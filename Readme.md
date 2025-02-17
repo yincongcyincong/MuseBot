@@ -38,9 +38,10 @@ Run the bot locally:
 ## ⚙️ Configuration
 You can configure the bot via environment variables:
 
-/ Variable Name /	Description
-TELEGRAM_BOT_TOKEN	Your Telegram bot token
-DEEPSEEK_API_KEY	DeepSeek API key
+| Variable Name   | 	Description            |
+|-----------------|-------------------------|
+| TELEGRAM_BOT_TOKEN	      | Your Telegram bot token |
+| DEEPSEEK_TOKEN	 | DeepSeek Auth token     |
 
 ## Deployment
 ### Deploy with Docker
@@ -51,7 +52,7 @@ DEEPSEEK_API_KEY	DeepSeek API key
    
 2. **Run the container**
    ```sh
-    docker run -e TELEGRAM_BOT_TOKEN="your_telegram_bot_token" -e DEEPSEEK_API_KEY="your_deepseek_api_key" deepseek-telegram-bot
+    docker run -e TELEGRAM_BOT_TOKEN="your_telegram_bot_token" -e DEEPSEEK_TOKEN="your_deepseek_auth_token" telegram-deepseek-bot
    ```
 
 ## Contributing

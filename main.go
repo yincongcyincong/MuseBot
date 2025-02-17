@@ -10,6 +10,7 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"io"
 	"log"
+	"os"
 	"strings"
 )
 
@@ -19,11 +20,19 @@ var (
 )
 
 func main() {
-	BotToken = flag.String("bot_token", "", "Comma-separated list of Telegram bot tokens")
+	BotToken = flag.String("telegram_bot_token", "", "Comma-separated list of Telegram bot tokens")
 	DeepseekToken = flag.String("deepseek_token", "", "deepseek auth token")
 	flag.Parse()
 
-	fmt.Println("BotToken:", *BotToken)
+	if *BotToken == "" {
+		*BotToken = os.Getenv("TELEGRAM_BOT_TOKEN")
+	}
+
+	if *DeepseekToken == "" {
+		*DeepseekToken = os.Getenv("DEEPSEEK_TOKEN")
+	}
+
+	fmt.Println("TelegramBotToken:", *BotToken)
 	fmt.Println("DeepseekToken:", *DeepseekToken)
 	if *BotToken == "" || *DeepseekToken == "" {
 		log.Fatalf("Bot token and deepseek token are required")
