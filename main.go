@@ -3,8 +3,8 @@ package main
 import (
 	"context"
 	"errors"
+	"flag"
 	"fmt"
-	_ "fmt"
 	deepseek "github.com/cohesion-org/deepseek-go"
 	constants "github.com/cohesion-org/deepseek-go/constants"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
@@ -13,9 +13,24 @@ import (
 	"strings"
 )
 
+var (
+	BotToken      *string
+	DeepseekToken *string
+)
+
 func main() {
+	BotToken = flag.String("bot_token", "", "Comma-separated list of Telegram bot tokens")
+	DeepseekToken = flag.String("deepseek_token", "", "deepseek auth token")
+	flag.Parse()
+
+	fmt.Println("BotToken:", *BotToken)
+	fmt.Println("DeepseekToken:", *DeepseekToken)
+	if *BotToken == "" || *DeepseekToken == "" {
+		return
+	}
+
 	// 替换为你的Telegram Bot Token
-	bot, err := tgbotapi.NewBotAPI("7331299978:AAGL2hdQJE5MMvjWlWM-BfsC4mKnPu84XJY")
+	bot, err := tgbotapi.NewBotAPI(*BotToken)
 	if err != nil {
 		log.Panic(err)
 	}
@@ -90,7 +105,7 @@ func main() {
 // callDeepSeekAPI 调用DeepSeek API并返回响应
 func callDeepSeekAPI(prompt string, messageChan chan string) error {
 
-	client := deepseek.NewClient("sk-e2b91d48bfbf4b8a8091642ae3d6ee9a")
+	client := deepseek.NewClient(*DeepseekToken)
 	request := &deepseek.StreamChatCompletionRequest{
 		Model: deepseek.DeepSeekChat,
 		Messages: []deepseek.ChatCompletionMessage{
@@ -102,7 +117,7 @@ func callDeepSeekAPI(prompt string, messageChan chan string) error {
 
 	stream, err := client.CreateChatCompletionStream(ctx, request)
 	if err != nil {
-		log.Fatalf("ChatCompletionStream error: %v", err)
+		log.Println("ChatCompletionStream error: %v", err)
 		return err
 	}
 	defer stream.Close()
