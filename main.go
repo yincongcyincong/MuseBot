@@ -62,7 +62,7 @@ func main() {
 
 			fmt.Printf("[%s] %s", update.Message.From.UserName, update.Message.Text)
 
-			if update.Message.Text == "" || !strings.Contains(update.Message.Text, "@Guanwushan_bot") {
+			if update.Message.Text == "" || !strings.Contains(update.Message.Text, "@"+bot.Self.UserName) {
 				continue
 			}
 
