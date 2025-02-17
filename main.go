@@ -26,18 +26,18 @@ func main() {
 	fmt.Println("BotToken:", *BotToken)
 	fmt.Println("DeepseekToken:", *DeepseekToken)
 	if *BotToken == "" || *DeepseekToken == "" {
-		return
+		log.Fatalf("Bot token and deepseek token are required")
 	}
 
 	// 替换为你的Telegram Bot Token
 	bot, err := tgbotapi.NewBotAPI(*BotToken)
 	if err != nil {
-		log.Panic(err)
+		log.Fatalf("Init bot fail", err.Error())
 	}
 
 	bot.Debug = true
 
-	log.Printf("Authorized on account %s", bot.Self.UserName)
+	fmt.Println("Authorized on account %s", bot.Self.UserName)
 
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
@@ -51,10 +51,10 @@ func main() {
 		// 检查是否有新消息
 		if update.Message != nil {
 
-			log.Printf("[%s] %s", update.Message.From.UserName, update.Message.Text)
+			fmt.Printf("[%s] %s", update.Message.From.UserName, update.Message.Text)
 
 			if update.Message.Text == "" || !strings.Contains(update.Message.Text, "@Guanwushan_bot") {
-				return
+				continue
 			}
 
 			messageChan := make(chan string)
