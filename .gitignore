@@ -2,3 +2,4 @@
 *.tar.gz
 telegram-deepseek-bot
 telegram_bot.db
+.DS_Store
