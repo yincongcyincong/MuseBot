@@ -46,10 +46,16 @@ Use docker
 ## ⚙️ Configuration
 You can configure the bot via environment variables:
 
-| Variable Name   | 	Description            |
-|-----------------|-------------------------|
-| TELEGRAM_BOT_TOKEN	      | Your Telegram bot token |
-| DEEPSEEK_TOKEN	 | DeepSeek Api Key        |
+| Variable Name       | 	Description            |
+|---------------------|-------------------------|
+| TELEGRAM_BOT_TOKEN	 | Your Telegram bot token |
+| DEEPSEEK_TOKEN	     | DeepSeek Api Key        |
+| MODE	               | sample / complex        |
+| CUSTOM_URL	         | deepseek url            |
+
+### MODE
+sample: all deepseek config is default config.
+complex: custome yourself deepseek config. now support choose deepseek mode (chat, coder, reasoner).
 
 ## Deployment
 ### Deploy with Docker
