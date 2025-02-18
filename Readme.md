@@ -9,7 +9,7 @@ This repository provides a **Telegram bot** built with **Golang** that integrate
 - 🏗 **Easy Deployment**: Run locally or deploy to a cloud server.
 
 ## 🤖 Usage Example
-https://github.com/yincongcyincong/telegram-deepseek-bot/wiki/Usage-Video
+[usage video](https://github.com/yincongcyincong/telegram-deepseek-bot/wiki/Usage-Video)
 
 
 ## 📌 Requirements
