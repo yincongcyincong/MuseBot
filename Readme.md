@@ -1,6 +1,7 @@
 # DeepSeek Telegram Bot
 
-This repository provides a **Telegram bot** built with **Golang** that integrates with **DeepSeek API** to provide AI-powered responses. The bot supports **streaming replies**, making interactions feel more natural and dynamic.
+This repository provides a **Telegram bot** built with **Golang** that integrates with **DeepSeek API** to provide AI-powered responses. The bot supports **streaming replies**, making interactions feel more natural and dynamic.      
+[中文文档](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/Readme_ZH.md)
 
 ## 🚀 Features
 - 🤖 **AI Responses**: Uses DeepSeek API for chatbot replies.
