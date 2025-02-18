@@ -8,6 +8,7 @@ import (
 	"github.com/cohesion-org/deepseek-go/constants"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
+	"github.com/yincongcyincong/telegram-deepseek-bot/db"
 	"github.com/yincongcyincong/telegram-deepseek-bot/param"
 	"io"
 	"log"
@@ -22,7 +23,7 @@ const (
 
 func GetContentFromDP(messageChan chan *param.MsgInfo, update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	text := strings.ReplaceAll(update.Message.Text, "@"+bot.Self.UserName, "")
-	err := callDeepSeekAPI(text, update.Message.MessageID, messageChan)
+	err := callDeepSeekAPI(text, update, messageChan)
 	if err != nil {
 		log.Printf("Error calling DeepSeek API: %s\n", err)
 	}
@@ -30,11 +31,23 @@ func GetContentFromDP(messageChan chan *param.MsgInfo, update tgbotapi.Update, b
 }
 
 // callDeepSeekAPI request DeepSeek API and get response
-func callDeepSeekAPI(prompt string, updateMsgID int, messageChan chan *param.MsgInfo) error {
+func callDeepSeekAPI(prompt string, update tgbotapi.Update, messageChan chan *param.MsgInfo) error {
+	updateMsgID := update.Message.MessageID
+	model := deepseek.DeepSeekChat
+	if *conf.Mode == conf.ComplexMode {
+		userInfo, err := db.GetUserByName(update.Message.From.UserName)
+		if err != nil {
+			log.Printf("Error getting user info: %s\n", err)
+		}
+		if userInfo != nil && userInfo.Mode != "" {
+			log.Printf("User info: %s, %s\n", userInfo.Name, userInfo.Mode)
+			model = userInfo.Mode
+		}
+	}
 
-	client := deepseek.NewClient(*conf.DeepseekToken)
+	client := deepseek.NewClient(*conf.DeepseekToken, *conf.CustomUrl)
 	request := &deepseek.StreamChatCompletionRequest{
-		Model: deepseek.DeepSeekChat,
+		Model: model,
 		Messages: []deepseek.ChatCompletionMessage{
 			{Role: constants.ChatMessageRoleUser, Content: prompt},
 		},

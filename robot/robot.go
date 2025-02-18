@@ -3,10 +3,12 @@ package robot
 import (
 	"errors"
 	"fmt"
+	"github.com/yincongcyincong/telegram-deepseek-bot/db"
 	"log"
 	"strings"
 	"time"
 
+	godeepseek "github.com/cohesion-org/deepseek-go"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
 	"github.com/yincongcyincong/telegram-deepseek-bot/deepseek"
@@ -29,12 +31,15 @@ func StartListenRobot() {
 
 	updates := bot.GetUpdatesChan(u)
 	for update := range updates {
+		if handleCommandAndCallback(update, bot) {
+			continue
+		}
 		// check whether you have new message
 		if update.Message != nil {
 
 			fmt.Printf("[%s] %s\n", update.Message.From.UserName, update.Message.Text)
 
-			if update.Message.Text == "" || !strings.Contains(update.Message.Text, "@"+bot.Self.UserName) {
+			if skipThisMsg(update, bot) {
 				continue
 			}
 
@@ -106,4 +111,109 @@ func sleepUtilNoLimit(msgId int, err error) bool {
 	}
 
 	return false
+}
+
+func handleCommandAndCallback(update tgbotapi.Update, bot *tgbotapi.BotAPI) bool {
+	// if it's command, directly
+	if update.Message != nil && update.Message.IsCommand() && *conf.Mode == conf.ComplexMode {
+		handleCommand(update, bot)
+		return true
+	}
+
+	if update.CallbackQuery != nil && *conf.Mode == conf.ComplexMode {
+		handleCallbackQuery(update, bot)
+		return true
+	}
+	return false
+}
+
+func skipThisMsg(update tgbotapi.Update, bot *tgbotapi.BotAPI) bool {
+
+	if update.Message.Chat.Type == "private" {
+		return false
+	}
+
+	if update.Message.Text == "" || !strings.Contains(update.Message.Text, "@"+bot.Self.UserName) {
+		return true
+	}
+
+	return false
+}
+
+func handleCommand(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
+	cmd := update.Message.Command()
+	switch cmd {
+	case "mode":
+		sendConfigurationOptions(bot, update.Message.Chat.ID)
+	case "help":
+	}
+}
+
+// 发送配置选择界面
+func sendConfigurationOptions(bot *tgbotapi.BotAPI, chatID int64) {
+	// create inline button
+	inlineKeyboard := tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("chat", godeepseek.DeepSeekChat),
+			tgbotapi.NewInlineKeyboardButtonData("coder", godeepseek.DeepSeekCoder),
+			tgbotapi.NewInlineKeyboardButtonData("reasoner", godeepseek.DeepSeekReasoner),
+		),
+	)
+
+	// 发送消息并附上内联键盘
+	msg := tgbotapi.NewMessage(chatID, "Select chat mode")
+	msg.ReplyMarkup = inlineKeyboard
+	_, err := bot.Send(msg)
+	if err != nil {
+		log.Printf("send inline message fail: %v", err)
+	}
+}
+
+// 处理回调查询（用户点击按钮）
+func handleCallbackQuery(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
+	userInfo, err := db.GetUserByName(update.CallbackQuery.From.UserName)
+	if err != nil {
+		log.Printf("get user fail: %s %v", update.CallbackQuery.From.UserName, err)
+		sendFailMessage(update, bot)
+		return
+	}
+
+	if userInfo != nil && userInfo.ID != 0 {
+		err = db.UpdateUserMode(update.CallbackQuery.From.UserName, update.CallbackQuery.Data)
+		if err != nil {
+			log.Printf("update user fail: %s %v", update.CallbackQuery.From.UserName, err)
+			sendFailMessage(update, bot)
+			return
+		}
+	} else {
+		_, err = db.InsertUser(update.CallbackQuery.From.UserName, update.CallbackQuery.Data)
+		if err != nil {
+			log.Printf("insert user fail: %s %v", update.CallbackQuery.From.UserName, err)
+			sendFailMessage(update, bot)
+			return
+		}
+	}
+
+	// send response
+	callback := tgbotapi.NewCallback(update.CallbackQuery.ID, update.CallbackQuery.Data)
+	if _, err := bot.Request(callback); err != nil {
+		log.Printf("request callback fail: %v", err)
+	}
+
+	msg := tgbotapi.NewMessage(update.CallbackQuery.Message.Chat.ID, "You choose: "+update.CallbackQuery.Data)
+	if _, err := bot.Send(msg); err != nil {
+		log.Printf("request send msg fail: %v", err)
+	}
+}
+
+func sendFailMessage(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
+	callback := tgbotapi.NewCallback(update.CallbackQuery.ID, "set mode fail!")
+	if _, err := bot.Request(callback); err != nil {
+		log.Printf("request callback fail: %v", err)
+	}
+
+	msg := tgbotapi.NewMessage(update.CallbackQuery.Message.Chat.ID, "set mode fail!")
+	if _, err := bot.Send(msg); err != nil {
+		log.Printf("request send msg fail: %v", err)
+	}
 }
