@@ -39,7 +39,7 @@ Run the bot locally:
    ```
 Use docker
    ```sh
-     docker pull jackyin0822/telegram-deepseek-bot:v0.0.1 
+     docker pull jackyin0822/telegram-deepseek-bot:lastest
      docker run -d -e TELEGRAM_BOT_TOKEN="telegram-bot-token" -e DEEPSEEK_TOKEN="deepseek-auth-token" --name my-telegram-bot  jackyin0822/telegram-deepseek-bot:v0.0.1
    ```
 

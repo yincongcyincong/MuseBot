@@ -5,13 +5,21 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	deepseek "github.com/cohesion-org/deepseek-go"
-	constants "github.com/cohesion-org/deepseek-go/constants"
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"io"
 	"log"
 	"os"
 	"strings"
+	"time"
+
+	deepseek "github.com/cohesion-org/deepseek-go"
+	constants "github.com/cohesion-org/deepseek-go/constants"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+)
+
+const (
+	OneMsgLen       = 1500
+	FirstSendLen    = 30
+	NonFirstSendLen = 300
 )
 
 var (
@@ -22,6 +30,7 @@ var (
 type msgInfo struct {
 	msgId   int
 	content string
+	sendLen int
 }
 
 func main() {
@@ -74,7 +83,7 @@ func main() {
 				text := strings.ReplaceAll(update.Message.Text, "@"+bot.Self.UserName, "")
 				err := callDeepSeekAPI(text, update.Message.MessageID, messageChan)
 				if err != nil {
-					log.Printf("Error calling DeepSeek API: %s", err)
+					log.Printf("Error calling DeepSeek API: %s\n", err)
 				}
 				close(messageChan)
 			}(update)
@@ -82,24 +91,43 @@ func main() {
 			// send response message
 			go func(update tgbotapi.Update) {
 				for msg := range messageChan {
+					if len(msg.content) == 0 {
+						log.Printf("%d content len is 0\n", update.Message.MessageID)
+						continue
+					}
+
 					if msg.msgId == 0 {
-						msgInfo := tgbotapi.NewMessage(update.Message.Chat.ID, msg.content)
-						msgInfo.ReplyToMessageID = update.Message.MessageID
-						sendInfo, err := bot.Send(msgInfo)
+						tgMsgInfo := tgbotapi.NewMessage(update.Message.Chat.ID, msg.content)
+						tgMsgInfo.ReplyToMessageID = update.Message.MessageID
+						sendInfo, err := bot.Send(tgMsgInfo)
 						if err != nil {
-							log.Printf("Error sending message: %s", err)
+							if sleepUtilNoLimit(update.Message.MessageID, err) {
+								sendInfo, err = bot.Send(tgMsgInfo)
+							}
+							if err != nil {
+								log.Printf("%d Error sending message: %s\n", update.Message.MessageID, err)
+								continue
+							}
 						}
 						msg.msgId = sendInfo.MessageID
 					} else {
-						_, err := bot.Send(tgbotapi.EditMessageTextConfig{
+						updateMsg := tgbotapi.EditMessageTextConfig{
 							BaseEdit: tgbotapi.BaseEdit{
 								ChatID:    update.Message.Chat.ID,
 								MessageID: msg.msgId,
 							},
 							Text: msg.content,
-						})
+						}
+						_, err := bot.Send(updateMsg)
+
 						if err != nil {
-							log.Println("Error editing message:", err)
+							// try again
+							if sleepUtilNoLimit(update.Message.MessageID, err) {
+								_, err = bot.Send(updateMsg)
+							}
+							if err != nil {
+								log.Printf("Error editing message:%d %s\n", update.Message.MessageID, err)
+							}
 						}
 					}
 
@@ -130,8 +158,10 @@ func callDeepSeekAPI(prompt string, updateMsgID int, messageChan chan *msgInfo) 
 		return err
 	}
 	defer stream.Close()
-	msgInfoContent := new(msgInfo)
-	limit := 30
+	msgInfoContent := &msgInfo{
+		sendLen: FirstSendLen,
+	}
+
 	for {
 		response, err := stream.Recv()
 		if errors.Is(err, io.EOF) {
@@ -143,15 +173,18 @@ func callDeepSeekAPI(prompt string, updateMsgID int, messageChan chan *msgInfo) 
 			break
 		}
 		for _, choice := range response.Choices {
-			// exceed max telegram per message length
-			if len(msgInfoContent.content) > 3000 {
-				msgInfoContent = new(msgInfo)
+			// exceed max telegram one message length
+			if len(msgInfoContent.content) > OneMsgLen {
+				messageChan <- msgInfoContent
+				msgInfoContent = &msgInfo{
+					sendLen: FirstSendLen,
+				}
 			}
 
 			msgInfoContent.content += choice.Delta.Content
-			if len(msgInfoContent.content) > limit {
+			if len(msgInfoContent.content) > msgInfoContent.sendLen {
 				messageChan <- msgInfoContent
-				limit += 100
+				msgInfoContent.sendLen += NonFirstSendLen
 			}
 		}
 	}
@@ -159,4 +192,16 @@ func callDeepSeekAPI(prompt string, updateMsgID int, messageChan chan *msgInfo) 
 	messageChan <- msgInfoContent
 
 	return nil
+}
+
+func sleepUtilNoLimit(msgId int, err error) bool {
+	var apiErr *tgbotapi.Error
+	if errors.As(err, &apiErr) && apiErr.Message == "Too Many Requests" {
+		waitTime := time.Duration(apiErr.RetryAfter) * time.Second
+		fmt.Printf("Rate limited. Retrying after %d %v...\n", msgId, waitTime)
+		time.Sleep(waitTime)
+		return true
+	}
+
+	return false
 }
