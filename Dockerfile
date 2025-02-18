@@ -8,7 +8,6 @@ WORKDIR /app
 COPY . .
 
 # 下载依赖
-RUN go clean -modcache
 RUN go mod tidy
 
 # 编译 Go 程序
@@ -16,7 +15,7 @@ RUN go build -o telegram-deepseek-bot main.go
 
 # 设置运行环境变量（可选）
 ENV TELEGRAM_BOT_TOKEN=""
-ENV DEEPSEEK_API_KEY=""
+ENV DEEPSEEK_TOKEN=""
 
 # 运行程序
 CMD ["./telegram-deepseek-bot"]
