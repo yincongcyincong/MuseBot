@@ -16,6 +16,8 @@ RUN go build -o telegram-deepseek-bot main.go
 # 设置运行环境变量（可选）
 ENV TELEGRAM_BOT_TOKEN=""
 ENV DEEPSEEK_TOKEN=""
+ENV MODE=""
+ENV CUSTOM_URL=""
 
 # 运行程序
 CMD ["./telegram-deepseek-bot"]
