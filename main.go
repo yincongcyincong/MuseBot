@@ -7,7 +7,7 @@ import (
 	"fmt"
 	deepseek "github.com/cohesion-org/deepseek-go"
 	constants "github.com/cohesion-org/deepseek-go/constants"
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"io"
 	"log"
 	"os"
@@ -41,26 +41,22 @@ func main() {
 	// 替换为你的Telegram Bot Token
 	bot, err := tgbotapi.NewBotAPI(*BotToken)
 	if err != nil {
-		log.Fatalf("Init bot fail", err.Error())
+		log.Fatalf("Init bot fail: %v\n", err.Error())
 	}
 
 	bot.Debug = true
 
-	fmt.Println("Authorized on account %s", bot.Self.UserName)
+	fmt.Printf("Authorized on account %s\n", bot.Self.UserName)
 
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
 
-	updates, err := bot.GetUpdatesChan(u)
-	if err != nil {
-		panic(err)
-	}
-
+	updates := bot.GetUpdatesChan(u)
 	for update := range updates {
 		// 检查是否有新消息
 		if update.Message != nil {
 
-			fmt.Printf("[%s] %s", update.Message.From.UserName, update.Message.Text)
+			fmt.Printf("[%s] %s\n", update.Message.From.UserName, update.Message.Text)
 
 			if update.Message.Text == "" || !strings.Contains(update.Message.Text, "@"+bot.Self.UserName) {
 				continue
@@ -70,7 +66,7 @@ func main() {
 
 			// 调用DeepSeek API
 			go func(update tgbotapi.Update) {
-				text := strings.ReplaceAll(update.Message.Text, "@Guanwushan_bot", "")
+				text := strings.ReplaceAll(update.Message.Text, "@"+bot.Self.UserName, "")
 				err := callDeepSeekAPI(text, messageChan)
 				if err != nil {
 					log.Printf("Error calling DeepSeek API: %s", err)
@@ -126,7 +122,7 @@ func callDeepSeekAPI(prompt string, messageChan chan string) error {
 
 	stream, err := client.CreateChatCompletionStream(ctx, request)
 	if err != nil {
-		log.Println("ChatCompletionStream error: %v", err)
+		log.Printf("ChatCompletionStream error: %v\n", err)
 		return err
 	}
 	defer stream.Close()
@@ -135,7 +131,7 @@ func callDeepSeekAPI(prompt string, messageChan chan string) error {
 	for {
 		response, err := stream.Recv()
 		if errors.Is(err, io.EOF) {
-			fmt.Println("\nStream finished")
+			fmt.Printf("\nStream finished")
 			break
 		}
 		if err != nil {
@@ -150,6 +146,8 @@ func callDeepSeekAPI(prompt string, messageChan chan string) error {
 			}
 		}
 	}
+
+	messageChan <- sendMsg
 
 	return nil
 }

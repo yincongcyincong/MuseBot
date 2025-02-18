@@ -8,6 +8,7 @@ WORKDIR /app
 COPY . .
 
 # 下载依赖
+RUN go clean -modcache
 RUN go mod tidy
 
 # 编译 Go 程序
