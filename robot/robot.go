@@ -64,6 +64,7 @@ func handleUpdate(messageChan chan *param.MsgInfo, update tgbotapi.Update, bot *
 		if msg.MsgId == 0 {
 			tgMsgInfo := tgbotapi.NewMessage(update.Message.Chat.ID, msg.Content)
 			tgMsgInfo.ReplyToMessageID = update.Message.MessageID
+			tgMsgInfo.ParseMode = tgbotapi.ModeMarkdown
 			sendInfo, err := bot.Send(tgMsgInfo)
 			if err != nil {
 				if sleepUtilNoLimit(update.Message.MessageID, err) {
@@ -81,7 +82,8 @@ func handleUpdate(messageChan chan *param.MsgInfo, update tgbotapi.Update, bot *
 					ChatID:    update.Message.Chat.ID,
 					MessageID: msg.MsgId,
 				},
-				Text: msg.Content,
+				Text:      msg.Content,
+				ParseMode: tgbotapi.ModeMarkdown,
 			}
 			_, err := bot.Send(updateMsg)
 
