@@ -58,8 +58,7 @@ func StartListenRobot() {
 func handleUpdate(messageChan chan *param.MsgInfo, update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	for msg := range messageChan {
 		if len(msg.Content) == 0 {
-			log.Printf("%d content len is 0\n", update.Message.MessageID)
-			continue
+			msg.Content = "get nothing from deepseek!"
 		}
 
 		if msg.MsgId == 0 {
