@@ -11,7 +11,7 @@ This repository provides a **Telegram bot** built with **Golang** that integrate
 ## 📌 Requirements
 - [Go 1.24+](https://go.dev/dl/)
 - [Telegram Bot Token](https://core.telegram.org/bots/tutorial#obtain-your-bot-token)
-- [DeepSeek API Key](https://www.deepseek.com/)
+- [DeepSeek Auth Token](https://api-docs.deepseek.com/zh-cn/)
 
 ## 📥 Installation
 1. **Clone the repository**
@@ -27,21 +27,29 @@ This repository provides a **Telegram bot** built with **Golang** that integrate
 3. **Set up environment variables**
    ```sh
     export TELEGRAM_BOT_TOKEN="your_telegram_bot_token"
-    export DEEPSEEK_API_KEY="your_deepseek_api_key"
+    export DEEPSEEK_TOKEN="your_deepseek_api_key"
     ```
 
 ## 🚀 Usage
 Run the bot locally:
    ```sh
     go run main.go
+    or
+    go run main.go -telegram_bot_token=telegram-bot-token -deepseek_token=deepseek-auth-token
    ```
+Use docker
+   ```sh
+     docker pull jackyin0822/telegram-deepseek-bot:v0.0.1 
+     docker run -d -e TELEGRAM_BOT_TOKEN="telegram-bot-token" -e DEEPSEEK_TOKEN="deepseek-auth-token" --name my-telegram-bot  jackyin0822/telegram-deepseek-bot:v0.0.1
+   ```
+
 ## ⚙️ Configuration
 You can configure the bot via environment variables:
 
 | Variable Name   | 	Description            |
 |-----------------|-------------------------|
 | TELEGRAM_BOT_TOKEN	      | Your Telegram bot token |
-| DEEPSEEK_TOKEN	 | DeepSeek Auth token     |
+| DEEPSEEK_TOKEN	 | DeepSeek Api Key        |
 
 ## Deployment
 ### Deploy with Docker
@@ -52,7 +60,7 @@ You can configure the bot via environment variables:
    
 2. **Run the container**
    ```sh
-    docker run -e TELEGRAM_BOT_TOKEN="your_telegram_bot_token" -e DEEPSEEK_TOKEN="your_deepseek_auth_token" telegram-deepseek-bot
+     docker run -d -e TELEGRAM_BOT_TOKEN="telegram-bot-token" -e DEEPSEEK_TOKEN="deepseek-auth-token" --name my-telegram-bot telegram-deepseek-bot 
    ```
 
 ## Contributing
