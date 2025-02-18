@@ -8,6 +8,11 @@ This repository provides a **Telegram bot** built with **Golang** that integrate
 - 🎯 **Command Handling**: Supports custom commands.
 - 🏗 **Easy Deployment**: Run locally or deploy to a cloud server.
 
+## 🤖 Usage Example
+https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/static/group.mp4      
+https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/static/private.mp4
+
+
 ## 📌 Requirements
 - [Go 1.24+](https://go.dev/dl/)
 - [Telegram Bot Token](https://core.telegram.org/bots/tutorial#obtain-your-bot-token)
@@ -54,7 +59,7 @@ You can configure the bot via environment variables:
 | CUSTOM_URL	         | deepseek url            |
 
 ### MODE
-sample: all deepseek config is default config.
+sample: all deepseek config is default config.      
 complex: custome yourself deepseek config. now support choose deepseek mode (chat, coder, reasoner).
 
 ## Deployment
@@ -73,4 +78,4 @@ complex: custome yourself deepseek config. now support choose deepseek mode (cha
 Feel free to submit issues and pull requests to improve this bot. 🚀
 
 ## License
-MIT License © 2025 Your Name
+MIT License © 2025 jack yin
