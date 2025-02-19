@@ -37,7 +37,7 @@ func StartListenRobot() {
 		// check whether you have new message
 		if update.Message != nil {
 
-			fmt.Printf("[%s] %s\n", update.Message.From.UserName, update.Message.Text)
+			fmt.Printf("[%s] %s\n", update.Message.From.String(), update.Message.Text)
 
 			if skipThisMsg(update, bot) {
 				continue
@@ -69,6 +69,8 @@ func handleUpdate(messageChan chan *param.MsgInfo, update tgbotapi.Update, bot *
 			if err != nil {
 				if sleepUtilNoLimit(update.Message.MessageID, err) {
 					sendInfo, err = bot.Send(tgMsgInfo)
+				} else {
+					sendInfo, err = bot.Send(tgMsgInfo)
 				}
 				if err != nil {
 					log.Printf("%d Error sending message: %s\n", update.Message.MessageID, err)
@@ -90,6 +92,8 @@ func handleUpdate(messageChan chan *param.MsgInfo, update tgbotapi.Update, bot *
 			if err != nil {
 				// try again
 				if sleepUtilNoLimit(update.Message.MessageID, err) {
+					_, err = bot.Send(updateMsg)
+				} else {
 					_, err = bot.Send(updateMsg)
 				}
 				if err != nil {
@@ -145,13 +149,55 @@ func handleCommand(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	cmd := update.Message.Command()
 	switch cmd {
 	case "mode":
-		sendConfigurationOptions(bot, update.Message.Chat.ID)
+		sendModeConfigurationOptions(bot, update.Message.Chat.ID)
+	case "balance":
+		showBalanceInfo(update, bot)
 	case "help":
+		sendHelpConfigurationOptions(bot, update.Message.Chat.ID)
 	}
 }
 
+func showBalanceInfo(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
+	balance := deepseek.GetBalanceInfo()
+
+	// handle balance info msg
+	msgContent := fmt.Sprintf(`🟣 Available: %t
+
+`, balance.IsAvailable)
+
+	template := `🟣 Your Currency: %s
+
+🟣 Your TotalBalance Left: %s
+
+🟣 Your ToppedUpBalance Left: %s
+
+🟣 Your GrantedBalance Left: %s
+
+`
+	for _, bInfo := range balance.BalanceInfos {
+		msgContent += fmt.Sprintf(template, bInfo.Currency, bInfo.TotalBalance,
+			bInfo.ToppedUpBalance, bInfo.GrantedBalance)
+	}
+
+	chatId := int64(0)
+	if update.Message != nil {
+		chatId = update.Message.Chat.ID
+	}
+	if update.CallbackQuery != nil {
+		chatId = update.CallbackQuery.Message.Chat.ID
+	}
+
+	msg := tgbotapi.NewMessage(chatId, msgContent)
+	msg.ParseMode = tgbotapi.ModeMarkdown
+	_, err := bot.Send(msg)
+	if err != nil {
+		log.Printf("send balance message fail: %v\n", err)
+	}
+
+}
+
 // 发送配置选择界面
-func sendConfigurationOptions(bot *tgbotapi.BotAPI, chatID int64) {
+func sendModeConfigurationOptions(bot *tgbotapi.BotAPI, chatID int64) {
 	// create inline button
 	inlineKeyboard := tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
@@ -166,30 +212,62 @@ func sendConfigurationOptions(bot *tgbotapi.BotAPI, chatID int64) {
 	msg.ReplyMarkup = inlineKeyboard
 	_, err := bot.Send(msg)
 	if err != nil {
-		log.Printf("send inline message fail: %v", err)
+		log.Printf("send inline message fail: %v\n", err)
+	}
+}
+
+func sendHelpConfigurationOptions(bot *tgbotapi.BotAPI, chatID int64) {
+	// create inline button
+	inlineKeyboard := tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("mode", "mode"),
+			tgbotapi.NewInlineKeyboardButtonData("balance", "balance"),
+			//tgbotapi.NewInlineKeyboardButtonData("retry", "retry"),
+		),
+	)
+
+	// 发送消息并附上内联键盘
+	msg := tgbotapi.NewMessage(chatID, "Select command")
+	msg.ReplyMarkup = inlineKeyboard
+	_, err := bot.Send(msg)
+	if err != nil {
+		log.Printf("send inline message fail: %v\n", err)
 	}
 }
 
 // 处理回调查询（用户点击按钮）
 func handleCallbackQuery(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
-	userInfo, err := db.GetUserByName(update.CallbackQuery.From.UserName)
+
+	switch update.CallbackQuery.Data {
+	case godeepseek.DeepSeekChat, godeepseek.DeepSeekCoder, godeepseek.DeepSeekReasoner:
+		handleModeUpdate(update, bot)
+	case "mode":
+		sendModeConfigurationOptions(bot, update.CallbackQuery.Message.Chat.ID)
+	case "balance":
+		showBalanceInfo(update, bot)
+	}
+
+}
+
+func handleModeUpdate(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
+	userInfo, err := db.GetUserByName(update.CallbackQuery.From.String())
 	if err != nil {
-		log.Printf("get user fail: %s %v", update.CallbackQuery.From.UserName, err)
+		log.Printf("get user fail: %s %v", update.CallbackQuery.From.String(), err)
 		sendFailMessage(update, bot)
 		return
 	}
 
 	if userInfo != nil && userInfo.ID != 0 {
-		err = db.UpdateUserMode(update.CallbackQuery.From.UserName, update.CallbackQuery.Data)
+		err = db.UpdateUserMode(update.CallbackQuery.From.String(), update.CallbackQuery.Data)
 		if err != nil {
-			log.Printf("update user fail: %s %v", update.CallbackQuery.From.UserName, err)
+			log.Printf("update user fail: %s %v\n", update.CallbackQuery.From.String(), err)
 			sendFailMessage(update, bot)
 			return
 		}
 	} else {
-		_, err = db.InsertUser(update.CallbackQuery.From.UserName, update.CallbackQuery.Data)
+		_, err = db.InsertUser(update.CallbackQuery.From.String(), update.CallbackQuery.Data)
 		if err != nil {
-			log.Printf("insert user fail: %s %v", update.CallbackQuery.From.UserName, err)
+			log.Printf("insert user fail: %s %v\n", update.CallbackQuery.From.String(), err)
 			sendFailMessage(update, bot)
 			return
 		}
@@ -198,23 +276,23 @@ func handleCallbackQuery(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	// send response
 	callback := tgbotapi.NewCallback(update.CallbackQuery.ID, update.CallbackQuery.Data)
 	if _, err := bot.Request(callback); err != nil {
-		log.Printf("request callback fail: %v", err)
+		log.Printf("request callback fail: %v\n", err)
 	}
 
 	msg := tgbotapi.NewMessage(update.CallbackQuery.Message.Chat.ID, "You choose: "+update.CallbackQuery.Data)
 	if _, err := bot.Send(msg); err != nil {
-		log.Printf("request send msg fail: %v", err)
+		log.Printf("request send msg fail: %v\n", err)
 	}
 }
 
 func sendFailMessage(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	callback := tgbotapi.NewCallback(update.CallbackQuery.ID, "set mode fail!")
 	if _, err := bot.Request(callback); err != nil {
-		log.Printf("request callback fail: %v", err)
+		log.Printf("request callback fail: %v\n", err)
 	}
 
 	msg := tgbotapi.NewMessage(update.CallbackQuery.Message.Chat.ID, "set mode fail!")
 	if _, err := bot.Send(msg); err != nil {
-		log.Printf("request send msg fail: %v", err)
+		log.Printf("request send msg fail: %v\n", err)
 	}
 }
