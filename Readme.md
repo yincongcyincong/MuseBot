@@ -60,11 +60,19 @@ You can configure the bot via environment variables:
 
 ### MODE
 sample: all deepseek config is default config.      
-complex: custome yourself deepseek config. now support choose deepseek mode (chat, coder, reasoner).
+complex: could use command to change deepseek config. include /mode /balance /help
+   ```sh
+    go run main.go -telegram_bot_token=telegram-bot-token -mode=complex -deepseek_token=deepseek-auth-token
+   ```
+
+## Command 
+### /mode
+chose deepseek mode, clude chat, coder, reasoner
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/2d1bc0be-d4a2-4908-bede-b351f2a10423" />
 
+### /balance
 
-
+### /help
 
 ## Deployment
 ### Deploy with Docker
