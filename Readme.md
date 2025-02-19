@@ -56,7 +56,7 @@ You can configure the bot via environment variables:
 | TELEGRAM_BOT_TOKEN	 | Your Telegram bot token            |
 | DEEPSEEK_TOKEN	     | DeepSeek Api Key                   |
 | MODE	               | Run mode, include sample / complex |
-| CUSTOM_URL	         | deepseek url                       |
+| CUSTOM_URL	         | custom deepseek url                |
 
 ### MODE
 sample: all deepseek config is default config.      
