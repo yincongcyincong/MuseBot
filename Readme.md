@@ -70,7 +70,7 @@ If you are using a self-deployed DeepSeek, you can set CUSTOM_URL to route reque
 
 ## Command 
 ### /mode
-chose deepseek mode, clude chat, coder, reasoner
+chose deepseek mode, clude chat, coder, reasoner      
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/2d1bc0be-d4a2-4908-bede-b351f2a10423" />
 
 ### /balance
