@@ -35,7 +35,7 @@ func callDeepSeekAPI(prompt string, update tgbotapi.Update, messageChan chan *pa
 	updateMsgID := update.Message.MessageID
 	model := deepseek.DeepSeekChat
 	if *conf.Mode == conf.ComplexMode {
-		userInfo, err := db.GetUserByName(update.Message.From.UserName)
+		userInfo, err := db.GetUserByName(update.Message.From.String())
 		if err != nil {
 			log.Printf("Error getting user info: %s\n", err)
 		}
@@ -95,4 +95,19 @@ func callDeepSeekAPI(prompt string, update tgbotapi.Update, messageChan chan *pa
 	messageChan <- msgInfoContent
 
 	return nil
+}
+
+func GetBalanceInfo() *deepseek.BalanceResponse {
+	client := deepseek.NewClient(*conf.DeepseekToken)
+	ctx := context.Background()
+	balance, err := deepseek.GetBalance(client, ctx)
+	if err != nil {
+		log.Printf("Error getting balance: %v\n", err)
+	}
+
+	if balance == nil || len(balance.BalanceInfos) == 0 {
+		log.Printf("No balance information returned\n")
+	}
+
+	return balance
 }
