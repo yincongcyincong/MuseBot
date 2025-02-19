@@ -69,6 +69,8 @@ complex: could use command to change deepseek config. include /mode /balance /he
 If you are using a self-deployed DeepSeek, you can set CUSTOM_URL to route requests to your self-deployed DeepSeek.
 
 ## Command 
+command only work at complex mode, please set `-mode=complex` or set env `MODE=complex` when you run application.
+
 ### /mode
 chose deepseek mode, include chat, coder, reasoner      
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/55ac3101-92d2-490d-8ee0-31a5b297e56e" />
