@@ -51,12 +51,12 @@ Use docker
 ## ⚙️ Configuration
 You can configure the bot via environment variables:
 
-| Variable Name       | 	Description            |
-|---------------------|-------------------------|
-| TELEGRAM_BOT_TOKEN	 | Your Telegram bot token |
-| DEEPSEEK_TOKEN	     | DeepSeek Api Key        |
-| MODE	               | sample / complex        |
-| CUSTOM_URL	         | deepseek url            |
+| Variable Name       | 	Description                       |
+|---------------------|------------------------------------|
+| TELEGRAM_BOT_TOKEN	 | Your Telegram bot token            |
+| DEEPSEEK_TOKEN	     | DeepSeek Api Key                   |
+| MODE	               | Run mode, include sample / complex |
+| CUSTOM_URL	         | deepseek url                       |
 
 ### MODE
 sample: all deepseek config is default config.      
@@ -64,6 +64,9 @@ complex: could use command to change deepseek config. include /mode /balance /he
    ```sh
     go run main.go -telegram_bot_token=telegram-bot-token -mode=complex -deepseek_token=deepseek-auth-token
    ```
+
+### CUSTOM_URL
+If you are using a self-deployed DeepSeek, you can set CUSTOM_URL to route requests to your self-deployed DeepSeek.
 
 ## Command 
 ### /mode
