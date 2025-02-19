@@ -61,9 +61,20 @@
 
 ### 运行模式（MODE）
 - **sample**：使用 DeepSeek 默认配置。
-- **complex**：允许自定义 DeepSeek 配置，目前支持选择 DeepSeek 模式（chat、coder、reasoner）。
+- **complex**：允许自定义 DeepSeek 配置。
 
+### 自部署deepseek
+如果你使用的自部署的deepseek，可以设置CUSTOM_URL请求到你自部署的deepseek
+
+## 命令
+### /mode
+自定义deepseek回答模型，包括chat，coder，reasoner。    
 <img width="374" alt="DeepSeek 模式" src="https://github.com/user-attachments/assets/2d1bc0be-d4a2-4908-bede-b351f2a10423" />
+
+### /balance
+
+### /help
+
 
 ## 🚀 部署
 ### 使用 Docker 部署
