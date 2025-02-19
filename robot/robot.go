@@ -202,14 +202,19 @@ func sendModeConfigurationOptions(bot *tgbotapi.BotAPI, chatID int64) {
 	inlineKeyboard := tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("chat", godeepseek.DeepSeekChat),
+		),
+		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("coder", godeepseek.DeepSeekCoder),
+		),
+		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("reasoner", godeepseek.DeepSeekReasoner),
 		),
 	)
 
 	// 发送消息并附上内联键盘
-	msg := tgbotapi.NewMessage(chatID, "Select chat mode")
+	msg := tgbotapi.NewMessage(chatID, "🚀**Select chat mode**")
 	msg.ReplyMarkup = inlineKeyboard
+	msg.ParseMode = tgbotapi.ModeMarkdown
 	_, err := bot.Send(msg)
 	if err != nil {
 		log.Printf("send inline message fail: %v\n", err)
@@ -221,14 +226,17 @@ func sendHelpConfigurationOptions(bot *tgbotapi.BotAPI, chatID int64) {
 	inlineKeyboard := tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("mode", "mode"),
-			tgbotapi.NewInlineKeyboardButtonData("balance", "balance"),
 			//tgbotapi.NewInlineKeyboardButtonData("retry", "retry"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("balance", "balance"),
 		),
 	)
 
 	// 发送消息并附上内联键盘
-	msg := tgbotapi.NewMessage(chatID, "Select command")
+	msg := tgbotapi.NewMessage(chatID, "🤖**Select command**")
 	msg.ReplyMarkup = inlineKeyboard
+	msg.ParseMode = tgbotapi.ModeMarkdown
 	_, err := bot.Send(msg)
 	if err != nil {
 		log.Printf("send inline message fail: %v\n", err)
