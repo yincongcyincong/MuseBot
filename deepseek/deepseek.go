@@ -47,12 +47,32 @@ func callDeepSeekAPI(prompt string, update tgbotapi.Update, messageChan chan *pa
 
 	client := deepseek.NewClient(*conf.DeepseekToken, *conf.CustomUrl)
 	request := &deepseek.StreamChatCompletionRequest{
-		Model: model,
-		Messages: []deepseek.ChatCompletionMessage{
-			{Role: constants.ChatMessageRoleUser, Content: prompt},
-		},
+		Model:  model,
 		Stream: true,
 	}
+	messages := make([]deepseek.ChatCompletionMessage, 0)
+
+	msgRecords := db.GetMsgRecord(update.Message.From.String())
+	if msgRecords != nil {
+		for _, record := range msgRecords.AQs {
+			log.Println("question:", record.Question, "answer:", record.Answer)
+			messages = append(messages, deepseek.ChatCompletionMessage{
+				Role:    constants.ChatMessageRoleAssistant,
+				Content: record.Question,
+			})
+			messages = append(messages, deepseek.ChatCompletionMessage{
+				Role:    constants.ChatMessageRoleUser,
+				Content: record.Answer,
+			})
+		}
+	}
+	messages = append(messages, deepseek.ChatCompletionMessage{
+		Role:    constants.ChatMessageRoleUser,
+		Content: prompt,
+	})
+
+	request.Messages = messages
+
 	ctx := context.Background()
 
 	stream, err := client.CreateChatCompletionStream(ctx, request)
@@ -80,11 +100,13 @@ func callDeepSeekAPI(prompt string, update tgbotapi.Update, messageChan chan *pa
 			if len(msgInfoContent.Content) > OneMsgLen {
 				messageChan <- msgInfoContent
 				msgInfoContent = &param.MsgInfo{
-					SendLen: FirstSendLen,
+					SendLen:     FirstSendLen,
+					FullContent: msgInfoContent.FullContent,
 				}
 			}
 
 			msgInfoContent.Content += choice.Delta.Content
+			msgInfoContent.FullContent += choice.Delta.Content
 			if len(msgInfoContent.Content) > msgInfoContent.SendLen {
 				messageChan <- msgInfoContent
 				msgInfoContent.SendLen += NonFirstSendLen
