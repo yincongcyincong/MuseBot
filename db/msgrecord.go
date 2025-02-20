@@ -33,7 +33,7 @@ func InsertMsgRecord(username string, aq *AQ) {
 	} else {
 		msgRecord = msgRecordInter.(*MsgRecordInfo)
 		msgRecord.AQs = append(msgRecord.AQs, aq)
-		if len(msgRecord.AQs) >= MaxQAPair {
+		if len(msgRecord.AQs) > MaxQAPair {
 			msgRecord.AQs = msgRecord.AQs[1:]
 		}
 		msgRecord.updateTime = time.Now().Unix()
@@ -97,7 +97,6 @@ func StarCheckUserLen() {
 					}
 				}
 			}
-
 		}
 
 	}()
