@@ -56,7 +56,8 @@ func StartListenRobot() {
 }
 
 func handleUpdate(messageChan chan *param.MsgInfo, update tgbotapi.Update, bot *tgbotapi.BotAPI) {
-	for msg := range messageChan {
+	var msg *param.MsgInfo
+	for msg = range messageChan {
 		if len(msg.Content) == 0 {
 			msg.Content = "get nothing from deepseek!"
 		}
@@ -103,6 +104,12 @@ func handleUpdate(messageChan chan *param.MsgInfo, update tgbotapi.Update, bot *
 		}
 
 	}
+
+	// store question and answer into record.
+	db.InsertMsgRecord(update.Message.From.String(), &db.AQ{
+		Question: update.Message.Text,
+		Answer:   msg.FullContent,
+	})
 
 }
 
@@ -152,8 +159,21 @@ func handleCommand(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 		sendModeConfigurationOptions(bot, update.Message.Chat.ID)
 	case "balance":
 		showBalanceInfo(update, bot)
+	case "clear":
+		clearAllRecord(update, bot)
+	case "retry":
 	case "help":
 		sendHelpConfigurationOptions(bot, update.Message.Chat.ID)
+	}
+}
+
+func clearAllRecord(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
+	db.DeleteMsgRecord(update.Message.From.String())
+	msg := tgbotapi.NewMessage(update.Message.Chat.ID, "🚀successfully delete")
+	msg.ParseMode = tgbotapi.ModeMarkdown
+	_, err := bot.Send(msg)
+	if err != nil {
+		log.Printf("send clear message fail: %v\n", err)
 	}
 }
 

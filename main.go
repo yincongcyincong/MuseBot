@@ -11,5 +11,6 @@ func main() {
 	if *conf.Mode == conf.ComplexMode {
 		db.InitTable()
 	}
+	db.StarCheckUserLen()
 	robot.StartListenRobot()
 }
