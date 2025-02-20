@@ -106,10 +106,12 @@ func handleUpdate(messageChan chan *param.MsgInfo, update tgbotapi.Update, bot *
 	}
 
 	// store question and answer into record.
-	db.InsertMsgRecord(update.Message.From.String(), &db.AQ{
-		Question: update.Message.Text,
-		Answer:   msg.FullContent,
-	})
+	if msg != nil && msg.FullContent != "" {
+		db.InsertMsgRecord(update.Message.From.String(), &db.AQ{
+			Question: update.Message.Text,
+			Answer:   msg.FullContent,
+		})
+	}
 
 }
 
