@@ -43,16 +43,19 @@ func StartListenRobot() {
 				continue
 			}
 
-			messageChan := make(chan *param.MsgInfo)
-
-			// request DeepSeek API
-			go deepseek.GetContentFromDP(messageChan, update, bot)
-
-			// send response message
-			go handleUpdate(messageChan, update, bot)
-
+			requestDeepseekAndResp(update, bot)
 		}
 	}
+}
+
+func requestDeepseekAndResp(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
+	messageChan := make(chan *param.MsgInfo)
+
+	// request DeepSeek API
+	go deepseek.GetContentFromDP(messageChan, update, bot)
+
+	// send response message
+	go handleUpdate(messageChan, update, bot)
 }
 
 func handleUpdate(messageChan chan *param.MsgInfo, update tgbotapi.Update, bot *tgbotapi.BotAPI) {
@@ -110,7 +113,7 @@ func handleUpdate(messageChan chan *param.MsgInfo, update tgbotapi.Update, bot *
 		db.InsertMsgRecord(update.Message.From.String(), &db.AQ{
 			Question: update.Message.Text,
 			Answer:   msg.FullContent,
-		})
+		}, true)
 	}
 
 }
@@ -129,12 +132,12 @@ func sleepUtilNoLimit(msgId int, err error) bool {
 
 func handleCommandAndCallback(update tgbotapi.Update, bot *tgbotapi.BotAPI) bool {
 	// if it's command, directly
-	if update.Message != nil && update.Message.IsCommand() && *conf.Mode == conf.ComplexMode {
+	if update.Message != nil && update.Message.IsCommand() {
 		handleCommand(update, bot)
 		return true
 	}
 
-	if update.CallbackQuery != nil && *conf.Mode == conf.ComplexMode {
+	if update.CallbackQuery != nil {
 		handleCallbackQuery(update, bot)
 		return true
 	}
@@ -164,14 +167,52 @@ func handleCommand(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	case "clear":
 		clearAllRecord(update, bot)
 	case "retry":
+		retryLastQuestion(update, bot)
 	case "help":
 		sendHelpConfigurationOptions(bot, update.Message.Chat.ID)
 	}
 }
 
+func retryLastQuestion(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
+	chatId := int64(0)
+	username := ""
+	if update.Message != nil {
+		chatId = update.Message.Chat.ID
+		username = update.Message.From.String()
+	}
+	if update.CallbackQuery != nil {
+		chatId = update.CallbackQuery.Message.Chat.ID
+		username = update.CallbackQuery.From.String()
+	}
+
+	records := db.GetMsgRecord(username)
+	if records != nil && len(records.AQs) > 0 {
+		update.Message.Text = records.AQs[len(records.AQs)-1].Question
+		requestDeepseekAndResp(update, bot)
+	} else {
+		msg := tgbotapi.NewMessage(chatId, "🚀no last question!")
+		msg.ParseMode = tgbotapi.ModeMarkdown
+		_, err := bot.Send(msg)
+		if err != nil {
+			log.Printf("send retry message fail: %v\n", err)
+		}
+	}
+}
+
 func clearAllRecord(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
-	db.DeleteMsgRecord(update.Message.From.String())
-	msg := tgbotapi.NewMessage(update.Message.Chat.ID, "🚀successfully delete")
+	chatId := int64(0)
+	username := ""
+	if update.Message != nil {
+		chatId = update.Message.Chat.ID
+		username = update.Message.From.String()
+	}
+	if update.CallbackQuery != nil {
+		chatId = update.CallbackQuery.Message.Chat.ID
+		username = update.CallbackQuery.From.String()
+	}
+
+	db.DeleteMsgRecord(username)
+	msg := tgbotapi.NewMessage(chatId, "🚀successfully delete!")
 	msg.ParseMode = tgbotapi.ModeMarkdown
 	_, err := bot.Send(msg)
 	if err != nil {
@@ -248,10 +289,15 @@ func sendHelpConfigurationOptions(bot *tgbotapi.BotAPI, chatID int64) {
 	inlineKeyboard := tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("mode", "mode"),
-			//tgbotapi.NewInlineKeyboardButtonData("retry", "retry"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("balance", "balance"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("retry", "retry"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("clear", "clear"),
 		),
 	)
 
@@ -275,6 +321,10 @@ func handleCallbackQuery(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 		sendModeConfigurationOptions(bot, update.CallbackQuery.Message.Chat.ID)
 	case "balance":
 		showBalanceInfo(update, bot)
+	case "clear":
+		clearAllRecord(update, bot)
+	case "retry":
+		retryLastQuestion(update, bot)
 	}
 
 }
