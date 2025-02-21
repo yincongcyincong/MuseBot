@@ -8,9 +8,7 @@ import (
 
 func main() {
 	conf.InitConf()
-	if *conf.Mode == conf.ComplexMode {
-		db.InitTable()
-	}
+	db.InitTable()
 	db.StarCheckUserLen()
 	robot.StartListenRobot()
 }

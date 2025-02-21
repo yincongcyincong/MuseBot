@@ -1,6 +1,8 @@
 package db
 
 import (
+	"fmt"
+	"github.com/cohesion-org/deepseek-go"
 	"log"
 	"sort"
 	"sync"
@@ -20,9 +22,16 @@ type AQ struct {
 	Answer   string
 }
 
+type Record struct {
+	ID       int
+	Name     string
+	Question string
+	Answer   string
+}
+
 var MsgRecord = sync.Map{}
 
-func InsertMsgRecord(username string, aq *AQ) {
+func InsertMsgRecord(username string, aq *AQ, insertDB bool) {
 	var msgRecord *MsgRecordInfo
 	msgRecordInter, ok := MsgRecord.Load(username)
 	if !ok {
@@ -39,6 +48,14 @@ func InsertMsgRecord(username string, aq *AQ) {
 		msgRecord.updateTime = time.Now().Unix()
 	}
 	MsgRecord.Store(username, msgRecord)
+
+	if insertDB {
+		go insertRecord(&Record{
+			Name:     username,
+			Question: aq.Question,
+			Answer:   aq.Answer,
+		})
+	}
 }
 
 func GetMsgRecord(username string) *MsgRecordInfo {
@@ -51,9 +68,15 @@ func GetMsgRecord(username string) *MsgRecordInfo {
 
 func DeleteMsgRecord(username string) {
 	MsgRecord.Delete(username)
+	err := DeleteRecord(username)
+	if err != nil {
+		log.Printf("Error deleting record: %v \n", err)
+	}
 }
 
 func StarCheckUserLen() {
+	InsertRecord()
+
 	go func() {
 		defer func() {
 			if err := recover(); err != nil {
@@ -70,6 +93,7 @@ func StarCheckUserLen() {
 					timeUserPair[msgRecord.updateTime] = make([]string, 0)
 				}
 				timeUserPair[msgRecord.updateTime] = append(timeUserPair[msgRecord.updateTime], k.(string))
+				UpdateUserInfo(k.(string), msgRecord.updateTime)
 				totalNum++
 				return true
 			})
@@ -100,4 +124,83 @@ func StarCheckUserLen() {
 		}
 
 	}()
+}
+
+func UpdateUserInfo(username string, updateTime int64) {
+	user, err := GetUserByName(username)
+	if err != nil {
+		log.Printf("Error get user by name: %v \n", err)
+	}
+
+	if user == nil {
+		_, err = InsertUser(username, deepseek.DeepSeekChat)
+		if err != nil {
+			log.Printf("Error get user by name: %v \n", err)
+		}
+	}
+
+	err = UpdateUserUpdateTime(username, updateTime)
+	if err != nil {
+		log.Printf("StarCheckUserLen UpdateUserUpdateTime err:%v\n", err)
+	}
+}
+
+func InsertRecord() {
+	users, err := GetUsers()
+	if err != nil {
+		log.Printf("InsertRecord GetUsers err:%v\n", err)
+	}
+
+	for _, user := range users {
+		records, err := getRecordsByName(user.Name)
+		if err != nil {
+			log.Printf("InsertRecord GetUsers err:%v\n", err)
+		}
+		for _, record := range records {
+			InsertMsgRecord(user.Name, &AQ{
+				Question: record.Question,
+				Answer:   record.Answer,
+			}, false)
+		}
+	}
+
+}
+
+func getRecordsByName(name string) ([]Record, error) {
+	// 构造 SQL 语句
+	query := fmt.Sprintf("SELECT id, name, question, answer FROM records WHERE name =  ? limit 10")
+
+	// 执行查询
+	rows, err := DB.Query(query, name)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	// 解析查询结果
+	var records []Record
+	for rows.Next() {
+		var record Record
+		err := rows.Scan(&record.ID, &record.Name, &record.Question, &record.Answer)
+		if err != nil {
+			return nil, err
+		}
+		records = append(records, record)
+	}
+
+	return records, nil
+}
+
+func insertRecord(record *Record) {
+	query := `INSERT INTO records (name, question, answer) VALUES (?, ?, ?)`
+	_, err := DB.Exec(query, record.Name, record.Question, record.Answer)
+	if err != nil {
+		log.Printf("insertRecord err:%v\n", err)
+	}
+}
+
+func DeleteRecord(name string) error {
+	query := `DELETE FROM records WHERE name = ?`
+	_, err := DB.Exec(query, name)
+	return err
 }

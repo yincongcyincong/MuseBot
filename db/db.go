@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"time"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -15,9 +16,10 @@ var (
 )
 
 type User struct {
-	ID   int64  `json:"id"`
-	Name string `json:"name"`
-	Mode string `json:"mode"`
+	ID         int64  `json:"id"`
+	Name       string `json:"name"`
+	Mode       string `json:"mode"`
+	Updatetime int64  `json:"updatetime"`
 }
 
 func InitTable() {
@@ -50,8 +52,16 @@ func initializeTable(db *sql.DB, tableName string) error {
 				CREATE TABLE users (
 					id INTEGER PRIMARY KEY AUTOINCREMENT,
 					name TEXT NOT NULL,
-					mode VARCHAR(30) NOT NULL DEFAULT ''
-				);`
+					mode VARCHAR(30) NOT NULL DEFAULT '',
+					updatetime int(10) NOT NULL DEFAULT '0'
+				);
+				CREATE TABLE records (
+					id INTEGER PRIMARY KEY AUTOINCREMENT,
+					name TEXT NOT NULL,
+					question TEXT NOT NULL,
+					answer TEXT NOT NULL
+				);
+				CREATE INDEX idx_records_name ON users(name);`
 			_, err := db.Exec(createTableSQL)
 			if err != nil {
 				return fmt.Errorf("create table fail: %v\n", err)
@@ -70,8 +80,8 @@ func initializeTable(db *sql.DB, tableName string) error {
 // 插入新用户
 func InsertUser(name, mode string) (int64, error) {
 	// 插入数据
-	insertSQL := `INSERT INTO users (name, mode) VALUES (?, ?)`
-	result, err := DB.Exec(insertSQL, name, mode)
+	insertSQL := `INSERT INTO users (name, mode, updatetime) VALUES (?, ?, ?)`
+	result, err := DB.Exec(insertSQL, name, mode, time.Now().Unix())
 	if err != nil {
 		return 0, err
 	}
@@ -106,7 +116,7 @@ func GetUserByName(name string) (*User, error) {
 // 读取所有用户
 func GetUsers() ([]User, error) {
 	// 查询所有用户
-	rows, err := DB.Query("SELECT id, name, mode FROM users")
+	rows, err := DB.Query("SELECT id, name, mode, updatetime FROM users order by updatetime limit 100")
 	if err != nil {
 		return nil, err
 	}
@@ -115,7 +125,7 @@ func GetUsers() ([]User, error) {
 	var users []User
 	for rows.Next() {
 		var user User
-		if err := rows.Scan(&user.ID, &user.Name, &user.Mode); err != nil {
+		if err := rows.Scan(&user.ID, &user.Name, &user.Mode, &user.Updatetime); err != nil {
 			return nil, err
 		}
 		users = append(users, user)
@@ -133,5 +143,12 @@ func UpdateUserMode(name string, mode string) error {
 	// 更新用户模式
 	updateSQL := `UPDATE users SET mode = ? WHERE name = ?`
 	_, err := DB.Exec(updateSQL, mode, name)
+	return err
+}
+
+func UpdateUserUpdateTime(name string, updateTime int64) error {
+	// 更新用户模式
+	updateSQL := `UPDATE users SET updateTime = ? WHERE name = ?`
+	_, err := DB.Exec(updateSQL, updateTime, name)
 	return err
 }

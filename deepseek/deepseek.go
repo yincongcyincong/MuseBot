@@ -34,15 +34,13 @@ func GetContentFromDP(messageChan chan *param.MsgInfo, update tgbotapi.Update, b
 func callDeepSeekAPI(prompt string, update tgbotapi.Update, messageChan chan *param.MsgInfo) error {
 	updateMsgID := update.Message.MessageID
 	model := deepseek.DeepSeekChat
-	if *conf.Mode == conf.ComplexMode {
-		userInfo, err := db.GetUserByName(update.Message.From.String())
-		if err != nil {
-			log.Printf("Error getting user info: %s\n", err)
-		}
-		if userInfo != nil && userInfo.Mode != "" {
-			log.Printf("User info: %s, %s\n", userInfo.Name, userInfo.Mode)
-			model = userInfo.Mode
-		}
+	userInfo, err := db.GetUserByName(update.Message.From.String())
+	if err != nil {
+		log.Printf("Error getting user info: %s\n", err)
+	}
+	if userInfo != nil && userInfo.Mode != "" {
+		log.Printf("User info: %s, %s\n", userInfo.Name, userInfo.Mode)
+		model = userInfo.Mode
 	}
 
 	client := deepseek.NewClient(*conf.DeepseekToken, *conf.CustomUrl)
