@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	OneMsgLen       = 1500
+	OneMsgLen       = 1200
 	FirstSendLen    = 30
 	NonFirstSendLen = 300
 )
@@ -54,15 +54,17 @@ func callDeepSeekAPI(prompt string, update tgbotapi.Update, messageChan chan *pa
 	msgRecords := db.GetMsgRecord(username)
 	if msgRecords != nil {
 		for _, record := range msgRecords.AQs {
-			log.Println("question:", record.Question, "answer:", record.Answer)
-			messages = append(messages, deepseek.ChatCompletionMessage{
-				Role:    constants.ChatMessageRoleAssistant,
-				Content: record.Question,
-			})
-			messages = append(messages, deepseek.ChatCompletionMessage{
-				Role:    constants.ChatMessageRoleUser,
-				Content: record.Answer,
-			})
+			if record.Answer != "" && record.Question != "" {
+				log.Println("question:", record.Question, "answer:", record.Answer)
+				messages = append(messages, deepseek.ChatCompletionMessage{
+					Role:    constants.ChatMessageRoleAssistant,
+					Content: record.Question,
+				})
+				messages = append(messages, deepseek.ChatCompletionMessage{
+					Role:    constants.ChatMessageRoleUser,
+					Content: record.Answer,
+				})
+			}
 		}
 	}
 	messages = append(messages, deepseek.ChatCompletionMessage{
@@ -74,7 +76,7 @@ func callDeepSeekAPI(prompt string, update tgbotapi.Update, messageChan chan *pa
 
 	ctx := context.Background()
 
-	fmt.Printf("[%s]: %s", username, prompt)
+	fmt.Printf("[%s]: %s\n", username, prompt)
 	stream, err := client.CreateChatCompletionStream(ctx, request)
 	if err != nil {
 		log.Printf("ChatCompletionStream error: %d, %v\n", updateMsgID, err)
