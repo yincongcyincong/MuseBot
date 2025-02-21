@@ -56,13 +56,13 @@ func requestDeepseekAndResp(update tgbotapi.Update, bot *tgbotapi.BotAPI, conten
 	go deepseek.GetContentFromDP(messageChan, update, bot, content)
 
 	// send response message
-	go handleUpdate(messageChan, update, bot)
+	go handleUpdate(messageChan, update, bot, content)
 }
 
-func handleUpdate(messageChan chan *param.MsgInfo, update tgbotapi.Update, bot *tgbotapi.BotAPI) {
+func handleUpdate(messageChan chan *param.MsgInfo, update tgbotapi.Update, bot *tgbotapi.BotAPI, content string) {
 	var msg *param.MsgInfo
 
-	chatId, msgId, _ := utils.GetChatIdAndMsgIdAndUserName(update)
+	chatId, msgId, username := utils.GetChatIdAndMsgIdAndUserName(update)
 	for msg = range messageChan {
 		if len(msg.Content) == 0 {
 			msg.Content = "get nothing from deepseek!"
@@ -113,10 +113,17 @@ func handleUpdate(messageChan chan *param.MsgInfo, update tgbotapi.Update, bot *
 
 	// store question and answer into record.
 	if msg != nil && msg.FullContent != "" {
-		db.InsertMsgRecord(update.Message.From.String(), &db.AQ{
-			Question: update.Message.Text,
+		db.InsertMsgRecord(username, &db.AQ{
+			Question: content,
 			Answer:   msg.FullContent,
 		}, true)
+	} else {
+		if !utils.CheckMsgIsCallback(update) {
+			db.InsertMsgRecord(username, &db.AQ{
+				Question: content,
+				Answer:   "",
+			}, true)
+		}
 	}
 
 }
