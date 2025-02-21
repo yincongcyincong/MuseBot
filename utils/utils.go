@@ -1,10 +1,21 @@
 package utils
 
-// ConvertToInterfaceSlice 辅助函数，将 []string 转换为 []interface{}
-func ConvertToInterfaceSlice(strs []string) []interface{} {
-	result := make([]interface{}, len(strs))
-	for i, v := range strs {
-		result[i] = v
+import tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+
+func GetChatIdAndMsgIdAndUserName(update tgbotapi.Update) (int64, int, string) {
+	chatId := int64(0)
+	msgId := 0
+	username := ""
+	if update.Message != nil {
+		chatId = update.Message.Chat.ID
+		username = update.Message.From.String()
+		msgId = update.Message.MessageID
 	}
-	return result
+	if update.CallbackQuery != nil {
+		chatId = update.CallbackQuery.Message.Chat.ID
+		username = update.CallbackQuery.From.String()
+		msgId = update.CallbackQuery.Message.MessageID
+	}
+
+	return chatId, msgId, username
 }

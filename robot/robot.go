@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/yincongcyincong/telegram-deepseek-bot/db"
+	"github.com/yincongcyincong/telegram-deepseek-bot/utils"
 	"log"
 	"strings"
 	"time"
@@ -16,43 +17,43 @@ import (
 )
 
 func StartListenRobot() {
-	// 替换为你的Telegram Bot Token
-	bot, err := tgbotapi.NewBotAPI(*conf.BotToken)
-	if err != nil {
-		log.Fatalf("Init bot fail: %v\n", err.Error())
-	}
-
-	bot.Debug = true
-
-	fmt.Printf("Authorized on account %s\n", bot.Self.UserName)
-
-	u := tgbotapi.NewUpdate(0)
-	u.Timeout = 60
-
-	updates := bot.GetUpdatesChan(u)
-	for update := range updates {
-		if handleCommandAndCallback(update, bot) {
-			continue
+	for {
+		// 替换为你的Telegram Bot Token
+		bot, err := tgbotapi.NewBotAPI(*conf.BotToken)
+		if err != nil {
+			log.Fatalf("Init bot fail: %v\n", err.Error())
 		}
-		// check whether you have new message
-		if update.Message != nil {
 
-			fmt.Printf("[%s] %s\n", update.Message.From.String(), update.Message.Text)
+		bot.Debug = true
 
-			if skipThisMsg(update, bot) {
+		fmt.Printf("Authorized on account %s\n", bot.Self.UserName)
+
+		u := tgbotapi.NewUpdate(0)
+		u.Timeout = 60
+
+		updates := bot.GetUpdatesChan(u)
+		for update := range updates {
+			if handleCommandAndCallback(update, bot) {
 				continue
 			}
+			// check whether you have new message
+			if update.Message != nil {
 
-			requestDeepseekAndResp(update, bot)
+				if skipThisMsg(update, bot) {
+					continue
+				}
+
+				requestDeepseekAndResp(update, bot, update.Message.Text)
+			}
 		}
 	}
 }
 
-func requestDeepseekAndResp(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
+func requestDeepseekAndResp(update tgbotapi.Update, bot *tgbotapi.BotAPI, content string) {
 	messageChan := make(chan *param.MsgInfo)
 
 	// request DeepSeek API
-	go deepseek.GetContentFromDP(messageChan, update, bot)
+	go deepseek.GetContentFromDP(messageChan, update, bot, content)
 
 	// send response message
 	go handleUpdate(messageChan, update, bot)
@@ -60,24 +61,26 @@ func requestDeepseekAndResp(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 
 func handleUpdate(messageChan chan *param.MsgInfo, update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	var msg *param.MsgInfo
+
+	chatId, msgId, _ := utils.GetChatIdAndMsgIdAndUserName(update)
 	for msg = range messageChan {
 		if len(msg.Content) == 0 {
 			msg.Content = "get nothing from deepseek!"
 		}
 
 		if msg.MsgId == 0 {
-			tgMsgInfo := tgbotapi.NewMessage(update.Message.Chat.ID, msg.Content)
-			tgMsgInfo.ReplyToMessageID = update.Message.MessageID
+			tgMsgInfo := tgbotapi.NewMessage(chatId, msg.Content)
+			tgMsgInfo.ReplyToMessageID = msgId
 			tgMsgInfo.ParseMode = tgbotapi.ModeMarkdown
 			sendInfo, err := bot.Send(tgMsgInfo)
 			if err != nil {
-				if sleepUtilNoLimit(update.Message.MessageID, err) {
+				if sleepUtilNoLimit(msgId, err) {
 					sendInfo, err = bot.Send(tgMsgInfo)
 				} else {
 					sendInfo, err = bot.Send(tgMsgInfo)
 				}
 				if err != nil {
-					log.Printf("%d Error sending message: %s\n", update.Message.MessageID, err)
+					log.Printf("%d Error sending message: %s\n", msgId, err)
 					continue
 				}
 			}
@@ -85,7 +88,7 @@ func handleUpdate(messageChan chan *param.MsgInfo, update tgbotapi.Update, bot *
 		} else {
 			updateMsg := tgbotapi.EditMessageTextConfig{
 				BaseEdit: tgbotapi.BaseEdit{
-					ChatID:    update.Message.Chat.ID,
+					ChatID:    chatId,
 					MessageID: msg.MsgId,
 				},
 				Text:      msg.Content,
@@ -95,13 +98,13 @@ func handleUpdate(messageChan chan *param.MsgInfo, update tgbotapi.Update, bot *
 
 			if err != nil {
 				// try again
-				if sleepUtilNoLimit(update.Message.MessageID, err) {
+				if sleepUtilNoLimit(msgId, err) {
 					_, err = bot.Send(updateMsg)
 				} else {
 					_, err = bot.Send(updateMsg)
 				}
 				if err != nil {
-					log.Printf("Error editing message:%d %s\n", update.Message.MessageID, err)
+					log.Printf("Error editing message:%d %s\n", msgId, err)
 				}
 			}
 		}
@@ -174,21 +177,11 @@ func handleCommand(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 }
 
 func retryLastQuestion(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
-	chatId := int64(0)
-	username := ""
-	if update.Message != nil {
-		chatId = update.Message.Chat.ID
-		username = update.Message.From.String()
-	}
-	if update.CallbackQuery != nil {
-		chatId = update.CallbackQuery.Message.Chat.ID
-		username = update.CallbackQuery.From.String()
-	}
+	chatId, _, username := utils.GetChatIdAndMsgIdAndUserName(update)
 
 	records := db.GetMsgRecord(username)
 	if records != nil && len(records.AQs) > 0 {
-		update.Message.Text = records.AQs[len(records.AQs)-1].Question
-		requestDeepseekAndResp(update, bot)
+		requestDeepseekAndResp(update, bot, records.AQs[len(records.AQs)-1].Question)
 	} else {
 		msg := tgbotapi.NewMessage(chatId, "🚀no last question!")
 		msg.ParseMode = tgbotapi.ModeMarkdown
@@ -200,17 +193,7 @@ func retryLastQuestion(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 }
 
 func clearAllRecord(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
-	chatId := int64(0)
-	username := ""
-	if update.Message != nil {
-		chatId = update.Message.Chat.ID
-		username = update.Message.From.String()
-	}
-	if update.CallbackQuery != nil {
-		chatId = update.CallbackQuery.Message.Chat.ID
-		username = update.CallbackQuery.From.String()
-	}
-
+	chatId, _, username := utils.GetChatIdAndMsgIdAndUserName(update)
 	db.DeleteMsgRecord(username)
 	msg := tgbotapi.NewMessage(chatId, "🚀successfully delete!")
 	msg.ParseMode = tgbotapi.ModeMarkdown
@@ -242,13 +225,7 @@ func showBalanceInfo(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 			bInfo.ToppedUpBalance, bInfo.GrantedBalance)
 	}
 
-	chatId := int64(0)
-	if update.Message != nil {
-		chatId = update.Message.Chat.ID
-	}
-	if update.CallbackQuery != nil {
-		chatId = update.CallbackQuery.Message.Chat.ID
-	}
+	chatId, _, _ := utils.GetChatIdAndMsgIdAndUserName(update)
 
 	msg := tgbotapi.NewMessage(chatId, msgContent)
 	msg.ParseMode = tgbotapi.ModeMarkdown
