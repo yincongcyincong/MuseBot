@@ -43,10 +43,25 @@ func StartListenRobot() {
 					continue
 				}
 
-				requestDeepseekAndResp(update, bot, update.Message.Text)
+				if *conf.DeepseekType == "deepseek" {
+					requestDeepseekAndResp(update, bot, update.Message.Text)
+				} else {
+					requestHuoshanAndResp(update, bot, update.Message.Text)
+				}
+
 			}
 		}
 	}
+}
+
+func requestHuoshanAndResp(update tgbotapi.Update, bot *tgbotapi.BotAPI, content string) {
+	messageChan := make(chan *param.MsgInfo)
+
+	// request DeepSeek API
+	go deepseek.GetContentFromHS(messageChan, update, bot, content)
+
+	// send response message
+	go handleUpdate(messageChan, update, bot, content)
 }
 
 func requestDeepseekAndResp(update tgbotapi.Update, bot *tgbotapi.BotAPI, content string) {
@@ -211,6 +226,18 @@ func clearAllRecord(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 }
 
 func showBalanceInfo(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
+	chatId, _, _ := utils.GetChatIdAndMsgIdAndUserName(update)
+
+	if *conf.DeepseekType != "deepseek" {
+		msg := tgbotapi.NewMessage(chatId, "🚀no-deepseek model don't have balance")
+		msg.ParseMode = tgbotapi.ModeMarkdown
+		_, err := bot.Send(msg)
+		if err != nil {
+			log.Printf("send message fail: %v\n", err)
+		}
+		return
+	}
+
 	balance := deepseek.GetBalanceInfo()
 
 	// handle balance info msg
@@ -231,8 +258,6 @@ func showBalanceInfo(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 		msgContent += fmt.Sprintf(template, bInfo.Currency, bInfo.TotalBalance,
 			bInfo.ToppedUpBalance, bInfo.GrantedBalance)
 	}
-
-	chatId, _, _ := utils.GetChatIdAndMsgIdAndUserName(update)
 
 	msg := tgbotapi.NewMessage(chatId, msgContent)
 	msg.ParseMode = tgbotapi.ModeMarkdown

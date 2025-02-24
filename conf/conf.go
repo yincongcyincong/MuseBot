@@ -10,7 +10,7 @@ import (
 var (
 	BotToken      *string
 	DeepseekToken *string
-	Mode          *string // simple complex
+	DeepseekType  *string // simple complex
 	CustomUrl     *string
 )
 
@@ -18,6 +18,7 @@ func InitConf() {
 	BotToken = flag.String("telegram_bot_token", "", "Comma-separated list of Telegram bot tokens")
 	DeepseekToken = flag.String("deepseek_token", "", "deepseek auth token")
 	CustomUrl = flag.String("custom_url", "https://api.deepseek.com/", "deepseek custom url")
+	DeepseekType = flag.String("deepseek_type", "deepseek", "deepseek auth type")
 	flag.Parse()
 
 	if *BotToken == "" {
@@ -30,6 +31,10 @@ func InitConf() {
 
 	if *CustomUrl == "" {
 		*CustomUrl = os.Getenv("CUSTOM_URL")
+	}
+
+	if *DeepseekType == "" {
+		*DeepseekType = os.Getenv("DEEPSEEK_TYPE")
 	}
 
 	fmt.Println("TelegramBotToken:", *BotToken)

@@ -58,11 +58,11 @@ func callDeepSeekAPI(prompt string, update tgbotapi.Update, messageChan chan *pa
 				log.Println("question:", record.Question, "answer:", record.Answer)
 				messages = append(messages, deepseek.ChatCompletionMessage{
 					Role:    constants.ChatMessageRoleAssistant,
-					Content: record.Question,
+					Content: record.Answer,
 				})
 				messages = append(messages, deepseek.ChatCompletionMessage{
 					Role:    constants.ChatMessageRoleUser,
-					Content: record.Answer,
+					Content: record.Question,
 				})
 			}
 		}
