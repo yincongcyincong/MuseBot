@@ -21,25 +21,26 @@ func InitConf() {
 	DeepseekType = flag.String("deepseek_type", "deepseek", "deepseek auth type")
 	flag.Parse()
 
-	if *BotToken == "" {
+	if os.Getenv("TELEGRAM_BOT_TOKEN") != "" {
 		*BotToken = os.Getenv("TELEGRAM_BOT_TOKEN")
 	}
 
-	if *DeepseekToken == "" {
+	if os.Getenv("DEEPSEEK_TOKEN") != "" {
 		*DeepseekToken = os.Getenv("DEEPSEEK_TOKEN")
 	}
 
-	if *CustomUrl == "" {
+	if os.Getenv("CUSTOM_URL") != "" {
 		*CustomUrl = os.Getenv("CUSTOM_URL")
 	}
 
-	if *DeepseekType == "" {
+	if os.Getenv("DEEPSEEK_TYPE") != "" {
 		*DeepseekType = os.Getenv("DEEPSEEK_TYPE")
 	}
 
 	fmt.Println("TelegramBotToken:", *BotToken)
 	fmt.Println("DeepseekToken:", *DeepseekToken)
 	fmt.Println("CustomUrl:", *CustomUrl)
+	fmt.Println("DeepseekType:", *DeepseekType)
 	if *BotToken == "" || *DeepseekToken == "" {
 		log.Fatalf("Bot token and deepseek token are required")
 	}
