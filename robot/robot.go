@@ -229,7 +229,7 @@ func showBalanceInfo(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	chatId, _, _ := utils.GetChatIdAndMsgIdAndUserName(update)
 
 	if *conf.DeepseekType != "deepseek" {
-		msg := tgbotapi.NewMessage(chatId, "🚀no-deepseek model don't have balance")
+		msg := tgbotapi.NewMessage(chatId, "🚀no-deepseek")
 		msg.ParseMode = tgbotapi.ModeMarkdown
 		_, err := bot.Send(msg)
 		if err != nil {

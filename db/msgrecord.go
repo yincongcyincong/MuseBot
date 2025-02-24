@@ -85,45 +85,49 @@ func StarCheckUserLen() {
 		}()
 		timer := time.NewTicker(time.Minute)
 		for range timer.C {
-			totalNum := 0
-			timeUserPair := make(map[int64][]string)
-			MsgRecord.Range(func(k, v interface{}) bool {
-				msgRecord := v.(*MsgRecordInfo)
-				if _, ok := timeUserPair[msgRecord.updateTime]; !ok {
-					timeUserPair[msgRecord.updateTime] = make([]string, 0)
-				}
-				timeUserPair[msgRecord.updateTime] = append(timeUserPair[msgRecord.updateTime], k.(string))
-				UpdateUserInfo(k.(string), msgRecord.updateTime)
-				totalNum++
-				return true
-			})
-
-			log.Printf("StarCheckUserLen totalNum:%d\n", totalNum)
-			if totalNum < MaxUserLength {
-				continue
-			}
-
-			log.Println("start cleaning...")
-			times := make([]int64, 0)
-			for t := range timeUserPair {
-				times = append(times, t)
-			}
-			sort.Slice(times, func(i, j int) bool {
-				return times[i] > times[j]
-			})
-
-			for _, t := range times {
-				for _, user := range timeUserPair[t] {
-					MsgRecord.Delete(user)
-					totalNum--
-					if totalNum <= MaxUserLength {
-						continue
-					}
-				}
-			}
+			UpdateDBData()
 		}
 
 	}()
+}
+
+func UpdateDBData() {
+	totalNum := 0
+	timeUserPair := make(map[int64][]string)
+	MsgRecord.Range(func(k, v interface{}) bool {
+		msgRecord := v.(*MsgRecordInfo)
+		if _, ok := timeUserPair[msgRecord.updateTime]; !ok {
+			timeUserPair[msgRecord.updateTime] = make([]string, 0)
+		}
+		timeUserPair[msgRecord.updateTime] = append(timeUserPair[msgRecord.updateTime], k.(string))
+		UpdateUserInfo(k.(string), msgRecord.updateTime)
+		totalNum++
+		return true
+	})
+
+	log.Printf("StarCheckUserLen totalNum:%d\n", totalNum)
+	if totalNum < MaxUserLength {
+		return
+	}
+
+	log.Println("start cleaning...")
+	times := make([]int64, 0)
+	for t := range timeUserPair {
+		times = append(times, t)
+	}
+	sort.Slice(times, func(i, j int) bool {
+		return times[i] > times[j]
+	})
+
+	for _, t := range times {
+		for _, user := range timeUserPair[t] {
+			MsgRecord.Delete(user)
+			totalNum--
+			if totalNum <= MaxUserLength {
+				continue
+			}
+		}
+	}
 }
 
 func UpdateUserInfo(username string, updateTime int64) {
