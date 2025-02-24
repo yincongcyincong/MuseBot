@@ -51,12 +51,12 @@ Use docker
 ## ⚙️ Configuration
 You can configure the bot via environment variables:
 
-| Variable Name       | 	Description                                                      |
-|---------------------|-------------------------------------------------------------------|
-| TELEGRAM_BOT_TOKEN	 | Your Telegram bot token                                           |
-| DEEPSEEK_TOKEN	     | DeepSeek Api Key                                                  |
-| CUSTOM_URL	         | custom deepseek url                                               |
-| DEEPSEEK_TYPE	      | deepseek/others(deepseek-r1-250120，doubao-1.5-pro-32k-250115，...) |
+| Variable Name                  | 	Description                                                      |
+|--------------------------------|-------------------------------------------------------------------|
+| TELEGRAM_BOT_TOKEN (required)	 | Your Telegram bot token                                           |
+| DEEPSEEK_TOKEN	  (required)              | DeepSeek Api Key                                                  |
+| CUSTOM_URL	                    | custom deepseek url                                               |
+| DEEPSEEK_TYPE	                 | deepseek/others(deepseek-r1-250120，doubao-1.5-pro-32k-250115，...) |
 
 ### CUSTOM_URL
 If you are using a self-deployed DeepSeek, you can set CUSTOM_URL to route requests to your self-deployed DeepSeek.
