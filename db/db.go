@@ -4,12 +4,13 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"os"
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
 )
 
-const dbFile = "telegram_bot.db" // SQLite 数据库文件
+const dbFile = "./data/telegram_bot.db" // SQLite 数据库文件
 
 var (
 	DB *sql.DB
@@ -24,6 +25,16 @@ type User struct {
 
 func InitTable() {
 	var err error
+	if _, err = os.Stat("./data"); os.IsNotExist(err) {
+		// 文件夹不存在，创建它
+		err := os.MkdirAll("./data", 0755)
+		if err != nil {
+			log.Fatal("❌ 创建文件夹失败:", err)
+			return
+		}
+		fmt.Println("✅ 文件夹创建成功")
+	}
+
 	DB, err = sql.Open("sqlite3", dbFile)
 	if err != nil {
 		log.Fatal(err)
