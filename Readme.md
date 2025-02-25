@@ -83,8 +83,8 @@ clear all of your communication record with deepseek. this record use for helpin
 retry last question.
 
 ### /photo
-using volcengine photo model create photo，VOLC_AK and VOLC_SK is necessary.      
-[doc](https://www.volcengine.com/docs/6444/1340578)
+using volcengine photo model create photo，VOLC_AK and VOLC_SK is necessary.[doc](https://www.volcengine.com/docs/6444/1340578)      
+<img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/c8072d7d-74e6-4270-8496-1b4e7532134b" />
 
 ### /help
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/869e0207-388b-49ca-b26a-378f71d58818" />
