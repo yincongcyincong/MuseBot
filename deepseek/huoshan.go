@@ -2,8 +2,10 @@ package deepseek
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+
 	"io"
 	"log"
 	"strings"
@@ -11,6 +13,7 @@ import (
 
 	"github.com/cohesion-org/deepseek-go/constants"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/volcengine/volc-sdk-golang/service/visual"
 	"github.com/volcengine/volcengine-go-sdk/service/arkruntime"
 	"github.com/volcengine/volcengine-go-sdk/service/arkruntime/model"
 	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
@@ -18,6 +21,24 @@ import (
 	"github.com/yincongcyincong/telegram-deepseek-bot/param"
 	"github.com/yincongcyincong/telegram-deepseek-bot/utils"
 )
+
+type ImgResponse struct {
+	Code    int              `json:"code"`
+	Data    *ImgResponseData `json:"data"`
+	Message string           `json:"message"`
+	Status  string           `json:"status"`
+}
+
+type ImgResponseData struct {
+	AlgorithmBaseResp struct {
+		StatusCode    int    `json:"status_code"`
+		StatusMessage string `json:"status_message"`
+	} `json:"algorithm_base_resp"`
+	ImageUrls        []string `json:"image_urls"`
+	PeResult         string   `json:"pe_result"`
+	PredictTagResult string   `json:"predict_tag_result"`
+	RephraserResult  string   `json:"rephraser_result"`
+}
 
 func GetContentFromHS(messageChan chan *param.MsgInfo, update tgbotapi.Update, bot *tgbotapi.BotAPI, content string) {
 	text := strings.ReplaceAll(content, "@"+bot.Self.UserName, "")
@@ -121,4 +142,50 @@ func getContentFromHS(prompt string, update tgbotapi.Update, messageChan chan *p
 
 	messageChan <- msgInfoContent
 	return nil
+}
+
+func GenerateImg(prompt string) (*ImgResponse, error) {
+
+	visual.DefaultInstance.Client.SetAccessKey(*conf.VolcAK)
+	visual.DefaultInstance.Client.SetSecretKey(*conf.VolcSK)
+
+	//请求Body(查看接口文档请求参数-请求示例，将请求参数内容复制到此)
+	reqBody := map[string]interface{}{
+		"req_key":           "high_aes_general_v21_L",
+		"prompt":            prompt,
+		"model_version":     "general_v2.1_L",
+		"req_schedule_conf": "general_v20_9B_pe",
+		"llm_seed":          -1,
+		"seed":              -1,
+		"scale":             3.5,
+		"ddim_steps":        25,
+		"width":             512,
+		"height":            512,
+		"use_pre_llm":       true,
+		"use_sr":            true,
+		"sr_seed":           -1,
+		"sr_strength":       0.4,
+		"sr_scale":          3.5,
+		"sr_steps":          20,
+		"is_only_sr":        false,
+		"return_url":        true,
+		"logo_info": map[string]interface{}{
+			"add_logo":          false,
+			"position":          0,
+			"language":          0,
+			"opacity":           0.3,
+			"logo_text_content": "",
+		},
+	}
+
+	resp, _, err := visual.DefaultInstance.CVProcess(reqBody)
+	if err != nil {
+		log.Printf("request img api fail: %w\n", err)
+		return nil, err
+	}
+
+	respByte, _ := json.Marshal(resp)
+	data := &ImgResponse{}
+	json.Unmarshal(respByte, data)
+	return data, nil
 }
