@@ -1,19 +1,22 @@
 package robot
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/yincongcyincong/telegram-deepseek-bot/db"
-	"github.com/yincongcyincong/telegram-deepseek-bot/utils"
 	"log"
+	"net/http"
 	"strings"
 	"time"
 
 	godeepseek "github.com/cohesion-org/deepseek-go"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
+	"github.com/yincongcyincong/telegram-deepseek-bot/db"
 	"github.com/yincongcyincong/telegram-deepseek-bot/deepseek"
 	"github.com/yincongcyincong/telegram-deepseek-bot/param"
+	"github.com/yincongcyincong/telegram-deepseek-bot/utils"
 )
 
 func StartListenRobot() {
@@ -193,6 +196,8 @@ func handleCommand(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 		clearAllRecord(update, bot)
 	case "retry":
 		retryLastQuestion(update, bot)
+	case "photo":
+		sendImg(update)
 	case "help":
 		sendHelpConfigurationOptions(bot, update.Message.Chat.ID)
 	}
@@ -384,4 +389,61 @@ func sendFailMessage(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	if _, err := bot.Send(msg); err != nil {
 		log.Printf("request send msg fail: %v\n", err)
 	}
+}
+
+func sendImg(update tgbotapi.Update) {
+	prompt := strings.Replace(update.Message.Text, "/photo", "", 1)
+	data, err := deepseek.GenerateImg(prompt)
+	if err != nil {
+		log.Printf("generate image fail: %v\n", err)
+		return
+	}
+
+	if data.Data == nil || len(data.Data.ImageUrls) == 0 {
+		log.Println("no image generated")
+		return
+	}
+
+	// 构造 URL
+	photoURL := data.Data.ImageUrls[0]
+	url := fmt.Sprintf("https://api.telegram.org/bot%s/sendPhoto", *conf.BotToken)
+	chatId, replyToMessageID, _ := utils.GetChatIdAndMsgIdAndUserName(update)
+
+	// 构造请求数据
+	req := map[string]interface{}{
+		"chat_id": chatId,
+		"photo":   photoURL,
+	}
+	if replyToMessageID != 0 {
+		req["reply_to_message_id"] = replyToMessageID
+	}
+
+	// 将数据编码为 JSON
+	jsonData, err := json.Marshal(req)
+	if err != nil {
+		log.Printf("编码 JSON 数据失败: %w\n", err)
+		return
+	}
+
+	// 发送 POST 请求
+	resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonData))
+	if err != nil {
+		log.Printf("发送请求失败: %w\n", err)
+		return
+	}
+	defer resp.Body.Close()
+
+	// 解析响应结果
+	var result map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		log.Printf("解析响应失败: %w\n", err)
+		return
+	}
+
+	if ok, found := result["ok"].(bool); !found || !ok {
+		log.Printf("发送图片失败: %+v", result)
+		return
+	}
+
+	return
 }
