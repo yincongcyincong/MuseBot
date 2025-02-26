@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	OneMsgLen       = 1200
+	OneMsgLen       = 1000
 	FirstSendLen    = 30
 	NonFirstSendLen = 300
 )
