@@ -17,11 +17,12 @@ import (
 )
 
 const (
-	OneMsgLen       = 1000
+	OneMsgLen       = 900
 	FirstSendLen    = 30
 	NonFirstSendLen = 300
 )
 
+// GetContentFromDP get comment from deepseek
 func GetContentFromDP(messageChan chan *param.MsgInfo, update tgbotapi.Update, bot *tgbotapi.BotAPI, content string) {
 	text := strings.ReplaceAll(content, "@"+bot.Self.UserName, "")
 	err := callDeepSeekAPI(text, update, messageChan)
@@ -121,6 +122,7 @@ func callDeepSeekAPI(prompt string, update tgbotapi.Update, messageChan chan *pa
 	return nil
 }
 
+// GetBalanceInfo get balance info
 func GetBalanceInfo() *deepseek.BalanceResponse {
 	client := deepseek.NewClient(*conf.DeepseekToken)
 	ctx := context.Background()

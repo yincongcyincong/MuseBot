@@ -11,18 +11,14 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	// 这里是测试前的初始化逻辑
 	setup()
 
-	// 运行测试
 	code := m.Run()
 
-	// 退出测试
 	os.Exit(code)
 }
 
 func setup() {
-	// 在这里执行你需要的初始化逻辑，比如连接数据库、设置环境变量等
 	InitTable()
 }
 
@@ -41,7 +37,7 @@ func TestInsertMsgRecord(t *testing.T) {
 
 func TestInsertMsgRecord_ExceedLimit(t *testing.T) {
 	username := "test_user2"
-	MsgRecord = sync.Map{} // 清理数据
+	MsgRecord = sync.Map{}
 
 	for i := 0; i < MaxQAPair+5; i++ {
 		aq := &AQ{Question: "Q" + strconv.Itoa(i), Answer: "A" + strconv.Itoa(i)}
@@ -66,7 +62,7 @@ func TestDeleteMsgRecord(t *testing.T) {
 }
 
 func TestStarCheckUserLen(t *testing.T) {
-	MsgRecord = sync.Map{} // 清理数据
+	MsgRecord = sync.Map{}
 
 	for i := 0; i < MaxUserLength+5; i++ {
 		MsgRecord.Store("user"+strconv.Itoa(i), &MsgRecordInfo{updateTime: time.Now().Unix()})

@@ -10,7 +10,23 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-const dbFile = "./data/telegram_bot.db" // SQLite 数据库文件
+const (
+	dbFile         = "./data/telegram_bot.db" // SQLite 数据库文件
+	createTableSQL = `
+			CREATE TABLE users (
+				id INTEGER PRIMARY KEY AUTOINCREMENT,
+				name TEXT NOT NULL,
+				mode VARCHAR(30) NOT NULL DEFAULT '',
+				updatetime int(10) NOT NULL DEFAULT '0'
+			);
+			CREATE TABLE records (
+				id INTEGER PRIMARY KEY AUTOINCREMENT,
+				name TEXT NOT NULL,
+				question TEXT NOT NULL,
+				answer TEXT NOT NULL
+			);
+			CREATE INDEX idx_records_name ON users(name);`
+)
 
 var (
 	DB *sql.DB
@@ -40,7 +56,7 @@ func InitTable() {
 		log.Fatal(err)
 	}
 
-	// 初始化表
+	// init table
 	err = initializeTable(DB, "users")
 	if err != nil {
 		log.Fatal(err)
@@ -51,7 +67,7 @@ func InitTable() {
 
 // initializeTable check table exist or not.
 func initializeTable(db *sql.DB, tableName string) error {
-	// 查询表是否存在
+	// check table exist or not
 	query := `SELECT name FROM sqlite_master WHERE type='table' AND name=?;`
 	var name string
 	err := db.QueryRow(query, tableName).Scan(&name)
@@ -59,20 +75,6 @@ func initializeTable(db *sql.DB, tableName string) error {
 	if err != nil {
 		if err == sql.ErrNoRows {
 			fmt.Printf("table '%s' not exist，creating...\n", tableName)
-			createTableSQL := `
-				CREATE TABLE users (
-					id INTEGER PRIMARY KEY AUTOINCREMENT,
-					name TEXT NOT NULL,
-					mode VARCHAR(30) NOT NULL DEFAULT '',
-					updatetime int(10) NOT NULL DEFAULT '0'
-				);
-				CREATE TABLE records (
-					id INTEGER PRIMARY KEY AUTOINCREMENT,
-					name TEXT NOT NULL,
-					question TEXT NOT NULL,
-					answer TEXT NOT NULL
-				);
-				CREATE INDEX idx_records_name ON users(name);`
 			_, err := db.Exec(createTableSQL)
 			if err != nil {
 				return fmt.Errorf("create table fail: %v\n", err)
@@ -90,14 +92,14 @@ func initializeTable(db *sql.DB, tableName string) error {
 
 // 插入新用户
 func InsertUser(name, mode string) (int64, error) {
-	// 插入数据
+	// insert data
 	insertSQL := `INSERT INTO users (name, mode, updatetime) VALUES (?, ?, ?)`
 	result, err := DB.Exec(insertSQL, name, mode, time.Now().Unix())
 	if err != nil {
 		return 0, err
 	}
 
-	// 获取插入的id
+	// get last insert id
 	id, err := result.LastInsertId()
 	if err != nil {
 		return 0, err
@@ -107,11 +109,11 @@ func InsertUser(name, mode string) (int64, error) {
 
 // 根据 name 查询用户
 func GetUserByName(name string) (*User, error) {
-	// 查询单个用户，使用 name 作为条件
+	// select one use base on name
 	querySQL := `SELECT id, name, mode FROM users WHERE name = ?`
 	row := DB.QueryRow(querySQL, name)
 
-	// 扫描查询结果并返回
+	// scan row get result
 	var user User
 	err := row.Scan(&user.ID, &user.Name, &user.Mode)
 	if err != nil {
@@ -124,10 +126,9 @@ func GetUserByName(name string) (*User, error) {
 	return &user, nil
 }
 
-// 读取所有用户
+// GetUsers get 1000 users order by updatetime
 func GetUsers() ([]User, error) {
-	// 查询所有用户
-	rows, err := DB.Query("SELECT id, name, mode, updatetime FROM users order by updatetime limit 100")
+	rows, err := DB.Query("SELECT id, name, mode, updatetime FROM users order by updatetime limit 1000")
 	if err != nil {
 		return nil, err
 	}
@@ -142,23 +143,22 @@ func GetUsers() ([]User, error) {
 		users = append(users, user)
 	}
 
-	// 检查是否有错误
+	// check error
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
 	return users, nil
 }
 
-// 更新用户的模式
+// UpdateUserMode update user mode
 func UpdateUserMode(name string, mode string) error {
-	// 更新用户模式
 	updateSQL := `UPDATE users SET mode = ? WHERE name = ?`
 	_, err := DB.Exec(updateSQL, mode, name)
 	return err
 }
 
+// UpdateUserUpdateTime update user updateTime
 func UpdateUserUpdateTime(name string, updateTime int64) error {
-	// 更新用户模式
 	updateSQL := `UPDATE users SET updateTime = ? WHERE name = ?`
 	_, err := DB.Exec(updateSQL, updateTime, name)
 	return err
