@@ -83,25 +83,18 @@ func getContentFromHS(prompt string, update tgbotapi.Update, messageChan chan *p
 	})
 
 	client := arkruntime.NewClientWithApiKey(
-		//通过 os.Getenv 从环境变量中获取 ARK_API_KEY
 		*conf.DeepseekToken,
-		//深度推理模型耗费时间会较长，请您设置较大的超时时间，避免超时导致任务失败。推荐30分钟以上
 		arkruntime.WithTimeout(30*time.Minute),
 	)
-	// 创建一个上下文，通常用于传递请求的上下文信息，如超时、取消等
 	ctx := context.Background()
-	// 构建聊天完成请求，设置请求的模型和消息内容
 	req := model.ChatCompletionRequest{
-		// 需要替换 <Model> 为模型的Model ID
 		Model:    *conf.DeepseekType,
 		Messages: messages,
 	}
 
 	fmt.Printf("[%s]: %s\n", username, prompt)
-	// 发送聊天完成请求，并将结果存储在 resp 中，将可能出现的错误存储在 err 中
 	stream, err := client.CreateChatCompletionStream(ctx, req)
 	if err != nil {
-		// 若出现错误，打印错误信息并终止程序
 		fmt.Printf("standard chat error: %v\n", err)
 		return err
 	}
@@ -144,6 +137,7 @@ func getContentFromHS(prompt string, update tgbotapi.Update, messageChan chan *p
 	return nil
 }
 
+// GenerateImg generate image
 func GenerateImg(prompt string) (*ImgResponse, error) {
 
 	visual.DefaultInstance.Client.SetAccessKey(*conf.VolcAK)

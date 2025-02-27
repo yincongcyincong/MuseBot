@@ -170,18 +170,18 @@ func InsertRecord() {
 
 }
 
+// getRecordsByName get latest 10 records by name
 func getRecordsByName(name string) ([]Record, error) {
-	// 构造 SQL 语句
+	// construct SQL statements
 	query := fmt.Sprintf("SELECT id, name, question, answer FROM records WHERE name =  ? limit 10")
 
-	// 执行查询
+	// execute query
 	rows, err := DB.Query(query, name)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	// 解析查询结果
 	var records []Record
 	for rows.Next() {
 		var record Record
@@ -195,6 +195,7 @@ func getRecordsByName(name string) ([]Record, error) {
 	return records, nil
 }
 
+// insertRecord insert record
 func insertRecord(record *Record) {
 	query := `INSERT INTO records (name, question, answer) VALUES (?, ?, ?)`
 	_, err := DB.Exec(query, record.Name, record.Question, record.Answer)
@@ -203,6 +204,7 @@ func insertRecord(record *Record) {
 	}
 }
 
+// delete record
 func DeleteRecord(name string) error {
 	query := `DELETE FROM records WHERE name = ?`
 	_, err := DB.Exec(query, name)

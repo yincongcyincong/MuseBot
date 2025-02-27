@@ -19,9 +19,9 @@ import (
 	"github.com/yincongcyincong/telegram-deepseek-bot/utils"
 )
 
+// StartListenRobot start listen robot callback
 func StartListenRobot() {
 	for {
-		// 替换为你的Telegram Bot Token
 		bot, err := tgbotapi.NewBotAPI(*conf.BotToken)
 		if err != nil {
 			log.Fatalf("Init bot fail: %v\n", err.Error())
@@ -57,6 +57,7 @@ func StartListenRobot() {
 	}
 }
 
+// requestHuoshanAndResp request huoshan api
 func requestHuoshanAndResp(update tgbotapi.Update, bot *tgbotapi.BotAPI, content string) {
 	messageChan := make(chan *param.MsgInfo)
 
@@ -67,6 +68,7 @@ func requestHuoshanAndResp(update tgbotapi.Update, bot *tgbotapi.BotAPI, content
 	go handleUpdate(messageChan, update, bot, content)
 }
 
+// requestDeepseekAndResp request deepseek api
 func requestDeepseekAndResp(update tgbotapi.Update, bot *tgbotapi.BotAPI, content string) {
 	messageChan := make(chan *param.MsgInfo)
 
@@ -77,6 +79,7 @@ func requestDeepseekAndResp(update tgbotapi.Update, bot *tgbotapi.BotAPI, conten
 	go handleUpdate(messageChan, update, bot, content)
 }
 
+// handleUpdate handle robot msg sending
 func handleUpdate(messageChan chan *param.MsgInfo, update tgbotapi.Update, bot *tgbotapi.BotAPI, content string) {
 	var msg *param.MsgInfo
 
@@ -219,6 +222,7 @@ func retryLastQuestion(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	}
 }
 
+// clearAllRecord clear all record
 func clearAllRecord(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	chatId, _, username := utils.GetChatIdAndMsgIdAndUserName(update)
 	db.DeleteMsgRecord(username)
@@ -230,6 +234,7 @@ func clearAllRecord(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	}
 }
 
+// showBalanceInfo show balance info
 func showBalanceInfo(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	chatId, _, _ := utils.GetChatIdAndMsgIdAndUserName(update)
 
@@ -273,7 +278,7 @@ func showBalanceInfo(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 
 }
 
-// 发送配置选择界面
+// sendModeConfigurationOptions send config view
 func sendModeConfigurationOptions(bot *tgbotapi.BotAPI, chatID int64) {
 	// create inline button
 	inlineKeyboard := tgbotapi.NewInlineKeyboardMarkup(
@@ -288,7 +293,6 @@ func sendModeConfigurationOptions(bot *tgbotapi.BotAPI, chatID int64) {
 		),
 	)
 
-	// 发送消息并附上内联键盘
 	msg := tgbotapi.NewMessage(chatID, "🚀**Select chat mode**")
 	msg.ReplyMarkup = inlineKeyboard
 	msg.ParseMode = tgbotapi.ModeMarkdown
@@ -315,7 +319,6 @@ func sendHelpConfigurationOptions(bot *tgbotapi.BotAPI, chatID int64) {
 		),
 	)
 
-	// 发送消息并附上内联键盘
 	msg := tgbotapi.NewMessage(chatID, "🤖**Select command**")
 	msg.ReplyMarkup = inlineKeyboard
 	msg.ParseMode = tgbotapi.ModeMarkdown
@@ -325,7 +328,7 @@ func sendHelpConfigurationOptions(bot *tgbotapi.BotAPI, chatID int64) {
 	}
 }
 
-// 处理回调查询（用户点击按钮）
+// handleCallbackQuery handle callback response
 func handleCallbackQuery(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 
 	switch update.CallbackQuery.Data {
@@ -343,6 +346,7 @@ func handleCallbackQuery(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 
 }
 
+// handleModeUpdate handle mode update
 func handleModeUpdate(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	userInfo, err := db.GetUserByName(update.CallbackQuery.From.String())
 	if err != nil {
@@ -404,12 +408,12 @@ func sendImg(update tgbotapi.Update) {
 		return
 	}
 
-	// 构造 URL
+	// create image url
 	photoURL := data.Data.ImageUrls[0]
 	url := fmt.Sprintf("https://api.telegram.org/bot%s/sendPhoto", *conf.BotToken)
 	chatId, replyToMessageID, _ := utils.GetChatIdAndMsgIdAndUserName(update)
 
-	// 构造请求数据
+	// construct request param
 	req := map[string]interface{}{
 		"chat_id": chatId,
 		"photo":   photoURL,
@@ -418,30 +422,29 @@ func sendImg(update tgbotapi.Update) {
 		req["reply_to_message_id"] = replyToMessageID
 	}
 
-	// 将数据编码为 JSON
 	jsonData, err := json.Marshal(req)
 	if err != nil {
-		log.Printf("编码 JSON 数据失败: %w\n", err)
+		log.Printf("marshal json content fail: %w\n", err)
 		return
 	}
 
-	// 发送 POST 请求
+	// send post request
 	resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonData))
 	if err != nil {
-		log.Printf("发送请求失败: %w\n", err)
+		log.Printf("send request fail: %w\n", err)
 		return
 	}
 	defer resp.Body.Close()
 
-	// 解析响应结果
+	// analysis response
 	var result map[string]interface{}
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		log.Printf("解析响应失败: %w\n", err)
+		log.Printf("analysis response fail: %w\n", err)
 		return
 	}
 
 	if ok, found := result["ok"].(bool); !found || !ok {
-		log.Printf("发送图片失败: %+v", result)
+		log.Printf("send image fail: %+v", result)
 		return
 	}
 
