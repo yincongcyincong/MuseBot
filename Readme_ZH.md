@@ -67,10 +67,14 @@
 ## 📜 机器人命令
 
 ### /mode
-选择 DeepSeek 模式，包括 chat、coder、reasoner。
+选择 DeepSeek 模式，包括 chat、coder、reasoner。      
+<img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/55ac3101-92d2-490d-8ee0-31a5b297e56e" />
+
 
 ### /balance
-查询 DeepSeek 账户余额。
+查询 DeepSeek 账户余额。      
+<img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/23048b44-a3af-457f-b6ce-3678b6776410" />
+
 
 ### /clear
 清除所有与你的 DeepSeek 交互记录，这些记录用于帮助 DeepSeek 理解上下文。
@@ -79,10 +83,13 @@
 重试上一个问题。
 
 ### /photo
-使用 Volcengine 图片模型生成图片，需要配置 **VOLC_AK** 和 **VOLC_SK**。详见 [文档](https://www.volcengine.com/docs/6444/1340578)。
+使用 Volcengine 图片模型生成图片，需要配置 **VOLC_AK** 和 **VOLC_SK**。详见 [文档](https://www.volcengine.com/docs/6444/1340578)。      
+<img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/c8072d7d-74e6-4270-8496-1b4e7532134b" />
 
 ### /help
-显示帮助信息。
+显示帮助信息。      
+<img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/869e0207-388b-49ca-b26a-378f71d58818" />
+
 
 ## 🚀 部署
 ### 使用 Docker 部署
