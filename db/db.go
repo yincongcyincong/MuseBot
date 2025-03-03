@@ -13,13 +13,13 @@ const (
 	createTableSQL = `
 			CREATE TABLE users (
 				id INTEGER PRIMARY KEY AUTOINCREMENT,
-				name TEXT NOT NULL,
+				name VARCHAR(255) NOT NULL,
 				mode VARCHAR(30) NOT NULL DEFAULT '',
 				updatetime int(10) NOT NULL DEFAULT '0'
 			);
 			CREATE TABLE records (
 				id INTEGER PRIMARY KEY AUTOINCREMENT,
-				name TEXT NOT NULL,
+				name VARCHAR(255) NOT NULL,
 				question TEXT NOT NULL,
 				answer TEXT NOT NULL
 			);
