@@ -3,6 +3,7 @@ package db
 import (
 	"fmt"
 	"github.com/cohesion-org/deepseek-go"
+	"github.com/yincongcyincong/telegram-deepseek-bot/metrics"
 	"log"
 	"sort"
 	"sync"
@@ -165,8 +166,11 @@ func InsertRecord() {
 				Question: record.Question,
 				Answer:   record.Answer,
 			}, false)
+			metrics.TotalRecords.Inc()
 		}
 	}
+
+	metrics.TotalUsers.Add(float64(len(users)))
 
 }
 
@@ -199,6 +203,7 @@ func getRecordsByName(name string) ([]Record, error) {
 func insertRecord(record *Record) {
 	query := `INSERT INTO records (name, question, answer) VALUES (?, ?, ?)`
 	_, err := DB.Exec(query, record.Name, record.Question, record.Answer)
+	metrics.TotalRecords.Inc()
 	if err != nil {
 		log.Printf("insertRecord err:%v\n", err)
 	}
