@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/yincongcyincong/telegram-deepseek-bot/metrics"
 
 	"io"
 	"log"
@@ -50,7 +51,7 @@ func GetContentFromHS(messageChan chan *param.MsgInfo, update tgbotapi.Update, b
 }
 
 func getContentFromHS(prompt string, update tgbotapi.Update, messageChan chan *param.MsgInfo) error {
-
+	start := time.Now()
 	_, updateMsgID, username := utils.GetChatIdAndMsgIdAndUserName(update)
 
 	messages := make([]*model.ChatCompletionMessage, 0)
@@ -134,16 +135,19 @@ func getContentFromHS(prompt string, update tgbotapi.Update, messageChan chan *p
 	}
 
 	messageChan <- msgInfoContent
+
+	// 记录对话总耗时
+	totalDuration := time.Since(start).Seconds()
+	metrics.ConversationDuration.Observe(totalDuration)
 	return nil
 }
 
 // GenerateImg generate image
 func GenerateImg(prompt string) (*ImgResponse, error) {
-
+	start := time.Now()
 	visual.DefaultInstance.Client.SetAccessKey(*conf.VolcAK)
 	visual.DefaultInstance.Client.SetSecretKey(*conf.VolcSK)
 
-	//请求Body(查看接口文档请求参数-请求示例，将请求参数内容复制到此)
 	reqBody := map[string]interface{}{
 		"req_key":           "high_aes_general_v21_L",
 		"prompt":            prompt,
@@ -181,5 +185,9 @@ func GenerateImg(prompt string) (*ImgResponse, error) {
 	respByte, _ := json.Marshal(resp)
 	data := &ImgResponse{}
 	json.Unmarshal(respByte, data)
+
+	// generate image costing
+	totalDuration := time.Since(start).Seconds()
+	metrics.ImageDuration.Observe(totalDuration)
 	return data, nil
 }

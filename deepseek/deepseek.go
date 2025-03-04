@@ -9,11 +9,13 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
 	"github.com/yincongcyincong/telegram-deepseek-bot/db"
+	"github.com/yincongcyincong/telegram-deepseek-bot/metrics"
 	"github.com/yincongcyincong/telegram-deepseek-bot/param"
 	"github.com/yincongcyincong/telegram-deepseek-bot/utils"
 	"io"
 	"log"
 	"strings"
+	"time"
 )
 
 const (
@@ -34,6 +36,7 @@ func GetContentFromDP(messageChan chan *param.MsgInfo, update tgbotapi.Update, b
 
 // callDeepSeekAPI request DeepSeek API and get response
 func callDeepSeekAPI(prompt string, update tgbotapi.Update, messageChan chan *param.MsgInfo) error {
+	start := time.Now()
 	_, updateMsgID, username := utils.GetChatIdAndMsgIdAndUserName(update)
 	model := deepseek.DeepSeekChat
 	userInfo, err := db.GetUserByName(username)
@@ -119,6 +122,9 @@ func callDeepSeekAPI(prompt string, update tgbotapi.Update, messageChan chan *pa
 
 	messageChan <- msgInfoContent
 
+	// 记录对话总耗时
+	totalDuration := time.Since(start).Seconds()
+	metrics.ConversationDuration.Observe(totalDuration)
 	return nil
 }
 

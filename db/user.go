@@ -2,6 +2,7 @@ package db
 
 import (
 	"database/sql"
+	"github.com/yincongcyincong/telegram-deepseek-bot/metrics"
 	"time"
 )
 
@@ -19,6 +20,7 @@ func InsertUser(name, mode string) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
+	metrics.TotalUsers.Inc()
 	return id, nil
 }
 
