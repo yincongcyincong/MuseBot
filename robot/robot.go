@@ -211,7 +211,11 @@ func retryLastQuestion(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 
 	records := db.GetMsgRecord(username)
 	if records != nil && len(records.AQs) > 0 {
-		requestDeepseekAndResp(update, bot, records.AQs[len(records.AQs)-1].Question)
+		if *conf.DeepseekType == "deepseek" {
+			requestDeepseekAndResp(update, bot, records.AQs[len(records.AQs)-1].Question)
+		} else {
+			requestHuoshanAndResp(update, bot, records.AQs[len(records.AQs)-1].Question)
+		}
 	} else {
 		msg := tgbotapi.NewMessage(chatId, "🚀no last question!")
 		msg.ParseMode = tgbotapi.ModeMarkdown
