@@ -6,11 +6,18 @@ import (
 	"time"
 )
 
+type User struct {
+	ID         int64  `json:"id"`
+	UserId     int64  `json:"user_id"`
+	Mode       string `json:"mode"`
+	Updatetime int64  `json:"updatetime"`
+}
+
 // InsertUser insert user data
-func InsertUser(name, mode string) (int64, error) {
+func InsertUser(userId int64, mode string) (int64, error) {
 	// insert data
-	insertSQL := `INSERT INTO users (name, mode, updatetime) VALUES (?, ?, ?)`
-	result, err := DB.Exec(insertSQL, name, mode, time.Now().Unix())
+	insertSQL := `INSERT INTO users (user_id, mode, updatetime) VALUES (?, ?, ?)`
+	result, err := DB.Exec(insertSQL, userId, mode, time.Now().Unix())
 	if err != nil {
 		return 0, err
 	}
@@ -25,14 +32,14 @@ func InsertUser(name, mode string) (int64, error) {
 }
 
 // 根据 name 查询用户
-func GetUserByName(name string) (*User, error) {
+func GetUserByID(userId int64) (*User, error) {
 	// select one use base on name
-	querySQL := `SELECT id, name, mode FROM users WHERE name = ?`
-	row := DB.QueryRow(querySQL, name)
+	querySQL := `SELECT id, user_id, mode FROM users WHERE user_id = ?`
+	row := DB.QueryRow(querySQL, userId)
 
 	// scan row get result
 	var user User
-	err := row.Scan(&user.ID, &user.Name, &user.Mode)
+	err := row.Scan(&user.ID, &user.UserId, &user.Mode)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			// 如果没有找到数据，返回 nil
@@ -45,7 +52,7 @@ func GetUserByName(name string) (*User, error) {
 
 // GetUsers get 1000 users order by updatetime
 func GetUsers() ([]User, error) {
-	rows, err := DB.Query("SELECT id, name, mode, updatetime FROM users order by updatetime limit 1000")
+	rows, err := DB.Query("SELECT id, user_id, mode, updatetime FROM users order by updatetime limit 1000")
 	if err != nil {
 		return nil, err
 	}
@@ -54,7 +61,7 @@ func GetUsers() ([]User, error) {
 	var users []User
 	for rows.Next() {
 		var user User
-		if err := rows.Scan(&user.ID, &user.Name, &user.Mode, &user.Updatetime); err != nil {
+		if err := rows.Scan(&user.ID, &user.UserId, &user.Mode, &user.Updatetime); err != nil {
 			return nil, err
 		}
 		users = append(users, user)
@@ -68,15 +75,15 @@ func GetUsers() ([]User, error) {
 }
 
 // UpdateUserMode update user mode
-func UpdateUserMode(name string, mode string) error {
-	updateSQL := `UPDATE users SET mode = ? WHERE name = ?`
-	_, err := DB.Exec(updateSQL, mode, name)
+func UpdateUserMode(userId int64, mode string) error {
+	updateSQL := `UPDATE users SET mode = ? WHERE user_id = ?`
+	_, err := DB.Exec(updateSQL, mode, userId)
 	return err
 }
 
 // UpdateUserUpdateTime update user updateTime
-func UpdateUserUpdateTime(name string, updateTime int64) error {
-	updateSQL := `UPDATE users SET updateTime = ? WHERE name = ?`
-	_, err := DB.Exec(updateSQL, updateTime, name)
+func UpdateUserUpdateTime(userId int64, updateTime int64) error {
+	updateSQL := `UPDATE users SET updateTime = ? WHERE user_id = ?`
+	_, err := DB.Exec(updateSQL, updateTime, userId)
 	return err
 }

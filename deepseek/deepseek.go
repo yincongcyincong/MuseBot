@@ -37,14 +37,14 @@ func GetContentFromDP(messageChan chan *param.MsgInfo, update tgbotapi.Update, b
 // callDeepSeekAPI request DeepSeek API and get response
 func callDeepSeekAPI(prompt string, update tgbotapi.Update, messageChan chan *param.MsgInfo) error {
 	start := time.Now()
-	_, updateMsgID, username := utils.GetChatIdAndMsgIdAndUserName(update)
+	_, updateMsgID, userId := utils.GetChatIdAndMsgIdAndUserID(update)
 	model := deepseek.DeepSeekChat
-	userInfo, err := db.GetUserByName(username)
+	userInfo, err := db.GetUserByID(userId)
 	if err != nil {
 		log.Printf("Error getting user info: %s\n", err)
 	}
 	if userInfo != nil && userInfo.Mode != "" {
-		log.Printf("User info: %s, %s\n", userInfo.Name, userInfo.Mode)
+		log.Printf("User info: %d, %s\n", userInfo.UserId, userInfo.Mode)
 		model = userInfo.Mode
 	}
 
@@ -55,7 +55,7 @@ func callDeepSeekAPI(prompt string, update tgbotapi.Update, messageChan chan *pa
 	}
 	messages := make([]deepseek.ChatCompletionMessage, 0)
 
-	msgRecords := db.GetMsgRecord(username)
+	msgRecords := db.GetMsgRecord(userId)
 	if msgRecords != nil {
 		for _, record := range msgRecords.AQs {
 			if record.Answer != "" && record.Question != "" {
@@ -80,7 +80,7 @@ func callDeepSeekAPI(prompt string, update tgbotapi.Update, messageChan chan *pa
 
 	ctx := context.Background()
 
-	fmt.Printf("[%s]: %s\n", username, prompt)
+	fmt.Printf("[%d]: %s\n", userId, prompt)
 	stream, err := client.CreateChatCompletionStream(ctx, request)
 	if err != nil {
 		log.Printf("ChatCompletionStream error: %d, %v\n", updateMsgID, err)

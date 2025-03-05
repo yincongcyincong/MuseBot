@@ -52,11 +52,11 @@ func GetContentFromHS(messageChan chan *param.MsgInfo, update tgbotapi.Update, b
 
 func getContentFromHS(prompt string, update tgbotapi.Update, messageChan chan *param.MsgInfo) error {
 	start := time.Now()
-	_, updateMsgID, username := utils.GetChatIdAndMsgIdAndUserName(update)
+	_, updateMsgID, userId := utils.GetChatIdAndMsgIdAndUserID(update)
 
 	messages := make([]*model.ChatCompletionMessage, 0)
 
-	msgRecords := db.GetMsgRecord(username)
+	msgRecords := db.GetMsgRecord(userId)
 	if msgRecords != nil {
 		for _, record := range msgRecords.AQs {
 			if record.Answer != "" && record.Question != "" {
@@ -93,7 +93,7 @@ func getContentFromHS(prompt string, update tgbotapi.Update, messageChan chan *p
 		Messages: messages,
 	}
 
-	fmt.Printf("[%s]: %s\n", username, prompt)
+	fmt.Printf("[%d]: %s\n", userId, prompt)
 	stream, err := client.CreateChatCompletionStream(ctx, req)
 	if err != nil {
 		fmt.Printf("standard chat error: %v\n", err)

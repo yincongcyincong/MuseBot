@@ -25,16 +25,16 @@ type AQ struct {
 
 type Record struct {
 	ID       int
-	Name     string
+	UserId   int64
 	Question string
 	Answer   string
 }
 
 var MsgRecord = sync.Map{}
 
-func InsertMsgRecord(username string, aq *AQ, insertDB bool) {
+func InsertMsgRecord(userId int64, aq *AQ, insertDB bool) {
 	var msgRecord *MsgRecordInfo
-	msgRecordInter, ok := MsgRecord.Load(username)
+	msgRecordInter, ok := MsgRecord.Load(userId)
 	if !ok {
 		msgRecord = &MsgRecordInfo{
 			AQs:        []*AQ{aq},
@@ -48,28 +48,28 @@ func InsertMsgRecord(username string, aq *AQ, insertDB bool) {
 		}
 		msgRecord.updateTime = time.Now().Unix()
 	}
-	MsgRecord.Store(username, msgRecord)
+	MsgRecord.Store(userId, msgRecord)
 
 	if insertDB {
 		go insertRecord(&Record{
-			Name:     username,
+			UserId:   userId,
 			Question: aq.Question,
 			Answer:   aq.Answer,
 		})
 	}
 }
 
-func GetMsgRecord(username string) *MsgRecordInfo {
-	msgRecord, ok := MsgRecord.Load(username)
+func GetMsgRecord(userId int64) *MsgRecordInfo {
+	msgRecord, ok := MsgRecord.Load(userId)
 	if !ok {
 		return nil
 	}
 	return msgRecord.(*MsgRecordInfo)
 }
 
-func DeleteMsgRecord(username string) {
-	MsgRecord.Delete(username)
-	err := DeleteRecord(username)
+func DeleteMsgRecord(userId int64) {
+	MsgRecord.Delete(userId)
+	err := DeleteRecord(userId)
 	if err != nil {
 		log.Printf("Error deleting record: %v \n", err)
 	}
@@ -94,14 +94,14 @@ func StarCheckUserLen() {
 
 func UpdateDBData() {
 	totalNum := 0
-	timeUserPair := make(map[int64][]string)
+	timeUserPair := make(map[int64][]int64)
 	MsgRecord.Range(func(k, v interface{}) bool {
 		msgRecord := v.(*MsgRecordInfo)
 		if _, ok := timeUserPair[msgRecord.updateTime]; !ok {
-			timeUserPair[msgRecord.updateTime] = make([]string, 0)
+			timeUserPair[msgRecord.updateTime] = make([]int64, 0)
 		}
-		timeUserPair[msgRecord.updateTime] = append(timeUserPair[msgRecord.updateTime], k.(string))
-		UpdateUserInfo(k.(string), msgRecord.updateTime)
+		timeUserPair[msgRecord.updateTime] = append(timeUserPair[msgRecord.updateTime], k.(int64))
+		UpdateUserInfo(k.(int64), msgRecord.updateTime)
 		totalNum++
 		return true
 	})
@@ -131,20 +131,20 @@ func UpdateDBData() {
 	}
 }
 
-func UpdateUserInfo(username string, updateTime int64) {
-	user, err := GetUserByName(username)
+func UpdateUserInfo(userId int64, updateTime int64) {
+	user, err := GetUserByID(userId)
 	if err != nil {
 		log.Printf("Error get user by name: %v \n", err)
 	}
 
 	if user == nil {
-		_, err = InsertUser(username, deepseek.DeepSeekChat)
+		_, err = InsertUser(userId, deepseek.DeepSeekChat)
 		if err != nil {
-			log.Printf("Error get user by name: %v \n", err)
+			log.Printf("Error insert user by name: %v \n", err)
 		}
 	}
 
-	err = UpdateUserUpdateTime(username, updateTime)
+	err = UpdateUserUpdateTime(userId, updateTime)
 	if err != nil {
 		log.Printf("StarCheckUserLen UpdateUserUpdateTime err:%v\n", err)
 	}
@@ -157,12 +157,12 @@ func InsertRecord() {
 	}
 
 	for _, user := range users {
-		records, err := getRecordsByName(user.Name)
+		records, err := getRecordsByUserId(user.UserId)
 		if err != nil {
 			log.Printf("InsertRecord GetUsers err:%v\n", err)
 		}
 		for _, record := range records {
-			InsertMsgRecord(user.Name, &AQ{
+			InsertMsgRecord(user.UserId, &AQ{
 				Question: record.Question,
 				Answer:   record.Answer,
 			}, false)
@@ -174,13 +174,13 @@ func InsertRecord() {
 
 }
 
-// getRecordsByName get latest 10 records by name
-func getRecordsByName(name string) ([]Record, error) {
+// getRecordsByUserId get latest 10 records by user_id
+func getRecordsByUserId(userId int64) ([]Record, error) {
 	// construct SQL statements
-	query := fmt.Sprintf("SELECT id, name, question, answer FROM records WHERE name =  ? limit 10")
+	query := fmt.Sprintf("SELECT id, user_id, question, answer FROM records WHERE user_id =  ? limit 10")
 
 	// execute query
-	rows, err := DB.Query(query, name)
+	rows, err := DB.Query(query, userId)
 	if err != nil {
 		return nil, err
 	}
@@ -189,7 +189,7 @@ func getRecordsByName(name string) ([]Record, error) {
 	var records []Record
 	for rows.Next() {
 		var record Record
-		err := rows.Scan(&record.ID, &record.Name, &record.Question, &record.Answer)
+		err := rows.Scan(&record.ID, &record.UserId, &record.Question, &record.Answer)
 		if err != nil {
 			return nil, err
 		}
@@ -201,8 +201,8 @@ func getRecordsByName(name string) ([]Record, error) {
 
 // insertRecord insert record
 func insertRecord(record *Record) {
-	query := `INSERT INTO records (name, question, answer) VALUES (?, ?, ?)`
-	_, err := DB.Exec(query, record.Name, record.Question, record.Answer)
+	query := `INSERT INTO records (user_id, question, answer) VALUES (?, ?, ?)`
+	_, err := DB.Exec(query, record.UserId, record.Question, record.Answer)
 	metrics.TotalRecords.Inc()
 	if err != nil {
 		log.Printf("insertRecord err:%v\n", err)
@@ -210,8 +210,8 @@ func insertRecord(record *Record) {
 }
 
 // delete record
-func DeleteRecord(name string) error {
-	query := `DELETE FROM records WHERE name = ?`
-	_, err := DB.Exec(query, name)
+func DeleteRecord(userId int64) error {
+	query := `DELETE FROM records WHERE user_id = ?`
+	_, err := DB.Exec(query, userId)
 	return err
 }
