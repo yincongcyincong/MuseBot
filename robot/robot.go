@@ -83,7 +83,7 @@ func requestDeepseekAndResp(update tgbotapi.Update, bot *tgbotapi.BotAPI, conten
 func handleUpdate(messageChan chan *param.MsgInfo, update tgbotapi.Update, bot *tgbotapi.BotAPI, content string) {
 	var msg *param.MsgInfo
 
-	chatId, msgId, username := utils.GetChatIdAndMsgIdAndUserName(update)
+	chatId, msgId, username := utils.GetChatIdAndMsgIdAndUserID(update)
 	for msg = range messageChan {
 		if len(msg.Content) == 0 {
 			msg.Content = "get nothing from deepseek!"
@@ -207,9 +207,9 @@ func handleCommand(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 }
 
 func retryLastQuestion(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
-	chatId, _, username := utils.GetChatIdAndMsgIdAndUserName(update)
+	chatId, _, userId := utils.GetChatIdAndMsgIdAndUserID(update)
 
-	records := db.GetMsgRecord(username)
+	records := db.GetMsgRecord(userId)
 	if records != nil && len(records.AQs) > 0 {
 		if *conf.DeepseekType == "deepseek" {
 			requestDeepseekAndResp(update, bot, records.AQs[len(records.AQs)-1].Question)
@@ -228,8 +228,8 @@ func retryLastQuestion(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 
 // clearAllRecord clear all record
 func clearAllRecord(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
-	chatId, _, username := utils.GetChatIdAndMsgIdAndUserName(update)
-	db.DeleteMsgRecord(username)
+	chatId, _, userId := utils.GetChatIdAndMsgIdAndUserID(update)
+	db.DeleteMsgRecord(userId)
 	msg := tgbotapi.NewMessage(chatId, "🚀successfully delete!")
 	msg.ParseMode = tgbotapi.ModeMarkdown
 	_, err := bot.Send(msg)
@@ -240,10 +240,10 @@ func clearAllRecord(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 
 // showBalanceInfo show balance info
 func showBalanceInfo(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
-	chatId, _, _ := utils.GetChatIdAndMsgIdAndUserName(update)
+	chatId, _, _ := utils.GetChatIdAndMsgIdAndUserID(update)
 
 	if *conf.DeepseekType != "deepseek" {
-		msg := tgbotapi.NewMessage(chatId, "🚀no-deepseek")
+		msg := tgbotapi.NewMessage(chatId, "🚀now model is not deepseek")
 		msg.ParseMode = tgbotapi.ModeMarkdown
 		_, err := bot.Send(msg)
 		if err != nil {
@@ -352,22 +352,22 @@ func handleCallbackQuery(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 
 // handleModeUpdate handle mode update
 func handleModeUpdate(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
-	userInfo, err := db.GetUserByName(update.CallbackQuery.From.String())
+	userInfo, err := db.GetUserByID(update.CallbackQuery.From.ID)
 	if err != nil {
-		log.Printf("get user fail: %s %v", update.CallbackQuery.From.String(), err)
+		log.Printf("get user fail: %d %v", update.CallbackQuery.From.ID, err)
 		sendFailMessage(update, bot)
 		return
 	}
 
 	if userInfo != nil && userInfo.ID != 0 {
-		err = db.UpdateUserMode(update.CallbackQuery.From.String(), update.CallbackQuery.Data)
+		err = db.UpdateUserMode(update.CallbackQuery.From.ID, update.CallbackQuery.Data)
 		if err != nil {
-			log.Printf("update user fail: %s %v\n", update.CallbackQuery.From.String(), err)
+			log.Printf("update user fail: %d %v\n", update.CallbackQuery.From.ID, err)
 			sendFailMessage(update, bot)
 			return
 		}
 	} else {
-		_, err = db.InsertUser(update.CallbackQuery.From.String(), update.CallbackQuery.Data)
+		_, err = db.InsertUser(update.CallbackQuery.From.ID, update.CallbackQuery.Data)
 		if err != nil {
 			log.Printf("insert user fail: %s %v\n", update.CallbackQuery.From.String(), err)
 			sendFailMessage(update, bot)
@@ -415,7 +415,7 @@ func sendImg(update tgbotapi.Update) {
 	// create image url
 	photoURL := data.Data.ImageUrls[0]
 	url := fmt.Sprintf("https://api.telegram.org/bot%s/sendPhoto", *conf.BotToken)
-	chatId, replyToMessageID, _ := utils.GetChatIdAndMsgIdAndUserName(update)
+	chatId, replyToMessageID, _ := utils.GetChatIdAndMsgIdAndUserID(update)
 
 	// construct request param
 	req := map[string]interface{}{

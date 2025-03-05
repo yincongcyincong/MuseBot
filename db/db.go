@@ -13,29 +13,22 @@ const (
 	createTableSQL = `
 			CREATE TABLE users (
 				id INTEGER PRIMARY KEY AUTOINCREMENT,
-				name VARCHAR(255) NOT NULL,
+				user_id int(11) NOT NULL DEFAULT '0',
 				mode VARCHAR(30) NOT NULL DEFAULT '',
 				updatetime int(10) NOT NULL DEFAULT '0'
 			);
 			CREATE TABLE records (
 				id INTEGER PRIMARY KEY AUTOINCREMENT,
-				name VARCHAR(255) NOT NULL,
+				user_id int(11) NOT NULL DEFAULT '0',
 				question TEXT NOT NULL,
 				answer TEXT NOT NULL
 			);
-			CREATE INDEX idx_records_name ON users(name);`
+			CREATE INDEX idx_records_user_id ON users(user_id);`
 )
 
 var (
 	DB *sql.DB
 )
-
-type User struct {
-	ID         int64  `json:"id"`
-	Name       string `json:"name"`
-	Mode       string `json:"mode"`
-	Updatetime int64  `json:"updatetime"`
-}
 
 func InitTable() {
 	var err error

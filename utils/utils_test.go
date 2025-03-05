@@ -11,15 +11,15 @@ func TestGetChatIdAndMsgIdAndUserName_MessageUpdate(t *testing.T) {
 	update := tgbotapi.Update{
 		Message: &tgbotapi.Message{
 			Chat:      &tgbotapi.Chat{ID: 123456},
-			From:      &tgbotapi.User{UserName: "test_user"},
+			From:      &tgbotapi.User{ID: 123},
 			MessageID: 789,
 		},
 	}
 
-	chatId, msgId, username := GetChatIdAndMsgIdAndUserName(update)
+	chatId, msgId, userId := GetChatIdAndMsgIdAndUserID(update)
 	assert.Equal(t, int64(123456), chatId)
 	assert.Equal(t, 789, msgId)
-	assert.Equal(t, "test_user", username)
+	assert.Equal(t, 123, userId)
 }
 
 func TestGetChatIdAndMsgIdAndUserName_CallbackQueryUpdate(t *testing.T) {
@@ -29,23 +29,23 @@ func TestGetChatIdAndMsgIdAndUserName_CallbackQueryUpdate(t *testing.T) {
 				Chat:      &tgbotapi.Chat{ID: 654321},
 				MessageID: 456,
 			},
-			From: &tgbotapi.User{UserName: "callback_user"},
+			From: &tgbotapi.User{ID: 111},
 		},
 	}
 
-	chatId, msgId, username := GetChatIdAndMsgIdAndUserName(update)
+	chatId, msgId, userId := GetChatIdAndMsgIdAndUserID(update)
 	assert.Equal(t, int64(654321), chatId)
 	assert.Equal(t, 456, msgId)
-	assert.Equal(t, "callback_user", username)
+	assert.Equal(t, 111, userId)
 }
 
 func TestGetChatIdAndMsgIdAndUserName_EmptyUpdate(t *testing.T) {
 	update := tgbotapi.Update{}
 
-	chatId, msgId, username := GetChatIdAndMsgIdAndUserName(update)
+	chatId, msgId, userId := GetChatIdAndMsgIdAndUserID(update)
 	assert.Equal(t, int64(0), chatId)
 	assert.Equal(t, 0, msgId)
-	assert.Equal(t, "", username)
+	assert.Equal(t, 0, userId)
 }
 
 func TestCheckMsgIsCallback(t *testing.T) {
