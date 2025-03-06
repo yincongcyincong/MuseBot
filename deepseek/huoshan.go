@@ -178,7 +178,7 @@ func GenerateImg(prompt string) (*ImgResponse, error) {
 
 	resp, _, err := visual.DefaultInstance.CVProcess(reqBody)
 	if err != nil {
-		log.Printf("request img api fail: %w\n", err)
+		log.Printf("request img api fail: %s\n", err)
 		return nil, err
 	}
 
