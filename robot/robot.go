@@ -428,14 +428,14 @@ func sendImg(update tgbotapi.Update) {
 
 	jsonData, err := json.Marshal(req)
 	if err != nil {
-		log.Printf("marshal json content fail: %w\n", err)
+		log.Printf("marshal json content fail: %s\n", err)
 		return
 	}
 
 	// send post request
 	resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonData))
 	if err != nil {
-		log.Printf("send request fail: %w\n", err)
+		log.Printf("send request fail: %s\n", err)
 		return
 	}
 	defer resp.Body.Close()
@@ -443,7 +443,7 @@ func sendImg(update tgbotapi.Update) {
 	// analysis response
 	var result map[string]interface{}
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		log.Printf("analysis response fail: %w\n", err)
+		log.Printf("analysis response fail: %s\n", err)
 		return
 	}
 
