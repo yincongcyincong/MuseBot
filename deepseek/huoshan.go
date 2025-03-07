@@ -136,7 +136,7 @@ func getContentFromHS(prompt string, update tgbotapi.Update, messageChan chan *p
 
 	messageChan <- msgInfoContent
 
-	// 记录对话总耗时
+	// record time costing in dialog
 	totalDuration := time.Since(start).Seconds()
 	metrics.ConversationDuration.Observe(totalDuration)
 	return nil
@@ -186,7 +186,7 @@ func GenerateImg(prompt string) (*ImgResponse, error) {
 	data := &ImgResponse{}
 	json.Unmarshal(respByte, data)
 
-	// generate image costing
+	// generate image time costing
 	totalDuration := time.Since(start).Seconds()
 	metrics.ImageDuration.Observe(totalDuration)
 	return data, nil

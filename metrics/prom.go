@@ -4,7 +4,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-// 定义所有监控指标
+// define all metrics
 var (
 	TotalUsers = prometheus.NewGauge(
 		prometheus.GaugeOpts{
@@ -24,7 +24,7 @@ var (
 		prometheus.HistogramOpts{
 			Name:    "app_conversation_duration_seconds",
 			Help:    "Duration of conversations in seconds.",
-			Buckets: prometheus.DefBuckets, // 默认桶: 0.005, 0.01, 0.025, 0.05, ..., 10, 30, 60
+			Buckets: prometheus.DefBuckets, // default: 0.005, 0.01, 0.025, 0.05, ..., 10, 30, 60
 		},
 	)
 
