@@ -31,7 +31,7 @@ func InsertUser(userId int64, mode string) (int64, error) {
 	return id, nil
 }
 
-// 根据 name 查询用户
+// GetUserByID get user by userId
 func GetUserByID(userId int64) (*User, error) {
 	// select one use base on name
 	querySQL := `SELECT id, user_id, mode FROM users WHERE user_id = ?`

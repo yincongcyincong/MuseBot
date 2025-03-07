@@ -33,7 +33,7 @@ var (
 func InitTable() {
 	var err error
 	if _, err = os.Stat("./data"); os.IsNotExist(err) {
-		// 文件夹不存在，创建它
+		// if dir don't exist, create it.
 		err := os.MkdirAll("./data", 0755)
 		if err != nil {
 			log.Fatal("❌ 创建文件夹失败:", err)

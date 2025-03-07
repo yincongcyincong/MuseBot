@@ -16,7 +16,7 @@ func InitPprof() {
 	pprofServer.Start()
 }
 
-// NewPProfServer 创建一个新的PProfServer实例，默认端口6060
+// NewPProfServer create http server, listen 36060 port.
 func NewPProfServer(addr string) *PProfServer {
 	if addr == "" {
 		addr = ":36060"
@@ -26,7 +26,7 @@ func NewPProfServer(addr string) *PProfServer {
 	}
 }
 
-// Start 启动pprof server，非阻塞（异步）
+// Start start pprof server
 func (p *PProfServer) Start() {
 	go func() {
 		log.Printf("Starting pprof server on %s\n", p.Addr)

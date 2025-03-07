@@ -209,7 +209,7 @@ func insertRecord(record *Record) {
 	}
 }
 
-// delete record
+// DeleteRecord delete record
 func DeleteRecord(userId int64) error {
 	query := `DELETE FROM records WHERE user_id = ?`
 	_, err := DB.Exec(query, userId)

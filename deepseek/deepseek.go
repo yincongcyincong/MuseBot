@@ -122,7 +122,7 @@ func callDeepSeekAPI(prompt string, update tgbotapi.Update, messageChan chan *pa
 
 	messageChan <- msgInfoContent
 
-	// 记录对话总耗时
+	// record time costing in dialog
 	totalDuration := time.Since(start).Seconds()
 	metrics.ConversationDuration.Observe(totalDuration)
 	return nil
