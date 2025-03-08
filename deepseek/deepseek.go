@@ -4,6 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
+	"log"
+	"strings"
+	"time"
+
 	"github.com/cohesion-org/deepseek-go"
 	"github.com/cohesion-org/deepseek-go/constants"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -12,14 +17,10 @@ import (
 	"github.com/yincongcyincong/telegram-deepseek-bot/metrics"
 	"github.com/yincongcyincong/telegram-deepseek-bot/param"
 	"github.com/yincongcyincong/telegram-deepseek-bot/utils"
-	"io"
-	"log"
-	"strings"
-	"time"
 )
 
 const (
-	OneMsgLen       = 900
+	OneMsgLen       = 4000
 	FirstSendLen    = 30
 	NonFirstSendLen = 300
 )
