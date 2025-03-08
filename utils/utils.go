@@ -1,6 +1,10 @@
 package utils
 
-import tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+import (
+	"unicode/utf16"
+
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+)
 
 func GetChatIdAndMsgIdAndUserID(update tgbotapi.Update) (int64, int, int64) {
 	chatId := int64(0)
@@ -22,4 +26,10 @@ func GetChatIdAndMsgIdAndUserID(update tgbotapi.Update) (int64, int, int64) {
 
 func CheckMsgIsCallback(update tgbotapi.Update) bool {
 	return update.CallbackQuery != nil
+}
+
+// Utf16len calculates the length of a string in UTF-16 code units.
+func Utf16len(s string) int {
+	utf16Str := utf16.Encode([]rune(s))
+	return len(utf16Str)
 }
