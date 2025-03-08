@@ -20,7 +20,7 @@ import (
 )
 
 const (
-	OneMsgLen       = 4000
+	OneMsgLen       = 4096
 	FirstSendLen    = 30
 	NonFirstSendLen = 300
 )
@@ -104,7 +104,7 @@ func callDeepSeekAPI(prompt string, update tgbotapi.Update, messageChan chan *pa
 		}
 		for _, choice := range response.Choices {
 			// exceed max telegram one message length
-			if len(msgInfoContent.Content) > OneMsgLen {
+			if utils.Utf16len(msgInfoContent.Content) > OneMsgLen {
 				messageChan <- msgInfoContent
 				msgInfoContent = &param.MsgInfo{
 					SendLen:     FirstSendLen,
