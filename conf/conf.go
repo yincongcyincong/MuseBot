@@ -14,6 +14,8 @@ var (
 	CustomUrl     *string
 	VolcAK        *string
 	VolcSK        *string
+	DBType        *string
+	DBConf        *string
 )
 
 func InitConf() {
@@ -23,6 +25,8 @@ func InitConf() {
 	DeepseekType = flag.String("deepseek_type", "deepseek", "deepseek auth type")
 	VolcAK = flag.String("volc_ak", "", "volc ak")
 	VolcSK = flag.String("volc_sk", "", "volc sk")
+	DBType = flag.String("db_type", "sqlite3", "db type")
+	DBConf = flag.String("db", "./data/telegram_bot.db", "db conf")
 	flag.Parse()
 
 	if os.Getenv("TELEGRAM_BOT_TOKEN") != "" {
@@ -49,12 +53,22 @@ func InitConf() {
 		*VolcSK = os.Getenv("VOLC_SK")
 	}
 
+	if os.Getenv("DB_TYPE") != "" {
+		*DBType = os.Getenv("DB_TYPE")
+	}
+
+	if os.Getenv("DB_CONF") != "" {
+		*DBConf = os.Getenv("DB_CONF")
+	}
+
 	fmt.Println("TelegramBotToken:", *BotToken)
 	fmt.Println("DeepseekToken:", *DeepseekToken)
 	fmt.Println("CustomUrl:", *CustomUrl)
 	fmt.Println("DeepseekType:", *DeepseekType)
 	fmt.Println("VOLC_AK:", *VolcAK)
 	fmt.Println("VOLC_SK:", *VolcSK)
+	fmt.Println("DBType:", *DBType)
+	fmt.Println("DBConf:", *DBConf)
 	if *BotToken == "" || *DeepseekToken == "" {
 		log.Fatalf("Bot token and deepseek token are required")
 	}

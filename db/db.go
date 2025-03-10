@@ -4,12 +4,12 @@ import (
 	"database/sql"
 	"fmt"
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
 	"log"
 	"os"
 )
 
 const (
-	dbFile         = "./data/telegram_bot.db" // SQLite 数据库文件
 	createTableSQL = `
 			CREATE TABLE users (
 				id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -42,7 +42,7 @@ func InitTable() {
 		fmt.Println("✅ 文件夹创建成功")
 	}
 
-	DB, err = sql.Open("sqlite3", dbFile)
+	DB, err = sql.Open(*conf.DBType, *conf.DBConf)
 	if err != nil {
 		log.Fatal(err)
 	}
