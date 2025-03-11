@@ -26,7 +26,7 @@ func InitConf() {
 	VolcAK = flag.String("volc_ak", "", "volc ak")
 	VolcSK = flag.String("volc_sk", "", "volc sk")
 	DBType = flag.String("db_type", "sqlite3", "db type")
-	DBConf = flag.String("db", "./data/telegram_bot.db", "db conf")
+	DBConf = flag.String("db_conf", "./data/telegram_bot.db", "db conf")
 	flag.Parse()
 
 	if os.Getenv("TELEGRAM_BOT_TOKEN") != "" {

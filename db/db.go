@@ -2,15 +2,18 @@ package db
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
-	_ "github.com/mattn/go-sqlite3"
-	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
 	"log"
 	"os"
+
+	_ "github.com/go-sql-driver/mysql"
+	_ "github.com/mattn/go-sqlite3"
+	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
 )
 
 const (
-	createTableSQL = `
+	sqlite3CreateTableSQL = `
 			CREATE TABLE users (
 				id INTEGER PRIMARY KEY AUTOINCREMENT,
 				user_id int(11) NOT NULL DEFAULT '0',
@@ -24,6 +27,23 @@ const (
 				answer TEXT NOT NULL
 			);
 			CREATE INDEX idx_records_user_id ON users(user_id);`
+	mysqlCreateUsersSQL = `
+CREATE TABLE IF NOT EXISTS users (
+    id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    user_id INT(11) NOT NULL DEFAULT 0,
+    mode VARCHAR(30) NOT NULL DEFAULT '',
+    updatetime INT(10) NOT NULL DEFAULT 0
+);`
+
+	mysqlCreateRecordsSQL = `
+CREATE TABLE IF NOT EXISTS records (
+    id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    user_id INT(11) NOT NULL DEFAULT 0,
+    question TEXT NOT NULL,
+    answer TEXT NOT NULL
+);`
+
+	mysqlCreateIndexSQL = `CREATE INDEX idx_records_user_id ON records(user_id);`
 )
 
 var (
@@ -48,16 +68,58 @@ func InitTable() {
 	}
 
 	// init table
-	err = initializeTable(DB, "users")
-	if err != nil {
-		log.Fatal(err)
+	switch *conf.DBType {
+	case "sqlite3":
+		err = initializeSqlite3Table(DB, "users")
+		if err != nil {
+			log.Fatal(err)
+		}
+	case "mysql":
+		// 检查并创建表
+		if err := initializeMysqlTable(DB, "users", mysqlCreateUsersSQL); err != nil {
+			log.Fatal(err)
+		}
+
+		if err := initializeMysqlTable(DB, "records", mysqlCreateRecordsSQL); err != nil {
+			log.Fatal(err)
+		}
+
+		// 创建索引（防止重复创建）
+		_, err = DB.Exec(mysqlCreateIndexSQL)
+		if err != nil {
+			log.Fatal("Create index failed:", err)
+		} else {
+			fmt.Println("Create index success")
+		}
 	}
 
 	fmt.Println("db initialize successfully")
 }
 
-// initializeTable check table exist or not.
-func initializeTable(db *sql.DB, tableName string) error {
+func initializeMysqlTable(db *sql.DB, tableName string, createSQL string) error {
+	var tb string
+	query := fmt.Sprintf("SHOW TABLES LIKE '%s'", tableName)
+	err := db.QueryRow(query).Scan(&tb)
+
+	// 如果表不存在，则创建
+	if errors.Is(err, sql.ErrNoRows) || tb == "" {
+		fmt.Printf("Table '%s' not exist, creating...\n", tableName)
+		_, err := db.Exec(createSQL)
+		if err != nil {
+			return fmt.Errorf("Create table failed: %v", err)
+		}
+		fmt.Println("Create table success:", tableName)
+	} else if err != nil {
+		return fmt.Errorf("Search table failed: %v", err)
+	} else {
+		fmt.Printf("Table '%s' exists\n", tableName)
+	}
+
+	return nil
+}
+
+// initializeSqlite3Table check table exist or not.
+func initializeSqlite3Table(db *sql.DB, tableName string) error {
 	// check table exist or not
 	query := `SELECT name FROM sqlite_master WHERE type='table' AND name=?;`
 	var name string
@@ -66,7 +128,7 @@ func initializeTable(db *sql.DB, tableName string) error {
 	if err != nil {
 		if err == sql.ErrNoRows {
 			fmt.Printf("table '%s' not exist，creating...\n", tableName)
-			_, err := db.Exec(createTableSQL)
+			_, err := db.Exec(sqlite3CreateTableSQL)
 			if err != nil {
 				return fmt.Errorf("create table fail: %v\n", err)
 			}
