@@ -51,21 +51,30 @@ Use docker
 ## ⚙️ Configuration
 You can configure the bot via environment variables:
 
-| Variable Name                  | 	Description                                                      |
-|--------------------------------|-------------------------------------------------------------------|
-| TELEGRAM_BOT_TOKEN (required)	 | Your Telegram bot token                                           |
-| DEEPSEEK_TOKEN	  (required)    | DeepSeek Api Key                                                  |
-| CUSTOM_URL	                    | custom deepseek url                                               |
-| DEEPSEEK_TYPE	                 | deepseek/others(deepseek-r1-250120，doubao-1.5-pro-32k-250115，...) |
-| VOLC_AK	                       | volcengine photo model ak                                         |
-| VOLC_SK	                       | volcengine photo model sk                                         |
+| Variable Name                  | 	Description                                                                      |
+|--------------------------------|-----------------------------------------------------------------------------------|
+| TELEGRAM_BOT_TOKEN (required)	 | Your Telegram bot token                                                           |
+| DEEPSEEK_TOKEN	  (required)    | DeepSeek Api Key                                                                  |
+| CUSTOM_URL	                    | custom deepseek url                                                               |
+| DEEPSEEK_TYPE	                 | deepseek/others(deepseek-r1-250120，doubao-1.5-pro-32k-250115，...)                 |
+| VOLC_AK	                       | volcengine photo model ak                                                         |
+| VOLC_SK	                       | volcengine photo model sk                                                         |
+| DB_TYPE                        | sqlite3 / mysql                                                                   |
+| DB_CONF	                       | ./data/telegram_bot.db / root:admin@tcp(127.0.0.1:3306)/dbname?charset=utf8mb4&parseTime=True&loc=Local |
 
 ### CUSTOM_URL
 If you are using a self-deployed DeepSeek, you can set CUSTOM_URL to route requests to your self-deployed DeepSeek.
 
 ### DEEPSEEK_TYPE
 deepseek: directly use deepseek service. but it's not very stable    
-others: see [doc](https://www.volcengine.com/docs/82379/1463946)     
+others: see [doc](https://www.volcengine.com/docs/82379/1463946)    
+
+### DB_TYPE
+support sqlite3 or mysql
+
+### DB_CONF
+if DB_TYPE is sqlite3, give a file path, such as /data/telegram_bot.db     
+if DB_TYPE is mysql, give a mysql link, such as root:admin@tcp(127.0.0.1:3306)/dbname?charset=utf8mb4&parseTime=True&loc=Local, database must be created.      
 
 ## Command 
 
@@ -85,6 +94,9 @@ retry last question.
 ### /photo
 using volcengine photo model create photo，VOLC_AK and VOLC_SK is necessary.[doc](https://www.volcengine.com/docs/6444/1340578)      
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/c8072d7d-74e6-4270-8496-1b4e7532134b" />
+
+### /chat
+allows the bot to chat through /chat command in groups, without the bot being set as admin of the group.
 
 ### /help
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/869e0207-388b-49ca-b26a-378f71d58818" />
