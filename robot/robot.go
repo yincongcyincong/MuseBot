@@ -191,6 +191,8 @@ func skipThisMsg(update tgbotapi.Update, bot *tgbotapi.BotAPI) bool {
 func handleCommand(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	cmd := update.Message.Command()
 	switch cmd {
+	case "chat":
+		sendChatMessage(update, bot)
 	case "mode":
 		sendModeConfigurationOptions(bot, update.Message.Chat.ID)
 	case "balance":
@@ -206,6 +208,35 @@ func handleCommand(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	}
 }
 
+func sendChatMessage(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
+	chatId, _, _ := utils.GetChatIdAndMsgIdAndUserID(update)
+	messageText := update.Message.Text
+
+	// Remove /chat and /chat@botUserName from the message
+	command := "/chat"
+	mention := "@" + bot.Self.UserName
+
+	content := strings.ReplaceAll(messageText, command, mention)
+	content = strings.ReplaceAll(content, mention, "")
+	content = strings.TrimSpace(content)
+
+	if len(content) == 0 {
+		// If there is no chat content after command
+		msg := tgbotapi.NewMessage(chatId, "❌ Please input text after /chat command.")
+		_, err := bot.Send(msg)
+		if err != nil {
+			log.Printf("send help message fail: %v\n", err)
+		}
+		return
+	}
+
+	// Reply to the chat content
+	if *conf.DeepseekType == "deepseek" {
+		requestDeepseekAndResp(update, bot, content)
+	} else {
+		requestHuoshanAndResp(update, bot, content)
+	}
+}
 func retryLastQuestion(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	chatId, _, userId := utils.GetChatIdAndMsgIdAndUserID(update)
 
