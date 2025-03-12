@@ -73,8 +73,8 @@ others: see [doc](https://www.volcengine.com/docs/82379/1463946)
 support sqlite3 or mysql
 
 ### DB_CONF
-if DB_TYPE is sqlite3, give a file path, such as /data/telegram_bot.db     
-if DB_TYPE is mysql, give a mysql link, such as root:admin@tcp(127.0.0.1:3306)/dbname?charset=utf8mb4&parseTime=True&loc=Local, database must be created.      
+if DB_TYPE is sqlite3, give a file path, such as `/data/telegram_bot.db`     
+if DB_TYPE is mysql, give a mysql link, such as `root:admin@tcp(127.0.0.1:3306)/dbname?charset=utf8mb4&parseTime=True&loc=Local`, database must be created.      
 
 ## Command 
 
