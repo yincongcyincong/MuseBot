@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/yincongcyincong/telegram-deepseek-bot/metrics"
-
 	"io"
 	"log"
 	"strings"
@@ -19,6 +17,7 @@ import (
 	"github.com/volcengine/volcengine-go-sdk/service/arkruntime/model"
 	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
 	"github.com/yincongcyincong/telegram-deepseek-bot/db"
+	"github.com/yincongcyincong/telegram-deepseek-bot/metrics"
 	"github.com/yincongcyincong/telegram-deepseek-bot/param"
 	"github.com/yincongcyincong/telegram-deepseek-bot/utils"
 )
@@ -117,7 +116,7 @@ func getContentFromHS(prompt string, update tgbotapi.Update, messageChan chan *p
 		}
 		for _, choice := range response.Choices {
 			// exceed max telegram one message length
-			if len(msgInfoContent.Content) > OneMsgLen {
+			if utils.Utf16len(msgInfoContent.Content) > OneMsgLen {
 				messageChan <- msgInfoContent
 				msgInfoContent = &param.MsgInfo{
 					SendLen:     FirstSendLen,

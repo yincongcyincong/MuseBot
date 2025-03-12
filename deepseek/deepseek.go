@@ -4,6 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
+	"log"
+	"strings"
+	"time"
+
 	"github.com/cohesion-org/deepseek-go"
 	"github.com/cohesion-org/deepseek-go/constants"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -12,14 +17,10 @@ import (
 	"github.com/yincongcyincong/telegram-deepseek-bot/metrics"
 	"github.com/yincongcyincong/telegram-deepseek-bot/param"
 	"github.com/yincongcyincong/telegram-deepseek-bot/utils"
-	"io"
-	"log"
-	"strings"
-	"time"
 )
 
 const (
-	OneMsgLen       = 900
+	OneMsgLen       = 3896
 	FirstSendLen    = 30
 	NonFirstSendLen = 300
 )
@@ -103,7 +104,7 @@ func callDeepSeekAPI(prompt string, update tgbotapi.Update, messageChan chan *pa
 		}
 		for _, choice := range response.Choices {
 			// exceed max telegram one message length
-			if len(msgInfoContent.Content) > OneMsgLen {
+			if utils.Utf16len(msgInfoContent.Content) > OneMsgLen {
 				messageChan <- msgInfoContent
 				msgInfoContent = &param.MsgInfo{
 					SendLen:     FirstSendLen,
