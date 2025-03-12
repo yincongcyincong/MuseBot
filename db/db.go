@@ -83,14 +83,6 @@ func InitTable() {
 		if err := initializeMysqlTable(DB, "records", mysqlCreateRecordsSQL); err != nil {
 			log.Fatal(err)
 		}
-
-		// 创建索引（防止重复创建）
-		_, err = DB.Exec(mysqlCreateIndexSQL)
-		if err != nil {
-			log.Fatal("Create index failed:", err)
-		} else {
-			fmt.Println("Create index success")
-		}
 	}
 
 	fmt.Println("db initialize successfully")
@@ -109,6 +101,14 @@ func initializeMysqlTable(db *sql.DB, tableName string, createSQL string) error 
 			return fmt.Errorf("Create table failed: %v", err)
 		}
 		fmt.Println("Create table success:", tableName)
+
+		// 创建索引（防止重复创建）
+		_, err = DB.Exec(mysqlCreateIndexSQL)
+		if err != nil {
+			log.Fatal("Create index failed:", err)
+		} else {
+			fmt.Println("Create index success")
+		}
 	} else if err != nil {
 		return fmt.Errorf("Search table failed: %v", err)
 	} else {
