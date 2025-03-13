@@ -84,6 +84,8 @@ func handleUpdate(messageChan chan *param.MsgInfo, update tgbotapi.Update, bot *
 	var msg *param.MsgInfo
 
 	chatId, msgId, username := utils.GetChatIdAndMsgIdAndUserID(update)
+	parseMode := tgbotapi.ModeMarkdown
+
 	for msg = range messageChan {
 		if len(msg.Content) == 0 {
 			msg.Content = "get nothing from deepseek!"
@@ -92,13 +94,15 @@ func handleUpdate(messageChan chan *param.MsgInfo, update tgbotapi.Update, bot *
 		if msg.MsgId == 0 {
 			tgMsgInfo := tgbotapi.NewMessage(chatId, msg.Content)
 			tgMsgInfo.ReplyToMessageID = msgId
-			tgMsgInfo.ParseMode = tgbotapi.ModeMarkdown
+			tgMsgInfo.ParseMode = parseMode
 			sendInfo, err := bot.Send(tgMsgInfo)
 			if err != nil {
 				if sleepUtilNoLimit(msgId, err) {
 					sendInfo, err = bot.Send(tgMsgInfo)
+				} else if strings.Contains(err.Error(), "can't parse entities") {
+					parseMode = ""
 				} else {
-					sendInfo, err = bot.Send(tgMsgInfo)
+					_, err = bot.Send(tgMsgInfo)
 				}
 				if err != nil {
 					log.Printf("%d Error sending message: %s\n", msgId, err)
@@ -113,7 +117,7 @@ func handleUpdate(messageChan chan *param.MsgInfo, update tgbotapi.Update, bot *
 					MessageID: msg.MsgId,
 				},
 				Text:      msg.Content,
-				ParseMode: tgbotapi.ModeMarkdown,
+				ParseMode: parseMode,
 			}
 			_, err := bot.Send(updateMsg)
 
@@ -121,6 +125,8 @@ func handleUpdate(messageChan chan *param.MsgInfo, update tgbotapi.Update, bot *
 				// try again
 				if sleepUtilNoLimit(msgId, err) {
 					_, err = bot.Send(updateMsg)
+				} else if strings.Contains(err.Error(), "can't parse entities") {
+					parseMode = ""
 				} else {
 					_, err = bot.Send(updateMsg)
 				}
