@@ -4,12 +4,11 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"log"
-	"os"
-
 	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
+	"log"
+	"os"
 )
 
 const (
@@ -30,7 +29,7 @@ const (
 	mysqlCreateUsersSQL = `
 CREATE TABLE IF NOT EXISTS users (
     id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    user_id INT(11) NOT NULL DEFAULT 0,
+    user_id BIGINT(20) NOT NULL DEFAULT 0,
     mode VARCHAR(30) NOT NULL DEFAULT '',
     updatetime INT(10) NOT NULL DEFAULT 0
 );`
@@ -38,7 +37,7 @@ CREATE TABLE IF NOT EXISTS users (
 	mysqlCreateRecordsSQL = `
 CREATE TABLE IF NOT EXISTS records (
     id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    user_id INT(11) NOT NULL DEFAULT 0,
+    user_id BIGINT(20) NOT NULL DEFAULT 0,
     question TEXT NOT NULL,
     answer TEXT NOT NULL
 );`
@@ -103,11 +102,13 @@ func initializeMysqlTable(db *sql.DB, tableName string, createSQL string) error 
 		fmt.Println("Create table success:", tableName)
 
 		// 创建索引（防止重复创建）
-		_, err = DB.Exec(mysqlCreateIndexSQL)
-		if err != nil {
-			log.Fatal("Create index failed:", err)
-		} else {
-			fmt.Println("Create index success")
+		if tableName == "records" {
+			_, err = db.Exec(mysqlCreateIndexSQL)
+			if err != nil {
+				log.Fatal("Create index failed:", err)
+			} else {
+				fmt.Println("Create index success")
+			}
 		}
 	} else if err != nil {
 		return fmt.Errorf("Search table failed: %v", err)
