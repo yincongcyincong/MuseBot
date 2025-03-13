@@ -38,8 +38,6 @@ This repository provides a **Telegram bot** built with **Golang** that integrate
 ## 🚀 Usage
 Run the bot locally:
    ```sh
-    go run main.go
-    or
     go run main.go -telegram_bot_token=telegram-bot-token -deepseek_token=deepseek-auth-token
    ```
 Use docker
