@@ -100,7 +100,8 @@ func handleUpdate(messageChan chan *param.MsgInfo, update tgbotapi.Update, bot *
 				if sleepUtilNoLimit(msgId, err) {
 					sendInfo, err = bot.Send(tgMsgInfo)
 				} else if strings.Contains(err.Error(), "can't parse entities") {
-					parseMode = ""
+					tgMsgInfo.ParseMode = ""
+					sendInfo, err = bot.Send(tgMsgInfo)
 				} else {
 					_, err = bot.Send(tgMsgInfo)
 				}
@@ -126,7 +127,8 @@ func handleUpdate(messageChan chan *param.MsgInfo, update tgbotapi.Update, bot *
 				if sleepUtilNoLimit(msgId, err) {
 					_, err = bot.Send(updateMsg)
 				} else if strings.Contains(err.Error(), "can't parse entities") {
-					parseMode = ""
+					updateMsg.ParseMode = ""
+					_, err = bot.Send(updateMsg)
 				} else {
 					_, err = bot.Send(updateMsg)
 				}
