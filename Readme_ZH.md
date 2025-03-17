@@ -35,8 +35,6 @@
 ## 🚀 运行
 本地运行机器人：
    ```sh
-   go run main.go
-   或
    go run main.go -telegram_bot_token=telegram-bot-token -deepseek_token=deepseek-auth-token
    ```
 使用 Docker 运行：
@@ -48,14 +46,16 @@
 ## ⚙️ 配置
 可以通过环境变量配置机器人：
 
-| 变量名称                  | 描述                                                         |
-|---------------------------|------------------------------------------------------------|
-| TELEGRAM_BOT_TOKEN (必填) | Telegram 机器人令牌                                          |
-| DEEPSEEK_TOKEN (必填)     | DeepSeek API 密钥                                           |
-| CUSTOM_URL                | 自定义 DeepSeek 地址                                        |
-| DEEPSEEK_TYPE             | deepseek/其他（deepseek-r1-250120，doubao-1.5-pro-32k-250115，...） |
-| VOLC_AK                   | Volcengine 图片模型 AK                                      |
-| VOLC_SK                   | Volcengine 图片模型 SK                                      |
+| 变量名称                  | 描述                                                                                                            |
+|---------------------------|---------------------------------------------------------------------------------------------------------------|
+| TELEGRAM_BOT_TOKEN (必填) | Telegram 机器人令牌                                                                                                |
+| DEEPSEEK_TOKEN (必填)     | DeepSeek API 密钥                                                                                               |
+| CUSTOM_URL                | 自定义 DeepSeek 地址                                                                                               |
+| DEEPSEEK_TYPE             | deepseek/其他（deepseek-r1-250120，doubao-1.5-pro-32k-250115，...）                                                 |
+| VOLC_AK                   | Volcengine 图片模型 AK                                                                                            |
+| VOLC_SK                   | Volcengine 图片模型 SK                                                                                            |
+| DB_TYPE                   | 数据库类型：sqlite3 / mysql                                                                                         |
+| DB_CONF	                  | 数据库配置：./data/telegram_bot.db / root:admin@tcp(127.0.0.1:3306)/dbname?charset=utf8mb4&parseTime=True&loc=Local |
 
 ### CUSTOM_URL
 如果你使用的是自建的 DeepSeek，可以设置 CUSTOM_URL 来将请求路由到你的自建 DeepSeek。
@@ -63,6 +63,14 @@
 ### DEEPSEEK_TYPE
 - **deepseek**：直接使用 DeepSeek 服务（但可能不太稳定）。
 - **其他类型**：详见 [文档](https://www.volcengine.com/docs/82379/1463946)。
+
+### DB_TYPE
+支持 sqlite3 或 mysql
+
+### DB_CONF
+如果 DB_TYPE 是 sqlite3, 需要定义一个本地文件，如： `/data/telegram_bot.db`     
+如果 DB_TYPE 是 mysql, 需要一个mysql配置链接：如 `root:admin@tcp(127.0.0.1:3306)/dbname?charset=utf8mb4&parseTime=True&loc=Local`, 需要提前把数据库创建，表会自动创建.
+
 
 ## 📜 机器人命令
 
@@ -85,6 +93,11 @@
 ### /photo
 使用 Volcengine 图片模型生成图片，需要配置 **VOLC_AK** 和 **VOLC_SK**。详见 [文档](https://www.volcengine.com/docs/6444/1340578)。      
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/c8072d7d-74e6-4270-8496-1b4e7532134b" />
+
+### /chat
+允许通过 /chat 在群里发送信息, 无需给机器人设置管理员.
+<img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/00a0faf3-6037-4d84-9a33-9aa6c320e44d" />
+
 
 ### /help
 显示帮助信息。      
