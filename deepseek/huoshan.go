@@ -119,7 +119,7 @@ func getContentFromHS(prompt string, update tgbotapi.Update, messageChan chan *p
 			if utils.Utf16len(msgInfoContent.Content) > OneMsgLen {
 				messageChan <- msgInfoContent
 				msgInfoContent = &param.MsgInfo{
-					SendLen:     FirstSendLen,
+					SendLen:     NonFirstSendLen,
 					FullContent: msgInfoContent.FullContent,
 				}
 			}
