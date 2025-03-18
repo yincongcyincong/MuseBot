@@ -86,13 +86,23 @@ func handleUpdate(messageChan chan *param.MsgInfo, update tgbotapi.Update, bot *
 	chatId, msgId, username := utils.GetChatIdAndMsgIdAndUserID(update)
 	parseMode := tgbotapi.ModeMarkdown
 
+	tgMsgInfo := tgbotapi.NewMessage(chatId, "🤔 thinking...")
+	tgMsgInfo.ReplyToMessageID = msgId
+	firstSendInfo, err := bot.Send(tgMsgInfo)
+	if err != nil {
+		log.Printf("Sending first message fail: %v\n", err.Error())
+	}
+
 	for msg = range messageChan {
 		if len(msg.Content) == 0 {
 			msg.Content = "get nothing from deepseek!"
 		}
+		if firstSendInfo.MessageID != 0 {
+			msg.MsgId = firstSendInfo.MessageID
+		}
 
-		if msg.MsgId == 0 {
-			tgMsgInfo := tgbotapi.NewMessage(chatId, msg.Content)
+		if msg.MsgId == 0 && firstSendInfo.MessageID == 0 {
+			tgMsgInfo = tgbotapi.NewMessage(chatId, msg.Content)
 			tgMsgInfo.ReplyToMessageID = msgId
 			tgMsgInfo.ParseMode = parseMode
 			sendInfo, err := bot.Send(tgMsgInfo)
@@ -120,7 +130,7 @@ func handleUpdate(messageChan chan *param.MsgInfo, update tgbotapi.Update, bot *
 				Text:      msg.Content,
 				ParseMode: parseMode,
 			}
-			_, err := bot.Send(updateMsg)
+			_, err = bot.Send(updateMsg)
 
 			if err != nil {
 				// try again
@@ -136,6 +146,7 @@ func handleUpdate(messageChan chan *param.MsgInfo, update tgbotapi.Update, bot *
 					log.Printf("Error editing message:%d %s\n", msgId, err)
 				}
 			}
+			firstSendInfo.MessageID = 0
 		}
 
 	}
