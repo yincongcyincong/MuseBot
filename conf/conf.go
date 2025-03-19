@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
+	"strings"
 )
 
 var (
@@ -16,6 +18,8 @@ var (
 	VolcSK        *string
 	DBType        *string
 	DBConf        *string
+	
+	AllowedTelegramUserIds = make(map[int64]bool)
 )
 
 func InitConf() {
@@ -27,6 +31,7 @@ func InitConf() {
 	VolcSK = flag.String("volc_sk", "", "volc sk")
 	DBType = flag.String("db_type", "sqlite3", "db type")
 	DBConf = flag.String("db_conf", "./data/telegram_bot.db", "db conf")
+	allowedUserIds := flag.String("allowed_telegram_user_ids", "", "db conf")
 	flag.Parse()
 
 	if os.Getenv("TELEGRAM_BOT_TOKEN") != "" {
@@ -61,6 +66,18 @@ func InitConf() {
 		*DBConf = os.Getenv("DB_CONF")
 	}
 
+	if os.Getenv("ALLOWED_TELEGRAM_USER_IDS") != "" {
+		*allowedUserIds = os.Getenv("ALLOWED_TELEGRAM_USER_IDS")
+	}
+
+	for _, userIdStr := range strings.Split(*allowedUserIds, ",") {
+		userId, err := strconv.Atoi(userIdStr)
+		if err != nil {
+			log.Printf("AllowedTelegramUserIds parse error:%s\n", userIdStr)
+		}
+		AllowedTelegramUserIds[int64(userId)] = true
+	}
+
 	fmt.Println("TelegramBotToken:", *BotToken)
 	fmt.Println("DeepseekToken:", *DeepseekToken)
 	fmt.Println("CustomUrl:", *CustomUrl)
@@ -69,6 +86,7 @@ func InitConf() {
 	fmt.Println("VOLC_SK:", *VolcSK)
 	fmt.Println("DBType:", *DBType)
 	fmt.Println("DBConf:", *DBConf)
+	fmt.Println("AllowedTelegramUserIds:", allowedUserIds)
 	if *BotToken == "" || *DeepseekToken == "" {
 		log.Fatalf("Bot token and deepseek token are required")
 	}
