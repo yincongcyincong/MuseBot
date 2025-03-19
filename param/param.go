@@ -5,4 +5,5 @@ type MsgInfo struct {
 	Content     string
 	SendLen     int
 	FullContent string
+	Token       int
 }

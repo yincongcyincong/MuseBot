@@ -87,3 +87,10 @@ func UpdateUserUpdateTime(userId int64, updateTime int64) error {
 	_, err := DB.Exec(updateSQL, updateTime, userId)
 	return err
 }
+
+// UpdateUserToken update user token
+func UpdateUserToken(userId int64, token int) error {
+	updateSQL := `UPDATE users SET token = token + ? WHERE user_id = ?`
+	_, err := DB.Exec(updateSQL, token, userId)
+	return err
+}

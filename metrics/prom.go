@@ -19,7 +19,7 @@ var (
 			Help: "Total number of records.",
 		},
 	)
-
+	
 	ConversationDuration = prometheus.NewHistogram(
 		prometheus.HistogramOpts{
 			Name:    "app_conversation_duration_seconds",

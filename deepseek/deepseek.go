@@ -109,6 +109,7 @@ func callDeepSeekAPI(prompt string, update tgbotapi.Update, messageChan chan *pa
 				msgInfoContent = &param.MsgInfo{
 					SendLen:     NonFirstSendLen,
 					FullContent: msgInfoContent.FullContent,
+					Token:       msgInfoContent.Token,
 				}
 			}
 
@@ -118,6 +119,10 @@ func callDeepSeekAPI(prompt string, update tgbotapi.Update, messageChan chan *pa
 				messageChan <- msgInfoContent
 				msgInfoContent.SendLen += NonFirstSendLen
 			}
+		}
+
+		if response.Usage != nil {
+			msgInfoContent.Token += response.Usage.TotalTokens
 		}
 	}
 
