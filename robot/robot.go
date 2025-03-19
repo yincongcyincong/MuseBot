@@ -36,6 +36,11 @@ func StartListenRobot() {
 
 		updates := bot.GetUpdatesChan(u)
 		for update := range updates {
+			if !checkUserAllow(update) {
+				log.Printf("User %s not allow to use this bot\n", update.Message.From.UserName)
+				continue
+			}
+
 			if handleCommandAndCallback(update, bot) {
 				continue
 			}
@@ -503,4 +508,14 @@ func sendImg(update tgbotapi.Update) {
 	}
 
 	return
+}
+
+func checkUserAllow(update tgbotapi.Update) bool {
+	if len(conf.AllowedTelegramUserIds) == 0 {
+		return true
+	}
+
+	_, _, userId := utils.GetChatIdAndMsgIdAndUserID(update)
+	_, ok := conf.AllowedTelegramUserIds[userId]
+	return ok
 }
