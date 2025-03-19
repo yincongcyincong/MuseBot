@@ -90,6 +90,9 @@ func getContentFromHS(prompt string, update tgbotapi.Update, messageChan chan *p
 	req := model.ChatCompletionRequest{
 		Model:    *conf.DeepseekType,
 		Messages: messages,
+		StreamOptions: &model.StreamOptions{
+			IncludeUsage: true,
+		},
 	}
 
 	fmt.Printf("[%d]: %s\n", userId, prompt)
@@ -121,6 +124,7 @@ func getContentFromHS(prompt string, update tgbotapi.Update, messageChan chan *p
 				msgInfoContent = &param.MsgInfo{
 					SendLen:     NonFirstSendLen,
 					FullContent: msgInfoContent.FullContent,
+					Token:       msgInfoContent.Token,
 				}
 			}
 
@@ -131,6 +135,11 @@ func getContentFromHS(prompt string, update tgbotapi.Update, messageChan chan *p
 				msgInfoContent.SendLen += NonFirstSendLen
 			}
 		}
+
+		if response.Usage != nil {
+			msgInfoContent.Token += response.Usage.TotalTokens
+		}
+
 	}
 
 	messageChan <- msgInfoContent

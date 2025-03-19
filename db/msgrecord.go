@@ -19,6 +19,7 @@ type MsgRecordInfo struct {
 type AQ struct {
 	Question string
 	Answer   string
+	Token    int
 }
 
 type Record struct {
@@ -26,6 +27,7 @@ type Record struct {
 	UserId   int64
 	Question string
 	Answer   string
+	Token    int
 }
 
 var MsgRecord = sync.Map{}
@@ -53,6 +55,7 @@ func InsertMsgRecord(userId int64, aq *AQ, insertDB bool) {
 			UserId:   userId,
 			Question: aq.Question,
 			Answer:   aq.Answer,
+			Token:    aq.Token,
 		})
 	}
 }
@@ -105,19 +108,7 @@ func UpdateDBData() {
 }
 
 func UpdateUserInfo(userId int64, updateTime int64) {
-	user, err := GetUserByID(userId)
-	if err != nil {
-		log.Printf("Error get user by name: %v \n", err)
-	}
-
-	if user == nil {
-		_, err = InsertUser(userId, deepseek.DeepSeekChat)
-		if err != nil {
-			log.Printf("Error insert user by name: %v \n", err)
-		}
-	}
-
-	err = UpdateUserUpdateTime(userId, updateTime)
+	err := UpdateUserUpdateTime(userId, updateTime)
 	if err != nil {
 		log.Printf("StarCheckUserLen UpdateUserUpdateTime err:%v\n", err)
 	}
@@ -174,8 +165,8 @@ func getRecordsByUserId(userId int64) ([]Record, error) {
 
 // insertRecord insert record
 func insertRecord(record *Record) {
-	query := `INSERT INTO records (user_id, question, answer) VALUES (?, ?, ?)`
-	_, err := DB.Exec(query, record.UserId, record.Question, record.Answer)
+	query := `INSERT INTO records (user_id, question, answer, token) VALUES (?, ?, ?, ?)`
+	_, err := DB.Exec(query, record.UserId, record.Question, record.Answer, record.Token)
 	metrics.TotalRecords.Inc()
 	if err != nil {
 		log.Printf("insertRecord err:%v\n", err)
@@ -183,14 +174,19 @@ func insertRecord(record *Record) {
 
 	user, err := GetUserByID(record.UserId)
 	if err != nil {
-		log.Printf("Error get user by name: %v \n", err)
+		log.Printf("Error get user by userid: %v \n", err)
 	}
 
 	if user == nil {
 		_, err = InsertUser(record.UserId, deepseek.DeepSeekChat)
 		if err != nil {
-			log.Printf("Error insert user by name: %v \n", err)
+			log.Printf("Error insert user by userid: %v \n", err)
 		}
+	}
+
+	err = UpdateUserToken(record.UserId, record.Token)
+	if err != nil {
+		log.Printf("Error update token by user: %v \n", err)
 	}
 }
 

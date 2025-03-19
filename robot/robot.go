@@ -31,7 +31,7 @@ func StartListenRobot() {
 			log.Fatalf("Init bot fail: %v\n", err.Error())
 		}
 
-		bot.Debug = true
+		//bot.Debug = true
 
 		fmt.Printf("Authorized on account %s\n", bot.Self.UserName)
 
@@ -93,7 +93,7 @@ func requestDeepseekAndResp(update tgbotapi.Update, bot *tgbotapi.BotAPI, conten
 func handleUpdate(messageChan chan *param.MsgInfo, update tgbotapi.Update, bot *tgbotapi.BotAPI, content string) {
 	var msg *param.MsgInfo
 
-	chatId, msgId, username := utils.GetChatIdAndMsgIdAndUserID(update)
+	chatId, msgId, userId := utils.GetChatIdAndMsgIdAndUserID(update)
 	parseMode := tgbotapi.ModeMarkdown
 
 	tgMsgInfo := tgbotapi.NewMessage(chatId, "🤔 thinking...")
@@ -163,15 +163,17 @@ func handleUpdate(messageChan chan *param.MsgInfo, update tgbotapi.Update, bot *
 
 	// store question and answer into record.
 	if msg != nil && msg.FullContent != "" {
-		db.InsertMsgRecord(username, &db.AQ{
+		db.InsertMsgRecord(userId, &db.AQ{
 			Question: content,
 			Answer:   msg.FullContent,
+			Token:    msg.Token,
 		}, true)
 	} else {
 		if !utils.CheckMsgIsCallback(update) {
-			db.InsertMsgRecord(username, &db.AQ{
+			db.InsertMsgRecord(userId, &db.AQ{
 				Question: content,
 				Answer:   "",
+				Token:    0,
 			}, true)
 		}
 	}

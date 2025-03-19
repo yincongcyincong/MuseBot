@@ -17,13 +17,15 @@ const (
 				id INTEGER PRIMARY KEY AUTOINCREMENT,
 				user_id int(11) NOT NULL DEFAULT '0',
 				mode VARCHAR(30) NOT NULL DEFAULT '',
-				updatetime int(10) NOT NULL DEFAULT '0'
+				updatetime int(10) NOT NULL DEFAULT '0',
+				token int(10) NOT NULL DEFAULT '0'
 			);
 			CREATE TABLE records (
 				id INTEGER PRIMARY KEY AUTOINCREMENT,
 				user_id int(11) NOT NULL DEFAULT '0',
 				question TEXT NOT NULL,
-				answer TEXT NOT NULL
+				answer TEXT NOT NULL,
+				token int(10) NOT NULL DEFAULT 0
 			);
 			CREATE INDEX idx_records_user_id ON users(user_id);`
 	mysqlCreateUsersSQL = `
@@ -31,7 +33,8 @@ CREATE TABLE IF NOT EXISTS users (
     id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     user_id BIGINT(20) NOT NULL DEFAULT 0,
     mode VARCHAR(30) NOT NULL DEFAULT '',
-    updatetime INT(10) NOT NULL DEFAULT 0
+    updatetime INT(10) NOT NULL DEFAULT 0,
+    token int(10) NOT NULL DEFAULT 0
 );`
 
 	mysqlCreateRecordsSQL = `
@@ -39,7 +42,8 @@ CREATE TABLE IF NOT EXISTS records (
     id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     user_id BIGINT(20) NOT NULL DEFAULT 0,
     question TEXT NOT NULL,
-    answer TEXT NOT NULL
+    answer TEXT NOT NULL,
+    token int(10) NOT NULL DEFAULT 0
 );`
 
 	mysqlCreateIndexSQL = `CREATE INDEX idx_records_user_id ON records(user_id);`
