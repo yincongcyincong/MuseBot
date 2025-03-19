@@ -1,2 +1,6 @@
+### v0.0.11
+1. add proxy for telegram and deepseek.
+
 ### v0.0.10
 1. add thinking mode
+2. add ALLOWED_TELEGRAM_USER_IDS param
