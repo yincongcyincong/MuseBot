@@ -55,8 +55,8 @@ You can configure the bot via environment variables:
 | DEEPSEEK_TOKEN	  (required)    | DeepSeek Api Key                                                                                        |
 | CUSTOM_URL	                    | custom deepseek url                                                                                     |
 | DEEPSEEK_TYPE	                 | deepseek/others(deepseek-r1-250120，doubao-1.5-pro-32k-250115，...)                                       |
-| VOLC_AK	                       | volcengine photo model ak                                                                               |
-| VOLC_SK	                       | volcengine photo model sk                                                                               |
+| VOLC_AK	                       | volcengine photo model ak     [doc](https://www.volcengine.com/docs/6444/1340578)                       |
+| VOLC_SK	                       | volcengine photo model sk      [doc](https://www.volcengine.com/docs/6444/1340578)                     |
 | DB_TYPE                        | sqlite3 / mysql                                                                                         |
 | DB_CONF	                       | ./data/telegram_bot.db / root:admin@tcp(127.0.0.1:3306)/dbname?charset=utf8mb4&parseTime=True&loc=Local |
 | ALLOWED_TELEGRAM_USER_IDS	  | telegram user id, only these users can use bot, using "," splite. empty means all use can use it.       |

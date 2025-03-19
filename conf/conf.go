@@ -18,7 +18,7 @@ var (
 	VolcSK        *string
 	DBType        *string
 	DBConf        *string
-	
+
 	AllowedTelegramUserIds = make(map[int64]bool)
 )
 
@@ -86,7 +86,7 @@ func InitConf() {
 	fmt.Println("VOLC_SK:", *VolcSK)
 	fmt.Println("DBType:", *DBType)
 	fmt.Println("DBConf:", *DBConf)
-	fmt.Println("AllowedTelegramUserIds:", allowedUserIds)
+	fmt.Println("AllowedTelegramUserIds:", *allowedUserIds)
 	if *BotToken == "" || *DeepseekToken == "" {
 		log.Fatalf("Bot token and deepseek token are required")
 	}

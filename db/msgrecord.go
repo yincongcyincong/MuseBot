@@ -5,12 +5,10 @@ import (
 	"github.com/cohesion-org/deepseek-go"
 	"github.com/yincongcyincong/telegram-deepseek-bot/metrics"
 	"log"
-	"sort"
 	"sync"
 	"time"
 )
 
-const MaxUserLength = 1000
 const MaxQAPair = 10
 
 type MsgRecordInfo struct {
@@ -77,7 +75,6 @@ func DeleteMsgRecord(userId int64) {
 
 func StarCheckUserLen() {
 	InsertRecord()
-
 	go func() {
 		defer func() {
 			if err := recover(); err != nil {
@@ -105,30 +102,6 @@ func UpdateDBData() {
 		totalNum++
 		return true
 	})
-
-	log.Printf("StarCheckUserLen totalNum:%d\n", totalNum)
-	if totalNum < MaxUserLength {
-		return
-	}
-
-	log.Println("start cleaning...")
-	times := make([]int64, 0)
-	for t := range timeUserPair {
-		times = append(times, t)
-	}
-	sort.Slice(times, func(i, j int) bool {
-		return times[i] > times[j]
-	})
-
-	for _, t := range times {
-		for _, user := range timeUserPair[t] {
-			MsgRecord.Delete(user)
-			totalNum--
-			if totalNum <= MaxUserLength {
-				continue
-			}
-		}
-	}
 }
 
 func UpdateUserInfo(userId int64, updateTime int64) {
@@ -206,6 +179,18 @@ func insertRecord(record *Record) {
 	metrics.TotalRecords.Inc()
 	if err != nil {
 		log.Printf("insertRecord err:%v\n", err)
+	}
+
+	user, err := GetUserByID(record.UserId)
+	if err != nil {
+		log.Printf("Error get user by name: %v \n", err)
+	}
+
+	if user == nil {
+		_, err = InsertUser(record.UserId, deepseek.DeepSeekChat)
+		if err != nil {
+			log.Printf("Error insert user by name: %v \n", err)
+		}
 	}
 }
 
