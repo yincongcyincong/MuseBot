@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -49,7 +51,28 @@ func callDeepSeekAPI(prompt string, update tgbotapi.Update, messageChan chan *pa
 		model = userInfo.Mode
 	}
 
-	client := deepseek.NewClient(*conf.DeepseekToken, *conf.CustomUrl)
+	// set deepseek proxy
+	httpClient := &http.Client{
+		Timeout: 30 * time.Minute,
+	}
+
+	if *conf.DeepseekProxy != "" {
+		proxy, err := url.Parse(*conf.DeepseekProxy)
+		if err != nil {
+			fmt.Println("parse deepseek proxy error:", err)
+		} else {
+			httpClient.Transport = &http.Transport{
+				Proxy: http.ProxyURL(proxy),
+			}
+		}
+	}
+
+	client, err := deepseek.NewClientWithOptions(*conf.DeepseekToken,
+		deepseek.WithBaseURL(*conf.CustomUrl), deepseek.WithHTTPClient(httpClient))
+	if err != nil {
+		log.Printf("Error creating deepseek client: %s\n", err)
+		return err
+	}
 	request := &deepseek.StreamChatCompletionRequest{
 		Model:  model,
 		Stream: true,
