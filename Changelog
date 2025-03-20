@@ -1,5 +1,7 @@
 ### 0.0.12
 u18n
+log
+metric
 
 ### v0.0.11
 1. add proxy for telegram and deepseek.
