@@ -141,7 +141,7 @@ func InsertRecord() {
 // getRecordsByUserId get latest 10 records by user_id
 func getRecordsByUserId(userId int64) ([]Record, error) {
 	// construct SQL statements
-	query := fmt.Sprintf("SELECT id, user_id, question, answer FROM records WHERE user_id =  ? limit 10")
+	query := fmt.Sprintf("SELECT id, user_id, question, answer FROM records WHERE user_id =  ? and is_deleted = 0 limit 10")
 
 	// execute query
 	rows, err := DB.Query(query, userId)
@@ -165,8 +165,8 @@ func getRecordsByUserId(userId int64) ([]Record, error) {
 
 // insertRecord insert record
 func insertRecord(record *Record) {
-	query := `INSERT INTO records (user_id, question, answer, token) VALUES (?, ?, ?, ?)`
-	_, err := DB.Exec(query, record.UserId, record.Question, record.Answer, record.Token)
+	query := `INSERT INTO records (user_id, question, answer, token, create_time) VALUES (?, ?, ?, ?, ?)`
+	_, err := DB.Exec(query, record.UserId, record.Question, record.Answer, record.Token, time.Now().Unix())
 	metrics.TotalRecords.Inc()
 	if err != nil {
 		log.Printf("insertRecord err:%v\n", err)
@@ -192,7 +192,7 @@ func insertRecord(record *Record) {
 
 // DeleteRecord delete record
 func DeleteRecord(userId int64) error {
-	query := `DELETE FROM records WHERE user_id = ?`
+	query := `UPDATE records set is_deleted = 1 WHERE user_id = ?`
 	_, err := DB.Exec(query, userId)
 	return err
 }
