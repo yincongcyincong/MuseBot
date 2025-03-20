@@ -247,6 +247,8 @@ func handleCommand(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 		sendModeConfigurationOptions(bot, update.Message.Chat.ID)
 	case "balance":
 		showBalanceInfo(update, bot)
+	case "state":
+		showStateInfo(update, bot)
 	case "clear":
 		clearAllRecord(update, bot)
 	case "retry":
@@ -359,6 +361,57 @@ func showBalanceInfo(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	_, err := bot.Send(msg)
 	if err != nil {
 		log.Printf("send balance message fail: %v\n", err)
+	}
+
+}
+
+// showStateInfo show user's usage of token
+func showStateInfo(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
+	chatId, _, userId := utils.GetChatIdAndMsgIdAndUserID(update)
+	userInfo, err := db.GetUserByID(userId)
+	if err != nil {
+		log.Printf("get user info fail: %v\n", err)
+		return
+	}
+
+	// get today token
+	now := time.Now()
+	startOfDay := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	endOfDay := time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 59, 999999999, now.Location())
+	todayTokey, err := db.GetTokenByUserIdAndTime(userId, startOfDay.Unix(), endOfDay.Unix())
+	if err != nil {
+		log.Printf("get today token fail: %v\n", err)
+	}
+
+	// get this week token
+	startOf7DaysAgo := now.AddDate(0, 0, -7).Truncate(24 * time.Hour)
+	weekToken, err := db.GetTokenByUserIdAndTime(userId, startOf7DaysAgo.Unix(), endOfDay.Unix())
+	if err != nil {
+		log.Printf("get week token fail: %v\n", err)
+	}
+
+	// handle balance info msg
+	startOf30DaysAgo := now.AddDate(0, 0, -30).Truncate(24 * time.Hour)
+	monthToken, err := db.GetTokenByUserIdAndTime(userId, startOf30DaysAgo.Unix(), endOfDay.Unix())
+	if err != nil {
+		log.Printf("get week token fail: %v\n", err)
+	}
+
+	template := `🟣 Your Total Token Usage: %d
+
+🟣 Your Today Token Usage: %d
+
+🟣 Your This Week Token Usage: %d
+
+🟣 Your This Month Token Usage: %d
+
+`
+	msgContent := fmt.Sprintf(template, userInfo.Token, todayTokey, weekToken, monthToken)
+	msg := tgbotapi.NewMessage(chatId, msgContent)
+	msg.ParseMode = tgbotapi.ModeMarkdown
+	_, err = bot.Send(msg)
+	if err != nil {
+		log.Printf("send state message fail: %v\n", err)
 	}
 
 }
