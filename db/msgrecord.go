@@ -1,6 +1,7 @@
 package db
 
 import (
+	"database/sql"
 	"fmt"
 	"github.com/cohesion-org/deepseek-go"
 	"github.com/yincongcyincong/telegram-deepseek-bot/metrics"
@@ -195,4 +196,21 @@ func DeleteRecord(userId int64) error {
 	query := `UPDATE records set is_deleted = 1 WHERE user_id = ?`
 	_, err := DB.Exec(query, userId)
 	return err
+}
+
+func GetTokenByUserIdAndTime(userId int64, start, end int64) (int, error) {
+	querySQL := `SELECT sum(token) FROM records WHERE user_id = ? and create_time >= ? and create_time <= ?`
+	row := DB.QueryRow(querySQL, userId, start, end)
+
+	// scan row get result
+	var user User
+	err := row.Scan(&user.Token)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			// 如果没有找到数据，返回 nil
+			return 0, nil
+		}
+		return 0, err
+	}
+	return user.Token, nil
 }
