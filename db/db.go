@@ -25,6 +25,7 @@ const (
 				user_id int(11) NOT NULL DEFAULT '0',
 				question TEXT NOT NULL,
 				answer TEXT NOT NULL,
+				create_time int(10) NOT NULL DEFAULT '0',
 				token int(10) NOT NULL DEFAULT 0
 			);
 			CREATE INDEX idx_records_user_id ON users(user_id);`
@@ -43,6 +44,7 @@ CREATE TABLE IF NOT EXISTS records (
     user_id BIGINT(20) NOT NULL DEFAULT 0,
     question TEXT NOT NULL,
     answer TEXT NOT NULL,
+    create_time int(10) NOT NULL DEFAULT '0',
     token int(10) NOT NULL DEFAULT 0
 );`
 
