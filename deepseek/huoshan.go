@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -82,9 +84,26 @@ func getContentFromHS(prompt string, update tgbotapi.Update, messageChan chan *p
 		},
 	})
 
+	// set deepseek proxy
+	httpClient := &http.Client{
+		Timeout: 30 * time.Minute,
+	}
+
+	if *conf.DeepseekProxy != "" {
+		proxy, err := url.Parse(*conf.DeepseekProxy)
+		if err != nil {
+			fmt.Println("parse deepseek proxy error:", err)
+		} else {
+			httpClient.Transport = &http.Transport{
+				Proxy: http.ProxyURL(proxy),
+			}
+		}
+	}
+
 	client := arkruntime.NewClientWithApiKey(
 		*conf.DeepseekToken,
 		arkruntime.WithTimeout(30*time.Minute),
+		arkruntime.WithHTTPClient(httpClient),
 	)
 	ctx := context.Background()
 	req := model.ChatCompletionRequest{
@@ -138,6 +157,7 @@ func getContentFromHS(prompt string, update tgbotapi.Update, messageChan chan *p
 
 		if response.Usage != nil {
 			msgInfoContent.Token += response.Usage.TotalTokens
+			metrics.TotalTokens.Add(float64(msgInfoContent.Token))
 		}
 
 	}

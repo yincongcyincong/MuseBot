@@ -19,7 +19,14 @@ var (
 			Help: "Total number of records.",
 		},
 	)
-	
+
+	TotalTokens = prometheus.NewCounter(
+		prometheus.CounterOpts{
+			Name: "app_total_tokens",
+			Help: "Total number of tokens.",
+		},
+	)
+
 	ConversationDuration = prometheus.NewHistogram(
 		prometheus.HistogramOpts{
 			Name:    "app_conversation_duration_seconds",
@@ -41,6 +48,7 @@ var (
 func RegisterMetrics() {
 	prometheus.MustRegister(TotalUsers)
 	prometheus.MustRegister(TotalRecords)
+	prometheus.MustRegister(TotalTokens)
 	prometheus.MustRegister(ConversationDuration)
 	prometheus.MustRegister(ImageDuration)
 }

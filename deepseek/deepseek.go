@@ -123,6 +123,7 @@ func callDeepSeekAPI(prompt string, update tgbotapi.Update, messageChan chan *pa
 
 		if response.Usage != nil {
 			msgInfoContent.Token += response.Usage.TotalTokens
+			metrics.TotalTokens.Add(float64(msgInfoContent.Token))
 		}
 	}
 

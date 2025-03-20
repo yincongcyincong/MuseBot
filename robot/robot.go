@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -26,7 +27,25 @@ const (
 // StartListenRobot start listen robot callback
 func StartListenRobot() {
 	for {
-		bot, err := tgbotapi.NewBotAPI(*conf.BotToken)
+
+		// 配置自定义 HTTP Client 并设置代理
+		client := &http.Client{
+			Timeout: 30 * time.Second,
+		}
+
+		// parse proxy URL
+		if *conf.TelegramProxy != "" {
+			proxy, err := url.Parse(*conf.TelegramProxy)
+			if err != nil {
+				log.Printf("Failed to parse proxy URL: %v\n", err)
+			} else {
+				client.Transport = &http.Transport{
+					Proxy: http.ProxyURL(proxy),
+				}
+			}
+		}
+
+		bot, err := tgbotapi.NewBotAPIWithClient(*conf.BotToken, tgbotapi.APIEndpoint, client)
 		if err != nil {
 			log.Fatalf("Init bot fail: %v\n", err.Error())
 		}

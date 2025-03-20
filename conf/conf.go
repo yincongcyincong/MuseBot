@@ -18,6 +18,8 @@ var (
 	VolcSK        *string
 	DBType        *string
 	DBConf        *string
+	DeepseekProxy *string
+	TelegramProxy *string
 
 	AllowedTelegramUserIds = make(map[int64]bool)
 )
@@ -31,6 +33,9 @@ func InitConf() {
 	VolcSK = flag.String("volc_sk", "", "volc sk")
 	DBType = flag.String("db_type", "sqlite3", "db type")
 	DBConf = flag.String("db_conf", "./data/telegram_bot.db", "db conf")
+	DeepseekProxy = flag.String("deepseek_proxy", "", "db conf")
+	TelegramProxy = flag.String("telegram_proxy", "", "db conf")
+
 	allowedUserIds := flag.String("allowed_telegram_user_ids", "", "db conf")
 	flag.Parse()
 
@@ -70,6 +75,14 @@ func InitConf() {
 		*allowedUserIds = os.Getenv("ALLOWED_TELEGRAM_USER_IDS")
 	}
 
+	if os.Getenv("DEEPSEEK_PROXY") != "" {
+		*DeepseekProxy = os.Getenv("DEEPSEEK_PROXY")
+	}
+
+	if os.Getenv("TELEGRAM_PROXY") != "" {
+		*TelegramProxy = os.Getenv("TELEGRAM_PROXY")
+	}
+
 	for _, userIdStr := range strings.Split(*allowedUserIds, ",") {
 		userId, err := strconv.Atoi(userIdStr)
 		if err != nil {
@@ -87,6 +100,8 @@ func InitConf() {
 	fmt.Println("DBType:", *DBType)
 	fmt.Println("DBConf:", *DBConf)
 	fmt.Println("AllowedTelegramUserIds:", *allowedUserIds)
+	fmt.Println("DeepseekProxy:", *DeepseekProxy)
+	fmt.Println("TelegramProxy:", *TelegramProxy)
 	if *BotToken == "" || *DeepseekToken == "" {
 		log.Fatalf("Bot token and deepseek token are required")
 	}
