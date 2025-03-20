@@ -29,9 +29,7 @@ func StartListenRobot() {
 	for {
 
 		// 配置自定义 HTTP Client 并设置代理
-		client := &http.Client{
-			Timeout: 30 * time.Second,
-		}
+		client := &http.Client{}
 
 		// parse proxy URL
 		if *conf.TelegramProxy != "" {
