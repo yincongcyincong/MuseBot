@@ -117,8 +117,8 @@ necessary.[doc](https://www.volcengine.com/docs/6444/1340578)
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/c8072d7d-74e6-4270-8496-1b4e7532134b" />
 
 ### /image
-`DEEPSEEK_TOKEN` must be volcengine Api key. [doc](https://www.volcengine.com/docs/82379/1399008#b00dee71)
-![image](https://github.com/user-attachments/assets/884eeb48-76c4-4329-9446-5cd3822a5d16)
+`DEEPSEEK_TOKEN` must be volcengine Api key. [doc](https://www.volcengine.com/docs/82379/1399008#b00dee71)      
+<img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/884eeb48-76c4-4329-9446-5cd3822a5d16" />
 
 ### /chat
 allows the bot to chat through /chat command in groups, without the bot being set as admin of the group.
