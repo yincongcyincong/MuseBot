@@ -59,9 +59,9 @@ func getContentFromHS(prompt string, update tgbotapi.Update, messageChan chan *p
 
 	msgRecords := db.GetMsgRecord(userId)
 	if msgRecords != nil {
-		for _, record := range msgRecords.AQs {
+		for i, record := range msgRecords.AQs {
 			if record.Answer != "" && record.Question != "" {
-				logger.Info("context content", "question:", record.Question, "answer:", record.Answer)
+				logger.Info("context content", "dialog", i, "question:", record.Question, "answer:", record.Answer)
 				messages = append(messages, &model.ChatCompletionMessage{
 					Role: constants.ChatMessageRoleAssistant,
 					Content: &model.ChatCompletionMessageContent{
@@ -129,7 +129,7 @@ func getContentFromHS(prompt string, update tgbotapi.Update, messageChan chan *p
 	for {
 		response, err := stream.Recv()
 		if errors.Is(err, io.EOF) {
-			logger.Error("stream finished", "updateMsgID", updateMsgID)
+			logger.Info("stream finished", "updateMsgID", updateMsgID)
 			break
 		}
 		if err != nil {

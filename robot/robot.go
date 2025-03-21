@@ -60,9 +60,10 @@ func StartListenRobot() {
 
 		updates := bot.GetUpdatesChan(u)
 		for update := range updates {
-			if !checkUserAllow(update) {
+			if !checkUserAllow(update) && !checkGroupAllow(update) {
 				_, _, userId := utils.GetChatIdAndMsgIdAndUserID(update)
-				logger.Warn("user not allow to use this bot", "userID", userId)
+				chat := utils.GetChat(update)
+				logger.Warn("user not allow to use this bot", "userID", userId, "chat", chat)
 				continue
 			}
 
@@ -657,4 +658,22 @@ func checkUserAllow(update tgbotapi.Update) bool {
 	_, _, userId := utils.GetChatIdAndMsgIdAndUserID(update)
 	_, ok := conf.AllowedTelegramUserIds[userId]
 	return ok
+}
+
+func checkGroupAllow(update tgbotapi.Update) bool {
+	chat := utils.GetChat(update)
+	if chat == nil {
+		return false
+	}
+
+	if chat.IsGroup() || chat.IsSuperGroup() { // 判断是否是群组或超级群组
+		if len(conf.AllowedTelegramGroupIds) == 0 {
+			return true
+		}
+		if _, ok := conf.AllowedTelegramGroupIds[chat.ID]; ok {
+			return true
+		}
+	}
+
+	return false
 }

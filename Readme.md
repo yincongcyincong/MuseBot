@@ -61,7 +61,7 @@ You can configure the bot via environment variables:
 | Variable Name                  | 	Description                                                                                            | Default Value             |
 |--------------------------------|---------------------------------------------------------------------------------------------------------|---------------------------|
 | TELEGRAM_BOT_TOKEN (required)	 | Your Telegram bot token                                                                                 | -                         |
-| DEEPSEEK_TOKEN	  (required)    | DeepSeek Api Key / volcengine Api key[doc](https://www.volcengine.com/docs/82379/1399008#b00dee71)    | -                         |
+| DEEPSEEK_TOKEN	  (required)    | DeepSeek Api Key / volcengine Api key[doc](https://www.volcengine.com/docs/82379/1399008#b00dee71)      | -                         |
 | CUSTOM_URL	                    | custom deepseek url                                                                                     | https://api.deepseek.com/ |
 | DEEPSEEK_TYPE	                 | deepseek/others(deepseek-r1-250120，doubao-1.5-pro-32k-250115，...)                                       | deepseek                  |
 | VOLC_AK	                       | volcengine photo model ak     [doc](https://www.volcengine.com/docs/6444/1340578)                       | -                         |
@@ -69,8 +69,9 @@ You can configure the bot via environment variables:
 | DB_TYPE                        | sqlite3 / mysql                                                                                         | sqlite3                   |
 | DB_CONF	                       | ./data/telegram_bot.db / root:admin@tcp(127.0.0.1:3306)/dbname?charset=utf8mb4&parseTime=True&loc=Local | ./data/telegram_bot.db    |
 | ALLOWED_TELEGRAM_USER_IDS	     | telegram user id, only these users can use bot, using "," splite. empty means all use can use it.       | -                         |
-| DEEPSEEK_PROXY	                 | deepseek proxy                                                                                          | -                         |
-| TELEGRAM_PROXY	                 | telegram proxy                                                                                           | -                         |
+| ALLOWED_TELEGRAM_GROUP_IDS	    | telegram chat id, only these chat can use bot, using "," splite. empty means all group can use it.      | -                         |
+| DEEPSEEK_PROXY	                | deepseek proxy                                                                                          | -                         |
+| TELEGRAM_PROXY	                | telegram proxy                                                                                          | -                         |
 
 ### CUSTOM_URL
 
