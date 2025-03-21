@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
+
 	"net/http"
 	"net/url"
 	"strings"
@@ -16,6 +16,7 @@ import (
 	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
 	"github.com/yincongcyincong/telegram-deepseek-bot/db"
 	"github.com/yincongcyincong/telegram-deepseek-bot/deepseek"
+	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
 	"github.com/yincongcyincong/telegram-deepseek-bot/param"
 	"github.com/yincongcyincong/telegram-deepseek-bot/utils"
 )
@@ -35,7 +36,7 @@ func StartListenRobot() {
 		if *conf.TelegramProxy != "" {
 			proxy, err := url.Parse(*conf.TelegramProxy)
 			if err != nil {
-				log.Printf("Failed to parse proxy URL: %v\n", err)
+				logger.Warn("Failed to parse proxy URL", err)
 			} else {
 				client.Transport = &http.Transport{
 					Proxy: http.ProxyURL(proxy),
@@ -45,12 +46,14 @@ func StartListenRobot() {
 
 		bot, err := tgbotapi.NewBotAPIWithClient(*conf.BotToken, tgbotapi.APIEndpoint, client)
 		if err != nil {
-			log.Fatalf("Init bot fail: %v\n", err.Error())
+			logger.Fatal("Init bot fail", "err", err)
 		}
 
-		//bot.Debug = true
+		if *conf.LogLevel == "debug" {
+			bot.Debug = true
+		}
 
-		fmt.Printf("Authorized on account %s\n", bot.Self.UserName)
+		logger.Info("telegramBot Info", "username", bot.Self.UserName)
 
 		u := tgbotapi.NewUpdate(0)
 		u.Timeout = 60
@@ -59,7 +62,7 @@ func StartListenRobot() {
 		for update := range updates {
 			if !checkUserAllow(update) {
 				_, _, userId := utils.GetChatIdAndMsgIdAndUserID(update)
-				log.Printf("User %d not allow to use this bot\n", userId)
+				logger.Warn("user not allow to use this bot", "userID", userId)
 				continue
 			}
 
@@ -117,7 +120,7 @@ func handleUpdate(messageChan chan *param.MsgInfo, update tgbotapi.Update, bot *
 	tgMsgInfo.ReplyToMessageID = msgId
 	firstSendInfo, err := bot.Send(tgMsgInfo)
 	if err != nil {
-		log.Printf("Sending first message fail: %v\n", err.Error())
+		logger.Warn("Sending first message fail", "err", err)
 	}
 
 	for msg = range messageChan {
@@ -143,7 +146,7 @@ func handleUpdate(messageChan chan *param.MsgInfo, update tgbotapi.Update, bot *
 					_, err = bot.Send(tgMsgInfo)
 				}
 				if err != nil {
-					log.Printf("%d Error sending message: %s\n", msgId, err)
+					logger.Warn("Error sending message:", "msgID", msgId, "err", err)
 					continue
 				}
 			}
@@ -170,7 +173,7 @@ func handleUpdate(messageChan chan *param.MsgInfo, update tgbotapi.Update, bot *
 					_, err = bot.Send(updateMsg)
 				}
 				if err != nil {
-					log.Printf("Error editing message:%d %s\n", msgId, err)
+					logger.Warn("Error editing message", "msgID", msgId, "err", err)
 				}
 			}
 			firstSendInfo.MessageID = 0
@@ -201,7 +204,7 @@ func sleepUtilNoLimit(msgId int, err error) bool {
 	var apiErr *tgbotapi.Error
 	if errors.As(err, &apiErr) && apiErr.Message == "Too Many Requests" {
 		waitTime := time.Duration(apiErr.RetryAfter) * time.Second
-		fmt.Printf("Rate limited. Retrying after %d %v...\n", msgId, waitTime)
+		logger.Warn("Rate limited. Retrying after", "msgID", msgId, "waitTime", waitTime)
 		time.Sleep(waitTime)
 		return true
 	}
@@ -275,7 +278,7 @@ func sendChatMessage(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 		msg := tgbotapi.NewMessage(chatId, "❌ Please input text after /chat command.")
 		_, err := bot.Send(msg)
 		if err != nil {
-			log.Printf("send help message fail: %v\n", err)
+			logger.Warn("send help message fail", "err", err)
 		}
 		return
 	}
@@ -302,7 +305,7 @@ func retryLastQuestion(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 		msg.ParseMode = tgbotapi.ModeMarkdown
 		_, err := bot.Send(msg)
 		if err != nil {
-			log.Printf("send retry message fail: %v\n", err)
+			logger.Warn("send retry message fail", "err", err)
 		}
 	}
 }
@@ -315,7 +318,7 @@ func clearAllRecord(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	msg.ParseMode = tgbotapi.ModeMarkdown
 	_, err := bot.Send(msg)
 	if err != nil {
-		log.Printf("send clear message fail: %v\n", err)
+		logger.Warn("send clear message fail", "err", err)
 	}
 }
 
@@ -328,7 +331,7 @@ func showBalanceInfo(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 		msg.ParseMode = tgbotapi.ModeMarkdown
 		_, err := bot.Send(msg)
 		if err != nil {
-			log.Printf("send message fail: %v\n", err)
+			logger.Warn("send message fail", "err", err)
 		}
 		return
 	}
@@ -358,7 +361,7 @@ func showBalanceInfo(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	msg.ParseMode = tgbotapi.ModeMarkdown
 	_, err := bot.Send(msg)
 	if err != nil {
-		log.Printf("send balance message fail: %v\n", err)
+		logger.Warn("send balance message fail", "err", err)
 	}
 
 }
@@ -368,7 +371,7 @@ func showStateInfo(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	chatId, _, userId := utils.GetChatIdAndMsgIdAndUserID(update)
 	userInfo, err := db.GetUserByID(userId)
 	if err != nil {
-		log.Printf("get user info fail: %v\n", err)
+		logger.Warn("get user info fail", "err", err)
 		return
 	}
 
@@ -378,21 +381,21 @@ func showStateInfo(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	endOfDay := time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 59, 999999999, now.Location())
 	todayTokey, err := db.GetTokenByUserIdAndTime(userId, startOfDay.Unix(), endOfDay.Unix())
 	if err != nil {
-		log.Printf("get today token fail: %v\n", err)
+		logger.Warn("get today token fail", "err", err)
 	}
 
 	// get this week token
 	startOf7DaysAgo := now.AddDate(0, 0, -7).Truncate(24 * time.Hour)
 	weekToken, err := db.GetTokenByUserIdAndTime(userId, startOf7DaysAgo.Unix(), endOfDay.Unix())
 	if err != nil {
-		log.Printf("get week token fail: %v\n", err)
+		logger.Warn("get week token fail", "err", err)
 	}
 
 	// handle balance info msg
 	startOf30DaysAgo := now.AddDate(0, 0, -30).Truncate(24 * time.Hour)
 	monthToken, err := db.GetTokenByUserIdAndTime(userId, startOf30DaysAgo.Unix(), endOfDay.Unix())
 	if err != nil {
-		log.Printf("get week token fail: %v\n", err)
+		logger.Warn("get week token fail", "err", err)
 	}
 
 	template := `🟣 Your Total Token Usage: %d
@@ -409,7 +412,7 @@ func showStateInfo(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	msg.ParseMode = tgbotapi.ModeMarkdown
 	_, err = bot.Send(msg)
 	if err != nil {
-		log.Printf("send state message fail: %v\n", err)
+		logger.Warn("send state message fail", "err", err)
 	}
 
 }
@@ -434,7 +437,7 @@ func sendModeConfigurationOptions(bot *tgbotapi.BotAPI, chatID int64) {
 	msg.ParseMode = tgbotapi.ModeMarkdown
 	_, err := bot.Send(msg)
 	if err != nil {
-		log.Printf("send inline message fail: %v\n", err)
+		logger.Warn("send inline message fail", "err", err)
 	}
 }
 
@@ -460,7 +463,7 @@ func sendHelpConfigurationOptions(bot *tgbotapi.BotAPI, chatID int64) {
 	msg.ParseMode = tgbotapi.ModeMarkdown
 	_, err := bot.Send(msg)
 	if err != nil {
-		log.Printf("send inline message fail: %v\n", err)
+		logger.Warn("send inline message fail", "err", err)
 	}
 }
 
@@ -486,7 +489,7 @@ func handleCallbackQuery(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 func handleModeUpdate(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	userInfo, err := db.GetUserByID(update.CallbackQuery.From.ID)
 	if err != nil {
-		log.Printf("get user fail: %d %v", update.CallbackQuery.From.ID, err)
+		logger.Warn("get user fail", "userID", update.CallbackQuery.From.ID, "err", err)
 		sendFailMessage(update, bot)
 		return
 	}
@@ -494,14 +497,14 @@ func handleModeUpdate(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	if userInfo != nil && userInfo.ID != 0 {
 		err = db.UpdateUserMode(update.CallbackQuery.From.ID, update.CallbackQuery.Data)
 		if err != nil {
-			log.Printf("update user fail: %d %v\n", update.CallbackQuery.From.ID, err)
+			logger.Warn("update user fail", "userID", update.CallbackQuery.From.ID, "err", err)
 			sendFailMessage(update, bot)
 			return
 		}
 	} else {
 		_, err = db.InsertUser(update.CallbackQuery.From.ID, update.CallbackQuery.Data)
 		if err != nil {
-			log.Printf("insert user fail: %s %v\n", update.CallbackQuery.From.String(), err)
+			logger.Warn("insert user fail", "userID", update.CallbackQuery.From.String(), "err", err)
 			sendFailMessage(update, bot)
 			return
 		}
@@ -510,24 +513,24 @@ func handleModeUpdate(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	// send response
 	callback := tgbotapi.NewCallback(update.CallbackQuery.ID, update.CallbackQuery.Data)
 	if _, err := bot.Request(callback); err != nil {
-		log.Printf("request callback fail: %v\n", err)
+		logger.Warn("request callback fail", "err", err)
 	}
 
 	msg := tgbotapi.NewMessage(update.CallbackQuery.Message.Chat.ID, "You choose: "+update.CallbackQuery.Data)
 	if _, err := bot.Send(msg); err != nil {
-		log.Printf("request send msg fail: %v\n", err)
+		logger.Warn("request send msg fail", "err", err)
 	}
 }
 
 func sendFailMessage(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	callback := tgbotapi.NewCallback(update.CallbackQuery.ID, "set mode fail!")
 	if _, err := bot.Request(callback); err != nil {
-		log.Printf("request callback fail: %v\n", err)
+		logger.Warn("request callback fail", "err", err)
 	}
 
 	msg := tgbotapi.NewMessage(update.CallbackQuery.Message.Chat.ID, "set mode fail!")
 	if _, err := bot.Send(msg); err != nil {
-		log.Printf("request send msg fail: %v\n", err)
+		logger.Warn("request send msg fail", "err", err)
 	}
 }
 
@@ -535,12 +538,12 @@ func sendImg(update tgbotapi.Update) {
 	prompt := strings.Replace(update.Message.Text, "/photo", "", 1)
 	data, err := deepseek.GenerateImg(prompt)
 	if err != nil {
-		log.Printf("generate image fail: %v\n", err)
+		logger.Warn("generate image fail", "err", err)
 		return
 	}
 
 	if data.Data == nil || len(data.Data.ImageUrls) == 0 {
-		log.Println("no image generated")
+		logger.Warn("no image generated")
 		return
 	}
 
@@ -560,14 +563,14 @@ func sendImg(update tgbotapi.Update) {
 
 	jsonData, err := json.Marshal(req)
 	if err != nil {
-		log.Printf("marshal json content fail: %s\n", err)
+		logger.Warn("marshal json content fail", "err", err)
 		return
 	}
 
 	// send post request
 	resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonData))
 	if err != nil {
-		log.Printf("send request fail: %s\n", err)
+		logger.Warn("send request fail", "err", err)
 		return
 	}
 	defer resp.Body.Close()
@@ -575,12 +578,12 @@ func sendImg(update tgbotapi.Update) {
 	// analysis response
 	var result map[string]interface{}
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		log.Printf("analysis response fail: %s\n", err)
+		logger.Warn("analysis response fail", "err", err)
 		return
 	}
 
 	if ok, found := result["ok"].(bool); !found || !ok {
-		log.Printf("send image fail: %+v", result)
+		logger.Warn("send image fail", "result", result)
 		return
 	}
 

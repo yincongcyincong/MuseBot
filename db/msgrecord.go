@@ -3,11 +3,12 @@ package db
 import (
 	"database/sql"
 	"fmt"
-	"github.com/cohesion-org/deepseek-go"
-	"github.com/yincongcyincong/telegram-deepseek-bot/metrics"
-	"log"
 	"sync"
 	"time"
+
+	"github.com/cohesion-org/deepseek-go"
+	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
+	"github.com/yincongcyincong/telegram-deepseek-bot/metrics"
 )
 
 const MaxQAPair = 10
@@ -73,16 +74,16 @@ func DeleteMsgRecord(userId int64) {
 	MsgRecord.Delete(userId)
 	err := DeleteRecord(userId)
 	if err != nil {
-		log.Printf("Error deleting record: %v \n", err)
+		logger.Error("Error deleting record", "err", err)
 	}
 }
 
-func StarCheckUserLen() {
+func UpdateUserTime() {
 	InsertRecord()
 	go func() {
 		defer func() {
 			if err := recover(); err != nil {
-				log.Printf("StarCheckUserLen panic err:%v\n", err)
+				logger.Error("StarCheckUserLen panic err", "err", err)
 			}
 		}()
 		timer := time.NewTicker(time.Minute)
@@ -111,20 +112,20 @@ func UpdateDBData() {
 func UpdateUserInfo(userId int64, updateTime int64) {
 	err := UpdateUserUpdateTime(userId, updateTime)
 	if err != nil {
-		log.Printf("StarCheckUserLen UpdateUserUpdateTime err:%v\n", err)
+		logger.Error("StarCheckUserLen UpdateUserUpdateTime err", "err", err)
 	}
 }
 
 func InsertRecord() {
 	users, err := GetUsers()
 	if err != nil {
-		log.Printf("InsertRecord GetUsers err:%v\n", err)
+		logger.Error("InsertRecord GetUsers err", "err", err)
 	}
 
 	for _, user := range users {
 		records, err := getRecordsByUserId(user.UserId)
 		if err != nil {
-			log.Printf("InsertRecord GetUsers err:%v\n", err)
+			logger.Error("InsertRecord GetUsers err", "err", err)
 		}
 		for _, record := range records {
 			InsertMsgRecord(user.UserId, &AQ{
@@ -170,24 +171,24 @@ func insertRecord(record *Record) {
 	_, err := DB.Exec(query, record.UserId, record.Question, record.Answer, record.Token, time.Now().Unix())
 	metrics.TotalRecords.Inc()
 	if err != nil {
-		log.Printf("insertRecord err:%v\n", err)
+		logger.Error("insertRecord err", "err", err)
 	}
 
 	user, err := GetUserByID(record.UserId)
 	if err != nil {
-		log.Printf("Error get user by userid: %v \n", err)
+		logger.Error("Error get user by userid", "err", err)
 	}
 
 	if user == nil {
 		_, err = InsertUser(record.UserId, deepseek.DeepSeekChat)
 		if err != nil {
-			log.Printf("Error insert user by userid: %v \n", err)
+			logger.Error("Error insert user by userid", "err", err)
 		}
 	}
 
 	err = UpdateUserToken(record.UserId, record.Token)
 	if err != nil {
-		log.Printf("Error update token by user: %v \n", err)
+		logger.Error("Error update token by user", "err", err)
 	}
 }
 
