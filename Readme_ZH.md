@@ -58,19 +58,19 @@ docker run -d -v /home/user/data:/app/data -e TELEGRAM_BOT_TOKEN="你的_telegra
 
 通过环境变量配置机器人：
 
-| 变量名                         | 描述                                                                                                  | 默认值                       |
-|--------------------------------|-------------------------------------------------------------------------------------------------------|------------------------------|
-| TELEGRAM_BOT_TOKEN (必填)      | Telegram 机器人 Token                                                                                  | -                            |
-| DEEPSEEK_TOKEN (必填)          | DeepSeek API 授权 Token                                                                                | -                            |
-| CUSTOM_URL                     | 自定义 DeepSeek URL                                                                                     | https://api.deepseek.com/    |
-| DEEPSEEK_TYPE                   | DeepSeek 类型（deepseek-r1-250120，doubao-1.5-pro-32k-250115 等）                                       | deepseek                     |
-| VOLC_AK                         | Volcengine 图像生成模型的 AK [文档](https://www.volcengine.com/docs/6444/1340578)                      | -                            |
-| VOLC_SK                         | Volcengine 图像生成模型的 SK [文档](https://www.volcengine.com/docs/6444/1340578)                      | -                            |
-| DB_TYPE                         | 数据库类型：sqlite3 / mysql                                                                            | sqlite3                      |
-| DB_CONF                         | 数据库配置：sqlite3 文件路径或 MySQL 连接信息                                                          | ./data/telegram_bot.db       |
-| ALLOWED_TELEGRAM_USER_IDS       | 允许使用机器人的 Telegram 用户 ID，多个用户用逗号分隔，空表示所有用户可使用                           | -                            |
-| DEEPSEEK_PROXY                   | DeepSeek 代理                                                                                            | -                            |
-| TELEGRAM_PROXY                   | Telegram 代理                                                                                            | -                            |
+| 变量名                         | 描述                                                                                                 | 默认值                       |
+|--------------------------------|----------------------------------------------------------------------------------------------------|------------------------------|
+| TELEGRAM_BOT_TOKEN (必填)      | Telegram 机器人 Token                                                                                 | -                            |
+| DEEPSEEK_TOKEN (必填)          | DeepSeek API Key  / volcengine Api Key[文档](https://www.volcengine.com/docs/82379/1399008#b00dee71) | -                            |
+| CUSTOM_URL                     | 自定义 DeepSeek URL                                                                                   | https://api.deepseek.com/    |
+| DEEPSEEK_TYPE                   | DeepSeek 类型（deepseek-r1-250120，doubao-1.5-pro-32k-250115 等）                                        | deepseek                     |
+| VOLC_AK                         | Volcengine 图像生成模型的 AK [文档](https://www.volcengine.com/docs/6444/1340578)                           | -                            |
+| VOLC_SK                         | Volcengine 图像生成模型的 SK [文档](https://www.volcengine.com/docs/6444/1340578)                           | -                            |
+| DB_TYPE                         | 数据库类型：sqlite3 / mysql                                                                              | sqlite3                      |
+| DB_CONF                         | 数据库配置：sqlite3 文件路径或 MySQL 连接信息                                                                     | ./data/telegram_bot.db       |
+| ALLOWED_TELEGRAM_USER_IDS       | 允许使用机器人的 Telegram 用户 ID，多个用户用逗号分隔，空表示所有用户可使用                                                       | -                            |
+| DEEPSEEK_PROXY                   | DeepSeek 代理                                                                                        | -                            |
+| TELEGRAM_PROXY                   | Telegram 代理                                                                                        | -                            |
 
 ### CUSTOM_URL
 
@@ -120,6 +120,11 @@ docker run -d -v /home/user/data:/app/data -e TELEGRAM_BOT_TOKEN="你的_telegra
 ### /chat
 在群组中使用 `/chat` 命令与机器人对话，无需将机器人设置为管理员。  
 <img width="374" alt="chat" src="https://github.com/user-attachments/assets/00a0faf3-6037-4d84-9a33-9aa6c320e44d" />
+
+### /video
+生成一个视频，`DEEPSEEK_TOKEN` 必须是 volcengine Api key. deepseek暂不支持生成视频. [文档](https://www.volcengine.com/docs/82379/1399008#b00dee71)      
+<img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/884eeb48-76c4-4329-9446-5cd3822a5d16" />
+
 
 ### /help
 查看帮助信息。  
