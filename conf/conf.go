@@ -21,7 +21,8 @@ var (
 	TelegramProxy *string
 	LogLevel      *string
 
-	AllowedTelegramUserIds = make(map[int64]bool)
+	AllowedTelegramUserIds  = make(map[int64]bool)
+	AllowedTelegramGroupIds = make(map[int64]bool)
 )
 
 func InitConf() {
@@ -38,6 +39,7 @@ func InitConf() {
 	LogLevel = flag.String("log_level", "info", "log level")
 
 	allowedUserIds := flag.String("allowed_telegram_user_ids", "", "db conf")
+	allowedGroupIds := flag.String("allowed_telegram_group_ids", "", "db conf")
 	flag.Parse()
 
 	if os.Getenv("TELEGRAM_BOT_TOKEN") != "" {
@@ -76,6 +78,10 @@ func InitConf() {
 		*allowedUserIds = os.Getenv("ALLOWED_TELEGRAM_USER_IDS")
 	}
 
+	if os.Getenv("ALLOWED_TELEGRAM_GROUP_IDS") != "" {
+		*allowedGroupIds = os.Getenv("ALLOWED_TELEGRAM_GROUP_IDS")
+	}
+
 	if os.Getenv("DEEPSEEK_PROXY") != "" {
 		*DeepseekProxy = os.Getenv("DEEPSEEK_PROXY")
 	}
@@ -96,6 +102,14 @@ func InitConf() {
 		AllowedTelegramUserIds[int64(userId)] = true
 	}
 
+	for _, groupIdStr := range strings.Split(*allowedGroupIds, ",") {
+		groupId, err := strconv.Atoi(groupIdStr)
+		if err != nil {
+			fmt.Println("AllowedTelegramGroupIds parse error", "groupId", groupIdStr)
+		}
+		AllowedTelegramGroupIds[int64(groupId)] = true
+	}
+
 	fmt.Println("TelegramBotToken:", *BotToken)
 	fmt.Println("DeepseekToken:", *DeepseekToken)
 	fmt.Println("CustomUrl:", *CustomUrl)
@@ -105,6 +119,7 @@ func InitConf() {
 	fmt.Println("DBType:", *DBType)
 	fmt.Println("DBConf:", *DBConf)
 	fmt.Println("AllowedTelegramUserIds:", *allowedUserIds)
+	fmt.Println("AllowedTelegramGroupIds:", *allowedGroupIds)
 	fmt.Println("DeepseekProxy:", *DeepseekProxy)
 	fmt.Println("TelegramProxy:", *TelegramProxy)
 

@@ -24,6 +24,16 @@ func GetChatIdAndMsgIdAndUserID(update tgbotapi.Update) (int64, int, int64) {
 	return chatId, msgId, userId
 }
 
+func GetChat(update tgbotapi.Update) *tgbotapi.Chat {
+	if update.Message != nil {
+		return update.Message.Chat
+	}
+	if update.CallbackQuery != nil {
+		return update.CallbackQuery.Message.Chat
+	}
+	return nil
+}
+
 func CheckMsgIsCallback(update tgbotapi.Update) bool {
 	return update.CallbackQuery != nil
 }
