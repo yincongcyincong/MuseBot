@@ -11,7 +11,7 @@ require (
 	github.com/rs/zerolog v1.33.0
 	github.com/stretchr/testify v1.10.0
 	github.com/volcengine/volc-sdk-golang v1.0.196
-	github.com/volcengine/volcengine-go-sdk v1.0.183
+	github.com/volcengine/volcengine-go-sdk v1.0.187
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 )
 
