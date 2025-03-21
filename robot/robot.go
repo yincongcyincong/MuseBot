@@ -241,6 +241,8 @@ func skipThisMsg(update tgbotapi.Update, bot *tgbotapi.BotAPI) bool {
 
 func handleCommand(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	cmd := update.Message.Command()
+	_, _, userID := utils.GetChatIdAndMsgIdAndUserID(update)
+	logger.Info("command info", "userID", userID, "cmd", cmd)
 	switch cmd {
 	case "chat":
 		sendChatMessage(update, bot)
@@ -256,6 +258,8 @@ func handleCommand(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 		retryLastQuestion(update, bot)
 	case "photo":
 		sendImg(update)
+	case "video":
+		sendVideo(update)
 	case "help":
 		sendHelpConfigurationOptions(bot, update.Message.Chat.ID)
 	}
@@ -532,6 +536,61 @@ func sendFailMessage(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	if _, err := bot.Send(msg); err != nil {
 		logger.Warn("request send msg fail", "err", err)
 	}
+}
+
+func sendVideo(update tgbotapi.Update) {
+	prompt := strings.Replace(update.Message.Text, "/video", "", 1)
+	videoUrl, err := deepseek.GenerateVideo(prompt)
+	if err != nil {
+		logger.Warn("generate video fail", "err", err)
+		return
+	}
+
+	if len(videoUrl) == 0 {
+		logger.Warn("no video generated")
+		return
+	}
+
+	// create image url
+	url := fmt.Sprintf("https://api.telegram.org/bot%s/sendVideo", *conf.BotToken)
+	chatId, replyToMessageID, _ := utils.GetChatIdAndMsgIdAndUserID(update)
+
+	// construct request param
+	req := map[string]interface{}{
+		"chat_id": chatId,
+		"video":   videoUrl,
+	}
+	if replyToMessageID != 0 {
+		req["reply_to_message_id"] = replyToMessageID
+	}
+
+	jsonData, err := json.Marshal(req)
+	if err != nil {
+		logger.Warn("marshal json content fail", "err", err)
+		return
+	}
+
+	// send post request
+	resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonData))
+	if err != nil {
+		logger.Warn("send request fail", "err", err)
+		return
+	}
+	defer resp.Body.Close()
+
+	// analysis response
+	var result map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		logger.Warn("analysis response fail", "err", err)
+		return
+	}
+
+	if ok, found := result["ok"].(bool); !found || !ok {
+		logger.Warn("send video fail", "result", result)
+		return
+	}
+
+	return
 }
 
 func sendImg(update tgbotapi.Update) {

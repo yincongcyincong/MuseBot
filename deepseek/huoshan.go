@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
+
 	"io"
 	"net/http"
 	"net/url"
@@ -18,6 +18,7 @@ import (
 	"github.com/volcengine/volcengine-go-sdk/service/arkruntime/model"
 	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
 	"github.com/yincongcyincong/telegram-deepseek-bot/db"
+	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
 	"github.com/yincongcyincong/telegram-deepseek-bot/metrics"
 	"github.com/yincongcyincong/telegram-deepseek-bot/param"
 	"github.com/yincongcyincong/telegram-deepseek-bot/utils"
@@ -217,4 +218,79 @@ func GenerateImg(prompt string) (*ImgResponse, error) {
 	totalDuration := time.Since(start).Seconds()
 	metrics.ImageDuration.Observe(totalDuration)
 	return data, nil
+}
+
+func GenerateVideo(prompt string) (string, error) {
+	if prompt == "" {
+		logger.Warn("prompt is empty", "prompt", prompt)
+		return "", errors.New("prompt is empty")
+	}
+
+	ctx, _ := context.WithTimeout(context.Background(), 5*time.Minute)
+
+	httpClient := &http.Client{
+		Timeout: 30 * time.Minute,
+	}
+
+	if *conf.DeepseekProxy != "" {
+		proxy, err := url.Parse(*conf.DeepseekProxy)
+		if err != nil {
+			logger.Error("parse deepseek proxy error", "err", err)
+		} else {
+			httpClient.Transport = &http.Transport{
+				Proxy: http.ProxyURL(proxy),
+			}
+		}
+	}
+
+	client := arkruntime.NewClientWithApiKey(
+		*conf.DeepseekToken,
+		arkruntime.WithTimeout(30*time.Minute),
+		arkruntime.WithHTTPClient(httpClient),
+	)
+
+	text := prompt + " --ratio 1:1 --fps 24  --dur 5"
+	resp, err := client.CreateContentGenerationTask(ctx, model.CreateContentGenerationTaskRequest{
+		Model: "doubao-seaweed-241128",
+		Content: []*model.CreateContentGenerationContentItem{
+			{
+				Type: model.ContentGenerationContentItemTypeText,
+				Text: &text,
+			},
+		},
+	})
+	if err != nil {
+		logger.Error("request create video api fail", "err", err)
+		return "", err
+	}
+
+	for {
+		getResp, err := client.GetContentGenerationTask(ctx, model.GetContentGenerationTaskRequest{
+			ID: resp.ID,
+		})
+
+		if err != nil {
+			logger.Error("request get video api fail", "err", err)
+			return "", err
+		}
+
+		if getResp.Status == model.StatusRunning || getResp.Status == model.StatusQueued {
+			logger.Info("video is createing...")
+			time.Sleep(3 * time.Second)
+			continue
+		}
+
+		if getResp.Error != nil {
+			logger.Error("request get video api fail", "err", getResp.Error)
+			return "", errors.New(getResp.Error.Message)
+		}
+
+		if getResp.Status == model.StatusSucceeded {
+			return getResp.Content.VideoURL, nil
+		} else {
+			logger.Error("request get video api fail", "status", getResp.Status)
+			return "", errors.New("create video fail")
+		}
+	}
+
 }

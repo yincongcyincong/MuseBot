@@ -423,8 +423,8 @@ github.com/urfave/cli/v2 v2.3.0/go.mod h1:LJmUH05zAU44vOAcrfzZQKsZbVcdbOG8rtL3/X
 github.com/volcengine/volc-sdk-golang v1.0.23/go.mod h1:AfG/PZRUkHJ9inETvbjNifTDgut25Wbkm2QoYBTbvyU=
 github.com/volcengine/volc-sdk-golang v1.0.196 h1:KYbX76ibTlNhgm6Kq3sDTjrujDBd0za8ULg0v7+sCag=
 github.com/volcengine/volc-sdk-golang v1.0.196/go.mod h1:stZX+EPgv1vF4nZwOlEe8iGcriUPRBKX8zA19gXycOQ=
-github.com/volcengine/volcengine-go-sdk v1.0.183 h1:2TuWnhuA6vb2sDYEb44ErGBVPLCPDW0s2JNgYb2RX+A=
-github.com/volcengine/volcengine-go-sdk v1.0.183/go.mod h1:gfEDc1s7SYaGoY+WH2dRrS3qiuDJMkwqyfXWCa7+7oA=
+github.com/volcengine/volcengine-go-sdk v1.0.187 h1:YpZjydoyHDA/ofnF6mYCelbOoo9pJsBEiQOOSJzGSOY=
+github.com/volcengine/volcengine-go-sdk v1.0.187/go.mod h1:gfEDc1s7SYaGoY+WH2dRrS3qiuDJMkwqyfXWCa7+7oA=
 github.com/xdg-go/pbkdf2 v1.0.0/go.mod h1:jrpuAogTd400dnrH08LKmI/xc1MbPOebTwRqcT5RDeI=
 github.com/xdg-go/scram v1.0.2/go.mod h1:1WAq6h33pAW+iRreB34OORO2Nf7qel3VV3fjBj+hCSs=
 github.com/xdg-go/stringprep v1.0.2/go.mod h1:8F9zXuvzgwmyT5DUm4GUfZGDdT3W+LCvS6+da4O5kxM=
