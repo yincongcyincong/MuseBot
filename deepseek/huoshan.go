@@ -4,9 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
+	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
 	"io"
-	"log"
 	"net/http"
 	"net/url"
 	"strings"
@@ -46,7 +45,7 @@ func GetContentFromHS(messageChan chan *param.MsgInfo, update tgbotapi.Update, b
 	text := strings.ReplaceAll(content, "@"+bot.Self.UserName, "")
 	err := getContentFromHS(text, update, messageChan)
 	if err != nil {
-		log.Printf("Error calling DeepSeek API: %s\n", err)
+		logger.Error("Error calling DeepSeek API", "err", err)
 	}
 	close(messageChan)
 }
@@ -61,7 +60,7 @@ func getContentFromHS(prompt string, update tgbotapi.Update, messageChan chan *p
 	if msgRecords != nil {
 		for _, record := range msgRecords.AQs {
 			if record.Answer != "" && record.Question != "" {
-				log.Println("question:", record.Question, "answer:", record.Answer)
+				logger.Info("context content", "question:", record.Question, "answer:", record.Answer)
 				messages = append(messages, &model.ChatCompletionMessage{
 					Role: constants.ChatMessageRoleAssistant,
 					Content: &model.ChatCompletionMessageContent{
@@ -92,7 +91,7 @@ func getContentFromHS(prompt string, update tgbotapi.Update, messageChan chan *p
 	if *conf.DeepseekProxy != "" {
 		proxy, err := url.Parse(*conf.DeepseekProxy)
 		if err != nil {
-			fmt.Println("parse deepseek proxy error:", err)
+			logger.Error("parse deepseek proxy error", "err", err)
 		} else {
 			httpClient.Transport = &http.Transport{
 				Proxy: http.ProxyURL(proxy),
@@ -114,10 +113,10 @@ func getContentFromHS(prompt string, update tgbotapi.Update, messageChan chan *p
 		},
 	}
 
-	fmt.Printf("[%d]: %s\n", userId, prompt)
+	logger.Info("msg receive", "userID", userId, "prompt", prompt)
 	stream, err := client.CreateChatCompletionStream(ctx, req)
 	if err != nil {
-		fmt.Printf("standard chat error: %v\n", err)
+		logger.Error("standard chat error", "err", err)
 		return err
 	}
 	defer stream.Close()
@@ -129,11 +128,11 @@ func getContentFromHS(prompt string, update tgbotapi.Update, messageChan chan *p
 	for {
 		response, err := stream.Recv()
 		if errors.Is(err, io.EOF) {
-			fmt.Printf("\n %d Stream finished", updateMsgID)
+			logger.Error("stream finished", "updateMsgID", updateMsgID)
 			break
 		}
 		if err != nil {
-			fmt.Printf("\n %d Stream error: %v\n", updateMsgID, err)
+			logger.Error("stream error:", "updateMsgID", updateMsgID, "err", err)
 			break
 		}
 		for _, choice := range response.Choices {
@@ -206,7 +205,7 @@ func GenerateImg(prompt string) (*ImgResponse, error) {
 
 	resp, _, err := visual.DefaultInstance.CVProcess(reqBody)
 	if err != nil {
-		log.Printf("request img api fail: %s\n", err)
+		logger.Error("request img api fail", "err", err)
 		return nil, err
 	}
 

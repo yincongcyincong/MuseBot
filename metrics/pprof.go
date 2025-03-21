@@ -2,7 +2,7 @@ package metrics
 
 import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"log"
+	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
 	"net/http"
 	_ "net/http/pprof"
 )
@@ -29,11 +29,11 @@ func NewPProfServer(addr string) *PProfServer {
 // Start start pprof server
 func (p *PProfServer) Start() {
 	go func() {
-		log.Printf("Starting pprof server on %s\n", p.Addr)
+		logger.Info("Starting pprof server on", "addr", p.Addr)
 		http.Handle("/metrics", promhttp.Handler())
 		err := http.ListenAndServe(p.Addr, nil)
 		if err != nil {
-			log.Fatalf("pprof server failed: %v", err)
+			logger.Fatal("pprof server failed", "err", err)
 		}
 	}()
 }

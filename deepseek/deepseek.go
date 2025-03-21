@@ -3,9 +3,7 @@ package deepseek
 import (
 	"context"
 	"errors"
-	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"net/url"
 	"strings"
@@ -16,6 +14,7 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
 	"github.com/yincongcyincong/telegram-deepseek-bot/db"
+	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
 	"github.com/yincongcyincong/telegram-deepseek-bot/metrics"
 	"github.com/yincongcyincong/telegram-deepseek-bot/param"
 	"github.com/yincongcyincong/telegram-deepseek-bot/utils"
@@ -32,7 +31,7 @@ func GetContentFromDP(messageChan chan *param.MsgInfo, update tgbotapi.Update, b
 	text := strings.ReplaceAll(content, "@"+bot.Self.UserName, "")
 	err := callDeepSeekAPI(text, update, messageChan)
 	if err != nil {
-		log.Printf("Error calling DeepSeek API: %s\n", err)
+		logger.Error("Error calling DeepSeek API", "err", err)
 	}
 	close(messageChan)
 }
@@ -44,10 +43,10 @@ func callDeepSeekAPI(prompt string, update tgbotapi.Update, messageChan chan *pa
 	model := deepseek.DeepSeekChat
 	userInfo, err := db.GetUserByID(userId)
 	if err != nil {
-		log.Printf("Error getting user info: %s\n", err)
+		logger.Error("Error getting user info", "err", err)
 	}
 	if userInfo != nil && userInfo.Mode != "" {
-		log.Printf("User info: %d, %s\n", userInfo.UserId, userInfo.Mode)
+		logger.Info("User info", "userID", userInfo.UserId, "mode", userInfo.Mode)
 		model = userInfo.Mode
 	}
 
@@ -59,7 +58,7 @@ func callDeepSeekAPI(prompt string, update tgbotapi.Update, messageChan chan *pa
 	if *conf.DeepseekProxy != "" {
 		proxy, err := url.Parse(*conf.DeepseekProxy)
 		if err != nil {
-			fmt.Println("parse deepseek proxy error:", err)
+			logger.Error("parse deepseek proxy error", "err", err)
 		} else {
 			httpClient.Transport = &http.Transport{
 				Proxy: http.ProxyURL(proxy),
@@ -70,7 +69,7 @@ func callDeepSeekAPI(prompt string, update tgbotapi.Update, messageChan chan *pa
 	client, err := deepseek.NewClientWithOptions(*conf.DeepseekToken,
 		deepseek.WithBaseURL(*conf.CustomUrl), deepseek.WithHTTPClient(httpClient))
 	if err != nil {
-		log.Printf("Error creating deepseek client: %s\n", err)
+		logger.Error("Error creating deepseek client", "err", err)
 		return err
 	}
 	request := &deepseek.StreamChatCompletionRequest{
@@ -81,9 +80,9 @@ func callDeepSeekAPI(prompt string, update tgbotapi.Update, messageChan chan *pa
 
 	msgRecords := db.GetMsgRecord(userId)
 	if msgRecords != nil {
-		for _, record := range msgRecords.AQs {
+		for i, record := range msgRecords.AQs {
 			if record.Answer != "" && record.Question != "" {
-				log.Println("question:", record.Question, "answer:", record.Answer)
+				logger.Info("context content", "dialog", i, "question:", record.Question, "answer:", record.Answer)
 				messages = append(messages, deepseek.ChatCompletionMessage{
 					Role:    constants.ChatMessageRoleAssistant,
 					Content: record.Answer,
@@ -104,10 +103,10 @@ func callDeepSeekAPI(prompt string, update tgbotapi.Update, messageChan chan *pa
 
 	ctx := context.Background()
 
-	fmt.Printf("[%d]: %s\n", userId, prompt)
+	logger.Info("msg receive", "userID", userId, "prompt", prompt)
 	stream, err := client.CreateChatCompletionStream(ctx, request)
 	if err != nil {
-		log.Printf("ChatCompletionStream error: %d, %v\n", updateMsgID, err)
+		logger.Error("ChatCompletionStream error", "updateMsgID", updateMsgID, "err", err)
 		return err
 	}
 	defer stream.Close()
@@ -118,11 +117,11 @@ func callDeepSeekAPI(prompt string, update tgbotapi.Update, messageChan chan *pa
 	for {
 		response, err := stream.Recv()
 		if errors.Is(err, io.EOF) {
-			fmt.Printf("\n %d Stream finished", updateMsgID)
+			logger.Info("Stream finished", "updateMsgID", updateMsgID)
 			break
 		}
 		if err != nil {
-			fmt.Printf("\n %d Stream error: %v\n", updateMsgID, err)
+			logger.Warn("Stream error", "updateMsgID", updateMsgID, "err", err)
 			break
 		}
 		for _, choice := range response.Choices {
@@ -164,11 +163,11 @@ func GetBalanceInfo() *deepseek.BalanceResponse {
 	ctx := context.Background()
 	balance, err := deepseek.GetBalance(client, ctx)
 	if err != nil {
-		log.Printf("Error getting balance: %v\n", err)
+		logger.Error("Error getting balance", "err", err)
 	}
 
 	if balance == nil || len(balance.BalanceInfos) == 0 {
-		log.Printf("No balance information returned\n")
+		logger.Error("No balance information returned")
 	}
 
 	return balance
