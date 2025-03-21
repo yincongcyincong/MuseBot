@@ -61,7 +61,7 @@ You can configure the bot via environment variables:
 | Variable Name                  | 	Description                                                                                            | Default Value             |
 |--------------------------------|---------------------------------------------------------------------------------------------------------|---------------------------|
 | TELEGRAM_BOT_TOKEN (required)	 | Your Telegram bot token                                                                                 | -                         |
-| DEEPSEEK_TOKEN	  (required)    | DeepSeek Api Key                                                                                        | -                         |
+| DEEPSEEK_TOKEN	  (required)    | DeepSeek Api Key / volcengine Api key[doc](https://www.volcengine.com/docs/82379/1399008#b00dee71)    | -                         |
 | CUSTOM_URL	                    | custom deepseek url                                                                                     | https://api.deepseek.com/ |
 | DEEPSEEK_TYPE	                 | deepseek/others(deepseek-r1-250120，doubao-1.5-pro-32k-250115，...)                                       | deepseek                  |
 | VOLC_AK	                       | volcengine photo model ak     [doc](https://www.volcengine.com/docs/6444/1340578)                       | -                         |
@@ -111,11 +111,14 @@ chat and coder means DeepSeek-V3, reasoner means DeepSeek-R1.
 calculate one user token usage.        
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/0814b3ac-dcf6-4ec7-ae6b-3b8d190a0132" />
 
-
 ### /photo
 using volcengine photo model create photo，VOLC_AK and VOLC_SK is
 necessary.[doc](https://www.volcengine.com/docs/6444/1340578)      
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/c8072d7d-74e6-4270-8496-1b4e7532134b" />
+
+### /image
+`DEEPSEEK_TOKEN` must be volcengine Api key. [doc](https://www.volcengine.com/docs/82379/1399008#b00dee71)
+![image](https://github.com/user-attachments/assets/884eeb48-76c4-4329-9446-5cd3822a5d16)
 
 ### /chat
 allows the bot to chat through /chat command in groups, without the bot being set as admin of the group.
