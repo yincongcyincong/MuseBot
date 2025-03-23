@@ -53,6 +53,47 @@ func StartListenRobot() {
 			bot.Debug = true
 		}
 
+		// set command
+		cmdCfg := tgbotapi.NewSetMyCommands(
+			tgbotapi.BotCommand{
+				Command:     "help",
+				Description: "help",
+			},
+			tgbotapi.BotCommand{
+				Command:     "clear",
+				Description: "clear all of your communication record with deepseek.",
+			},
+			tgbotapi.BotCommand{
+				Command:     "retry",
+				Description: "retry last question.",
+			},
+			tgbotapi.BotCommand{
+				Command:     "mode",
+				Description: "chose deepseek mode, include chat, coder, reasoner",
+			},
+			tgbotapi.BotCommand{
+				Command:     "balance",
+				Description: "show deepseek balance.",
+			},
+			tgbotapi.BotCommand{
+				Command:     "state",
+				Description: "calculate one user token usage.",
+			},
+			tgbotapi.BotCommand{
+				Command:     "photo",
+				Description: "using volcengine photo model create photo.",
+			},
+			tgbotapi.BotCommand{
+				Command:     "video",
+				Description: "using volcengine video model create video.",
+			},
+			tgbotapi.BotCommand{
+				Command:     "chat",
+				Description: "allows the bot to chat through /chat command in groups, without the bot being set as admin of the group.",
+			},
+		)
+		bot.Send(cmdCfg)
+
 		logger.Info("telegramBot Info", "username", bot.Self.UserName)
 
 		u := tgbotapi.NewUpdate(0)
@@ -652,6 +693,9 @@ func sendImg(update tgbotapi.Update) {
 
 func checkUserAllow(update tgbotapi.Update) bool {
 	if len(conf.AllowedTelegramUserIds) == 0 {
+		return false
+	}
+	if conf.AllowedTelegramUserIds[0] {
 		return true
 	}
 
@@ -668,6 +712,9 @@ func checkGroupAllow(update tgbotapi.Update) bool {
 
 	if chat.IsGroup() || chat.IsSuperGroup() { // 判断是否是群组或超级群组
 		if len(conf.AllowedTelegramGroupIds) == 0 {
+			return false
+		}
+		if conf.AllowedTelegramGroupIds[0] {
 			return true
 		}
 		if _, ok := conf.AllowedTelegramGroupIds[chat.ID]; ok {
