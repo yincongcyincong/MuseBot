@@ -68,7 +68,8 @@ docker run -d -v /home/user/data:/app/data -e TELEGRAM_BOT_TOKEN="你的_telegra
 | VOLC_SK                         | Volcengine 图像生成模型的 SK [文档](https://www.volcengine.com/docs/6444/1340578)                           | -                            |
 | DB_TYPE                         | 数据库类型：sqlite3 / mysql                                                                              | sqlite3                      |
 | DB_CONF                         | 数据库配置：sqlite3 文件路径或 MySQL 连接信息                                                                     | ./data/telegram_bot.db       |
-| ALLOWED_TELEGRAM_USER_IDS       | 允许使用机器人的 Telegram 用户 ID，多个用户用逗号分隔，空表示所有用户可使用                                                       | -                            |
+| ALLOWED_TELEGRAM_USER_IDS       | 允许使用机器人的 Telegram 群聊 ID，多个群聊用逗号分隔，0表示所有用户可使用， 空表示所有群组都不能使用         | -                            |
+| ALLOWED_TELEGRAM_USER_IDS       | 允许使用机器人的 Telegram 用户 ID，多个用户用逗号分隔，0表示所有用户可使用，空表示所有用户都不能使用         | -                            |
 | DEEPSEEK_PROXY                   | DeepSeek 代理                                                                                        | -                            |
 | TELEGRAM_PROXY                   | Telegram 代理                                                                                        | -                            |
 
