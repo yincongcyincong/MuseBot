@@ -5,8 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/volcengine/volcengine-go-sdk/service/arkruntime"
-	"github.com/volcengine/volcengine-go-sdk/service/arkruntime/model"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -20,6 +18,8 @@ import (
 	"github.com/cohesion-org/deepseek-go"
 	"github.com/cohesion-org/deepseek-go/constants"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/volcengine/volcengine-go-sdk/service/arkruntime"
+	"github.com/volcengine/volcengine-go-sdk/service/arkruntime/model"
 	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
 	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
 )
@@ -130,7 +130,6 @@ func (c *CommandInfo) fetchURL(config *HTTPParam, wg *sync.WaitGroup, resultChan
 		resultChan <- map[string]interface{}{key: fmt.Sprintf("Error: %v", err)}
 		return
 	}
-
 	req, err := http.NewRequest(config.Method, urlStr, bytes.NewBuffer([]byte(config.Body)))
 	if err != nil {
 		resultChan <- map[string]interface{}{key: fmt.Sprintf("Error: %v", err)}
