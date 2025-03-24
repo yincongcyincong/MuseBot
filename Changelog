@@ -9,6 +9,7 @@ u18n
 ### 0.0.13
 video
 add auto add menu
+add ALLOWED_TELEGRAM_GROUP_IDS param
 
 ### 0.0.12
 log
