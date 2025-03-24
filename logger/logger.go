@@ -22,6 +22,8 @@ func init() {
 	if os.Getenv("LOG_LEVEL") != "" {
 		*LogLevel = os.Getenv("LOG_LEVEL")
 	}
+
+	fmt.Println("log level:", *LogLevel)
 }
 
 // Logger instance
