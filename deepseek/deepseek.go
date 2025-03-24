@@ -80,7 +80,12 @@ func callDeepSeekAPI(prompt string, update tgbotapi.Update, messageChan chan *pa
 
 	msgRecords := db.GetMsgRecord(userId)
 	if msgRecords != nil {
-		for i, record := range msgRecords.AQs {
+		aqs := msgRecords.AQs
+		if len(aqs) > 10 {
+			aqs = aqs[len(aqs)-10:]
+		}
+
+		for i, record := range aqs {
 			if record.Answer != "" && record.Question != "" {
 				logger.Info("context content", "dialog", i, "question:", record.Question, "answer:", record.Answer)
 				messages = append(messages, deepseek.ChatCompletionMessage{
@@ -94,6 +99,7 @@ func callDeepSeekAPI(prompt string, update tgbotapi.Update, messageChan chan *pa
 			}
 		}
 	}
+
 	messages = append(messages, deepseek.ChatCompletionMessage{
 		Role:    constants.ChatMessageRoleUser,
 		Content: prompt,

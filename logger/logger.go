@@ -1,6 +1,7 @@
 package logger
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -8,9 +9,20 @@ import (
 	"strings"
 
 	"github.com/rs/zerolog"
-	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
 	"gopkg.in/natefinch/lumberjack.v2"
 )
+
+var (
+	LogLevel *string
+)
+
+func init() {
+	LogLevel = flag.String("log_level", "info", "log level")
+
+	if os.Getenv("LOG_LEVEL") != "" {
+		*LogLevel = os.Getenv("LOG_LEVEL")
+	}
+}
 
 // Logger instance
 var Logger zerolog.Logger
@@ -37,7 +49,7 @@ func InitLogger() {
 	log.SetOutput(Logger)
 	log.SetFlags(0)
 	// set log level
-	switch strings.ToLower(*conf.LogLevel) {
+	switch strings.ToLower(*LogLevel) {
 	case "debug":
 		zerolog.SetGlobalLevel(zerolog.DebugLevel)
 	case "info":
@@ -49,6 +61,8 @@ func InitLogger() {
 	default:
 		zerolog.SetGlobalLevel(zerolog.InfoLevel)
 	}
+
+	Info("log level", "loglevel", *LogLevel)
 }
 
 func getCallerFile() string {
@@ -68,7 +82,7 @@ func Info(msg string, fields ...interface{}) {
 	Logger.Info().Fields(fields).Msg(callerFile + " " + msg)
 }
 
-// Warn warn log
+// Warn log
 func Warn(msg string, fields ...interface{}) {
 	callerFile := getCallerFile()
 	Logger.Warn().Fields(fields).Msg(callerFile + " " + msg)

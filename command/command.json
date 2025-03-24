@@ -1,0 +1,35 @@
+[{
+  "crontab": "0 0 * * *",
+  "command": "currency",
+  "send_user": "5542540980",
+  "send_group": "-1002450738077",
+  "param":{
+    "currency_pair": "BTCUSDT"
+  },
+  "chains": [
+    {
+      "type": "http",
+      "tasks": [
+        {
+          "name": "task1",
+          "http_param": {
+            "url": "https://api.binance.com/api/v3/ticker/price?symbol={{.currency_pair}}",
+            "method": "GET",
+            "headers": {},
+            "body": ""
+          }
+        }
+      ]
+    },
+    {
+      "type": "deepseek",
+      "tasks": [
+        {
+          "name": "deepseek",
+          "template": "BTC price is {{.task1.price}}, give me some advice about investment.",
+          "proxy": ""
+        }
+      ]
+    }
+  ]
+}]
