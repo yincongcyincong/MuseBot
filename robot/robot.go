@@ -5,9 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-
+	"github.com/yincongcyincong/telegram-deepseek-bot/command"
 	"net/http"
-	"net/url"
 	"strings"
 	"time"
 
@@ -29,71 +28,7 @@ const (
 func StartListenRobot() {
 	for {
 
-		// 配置自定义 HTTP Client 并设置代理
-		client := &http.Client{}
-
-		// parse proxy URL
-		if *conf.TelegramProxy != "" {
-			proxy, err := url.Parse(*conf.TelegramProxy)
-			if err != nil {
-				logger.Warn("Failed to parse proxy URL", err)
-			} else {
-				client.Transport = &http.Transport{
-					Proxy: http.ProxyURL(proxy),
-				}
-			}
-		}
-
-		bot, err := tgbotapi.NewBotAPIWithClient(*conf.BotToken, tgbotapi.APIEndpoint, client)
-		if err != nil {
-			logger.Fatal("Init bot fail", "err", err)
-		}
-
-		if *conf.LogLevel == "debug" {
-			bot.Debug = true
-		}
-
-		// set command
-		cmdCfg := tgbotapi.NewSetMyCommands(
-			tgbotapi.BotCommand{
-				Command:     "help",
-				Description: "help",
-			},
-			tgbotapi.BotCommand{
-				Command:     "clear",
-				Description: "clear all of your communication record with deepseek.",
-			},
-			tgbotapi.BotCommand{
-				Command:     "retry",
-				Description: "retry last question.",
-			},
-			tgbotapi.BotCommand{
-				Command:     "mode",
-				Description: "chose deepseek mode, include chat, coder, reasoner",
-			},
-			tgbotapi.BotCommand{
-				Command:     "balance",
-				Description: "show deepseek balance.",
-			},
-			tgbotapi.BotCommand{
-				Command:     "state",
-				Description: "calculate one user token usage.",
-			},
-			tgbotapi.BotCommand{
-				Command:     "photo",
-				Description: "using volcengine photo model create photo.",
-			},
-			tgbotapi.BotCommand{
-				Command:     "video",
-				Description: "using volcengine video model create video.",
-			},
-			tgbotapi.BotCommand{
-				Command:     "chat",
-				Description: "allows the bot to chat through /chat command in groups, without the bot being set as admin of the group.",
-			},
-		)
-		bot.Send(cmdCfg)
-
+		bot := conf.CreateBot()
 		logger.Info("telegramBot Info", "username", bot.Self.UserName)
 
 		u := tgbotapi.NewUpdate(0)
@@ -304,6 +239,8 @@ func handleCommand(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 		sendVideo(update)
 	case "help":
 		sendHelpConfigurationOptions(bot, update.Message.Chat.ID)
+	default:
+		command.ExecuteCustomCommand(cmd)
 	}
 }
 

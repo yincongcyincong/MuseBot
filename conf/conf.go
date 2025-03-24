@@ -2,10 +2,14 @@ package conf
 
 import (
 	"flag"
-	"fmt"
+	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
+	"net/http"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
+
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
 var (
@@ -19,10 +23,13 @@ var (
 	DBConf        *string
 	DeepseekProxy *string
 	TelegramProxy *string
-	LogLevel      *string
 
 	AllowedTelegramUserIds  = make(map[int64]bool)
 	AllowedTelegramGroupIds = make(map[int64]bool)
+)
+
+var (
+	Bot *tgbotapi.BotAPI
 )
 
 func InitConf() {
@@ -36,7 +43,6 @@ func InitConf() {
 	DBConf = flag.String("db_conf", "./data/telegram_bot.db", "db conf")
 	DeepseekProxy = flag.String("deepseek_proxy", "", "db conf")
 	TelegramProxy = flag.String("telegram_proxy", "", "db conf")
-	LogLevel = flag.String("log_level", "info", "log level")
 
 	allowedUserIds := flag.String("allowed_telegram_user_ids", "", "db conf")
 	allowedGroupIds := flag.String("allowed_telegram_group_ids", "", "db conf")
@@ -90,14 +96,10 @@ func InitConf() {
 		*TelegramProxy = os.Getenv("TELEGRAM_PROXY")
 	}
 
-	if os.Getenv("LOG_LEVEL") != "" {
-		*LogLevel = os.Getenv("LOG_LEVEL")
-	}
-
 	for _, userIdStr := range strings.Split(*allowedUserIds, ",") {
 		userId, err := strconv.Atoi(userIdStr)
 		if err != nil {
-			fmt.Println("AllowedTelegramUserIds parse error", "userID", userIdStr)
+			logger.Warn("AllowedTelegramUserIds parse error", "userID", userIdStr)
 			continue
 		}
 		AllowedTelegramUserIds[int64(userId)] = true
@@ -106,27 +108,97 @@ func InitConf() {
 	for _, groupIdStr := range strings.Split(*allowedGroupIds, ",") {
 		groupId, err := strconv.Atoi(groupIdStr)
 		if err != nil {
-			fmt.Println("AllowedTelegramGroupIds parse error", "groupId", groupIdStr)
+			logger.Warn("AllowedTelegramGroupIds parse error", "groupId", groupIdStr)
 			continue
 		}
 		AllowedTelegramGroupIds[int64(groupId)] = true
 	}
 
-	fmt.Println("TelegramBotToken:", *BotToken)
-	fmt.Println("DeepseekToken:", *DeepseekToken)
-	fmt.Println("CustomUrl:", *CustomUrl)
-	fmt.Println("DeepseekType:", *DeepseekType)
-	fmt.Println("VOLC_AK:", *VolcAK)
-	fmt.Println("VOLC_SK:", *VolcSK)
-	fmt.Println("DBType:", *DBType)
-	fmt.Println("DBConf:", *DBConf)
-	fmt.Println("AllowedTelegramUserIds:", *allowedUserIds)
-	fmt.Println("AllowedTelegramGroupIds:", *allowedGroupIds)
-	fmt.Println("DeepseekProxy:", *DeepseekProxy)
-	fmt.Println("TelegramProxy:", *TelegramProxy)
+	logger.Info("", "TelegramBotToken", *BotToken)
+	logger.Info("", "DeepseekToken", *DeepseekToken)
+	logger.Info("", "CustomUrl", *CustomUrl)
+	logger.Info("", "DeepseekType", *DeepseekType)
+	logger.Info("", "VOLC_AK", *VolcAK)
+	logger.Info("", "VOLC_SK", *VolcSK)
+	logger.Info("", "DBType", *DBType)
+	logger.Info("", "DBConf", *DBConf)
+	logger.Info("", "AllowedTelegramUserIds", *allowedUserIds)
+	logger.Info("", "AllowedTelegramGroupIds", *allowedGroupIds)
+	logger.Info("", "DeepseekProxy", *DeepseekProxy)
+	logger.Info("", "TelegramProxy", *TelegramProxy)
 
 	if *BotToken == "" || *DeepseekToken == "" {
 		panic("Bot token and deepseek token are required")
 	}
 
+}
+
+func CreateBot() *tgbotapi.BotAPI {
+	// 配置自定义 HTTP Client 并设置代理
+	client := &http.Client{}
+
+	// parse proxy URL
+	if *TelegramProxy != "" {
+		proxy, err := url.Parse(*TelegramProxy)
+		if err != nil {
+			logger.Info("Failed to parse proxy URL", err)
+		} else {
+			client.Transport = &http.Transport{
+				Proxy: http.ProxyURL(proxy),
+			}
+		}
+	}
+
+	var err error
+	Bot, err = tgbotapi.NewBotAPIWithClient(*BotToken, tgbotapi.APIEndpoint, client)
+	if err != nil {
+		panic("Init bot fail" + err.Error())
+	}
+
+	if *logger.LogLevel == "debug" {
+		Bot.Debug = true
+	}
+
+	// set command
+	cmdCfg := tgbotapi.NewSetMyCommands(
+		tgbotapi.BotCommand{
+			Command:     "help",
+			Description: "help",
+		},
+		tgbotapi.BotCommand{
+			Command:     "clear",
+			Description: "clear all of your communication record with deepseek.",
+		},
+		tgbotapi.BotCommand{
+			Command:     "retry",
+			Description: "retry last question.",
+		},
+		tgbotapi.BotCommand{
+			Command:     "mode",
+			Description: "chose deepseek mode, include chat, coder, reasoner",
+		},
+		tgbotapi.BotCommand{
+			Command:     "balance",
+			Description: "show deepseek balance.",
+		},
+		tgbotapi.BotCommand{
+			Command:     "state",
+			Description: "calculate one user token usage.",
+		},
+		tgbotapi.BotCommand{
+			Command:     "photo",
+			Description: "using volcengine photo model create photo.",
+		},
+		tgbotapi.BotCommand{
+			Command:     "video",
+			Description: "using volcengine video model create video.",
+		},
+		tgbotapi.BotCommand{
+			Command:     "chat",
+			Description: "allows the bot to chat through /chat command in groups, without the bot being set as admin of the group.",
+		},
+	)
+	Bot.Send(cmdCfg)
+
+	return Bot
 }

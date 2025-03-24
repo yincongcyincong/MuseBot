@@ -1,6 +1,7 @@
 package logger
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -8,9 +9,23 @@ import (
 	"strings"
 
 	"github.com/rs/zerolog"
-	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
 	"gopkg.in/natefinch/lumberjack.v2"
 )
+
+var (
+	LogLevel *string
+)
+
+func init() {
+	LogLevel = flag.String("log_level", "info", "log level")
+
+	if os.Getenv("LOG_LEVEL") != "" {
+		*LogLevel = os.Getenv("LOG_LEVEL")
+	}
+
+	fmt.Println("log level:", *LogLevel)
+
+}
 
 // Logger instance
 var Logger zerolog.Logger
@@ -37,7 +52,7 @@ func InitLogger() {
 	log.SetOutput(Logger)
 	log.SetFlags(0)
 	// set log level
-	switch strings.ToLower(*conf.LogLevel) {
+	switch strings.ToLower(*LogLevel) {
 	case "debug":
 		zerolog.SetGlobalLevel(zerolog.DebugLevel)
 	case "info":
