@@ -693,10 +693,10 @@ func sendImg(update tgbotapi.Update) {
 
 func checkUserAllow(update tgbotapi.Update) bool {
 	if len(conf.AllowedTelegramUserIds) == 0 {
-		return false
+		return true
 	}
 	if conf.AllowedTelegramUserIds[0] {
-		return true
+		return false
 	}
 
 	_, _, userId := utils.GetChatIdAndMsgIdAndUserID(update)
@@ -712,10 +712,10 @@ func checkGroupAllow(update tgbotapi.Update) bool {
 
 	if chat.IsGroup() || chat.IsSuperGroup() { // 判断是否是群组或超级群组
 		if len(conf.AllowedTelegramGroupIds) == 0 {
-			return false
+			return true
 		}
 		if conf.AllowedTelegramGroupIds[0] {
-			return true
+			return false
 		}
 		if _, ok := conf.AllowedTelegramGroupIds[chat.ID]; ok {
 			return true

@@ -68,8 +68,8 @@ You can configure the bot via environment variables:
 | VOLC_SK	                       | volcengine photo model sk      [doc](https://www.volcengine.com/docs/6444/1340578)                                             | -                         |
 | DB_TYPE                        | sqlite3 / mysql                                                                                                                | sqlite3                   |
 | DB_CONF	                       | ./data/telegram_bot.db / root:admin@tcp(127.0.0.1:3306)/dbname?charset=utf8mb4&parseTime=True&loc=Local                        | ./data/telegram_bot.db    |
-| ALLOWED_TELEGRAM_USER_IDS	     | telegram user id, only these users can use bot, using "," splite. 0 means all use can use it. empty means all user is banned   | -                         |
-| ALLOWED_TELEGRAM_GROUP_IDS	    | telegram chat id, only these chat can use bot, using "," splite. 0 means all group can use it. empty means all group is banned | -                         |
+| ALLOWED_TELEGRAM_USER_IDS	     | telegram user id, only these users can use bot, using "," splite. empty means all use can use it. 0 means all user is banned   | -                         |
+| ALLOWED_TELEGRAM_GROUP_IDS	    | telegram chat id, only these chat can use bot, using "," splite. empty means all group can use it. 0 means all group is banned | -                         |
 | DEEPSEEK_PROXY	                | deepseek proxy                                                                                                                 | -                         |
 | TELEGRAM_PROXY	                | telegram proxy                                                                                                                 | -                         |
 
