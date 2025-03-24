@@ -98,6 +98,7 @@ func InitConf() {
 		userId, err := strconv.Atoi(userIdStr)
 		if err != nil {
 			fmt.Println("AllowedTelegramUserIds parse error", "userID", userIdStr)
+			continue
 		}
 		AllowedTelegramUserIds[int64(userId)] = true
 	}
@@ -106,6 +107,7 @@ func InitConf() {
 		groupId, err := strconv.Atoi(groupIdStr)
 		if err != nil {
 			fmt.Println("AllowedTelegramGroupIds parse error", "groupId", groupIdStr)
+			continue
 		}
 		AllowedTelegramGroupIds[int64(groupId)] = true
 	}
