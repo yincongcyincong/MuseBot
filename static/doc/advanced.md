@@ -84,6 +84,9 @@ Here’s an example JSON configuration:
 ## **📖 Execution Flow**
 1. **Cron Trigger**
    - The task is triggered every minute as specified by the cron expression: `0 */1 * * * *`.
+   - execute command `/currency`    
+<img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/14415702-693a-4f8a-9403-71191d8649e2" />
+
 
 2. **HTTP Task (`task1`)**
    - The system sends a request to:
