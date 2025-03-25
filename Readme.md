@@ -10,6 +10,7 @@ AI-powered responses. The bot supports **streaming replies**, making interaction
 - ⏳ **Streaming Output**: Sends responses in real-time to improve user experience.
 - 🎯 **Command Handling**: Supports custom commands.
 - 🏗 **Easy Deployment**: Run locally or deploy to a cloud server.
+- 📈 **Custom Command**: Define your own commands, [go](https://github.com/yincongcyincong/telegram-deepseek-bot?tab=readme-ov-file#advanced-usage).
 
 ## 🤖 Usage Example
 
@@ -135,11 +136,11 @@ allows the bot to chat through /chat command in groups, without the bot being se
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/00a0faf3-6037-4d84-9a33-9aa6c320e44d" />
 
 ### /help
-
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/869e0207-388b-49ca-b26a-378f71d58818" />
 
 ## Advanced Usage
-[custom command](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/static/doc/advanced.md)
+[Custom Command](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/static/doc/advanced.md)      
+Define some HTTP requests combined with DeepSeek to enable DeepSeek to help you perform data analysis, article analysis, and other functions.
 
 ## Deployment
 
