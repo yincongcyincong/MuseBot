@@ -139,7 +139,7 @@ allows the bot to chat through /chat command in groups, without the bot being se
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/869e0207-388b-49ca-b26a-378f71d58818" />
 
 ## Advanced Usage
-[custom command](https://github.com/jackyin0822/telegram-deepseek-bot/blob/main/static/docs/advanced.md)
+[custom command](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/static/doc/advanced.md)
 
 ## Deployment
 
