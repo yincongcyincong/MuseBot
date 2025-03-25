@@ -1,0 +1,54 @@
+name: Go CI/CD Pipeline
+
+# 触发条件：在 push 和 pull request 时运行
+on:
+  push:
+    branches:
+      - main   # 主分支
+  pull_request:
+    branches:
+      - main
+
+# 工作流程定义
+jobs:
+  build:
+    runs-on: ubuntu-latest  # 指定运行环境
+    steps:
+      # 检出代码
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # 安装 Golang 环境
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.21  # 指定 Go 版本
+
+      # 下载依赖
+      - name: Install Dependencies
+        run: |
+          go mod tidy
+          go mod download
+
+      # 格式化和静态检查
+      - name: Lint and Vet
+        run: |
+          go fmt ./...
+          go vet ./...
+
+      # 运行测试
+      - name: Run Tests
+        run: go test -v ./...
+
+      # 构建
+      - name: Build
+        run: |
+          mkdir -p ./bin
+          go build -o ./bin/myapp main.go
+
+      # 上传构建产物
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: telegram-deepseek-bot
+          path: ./bin/telegram-deepseek-bot
