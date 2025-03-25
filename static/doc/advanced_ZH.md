@@ -53,7 +53,7 @@
             "proxy": ""
           },
           {
-            "name": "task1",
+            "name": "task2",
             "http_param": {
               "url": "https://api.binance.com/api/v3/ticker/price?symbol=DOGEUSDT",
               "method": "GET",
@@ -96,14 +96,14 @@
      }
      ```
    - 返回结果被存储为：
-   ```json
-   {
-    "task1": {
-      "price": "45000.00", 
-      "symbol": "BTCUSDT"
-    }
-   }
-    ```
+     ```json
+     {
+      "task1": {
+        "price": "45000.00", 
+        "symbol": "BTCUSDT"
+      }
+     }
+      ```
 
 3. **执行 AI 分析任务 (`task2`)**
    - `task1.price` 值被动态填充，例如 `"BTC price is 45000.00, give me some advice about investment."`
@@ -127,4 +127,4 @@
 3. **分析投资建议** (`deepseek` 任务)
 4. **扩展能力**（支持多个币种 & 消息推送）
 
-🚀 这样，你就可以用 Golang 执行自动化投资分析了！
+🚀 这样，你就可以用 deepseek 执行自动化投资分析了！
