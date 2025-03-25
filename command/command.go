@@ -238,27 +238,32 @@ func (c *CommandInfo) sendDeepseekContent(requests []*Task, proxy string) {
 			}
 		}
 
-		userIDs := strings.Split(c.c.SendUser, ",")
-		for _, userID := range userIDs {
-			userIDInt, err := strconv.ParseInt(userID, 10, 64)
-			if err != nil {
-				logger.Error("parse userID error", "err", err)
-				continue
+		if c.c.SendUser != "" {
+			userIDs := strings.Split(c.c.SendUser, ",")
+			for _, userID := range userIDs {
+				userIDInt, err := strconv.ParseInt(userID, 10, 64)
+				if err != nil {
+					logger.Error("parse userID error", "err", err)
+					continue
+				}
+				sendMsg(userIDInt, config.Name+" question: "+question)
+				sendMsg(userIDInt, config.Name+" answer: "+answer)
 			}
-			sendMsg(userIDInt, config.Name+" question: "+question)
-			sendMsg(userIDInt, config.Name+" answer: "+answer)
 		}
 
-		groupIDs := strings.Split(c.c.SendGroup, ",")
-		for _, groupID := range groupIDs {
-			groupIdInt, err := strconv.ParseInt(groupID, 10, 64)
-			if err != nil {
-				logger.Error("parse userID error", "err", err)
-				continue
+		if c.c.SendGroup != "" {
+			groupIDs := strings.Split(c.c.SendGroup, ",")
+			for _, groupID := range groupIDs {
+				groupIdInt, err := strconv.ParseInt(groupID, 10, 64)
+				if err != nil {
+					logger.Error("parse groupID error", "err", err)
+					continue
+				}
+				sendMsg(groupIdInt, config.Name+" question: "+question)
+				sendMsg(groupIdInt, config.Name+" answer: "+answer)
 			}
-			sendMsg(groupIdInt, config.Name+" question: "+question)
-			sendMsg(groupIdInt, config.Name+" answer: "+answer)
 		}
+
 	}
 }
 
