@@ -1,8 +1,8 @@
 [{
-  "crontab": "0 0 * * *",
+  "crontab": "",
   "command": "currency",
-  "send_user": "5542540980",
-  "send_group": "-1002450738077",
+  "send_user": "",
+  "send_group": "",
   "param":{
     "currency_pair": "BTCUSDT"
   },
@@ -17,7 +17,8 @@
             "method": "GET",
             "headers": {},
             "body": ""
-          }
+          },
+          "proxy": ""
         }
       ]
     },
@@ -25,7 +26,7 @@
       "type": "deepseek",
       "tasks": [
         {
-          "name": "deepseek",
+          "name": "task2",
           "template": "BTC price is {{.task1.price}}, give me some advice about investment.",
           "proxy": ""
         }

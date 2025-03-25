@@ -20,10 +20,6 @@ import (
 	"github.com/yincongcyincong/telegram-deepseek-bot/utils"
 )
 
-const (
-	DeepSeek = "deepseek"
-)
-
 // StartListenRobot start listen robot callback
 func StartListenRobot() {
 	for {
@@ -53,7 +49,7 @@ func StartListenRobot() {
 					continue
 				}
 
-				if *conf.DeepseekType == DeepSeek {
+				if *conf.DeepseekType == param.DeepSeek {
 					requestDeepseekAndResp(update, bot, update.Message.Text)
 				} else {
 					requestHuoshanAndResp(update, bot, update.Message.Text)
@@ -267,7 +263,7 @@ func sendChatMessage(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	}
 
 	// Reply to the chat content
-	if *conf.DeepseekType == DeepSeek {
+	if *conf.DeepseekType == param.DeepSeek {
 		requestDeepseekAndResp(update, bot, content)
 	} else {
 		requestHuoshanAndResp(update, bot, content)
@@ -278,7 +274,7 @@ func retryLastQuestion(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 
 	records := db.GetMsgRecord(userId)
 	if records != nil && len(records.AQs) > 0 {
-		if *conf.DeepseekType == DeepSeek {
+		if *conf.DeepseekType == param.DeepSeek {
 			requestDeepseekAndResp(update, bot, records.AQs[len(records.AQs)-1].Question)
 		} else {
 			requestHuoshanAndResp(update, bot, records.AQs[len(records.AQs)-1].Question)
@@ -309,7 +305,7 @@ func clearAllRecord(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 func showBalanceInfo(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	chatId, _, _ := utils.GetChatIdAndMsgIdAndUserID(update)
 
-	if *conf.DeepseekType != DeepSeek {
+	if *conf.DeepseekType != param.DeepSeek {
 		msg := tgbotapi.NewMessage(chatId, "🚀now model is not deepseek")
 		msg.ParseMode = tgbotapi.ModeMarkdown
 		_, err := bot.Send(msg)
