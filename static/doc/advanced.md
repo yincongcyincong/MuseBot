@@ -101,14 +101,14 @@ Here’s an example JSON configuration:
      }
      ```
    - save data into `param` like：
-   ```json
-   {
-    "task1": {
-      "price": "45000.00", 
-      "symbol": "BTCUSDT"
-    }
-   }
-    ```
+     ```json
+     {
+      "task1": {
+        "price": "45000.00", 
+        "symbol": "BTCUSDT"
+      }
+     }
+      ```
 
 3. **AI Processing Task (`task2`)**
    - The AI task uses the response from `task1` and processes the template:
