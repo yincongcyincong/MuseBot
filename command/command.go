@@ -43,16 +43,16 @@ type CostumCommand struct {
 
 // Chain chain struct
 type Chain struct {
-	Type  string  `json:"type"`  // 任务类型（http 或 deepseek）
-	Tasks []*Task `json:"tasks"` // 任务列表
+	Type  string  `json:"type"`
+	Tasks []*Task `json:"tasks"`
 	Proxy string  `json:"proxy"`
 }
 
 // Task task
 type Task struct {
-	Name      string     `json:"name"`                 // 任务名称
-	HTTPParam *HTTPParam `json:"http_param,omitempty"` // HTTP 请求参数（仅当 type 为 http 时有效）
-	Template  string     `json:"template,omitempty"`   // 模板字符串（仅当 type 为 deepseek 时有效）
+	Name      string     `json:"name"`
+	HTTPParam *HTTPParam `json:"http_param,omitempty"`
+	Template  string     `json:"template,omitempty"`
 }
 
 const (
@@ -62,10 +62,10 @@ const (
 
 // HTTPParam send http request
 type HTTPParam struct {
-	URL     string            `json:"url"`     // 请求 URL
-	Method  string            `json:"method"`  // 请求方法（GET、POST 等）
-	Headers map[string]string `json:"headers"` // 请求头
-	Body    string            `json:"body"`    // 请求体
+	URL     string            `json:"url"`
+	Method  string            `json:"method"`
+	Headers map[string]string `json:"headers"`
+	Body    string            `json:"body"`
 }
 
 var (
@@ -80,14 +80,12 @@ func LoadCustomCommands() {
 	}
 	defer file.Close()
 
-	// 读取文件内容
 	data, err := ioutil.ReadAll(file)
 	if err != nil {
 		logger.Error("read command.json error", err)
 		return
 	}
 
-	// 将 JSON 解析到结构体
 	err = json.Unmarshal(data, &CustomCommandList)
 	if err != nil {
 		logger.Error("parse command.json error", err)
@@ -210,7 +208,6 @@ func (c *CommandInfo) concurrentHTTPRequests(requests []*Task, proxy string) {
 		close(resultChan)
 	}()
 
-	// 收集结果
 	for resp := range resultChan {
 		for key, value := range resp {
 			c.c.Param[key] = value

@@ -53,7 +53,7 @@
             "proxy": ""
           },
           {
-            "name": "task1",
+            "name": "task2",
             "http_param": {
               "url": "https://api.binance.com/api/v3/ticker/price?symbol=DOGEUSDT",
               "method": "GET",
