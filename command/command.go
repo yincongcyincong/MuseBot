@@ -18,6 +18,7 @@ import (
 	"github.com/cohesion-org/deepseek-go"
 	"github.com/cohesion-org/deepseek-go/constants"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/robfig/cron/v3"
 	"github.com/volcengine/volcengine-go-sdk/service/arkruntime"
 	"github.com/volcengine/volcengine-go-sdk/service/arkruntime/model"
 	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
@@ -68,7 +69,7 @@ type HTTPParam struct {
 }
 
 var (
-	CustomeCommandList = make([]*CostumCommand, 0)
+	CustomCommandList = make([]*CostumCommand, 0)
 )
 
 func LoadCustomCommands() {
@@ -87,15 +88,30 @@ func LoadCustomCommands() {
 	}
 
 	// 将 JSON 解析到结构体
-	err = json.Unmarshal(data, &CustomeCommandList)
+	err = json.Unmarshal(data, &CustomCommandList)
 	if err != nil {
 		logger.Error("parse command.json error", err)
 	}
+
+	c := cron.New(cron.WithSeconds())
+
+	for _, command := range CustomCommandList {
+		if command.Crontab != "" {
+			_, err = c.AddFunc(command.Crontab, func() {
+				command.Execute()
+			})
+			if err != nil {
+				logger.Error("crontab parse error", err)
+			}
+		}
+	}
+
+	c.Start()
 }
 
 func ExecuteCustomCommand(command string) {
 	var c *CostumCommand
-	for _, customCommand := range CustomeCommandList {
+	for _, customCommand := range CustomCommandList {
 		if customCommand.Command == command {
 			c = customCommand
 			break
@@ -106,9 +122,14 @@ func ExecuteCustomCommand(command string) {
 		return
 	}
 
+	c.Execute()
+}
+
+func (c *CostumCommand) Execute() {
 	cf := &CommandInfo{
 		c:           c,
 		deepseekMsg: make([]deepseek.ChatCompletionMessage, 0),
+		huoshanMsg:  make([]*model.ChatCompletionMessage, 0),
 	}
 
 	for _, chain := range c.Chains {
@@ -230,13 +251,13 @@ func (c *CommandInfo) sendDeepseekContent(requests []*Task, proxy string) {
 
 		groupIDs := strings.Split(c.c.SendGroup, ",")
 		for _, groupID := range groupIDs {
-			userIDInt, err := strconv.ParseInt(groupID, 10, 64)
+			groupIdInt, err := strconv.ParseInt(groupID, 10, 64)
 			if err != nil {
 				logger.Error("parse userID error", "err", err)
 				continue
 			}
-			sendMsg(userIDInt, config.Name+" question: "+question)
-			sendMsg(userIDInt, config.Name+" answer: "+answer)
+			sendMsg(groupIdInt, config.Name+" question: "+question)
+			sendMsg(groupIdInt, config.Name+" answer: "+answer)
 		}
 	}
 }

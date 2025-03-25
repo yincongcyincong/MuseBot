@@ -1,5 +1,9 @@
 package param
 
+const (
+	DeepSeek = "deepseek"
+)
+
 type MsgInfo struct {
 	MsgId       int
 	Content     string
