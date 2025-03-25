@@ -44,7 +44,7 @@ jobs:
       - name: Build
         run: |
           mkdir -p ./bin
-          go build -o ./bin/myapp main.go
+          go build -o ./bin/telegram-deepseek-bot main.go
 
       # 上传构建产物
       - name: Upload Artifact
