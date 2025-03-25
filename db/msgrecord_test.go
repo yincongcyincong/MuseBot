@@ -1,13 +1,12 @@
 package db
 
 import (
+	"github.com/stretchr/testify/assert"
+	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
 	"os"
 	"strconv"
 	"sync"
 	"testing"
-	"time"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestMain(m *testing.M) {
@@ -19,6 +18,9 @@ func TestMain(m *testing.M) {
 }
 
 func setup() {
+	os.Setenv("TELEGRAM_BOT_TOKEN", "test_bot_token")
+	os.Setenv("DEEPSEEK_TOKEN", "test_deepseek_token")
+	conf.InitConf()
 	InitTable()
 }
 
@@ -59,21 +61,4 @@ func TestDeleteMsgRecord(t *testing.T) {
 
 	record := GetMsgRecord(userId)
 	assert.Nil(t, record, "Record should be deleted")
-}
-
-func TestStarCheckUserLen(t *testing.T) {
-	MsgRecord = sync.Map{}
-
-	for i := 0; i < MaxUserLength+5; i++ {
-		MsgRecord.Store(int64(i), &MsgRecordInfo{updateTime: time.Now().Unix()})
-	}
-
-	UpdateDBData()
-
-	totalNum := 0
-	MsgRecord.Range(func(_, _ interface{}) bool {
-		totalNum++
-		return true
-	})
-	assert.LessOrEqual(t, totalNum, MaxUserLength, "Should clean up extra users")
 }

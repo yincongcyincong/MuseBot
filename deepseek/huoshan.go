@@ -230,7 +230,8 @@ func GenerateVideo(prompt string) (string, error) {
 		return "", errors.New("prompt is empty")
 	}
 
-	ctx, _ := context.WithTimeout(context.Background(), 5*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
 
 	httpClient := &http.Client{
 		Timeout: 30 * time.Minute,

@@ -15,6 +15,9 @@ func TestInitConf(t *testing.T) {
 	os.Setenv("DEEPSEEK_TYPE", "test_type")
 	os.Setenv("VOLC_AK", "ak")
 	os.Setenv("VOLC_SK", "sk")
+	os.Setenv("LOG_LEVEL", "debug")
+	os.Setenv("DBType", "sqlite3")
+	os.Setenv("DBPath", "./test.db")
 
 	// call InitConf
 	InitConf()
