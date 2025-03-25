@@ -10,7 +10,7 @@ AI-powered responses. The bot supports **streaming replies**, making interaction
 - ⏳ **Streaming Output**: Sends responses in real-time to improve user experience.
 - 🎯 **Command Handling**: Supports custom commands.
 - 🏗 **Easy Deployment**: Run locally or deploy to a cloud server.
-- 📈 **Custom Command**: Define your own commands, [go](https://github.com/yincongcyincong/telegram-deepseek-bot?tab=readme-ov-file#advanced-usage).
+- 📈 **Custom Command**: Define your own commands, [go](#advanced-usage).
 
 ## 🤖 Usage Example
 
