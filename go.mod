@@ -6,6 +6,7 @@ require (
 	github.com/cohesion-org/deepseek-go v1.2.7
 	github.com/go-sql-driver/mysql v1.9.0
 	github.com/go-telegram-bot-api/telegram-bot-api/v5 v5.5.1
+	github.com/jarcoal/httpmock v1.3.1
 	github.com/mattn/go-sqlite3 v1.14.24
 	github.com/prometheus/client_golang v1.11.1
 	github.com/robfig/cron/v3 v3.0.1
