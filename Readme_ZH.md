@@ -1,24 +1,34 @@
-# DeepSeek Telegram 机器人
+# DeepSeek Telegram Bot
 
-本仓库提供了一个基于 **Golang** 构建的 **Telegram 机器人**，集成了 **DeepSeek API**，实现 AI 驱动的智能回复功能。机器人支持 **流式输出**，让交互更加自然流畅。  
-[English Documentation](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/README.md)
+本仓库提供了一个基于 **Golang** 构建的 **Telegram 机器人**，集成了 **DeepSeek API**，实现 AI 驱动的回复。  
+该机器人支持 **流式输出**，让对话体验更加自然和流畅。  
+[English Doc](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/README.md)
 
-## 🚀 功能特点
+---
 
-- 🤖 **AI 智能回复**：使用 DeepSeek API 进行智能对话。
-- ⏳ **流式输出**：实时发送回复，提升用户体验。
-- 🎯 **命令处理**：支持自定义命令。
-- 🏗 **轻松部署**：可在本地运行或部署到云服务器。
+## 🚀 功能特性
+
+- 🤖 **AI 回复**：通过 DeepSeek API 实现智能聊天。
+- ⏳ **流式输出**：流式返回回复，减少等待时间。
+- 🎯 **自定义命令**：支持自定义命令扩展功能。
+- 🏗 **简易部署**：支持本地或云服务器部署。
+- 📈 **自定义链式命令**：自定义 HTTP 请求链，结合 DeepSeek 实现数据分析、文章解析等功能 [go](#高级用法)。
+
+---
 
 ## 🤖 使用示例
 
 [使用视频](https://github.com/yincongcyincong/telegram-deepseek-bot/wiki/Usage-Video)
 
+---
+
 ## 📌 环境要求
 
 - [Go 1.24+](https://go.dev/dl/)
 - [Telegram Bot Token](https://core.telegram.org/bots/tutorial#obtain-your-bot-token)
-- [DeepSeek 授权 Token](https://api-docs.deepseek.com/zh-cn/)
+- [DeepSeek Auth Token](https://api-docs.deepseek.com/zh-cn/)
+
+---
 
 ## 📥 安装
 
@@ -33,122 +43,138 @@
    go mod tidy
    ```
 
-3. **配置环境变量**
+3. **设置环境变量**
    ```sh
-   export TELEGRAM_BOT_TOKEN="你的 Telegram 机器人 Token"
-   export DEEPSEEK_TOKEN="你的 DeepSeek 授权 Token"
+   export TELEGRAM_BOT_TOKEN="你的Telegram Bot Token"
+   export DEEPSEEK_TOKEN="你的DeepSeek API密钥"
    ```
 
-## 🚀 启动
+---
 
-本地运行：
+## 🚀 使用方法
+
+在本地运行：
 
 ```sh
-go run main.go -telegram_bot_token=你的_telegram_token -deepseek_token=你的_deepseek_token
+go run main.go -telegram_bot_token=telegram-bot-token -deepseek_token=deepseek-auth-token
 ```
 
-使用 Docker：
+使用 Docker 运行：
 
 ```sh
 docker pull jackyin0822/telegram-deepseek-bot:latest
-docker run -d -v /home/user/data:/app/data -e TELEGRAM_BOT_TOKEN="你的_telegram_token" -e DEEPSEEK_TOKEN="你的_deepseek_token" --name my-telegram-bot jackyin0822/telegram-deepseek-bot:latest
+docker run -d -v /home/user/data:/app/data -e TELEGRAM_BOT_TOKEN="你的Telegram Bot Token" -e DEEPSEEK_TOKEN="你的DeepSeek API密钥" --name my-telegram-bot jackyin0822/telegram-deepseek-bot:latest
 ```
 
-## ⚙️ 配置
+---
 
-通过环境变量配置机器人：
+## ⚙️ 配置项
 
-| 变量名                         | 描述                                                                                                 | 默认值                       |
-|--------------------------------|----------------------------------------------------------------------------------------------------|------------------------------|
-| TELEGRAM_BOT_TOKEN (必填)      | Telegram 机器人 Token                                                                                 | -                            |
-| DEEPSEEK_TOKEN (必填)          | DeepSeek API Key  / volcengine Api Key[文档](https://www.volcengine.com/docs/82379/1399008#b00dee71) | -                            |
-| CUSTOM_URL                     | 自定义 DeepSeek URL                                                                                   | https://api.deepseek.com/    |
-| DEEPSEEK_TYPE                   | DeepSeek 类型（deepseek-r1-250120，doubao-1.5-pro-32k-250115 等）                                        | deepseek                     |
-| VOLC_AK                         | Volcengine 图像生成模型的 AK [文档](https://www.volcengine.com/docs/6444/1340578)                           | -                            |
-| VOLC_SK                         | Volcengine 图像生成模型的 SK [文档](https://www.volcengine.com/docs/6444/1340578)                           | -                            |
-| DB_TYPE                         | 数据库类型：sqlite3 / mysql                                                                              | sqlite3                      |
-| DB_CONF                         | 数据库配置：sqlite3 文件路径或 MySQL 连接信息                                                                     | ./data/telegram_bot.db       |
-| ALLOWED_TELEGRAM_USER_IDS       | 允许使用机器人的 Telegram 群聊 ID，多个群聊用逗号分隔，0表示所有用户可使用， 空表示所有群组都不能使用         | -                            |
-| ALLOWED_TELEGRAM_USER_IDS       | 允许使用机器人的 Telegram 用户 ID，多个用户用逗号分隔，0表示所有用户可使用，空表示所有用户都不能使用         | -                            |
-| DEEPSEEK_PROXY                   | DeepSeek 代理                                                                                        | -                            |
-| TELEGRAM_PROXY                   | Telegram 代理                                                                                        | -                            |
+机器人支持通过环境变量进行配置：
 
-### CUSTOM_URL
+| 变量名称                      | 描述                                                                                             | 默认值                       |
+|------------------------------|-------------------------------------------------------------------------------------------------|-----------------------------|
+| TELEGRAM_BOT_TOKEN（必填）   | Telegram 机器人 Token                                                                            | -                           |
+| DEEPSEEK_TOKEN（必填）       | DeepSeek API 密钥或火山引擎密钥 [文档](https://www.volcengine.com/docs/82379/1399008#b00dee71)   | -                           |
+| CUSTOM_URL                    | 自定义 DeepSeek 请求地址（自建服务）                                                              | https://api.deepseek.com/   |
+| DEEPSEEK_TYPE                  | deepseek / 其他模型（如 deepseek-r1-250120, doubao-1.5-pro-32k-250115）                          | deepseek                    |
+| VOLC_AK                       | 火山引擎图片模型 AK [文档](https://www.volcengine.com/docs/6444/1340578)                         | -                           |
+| VOLC_SK                       | 火山引擎图片模型 SK [文档](https://www.volcengine.com/docs/6444/1340578)                         | -                           |
+| DB_TYPE                       | 数据库类型：sqlite3 或 mysql                                                                      | sqlite3                     |
+| DB_CONF                       | 数据库配置：sqlite3 文件路径或 MySQL 连接串                                                        | ./data/telegram_bot.db      |
+| ALLOWED_TELEGRAM_USER_IDS     | 指定允许使用机器人的用户 ID，逗号分隔，空为所有用户可用，0 表示禁止所有用户                      | -                           |
+| ALLOWED_TELEGRAM_GROUP_IDS    | 指定允许使用机器人的群组 ID，逗号分隔，空为所有群可用，0 表示禁止所有群                         | -                           |
+| DEEPSEEK_PROXY                 | DeepSeek 请求代理地址                                                                             | -                           |
+| TELEGRAM_PROXY                 | Telegram 请求代理地址                                                                            | -                           |
 
-如果使用自建的 DeepSeek 服务，可通过 CUSTOM_URL 指定自建服务的地址。
+---
 
-### DEEPSEEK_TYPE
+## 💬 命令
 
-- `deepseek`: 使用官方 DeepSeek 服务，但稳定性可能波动。  
-- `others`: 使用其他模型，例如 [火山引擎](https://www.volcengine.com/docs/82379/1463946)。
+### `/clear`
 
-### DB_TYPE
+清除与 DeepSeek 的历史对话记录，用于上下文清理。
 
-支持 sqlite3 和 MySQL：
+### `/retry`
 
-- sqlite3：配置为数据库文件路径，例如 `./data/telegram_bot.db`
-- MySQL：配置为 MySQL 连接信息，数据库需提前创建，例如：
-  ```
-  root:admin@tcp(127.0.0.1:3306)/dbname?charset=utf8mb4&parseTime=True&loc=Local
-  ```
+重试上一次问题。
 
-## 🛠️ 命令
+### `/mode`
 
-### /clear
-清除与 DeepSeek 的所有对话记录，这些记录用于帮助 DeepSeek 理解上下文。
+选择 DeepSeek 模式，包括：
+- `chat`: 对话模式（DeepSeek-V3）
+- `coder`: 编程模式（DeepSeek-V3）
+- `reasoner`: 推理模式（DeepSeek-R1）
 
-### /retry
-重试上一个问题。
+<img width="400" src="https://github.com/user-attachments/assets/55ac3101-92d2-490d-8ee0-31a5b297e56e" />
 
-### /mode
-选择 DeepSeek 模式，包括 `chat`、`coder` 和 `reasoner`。  
-- `chat` 和 `coder` 对应 DeepSeek-V3  
-- `reasoner` 对应 DeepSeek-R1  
-<img width="374" alt="mode" src="https://github.com/user-attachments/assets/55ac3101-92d2-490d-8ee0-31a5b297e56e" />
+### `/balance`
 
-### /balance
-查询 DeepSeek 账户的余额。  
-<img width="374" alt="balance" src="https://github.com/user-attachments/assets/23048b44-a3af-457f-b6ce-3678b6776410" />
+查询当前用户的 DeepSeek API 余额。
 
-### /state
-计算当前用户的 Token 使用量。  
-<img width="374" alt="state" src="https://github.com/user-attachments/assets/0814b3ac-dcf6-4ec7-ae6b-3b8d190a0132" />
+<img width="400" src="https://github.com/user-attachments/assets/23048b44-a3af-457f-b6ce-3678b6776410" />
 
-### /photo
-使用 Volcengine 图像生成模型创建图片，需配置 VOLC_AK 和 VOLC_SK。[文档](https://www.volcengine.com/docs/6444/1340578)  
-<img width="374" alt="photo" src="https://github.com/user-attachments/assets/c8072d7d-74e6-4270-8496-1b4e7532134b" />
+### `/state`
 
-### /chat
-在群组中使用 `/chat` 命令与机器人对话，无需将机器人设置为管理员。  
-<img width="374" alt="chat" src="https://github.com/user-attachments/assets/00a0faf3-6037-4d84-9a33-9aa6c320e44d" />
+统计用户的 Token 使用量。
 
-### /video
-生成一个视频，`DEEPSEEK_TOKEN` 必须是 volcengine Api key. deepseek暂不支持生成视频. [文档](https://www.volcengine.com/docs/82379/1399008#b00dee71)      
-<img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/884eeb48-76c4-4329-9446-5cd3822a5d16" />
+<img width="400" src="https://github.com/user-attachments/assets/0814b3ac-dcf6-4ec7-ae6b-3b8d190a0132" />
 
+### `/photo`
 
-### /help
-查看帮助信息。  
-<img width="374" alt="help" src="https://github.com/user-attachments/assets/869e0207-388b-49ca-b26a-378f71d58818" />
+使用火山引擎图片模型生成图片，DeepSeek 暂不支持图片生成。  
+需要配置 `VOLC_AK` 和 `VOLC_SK`。[文档](https://www.volcengine.com/docs/6444/1340578)
 
-## 🚀 部署
+<img width="400" src="https://github.com/user-attachments/assets/c8072d7d-74e6-4270-8496-1b4e7532134b" />
 
-### 使用 Docker 部署
+### `/video`
+
+生成视频，需要使用火山引擎 API 密钥（`DEEPSEEK_TOKEN`），DeepSeek 暂不支持视频生成。  
+[文档](https://www.volcengine.com/docs/82379/1399008#b00dee71)
+
+<img width="400" src="https://github.com/user-attachments/assets/884eeb48-76c4-4329-9446-5cd3822a5d16" />
+
+### `/chat`
+
+在群组中使用 `/chat` 命令与机器人对话，无需将机器人设置为管理员。
+
+<img width="400" src="https://github.com/user-attachments/assets/00a0faf3-6037-4d84-9a33-9aa6c320e44d" />
+
+### `/help`
+
+显示帮助信息。
+
+<img width="400" src="https://github.com/user-attachments/assets/869e0207-388b-49ca-b26a-378f71d58818" />
+
+---
+
+## 高级用法
+
+[自定义命令](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/static/doc/advanced.md)  
+通过自定义 HTTP 请求与 DeepSeek 结合，实现数据分析、文章解析等功能。
+
+---
+
+## 🚀 Docker 部署
 
 1. **构建 Docker 镜像**
    ```sh
    docker build -t deepseek-telegram-bot .
    ```
 
-2. **运行容器**
+2. **运行 Docker 容器**
    ```sh
-   docker run -d -v /home/user/xxx/data:/app/data -e TELEGRAM_BOT_TOKEN="你的_telegram_token" -e DEEPSEEK_TOKEN="你的_deepseek_token" --name my-telegram-bot telegram-deepseek-bot 
+   docker run -d -v /home/user/xxx/data:/app/data -e TELEGRAM_BOT_TOKEN="你的Telegram Bot Token" -e DEEPSEEK_TOKEN="你的DeepSeek API密钥" --name my-telegram-bot deepseek-telegram-bot 
    ```
+
+---
 
 ## 🤝 贡献
 
-欢迎提交 Issues 和 Pull Requests 来改进此机器人！🚀
+欢迎提交 Issue 和 Pull Request，一起优化和改进本项目！🚀
 
-## 📜 许可证
+---
 
-MIT License © 2025 jack yin
+## 📜 开源协议
+
+MIT License © 2025 Jack Yin

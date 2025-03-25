@@ -1,7 +1,7 @@
 [{
   "crontab": "",
   "command": "currency",
-  "send_user": "5542540980",
+  "send_user": "",
   "send_group": "",
   "param":{
     "currency_pair": "BTCUSDT"
