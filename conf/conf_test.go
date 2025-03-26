@@ -15,9 +15,12 @@ func TestInitConf(t *testing.T) {
 	os.Setenv("DEEPSEEK_TYPE", "test_type")
 	os.Setenv("VOLC_AK", "ak")
 	os.Setenv("VOLC_SK", "sk")
-	os.Setenv("LOG_LEVEL", "debug")
-	os.Setenv("DBType", "sqlite3")
-	os.Setenv("DBPath", "./test.db")
+	os.Setenv("DB_TYPE", "sqlite3")
+	os.Setenv("DB_CONF", "./test.db")
+	os.Setenv("ALLOWED_TELEGRAM_USER_IDS", "0")
+	os.Setenv("ALLOWED_TELEGRAM_GROUP_IDS", "0")
+	os.Setenv("DEEPSEEK_PROXY", "http://127.0.0.1:7890")
+	os.Setenv("TELEGRAM_PROXY", "http://127.0.0.1:7891")
 
 	// call InitConf
 	InitConf()
@@ -29,5 +32,11 @@ func TestInitConf(t *testing.T) {
 	assert.Equal(t, "test_type", *DeepseekType, "DeepseekType should be from environment variable")
 	assert.Equal(t, "ak", *VolcAK, "VolcAK should be from environment variable")
 	assert.Equal(t, "sk", *VolcSK, "VolcSK should be from environment variable")
+	assert.Equal(t, "sqlite3", *DBType, "DBType should be from environment variable")
+	assert.Equal(t, "./test.db", *DBConf, "DBPath should be from environment variable")
+	assert.Equal(t, "http://127.0.0.1:7891", *TelegramProxy, "TelegramProxy should be from environment variable")
+	assert.Equal(t, map[int64]bool{0: true}, AllowedTelegramUserIds, "AllowedTelegramUserIds should be from environment variable")
+	assert.Equal(t, map[int64]bool{0: true}, AllowedTelegramGroupIds, "AllowedTelegramGroupIds should be from environment variable")
+	assert.Equal(t, "http://127.0.0.1:7890", *DeepseekProxy, "DeepseekProxy should be from environment variable")
 
 }

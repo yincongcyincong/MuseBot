@@ -127,7 +127,8 @@ func InsertRecord() {
 		if err != nil {
 			logger.Error("InsertRecord GetUsers err", "err", err)
 		}
-		for _, record := range records {
+		for i := len(records) - 1; i >= 0; i-- {
+			record := records[i]
 			InsertMsgRecord(user.UserId, &AQ{
 				Question: record.Question,
 				Answer:   record.Answer,
@@ -143,7 +144,7 @@ func InsertRecord() {
 // getRecordsByUserId get latest 10 records by user_id
 func getRecordsByUserId(userId int64) ([]Record, error) {
 	// construct SQL statements
-	query := fmt.Sprintf("SELECT id, user_id, question, answer FROM records WHERE user_id =  ? and is_deleted = 0 limit 10")
+	query := fmt.Sprintf("SELECT id, user_id, question, answer FROM records WHERE user_id =  ? and is_deleted = 0 order by create_time desc limit 10")
 
 	// execute query
 	rows, err := DB.Query(query, userId)

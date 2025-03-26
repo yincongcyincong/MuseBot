@@ -23,7 +23,7 @@ import (
 const (
 	OneMsgLen       = 3896
 	FirstSendLen    = 30
-	NonFirstSendLen = 300
+	NonFirstSendLen = 500
 )
 
 // GetContentFromDP get comment from deepseek
