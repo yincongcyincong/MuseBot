@@ -5,16 +5,17 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/yincongcyincong/telegram-deepseek-bot/command"
 	"net/http"
 	"strings"
 	"time"
 
 	godeepseek "github.com/cohesion-org/deepseek-go"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/yincongcyincong/telegram-deepseek-bot/command"
 	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
 	"github.com/yincongcyincong/telegram-deepseek-bot/db"
 	"github.com/yincongcyincong/telegram-deepseek-bot/deepseek"
+	"github.com/yincongcyincong/telegram-deepseek-bot/i18n"
 	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
 	"github.com/yincongcyincong/telegram-deepseek-bot/param"
 	"github.com/yincongcyincong/telegram-deepseek-bot/utils"
@@ -89,7 +90,7 @@ func handleUpdate(messageChan chan *param.MsgInfo, update tgbotapi.Update, bot *
 	chatId, msgId, userId := utils.GetChatIdAndMsgIdAndUserID(update)
 	parseMode := tgbotapi.ModeMarkdown
 
-	tgMsgInfo := tgbotapi.NewMessage(chatId, "🤔 thinking...")
+	tgMsgInfo := tgbotapi.NewMessage(chatId, i18n.GetMessage(*conf.Lang, "thinking", nil))
 	tgMsgInfo.ReplyToMessageID = msgId
 	firstSendInfo, err := bot.Send(tgMsgInfo)
 	if err != nil {
@@ -254,7 +255,7 @@ func sendChatMessage(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 
 	if len(content) == 0 {
 		// If there is no chat content after command
-		msg := tgbotapi.NewMessage(chatId, "❌ Please input text after /chat command.")
+		msg := tgbotapi.NewMessage(chatId, i18n.GetMessage(*conf.Lang, "chat_fail", nil))
 		_, err := bot.Send(msg)
 		if err != nil {
 			logger.Warn("send help message fail", "err", err)
@@ -280,7 +281,7 @@ func retryLastQuestion(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 			requestHuoshanAndResp(update, bot, records.AQs[len(records.AQs)-1].Question)
 		}
 	} else {
-		msg := tgbotapi.NewMessage(chatId, "🚀no last question!")
+		msg := tgbotapi.NewMessage(chatId, i18n.GetMessage(*conf.Lang, "last_question_fail", nil))
 		msg.ParseMode = tgbotapi.ModeMarkdown
 		_, err := bot.Send(msg)
 		if err != nil {
@@ -293,7 +294,7 @@ func retryLastQuestion(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 func clearAllRecord(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	chatId, _, userId := utils.GetChatIdAndMsgIdAndUserID(update)
 	db.DeleteMsgRecord(userId)
-	msg := tgbotapi.NewMessage(chatId, "🚀successfully delete!")
+	msg := tgbotapi.NewMessage(chatId, i18n.GetMessage(*conf.Lang, "delete_succ", nil))
 	msg.ParseMode = tgbotapi.ModeMarkdown
 	_, err := bot.Send(msg)
 	if err != nil {
@@ -306,7 +307,7 @@ func showBalanceInfo(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	chatId, _, _ := utils.GetChatIdAndMsgIdAndUserID(update)
 
 	if *conf.DeepseekType != param.DeepSeek {
-		msg := tgbotapi.NewMessage(chatId, "🚀now model is not deepseek")
+		msg := tgbotapi.NewMessage(chatId, i18n.GetMessage(*conf.Lang, "not_deepseek", nil))
 		msg.ParseMode = tgbotapi.ModeMarkdown
 		_, err := bot.Send(msg)
 		if err != nil {
@@ -318,19 +319,10 @@ func showBalanceInfo(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	balance := deepseek.GetBalanceInfo()
 
 	// handle balance info msg
-	msgContent := fmt.Sprintf(`🟣 Available: %t
+	msgContent := fmt.Sprintf(i18n.GetMessage(*conf.Lang, "balance_title", nil), balance.IsAvailable)
 
-`, balance.IsAvailable)
+	template := i18n.GetMessage(*conf.Lang, "balance_content", nil)
 
-	template := `🟣 Your Currency: %s
-
-🟣 Your TotalBalance Left: %s
-
-🟣 Your ToppedUpBalance Left: %s
-
-🟣 Your GrantedBalance Left: %s
-
-`
 	for _, bInfo := range balance.BalanceInfos {
 		msgContent += fmt.Sprintf(template, bInfo.Currency, bInfo.TotalBalance,
 			bInfo.ToppedUpBalance, bInfo.GrantedBalance)
@@ -377,15 +369,7 @@ func showStateInfo(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 		logger.Warn("get week token fail", "err", err)
 	}
 
-	template := `🟣 Your Total Token Usage: %d
-
-🟣 Your Today Token Usage: %d
-
-🟣 Your This Week Token Usage: %d
-
-🟣 Your This Month Token Usage: %d
-
-`
+	template := i18n.GetMessage(*conf.Lang, "state_content", nil)
 	msgContent := fmt.Sprintf(template, userInfo.Token, todayTokey, weekToken, monthToken)
 	msg := tgbotapi.NewMessage(chatId, msgContent)
 	msg.ParseMode = tgbotapi.ModeMarkdown
@@ -411,7 +395,7 @@ func sendModeConfigurationOptions(bot *tgbotapi.BotAPI, chatID int64) {
 		),
 	)
 
-	msg := tgbotapi.NewMessage(chatID, "🚀**Select chat mode**")
+	msg := tgbotapi.NewMessage(chatID, i18n.GetMessage(*conf.Lang, "chat_mode", nil))
 	msg.ReplyMarkup = inlineKeyboard
 	msg.ParseMode = tgbotapi.ModeMarkdown
 	_, err := bot.Send(msg)
@@ -437,7 +421,7 @@ func sendHelpConfigurationOptions(bot *tgbotapi.BotAPI, chatID int64) {
 		),
 	)
 
-	msg := tgbotapi.NewMessage(chatID, "🤖**Select command**")
+	msg := tgbotapi.NewMessage(chatID, i18n.GetMessage(*conf.Lang, "command_notice", nil))
 	msg.ReplyMarkup = inlineKeyboard
 	msg.ParseMode = tgbotapi.ModeMarkdown
 	_, err := bot.Send(msg)
@@ -495,19 +479,19 @@ func handleModeUpdate(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 		logger.Warn("request callback fail", "err", err)
 	}
 
-	msg := tgbotapi.NewMessage(update.CallbackQuery.Message.Chat.ID, "You choose: "+update.CallbackQuery.Data)
+	msg := tgbotapi.NewMessage(update.CallbackQuery.Message.Chat.ID, i18n.GetMessage(*conf.Lang, "mode_choose", nil)+update.CallbackQuery.Data)
 	if _, err := bot.Send(msg); err != nil {
 		logger.Warn("request send msg fail", "err", err)
 	}
 }
 
 func sendFailMessage(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
-	callback := tgbotapi.NewCallback(update.CallbackQuery.ID, "set mode fail!")
+	callback := tgbotapi.NewCallback(update.CallbackQuery.ID, i18n.GetMessage(*conf.Lang, "set_mode", nil))
 	if _, err := bot.Request(callback); err != nil {
 		logger.Warn("request callback fail", "err", err)
 	}
 
-	msg := tgbotapi.NewMessage(update.CallbackQuery.Message.Chat.ID, "set mode fail!")
+	msg := tgbotapi.NewMessage(update.CallbackQuery.Message.Chat.ID, i18n.GetMessage(*conf.Lang, "set_mode", nil))
 	if _, err := bot.Send(msg); err != nil {
 		logger.Warn("request send msg fail", "err", err)
 	}

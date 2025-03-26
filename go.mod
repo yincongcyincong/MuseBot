@@ -8,12 +8,14 @@ require (
 	github.com/go-telegram-bot-api/telegram-bot-api/v5 v5.5.1
 	github.com/jarcoal/httpmock v1.3.1
 	github.com/mattn/go-sqlite3 v1.14.24
+	github.com/nicksnyder/go-i18n/v2 v2.5.1
 	github.com/prometheus/client_golang v1.11.1
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/rs/zerolog v1.33.0
 	github.com/stretchr/testify v1.10.0
 	github.com/volcengine/volc-sdk-golang v1.0.196
 	github.com/volcengine/volcengine-go-sdk v1.0.187
+	golang.org/x/text v0.21.0
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 )
 
@@ -36,7 +38,6 @@ require (
 	github.com/prometheus/procfs v0.7.3 // indirect
 	golang.org/x/net v0.33.0 // indirect
 	golang.org/x/sys v0.28.0 // indirect
-	golang.org/x/text v0.21.0 // indirect
 	google.golang.org/protobuf v1.32.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect

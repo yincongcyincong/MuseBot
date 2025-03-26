@@ -1,0 +1,14 @@
+{
+  "balance_title": "🟣 是否可用：%t\n\n",
+  "balance_content": "🟣 您的货币：%s\n\n🟣 您的总余额：%s\n\n🟣 您的充值余额：%s\n\n🟣 您的赠送余额：%s",
+  "state_content": "🟣 您的总 Token 使用量：%d\n\n🟣 您今天的 Token 使用量：%d\n\n🟣 您本周的 Token 使用量：%d\n\n🟣 您本月的 Token 使用量：%d",
+  "chat_mode": "🚀**选择聊天模式**",
+  "set_mode": "设置模式失败！",
+  "command_notice": "🤖**选择命令**",
+  "mode_choose": "您选择了：",
+  "thinking": "🤔 思考中...",
+  "chat_fail": "❌ 请在 /chat 命令后输入文本！",
+  "last_question_fail": "❌ 没有上一个问题！",
+  "delete_succ": "🚀 删除成功！",
+  "not_deepseek": "❌ 当前模型不是 DeepSeek"
+}

@@ -72,20 +72,21 @@ docker run -d -v /home/user/data:/app/data -e TELEGRAM_BOT_TOKEN="你的Telegram
 
 机器人支持通过环境变量进行配置：
 
-| 变量名称                      | 描述                                                                                             | 默认值                       |
-|------------------------------|-------------------------------------------------------------------------------------------------|-----------------------------|
-| TELEGRAM_BOT_TOKEN（必填）   | Telegram 机器人 Token                                                                            | -                           |
-| DEEPSEEK_TOKEN（必填）       | DeepSeek API 密钥或火山引擎密钥 [文档](https://www.volcengine.com/docs/82379/1399008#b00dee71)   | -                           |
-| CUSTOM_URL                    | 自定义 DeepSeek 请求地址（自建服务）                                                              | https://api.deepseek.com/   |
-| DEEPSEEK_TYPE                  | deepseek / 其他模型（如 deepseek-r1-250120, doubao-1.5-pro-32k-250115）                          | deepseek                    |
-| VOLC_AK                       | 火山引擎图片模型 AK [文档](https://www.volcengine.com/docs/6444/1340578)                         | -                           |
-| VOLC_SK                       | 火山引擎图片模型 SK [文档](https://www.volcengine.com/docs/6444/1340578)                         | -                           |
-| DB_TYPE                       | 数据库类型：sqlite3 或 mysql                                                                      | sqlite3                     |
-| DB_CONF                       | 数据库配置：sqlite3 文件路径或 MySQL 连接串                                                        | ./data/telegram_bot.db      |
-| ALLOWED_TELEGRAM_USER_IDS     | 指定允许使用机器人的用户 ID，逗号分隔，空为所有用户可用，0 表示禁止所有用户                      | -                           |
-| ALLOWED_TELEGRAM_GROUP_IDS    | 指定允许使用机器人的群组 ID，逗号分隔，空为所有群可用，0 表示禁止所有群                         | -                           |
-| DEEPSEEK_PROXY                 | DeepSeek 请求代理地址                                                                             | -                           |
-| TELEGRAM_PROXY                 | Telegram 请求代理地址                                                                            | -                           |
+| 变量名称                      | 描述                                                                                  | 默认值                       |
+|------------------------------|-------------------------------------------------------------------------------------|-----------------------------|
+| TELEGRAM_BOT_TOKEN（必填）   | Telegram 机器人 Token                                                                  | -                           |
+| DEEPSEEK_TOKEN（必填）       | DeepSeek API 密钥或火山引擎密钥 [文档](https://www.volcengine.com/docs/82379/1399008#b00dee71) | -                           |
+| CUSTOM_URL                    | 自定义 DeepSeek 请求地址（自建服务）                                                             | https://api.deepseek.com/   |
+| DEEPSEEK_TYPE                  | deepseek / 其他模型（如 deepseek-r1-250120, doubao-1.5-pro-32k-250115）                    | deepseek                    |
+| VOLC_AK                       | 火山引擎图片模型 AK [文档](https://www.volcengine.com/docs/6444/1340578)                      | -                           |
+| VOLC_SK                       | 火山引擎图片模型 SK [文档](https://www.volcengine.com/docs/6444/1340578)                      | -                           |
+| DB_TYPE                       | 数据库类型：sqlite3 或 mysql                                                               | sqlite3                     |
+| DB_CONF                       | 数据库配置：sqlite3 文件路径或 MySQL 连接串                                                       | ./data/telegram_bot.db      |
+| ALLOWED_TELEGRAM_USER_IDS     | 指定允许使用机器人的用户 ID，逗号分隔，空为所有用户可用，0 表示禁止所有用户                                            | -                           |
+| ALLOWED_TELEGRAM_GROUP_IDS    | 指定允许使用机器人的群组 ID，逗号分隔，空为所有群可用，0 表示禁止所有群                                              | -                           |
+| DEEPSEEK_PROXY                 | DeepSeek 请求代理地址                                                                     | -                           |
+| TELEGRAM_PROXY                 | Telegram 请求代理地址                                                                     | -                           |
+| LANG	                          | en / zh                                                                             | en                        |
 
 ---
 
