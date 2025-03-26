@@ -33,10 +33,11 @@ func StartListenRobot() {
 
 		updates := bot.GetUpdatesChan(u)
 		for update := range updates {
+			chatId, _, userId := utils.GetChatIdAndMsgIdAndUserID(update)
 			if !checkUserAllow(update) && !checkGroupAllow(update) {
-				_, _, userId := utils.GetChatIdAndMsgIdAndUserID(update)
 				chat := utils.GetChat(update)
-				logger.Warn("user not allow to use this bot", "userID", userId, "chat", chat)
+				logger.Warn("user/group not allow to use this bot", "userID", userId, "chat", chat)
+				i18n.SendMsg(chatId, "valid_user_group", bot, nil)
 				continue
 			}
 
@@ -63,6 +64,13 @@ func StartListenRobot() {
 
 // requestHuoshanAndResp request huoshan api
 func requestHuoshanAndResp(update tgbotapi.Update, bot *tgbotapi.BotAPI, content string) {
+	chatId, _, userId := utils.GetChatIdAndMsgIdAndUserID(update)
+	if checkUserTokenExceed(update) {
+		logger.Warn("user token exceed", "userID", userId)
+		i18n.SendMsg(chatId, "token_exceed", bot, nil)
+		return
+	}
+
 	messageChan := make(chan *param.MsgInfo)
 
 	// request DeepSeek API
@@ -74,6 +82,13 @@ func requestHuoshanAndResp(update tgbotapi.Update, bot *tgbotapi.BotAPI, content
 
 // requestDeepseekAndResp request deepseek api
 func requestDeepseekAndResp(update tgbotapi.Update, bot *tgbotapi.BotAPI, content string) {
+	chatId, _, userId := utils.GetChatIdAndMsgIdAndUserID(update)
+	if checkUserTokenExceed(update) {
+		logger.Warn("user token exceed", "userID", userId)
+		i18n.SendMsg(chatId, "token_exceed", bot, nil)
+		return
+	}
+
 	messageChan := make(chan *param.MsgInfo)
 
 	// request DeepSeek API
@@ -255,11 +270,7 @@ func sendChatMessage(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 
 	if len(content) == 0 {
 		// If there is no chat content after command
-		msg := tgbotapi.NewMessage(chatId, i18n.GetMessage(*conf.Lang, "chat_fail", nil))
-		_, err := bot.Send(msg)
-		if err != nil {
-			logger.Warn("send help message fail", "err", err)
-		}
+		i18n.SendMsg(chatId, "chat_fail", bot, nil)
 		return
 	}
 
@@ -281,12 +292,7 @@ func retryLastQuestion(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 			requestHuoshanAndResp(update, bot, records.AQs[len(records.AQs)-1].Question)
 		}
 	} else {
-		msg := tgbotapi.NewMessage(chatId, i18n.GetMessage(*conf.Lang, "last_question_fail", nil))
-		msg.ParseMode = tgbotapi.ModeMarkdown
-		_, err := bot.Send(msg)
-		if err != nil {
-			logger.Warn("send retry message fail", "err", err)
-		}
+		i18n.SendMsg(chatId, "last_question_fail", bot, nil)
 	}
 }
 
@@ -294,12 +300,7 @@ func retryLastQuestion(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 func clearAllRecord(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	chatId, _, userId := utils.GetChatIdAndMsgIdAndUserID(update)
 	db.DeleteMsgRecord(userId)
-	msg := tgbotapi.NewMessage(chatId, i18n.GetMessage(*conf.Lang, "delete_succ", nil))
-	msg.ParseMode = tgbotapi.ModeMarkdown
-	_, err := bot.Send(msg)
-	if err != nil {
-		logger.Warn("send clear message fail", "err", err)
-	}
+	i18n.SendMsg(chatId, "delete_succ", bot, nil)
 }
 
 // showBalanceInfo show balance info
@@ -307,12 +308,7 @@ func showBalanceInfo(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	chatId, _, _ := utils.GetChatIdAndMsgIdAndUserID(update)
 
 	if *conf.DeepseekType != param.DeepSeek {
-		msg := tgbotapi.NewMessage(chatId, i18n.GetMessage(*conf.Lang, "not_deepseek", nil))
-		msg.ParseMode = tgbotapi.ModeMarkdown
-		_, err := bot.Send(msg)
-		if err != nil {
-			logger.Warn("send message fail", "err", err)
-		}
+		i18n.SendMsg(chatId, "not_deepseek", bot, nil)
 		return
 	}
 
@@ -328,13 +324,7 @@ func showBalanceInfo(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 			bInfo.ToppedUpBalance, bInfo.GrantedBalance)
 	}
 
-	msg := tgbotapi.NewMessage(chatId, msgContent)
-	msg.ParseMode = tgbotapi.ModeMarkdown
-	_, err := bot.Send(msg)
-	if err != nil {
-		logger.Warn("send balance message fail", "err", err)
-	}
-
+	utils.SendMsg(chatId, msgContent, bot)
 }
 
 // showStateInfo show user's usage of token
@@ -371,13 +361,7 @@ func showStateInfo(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 
 	template := i18n.GetMessage(*conf.Lang, "state_content", nil)
 	msgContent := fmt.Sprintf(template, userInfo.Token, todayTokey, weekToken, monthToken)
-	msg := tgbotapi.NewMessage(chatId, msgContent)
-	msg.ParseMode = tgbotapi.ModeMarkdown
-	_, err = bot.Send(msg)
-	if err != nil {
-		logger.Warn("send state message fail", "err", err)
-	}
-
+	utils.SendMsg(chatId, msgContent, bot)
 }
 
 // sendModeConfigurationOptions send config view
@@ -395,13 +379,7 @@ func sendModeConfigurationOptions(bot *tgbotapi.BotAPI, chatID int64) {
 		),
 	)
 
-	msg := tgbotapi.NewMessage(chatID, i18n.GetMessage(*conf.Lang, "chat_mode", nil))
-	msg.ReplyMarkup = inlineKeyboard
-	msg.ParseMode = tgbotapi.ModeMarkdown
-	_, err := bot.Send(msg)
-	if err != nil {
-		logger.Warn("send inline message fail", "err", err)
-	}
+	i18n.SendMsg(chatID, "chat_mode", bot, &inlineKeyboard)
 }
 
 func sendHelpConfigurationOptions(bot *tgbotapi.BotAPI, chatID int64) {
@@ -421,13 +399,7 @@ func sendHelpConfigurationOptions(bot *tgbotapi.BotAPI, chatID int64) {
 		),
 	)
 
-	msg := tgbotapi.NewMessage(chatID, i18n.GetMessage(*conf.Lang, "command_notice", nil))
-	msg.ReplyMarkup = inlineKeyboard
-	msg.ParseMode = tgbotapi.ModeMarkdown
-	_, err := bot.Send(msg)
-	if err != nil {
-		logger.Warn("send inline message fail", "err", err)
-	}
+	i18n.SendMsg(chatID, "command_notice", bot, &inlineKeyboard)
 }
 
 // handleCallbackQuery handle callback response
@@ -479,10 +451,8 @@ func handleModeUpdate(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 		logger.Warn("request callback fail", "err", err)
 	}
 
-	msg := tgbotapi.NewMessage(update.CallbackQuery.Message.Chat.ID, i18n.GetMessage(*conf.Lang, "mode_choose", nil)+update.CallbackQuery.Data)
-	if _, err := bot.Send(msg); err != nil {
-		logger.Warn("request send msg fail", "err", err)
-	}
+	utils.SendMsg(update.CallbackQuery.Message.Chat.ID,
+		i18n.GetMessage(*conf.Lang, "mode_choose", nil)+update.CallbackQuery.Data, bot)
 }
 
 func sendFailMessage(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
@@ -491,10 +461,7 @@ func sendFailMessage(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 		logger.Warn("request callback fail", "err", err)
 	}
 
-	msg := tgbotapi.NewMessage(update.CallbackQuery.Message.Chat.ID, i18n.GetMessage(*conf.Lang, "set_mode", nil))
-	if _, err := bot.Send(msg); err != nil {
-		logger.Warn("request send msg fail", "err", err)
-	}
+	i18n.SendMsg(update.CallbackQuery.Message.Chat.ID, "set_mode", bot, nil)
 }
 
 func sendVideo(update tgbotapi.Update) {
@@ -640,4 +607,24 @@ func checkGroupAllow(update tgbotapi.Update) bool {
 	}
 
 	return false
+}
+
+func checkUserTokenExceed(update tgbotapi.Update) bool {
+	//if *conf.TokenPerUser == 0 {
+	//	return false
+	//}
+	//
+	//_, _, userId := utils.GetChatIdAndMsgIdAndUserID(update)
+	//userInfo, err := db.GetUserByID(userId)
+	//if err != nil {
+	//	logger.Warn("get user info fail", "err", err)
+	//	return false
+	//}
+	//
+	//if userInfo.Token >= *conf.TokenPerUser {
+	//	return true
+	//}
+	//
+	//return false
+	return true
 }

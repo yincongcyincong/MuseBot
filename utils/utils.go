@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
 	"unicode/utf16"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -42,4 +43,13 @@ func CheckMsgIsCallback(update tgbotapi.Update) bool {
 func Utf16len(s string) int {
 	utf16Str := utf16.Encode([]rune(s))
 	return len(utf16Str)
+}
+
+func SendMsg(chatId int64, msgContent string, bot *tgbotapi.BotAPI) {
+	msg := tgbotapi.NewMessage(chatId, msgContent)
+	msg.ParseMode = tgbotapi.ModeMarkdown
+	_, err := bot.Send(msg)
+	if err != nil {
+		logger.Warn("send clear message fail", "err", err)
+	}
 }
