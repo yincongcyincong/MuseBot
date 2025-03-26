@@ -10,5 +10,7 @@
   "chat_fail": "❌ Please input text after /chat command!",
   "last_question_fail": "❌ no last question!",
   "delete_succ": "\uD83D\uDE80successfully delete!",
-  "not_deepseek": "❌now model is not deepseek"
+  "not_deepseek": "❌now model is not deepseek",
+  "token_exceed": "❌exceed token limit",
+  "valid_user_group": "❌not a valid user or group"
 }

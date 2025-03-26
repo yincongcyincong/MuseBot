@@ -24,6 +24,7 @@ var (
 	DeepseekProxy *string
 	TelegramProxy *string
 	Lang          *string
+	TokenPerUser  *int
 
 	AllowedTelegramUserIds  = make(map[int64]bool)
 	AllowedTelegramGroupIds = make(map[int64]bool)
@@ -45,6 +46,7 @@ func InitConf() {
 	DeepseekProxy = flag.String("deepseek_proxy", "", "db conf")
 	TelegramProxy = flag.String("telegram_proxy", "", "db conf")
 	Lang = flag.String("lang", "en", "lang")
+	TokenPerUser = flag.Int("token_per_user", 0, "token per user")
 
 	allowedUserIds := flag.String("allowed_telegram_user_ids", "", "db conf")
 	allowedGroupIds := flag.String("allowed_telegram_group_ids", "", "db conf")
@@ -100,6 +102,10 @@ func InitConf() {
 
 	if os.Getenv("LANG") != "" {
 		*Lang = os.Getenv("LANG")
+	}
+
+	if os.Getenv("TOKEN_PER_USER") != "" {
+		*TokenPerUser, _ = strconv.Atoi(os.Getenv("TOKEN_PER_USER"))
 	}
 
 	for _, userIdStr := range strings.Split(*allowedUserIds, ",") {

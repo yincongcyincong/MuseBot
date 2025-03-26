@@ -10,5 +10,7 @@
   "chat_fail": "❌ 请在 /chat 命令后输入文本！",
   "last_question_fail": "❌ 没有上一个问题！",
   "delete_succ": "🚀 删除成功！",
-  "not_deepseek": "❌ 当前模型不是 DeepSeek"
+  "not_deepseek": "❌ 当前模型不是 DeepSeek",
+  "token_exceed": "❌token 超出限制！",
+  "valid_user_group": "❌ 用户或群组无效！"
 }

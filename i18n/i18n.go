@@ -2,6 +2,8 @@ package i18n
 
 import (
 	"encoding/json"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
 
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
@@ -59,4 +61,15 @@ func GetMessage(tag string, messageID string, templateData map[string]interface{
 		return ""
 	}
 	return msg
+}
+
+// SendMsg send message to user
+func SendMsg(chatId int64, msgId string, bot *tgbotapi.BotAPI, inlineKeyboard *tgbotapi.InlineKeyboardMarkup) {
+	msg := tgbotapi.NewMessage(chatId, GetMessage(*conf.Lang, msgId, nil))
+	msg.ParseMode = tgbotapi.ModeMarkdown
+	msg.ReplyMarkup = inlineKeyboard
+	_, err := bot.Send(msg)
+	if err != nil {
+		logger.Warn("send clear message fail", "err", err)
+	}
 }
