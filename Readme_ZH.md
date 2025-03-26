@@ -2,7 +2,7 @@
 
 本仓库提供了一个基于 **Golang** 构建的 **Telegram 机器人**，集成了 **DeepSeek API**，实现 AI 驱动的回复。  
 该机器人支持 **流式输出**，让对话体验更加自然和流畅。  
-[English Doc](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/README.md)
+[English Doc](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/Readme.md)
 
 ---
 
