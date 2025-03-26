@@ -73,6 +73,7 @@ You can configure the bot via environment variables:
 | ALLOWED_TELEGRAM_GROUP_IDS	    | telegram chat id, only these chat can use bot, using "," splite. empty means all group can use it. 0 means all group is banned | -                         |
 | DEEPSEEK_PROXY	                | deepseek proxy                                                                                                                 | -                         |
 | TELEGRAM_PROXY	                | telegram proxy                                                                                                                 | -                         |
+| LANG	                          | en / zh                                                                                                                        | en                        |
 
 ### CUSTOM_URL
 
@@ -92,6 +93,9 @@ support sqlite3 or mysql
 if DB_TYPE is sqlite3, give a file path, such as `./data/telegram_bot.db`     
 if DB_TYPE is mysql, give a mysql link, such as
 `root:admin@tcp(127.0.0.1:3306)/dbname?charset=utf8mb4&parseTime=True&loc=Local`, database must be created.
+
+### LANG
+choose a language for bot, English or Chinese.
 
 ## Command
 

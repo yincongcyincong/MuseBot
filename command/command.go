@@ -73,7 +73,7 @@ var (
 )
 
 func LoadCustomCommands() {
-	file, err := os.Open("./command/command.json")
+	file, err := os.Open("./conf/command.json")
 	if err != nil {
 		logger.Error("open command.json error", err)
 		return

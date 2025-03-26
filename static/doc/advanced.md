@@ -2,7 +2,7 @@
 
 #### 📌 **Overview**
 This document explains how to configure and use a custom chain command to execute a series of tasks, including HTTP requests and AI-based calculations, and finally generate investment advice.
-If you want to use this feature, you must change ./command/command.json file.
+If you want to use this feature, you must change ./config/command.json file.
 ---
 
 ## **📖 Configuration Fields**
