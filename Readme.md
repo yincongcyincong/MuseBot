@@ -164,6 +164,9 @@ Define some HTTP requests combined with DeepSeek to enable DeepSeek to help you 
 
 Feel free to submit issues and pull requests to improve this bot. 🚀
 
+## group
+telegram-group: https://t.me/+WtaMcDpaMOlhZTE1
+
 ## License
 
 MIT License © 2025 jack yin
