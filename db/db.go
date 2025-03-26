@@ -29,7 +29,8 @@ const (
 				is_deleted int(10) NOT NULL DEFAULT '0',
 				token int(10) NOT NULL DEFAULT 0
 			);
-			CREATE INDEX idx_records_user_id ON users(user_id);`
+			CREATE INDEX idx_records_user_id ON records(user_id);
+			CREATE INDEX idx_records_create_time ON records(create_time);`
 	mysqlCreateUsersSQL = `
 CREATE TABLE IF NOT EXISTS users (
     id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -50,7 +51,8 @@ CREATE TABLE IF NOT EXISTS records (
     token int(10) NOT NULL DEFAULT 0
 );`
 
-	mysqlCreateIndexSQL = `CREATE INDEX idx_records_user_id ON records(user_id);`
+	mysqlCreateIndexSQL   = `CREATE INDEX idx_records_user_id ON records(user_id);`
+	mysqlCreateCTIndexSQL = `CREATE INDEX idx_records_create_time ON records(create_time);`
 )
 
 var (
@@ -114,8 +116,10 @@ func initializeMysqlTable(db *sql.DB, tableName string, createSQL string) error 
 			_, err = db.Exec(mysqlCreateIndexSQL)
 			if err != nil {
 				logger.Fatal("Create index failed", "err", err)
-			} else {
-				logger.Info("Create index success")
+			}
+			_, err = db.Exec(mysqlCreateCTIndexSQL)
+			if err != nil {
+				logger.Fatal("Create index failed", "err", err)
 			}
 		}
 	} else if err != nil {
