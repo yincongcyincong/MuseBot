@@ -82,7 +82,7 @@ func callDeepSeekAPI(prompt string, update tgbotapi.Update, messageChan chan *pa
 	messages := make([]deepseek.ChatCompletionMessage, 0)
 
 	msgRecords := db.GetMsgRecord(userId)
-	if msgRecords != nil {
+	if msgRecords != nil && model != deepseek.DeepSeekReasoner {
 		aqs := msgRecords.AQs
 		if len(aqs) > 10 {
 			aqs = aqs[len(aqs)-10:]
