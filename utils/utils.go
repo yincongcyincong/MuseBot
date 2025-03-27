@@ -61,9 +61,10 @@ func ParseInt(str string) int {
 	return num
 }
 
-func SendMsg(chatId int64, msgContent string, bot *tgbotapi.BotAPI) {
+func SendMsg(chatId int64, msgContent string, bot *tgbotapi.BotAPI, replyToMessageID int) {
 	msg := tgbotapi.NewMessage(chatId, msgContent)
 	msg.ParseMode = tgbotapi.ModeMarkdown
+	msg.ReplyToMessageID = replyToMessageID
 	_, err := bot.Send(msg)
 	if err != nil {
 		logger.Warn("send clear message fail", "err", err)
