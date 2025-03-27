@@ -500,7 +500,7 @@ func sendVideo(update tgbotapi.Update) {
 
 	// create image url
 	url := fmt.Sprintf("https://api.telegram.org/bot%s/sendVideo", *conf.BotToken)
-	chatId, replyToMessageID, _ := utils.GetChatIdAndMsgIdAndUserID(update)
+	chatId, replyToMessageID, userId := utils.GetChatIdAndMsgIdAndUserID(update)
 
 	// construct request param
 	req := map[string]interface{}{
@@ -537,6 +537,7 @@ func sendVideo(update tgbotapi.Update) {
 		return
 	}
 
+	db.AddToken(userId, param.VideoTokenUsage)
 	return
 }
 
@@ -556,7 +557,7 @@ func sendImg(update tgbotapi.Update) {
 	// create image url
 	photoURL := data.Data.ImageUrls[0]
 	url := fmt.Sprintf("https://api.telegram.org/bot%s/sendPhoto", *conf.BotToken)
-	chatId, replyToMessageID, _ := utils.GetChatIdAndMsgIdAndUserID(update)
+	chatId, replyToMessageID, userId := utils.GetChatIdAndMsgIdAndUserID(update)
 
 	// construct request param
 	req := map[string]interface{}{
@@ -592,6 +593,8 @@ func sendImg(update tgbotapi.Update) {
 		logger.Warn("send image fail", "result", result)
 		return
 	}
+
+	db.AddToken(userId, param.ImageTokenUsage)
 
 	return
 }
