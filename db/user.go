@@ -37,12 +37,12 @@ func InsertUser(userId int64, mode string) (int64, error) {
 // GetUserByID get user by userId
 func GetUserByID(userId int64) (*User, error) {
 	// select one use base on name
-	querySQL := `SELECT id, user_id, mode, token FROM users WHERE user_id = ?`
+	querySQL := `SELECT id, user_id, mode, token, avail_token FROM users WHERE user_id = ?`
 	row := DB.QueryRow(querySQL, userId)
 
 	// scan row get result
 	var user User
-	err := row.Scan(&user.ID, &user.UserId, &user.Mode, &user.Token)
+	err := row.Scan(&user.ID, &user.UserId, &user.Mode, &user.Token, &user.AvailToken)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			// 如果没有找到数据，返回 nil
