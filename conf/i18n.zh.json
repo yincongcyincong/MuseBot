@@ -11,7 +11,7 @@
   "last_question_fail": "❌ 没有上一个问题！",
   "delete_succ": "🚀 删除成功！",
   "not_deepseek": "❌ 当前模型不是 DeepSeek",
-  "token_exceed": "❌token 超出限制！已用token：%d 剩余token：%d",
+  "token_exceed": "❌token 超出限制！已用token：%d 剩余token：%d 总可用token：%d",
   "valid_user_group": "❌ 用户或群组无效！",
   "add_token_succ": "\uD83D\uDE80 增加token成功!"
 }

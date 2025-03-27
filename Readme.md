@@ -1,7 +1,6 @@
 ## group
 telegram-group: https://t.me/+WtaMcDpaMOlhZTE1      
-every body have **1000** token to try this bot
-please give me a star!
+every body have **3000** token to try this bot, please give me a star!
 
 # DeepSeek Telegram Bot
 

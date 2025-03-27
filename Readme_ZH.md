@@ -1,3 +1,7 @@
+## group
+telegram群: https://t.me/+WtaMcDpaMOlhZTE1
+每个人有 **3000** token 去试用robot, 点个star吧!
+
 # DeepSeek Telegram Bot
 
 本仓库提供了一个基于 **Golang** 构建的 **Telegram 机器人**，集成了 **DeepSeek API**，实现 AI 驱动的回复。  

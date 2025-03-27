@@ -682,7 +682,7 @@ func checkUserTokenExceed(update tgbotapi.Update, bot *tgbotapi.BotAPI) bool {
 
 	if userInfo.Token >= userInfo.AvailToken {
 		tpl := i18n.GetMessage(*conf.Lang, "token_exceed", nil)
-		content := fmt.Sprintf(tpl, userInfo.Token, userInfo.AvailToken-userInfo.Token)
+		content := fmt.Sprintf(tpl, userInfo.Token, userInfo.AvailToken-userInfo.Token, userInfo.AvailToken)
 		utils.SendMsg(chatId, content, bot, msgId)
 		return true
 	}
