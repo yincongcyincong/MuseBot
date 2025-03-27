@@ -151,7 +151,7 @@ docker run -d -v /home/user/data:/app/data -e TELEGRAM_BOT_TOKEN="你的Telegram
 
 ## 高级用法
 
-[自定义命令](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/static/doc/advanced.md)  
+[自定义命令](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/static/doc/advanced_ZH.md)  
 通过自定义 HTTP 请求与 DeepSeek 结合，实现数据分析、文章解析等功能。
 
 ---
