@@ -1,5 +1,5 @@
 ## group
-telegram-group: https://t.me/+WtaMcDpaMOlhZTE1      
+telegram-group: https://t.me/+WtaMcDpaMOlhZTE1 , or you can have a try GWSbot.      
 every body have **3000** token to try this bot, please give me a star!
 
 # DeepSeek Telegram Bot
