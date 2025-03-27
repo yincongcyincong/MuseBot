@@ -244,9 +244,9 @@ func handleCommand(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	case "retry":
 		retryLastQuestion(update, bot)
 	case "photo":
-		sendImg(update)
+		sendImg(update, bot)
 	case "video":
-		sendVideo(update)
+		sendVideo(update, bot)
 	case "help":
 		sendHelpConfigurationOptions(bot, update.Message.Chat.ID)
 	default:
@@ -485,7 +485,13 @@ func sendFailMessage(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	i18n.SendMsg(update.CallbackQuery.Message.Chat.ID, "set_mode", bot, nil)
 }
 
-func sendVideo(update tgbotapi.Update) {
+func sendVideo(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
+	chatId, replyToMessageID, userId := utils.GetChatIdAndMsgIdAndUserID(update)
+	if checkUserTokenExceed(update, bot) {
+		logger.Warn("user token exceed", "userID", userId)
+		return
+	}
+
 	prompt := strings.Replace(update.Message.Text, "/video", "", 1)
 	videoUrl, err := deepseek.GenerateVideo(prompt)
 	if err != nil {
@@ -500,7 +506,6 @@ func sendVideo(update tgbotapi.Update) {
 
 	// create image url
 	url := fmt.Sprintf("https://api.telegram.org/bot%s/sendVideo", *conf.BotToken)
-	chatId, replyToMessageID, userId := utils.GetChatIdAndMsgIdAndUserID(update)
 
 	// construct request param
 	req := map[string]interface{}{
@@ -541,8 +546,18 @@ func sendVideo(update tgbotapi.Update) {
 	return
 }
 
-func sendImg(update tgbotapi.Update) {
+func sendImg(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
+	chatId, replyToMessageID, userId := utils.GetChatIdAndMsgIdAndUserID(update)
+	if checkUserTokenExceed(update, bot) {
+		logger.Warn("user token exceed", "userID", userId)
+		return
+	}
+
 	prompt := strings.Replace(update.Message.Text, "/photo", "", 1)
+	if len(prompt) == 0 {
+		return
+	}
+
 	data, err := deepseek.GenerateImg(prompt)
 	if err != nil {
 		logger.Warn("generate image fail", "err", err)
@@ -557,7 +572,6 @@ func sendImg(update tgbotapi.Update) {
 	// create image url
 	photoURL := data.Data.ImageUrls[0]
 	url := fmt.Sprintf("https://api.telegram.org/bot%s/sendPhoto", *conf.BotToken)
-	chatId, replyToMessageID, userId := utils.GetChatIdAndMsgIdAndUserID(update)
 
 	// construct request param
 	req := map[string]interface{}{
@@ -650,7 +664,7 @@ func checkUserTokenExceed(update tgbotapi.Update, bot *tgbotapi.BotAPI) bool {
 		return false
 	}
 
-	if userInfo.AvailToken >= userInfo.Token {
+	if userInfo.Token >= userInfo.AvailToken {
 		tpl := i18n.GetMessage(*conf.Lang, "token_exceed", nil)
 		content := fmt.Sprintf(tpl, userInfo.Token, userInfo.AvailToken-userInfo.Token)
 		utils.SendMsg(chatId, content, bot)
