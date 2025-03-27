@@ -11,7 +11,7 @@
   "last_question_fail": "❌ no last question!",
   "delete_succ": "\uD83D\uDE80successfully delete!",
   "not_deepseek": "❌now model is not deepseek",
-  "token_exceed": "❌exceed token limit, used token: %d, available token: %d",
+  "token_exceed": "❌exceed token limit, used token: %d, available token: %d, total available token: %d",
   "valid_user_group": "❌not a valid user or group",
   "add_token_succ": "\uD83D\uDE80add token success!"
 }
