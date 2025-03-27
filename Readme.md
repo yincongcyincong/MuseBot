@@ -1,3 +1,8 @@
+## group
+telegram-group: https://t.me/+WtaMcDpaMOlhZTE1      
+every body have **1000** token to try this bot
+please give me a star!
+
 # DeepSeek Telegram Bot
 
 This repository provides a **Telegram bot** built with **Golang** that integrates with **DeepSeek API** to provide
@@ -173,11 +178,7 @@ add token for user.
 
 ## Contributing
 
-Feel free to submit issues and pull requests to improve this bot. 🚀
-
-## group
-telegram-group: https://t.me/+WtaMcDpaMOlhZTE1      
-every body have **1000** token to try this bot      
+Feel free to submit issues and pull requests to improve this bot. 🚀     
 
 ## License
 
