@@ -64,10 +64,9 @@ func StartListenRobot() {
 
 // requestHuoshanAndResp request huoshan api
 func requestHuoshanAndResp(update tgbotapi.Update, bot *tgbotapi.BotAPI, content string) {
-	chatId, _, userId := utils.GetChatIdAndMsgIdAndUserID(update)
-	if checkUserTokenExceed(update) {
+	_, _, userId := utils.GetChatIdAndMsgIdAndUserID(update)
+	if checkUserTokenExceed(update, bot) {
 		logger.Warn("user token exceed", "userID", userId)
-		i18n.SendMsg(chatId, "token_exceed", bot, nil)
 		return
 	}
 
@@ -82,10 +81,9 @@ func requestHuoshanAndResp(update tgbotapi.Update, bot *tgbotapi.BotAPI, content
 
 // requestDeepseekAndResp request deepseek api
 func requestDeepseekAndResp(update tgbotapi.Update, bot *tgbotapi.BotAPI, content string) {
-	chatId, _, userId := utils.GetChatIdAndMsgIdAndUserID(update)
-	if checkUserTokenExceed(update) {
+	_, _, userId := utils.GetChatIdAndMsgIdAndUserID(update)
+	if checkUserTokenExceed(update, bot) {
 		logger.Warn("user token exceed", "userID", userId)
-		i18n.SendMsg(chatId, "token_exceed", bot, nil)
 		return
 	}
 
@@ -254,6 +252,13 @@ func handleCommand(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	default:
 		command.ExecuteCustomCommand(cmd)
 	}
+
+	if checkAdminUser(update) {
+		switch cmd {
+		case "addtoken":
+			addToken(update, bot)
+		}
+	}
 }
 
 func sendChatMessage(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
@@ -301,6 +306,22 @@ func clearAllRecord(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	chatId, _, userId := utils.GetChatIdAndMsgIdAndUserID(update)
 	db.DeleteMsgRecord(userId)
 	i18n.SendMsg(chatId, "delete_succ", bot, nil)
+}
+
+// addToken clear all record
+func addToken(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
+	chatId, _, _ := utils.GetChatIdAndMsgIdAndUserID(update)
+	msg := utils.GetMessage(update)
+	command := "/addtoken"
+	mention := "@" + bot.Self.UserName
+
+	content := strings.ReplaceAll(msg.Text, command, mention)
+	content = strings.ReplaceAll(content, mention, "")
+	content = strings.TrimSpace(content)
+	splitContent := strings.Split(content, " ")
+
+	db.AddAvailToken(int64(utils.ParseInt(splitContent[0])), utils.ParseInt(splitContent[1]))
+	i18n.SendMsg(chatId, "add_token_succ", bot, nil)
 }
 
 // showBalanceInfo show balance info
@@ -609,22 +630,39 @@ func checkGroupAllow(update tgbotapi.Update) bool {
 	return false
 }
 
-func checkUserTokenExceed(update tgbotapi.Update) bool {
-	//if *conf.TokenPerUser == 0 {
-	//	return false
-	//}
-	//
-	//_, _, userId := utils.GetChatIdAndMsgIdAndUserID(update)
-	//userInfo, err := db.GetUserByID(userId)
-	//if err != nil {
-	//	logger.Warn("get user info fail", "err", err)
-	//	return false
-	//}
-	//
-	//if userInfo.Token >= *conf.TokenPerUser {
-	//	return true
-	//}
-	//
-	//return false
-	return true
+func checkUserTokenExceed(update tgbotapi.Update, bot *tgbotapi.BotAPI) bool {
+	if *conf.TokenPerUser == 0 {
+		return false
+	}
+
+	chatId, _, userId := utils.GetChatIdAndMsgIdAndUserID(update)
+	userInfo, err := db.GetUserByID(userId)
+	if err != nil {
+		logger.Warn("get user info fail", "err", err)
+		return false
+	}
+
+	if userInfo == nil {
+		logger.Warn("get user info is nil")
+		return false
+	}
+
+	if userInfo.AvailToken >= userInfo.Token {
+		tpl := i18n.GetMessage(*conf.Lang, "token_exceed", nil)
+		content := fmt.Sprintf(tpl, userInfo.Token, userInfo.AvailToken-userInfo.Token)
+		utils.SendMsg(chatId, content, bot)
+		return true
+	}
+
+	return false
+}
+
+func checkAdminUser(update tgbotapi.Update) bool {
+	if len(conf.AdminUserIds) == 0 {
+		return false
+	}
+
+	_, _, userId := utils.GetChatIdAndMsgIdAndUserID(update)
+	_, ok := conf.AdminUserIds[userId]
+	return ok
 }

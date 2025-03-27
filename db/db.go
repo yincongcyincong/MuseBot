@@ -18,7 +18,8 @@ const (
 				user_id int(11) NOT NULL DEFAULT '0',
 				mode VARCHAR(30) NOT NULL DEFAULT '',
 				updatetime int(10) NOT NULL DEFAULT '0',
-				token int(10) NOT NULL DEFAULT '0'
+				token int(10) NOT NULL DEFAULT '0',
+				avail_token int(10) NOT NULL DEFAULT 0
 			);
 			CREATE TABLE records (
 				id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -37,7 +38,8 @@ CREATE TABLE IF NOT EXISTS users (
     user_id BIGINT(20) NOT NULL DEFAULT 0,
     mode VARCHAR(30) NOT NULL DEFAULT '',
     updatetime INT(10) NOT NULL DEFAULT 0,
-    token int(10) NOT NULL DEFAULT 0
+    token int(10) NOT NULL DEFAULT 0,
+    avail_token int(10) NOT NULL DEFAULT 0
 );`
 
 	mysqlCreateRecordsSQL = `

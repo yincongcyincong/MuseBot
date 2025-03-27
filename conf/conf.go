@@ -28,6 +28,7 @@ var (
 
 	AllowedTelegramUserIds  = make(map[int64]bool)
 	AllowedTelegramGroupIds = make(map[int64]bool)
+	AdminUserIds            = make(map[int64]bool)
 )
 
 var (
@@ -46,10 +47,11 @@ func InitConf() {
 	DeepseekProxy = flag.String("deepseek_proxy", "", "db conf")
 	TelegramProxy = flag.String("telegram_proxy", "", "db conf")
 	Lang = flag.String("lang", "en", "lang")
-	TokenPerUser = flag.Int("token_per_user", 0, "token per user")
+	TokenPerUser = flag.Int("token_per_user", 10000, "token per user")
 
-	allowedUserIds := flag.String("allowed_telegram_user_ids", "", "db conf")
-	allowedGroupIds := flag.String("allowed_telegram_group_ids", "", "db conf")
+	adminUserIds := flag.String("admin_user_ids", "", "admin user ids")
+	allowedUserIds := flag.String("allowed_telegram_user_ids", "", "allowed telegram user ids")
+	allowedGroupIds := flag.String("allowed_telegram_group_ids", "", "allowed telegram group ids")
 	flag.Parse()
 
 	if os.Getenv("TELEGRAM_BOT_TOKEN") != "" {
@@ -108,6 +110,10 @@ func InitConf() {
 		*TokenPerUser, _ = strconv.Atoi(os.Getenv("TOKEN_PER_USER"))
 	}
 
+	if os.Getenv("ADMIN_USER_IDS") != "" {
+		*adminUserIds = os.Getenv("ADMIN_USER_IDS")
+	}
+
 	for _, userIdStr := range strings.Split(*allowedUserIds, ",") {
 		userId, err := strconv.Atoi(userIdStr)
 		if err != nil {
@@ -126,6 +132,15 @@ func InitConf() {
 		AllowedTelegramGroupIds[int64(groupId)] = true
 	}
 
+	for _, userIdStr := range strings.Split(*adminUserIds, ",") {
+		userId, err := strconv.Atoi(userIdStr)
+		if err != nil {
+			logger.Warn("AdminUserIds parse error", "userID", userIdStr)
+			continue
+		}
+		AdminUserIds[int64(userId)] = true
+	}
+
 	logger.Info("", "TelegramBotToken", *BotToken)
 	logger.Info("", "DeepseekToken", *DeepseekToken)
 	logger.Info("", "CustomUrl", *CustomUrl)
@@ -138,6 +153,9 @@ func InitConf() {
 	logger.Info("", "AllowedTelegramGroupIds", *allowedGroupIds)
 	logger.Info("", "DeepseekProxy", *DeepseekProxy)
 	logger.Info("", "TelegramProxy", *TelegramProxy)
+	logger.Info("", "LANG", *Lang)
+	logger.Info("", "TOKEN_PER_USER", *TokenPerUser)
+	logger.Info("", "AdminUserIds", *adminUserIds)
 
 	if *BotToken == "" || *DeepseekToken == "" {
 		panic("Bot token and deepseek token are required")

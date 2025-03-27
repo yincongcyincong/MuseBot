@@ -74,6 +74,8 @@ You can configure the bot via environment variables:
 | DEEPSEEK_PROXY	                | deepseek proxy                                                                                                                 | -                         |
 | TELEGRAM_PROXY	                | telegram proxy                                                                                                                 | -                         |
 | LANG	                          | en / zh                                                                                                                        | en                        |
+| TOKEN_PER_USER	                | The tokens that each user can use                                                                                              | 10000                     |
+| ADMIN_USER_IDS	                | admin user, can use some admin commands                                                                                        | -                         |
 
 ### CUSTOM_URL
 
@@ -95,6 +97,7 @@ if DB_TYPE is mysql, give a mysql link, such as
 `root:admin@tcp(127.0.0.1:3306)/dbname?charset=utf8mb4&parseTime=True&loc=Local`, database must be created.
 
 ### LANG
+
 choose a language for bot, English or Chinese.
 
 ## Command
@@ -140,11 +143,18 @@ allows the bot to chat through /chat command in groups, without the bot being se
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/00a0faf3-6037-4d84-9a33-9aa6c320e44d" />
 
 ### /help
+
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/869e0207-388b-49ca-b26a-378f71d58818" />
 
 ## Advanced Usage
+
 [Custom Command](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/static/doc/advanced.md)      
-Define some HTTP requests combined with DeepSeek to enable DeepSeek to help you perform data analysis, article analysis, and other functions.
+Define some HTTP requests combined with DeepSeek to enable DeepSeek to help you perform data analysis, article analysis,
+and other functions.
+
+## Admin Command
+### /addtoken
+add token for user.  
 
 ## Deployment
 
@@ -165,6 +175,7 @@ Define some HTTP requests combined with DeepSeek to enable DeepSeek to help you 
 Feel free to submit issues and pull requests to improve this bot. 🚀
 
 ## group
+
 telegram-group: https://t.me/+WtaMcDpaMOlhZTE1
 
 ## License

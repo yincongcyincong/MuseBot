@@ -75,6 +75,9 @@ func callDeepSeekAPI(prompt string, update tgbotapi.Update, messageChan chan *pa
 	request := &deepseek.StreamChatCompletionRequest{
 		Model:  model,
 		Stream: true,
+		StreamOptions: deepseek.StreamOptions{
+			IncludeUsage: true,
+		},
 	}
 	messages := make([]deepseek.ChatCompletionMessage, 0)
 

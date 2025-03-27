@@ -2,6 +2,7 @@ package db
 
 import (
 	"database/sql"
+	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
 	"github.com/yincongcyincong/telegram-deepseek-bot/metrics"
 	"time"
 )
@@ -12,13 +13,14 @@ type User struct {
 	Mode       string `json:"mode"`
 	Token      int    `json:"token"`
 	Updatetime int64  `json:"updatetime"`
+	AvailToken int    `json:"avail_token"`
 }
 
 // InsertUser insert user data
 func InsertUser(userId int64, mode string) (int64, error) {
 	// insert data
-	insertSQL := `INSERT INTO users (user_id, mode, updatetime) VALUES (?, ?, ?)`
-	result, err := DB.Exec(insertSQL, userId, mode, time.Now().Unix())
+	insertSQL := `INSERT INTO users (user_id, mode, updatetime, avail_token) VALUES (?, ?, ?, ?)`
+	result, err := DB.Exec(insertSQL, userId, mode, time.Now().Unix(), *conf.TokenPerUser)
 	if err != nil {
 		return 0, err
 	}
@@ -91,6 +93,19 @@ func UpdateUserUpdateTime(userId int64, updateTime int64) error {
 
 // UpdateUserToken update user token
 func UpdateUserToken(userId int64, token int) error {
+	updateSQL := `UPDATE users SET token = token + ? WHERE user_id = ?`
+	_, err := DB.Exec(updateSQL, token, userId)
+	return err
+}
+
+// AddToken add token
+func AddAvailToken(userId int64, token int) error {
+	updateSQL := `UPDATE users SET avail_token = avail_token + ? WHERE user_id = ?`
+	_, err := DB.Exec(updateSQL, token, userId)
+	return err
+}
+
+func AddToken(userId int64, token int) error {
 	updateSQL := `UPDATE users SET token = token + ? WHERE user_id = ?`
 	_, err := DB.Exec(updateSQL, token, userId)
 	return err
