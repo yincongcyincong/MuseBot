@@ -155,6 +155,7 @@ and other functions.
 ## Admin Command
 ### /addtoken
 add token for user.  
+<img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/12d98272-0718-4c9b-bc5c-e0a92e6c8664" />
 
 ## Deployment
 
