@@ -542,7 +542,13 @@ func sendVideo(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 		return
 	}
 
-	db.AddToken(userId, param.VideoTokenUsage)
+	db.InsertRecordInfo(&db.Record{
+		UserId:    userId,
+		Question:  prompt,
+		Answer:    videoUrl,
+		Token:     param.VideoTokenUsage,
+		IsDeleted: 1,
+	})
 	return
 }
 
@@ -553,7 +559,7 @@ func sendImg(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 		return
 	}
 
-	prompt := strings.Replace(update.Message.Text, "/photo", "", 1)
+	prompt := strings.TrimSpace(strings.Replace(update.Message.Text, "/photo", "", 1))
 	if len(prompt) == 0 {
 		return
 	}
@@ -608,7 +614,13 @@ func sendImg(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 		return
 	}
 
-	db.AddToken(userId, param.ImageTokenUsage)
+	db.InsertRecordInfo(&db.Record{
+		UserId:    userId,
+		Question:  prompt,
+		Answer:    data.Data.ImageUrls[0],
+		Token:     param.ImageTokenUsage,
+		IsDeleted: 1,
+	})
 
 	return
 }
