@@ -25,11 +25,12 @@ type AQ struct {
 }
 
 type Record struct {
-	ID       int
-	UserId   int64
-	Question string
-	Answer   string
-	Token    int
+	ID        int
+	UserId    int64
+	Question  string
+	Answer    string
+	Token     int
+	IsDeleted int
 }
 
 var MsgRecord = sync.Map{}
@@ -53,7 +54,7 @@ func InsertMsgRecord(userId int64, aq *AQ, insertDB bool) {
 	MsgRecord.Store(userId, msgRecord)
 
 	if insertDB {
-		go insertRecord(&Record{
+		go InsertRecordInfo(&Record{
 			UserId:   userId,
 			Question: aq.Question,
 			Answer:   aq.Answer,
@@ -166,10 +167,10 @@ func getRecordsByUserId(userId int64) ([]Record, error) {
 	return records, nil
 }
 
-// insertRecord insert record
-func insertRecord(record *Record) {
-	query := `INSERT INTO records (user_id, question, answer, token, create_time) VALUES (?, ?, ?, ?, ?)`
-	_, err := DB.Exec(query, record.UserId, record.Question, record.Answer, record.Token, time.Now().Unix())
+// InsertRecordInfo insert record
+func InsertRecordInfo(record *Record) {
+	query := `INSERT INTO records (user_id, question, answer, token, create_time, is_deleted) VALUES (?, ?, ?, ?, ?, ?)`
+	_, err := DB.Exec(query, record.UserId, record.Question, record.Answer, record.Token, time.Now().Unix(), record.IsDeleted)
 	metrics.TotalRecords.Inc()
 	if err != nil {
 		logger.Error("insertRecord err", "err", err)
