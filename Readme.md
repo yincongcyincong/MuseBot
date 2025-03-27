@@ -176,8 +176,8 @@ add token for user.
 Feel free to submit issues and pull requests to improve this bot. 🚀
 
 ## group
-
-telegram-group: https://t.me/+WtaMcDpaMOlhZTE1
+telegram-group: https://t.me/+WtaMcDpaMOlhZTE1      
+every body have **1000** token to try this bot      
 
 ## License
 
