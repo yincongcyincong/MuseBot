@@ -104,6 +104,10 @@ if DB_TYPE is mysql, give a mysql link, such as
 
 choose a language for bot, English or Chinese.
 
+### other config
+[photo_conf](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/static/doc/photoconf.md)     
+[video_conf](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/static/doc/videoconf.md)
+
 ## Command
 
 ### /clear
