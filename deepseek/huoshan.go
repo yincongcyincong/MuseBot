@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 
 	"io"
 	"net/http"
@@ -181,30 +182,25 @@ func GenerateImg(prompt string) (*ImgResponse, error) {
 	visual.DefaultInstance.Client.SetSecretKey(*conf.VolcSK)
 
 	reqBody := map[string]interface{}{
-		"req_key":           "high_aes_general_v21_L",
+		"req_key":           *conf.ReqKey,
 		"prompt":            prompt,
-		"model_version":     "general_v2.1_L",
-		"req_schedule_conf": "general_v20_9B_pe",
-		"llm_seed":          -1,
-		"seed":              -1,
-		"scale":             3.5,
-		"ddim_steps":        25,
-		"width":             512,
-		"height":            512,
-		"use_pre_llm":       true,
-		"use_sr":            true,
-		"sr_seed":           -1,
-		"sr_strength":       0.4,
-		"sr_scale":          3.5,
-		"sr_steps":          20,
-		"is_only_sr":        false,
-		"return_url":        true,
+		"model_version":     *conf.ModelVersion,
+		"req_schedule_conf": *conf.ReqScheduleConf,
+		"llm_seed":          *conf.Seed,
+		"seed":              *conf.Seed,
+		"scale":             *conf.Scale,
+		"ddim_steps":        *conf.DDIMSteps,
+		"width":             *conf.Width,
+		"height":            *conf.Height,
+		"use_pre_llm":       *conf.UsePreLLM,
+		"use_sr":            *conf.UseSr,
+		"return_url":        *conf.ReturnUrl,
 		"logo_info": map[string]interface{}{
-			"add_logo":          false,
-			"position":          0,
-			"language":          0,
-			"opacity":           0.3,
-			"logo_text_content": "",
+			"add_logo":          *conf.AddLogo,
+			"position":          *conf.Position,
+			"language":          *conf.Language,
+			"opacity":           *conf.Opacity,
+			"logo_text_content": *conf.LogoTextContent,
 		},
 	}
 
@@ -254,9 +250,12 @@ func GenerateVideo(prompt string) (string, error) {
 		arkruntime.WithHTTPClient(httpClient),
 	)
 
-	text := prompt + " --ratio 1:1 --fps 24  --dur 5"
+	videoParam := fmt.Sprintf(" --ratio %s --fps %d  --dur %d --resolution %s --watermark %t",
+		*conf.Radio, *conf.FPS, *conf.Duration, *conf.Resolution, *conf.Watermark)
+
+	text := prompt + videoParam
 	resp, err := client.CreateContentGenerationTask(ctx, model.CreateContentGenerationTaskRequest{
-		Model: "doubao-seaweed-241128",
+		Model: *conf.VideoModel,
 		Content: []*model.CreateContentGenerationContentItem{
 			{
 				Type: model.ContentGenerationContentItemTypeText,
@@ -281,7 +280,7 @@ func GenerateVideo(prompt string) (string, error) {
 
 		if getResp.Status == model.StatusRunning || getResp.Status == model.StatusQueued {
 			logger.Info("video is createing...")
-			time.Sleep(3 * time.Second)
+			time.Sleep(5 * time.Second)
 			continue
 		}
 

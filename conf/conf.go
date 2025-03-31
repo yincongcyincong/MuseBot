@@ -52,6 +52,9 @@ func InitConf() {
 	adminUserIds := flag.String("admin_user_ids", "", "admin user ids")
 	allowedUserIds := flag.String("allowed_telegram_user_ids", "", "allowed telegram user ids")
 	allowedGroupIds := flag.String("allowed_telegram_group_ids", "", "allowed telegram group ids")
+
+	InitPhotoConf()
+	InitVideoConf()
 	flag.Parse()
 
 	if os.Getenv("TELEGRAM_BOT_TOKEN") != "" {
@@ -214,18 +217,6 @@ func CreateBot() *tgbotapi.BotAPI {
 		tgbotapi.BotCommand{
 			Command:     "state",
 			Description: "calculate one user token usage.",
-		},
-		tgbotapi.BotCommand{
-			Command:     "photo",
-			Description: "using volcengine photo model create photo.",
-		},
-		tgbotapi.BotCommand{
-			Command:     "video",
-			Description: "using volcengine video model create video.",
-		},
-		tgbotapi.BotCommand{
-			Command:     "chat",
-			Description: "allows the bot to chat through /chat command in groups, without the bot being set as admin of the group.",
 		},
 	)
 	Bot.Send(cmdCfg)
