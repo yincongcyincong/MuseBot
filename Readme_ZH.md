@@ -91,6 +91,13 @@ docker run -d -v /home/user/data:/app/data -e TELEGRAM_BOT_TOKEN="你的Telegram
 | DEEPSEEK_PROXY                 | DeepSeek 请求代理地址                                                                     | -                           |
 | TELEGRAM_PROXY                 | Telegram 请求代理地址                                                                     | -                           |
 | LANG	                          | en / zh                                                                             | en                        |
+| TOKEN_PER_USER	                | 每个用户可用token数量                                                                       | 10000                     |
+| ADMIN_USER_IDS	                | 管理员，逗号分隔，可使用管理员命令                                                                   | -                         |
+
+
+### 其他配置
+[图片参数](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/static/doc/photoconf_ZH.md)    
+[视频参数](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/static/doc/videoconf_ZH.md)
 
 ---
 
@@ -150,6 +157,13 @@ docker run -d -v /home/user/data:/app/data -e TELEGRAM_BOT_TOKEN="你的Telegram
 显示帮助信息。
 
 <img width="400" src="https://github.com/user-attachments/assets/869e0207-388b-49ca-b26a-378f71d58818" />
+
+
+## 管理员命令
+### /addtoken
+给用户增加token.  
+<img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/12d98272-0718-4c9b-bc5c-e0a92e6c8664" />
+
 
 ---
 
