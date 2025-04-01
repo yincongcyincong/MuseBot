@@ -103,10 +103,6 @@ func requestDeepseekAndResp(update tgbotapi.Update, bot *tgbotapi.BotAPI, conten
 
 // handleUpdate handle robot msg sending
 func handleUpdate(messageChan chan *param.MsgInfo, update tgbotapi.Update, bot *tgbotapi.BotAPI, content string) {
-	defer func() {
-		utils.DecreaseUserChat(update)
-	}()
-
 	var msg *param.MsgInfo
 
 	chatId, msgId, userId := utils.GetChatIdAndMsgIdAndUserID(update)
