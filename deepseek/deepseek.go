@@ -83,6 +83,14 @@ func callDeepSeekAPI(prompt string, update tgbotapi.Update, messageChan chan *pa
 		StreamOptions: deepseek.StreamOptions{
 			IncludeUsage: true,
 		},
+		MaxTokens:        *conf.MaxTokens,
+		TopP:             float32(*conf.TopP),
+		FrequencyPenalty: float32(*conf.FrequencyPenalty),
+		TopLogProbs:      *conf.TopLogProbs,
+		LogProbs:         *conf.LogProbs,
+		Stop:             conf.Stop,
+		PresencePenalty:  float32(*conf.PresencePenalty),
+		Temperature:      float32(*conf.Temperature),
 	}
 	messages := make([]deepseek.ChatCompletionMessage, 0)
 
