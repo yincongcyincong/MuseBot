@@ -1,7 +1,6 @@
 package main
 
 import (
-	"github.com/yincongcyincong/telegram-deepseek-bot/command"
 	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
 	"github.com/yincongcyincong/telegram-deepseek-bot/db"
 	"github.com/yincongcyincong/telegram-deepseek-bot/i18n"
@@ -14,7 +13,6 @@ func main() {
 	logger.InitLogger()
 	conf.InitConf()
 	i18n.InitI18n()
-	command.LoadCustomCommands()
 	db.InitTable()
 	db.UpdateUserTime()
 	metrics.InitPprof()

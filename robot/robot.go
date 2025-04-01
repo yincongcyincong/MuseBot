@@ -12,7 +12,6 @@ import (
 
 	godeepseek "github.com/cohesion-org/deepseek-go"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	"github.com/yincongcyincong/telegram-deepseek-bot/command"
 	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
 	"github.com/yincongcyincong/telegram-deepseek-bot/db"
 	"github.com/yincongcyincong/telegram-deepseek-bot/deepseek"
@@ -278,8 +277,6 @@ func handleCommand(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 		sendVideo(update, bot)
 	case "help":
 		sendHelpConfigurationOptions(update, bot)
-	default:
-		command.ExecuteCustomCommand(cmd)
 	}
 
 	if checkAdminUser(update) {
