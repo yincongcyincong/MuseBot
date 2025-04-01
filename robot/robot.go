@@ -202,12 +202,12 @@ func sleepUtilNoLimit(msgId int, err error) bool {
 func handleCommandAndCallback(update tgbotapi.Update, bot *tgbotapi.BotAPI) bool {
 	// if it's command, directly
 	if update.Message != nil && update.Message.IsCommand() {
-		handleCommand(update, bot)
+		go handleCommand(update, bot)
 		return true
 	}
 
 	if update.CallbackQuery != nil {
-		handleCallbackQuery(update, bot)
+		go handleCallbackQuery(update, bot)
 		return true
 	}
 	return false
@@ -253,9 +253,9 @@ func handleCommand(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	case "retry":
 		retryLastQuestion(update, bot)
 	case "photo":
-		go sendImg(update, bot)
+		sendImg(update, bot)
 	case "video":
-		go sendVideo(update, bot)
+		sendVideo(update, bot)
 	case "help":
 		sendHelpConfigurationOptions(update, bot)
 	}
