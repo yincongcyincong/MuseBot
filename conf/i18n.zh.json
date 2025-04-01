@@ -15,5 +15,6 @@
   "valid_user_group": "❌ 用户或群组无效！",
   "add_token_succ": "\uD83D\uDE80 增加token成功!",
   "question": " 问题: ",
-  "answer": " 回答: "
+  "answer": " 回答: ",
+  "chat_exceed": "❌超过聊天数限制"
 }

@@ -46,6 +46,11 @@ func GetMessage(update tgbotapi.Update) *tgbotapi.Message {
 	return nil
 }
 
+func GetChatType(update tgbotapi.Update) string {
+	chat := GetChat(update)
+	return chat.Type
+}
+
 func CheckMsgIsCallback(update tgbotapi.Update) bool {
 	return update.CallbackQuery != nil
 }

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	godeepseek "github.com/cohesion-org/deepseek-go"
@@ -21,6 +22,10 @@ import (
 	"github.com/yincongcyincong/telegram-deepseek-bot/utils"
 )
 
+var (
+	userChatMap = sync.Map{}
+)
+
 // StartListenRobot start listen robot callback
 func StartListenRobot() {
 	for {
@@ -33,33 +38,44 @@ func StartListenRobot() {
 
 		updates := bot.GetUpdatesChan(u)
 		for update := range updates {
-			chatId, msgId, userId := utils.GetChatIdAndMsgIdAndUserID(update)
-			if !checkUserAllow(update) && !checkGroupAllow(update) {
-				chat := utils.GetChat(update)
-				logger.Warn("user/group not allow to use this bot", "userID", userId, "chat", chat)
-				i18n.SendMsg(chatId, "valid_user_group", bot, nil, msgId)
-				continue
-			}
-
-			if handleCommandAndCallback(update, bot) {
-				continue
-			}
-			// check whether you have new message
-			if update.Message != nil {
-
-				if skipThisMsg(update, bot) {
-					continue
-				}
-
-				if *conf.DeepseekType == param.DeepSeek {
-					requestDeepseekAndResp(update, bot, update.Message.Text)
-				} else {
-					requestHuoshanAndResp(update, bot, update.Message.Text)
-				}
-
-			}
+			ExecUpdate(update, bot)
 		}
 	}
+}
+
+func ExecUpdate(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
+	chatId, msgId, userId := utils.GetChatIdAndMsgIdAndUserID(update)
+
+	// check user chat exceed max count
+	if checkUserChatExceed(update, bot) {
+		return
+	}
+
+	if !checkUserAllow(update) && !checkGroupAllow(update) {
+		chat := utils.GetChat(update)
+		logger.Warn("user/group not allow to use this bot", "userID", userId, "chat", chat)
+		i18n.SendMsg(chatId, "valid_user_group", bot, nil, msgId)
+		return
+	}
+
+	if handleCommandAndCallback(update, bot) {
+		return
+	}
+	// check whether you have new message
+	if update.Message != nil {
+
+		if skipThisMsg(update, bot) {
+			return
+		}
+
+		if *conf.DeepseekType == param.DeepSeek {
+			requestDeepseekAndResp(update, bot, update.Message.Text)
+		} else {
+			requestHuoshanAndResp(update, bot, update.Message.Text)
+		}
+
+	}
+
 }
 
 // requestHuoshanAndResp request huoshan api
@@ -98,6 +114,10 @@ func requestDeepseekAndResp(update tgbotapi.Update, bot *tgbotapi.BotAPI, conten
 
 // handleUpdate handle robot msg sending
 func handleUpdate(messageChan chan *param.MsgInfo, update tgbotapi.Update, bot *tgbotapi.BotAPI, content string) {
+	defer func() {
+		DecreaseUserChat(update)
+	}()
+
 	var msg *param.MsgInfo
 
 	chatId, msgId, userId := utils.GetChatIdAndMsgIdAndUserID(update)
@@ -230,6 +250,15 @@ func handleCommand(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	cmd := update.Message.Command()
 	_, _, userID := utils.GetChatIdAndMsgIdAndUserID(update)
 	logger.Info("command info", "userID", userID, "cmd", cmd)
+
+	// check if at bot
+	if (utils.GetChatType(update) == "group" || utils.GetChatType(update) == "supergroup") && *conf.NeedATBOt {
+		if !strings.Contains(update.Message.Text, "@"+bot.Self.UserName) {
+			logger.Warn("not at bot", "userID", userID, "cmd", cmd)
+			return
+		}
+	}
+
 	switch cmd {
 	case "chat":
 		sendChatMessage(update, bot)
@@ -698,4 +727,28 @@ func checkAdminUser(update tgbotapi.Update) bool {
 	_, _, userId := utils.GetChatIdAndMsgIdAndUserID(update)
 	_, ok := conf.AdminUserIds[userId]
 	return ok
+}
+
+func checkUserChatExceed(update tgbotapi.Update, bot *tgbotapi.BotAPI) bool {
+	chatId, msgId, userId := utils.GetChatIdAndMsgIdAndUserID(update)
+	times := 1
+	if timeInter, ok := userChatMap.Load(userId); ok {
+		times = timeInter.(int)
+		if times >= *conf.MaxUserChat {
+			i18n.SendMsg(chatId, "chat_exceed", bot, nil, msgId)
+			return true
+		}
+		times++
+	}
+	userChatMap.Store(userId, times)
+	return false
+}
+
+func DecreaseUserChat(update tgbotapi.Update) {
+	_, _, userId := utils.GetChatIdAndMsgIdAndUserID(update)
+	if timeInter, ok := userChatMap.Load(userId); ok {
+		times := timeInter.(int)
+		times--
+		userChatMap.Store(userId, times)
+	}
 }
