@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-	"sync"
 	"time"
 
 	godeepseek "github.com/cohesion-org/deepseek-go"
@@ -19,10 +18,6 @@ import (
 	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
 	"github.com/yincongcyincong/telegram-deepseek-bot/param"
 	"github.com/yincongcyincong/telegram-deepseek-bot/utils"
-)
-
-var (
-	userChatMap = sync.Map{}
 )
 
 // StartListenRobot start listen robot callback
@@ -44,11 +39,6 @@ func StartListenRobot() {
 
 func ExecUpdate(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	chatId, msgId, userId := utils.GetChatIdAndMsgIdAndUserID(update)
-
-	// check user chat exceed max count
-	if checkUserChatExceed(update, bot) {
-		return
-	}
 
 	if !checkUserAllow(update) && !checkGroupAllow(update) {
 		chat := utils.GetChat(update)
@@ -114,7 +104,7 @@ func requestDeepseekAndResp(update tgbotapi.Update, bot *tgbotapi.BotAPI, conten
 // handleUpdate handle robot msg sending
 func handleUpdate(messageChan chan *param.MsgInfo, update tgbotapi.Update, bot *tgbotapi.BotAPI, content string) {
 	defer func() {
-		DecreaseUserChat(update)
+		utils.DecreaseUserChat(update)
 	}()
 
 	var msg *param.MsgInfo
@@ -272,9 +262,9 @@ func handleCommand(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	case "retry":
 		retryLastQuestion(update, bot)
 	case "photo":
-		sendImg(update, bot)
+		go sendImg(update, bot)
 	case "video":
-		sendVideo(update, bot)
+		go sendVideo(update, bot)
 	case "help":
 		sendHelpConfigurationOptions(update, bot)
 	}
@@ -516,6 +506,14 @@ func sendFailMessage(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 }
 
 func sendVideo(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
+	if utils.CheckUserChatExceed(update, bot) {
+		return
+	}
+
+	defer func() {
+		utils.DecreaseUserChat(update)
+	}()
+
 	chatId, replyToMessageID, userId := utils.GetChatIdAndMsgIdAndUserID(update)
 	if checkUserTokenExceed(update, bot) {
 		logger.Warn("user token exceed", "userID", userId)
@@ -583,6 +581,14 @@ func sendVideo(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 }
 
 func sendImg(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
+	if utils.CheckUserChatExceed(update, bot) {
+		return
+	}
+
+	defer func() {
+		utils.DecreaseUserChat(update)
+	}()
+
 	chatId, replyToMessageID, userId := utils.GetChatIdAndMsgIdAndUserID(update)
 	if checkUserTokenExceed(update, bot) {
 		logger.Warn("user token exceed", "userID", userId)
@@ -724,28 +730,4 @@ func checkAdminUser(update tgbotapi.Update) bool {
 	_, _, userId := utils.GetChatIdAndMsgIdAndUserID(update)
 	_, ok := conf.AdminUserIds[userId]
 	return ok
-}
-
-func checkUserChatExceed(update tgbotapi.Update, bot *tgbotapi.BotAPI) bool {
-	chatId, msgId, userId := utils.GetChatIdAndMsgIdAndUserID(update)
-	times := 1
-	if timeInter, ok := userChatMap.Load(userId); ok {
-		times = timeInter.(int)
-		if times >= *conf.MaxUserChat {
-			i18n.SendMsg(chatId, "chat_exceed", bot, nil, msgId)
-			return true
-		}
-		times++
-	}
-	userChatMap.Store(userId, times)
-	return false
-}
-
-func DecreaseUserChat(update tgbotapi.Update) {
-	_, _, userId := utils.GetChatIdAndMsgIdAndUserID(update)
-	if timeInter, ok := userChatMap.Load(userId); ok {
-		times := timeInter.(int)
-		times--
-		userChatMap.Store(userId, times)
-	}
 }

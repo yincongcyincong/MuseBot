@@ -44,6 +44,11 @@ type ImgResponseData struct {
 }
 
 func GetContentFromHS(messageChan chan *param.MsgInfo, update tgbotapi.Update, bot *tgbotapi.BotAPI, content string) {
+	// check user chat exceed max count
+	if utils.CheckUserChatExceed(update, bot) {
+		return
+	}
+
 	text := strings.ReplaceAll(content, "@"+bot.Self.UserName, "")
 	err := getContentFromHS(text, update, messageChan)
 	if err != nil {

@@ -28,6 +28,11 @@ const (
 
 // GetContentFromDP get comment from deepseek
 func GetContentFromDP(messageChan chan *param.MsgInfo, update tgbotapi.Update, bot *tgbotapi.BotAPI, content string) {
+	// check user chat exceed max count
+	if utils.CheckUserChatExceed(update, bot) {
+		return
+	}
+
 	text := strings.ReplaceAll(content, "@"+bot.Self.UserName, "")
 	err := callDeepSeekAPI(text, update, messageChan)
 	if err != nil {
@@ -82,7 +87,7 @@ func callDeepSeekAPI(prompt string, update tgbotapi.Update, messageChan chan *pa
 	messages := make([]deepseek.ChatCompletionMessage, 0)
 
 	msgRecords := db.GetMsgRecord(userId)
-	if msgRecords != nil && model != deepseek.DeepSeekReasoner {
+	if msgRecords != nil {
 		aqs := msgRecords.AQs
 		if len(aqs) > 10 {
 			aqs = aqs[len(aqs)-10:]
