@@ -1,4 +1,5 @@
 ## group
+
 telegram-group: https://t.me/+WtaMcDpaMOlhZTE1 , or you can have a try GWSbot.      
 every body have **3000** token to try this bot, please give me a star!
 
@@ -80,6 +81,8 @@ You can configure the bot via environment variables:
 | LANG	                          | en / zh                                                                                                                        | en                        |
 | TOKEN_PER_USER	                | The tokens that each user can use                                                                                              | 10000                     |
 | ADMIN_USER_IDS	                | admin user, can use some admin commands                                                                                        | -                         |
+| NEED_AT_BOT	                   | if need at bot in group to trigger bot                                                                                         | false                     |
+| MAX_USER_CHAT	                 | max exist chat per user                                                                                                        | 2                         |
 
 ### CUSTOM_URL
 
@@ -105,6 +108,7 @@ if DB_TYPE is mysql, give a mysql link, such as
 choose a language for bot, English or Chinese.
 
 ### other config
+
 [photo_conf](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/static/doc/photoconf.md)     
 [video_conf](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/static/doc/videoconf.md)
 
@@ -155,7 +159,9 @@ allows the bot to chat through /chat command in groups, without the bot being se
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/869e0207-388b-49ca-b26a-378f71d58818" />
 
 ## Admin Command
+
 ### /addtoken
+
 add token for user.  
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/12d98272-0718-4c9b-bc5c-e0a92e6c8664" />
 
@@ -175,7 +181,7 @@ add token for user.
 
 ## Contributing
 
-Feel free to submit issues and pull requests to improve this bot. 🚀     
+Feel free to submit issues and pull requests to improve this bot. 🚀
 
 ## License
 
