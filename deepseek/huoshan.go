@@ -43,28 +43,35 @@ type ImgResponseData struct {
 	RephraserResult  string   `json:"rephraser_result"`
 }
 
-func GetContentFromHS(messageChan chan *param.MsgInfo, update tgbotapi.Update, bot *tgbotapi.BotAPI, content string) {
+type HuoshanReq struct {
+	MessageChan chan *param.MsgInfo
+	Update      tgbotapi.Update
+	Bot         *tgbotapi.BotAPI
+	Content     string
+}
+
+func (h *HuoshanReq) GetContent() {
 	// check user chat exceed max count
-	if utils.CheckUserChatExceed(update, bot) {
+	if utils.CheckUserChatExceed(h.Update, h.Bot) {
 		return
 	}
 
 	defer func() {
-		utils.DecreaseUserChat(update)
-		close(messageChan)
+		utils.DecreaseUserChat(h.Update)
+		close(h.MessageChan)
 	}()
 
-	text := strings.ReplaceAll(content, "@"+bot.Self.UserName, "")
-	err := getContentFromHS(text, update, messageChan)
+	text := strings.ReplaceAll(h.Content, "@"+h.Bot.Self.UserName, "")
+	err := h.getContentFromHS(text)
 	if err != nil {
 		logger.Error("Error calling DeepSeek API", "err", err)
 	}
 
 }
 
-func getContentFromHS(prompt string, update tgbotapi.Update, messageChan chan *param.MsgInfo) error {
+func (h *HuoshanReq) getContentFromHS(prompt string) error {
 	start := time.Now()
-	_, updateMsgID, userId := utils.GetChatIdAndMsgIdAndUserID(update)
+	_, updateMsgID, userId := utils.GetChatIdAndMsgIdAndUserID(h.Update)
 
 	messages := make([]*model.ChatCompletionMessage, 0)
 
@@ -162,7 +169,7 @@ func getContentFromHS(prompt string, update tgbotapi.Update, messageChan chan *p
 		for _, choice := range response.Choices {
 			// exceed max telegram one message length
 			if utils.Utf16len(msgInfoContent.Content) > OneMsgLen {
-				messageChan <- msgInfoContent
+				h.MessageChan <- msgInfoContent
 				msgInfoContent = &param.MsgInfo{
 					SendLen:     NonFirstSendLen,
 					FullContent: msgInfoContent.FullContent,
@@ -173,7 +180,7 @@ func getContentFromHS(prompt string, update tgbotapi.Update, messageChan chan *p
 			msgInfoContent.Content += choice.Delta.Content
 			msgInfoContent.FullContent += choice.Delta.Content
 			if len(msgInfoContent.Content) > msgInfoContent.SendLen {
-				messageChan <- msgInfoContent
+				h.MessageChan <- msgInfoContent
 				msgInfoContent.SendLen += NonFirstSendLen
 			}
 		}
@@ -185,7 +192,7 @@ func getContentFromHS(prompt string, update tgbotapi.Update, messageChan chan *p
 
 	}
 
-	messageChan <- msgInfoContent
+	h.MessageChan <- msgInfoContent
 
 	// record time costing in dialog
 	totalDuration := time.Since(start).Seconds()

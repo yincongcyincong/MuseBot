@@ -26,29 +26,40 @@ const (
 	NonFirstSendLen = 500
 )
 
-// GetContentFromDP get comment from deepseek
-func GetContentFromDP(messageChan chan *param.MsgInfo, update tgbotapi.Update, bot *tgbotapi.BotAPI, content string) {
+type Deepseek interface {
+	GetContent()
+}
+
+type DeepseekReq struct {
+	MessageChan chan *param.MsgInfo
+	Update      tgbotapi.Update
+	Bot         *tgbotapi.BotAPI
+	Content     string
+}
+
+// GetContent get comment from deepseek
+func (d *DeepseekReq) GetContent() {
 	// check user chat exceed max count
-	if utils.CheckUserChatExceed(update, bot) {
+	if utils.CheckUserChatExceed(d.Update, d.Bot) {
 		return
 	}
 
 	defer func() {
-		utils.DecreaseUserChat(update)
-		close(messageChan)
+		utils.DecreaseUserChat(d.Update)
+		close(d.MessageChan)
 	}()
 
-	text := strings.ReplaceAll(content, "@"+bot.Self.UserName, "")
-	err := callDeepSeekAPI(text, update, messageChan)
+	text := strings.ReplaceAll(d.Content, "@"+d.Bot.Self.UserName, "")
+	err := d.callDeepSeekAPI(text)
 	if err != nil {
 		logger.Error("Error calling DeepSeek API", "err", err)
 	}
 }
 
 // callDeepSeekAPI request DeepSeek API and get response
-func callDeepSeekAPI(prompt string, update tgbotapi.Update, messageChan chan *param.MsgInfo) error {
+func (d *DeepseekReq) callDeepSeekAPI(prompt string) error {
 	start := time.Now()
-	_, updateMsgID, userId := utils.GetChatIdAndMsgIdAndUserID(update)
+	_, updateMsgID, userId := utils.GetChatIdAndMsgIdAndUserID(d.Update)
 	model := deepseek.DeepSeekChat
 	userInfo, err := db.GetUserByID(userId)
 	if err != nil {
@@ -153,7 +164,7 @@ func callDeepSeekAPI(prompt string, update tgbotapi.Update, messageChan chan *pa
 		for _, choice := range response.Choices {
 			// exceed max telegram one message length
 			if utils.Utf16len(msgInfoContent.Content) > OneMsgLen {
-				messageChan <- msgInfoContent
+				d.MessageChan <- msgInfoContent
 				msgInfoContent = &param.MsgInfo{
 					SendLen:     NonFirstSendLen,
 					FullContent: msgInfoContent.FullContent,
@@ -164,7 +175,7 @@ func callDeepSeekAPI(prompt string, update tgbotapi.Update, messageChan chan *pa
 			msgInfoContent.Content += choice.Delta.Content
 			msgInfoContent.FullContent += choice.Delta.Content
 			if len(msgInfoContent.Content) > msgInfoContent.SendLen {
-				messageChan <- msgInfoContent
+				d.MessageChan <- msgInfoContent
 				msgInfoContent.SendLen += NonFirstSendLen
 			}
 		}
@@ -175,7 +186,7 @@ func callDeepSeekAPI(prompt string, update tgbotapi.Update, messageChan chan *pa
 		}
 	}
 
-	messageChan <- msgInfoContent
+	d.MessageChan <- msgInfoContent
 
 	// record time costing in dialog
 	totalDuration := time.Since(start).Seconds()

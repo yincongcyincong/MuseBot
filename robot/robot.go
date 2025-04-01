@@ -57,31 +57,9 @@ func ExecUpdate(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 			return
 		}
 
-		if *conf.DeepseekType == param.DeepSeek {
-			requestDeepseekAndResp(update, bot, update.Message.Text)
-		} else {
-			requestHuoshanAndResp(update, bot, update.Message.Text)
-		}
-
+		requestDeepseekAndResp(update, bot, update.Message.Text)
 	}
 
-}
-
-// requestHuoshanAndResp request huoshan api
-func requestHuoshanAndResp(update tgbotapi.Update, bot *tgbotapi.BotAPI, content string) {
-	_, _, userId := utils.GetChatIdAndMsgIdAndUserID(update)
-	if checkUserTokenExceed(update, bot) {
-		logger.Warn("user token exceed", "userID", userId)
-		return
-	}
-
-	messageChan := make(chan *param.MsgInfo)
-
-	// request DeepSeek API
-	go deepseek.GetContentFromHS(messageChan, update, bot, content)
-
-	// send response message
-	go handleUpdate(messageChan, update, bot, content)
 }
 
 // requestDeepseekAndResp request deepseek api
@@ -94,8 +72,25 @@ func requestDeepseekAndResp(update tgbotapi.Update, bot *tgbotapi.BotAPI, conten
 
 	messageChan := make(chan *param.MsgInfo)
 
+	var dpReq deepseek.Deepseek
+	if *conf.DeepseekType == param.DeepSeek {
+		dpReq = &deepseek.DeepseekReq{
+			Content:     content,
+			Update:      update,
+			Bot:         bot,
+			MessageChan: messageChan,
+		}
+	} else {
+		dpReq = &deepseek.HuoshanReq{
+			Content:     content,
+			Update:      update,
+			Bot:         bot,
+			MessageChan: messageChan,
+		}
+	}
+
 	// request DeepSeek API
-	go deepseek.GetContentFromDP(messageChan, update, bot, content)
+	go dpReq.GetContent()
 
 	// send response message
 	go handleUpdate(messageChan, update, bot, content)
@@ -292,22 +287,14 @@ func sendChatMessage(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	}
 
 	// Reply to the chat content
-	if *conf.DeepseekType == param.DeepSeek {
-		requestDeepseekAndResp(update, bot, content)
-	} else {
-		requestHuoshanAndResp(update, bot, content)
-	}
+	requestDeepseekAndResp(update, bot, content)
 }
 func retryLastQuestion(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	chatId, msgId, userId := utils.GetChatIdAndMsgIdAndUserID(update)
 
 	records := db.GetMsgRecord(userId)
 	if records != nil && len(records.AQs) > 0 {
-		if *conf.DeepseekType == param.DeepSeek {
-			requestDeepseekAndResp(update, bot, records.AQs[len(records.AQs)-1].Question)
-		} else {
-			requestHuoshanAndResp(update, bot, records.AQs[len(records.AQs)-1].Question)
-		}
+		requestDeepseekAndResp(update, bot, records.AQs[len(records.AQs)-1].Question)
 	} else {
 		i18n.SendMsg(chatId, "last_question_fail", bot, nil, msgId)
 	}
