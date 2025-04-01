@@ -50,8 +50,8 @@ func InitConf() {
 	TelegramProxy = flag.String("telegram_proxy", "", "db conf")
 	Lang = flag.String("lang", "en", "lang")
 	TokenPerUser = flag.Int("token_per_user", 10000, "token per user")
-	NeedATBOt = flag.Bool("need_atbot", false, "need atbot")
-	MaxUserChat = flag.Int("max_user_chat", 2, "max chat per user")
+	NeedATBOt = flag.Bool("need_atbot", false, "need at bot")
+	MaxUserChat = flag.Int("max_user_chat", 1, "max chat per user")
 
 	adminUserIds := flag.String("admin_user_ids", "", "admin user ids")
 	allowedUserIds := flag.String("allowed_telegram_user_ids", "", "allowed telegram user ids")
