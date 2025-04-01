@@ -57,6 +57,7 @@ func InitConf() {
 	allowedUserIds := flag.String("allowed_telegram_user_ids", "", "allowed telegram user ids")
 	allowedGroupIds := flag.String("allowed_telegram_group_ids", "", "allowed telegram group ids")
 
+	InitDeepseekConf()
 	InitPhotoConf()
 	InitVideoConf()
 	flag.Parse()

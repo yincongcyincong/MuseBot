@@ -122,6 +122,14 @@ func getContentFromHS(prompt string, update tgbotapi.Update, messageChan chan *p
 		StreamOptions: &model.StreamOptions{
 			IncludeUsage: true,
 		},
+		MaxTokens:        *conf.MaxTokens,
+		TopP:             float32(*conf.TopP),
+		FrequencyPenalty: float32(*conf.FrequencyPenalty),
+		TopLogProbs:      *conf.TopLogProbs,
+		LogProbs:         *conf.LogProbs,
+		Stop:             conf.Stop,
+		PresencePenalty:  float32(*conf.PresencePenalty),
+		Temperature:      float32(*conf.Temperature),
 	}
 
 	logger.Info("msg receive", "userID", userId, "prompt", prompt)
