@@ -33,12 +33,16 @@ func GetContentFromDP(messageChan chan *param.MsgInfo, update tgbotapi.Update, b
 		return
 	}
 
+	defer func() {
+		utils.DecreaseUserChat(update)
+		close(messageChan)
+	}()
+
 	text := strings.ReplaceAll(content, "@"+bot.Self.UserName, "")
 	err := callDeepSeekAPI(text, update, messageChan)
 	if err != nil {
 		logger.Error("Error calling DeepSeek API", "err", err)
 	}
-	close(messageChan)
 }
 
 // callDeepSeekAPI request DeepSeek API and get response

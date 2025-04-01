@@ -49,12 +49,17 @@ func GetContentFromHS(messageChan chan *param.MsgInfo, update tgbotapi.Update, b
 		return
 	}
 
+	defer func() {
+		utils.DecreaseUserChat(update)
+		close(messageChan)
+	}()
+
 	text := strings.ReplaceAll(content, "@"+bot.Self.UserName, "")
 	err := getContentFromHS(text, update, messageChan)
 	if err != nil {
 		logger.Error("Error calling DeepSeek API", "err", err)
 	}
-	close(messageChan)
+
 }
 
 func getContentFromHS(prompt string, update tgbotapi.Update, messageChan chan *param.MsgInfo) error {
