@@ -24,4 +24,4 @@ Documentation: [https://www.volcengine.com/docs/6791/1366783](https://www.volcen
 | `OPACITY`           | `float`  | Optional          | Watermark opacity:<br>- Range: `0` ~ `1`<br>- `1` = Fully opaque<br>- Default: `0.3`                                                                                                                               |
 | `LOGO_TEXT_CONTENT` | `String` | Optional          | Custom watermark content                                                                                                                                                                                           |
 
-me know if you need further modifications or explanations! 😊
+

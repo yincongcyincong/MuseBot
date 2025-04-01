@@ -93,9 +93,12 @@ docker run -d -v /home/user/data:/app/data -e TELEGRAM_BOT_TOKEN="你的Telegram
 | LANG	                          | en / zh                                                                             | en                        |
 | TOKEN_PER_USER	                | 每个用户可用token数量                                                                       | 10000                     |
 | ADMIN_USER_IDS	                | 管理员，逗号分隔，可使用管理员命令                                                                   | -                         |
+| NEED_AT_BOT	                   | 在群组中是否需要at机器人触发                                                                     | false                     |
+| MAX_USER_CHAT	                 | 每个用户的最大现有聊天次数                                                             | 2                         |
 
 
 ### 其他配置
+[deepseek参数](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/static/doc/deepseekconf_ZH.md)
 [图片参数](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/static/doc/photoconf_ZH.md)    
 [视频参数](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/static/doc/videoconf_ZH.md)
 
