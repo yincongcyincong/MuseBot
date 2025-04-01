@@ -81,8 +81,8 @@ You can configure the bot via environment variables:
 | LANG	                          | en / zh                                                                                                                        | en                        |
 | TOKEN_PER_USER	                | The tokens that each user can use                                                                                              | 10000                     |
 | ADMIN_USER_IDS	                | admin user, can use some admin commands                                                                                        | -                         |
-| NEED_AT_BOT	                   | if need at bot in group to trigger bot                                                                                         | false                     |
-| MAX_USER_CHAT	                 | max exist chat per user                                                                                                        | 2                         |
+| NEED_AT_BOT	                   | is it necessary to trigger an at robot in the group                                                                            | false                     |
+| MAX_USER_CHAT	                 | max existing chat per user                                                                                                     | 2                         |
 
 ### CUSTOM_URL
 
@@ -109,6 +109,7 @@ choose a language for bot, English or Chinese.
 
 ### other config
 
+[deepseek_conf](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/static/doc/deepseekconf.md)    
 [photo_conf](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/static/doc/photoconf.md)     
 [video_conf](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/static/doc/videoconf.md)
 
