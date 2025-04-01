@@ -1,11 +1,23 @@
-### 0.0.16
+### v0.0.19
+metric
+mcp
+
+### 0.0.18
+deepseek conf
+lock user
+
+
+### 0.0.17
 image param
 video param
-metric
-u18n
+
+### 0.0.16
+add token limit for every user
+add admin user config
+fix reasoner mode bug
 
 ### 0.0.15
-
+i18n
 
 ### 0.0.14
 custom command

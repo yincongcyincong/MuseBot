@@ -25,6 +25,8 @@ var (
 	TelegramProxy *string
 	Lang          *string
 	TokenPerUser  *int
+	NeedATBOt     *bool
+	MaxUserChat   *int
 
 	AllowedTelegramUserIds  = make(map[int64]bool)
 	AllowedTelegramGroupIds = make(map[int64]bool)
@@ -48,6 +50,8 @@ func InitConf() {
 	TelegramProxy = flag.String("telegram_proxy", "", "db conf")
 	Lang = flag.String("lang", "en", "lang")
 	TokenPerUser = flag.Int("token_per_user", 10000, "token per user")
+	NeedATBOt = flag.Bool("need_atbot", false, "need atbot")
+	MaxUserChat = flag.Int("max_user_chat", 2, "max chat per user")
 
 	adminUserIds := flag.String("admin_user_ids", "", "admin user ids")
 	allowedUserIds := flag.String("allowed_telegram_user_ids", "", "allowed telegram user ids")
@@ -117,6 +121,14 @@ func InitConf() {
 		*adminUserIds = os.Getenv("ADMIN_USER_IDS")
 	}
 
+	if os.Getenv("NEED_AT_BOT") != "" {
+		*NeedATBOt, _ = strconv.ParseBool(os.Getenv("NEED_AT_BOT"))
+	}
+
+	if os.Getenv("MAX_USER_CHAT") != "" {
+		*MaxUserChat, _ = strconv.Atoi(os.Getenv("MAX_USER_CHAT"))
+	}
+
 	for _, userIdStr := range strings.Split(*allowedUserIds, ",") {
 		userId, err := strconv.Atoi(userIdStr)
 		if err != nil {
@@ -148,17 +160,19 @@ func InitConf() {
 	logger.Info("", "DeepseekToken", *DeepseekToken)
 	logger.Info("", "CustomUrl", *CustomUrl)
 	logger.Info("", "DeepseekType", *DeepseekType)
-	logger.Info("", "VOLC_AK", *VolcAK)
-	logger.Info("", "VOLC_SK", *VolcSK)
+	logger.Info("", "VolcAK", *VolcAK)
+	logger.Info("", "VolcSK", *VolcSK)
 	logger.Info("", "DBType", *DBType)
 	logger.Info("", "DBConf", *DBConf)
 	logger.Info("", "AllowedTelegramUserIds", *allowedUserIds)
 	logger.Info("", "AllowedTelegramGroupIds", *allowedGroupIds)
 	logger.Info("", "DeepseekProxy", *DeepseekProxy)
 	logger.Info("", "TelegramProxy", *TelegramProxy)
-	logger.Info("", "LANG", *Lang)
-	logger.Info("", "TOKEN_PER_USER", *TokenPerUser)
+	logger.Info("", "Lang", *Lang)
+	logger.Info("", "TokenPerUser", *TokenPerUser)
 	logger.Info("", "AdminUserIds", *adminUserIds)
+	logger.Info("", "NeedATBOt", *NeedATBOt)
+	logger.Info("", "MaxUserChat", *MaxUserChat)
 
 	if *BotToken == "" || *DeepseekToken == "" {
 		panic("Bot token and deepseek token are required")

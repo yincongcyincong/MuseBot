@@ -15,5 +15,6 @@
   "valid_user_group": "❌not a valid user or group",
   "add_token_succ": "\uD83D\uDE80add token success!",
   "question": " question: ",
-  "answer": " answer: "
+  "answer": " answer: ",
+  "chat_exceed": "❌exceed chat num limit"
 }
