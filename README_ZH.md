@@ -164,14 +164,6 @@ docker run -d -v /home/user/data:/app/data -e TELEGRAM_BOT_TOKEN="你的Telegram
 给用户增加token.  
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/12d98272-0718-4c9b-bc5c-e0a92e6c8664" />
 
-
----
-
-## 高级用法
-
-[自定义命令](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/static/doc/advanced_ZH.md)  
-通过自定义 HTTP 请求与 DeepSeek 结合，实现数据分析、文章解析等功能。
-
 ---
 
 ## 🚀 Docker 部署
