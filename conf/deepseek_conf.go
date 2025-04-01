@@ -69,12 +69,12 @@ func InitDeepseekConf() {
 
 	}
 
-	logger.Info("", "FrequencyPenalty", *FrequencyPenalty)
-	logger.Info("", "MaxTokens", *MaxTokens)
-	logger.Info("", "PresencePenalty", *PresencePenalty)
-	logger.Info("", "Temperature", *Temperature)
-	logger.Info("", "TopP", *TopP)
-	logger.Info("", "Stop", *stop)
-	logger.Info("", "LogProbs", *LogProbs)
-	logger.Info("", "TopLogProbs", *TopLogProbs)
+	logger.Info("DEEPSEEK_CONF", "FrequencyPenalty", *FrequencyPenalty)
+	logger.Info("DEEPSEEK_CONF", "MaxTokens", *MaxTokens)
+	logger.Info("DEEPSEEK_CONF", "PresencePenalty", *PresencePenalty)
+	logger.Info("DEEPSEEK_CONF", "Temperature", *Temperature)
+	logger.Info("DEEPSEEK_CONF", "TopP", *TopP)
+	logger.Info("DEEPSEEK_CONF", "Stop", *stop)
+	logger.Info("DEEPSEEK_CONF", "LogProbs", *LogProbs)
+	logger.Info("DEEPSEEK_CONF", "TopLogProbs", *TopLogProbs)
 }

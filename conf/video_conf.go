@@ -48,11 +48,11 @@ func InitVideoConf() {
 		*Watermark, _ = strconv.ParseBool(os.Getenv("WATERMARK"))
 	}
 
-	logger.Info("", "VIDEO_MODEL", *VideoModel)
-	logger.Info("", "RADIO", *Radio)
-	logger.Info("", "DURATION", *Duration)
-	logger.Info("", "FPS", *FPS)
-	logger.Info("", "RESOLUTION", *Resolution)
-	logger.Info("", "WATERMARK", *Watermark)
+	logger.Info("VIDEO_CONF", "VIDEO_MODEL", *VideoModel)
+	logger.Info("VIDEO_CONF", "RADIO", *Radio)
+	logger.Info("VIDEO_CONF", "DURATION", *Duration)
+	logger.Info("VIDEO_CONF", "FPS", *FPS)
+	logger.Info("VIDEO_CONF", "RESOLUTION", *Resolution)
+	logger.Info("VIDEO_CONF", "WATERMARK", *Watermark)
 
 }
