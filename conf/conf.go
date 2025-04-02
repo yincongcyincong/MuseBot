@@ -2,7 +2,6 @@ package conf
 
 import (
 	"flag"
-	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
 	"net/http"
 	"net/url"
 	"os"
@@ -10,6 +9,7 @@ import (
 	"strings"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
 )
 
 var (

@@ -2,10 +2,11 @@ package conf
 
 import (
 	"flag"
-	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
 )
 
 var (
