@@ -14,7 +14,5 @@
   "token_exceed": "❌exceed token limit, used token: %d, available token: %d, total available token: %d",
   "valid_user_group": "❌not a valid user or group",
   "add_token_succ": "\uD83D\uDE80add token success!",
-  "question": " question: ",
-  "answer": " answer: ",
   "chat_exceed": "❌exceed chat num limit"
 }
