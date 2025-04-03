@@ -83,6 +83,7 @@ You can configure the bot via environment variables:
 | ADMIN_USER_IDS	                | admin user, can use some admin commands                                                                                        | -                         |
 | NEED_AT_BOT	                   | is it necessary to trigger an at robot in the group                                                                            | false                     |
 | MAX_USER_CHAT	                 | max existing chat per user                                                                                                     | 2                         |
+| VIDEO_TOKEN	                   | volcengine Api key[doc](https://www.volcengine.com/docs/82379/1399008#b00dee71)                                                | -                         |
 
 ### CUSTOM_URL
 

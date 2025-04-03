@@ -27,6 +27,7 @@ var (
 	TokenPerUser  *int
 	NeedATBOt     *bool
 	MaxUserChat   *int
+	VideoToken    *string
 
 	AllowedTelegramUserIds  = make(map[int64]bool)
 	AllowedTelegramGroupIds = make(map[int64]bool)
@@ -52,6 +53,7 @@ func InitConf() {
 	TokenPerUser = flag.Int("token_per_user", 10000, "token per user")
 	NeedATBOt = flag.Bool("need_at_bot", false, "need at bot")
 	MaxUserChat = flag.Int("max_user_chat", 2, "max chat per user")
+	VideoToken = flag.String("video_token", "", "video token")
 
 	adminUserIds := flag.String("admin_user_ids", "", "admin user ids")
 	allowedUserIds := flag.String("allowed_telegram_user_ids", "", "allowed telegram user ids")
@@ -130,6 +132,10 @@ func InitConf() {
 		*MaxUserChat, _ = strconv.Atoi(os.Getenv("MAX_USER_CHAT"))
 	}
 
+	if os.Getenv("VIDEO_TOKEN") != "" {
+		*VideoToken = os.Getenv("VIDEO_TOKEN")
+	}
+
 	for _, userIdStr := range strings.Split(*allowedUserIds, ",") {
 		userId, err := strconv.Atoi(userIdStr)
 		if err != nil {
@@ -174,6 +180,7 @@ func InitConf() {
 	logger.Info("CONF", "AdminUserIds", *adminUserIds)
 	logger.Info("CONF", "NeedATBOt", *NeedATBOt)
 	logger.Info("CONF", "MaxUserChat", *MaxUserChat)
+	logger.Info("CONF", "VideoToken", *VideoToken)
 
 	if *BotToken == "" || *DeepseekToken == "" {
 		panic("Bot token and deepseek token are required")
