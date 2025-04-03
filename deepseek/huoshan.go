@@ -270,7 +270,7 @@ func GenerateVideo(prompt string) (string, error) {
 	}
 
 	client := arkruntime.NewClientWithApiKey(
-		*conf.DeepseekToken,
+		*conf.VideoToken,
 		arkruntime.WithTimeout(30*time.Minute),
 		arkruntime.WithHTTPClient(httpClient),
 	)
