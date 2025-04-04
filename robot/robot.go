@@ -280,6 +280,10 @@ func sendChatMessage(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	content = strings.ReplaceAll(content, mention, "")
 	content = strings.TrimSpace(content)
 
+	if content == "" {
+		content = "hi"
+	}
+
 	if len(content) == 0 {
 		// If there is no chat content after command
 		i18n.SendMsg(chatId, "chat_fail", bot, nil, msgId)
@@ -508,7 +512,16 @@ func sendVideo(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 		return
 	}
 
-	prompt := strings.Replace(update.Message.Text, "/video", "", 1)
+	command := "/video"
+	mention := "@" + bot.Self.UserName
+
+	content := strings.ReplaceAll(update.Message.Text, command, mention)
+	content = strings.ReplaceAll(content, mention, "")
+	prompt := strings.TrimSpace(content)
+
+	if prompt == "" {
+		prompt = "hi"
+	}
 	videoUrl, err := deepseek.GenerateVideo(prompt)
 	if err != nil {
 		logger.Warn("generate video fail", "err", err)
@@ -583,7 +596,17 @@ func sendImg(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 		return
 	}
 
-	prompt := strings.TrimSpace(strings.Replace(update.Message.Text, "/photo", "", 1))
+	command := "/photo"
+	mention := "@" + bot.Self.UserName
+
+	content := strings.ReplaceAll(update.Message.Text, command, mention)
+	content = strings.ReplaceAll(content, mention, "")
+	prompt := strings.TrimSpace(content)
+
+	if prompt == "" {
+		prompt = "hi"
+	}
+
 	if len(prompt) == 0 {
 		return
 	}
