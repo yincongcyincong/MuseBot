@@ -356,6 +356,11 @@ func showStateInfo(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 		return
 	}
 
+	if userInfo == nil {
+		db.InsertUser(userId, godeepseek.DeepSeekChat)
+		userInfo, err = db.GetUserByID(userId)
+	}
+
 	// get today token
 	now := time.Now()
 	startOfDay := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
