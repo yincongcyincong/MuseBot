@@ -1,8 +1,11 @@
 package utils
 
 import (
+	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
+	"github.com/yincongcyincong/telegram-deepseek-bot/i18n"
 	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
 	"strconv"
+	"strings"
 	"unicode/utf16"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -74,4 +77,25 @@ func SendMsg(chatId int64, msgContent string, bot *tgbotapi.BotAPI, replyToMessa
 	if err != nil {
 		logger.Warn("send clear message fail", "err", err)
 	}
+}
+
+func ReplaceCommand(content string, command string, botName string) string {
+	mention := "@" + botName
+
+	content = strings.ReplaceAll(content, command, mention)
+	content = strings.ReplaceAll(content, mention, "")
+	prompt := strings.TrimSpace(content)
+
+	return prompt
+}
+
+func ForceReply(chatId int64, msgId int, i18MsgId string, bot *tgbotapi.BotAPI) error {
+	msg := tgbotapi.NewMessage(chatId, i18n.GetMessage(*conf.Lang, i18MsgId, nil))
+	msg.ReplyMarkup = tgbotapi.ForceReply{
+		ForceReply: true,
+		Selective:  true,
+	}
+	msg.ReplyToMessageID = msgId
+	_, err := bot.Send(msg)
+	return err
 }

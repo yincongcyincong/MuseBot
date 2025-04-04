@@ -14,5 +14,8 @@
   "token_exceed": "❌exceed token limit, used token: %d, available token: %d, total available token: %d",
   "valid_user_group": "❌not a valid user or group",
   "add_token_succ": "\uD83D\uDE80add token success!",
-  "chat_exceed": "❌exceed chat num limit"
+  "chat_exceed": "❌exceed chat num limit",
+  "chat_empty_content": "please input chat prompt",
+  "video_empty_content": "please input video prompt",
+  "photo_empty_content": "please input photo prompt"
 }

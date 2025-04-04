@@ -14,5 +14,8 @@
   "token_exceed": "❌token 超出限制！已用token：%d 剩余token：%d 总可用token：%d",
   "valid_user_group": "❌ 用户或群组无效！",
   "add_token_succ": "\uD83D\uDE80 增加token成功!",
-  "chat_exceed": "❌超过聊天数限制"
+  "chat_exceed": "❌超过聊天数限制",
+  "chat_empty_content": "请输入聊天prompt",
+  "video_empty_content": "请输入视频prompt",
+  "photo_empty_content": "请输入图片prompt"
 }
