@@ -210,6 +210,12 @@ func handleCommandAndCallback(update tgbotapi.Update, bot *tgbotapi.BotAPI) bool
 		go handleCallbackQuery(update, bot)
 		return true
 	}
+
+	if update.Message.ReplyToMessage != nil && update.Message.ReplyToMessage.From != nil &&
+		update.Message.ReplyToMessage.From.UserName == bot.Self.UserName {
+		go ExecuteForceReply(update, bot)
+	}
+
 	return false
 }
 
@@ -269,24 +275,18 @@ func handleCommand(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 }
 
 func sendChatMessage(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
-	chatId, msgId, _ := utils.GetChatIdAndMsgIdAndUserID(update)
+	chatId, msgID, _ := utils.GetChatIdAndMsgIdAndUserID(update)
 	messageText := update.Message.Text
 
 	// Remove /chat and /chat@botUserName from the message
-	command := "/chat"
-	mention := "@" + bot.Self.UserName
-
-	content := strings.ReplaceAll(messageText, command, mention)
-	content = strings.ReplaceAll(content, mention, "")
-	content = strings.TrimSpace(content)
-
-	if content == "" {
-		content = "hi"
-	}
+	content := utils.ReplaceCommand(messageText, "/chat", bot.Self.UserName)
+	update.Message.Text = content
 
 	if len(content) == 0 {
-		// If there is no chat content after command
-		i18n.SendMsg(chatId, "chat_fail", bot, nil, msgId)
+		err := utils.ForceReply(chatId, msgID, "chat_empty_content", bot)
+		if err != nil {
+			logger.Warn("force reply fail", "err", err)
+		}
 		return
 	}
 
@@ -315,12 +315,8 @@ func clearAllRecord(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 func addToken(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	chatId, msgId, _ := utils.GetChatIdAndMsgIdAndUserID(update)
 	msg := utils.GetMessage(update)
-	command := "/addtoken"
-	mention := "@" + bot.Self.UserName
 
-	content := strings.ReplaceAll(msg.Text, command, mention)
-	content = strings.ReplaceAll(content, mention, "")
-	content = strings.TrimSpace(content)
+	content := utils.ReplaceCommand(msg.Text, "/addtoken", bot.Self.UserName)
 	splitContent := strings.Split(content, " ")
 
 	db.AddAvailToken(int64(utils.ParseInt(splitContent[0])), utils.ParseInt(splitContent[1]))
@@ -512,16 +508,15 @@ func sendVideo(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 		return
 	}
 
-	command := "/video"
-	mention := "@" + bot.Self.UserName
-
-	content := strings.ReplaceAll(update.Message.Text, command, mention)
-	content = strings.ReplaceAll(content, mention, "")
-	prompt := strings.TrimSpace(content)
-
-	if prompt == "" {
-		prompt = "hi"
+	prompt := utils.ReplaceCommand(update.Message.Text, "/video", bot.Self.UserName)
+	if len(prompt) == 0 {
+		err := utils.ForceReply(chatId, replyToMessageID, "video_empty_content", bot)
+		if err != nil {
+			logger.Warn("force reply fail", "err", err)
+		}
+		return
 	}
+
 	videoUrl, err := deepseek.GenerateVideo(prompt)
 	if err != nil {
 		logger.Warn("generate video fail", "err", err)
@@ -596,18 +591,12 @@ func sendImg(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 		return
 	}
 
-	command := "/photo"
-	mention := "@" + bot.Self.UserName
-
-	content := strings.ReplaceAll(update.Message.Text, command, mention)
-	content = strings.ReplaceAll(content, mention, "")
-	prompt := strings.TrimSpace(content)
-
-	if prompt == "" {
-		prompt = "hi"
-	}
-
+	prompt := utils.ReplaceCommand(update.Message.Text, "/photo", bot.Self.UserName)
 	if len(prompt) == 0 {
+		err := utils.ForceReply(chatId, replyToMessageID, "photo_empty_content", bot)
+		if err != nil {
+			logger.Warn("force reply fail", "err", err)
+		}
 		return
 	}
 
@@ -741,4 +730,15 @@ func checkAdminUser(update tgbotapi.Update) bool {
 	_, _, userId := utils.GetChatIdAndMsgIdAndUserID(update)
 	_, ok := conf.AdminUserIds[userId]
 	return ok
+}
+
+func ExecuteForceReply(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
+	switch update.Message.ReplyToMessage.Text {
+	case i18n.GetMessage(*conf.Lang, "chat_empty_content", nil):
+		sendChatMessage(update, bot)
+	case i18n.GetMessage(*conf.Lang, "photo_empty_content", nil):
+		sendImg(update, bot)
+	case i18n.GetMessage(*conf.Lang, "video_empty_content", nil):
+		sendVideo(update, bot)
+	}
 }
