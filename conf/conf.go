@@ -240,6 +240,18 @@ func CreateBot() *tgbotapi.BotAPI {
 			Command:     "state",
 			Description: "calculate one user token usage.",
 		},
+		tgbotapi.BotCommand{
+			Command:     "photo",
+			Description: "using volcengine photo model create photo.",
+		},
+		tgbotapi.BotCommand{
+			Command:     "video",
+			Description: "using volcengine video model create video.",
+		},
+		tgbotapi.BotCommand{
+			Command:     "chat",
+			Description: "allows the bot to chat through /chat command in groups, without the bot being set as admin of the group.",
+		},
 	)
 	Bot.Send(cmdCfg)
 
