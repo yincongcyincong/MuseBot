@@ -211,9 +211,10 @@ func handleCommandAndCallback(update tgbotapi.Update, bot *tgbotapi.BotAPI) bool
 		return true
 	}
 
-	if update.Message.ReplyToMessage != nil && update.Message.ReplyToMessage.From != nil &&
+	if update.Message != nil && update.Message.ReplyToMessage != nil && update.Message.ReplyToMessage.From != nil &&
 		update.Message.ReplyToMessage.From.UserName == bot.Self.UserName {
 		go ExecuteForceReply(update, bot)
+		return true
 	}
 
 	return false
