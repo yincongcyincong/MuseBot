@@ -45,6 +45,9 @@ func (d *DeepseekReq) GetContent() {
 	}
 
 	defer func() {
+		if err := recover(); err != nil {
+			logger.Error("GetContent panic err", "err", err)
+		}
 		utils.DecreaseUserChat(d.Update)
 		close(d.MessageChan)
 	}()

@@ -57,6 +57,9 @@ func (h *HuoshanReq) GetContent() {
 	}
 
 	defer func() {
+		if err := recover(); err != nil {
+			logger.Error("GetContent panic err", "err", err)
+		}
 		utils.DecreaseUserChat(h.Update)
 		close(h.MessageChan)
 	}()
