@@ -1,6 +1,7 @@
 ### Parameter List
 
-[speech model](https://www.volcengine.com/docs/6561/80816)
+[speech model](https://www.volcengine.com/docs/6561/80816)    
+use `一句话识别` model。
 
 | Parameter Name  | Type     | Required/Optional | Description  |
 |-----------------|----------|-------------------|--------------|
