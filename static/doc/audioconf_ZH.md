@@ -1,6 +1,7 @@
 ### 参数
 
 没有服务调用参数会导致语音转文字不可用
+[语音模型](https://www.volcengine.com/docs/6561/80816)
 
 | Parameter Name  | Type     | Required/Optional | Description  |
 |-----------------|----------|-------------------|--------------|
