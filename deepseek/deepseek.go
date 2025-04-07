@@ -52,7 +52,7 @@ func (d *DeepseekReq) GetContent() {
 		close(d.MessageChan)
 	}()
 
-	if d.Content == "" && d.Update.Message.Voice != nil {
+	if d.Content == "" && d.Update.Message.Voice != nil && *conf.AudioAppID != "" {
 		audioContent := utils.GetAudioContent(d.Update, d.Bot)
 		if audioContent == nil {
 			logger.Warn("audio url empty")
