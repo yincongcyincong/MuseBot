@@ -299,7 +299,7 @@ func sendChatMessage(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	messageText := ""
 	if update.Message != nil {
 		messageText = update.Message.Text
-		if messageText == "" && update.Message.Voice != nil {
+		if messageText == "" && update.Message.Voice != nil && *conf.AudioAppID != "" {
 			audioContent := utils.GetAudioContent(update, bot)
 			if audioContent == nil {
 				logger.Warn("audio url empty")

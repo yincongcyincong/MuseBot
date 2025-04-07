@@ -83,7 +83,7 @@ func (h *HuoshanReq) GetContent() {
 		close(h.MessageChan)
 	}()
 
-	if h.Content == "" && h.Update.Message.Voice != nil {
+	if h.Content == "" && h.Update.Message.Voice != nil && *conf.AudioAppID != "" {
 		audioContent := utils.GetAudioContent(h.Update, h.Bot)
 		if audioContent == nil {
 			logger.Warn("audio url empty")
