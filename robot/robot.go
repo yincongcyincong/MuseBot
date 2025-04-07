@@ -299,6 +299,14 @@ func sendChatMessage(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	messageText := ""
 	if update.Message != nil {
 		messageText = update.Message.Text
+		if messageText == "" && update.Message.Voice != nil {
+			audioContent := utils.GetAudioContent(update, bot)
+			if audioContent == nil {
+				logger.Warn("audio url empty")
+				return
+			}
+			messageText = deepseek.FileRecognize(audioContent)
+		}
 	} else {
 		update.Message = new(tgbotapi.Message)
 	}
