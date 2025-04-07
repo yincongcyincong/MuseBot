@@ -1,11 +1,9 @@
 package robot
 
 import (
-	"bytes"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"net/http"
+	"runtime/debug"
 	"strings"
 	"time"
 
@@ -100,7 +98,7 @@ func requestDeepseekAndResp(update tgbotapi.Update, bot *tgbotapi.BotAPI, conten
 func handleUpdate(messageChan chan *param.MsgInfo, update tgbotapi.Update, bot *tgbotapi.BotAPI, content string) {
 	defer func() {
 		if err := recover(); err != nil {
-			logger.Error("handleUpdate panic err", "err", err)
+			logger.Error("handleUpdate panic err", "err", err, "stack", string(debug.Stack()))
 		}
 	}()
 
@@ -242,7 +240,7 @@ func skipThisMsg(update tgbotapi.Update, bot *tgbotapi.BotAPI) bool {
 func handleCommand(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	defer func() {
 		if err := recover(); err != nil {
-			logger.Error("handleCommand panic err", "err", err)
+			logger.Error("handleCommand panic err", "err", err, "stack", string(debug.Stack()))
 		}
 	}()
 
@@ -289,7 +287,13 @@ func handleCommand(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 
 func sendChatMessage(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	chatId, msgID, _ := utils.GetChatIdAndMsgIdAndUserID(update)
-	messageText := update.Message.Text
+
+	messageText := ""
+	if update.Message != nil {
+		messageText = update.Message.Text
+	} else {
+		update.Message = new(tgbotapi.Message)
+	}
 
 	// Remove /chat and /chat@botUserName from the message
 	content := utils.ReplaceCommand(messageText, "/chat", bot.Self.UserName)
@@ -429,15 +433,19 @@ func sendHelpConfigurationOptions(update tgbotapi.Update, bot *tgbotapi.BotAPI) 
 	inlineKeyboard := tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("mode", "mode"),
+			tgbotapi.NewInlineKeyboardButtonData("clear", "clear"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("balance", "balance"),
+			tgbotapi.NewInlineKeyboardButtonData("state", "state"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("retry", "retry"),
+			tgbotapi.NewInlineKeyboardButtonData("chat", "chat"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("clear", "clear"),
+			tgbotapi.NewInlineKeyboardButtonData("photo", "photo"),
+			tgbotapi.NewInlineKeyboardButtonData("video", "video"),
 		),
 	)
 
@@ -448,7 +456,7 @@ func sendHelpConfigurationOptions(update tgbotapi.Update, bot *tgbotapi.BotAPI) 
 func handleCallbackQuery(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	defer func() {
 		if err := recover(); err != nil {
-			logger.Error("handleCommand panic err", "err", err)
+			logger.Error("handleCommand panic err", "err", err, "stack", string(debug.Stack()))
 		}
 	}()
 
@@ -463,6 +471,14 @@ func handleCallbackQuery(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 		clearAllRecord(update, bot)
 	case "retry":
 		retryLastQuestion(update, bot)
+	case "state":
+		showStateInfo(update, bot)
+	case "photo":
+		sendImg(update, bot)
+	case "video":
+		sendVideo(update, bot)
+	case "chat":
+		sendChatMessage(update, bot)
 	}
 
 }
@@ -526,7 +542,12 @@ func sendVideo(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 		return
 	}
 
-	prompt := utils.ReplaceCommand(update.Message.Text, "/video", bot.Self.UserName)
+	prompt := ""
+	if update.Message != nil {
+		prompt = update.Message.Text
+	}
+
+	prompt = utils.ReplaceCommand(prompt, "/video", bot.Self.UserName)
 	if len(prompt) == 0 {
 		err := utils.ForceReply(chatId, replyToMessageID, "video_empty_content", bot)
 		if err != nil {
@@ -535,6 +556,7 @@ func sendVideo(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 		return
 	}
 
+	thinkingMsgId := i18n.SendMsg(chatId, "thinking", bot, nil, replyToMessageID)
 	videoUrl, err := deepseek.GenerateVideo(prompt)
 	if err != nil {
 		logger.Warn("generate video fail", "err", err)
@@ -546,41 +568,18 @@ func sendVideo(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 		return
 	}
 
-	// create image url
-	url := fmt.Sprintf("https://api.telegram.org/bot%s/sendVideo", *conf.BotToken)
-
-	// construct request param
-	req := map[string]interface{}{
-		"chat_id": chatId,
-		"video":   videoUrl,
-	}
-	if replyToMessageID != 0 {
-		req["reply_to_message_id"] = replyToMessageID
+	video := tgbotapi.NewInputMediaVideo(tgbotapi.FileURL(videoUrl))
+	edit := tgbotapi.EditMessageMediaConfig{
+		BaseEdit: tgbotapi.BaseEdit{
+			ChatID:    chatId,
+			MessageID: thinkingMsgId,
+		},
+		Media: video,
 	}
 
-	jsonData, err := json.Marshal(req)
+	_, err = bot.Request(edit)
 	if err != nil {
-		logger.Warn("marshal json content fail", "err", err)
-		return
-	}
-
-	// send post request
-	resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonData))
-	if err != nil {
-		logger.Warn("send request fail", "err", err)
-		return
-	}
-	defer resp.Body.Close()
-
-	// analysis response
-	var result map[string]interface{}
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		logger.Warn("analysis response fail", "err", err)
-		return
-	}
-
-	if ok, found := result["ok"].(bool); !found || !ok {
-		logger.Warn("send video fail", "result", result)
+		logger.Warn("send video fail", "result", edit)
 		return
 	}
 
@@ -609,7 +608,12 @@ func sendImg(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 		return
 	}
 
-	prompt := utils.ReplaceCommand(update.Message.Text, "/photo", bot.Self.UserName)
+	prompt := ""
+	if update.Message != nil {
+		prompt = update.Message.Text
+	}
+
+	prompt = utils.ReplaceCommand(prompt, "/photo", bot.Self.UserName)
 	if len(prompt) == 0 {
 		err := utils.ForceReply(chatId, replyToMessageID, "photo_empty_content", bot)
 		if err != nil {
@@ -618,6 +622,7 @@ func sendImg(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 		return
 	}
 
+	thinkingMsgId := i18n.SendMsg(chatId, "thinking", bot, nil, replyToMessageID)
 	data, err := deepseek.GenerateImg(prompt)
 	if err != nil {
 		logger.Warn("generate image fail", "err", err)
@@ -629,42 +634,18 @@ func sendImg(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 		return
 	}
 
-	// create image url
-	photoURL := data.Data.ImageUrls[0]
-	url := fmt.Sprintf("https://api.telegram.org/bot%s/sendPhoto", *conf.BotToken)
-
-	// construct request param
-	req := map[string]interface{}{
-		"chat_id": chatId,
-		"photo":   photoURL,
-	}
-	if replyToMessageID != 0 {
-		req["reply_to_message_id"] = replyToMessageID
+	photo := tgbotapi.NewInputMediaPhoto(tgbotapi.FileURL(data.Data.ImageUrls[0]))
+	edit := tgbotapi.EditMessageMediaConfig{
+		BaseEdit: tgbotapi.BaseEdit{
+			ChatID:    chatId,
+			MessageID: thinkingMsgId,
+		},
+		Media: photo,
 	}
 
-	jsonData, err := json.Marshal(req)
+	_, err = bot.Request(edit)
 	if err != nil {
-		logger.Warn("marshal json content fail", "err", err)
-		return
-	}
-
-	// send post request
-	resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonData))
-	if err != nil {
-		logger.Warn("send request fail", "err", err)
-		return
-	}
-	defer resp.Body.Close()
-
-	// analysis response
-	var result map[string]interface{}
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		logger.Warn("analysis response fail", "err", err)
-		return
-	}
-
-	if ok, found := result["ok"].(bool); !found || !ok {
-		logger.Warn("send image fail", "result", result)
+		logger.Warn("send image fail", "result", edit)
 		return
 	}
 
@@ -753,7 +734,7 @@ func checkAdminUser(update tgbotapi.Update) bool {
 func ExecuteForceReply(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	defer func() {
 		if err := recover(); err != nil {
-			logger.Error("ExecuteForceReply panic err", "err", err)
+			logger.Error("ExecuteForceReply panic err", "err", err, "stack", string(debug.Stack()))
 		}
 	}()
 

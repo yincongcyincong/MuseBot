@@ -64,13 +64,14 @@ func GetMessage(tag string, messageID string, templateData map[string]interface{
 }
 
 // SendMsg send message to user
-func SendMsg(chatId int64, msgId string, bot *tgbotapi.BotAPI, inlineKeyboard *tgbotapi.InlineKeyboardMarkup, replyToMessageID int) {
+func SendMsg(chatId int64, msgId string, bot *tgbotapi.BotAPI, inlineKeyboard *tgbotapi.InlineKeyboardMarkup, replyToMessageID int) int {
 	msg := tgbotapi.NewMessage(chatId, GetMessage(*conf.Lang, msgId, nil))
 	msg.ParseMode = tgbotapi.ModeMarkdown
 	msg.ReplyMarkup = inlineKeyboard
 	msg.ReplyToMessageID = replyToMessageID
-	_, err := bot.Send(msg)
+	msgInfo, err := bot.Send(msg)
 	if err != nil {
 		logger.Warn("send clear message fail", "err", err)
 	}
+	return msgInfo.MessageID
 }
