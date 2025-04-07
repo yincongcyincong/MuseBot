@@ -98,6 +98,12 @@ func requestDeepseekAndResp(update tgbotapi.Update, bot *tgbotapi.BotAPI, conten
 
 // handleUpdate handle robot msg sending
 func handleUpdate(messageChan chan *param.MsgInfo, update tgbotapi.Update, bot *tgbotapi.BotAPI, content string) {
+	defer func() {
+		if err := recover(); err != nil {
+			logger.Error("handleUpdate panic err", "err", err)
+		}
+	}()
+
 	var msg *param.MsgInfo
 
 	chatId, msgId, userId := utils.GetChatIdAndMsgIdAndUserID(update)
@@ -234,6 +240,12 @@ func skipThisMsg(update tgbotapi.Update, bot *tgbotapi.BotAPI) bool {
 }
 
 func handleCommand(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
+	defer func() {
+		if err := recover(); err != nil {
+			logger.Error("handleCommand panic err", "err", err)
+		}
+	}()
+
 	cmd := update.Message.Command()
 	_, _, userID := utils.GetChatIdAndMsgIdAndUserID(update)
 	logger.Info("command info", "userID", userID, "cmd", cmd)
@@ -434,6 +446,11 @@ func sendHelpConfigurationOptions(update tgbotapi.Update, bot *tgbotapi.BotAPI) 
 
 // handleCallbackQuery handle callback response
 func handleCallbackQuery(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
+	defer func() {
+		if err := recover(); err != nil {
+			logger.Error("handleCommand panic err", "err", err)
+		}
+	}()
 
 	switch update.CallbackQuery.Data {
 	case godeepseek.DeepSeekChat, godeepseek.DeepSeekCoder, godeepseek.DeepSeekReasoner:
@@ -734,6 +751,12 @@ func checkAdminUser(update tgbotapi.Update) bool {
 }
 
 func ExecuteForceReply(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
+	defer func() {
+		if err := recover(); err != nil {
+			logger.Error("ExecuteForceReply panic err", "err", err)
+		}
+	}()
+
 	switch update.Message.ReplyToMessage.Text {
 	case i18n.GetMessage(*conf.Lang, "chat_empty_content", nil):
 		sendChatMessage(update, bot)
