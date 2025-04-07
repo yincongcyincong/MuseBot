@@ -52,6 +52,20 @@ func (d *DeepseekReq) GetContent() {
 		close(d.MessageChan)
 	}()
 
+	if d.Content == "" && d.Update.Message.Voice != nil {
+		audioContent := utils.GetAudioContent(d.Update, d.Bot)
+		if audioContent == nil {
+			logger.Warn("audio url empty")
+			return
+		}
+		d.Content = FileRecognize(audioContent)
+	}
+
+	if d.Content == "" {
+		logger.Warn("content empty")
+		return
+	}
+
 	text := strings.ReplaceAll(d.Content, "@"+d.Bot.Self.UserName, "")
 	err := d.callDeepSeekAPI(text)
 	if err != nil {

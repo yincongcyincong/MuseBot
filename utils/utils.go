@@ -4,8 +4,12 @@ import (
 	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
 	"github.com/yincongcyincong/telegram-deepseek-bot/i18n"
 	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
+	"io"
+	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
+	"time"
 	"unicode/utf16"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -98,4 +102,50 @@ func ForceReply(chatId int64, msgId int, i18MsgId string, bot *tgbotapi.BotAPI) 
 	msg.ReplyToMessageID = msgId
 	_, err := bot.Send(msg)
 	return err
+}
+
+func GetAudioContent(update tgbotapi.Update, bot *tgbotapi.BotAPI) []byte {
+	if update.Message == nil || update.Message.Voice == nil {
+		return nil
+	}
+
+	fileID := update.Message.Voice.FileID
+	file, err := bot.GetFile(tgbotapi.FileConfig{FileID: fileID})
+	if err != nil {
+		logger.Warn("get file fail", "err", err)
+		return nil
+	}
+
+	// 构造下载 URL
+	downloadURL := file.Link(bot.Token)
+
+	transport := &http.Transport{}
+
+	if *conf.TelegramProxy != "" {
+		proxy, err := url.Parse(*conf.TelegramProxy)
+		if err != nil {
+			logger.Warn("parse proxy url fail", "err", err)
+			return nil
+		}
+		transport.Proxy = http.ProxyURL(proxy)
+	}
+
+	client := &http.Client{
+		Transport: transport,
+		Timeout:   30 * time.Second, // 设置超时
+	}
+
+	// 通过代理下载
+	resp, err := client.Get(downloadURL)
+	if err != nil {
+		logger.Warn("download fail", "err", err)
+		return nil
+	}
+	defer resp.Body.Close()
+	voice, err := io.ReadAll(resp.Body)
+	if err != nil {
+		logger.Warn("read response fail", "err", err)
+		return nil
+	}
+	return voice
 }
