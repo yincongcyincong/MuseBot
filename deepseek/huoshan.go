@@ -83,6 +83,15 @@ func (h *HuoshanReq) GetContent() {
 		close(h.MessageChan)
 	}()
 
+	if h.Content == "" && h.Update.Message.Voice != nil {
+		audioContent := utils.GetAudioContent(h.Update, h.Bot)
+		if audioContent == nil {
+			logger.Warn("audio url empty")
+			return
+		}
+		h.Content = FileRecognize(audioContent)
+	}
+
 	text := strings.ReplaceAll(h.Content, "@"+h.Bot.Self.UserName, "")
 	err := h.getContentFromHS(text)
 	if err != nil {
