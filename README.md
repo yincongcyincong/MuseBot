@@ -15,11 +15,12 @@ AI-powered responses. The bot supports **streaming replies**, making interaction
 - ⏳ **Streaming Output**: Sends responses in real-time to improve user experience.
 - 🎯 **Command Handling**: Supports custom commands.
 - 🏗 **Easy Deployment**: Run locally or deploy to a cloud server.
-- 📈 **Custom Command**: Define your own commands, [go](#advanced-usage).
+- 🎺 **Support Voice**: use voice to communicate with deepseek.
 
 ## 🤖 Usage Example
 
 [usage video](https://github.com/yincongcyincong/telegram-deepseek-bot/wiki/Usage-Video)
+
 
 ## 📌 Requirements
 
@@ -113,6 +114,7 @@ choose a language for bot, English or Chinese.
 [deepseek_conf](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/static/doc/deepseekconf.md)    
 [photo_conf](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/static/doc/photoconf.md)     
 [video_conf](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/static/doc/videoconf.md)
+[audio_conf](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/static/doc/audioconf.md)
 
 ## Command
 
