@@ -52,6 +52,7 @@ func ExecUpdate(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	if update.Message != nil {
 
 		if skipThisMsg(update, bot) {
+			logger.Warn("skip this msg", "msgId", msgId, "chat", chatId)
 			return
 		}
 
@@ -225,13 +226,20 @@ func handleCommandAndCallback(update tgbotapi.Update, bot *tgbotapi.BotAPI) bool
 }
 
 func skipThisMsg(update tgbotapi.Update, bot *tgbotapi.BotAPI) bool {
-
 	if update.Message.Chat.Type == "private" {
-		return false
-	}
+		if update.Message.Text == "" && update.Message.Voice == nil {
+			return true
+		}
 
-	if update.Message.Text == "" || !strings.Contains(update.Message.Text, "@"+bot.Self.UserName) {
-		return true
+		return false
+	} else {
+		if update.Message.Text == "" && update.Message.Voice == nil {
+			return true
+		}
+
+		if !strings.Contains(update.Message.Text, "@"+bot.Self.UserName) {
+			return true
+		}
 	}
 
 	return false
@@ -474,10 +482,19 @@ func handleCallbackQuery(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	case "state":
 		showStateInfo(update, bot)
 	case "photo":
+		if update.CallbackQuery.Message.ReplyToMessage != nil {
+			update.CallbackQuery.Message.MessageID = update.CallbackQuery.Message.ReplyToMessage.MessageID
+		}
 		sendImg(update, bot)
 	case "video":
+		if update.CallbackQuery.Message.ReplyToMessage != nil {
+			update.CallbackQuery.Message.MessageID = update.CallbackQuery.Message.ReplyToMessage.MessageID
+		}
 		sendVideo(update, bot)
 	case "chat":
+		if update.CallbackQuery.Message.ReplyToMessage != nil {
+			update.CallbackQuery.Message.MessageID = update.CallbackQuery.Message.ReplyToMessage.MessageID
+		}
 		sendChatMessage(update, bot)
 	}
 

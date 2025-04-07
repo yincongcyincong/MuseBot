@@ -62,6 +62,7 @@ func InitConf() {
 	InitDeepseekConf()
 	InitPhotoConf()
 	InitVideoConf()
+	InitAudioConf()
 	flag.Parse()
 
 	if os.Getenv("TELEGRAM_BOT_TOKEN") != "" {

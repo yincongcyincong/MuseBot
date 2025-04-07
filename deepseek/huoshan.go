@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-
 	"io"
 	"net/http"
 	"net/url"
@@ -23,6 +22,10 @@ import (
 	"github.com/yincongcyincong/telegram-deepseek-bot/metrics"
 	"github.com/yincongcyincong/telegram-deepseek-bot/param"
 	"github.com/yincongcyincong/telegram-deepseek-bot/utils"
+)
+
+const (
+	serviceURL = "https://openspeech.bytedance.com/api/v1/auc"
 )
 
 type ImgResponse struct {
@@ -48,6 +51,22 @@ type HuoshanReq struct {
 	Update      tgbotapi.Update
 	Bot         *tgbotapi.BotAPI
 	Content     string
+}
+
+type AudioSubmitResponse struct {
+	Resp struct {
+		ID   string `json:"id"`
+		Code int    `json:"code"`
+		Msg  string `json:"message"`
+	} `json:"resp"`
+}
+
+type AudioQueryResponse struct {
+	Resp struct {
+		Code int    `json:"code"`
+		Msg  string `json:"msg"`
+		Text string `json:"text"`
+	} `json:"resp"`
 }
 
 func (h *HuoshanReq) GetContent() {
@@ -324,5 +343,27 @@ func GenerateVideo(prompt string) (string, error) {
 			return "", errors.New("create video fail")
 		}
 	}
+
+}
+
+func FileRecognize(audioContent []byte) string {
+
+	client := utils.BuildAsrClient()
+	client.Appid = *conf.AudioAppID
+	client.Token = *conf.AudioToken
+	client.Cluster = *conf.AudioCluster
+
+	asrResponse, err := client.RequestAsr(audioContent)
+	if err != nil {
+		logger.Error("fail to request asr ", "err", err)
+		return ""
+	}
+
+	if len(asrResponse.Results) == 0 {
+		logger.Error("fail to request asr", "results", asrResponse.Results)
+		return ""
+	}
+
+	return asrResponse.Results[0].Text
 
 }
