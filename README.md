@@ -15,11 +15,13 @@ AI-powered responses. The bot supports **streaming replies**, making interaction
 - ⏳ **Streaming Output**: Sends responses in real-time to improve user experience.
 - 🎯 **Command Handling**: Supports custom commands.
 - 🏗 **Easy Deployment**: Run locally or deploy to a cloud server.
-- 🎺 **Support Voice**: use voice to communicate with deepseek.
+- 🎺 **Support Voice**: use voice to communicate with deepseek, see [doc](https://www.volcengine.com/docs/6561/80816).
 
 ## 🤖 Usage Example
+<img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/f6b5cdc7-836f-410f-a784-f7074a672c0e" />
 
-[usage video](https://github.com/yincongcyincong/telegram-deepseek-bot/wiki/Usage-Video)
+## 🎺 Voice Example
+<img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/b4057dce-9ea9-4fcc-b7fa-bcc297482542" />
 
 
 ## 📌 Requirements
