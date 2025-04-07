@@ -1,6 +1,6 @@
 ## group
 
-telegram-group: https://t.me/+WtaMcDpaMOlhZTE1 , or you can have a try GWSbot.      
+telegram-group: https://t.me/+WtaMcDpaMOlhZTE1 , or you can have a try robot `GWSbot`.      
 every body have **3000** token to try this bot, please give me a star!
 
 # DeepSeek Telegram Bot
@@ -15,7 +15,7 @@ AI-powered responses. The bot supports **streaming replies**, making interaction
 - ⏳ **Streaming Output**: Sends responses in real-time to improve user experience.
 - 🎯 **Command Handling**: Supports custom commands.
 - 🏗 **Easy Deployment**: Run locally or deploy to a cloud server.
-- 🎺 **Support Voice**: use voice to communicate with deepseek, see [doc](https://www.volcengine.com/docs/6561/80816).
+- 🎺 **Support Voice**: use voice to communicate with deepseek, see [doc](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/static/doc/audioconf.md).
 
 ## 🤖 Usage Example
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/f6b5cdc7-836f-410f-a784-f7074a672c0e" />
