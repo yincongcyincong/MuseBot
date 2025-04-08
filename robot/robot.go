@@ -227,13 +227,15 @@ func handleCommandAndCallback(update tgbotapi.Update, bot *tgbotapi.BotAPI) bool
 
 func skipThisMsg(update tgbotapi.Update, bot *tgbotapi.BotAPI) bool {
 	if update.Message.Chat.Type == "private" {
-		if update.Message.Text == "" && update.Message.Voice == nil {
+		if strings.TrimSpace(update.Message.Text) == "" &&
+			update.Message.Voice == nil {
 			return true
 		}
 
 		return false
 	} else {
-		if update.Message.Text == "" && update.Message.Voice == nil {
+		if strings.TrimSpace(strings.ReplaceAll(update.Message.Text, "@"+bot.Self.UserName, "")) == "" &&
+			update.Message.Voice == nil {
 			return true
 		}
 
