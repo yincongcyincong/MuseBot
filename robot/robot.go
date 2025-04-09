@@ -734,6 +734,7 @@ func checkUserTokenExceed(update tgbotapi.Update, bot *tgbotapi.BotAPI) bool {
 	}
 
 	if userInfo == nil {
+		db.InsertUser(userId, godeepseek.DeepSeekChat)
 		logger.Warn("get user info is nil")
 		return false
 	}
