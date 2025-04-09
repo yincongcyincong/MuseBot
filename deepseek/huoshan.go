@@ -24,49 +24,11 @@ import (
 	"github.com/yincongcyincong/telegram-deepseek-bot/utils"
 )
 
-const (
-	serviceURL = "https://openspeech.bytedance.com/api/v1/auc"
-)
-
-type ImgResponse struct {
-	Code    int              `json:"code"`
-	Data    *ImgResponseData `json:"data"`
-	Message string           `json:"message"`
-	Status  string           `json:"status"`
-}
-
-type ImgResponseData struct {
-	AlgorithmBaseResp struct {
-		StatusCode    int    `json:"status_code"`
-		StatusMessage string `json:"status_message"`
-	} `json:"algorithm_base_resp"`
-	ImageUrls        []string `json:"image_urls"`
-	PeResult         string   `json:"pe_result"`
-	PredictTagResult string   `json:"predict_tag_result"`
-	RephraserResult  string   `json:"rephraser_result"`
-}
-
 type HuoshanReq struct {
 	MessageChan chan *param.MsgInfo
 	Update      tgbotapi.Update
 	Bot         *tgbotapi.BotAPI
 	Content     string
-}
-
-type AudioSubmitResponse struct {
-	Resp struct {
-		ID   string `json:"id"`
-		Code int    `json:"code"`
-		Msg  string `json:"message"`
-	} `json:"resp"`
-}
-
-type AudioQueryResponse struct {
-	Resp struct {
-		Code int    `json:"code"`
-		Msg  string `json:"msg"`
-		Text string `json:"text"`
-	} `json:"resp"`
 }
 
 func (h *HuoshanReq) GetContent() {
@@ -232,7 +194,7 @@ func (h *HuoshanReq) getContentFromHS(prompt string) error {
 }
 
 // GenerateImg generate image
-func GenerateImg(prompt string) (*ImgResponse, error) {
+func GenerateImg(prompt string) (*param.ImgResponse, error) {
 	start := time.Now()
 	visual.DefaultInstance.Client.SetAccessKey(*conf.VolcAK)
 	visual.DefaultInstance.Client.SetSecretKey(*conf.VolcSK)
@@ -267,7 +229,7 @@ func GenerateImg(prompt string) (*ImgResponse, error) {
 	}
 
 	respByte, _ := json.Marshal(resp)
-	data := &ImgResponse{}
+	data := &param.ImgResponse{}
 	json.Unmarshal(respByte, data)
 
 	// generate image time costing
