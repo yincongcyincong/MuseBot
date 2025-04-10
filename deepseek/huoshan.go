@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	godeepseek "github.com/cohesion-org/deepseek-go"
 	"io"
 	"net/http"
 	"net/url"
@@ -29,6 +30,8 @@ type HuoshanReq struct {
 	Update      tgbotapi.Update
 	Bot         *tgbotapi.BotAPI
 	Content     string
+	Model       string
+	ToolsData   godeepseek.ToolCall
 }
 
 func (h *HuoshanReq) GetContent() {

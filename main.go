@@ -15,6 +15,7 @@ func main() {
 	i18n.InitI18n()
 	db.InitTable()
 	db.UpdateUserTime()
+	conf.InitTools()
 	metrics.InitPprof()
 	metrics.RegisterMetrics()
 	robot.StartListenRobot()

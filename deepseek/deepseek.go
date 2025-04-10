@@ -2,7 +2,9 @@ package deepseek
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"github.com/yincongcyincong/mcp-client-go/clients"
 	"io"
 	"net/http"
 	"net/url"
@@ -35,6 +37,8 @@ type DeepseekReq struct {
 	Update      tgbotapi.Update
 	Bot         *tgbotapi.BotAPI
 	Content     string
+	Model       string
+	ToolCall    deepseek.ToolCall
 }
 
 // GetContent get comment from deepseek
@@ -75,55 +79,17 @@ func (d *DeepseekReq) GetContent() {
 
 // callDeepSeekAPI request DeepSeek API and get response
 func (d *DeepseekReq) callDeepSeekAPI(prompt string) error {
-	start := time.Now()
-	_, updateMsgID, userId := utils.GetChatIdAndMsgIdAndUserID(d.Update)
-	model := deepseek.DeepSeekChat
+	_, _, userId := utils.GetChatIdAndMsgIdAndUserID(d.Update)
+	d.Model = deepseek.DeepSeekChat
 	userInfo, err := db.GetUserByID(userId)
 	if err != nil {
 		logger.Error("Error getting user info", "err", err)
 	}
 	if userInfo != nil && userInfo.Mode != "" {
 		logger.Info("User info", "userID", userInfo.UserId, "mode", userInfo.Mode)
-		model = userInfo.Mode
+		d.Model = userInfo.Mode
 	}
 
-	// set deepseek proxy
-	httpClient := &http.Client{
-		Timeout: 30 * time.Minute,
-	}
-
-	if *conf.DeepseekProxy != "" {
-		proxy, err := url.Parse(*conf.DeepseekProxy)
-		if err != nil {
-			logger.Error("parse deepseek proxy error", "err", err)
-		} else {
-			httpClient.Transport = &http.Transport{
-				Proxy: http.ProxyURL(proxy),
-			}
-		}
-	}
-
-	client, err := deepseek.NewClientWithOptions(*conf.DeepseekToken,
-		deepseek.WithBaseURL(*conf.CustomUrl), deepseek.WithHTTPClient(httpClient))
-	if err != nil {
-		logger.Error("Error creating deepseek client", "err", err)
-		return err
-	}
-	request := &deepseek.StreamChatCompletionRequest{
-		Model:  model,
-		Stream: true,
-		StreamOptions: deepseek.StreamOptions{
-			IncludeUsage: true,
-		},
-		MaxTokens:        *conf.MaxTokens,
-		TopP:             float32(*conf.TopP),
-		FrequencyPenalty: float32(*conf.FrequencyPenalty),
-		TopLogProbs:      *conf.TopLogProbs,
-		LogProbs:         *conf.LogProbs,
-		Stop:             conf.Stop,
-		PresencePenalty:  float32(*conf.PresencePenalty),
-		Temperature:      float32(*conf.Temperature),
-	}
 	messages := make([]deepseek.ChatCompletionMessage, 0)
 
 	msgRecords := db.GetMsgRecord(userId)
@@ -153,11 +119,58 @@ func (d *DeepseekReq) callDeepSeekAPI(prompt string) error {
 		Content: prompt,
 	})
 
+	logger.Info("msg receive", "userID", userId, "prompt", prompt)
+
+	return d.send(messages)
+}
+
+func (d *DeepseekReq) send(messages []deepseek.ChatCompletionMessage) error {
+	start := time.Now()
+	_, updateMsgID, _ := utils.GetChatIdAndMsgIdAndUserID(d.Update)
+	// set deepseek proxy
+	httpClient := &http.Client{
+		Timeout: 30 * time.Minute,
+	}
+
+	if *conf.DeepseekProxy != "" {
+		proxy, err := url.Parse(*conf.DeepseekProxy)
+		if err != nil {
+			logger.Error("parse deepseek proxy error", "err", err)
+		} else {
+			httpClient.Transport = &http.Transport{
+				Proxy: http.ProxyURL(proxy),
+			}
+		}
+	}
+
+	client, err := deepseek.NewClientWithOptions(*conf.DeepseekToken,
+		deepseek.WithBaseURL(*conf.CustomUrl), deepseek.WithHTTPClient(httpClient))
+	if err != nil {
+		logger.Error("Error creating deepseek client", "err", err)
+		return err
+	}
+
+	request := &deepseek.StreamChatCompletionRequest{
+		Model:  d.Model,
+		Stream: true,
+		StreamOptions: deepseek.StreamOptions{
+			IncludeUsage: true,
+		},
+		MaxTokens:        *conf.MaxTokens,
+		TopP:             float32(*conf.TopP),
+		FrequencyPenalty: float32(*conf.FrequencyPenalty),
+		TopLogProbs:      *conf.TopLogProbs,
+		LogProbs:         *conf.LogProbs,
+		Stop:             conf.Stop,
+		PresencePenalty:  float32(*conf.PresencePenalty),
+		Temperature:      float32(*conf.Temperature),
+		Tools:            conf.DeepseekTools,
+	}
+
 	request.Messages = messages
 
 	ctx := context.Background()
 
-	logger.Info("msg receive", "userID", userId, "prompt", prompt)
 	stream, err := client.CreateChatCompletionStream(ctx, request)
 	if err != nil {
 		logger.Error("ChatCompletionStream error", "updateMsgID", updateMsgID, "err", err)
@@ -179,6 +192,15 @@ func (d *DeepseekReq) callDeepSeekAPI(prompt string) error {
 			break
 		}
 		for _, choice := range response.Choices {
+			if len(choice.Delta.ToolCalls) > 0 {
+				err = d.requestToolsCall(ctx, choice, messages)
+				if err != nil {
+					logger.Warn("requestToolsCall error", "updateMsgID", updateMsgID, "err", err)
+					continue
+				}
+				return nil
+			}
+
 			// exceed max telegram one message length
 			if utils.Utf16len(msgInfoContent.Content) > OneMsgLen {
 				d.MessageChan <- msgInfoContent
@@ -209,6 +231,61 @@ func (d *DeepseekReq) callDeepSeekAPI(prompt string) error {
 	totalDuration := time.Since(start).Seconds()
 	metrics.ConversationDuration.Observe(totalDuration)
 	return nil
+}
+
+func (d *DeepseekReq) requestToolsCall(ctx context.Context, choice deepseek.StreamChoices, messages []deepseek.ChatCompletionMessage) error {
+
+	toolMessage := make([]deepseek.ChatCompletionMessage, 0)
+	for _, toolCall := range choice.Delta.ToolCalls {
+		property := make(map[string]interface{})
+
+		if toolCall.Function.Name != "" {
+			d.ToolCall.Function.Name = toolCall.Function.Name
+		}
+
+		if toolCall.ID != "" {
+			d.ToolCall.ID = toolCall.ID
+		}
+
+		if toolCall.Type != "" {
+			d.ToolCall.Type = toolCall.Type
+		}
+
+		if toolCall.Function.Arguments != "" {
+			d.ToolCall.Function.Arguments += toolCall.Function.Arguments
+		}
+
+		err := json.Unmarshal([]byte(d.ToolCall.Function.Arguments), &property)
+		if err != nil {
+			logger.Warn("unmarshal json fail", "err", err, "arguments", d.ToolCall.Function.Arguments)
+			return err
+		}
+
+		mc, err := clients.GetMCPClientByToolName(d.ToolCall.Function.Name)
+		if err != nil {
+			logger.Warn("get mcp fail", "err", err)
+			return err
+		}
+
+		toolsData, err := mc.ExecTools(ctx, d.ToolCall.Function.Name, property)
+		toolMessage = append(toolMessage, deepseek.ChatCompletionMessage{
+			Role:       constants.ChatMessageRoleTool,
+			Content:    toolsData,
+			ToolCallID: d.ToolCall.ID,
+		})
+
+	}
+
+	logger.Info("send tool request", "function", d.ToolCall.Function.Name, "toolCall", d.ToolCall.ID, "argument", d.ToolCall.Function.Arguments)
+	messages = append(messages, deepseek.ChatCompletionMessage{
+		Role:      deepseek.ChatMessageRoleAssistant,
+		Content:   "",
+		ToolCalls: []deepseek.ToolCall{d.ToolCall},
+	})
+	messages = append(messages, toolMessage...)
+
+	return d.send(messages)
+
 }
 
 // GetBalanceInfo get balance info
