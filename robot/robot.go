@@ -78,6 +78,7 @@ func requestDeepseekAndResp(update tgbotapi.Update, bot *tgbotapi.BotAPI, conten
 			Update:      update,
 			Bot:         bot,
 			MessageChan: messageChan,
+			ToolCall:    godeepseek.ToolCall{},
 		}
 	} else {
 		dpReq = &deepseek.HuoshanReq{
@@ -85,6 +86,7 @@ func requestDeepseekAndResp(update tgbotapi.Update, bot *tgbotapi.BotAPI, conten
 			Update:      update,
 			Bot:         bot,
 			MessageChan: messageChan,
+			ToolsData:   godeepseek.ToolCall{},
 		}
 	}
 
