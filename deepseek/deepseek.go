@@ -28,6 +28,10 @@ const (
 	NonFirstSendLen = 500
 )
 
+var (
+	toolsJsonErr = errors.New("tools json error")
+)
+
 type Deepseek interface {
 	GetContent()
 }
@@ -195,8 +199,12 @@ func (d *DeepseekReq) send(messages []deepseek.ChatCompletionMessage) error {
 			if len(choice.Delta.ToolCalls) > 0 {
 				err = d.requestToolsCall(ctx, choice, messages)
 				if err != nil {
-					logger.Warn("requestToolsCall error", "updateMsgID", updateMsgID, "err", err)
-					continue
+					if errors.Is(err, toolsJsonErr) {
+						continue
+					} else {
+						logger.Warn("requestToolsCall error", "updateMsgID", updateMsgID, "err", err)
+						return err
+					}
 				}
 				return nil
 			}
@@ -257,8 +265,7 @@ func (d *DeepseekReq) requestToolsCall(ctx context.Context, choice deepseek.Stre
 
 		err := json.Unmarshal([]byte(d.ToolCall.Function.Arguments), &property)
 		if err != nil {
-			logger.Warn("unmarshal json fail", "err", err, "arguments", d.ToolCall.Function.Arguments)
-			return err
+			return toolsJsonErr
 		}
 
 		mc, err := clients.GetMCPClientByToolName(d.ToolCall.Function.Name)
@@ -268,6 +275,10 @@ func (d *DeepseekReq) requestToolsCall(ctx context.Context, choice deepseek.Stre
 		}
 
 		toolsData, err := mc.ExecTools(ctx, d.ToolCall.Function.Name, property)
+		if err != nil {
+			logger.Warn("exec tools fail", "err", err)
+			return err
+		}
 		toolMessage = append(toolMessage, deepseek.ChatCompletionMessage{
 			Role:       constants.ChatMessageRoleTool,
 			Content:    toolsData,

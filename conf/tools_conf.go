@@ -69,9 +69,9 @@ func InitTools() {
 			github.InitModelContextProtocolGithubMCPClient(*GithubAccessToken, "", nil, nil, nil))
 	}
 
-	err := clients.InitMCPClient(ctx, mcpParams)
-	if err != nil {
-		panic(err)
+	err := clients.RegisterMCPClient(ctx, mcpParams)
+	if len(err) > 0 {
+		logger.Error("register mcp client error", "errors", err)
 	}
 
 	if *AmapApiKey != "" {
@@ -79,7 +79,7 @@ func InitTools() {
 	}
 
 	if *GithubAccessToken != "" {
-		InsertTools(github.NpxModelContextProtocolServerGithub, allTools)
+		InsertTools(github.NpxModelContextProtocolGithubServer, allTools)
 	}
 
 }
