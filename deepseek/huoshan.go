@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/cohesion-org/deepseek-go"
-	"github.com/yincongcyincong/mcp-client-go/clients"
 	"io"
 	"net/http"
 	"net/url"
@@ -18,6 +16,7 @@ import (
 	"github.com/volcengine/volc-sdk-golang/service/visual"
 	"github.com/volcengine/volcengine-go-sdk/service/arkruntime"
 	"github.com/volcengine/volcengine-go-sdk/service/arkruntime/model"
+	"github.com/yincongcyincong/mcp-client-go/clients"
 	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
 	"github.com/yincongcyincong/telegram-deepseek-bot/db"
 	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
@@ -229,7 +228,7 @@ func (h *HuoshanReq) send(messages []*model.ChatCompletionMessage) error {
 	} else {
 		h.ToolMessage = append([]*model.ChatCompletionMessage{
 			{
-				Role: deepseek.ChatMessageRoleAssistant,
+				Role: constants.ChatMessageRoleAssistant,
 				Content: &model.ChatCompletionMessageContent{
 					StringValue: &h.DeepSeekContent,
 				},
