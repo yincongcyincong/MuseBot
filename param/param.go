@@ -8,11 +8,9 @@ const (
 )
 
 type MsgInfo struct {
-	MsgId       int
-	Content     string
-	SendLen     int
-	FullContent string
-	Token       int
+	MsgId   int
+	Content string
+	SendLen int
 }
 
 type ImgResponse struct {

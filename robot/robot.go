@@ -3,6 +3,7 @@ package robot
 import (
 	"errors"
 	"fmt"
+	"github.com/volcengine/volcengine-go-sdk/service/arkruntime/model"
 	"runtime/debug"
 	"strings"
 	"time"
@@ -78,7 +79,8 @@ func requestDeepseekAndResp(update tgbotapi.Update, bot *tgbotapi.BotAPI, conten
 			Update:      update,
 			Bot:         bot,
 			MessageChan: messageChan,
-			ToolCall:    godeepseek.ToolCall{},
+			ToolCall:    []godeepseek.ToolCall{},
+			ToolMessage: []godeepseek.ChatCompletionMessage{},
 		}
 	} else {
 		dpReq = &deepseek.HuoshanReq{
@@ -86,7 +88,8 @@ func requestDeepseekAndResp(update tgbotapi.Update, bot *tgbotapi.BotAPI, conten
 			Update:      update,
 			Bot:         bot,
 			MessageChan: messageChan,
-			ToolsData:   godeepseek.ToolCall{},
+			ToolCall:    []*model.ToolCall{},
+			ToolMessage: []*model.ChatCompletionMessage{},
 		}
 	}
 
@@ -107,7 +110,7 @@ func handleUpdate(messageChan chan *param.MsgInfo, update tgbotapi.Update, bot *
 
 	var msg *param.MsgInfo
 
-	chatId, msgId, userId := utils.GetChatIdAndMsgIdAndUserID(update)
+	chatId, msgId, _ := utils.GetChatIdAndMsgIdAndUserID(update)
 	parseMode := tgbotapi.ModeMarkdown
 
 	tgMsgInfo := tgbotapi.NewMessage(chatId, i18n.GetMessage(*conf.Lang, "thinking", nil))
@@ -174,24 +177,6 @@ func handleUpdate(messageChan chan *param.MsgInfo, update tgbotapi.Update, bot *
 		}
 
 	}
-
-	// store question and answer into record.
-	if msg != nil && msg.FullContent != "" {
-		db.InsertMsgRecord(userId, &db.AQ{
-			Question: content,
-			Answer:   msg.FullContent,
-			Token:    msg.Token,
-		}, true)
-	} else {
-		if !utils.CheckMsgIsCallback(update) {
-			db.InsertMsgRecord(userId, &db.AQ{
-				Question: content,
-				Answer:   "",
-				Token:    0,
-			}, true)
-		}
-	}
-
 }
 
 func sleepUtilNoLimit(msgId int, err error) bool {
