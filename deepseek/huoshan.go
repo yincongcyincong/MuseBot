@@ -5,7 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	godeepseek "github.com/cohesion-org/deepseek-go"
+	"github.com/cohesion-org/deepseek-go"
+	"github.com/yincongcyincong/mcp-client-go/clients"
 	"io"
 	"net/http"
 	"net/url"
@@ -31,7 +32,11 @@ type HuoshanReq struct {
 	Bot         *tgbotapi.BotAPI
 	Content     string
 	Model       string
-	ToolsData   godeepseek.ToolCall
+	Token       int
+
+	ToolCall        []*model.ToolCall
+	DeepSeekContent string
+	ToolMessage     []*model.ChatCompletionMessage
 }
 
 func (h *HuoshanReq) GetContent() {
@@ -66,8 +71,7 @@ func (h *HuoshanReq) GetContent() {
 }
 
 func (h *HuoshanReq) getContentFromHS(prompt string) error {
-	start := time.Now()
-	_, updateMsgID, userId := utils.GetChatIdAndMsgIdAndUserID(h.Update)
+	_, _, userId := utils.GetChatIdAndMsgIdAndUserID(h.Update)
 
 	messages := make([]*model.ChatCompletionMessage, 0)
 
@@ -79,19 +83,33 @@ func (h *HuoshanReq) getContentFromHS(prompt string) error {
 		}
 		for i, record := range aqs {
 			if record.Answer != "" && record.Question != "" {
-				logger.Info("context content", "dialog", i, "question:", record.Question, "answer:", record.Answer)
-				messages = append(messages, &model.ChatCompletionMessage{
-					Role: constants.ChatMessageRoleAssistant,
-					Content: &model.ChatCompletionMessageContent{
-						StringValue: &record.Answer,
-					},
-				})
+				logger.Info("context content", "dialog", i, "question:", record.Question,
+					"toolContent", record.Content, "answer:", record.Answer)
+
 				messages = append(messages, &model.ChatCompletionMessage{
 					Role: constants.ChatMessageRoleUser,
 					Content: &model.ChatCompletionMessageContent{
 						StringValue: &record.Question,
 					},
 				})
+
+				if record.Content != "" {
+					toolsMsgs := make([]*model.ChatCompletionMessage, 0)
+					err := json.Unmarshal([]byte(record.Content), &toolsMsgs)
+					if err != nil {
+						logger.Error("Error unmarshalling tools json", "err", err)
+					} else {
+						messages = append(messages, toolsMsgs...)
+					}
+				}
+
+				messages = append(messages, &model.ChatCompletionMessage{
+					Role: constants.ChatMessageRoleAssistant,
+					Content: &model.ChatCompletionMessageContent{
+						StringValue: &record.Answer,
+					},
+				})
+
 			}
 		}
 	}
@@ -102,6 +120,12 @@ func (h *HuoshanReq) getContentFromHS(prompt string) error {
 		},
 	})
 
+	return nil
+}
+
+func (h *HuoshanReq) send(messages []*model.ChatCompletionMessage) error {
+	start := time.Now()
+	_, updateMsgID, userId := utils.GetChatIdAndMsgIdAndUserID(h.Update)
 	// set deepseek proxy
 	httpClient := &http.Client{
 		Timeout: 30 * time.Minute,
@@ -138,9 +162,10 @@ func (h *HuoshanReq) getContentFromHS(prompt string) error {
 		Stop:             conf.Stop,
 		PresencePenalty:  float32(*conf.PresencePenalty),
 		Temperature:      float32(*conf.Temperature),
+		Tools:            conf.VolTools,
 	}
 
-	logger.Info("msg receive", "userID", userId, "prompt", prompt)
+	logger.Info("msg receive", "userID", userId, "prompt", h.Content)
 	stream, err := client.CreateChatCompletionStream(ctx, req)
 	if err != nil {
 		logger.Error("standard chat error", "err", err)
@@ -151,6 +176,8 @@ func (h *HuoshanReq) getContentFromHS(prompt string) error {
 	msgInfoContent := &param.MsgInfo{
 		SendLen: FirstSendLen,
 	}
+
+	hasTools := false
 
 	for {
 		response, err := stream.Recv()
@@ -163,37 +190,130 @@ func (h *HuoshanReq) getContentFromHS(prompt string) error {
 			break
 		}
 		for _, choice := range response.Choices {
-			// exceed max telegram one message length
-			if utils.Utf16len(msgInfoContent.Content) > OneMsgLen {
-				h.MessageChan <- msgInfoContent
-				msgInfoContent = &param.MsgInfo{
-					SendLen:     NonFirstSendLen,
-					FullContent: msgInfoContent.FullContent,
-					Token:       msgInfoContent.Token,
+
+			if len(choice.Delta.ToolCalls) > 0 {
+				hasTools = true
+				err = h.requestToolsCall(ctx, choice)
+				if err != nil {
+					if errors.Is(err, toolsJsonErr) {
+						continue
+					} else {
+						logger.Error("requestToolsCall error", "updateMsgID", updateMsgID, "err", err)
+						return err
+					}
 				}
 			}
 
-			msgInfoContent.Content += choice.Delta.Content
-			msgInfoContent.FullContent += choice.Delta.Content
-			if len(msgInfoContent.Content) > msgInfoContent.SendLen {
-				h.MessageChan <- msgInfoContent
-				msgInfoContent.SendLen += NonFirstSendLen
+			if !hasTools {
+				h.sendMsg(msgInfoContent, choice)
 			}
 		}
 
 		if response.Usage != nil {
-			msgInfoContent.Token += response.Usage.TotalTokens
-			metrics.TotalTokens.Add(float64(msgInfoContent.Token))
+			h.Token += response.Usage.TotalTokens
+			metrics.TotalTokens.Add(float64(h.Token))
 		}
 
 	}
 
+	if !hasTools {
+		h.MessageChan <- msgInfoContent
+
+		data, _ := json.Marshal(h.ToolMessage)
+		db.InsertMsgRecord(userId, &db.AQ{
+			Question: h.Content,
+			Answer:   h.DeepSeekContent,
+			Content:  string(data),
+			Token:    h.Token,
+		}, true)
+	} else {
+		h.ToolMessage = append([]*model.ChatCompletionMessage{
+			{
+				Role: deepseek.ChatMessageRoleAssistant,
+				Content: &model.ChatCompletionMessageContent{
+					StringValue: &h.DeepSeekContent,
+				},
+				ToolCalls: h.ToolCall,
+			},
+		}, h.ToolMessage...)
+		messages = append(messages, h.ToolMessage...)
+		return h.send(messages)
+	}
 	h.MessageChan <- msgInfoContent
 
 	// record time costing in dialog
 	totalDuration := time.Since(start).Seconds()
 	metrics.ConversationDuration.Observe(totalDuration)
 	return nil
+}
+
+func (h *HuoshanReq) requestToolsCall(ctx context.Context, choice *model.ChatCompletionStreamChoice) error {
+	for _, toolCall := range choice.Delta.ToolCalls {
+		property := make(map[string]interface{})
+
+		if toolCall.Function.Name != "" {
+			h.ToolCall = append(h.ToolCall, toolCall)
+			h.ToolCall[len(h.ToolCall)-1].Function.Name = toolCall.Function.Name
+		}
+
+		if toolCall.ID != "" {
+			h.ToolCall[len(h.ToolCall)-1].ID = toolCall.ID
+		}
+
+		if toolCall.Type != "" {
+			h.ToolCall[len(h.ToolCall)-1].Type = toolCall.Type
+		}
+
+		if toolCall.Function.Arguments != "" {
+			h.ToolCall[len(h.ToolCall)-1].Function.Arguments += toolCall.Function.Arguments
+		}
+
+		err := json.Unmarshal([]byte(h.ToolCall[len(h.ToolCall)-1].Function.Arguments), &property)
+		if err != nil {
+			return toolsJsonErr
+		}
+
+		mc, err := clients.GetMCPClientByToolName(h.ToolCall[len(h.ToolCall)-1].Function.Name)
+		if err != nil {
+			logger.Warn("get mcp fail", "err", err)
+			return err
+		}
+
+		toolsData, err := mc.ExecTools(ctx, h.ToolCall[len(h.ToolCall)-1].Function.Name, property)
+		if err != nil {
+			logger.Warn("exec tools fail", "err", err)
+			return err
+		}
+		h.ToolMessage = append(h.ToolMessage, &model.ChatCompletionMessage{
+			Role: constants.ChatMessageRoleTool,
+			Content: &model.ChatCompletionMessageContent{
+				StringValue: &toolsData,
+			},
+			ToolCallID: h.ToolCall[len(h.ToolCall)-1].ID,
+		})
+	}
+
+	logger.Info("send tool request", "function", h.ToolCall[len(h.ToolCall)-1].Function.Name,
+		"toolCall", h.ToolCall[len(h.ToolCall)-1].ID, "argument", h.ToolCall[len(h.ToolCall)-1].Function.Arguments)
+
+	return nil
+}
+
+func (h *HuoshanReq) sendMsg(msgInfoContent *param.MsgInfo, choice *model.ChatCompletionStreamChoice) {
+	// exceed max telegram one message length
+	if utils.Utf16len(msgInfoContent.Content) > OneMsgLen {
+		h.MessageChan <- msgInfoContent
+		msgInfoContent = &param.MsgInfo{
+			SendLen: NonFirstSendLen,
+		}
+	}
+
+	msgInfoContent.Content += choice.Delta.Content
+	h.DeepSeekContent += choice.Delta.Content
+	if len(msgInfoContent.Content) > msgInfoContent.SendLen {
+		h.MessageChan <- msgInfoContent
+		msgInfoContent.SendLen += NonFirstSendLen
+	}
 }
 
 // GenerateImg generate image

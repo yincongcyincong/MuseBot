@@ -21,6 +21,7 @@ type MsgRecordInfo struct {
 type AQ struct {
 	Question string
 	Answer   string
+	Content  string
 	Token    int
 }
 
@@ -29,6 +30,7 @@ type Record struct {
 	UserId    int64
 	Question  string
 	Answer    string
+	Content   string
 	Token     int
 	IsDeleted int
 }
@@ -58,6 +60,7 @@ func InsertMsgRecord(userId int64, aq *AQ, insertDB bool) {
 			UserId:   userId,
 			Question: aq.Question,
 			Answer:   aq.Answer,
+			Content:  aq.Content,
 			Token:    aq.Token,
 		})
 	}
@@ -133,6 +136,7 @@ func InsertRecord() {
 			InsertMsgRecord(user.UserId, &AQ{
 				Question: record.Question,
 				Answer:   record.Answer,
+				Content:  record.Content,
 			}, false)
 			metrics.TotalRecords.Inc()
 		}
@@ -145,7 +149,7 @@ func InsertRecord() {
 // getRecordsByUserId get latest 10 records by user_id
 func getRecordsByUserId(userId int64) ([]Record, error) {
 	// construct SQL statements
-	query := fmt.Sprintf("SELECT id, user_id, question, answer FROM records WHERE user_id =  ? and is_deleted = 0 order by create_time desc limit 10")
+	query := fmt.Sprintf("SELECT id, user_id, question, answer, content FROM records WHERE user_id =  ? and is_deleted = 0 order by create_time desc limit 10")
 
 	// execute query
 	rows, err := DB.Query(query, userId)
@@ -157,7 +161,7 @@ func getRecordsByUserId(userId int64) ([]Record, error) {
 	var records []Record
 	for rows.Next() {
 		var record Record
-		err := rows.Scan(&record.ID, &record.UserId, &record.Question, &record.Answer)
+		err := rows.Scan(&record.ID, &record.UserId, &record.Question, &record.Answer, &record.Content)
 		if err != nil {
 			return nil, err
 		}
@@ -169,8 +173,8 @@ func getRecordsByUserId(userId int64) ([]Record, error) {
 
 // InsertRecordInfo insert record
 func InsertRecordInfo(record *Record) {
-	query := `INSERT INTO records (user_id, question, answer, token, create_time, is_deleted) VALUES (?, ?, ?, ?, ?, ?)`
-	_, err := DB.Exec(query, record.UserId, record.Question, record.Answer, record.Token, time.Now().Unix(), record.IsDeleted)
+	query := `INSERT INTO records (user_id, question, answer, content, token, create_time, is_deleted) VALUES (?, ?, ?, ?, ?, ?, ?)`
+	_, err := DB.Exec(query, record.UserId, record.Question, record.Answer, record.Content, record.Token, time.Now().Unix(), record.IsDeleted)
 	metrics.TotalRecords.Inc()
 	if err != nil {
 		logger.Error("insertRecord err", "err", err)
