@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/yincongcyincong/mcp-client-go/clients"
 	"io"
 	"net/http"
 	"net/url"
@@ -14,6 +13,7 @@ import (
 	"github.com/cohesion-org/deepseek-go"
 	"github.com/cohesion-org/deepseek-go/constants"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/yincongcyincong/mcp-client-go/clients"
 	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
 	"github.com/yincongcyincong/telegram-deepseek-bot/db"
 	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
@@ -235,7 +235,7 @@ func (d *DeepseekReq) send(messages []deepseek.ChatCompletionMessage) error {
 		}
 	}
 
-	if !hasTools {
+	if !hasTools || len(d.ToolMessage) == 0 {
 		d.MessageChan <- msgInfoContent
 
 		data, _ := json.Marshal(d.ToolMessage)
