@@ -198,7 +198,6 @@ func (h *HuoshanReq) send(messages []*model.ChatCompletionMessage) error {
 						continue
 					} else {
 						logger.Error("requestToolsCall error", "updateMsgID", updateMsgID, "err", err)
-						return err
 					}
 				}
 			}

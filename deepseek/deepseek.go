@@ -219,7 +219,6 @@ func (d *DeepseekReq) send(messages []deepseek.ChatCompletionMessage) error {
 						continue
 					} else {
 						logger.Error("requestToolsCall error", "updateMsgID", updateMsgID, "err", err)
-						return err
 					}
 				}
 			}
