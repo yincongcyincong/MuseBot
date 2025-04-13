@@ -119,7 +119,7 @@ func (h *HuoshanReq) getContentFromHS(prompt string) error {
 		},
 	})
 
-	return nil
+	return h.send(messages)
 }
 
 func (h *HuoshanReq) send(messages []*model.ChatCompletionMessage) error {
@@ -215,7 +215,7 @@ func (h *HuoshanReq) send(messages []*model.ChatCompletionMessage) error {
 
 	}
 
-	if !hasTools {
+	if !hasTools || len(h.ToolCall) == 0 {
 		h.MessageChan <- msgInfoContent
 
 		data, _ := json.Marshal(h.ToolMessage)
@@ -238,7 +238,6 @@ func (h *HuoshanReq) send(messages []*model.ChatCompletionMessage) error {
 		messages = append(messages, h.ToolMessage...)
 		return h.send(messages)
 	}
-	h.MessageChan <- msgInfoContent
 
 	// record time costing in dialog
 	totalDuration := time.Since(start).Seconds()
