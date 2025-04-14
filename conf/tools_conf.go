@@ -3,6 +3,7 @@ package conf
 import (
 	"context"
 	"flag"
+	"github.com/yincongcyincong/mcp-client-go/clients/victoriametrics"
 	"os"
 	"strings"
 	"time"
@@ -20,6 +21,9 @@ import (
 var (
 	AmapApiKey        *string
 	GithubAccessToken *string
+	VMUrl             *string
+	VMInsertUrl       *string
+	VMSelectUrl       *string
 	AllTools          *string
 
 	DeepseekTools = make([]deepseek.Tool, 0)
@@ -30,6 +34,9 @@ func InitToolsConf() {
 	AmapApiKey = flag.String("amap_api_key", "", "amap api key")
 	AllTools = flag.String("allow_tools", "*", "allow tools")
 	GithubAccessToken = flag.String("github_access_token", "", "github access token")
+	VMUrl = flag.String("vm_url", "", "vm url")
+	VMInsertUrl = flag.String("vm_insert_url", "", "vm insert url")
+	VMSelectUrl = flag.String("vm_select_url", "", "vm select url")
 
 	if os.Getenv("AMAP_API_KEY") != "" {
 		*AmapApiKey = os.Getenv("AMAP_API_KEY")
@@ -41,6 +48,18 @@ func InitToolsConf() {
 
 	if os.Getenv("GITHUB_ACCESS_TOKEN") != "" {
 		*GithubAccessToken = os.Getenv("GITHUB_ACCESS_TOKEN")
+	}
+
+	if os.Getenv("VM_URL") != "" {
+		*VMUrl = os.Getenv("VM_URL")
+	}
+
+	if os.Getenv("VM_INSERT_URL") != "" {
+		*VMInsertUrl = os.Getenv("VM_INSERT_URL")
+	}
+
+	if os.Getenv("VM_SELECT_URL") != "" {
+		*VMSelectUrl = os.Getenv("VM_SELECT_URL")
 	}
 
 	logger.Info("TOOLS_CONF", "AmapApiKey", *AmapApiKey)
@@ -61,12 +80,24 @@ func InitTools() {
 	mcpParams := make([]*param.MCPClientConf, 0)
 	if *AmapApiKey != "" {
 		mcpParams = append(mcpParams,
-			amap.InitAmapMCPClient(*AmapApiKey, "", nil, nil, nil))
+			amap.InitAmapMCPClient(&amap.AmapParam{
+				AmapApiKey: *AmapApiKey,
+			}, "", nil, nil, nil))
 	}
 
 	if *GithubAccessToken != "" {
 		mcpParams = append(mcpParams,
-			github.InitModelContextProtocolGithubMCPClient(*GithubAccessToken, "", nil, nil, nil))
+			github.InitModelContextProtocolGithubMCPClient(&github.GithubParam{
+				GithubAccessToken: *GithubAccessToken,
+			}, "", nil, nil, nil))
+	}
+
+	if *VMUrl != "" || *VMInsertUrl != "" || *VMSelectUrl != "" {
+		mcpParams = append(mcpParams, victoriametrics.InitVictoriaMetricsMCPClient(&victoriametrics.VictoriaMetricsParam{
+			VMUrl:       *VMUrl,
+			VMInsertUrl: *VMInsertUrl,
+			VMSelectUrl: *VMSelectUrl,
+		}, "", nil, nil, nil))
 	}
 
 	err := clients.RegisterMCPClient(ctx, mcpParams)
@@ -80,6 +111,10 @@ func InitTools() {
 
 	if *GithubAccessToken != "" {
 		InsertTools(github.NpxModelContextProtocolGithubServer, allTools)
+	}
+
+	if *VMUrl != "" || *VMInsertUrl != "" || *VMSelectUrl != "" {
+		InsertTools(victoriametrics.NpxVictoriaMetricsMcpServer, allTools)
 	}
 
 }
