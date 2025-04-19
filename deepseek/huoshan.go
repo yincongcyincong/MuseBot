@@ -39,6 +39,8 @@ type HuoshanReq struct {
 }
 
 func (h *HuoshanReq) GetContent() {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
 	// check user chat exceed max count
 	if utils.CheckUserChatExceed(h.Update, h.Bot) {
 		return
@@ -62,14 +64,14 @@ func (h *HuoshanReq) GetContent() {
 	}
 
 	text := strings.ReplaceAll(h.Content, "@"+h.Bot.Self.UserName, "")
-	err := h.getContentFromHS(text)
+	err := h.getContentFromHS(ctx, text)
 	if err != nil {
 		logger.Error("Error calling DeepSeek API", "err", err)
 	}
 
 }
 
-func (h *HuoshanReq) getContentFromHS(prompt string) error {
+func (h *HuoshanReq) getContentFromHS(ctx context.Context, prompt string) error {
 	_, _, userId := utils.GetChatIdAndMsgIdAndUserID(h.Update)
 
 	messages := make([]*model.ChatCompletionMessage, 0)
@@ -119,15 +121,15 @@ func (h *HuoshanReq) getContentFromHS(prompt string) error {
 		},
 	})
 
-	return h.send(messages)
+	return h.send(ctx, messages)
 }
 
-func (h *HuoshanReq) send(messages []*model.ChatCompletionMessage) error {
+func (h *HuoshanReq) send(ctx context.Context, messages []*model.ChatCompletionMessage) error {
 	start := time.Now()
 	_, updateMsgID, userId := utils.GetChatIdAndMsgIdAndUserID(h.Update)
 	// set deepseek proxy
 	httpClient := &http.Client{
-		Timeout: 30 * time.Minute,
+		Timeout: 5 * time.Minute,
 	}
 
 	if *conf.DeepseekProxy != "" {
@@ -143,10 +145,10 @@ func (h *HuoshanReq) send(messages []*model.ChatCompletionMessage) error {
 
 	client := arkruntime.NewClientWithApiKey(
 		*conf.DeepseekToken,
-		arkruntime.WithTimeout(30*time.Minute),
+		arkruntime.WithTimeout(5*time.Minute),
 		arkruntime.WithHTTPClient(httpClient),
 	)
-	ctx := context.Background()
+
 	req := model.ChatCompletionRequest{
 		Model:    *conf.DeepseekType,
 		Messages: messages,
@@ -235,7 +237,7 @@ func (h *HuoshanReq) send(messages []*model.ChatCompletionMessage) error {
 			},
 		}, h.ToolMessage...)
 		messages = append(messages, h.ToolMessage...)
-		return h.send(messages)
+		return h.send(ctx, messages)
 	}
 
 	// record time costing in dialog
@@ -368,7 +370,7 @@ func GenerateVideo(prompt string) (string, error) {
 	defer cancel()
 
 	httpClient := &http.Client{
-		Timeout: 30 * time.Minute,
+		Timeout: 5 * time.Minute,
 	}
 
 	if *conf.DeepseekProxy != "" {
@@ -384,7 +386,7 @@ func GenerateVideo(prompt string) (string, error) {
 
 	client := arkruntime.NewClientWithApiKey(
 		*conf.VideoToken,
-		arkruntime.WithTimeout(30*time.Minute),
+		arkruntime.WithTimeout(5*time.Minute),
 		arkruntime.WithHTTPClient(httpClient),
 	)
 
