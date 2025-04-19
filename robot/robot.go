@@ -3,13 +3,13 @@ package robot
 import (
 	"errors"
 	"fmt"
-	"github.com/volcengine/volcengine-go-sdk/service/arkruntime/model"
 	"runtime/debug"
 	"strings"
 	"time"
 
 	godeepseek "github.com/cohesion-org/deepseek-go"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/volcengine/volcengine-go-sdk/service/arkruntime/model"
 	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
 	"github.com/yincongcyincong/telegram-deepseek-bot/db"
 	"github.com/yincongcyincong/telegram-deepseek-bot/deepseek"
@@ -56,7 +56,6 @@ func ExecUpdate(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 			logger.Warn("skip this msg", "msgId", msgId, "chat", chatId)
 			return
 		}
-
 		requestDeepseekAndResp(update, bot, update.Message.Text)
 	}
 
@@ -97,11 +96,11 @@ func requestDeepseekAndResp(update tgbotapi.Update, bot *tgbotapi.BotAPI, conten
 	go dpReq.GetContent()
 
 	// send response message
-	go handleUpdate(messageChan, update, bot, content)
+	go handleUpdate(messageChan, update, bot)
 }
 
 // handleUpdate handle robot msg sending
-func handleUpdate(messageChan chan *param.MsgInfo, update tgbotapi.Update, bot *tgbotapi.BotAPI, content string) {
+func handleUpdate(messageChan chan *param.MsgInfo, update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	defer func() {
 		if err := recover(); err != nil {
 			logger.Error("handleUpdate panic err", "err", err, "stack", string(debug.Stack()))

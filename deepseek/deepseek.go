@@ -51,6 +51,8 @@ type DeepseekReq struct {
 
 // GetContent get comment from deepseek
 func (d *DeepseekReq) GetContent() {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
 	// check user chat exceed max count
 	if utils.CheckUserChatExceed(d.Update, d.Bot) {
 		return
@@ -79,14 +81,14 @@ func (d *DeepseekReq) GetContent() {
 	}
 
 	text := strings.ReplaceAll(d.Content, "@"+d.Bot.Self.UserName, "")
-	err := d.callDeepSeekAPI(text)
+	err := d.callDeepSeekAPI(ctx, text)
 	if err != nil {
 		logger.Error("Error calling DeepSeek API", "err", err)
 	}
 }
 
 // callDeepSeekAPI request DeepSeek API and get response
-func (d *DeepseekReq) callDeepSeekAPI(prompt string) error {
+func (d *DeepseekReq) callDeepSeekAPI(ctx context.Context, prompt string) error {
 	_, _, userId := utils.GetChatIdAndMsgIdAndUserID(d.Update)
 	d.Model = deepseek.DeepSeekChat
 	userInfo, err := db.GetUserByID(userId)
@@ -139,10 +141,10 @@ func (d *DeepseekReq) callDeepSeekAPI(prompt string) error {
 
 	logger.Info("msg receive", "userID", userId, "prompt", prompt)
 
-	return d.send(messages)
+	return d.send(ctx, messages)
 }
 
-func (d *DeepseekReq) send(messages []deepseek.ChatCompletionMessage) error {
+func (d *DeepseekReq) send(ctx context.Context, messages []deepseek.ChatCompletionMessage) error {
 	start := time.Now()
 	_, updateMsgID, userId := utils.GetChatIdAndMsgIdAndUserID(d.Update)
 	// set deepseek proxy
@@ -186,8 +188,6 @@ func (d *DeepseekReq) send(messages []deepseek.ChatCompletionMessage) error {
 	}
 
 	request.Messages = messages
-
-	ctx := context.Background()
 
 	stream, err := client.CreateChatCompletionStream(ctx, request)
 	if err != nil {
@@ -253,7 +253,7 @@ func (d *DeepseekReq) send(messages []deepseek.ChatCompletionMessage) error {
 			},
 		}, d.ToolMessage...)
 		messages = append(messages, d.ToolMessage...)
-		return d.send(messages)
+		return d.send(ctx, messages)
 	}
 
 	// record time costing in dialog
@@ -334,7 +334,8 @@ func (d *DeepseekReq) requestToolsCall(ctx context.Context, choice deepseek.Stre
 // GetBalanceInfo get balance info
 func GetBalanceInfo() *deepseek.BalanceResponse {
 	client := deepseek.NewClient(*conf.DeepseekToken)
-	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
+	defer cancel()
 	balance, err := deepseek.GetBalance(client, ctx)
 	if err != nil {
 		logger.Error("Error getting balance", "err", err)
