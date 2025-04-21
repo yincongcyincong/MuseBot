@@ -16,7 +16,7 @@ const (
 			CREATE TABLE users (
 				id INTEGER PRIMARY KEY AUTOINCREMENT,
 				user_id int(11) NOT NULL DEFAULT '0',
-				mode VARCHAR(30) NOT NULL DEFAULT '',
+				mode VARCHAR(100) NOT NULL DEFAULT '',
 				updatetime int(10) NOT NULL DEFAULT '0',
 				token int(10) NOT NULL DEFAULT '0',
 				avail_token int(10) NOT NULL DEFAULT 0
@@ -37,7 +37,7 @@ const (
 CREATE TABLE IF NOT EXISTS users (
     id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     user_id BIGINT(20) NOT NULL DEFAULT 0,
-    mode VARCHAR(30) NOT NULL DEFAULT '',
+    mode VARCHAR(100) NOT NULL DEFAULT '',
     updatetime INT(10) NOT NULL DEFAULT 0,
     token int(10) NOT NULL DEFAULT 0,
     avail_token int(10) NOT NULL DEFAULT 0
