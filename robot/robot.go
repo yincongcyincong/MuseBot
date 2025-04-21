@@ -214,7 +214,7 @@ func handleCommandAndCallback(update tgbotapi.Update, bot *tgbotapi.BotAPI) bool
 func skipThisMsg(update tgbotapi.Update, bot *tgbotapi.BotAPI) bool {
 	if update.Message.Chat.Type == "private" {
 		if strings.TrimSpace(update.Message.Text) == "" &&
-			update.Message.Voice == nil {
+			update.Message.Voice == nil && update.Message.Photo == nil {
 			return true
 		}
 
