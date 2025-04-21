@@ -425,6 +425,9 @@ func sendModeConfigurationOptions(update tgbotapi.Update, bot *tgbotapi.BotAPI) 
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("reasoner", godeepseek.DeepSeekReasoner),
 		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("llama2", param.LLAVA),
+		),
 	)
 
 	i18n.SendMsg(chatID, "chat_mode", bot, &inlineKeyboard, msgId)
@@ -467,6 +470,8 @@ func handleCallbackQuery(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	switch update.CallbackQuery.Data {
 	case godeepseek.DeepSeekChat, godeepseek.DeepSeekCoder, godeepseek.DeepSeekReasoner:
 		handleModeUpdate(update, bot)
+	case param.LLAVA:
+		handleSpecailMode(update, bot)
 	case "mode":
 		sendModeConfigurationOptions(update, bot)
 	case "balance":
@@ -493,6 +498,20 @@ func handleCallbackQuery(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 		}
 		sendChatMessage(update, bot)
 	}
+
+}
+
+func handleSpecailMode(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
+
+	if *conf.CustomUrl == "" || *conf.CustomUrl == "https://api.deepseek.com/" {
+		callback := tgbotapi.NewCallback(update.CallbackQuery.ID, i18n.GetMessage(*conf.Lang, "mode_change_fail", nil))
+		if _, err := bot.Request(callback); err != nil {
+			logger.Warn("request callback fail", "err", err)
+		}
+		return
+	}
+
+	handleModeUpdate(update, bot)
 
 }
 
