@@ -64,8 +64,8 @@ func (h *HuoshanReq) GetContent() {
 		h.Content = FileRecognize(audioContent)
 	}
 
-	if h.Update.Message.Photo != nil {
-		imageContent, err := getImageContent(utils.GetPhotoContent(h.Update, h.Bot))
+	if h.Content == "" && h.Update.Message.Photo != nil {
+		imageContent, err := GetImageContent(utils.GetPhotoContent(h.Update, h.Bot))
 		if err != nil {
 			logger.Warn("get image content err", "err", err)
 			return
@@ -471,7 +471,7 @@ func FileRecognize(audioContent []byte) string {
 
 }
 
-func getImageContent(imageContent []byte) (string, error) {
+func GetImageContent(imageContent []byte) (string, error) {
 	visual.DefaultInstance.Client.SetAccessKey(*conf.VolcAK)
 	visual.DefaultInstance.Client.SetSecretKey(*conf.VolcSK)
 

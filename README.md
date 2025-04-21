@@ -15,6 +15,7 @@ AI-powered responses. The bot supports **streaming replies**, making interaction
 - ⏳ **Streaming Output**: Sends responses in real-time to improve user experience.
 - 🎯 **Command Handling**: Supports custom commands.
 - 🏗 **Easy Deployment**: Run locally or deploy to a cloud server.
+- 👀 **Identify Image**: use image to communicate with deepseek, see [doc](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/static/doc/imageconf.md).
 - 🎺 **Support Voice**: use voice to communicate with deepseek, see [doc](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/static/doc/audioconf.md).
 - 🐂 **Function Call**: transform mcp protocol to function call, see [doc](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/static/doc/functioncall.md).
 

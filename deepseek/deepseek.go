@@ -75,8 +75,8 @@ func (d *DeepseekReq) GetContent() {
 		d.Content = FileRecognize(audioContent)
 	}
 
-	if d.Update.Message.Photo != nil {
-		imageContent, err := getImageContent(utils.GetPhotoContent(d.Update, d.Bot))
+	if d.Content == "" && d.Update.Message.Photo != nil {
+		imageContent, err := GetImageContent(utils.GetPhotoContent(d.Update, d.Bot))
 		if err != nil {
 			logger.Warn("get image content err", "err", err)
 			return
@@ -84,7 +84,7 @@ func (d *DeepseekReq) GetContent() {
 		d.Content = imageContent
 	}
 
-	if d.Content == "" && d.Image == "" {
+	if d.Content == "" {
 		logger.Warn("content empty")
 		return
 	}
