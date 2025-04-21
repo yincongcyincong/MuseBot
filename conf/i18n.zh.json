@@ -17,5 +17,6 @@
   "chat_exceed": "❌超过聊天数限制",
   "chat_empty_content": "请输入聊天prompt",
   "video_empty_content": "请输入视频prompt",
-  "photo_empty_content": "请输入图片prompt"
+  "photo_empty_content": "请输入图片prompt",
+  "mode_change_fail": "此mode仅自部署deepseek可用"
 }

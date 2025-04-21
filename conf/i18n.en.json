@@ -17,5 +17,6 @@
   "chat_exceed": "❌exceed chat num limit",
   "chat_empty_content": "please input chat prompt",
   "video_empty_content": "please input video prompt",
-  "photo_empty_content": "please input photo prompt"
+  "photo_empty_content": "please input photo prompt",
+  "mode_change_fail": "this mode just uses in local installed deepseek"
 }

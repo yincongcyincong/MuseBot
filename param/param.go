@@ -3,6 +3,8 @@ package param
 const (
 	DeepSeek = "deepseek"
 
+	LLAVA = "llava:latest"
+
 	ImageTokenUsage = 10000
 	VideoTokenUsage = 20000
 )
