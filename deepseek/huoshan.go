@@ -2,6 +2,7 @@ package deepseek
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -61,6 +62,15 @@ func (h *HuoshanReq) GetContent() {
 			return
 		}
 		h.Content = FileRecognize(audioContent)
+	}
+
+	if h.Update.Message.Photo != nil {
+		imageContent, err := getImageContent(utils.GetPhotoContent(h.Update, h.Bot))
+		if err != nil {
+			logger.Warn("get image content err", "err", err)
+			return
+		}
+		h.Content = imageContent
 	}
 
 	text := strings.ReplaceAll(h.Content, "@"+h.Bot.Self.UserName, "")
@@ -459,4 +469,25 @@ func FileRecognize(audioContent []byte) string {
 
 	return asrResponse.Results[0].Text
 
+}
+
+func getImageContent(imageContent []byte) (string, error) {
+	visual.DefaultInstance.Client.SetAccessKey(*conf.VolcAK)
+	visual.DefaultInstance.Client.SetSecretKey(*conf.VolcSK)
+
+	form := url.Values{}
+	form.Add("image_base64", base64.StdEncoding.EncodeToString(imageContent))
+
+	resp, _, err := visual.DefaultInstance.OCRNormal(form)
+	if err != nil {
+		logger.Error("request img api fail", "err", err)
+		return "", err
+	}
+
+	if resp.Code != 10000 {
+		logger.Error("request img api fail", "code", resp.Code, "msg", resp.Message)
+		return "", errors.New("request img api fail")
+	}
+
+	return strings.Join(resp.Data.LineTexts, ","), nil
 }

@@ -149,3 +149,58 @@ func GetAudioContent(update tgbotapi.Update, bot *tgbotapi.BotAPI) []byte {
 	}
 	return voice
 }
+
+func GetPhotoContent(update tgbotapi.Update, bot *tgbotapi.BotAPI) []byte {
+	if update.Message == nil || update.Message.Photo == nil {
+		return nil
+	}
+
+	var photo tgbotapi.PhotoSize
+	for i := len(update.Message.Photo) - 1; i >= 0; i-- {
+		if update.Message.Photo[i].FileSize < 8*1024*1024 {
+			photo = update.Message.Photo[i]
+			break
+		}
+	}
+
+	fileID := photo.FileID
+	file, err := bot.GetFile(tgbotapi.FileConfig{FileID: fileID})
+	if err != nil {
+		logger.Warn("get file fail", "err", err)
+		return nil
+	}
+
+	// 构造下载 URL
+	downloadURL := file.Link(bot.Token)
+
+	transport := &http.Transport{}
+
+	if *conf.TelegramProxy != "" {
+		proxy, err := url.Parse(*conf.TelegramProxy)
+		if err != nil {
+			logger.Warn("parse proxy url fail", "err", err)
+			return nil
+		}
+		transport.Proxy = http.ProxyURL(proxy)
+	}
+
+	client := &http.Client{
+		Transport: transport,
+		Timeout:   30 * time.Second, // 设置超时
+	}
+
+	// 通过代理下载
+	resp, err := client.Get(downloadURL)
+	if err != nil {
+		logger.Warn("download fail", "err", err)
+		return nil
+	}
+	defer resp.Body.Close()
+	photoContent, err := io.ReadAll(resp.Body)
+	if err != nil {
+		logger.Warn("read response fail", "err", err)
+		return nil
+	}
+
+	return photoContent
+}
