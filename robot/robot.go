@@ -414,21 +414,48 @@ func showStateInfo(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 func sendModeConfigurationOptions(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	chatID, msgId, _ := utils.GetChatIdAndMsgIdAndUserID(update)
 
-	// create inline button
-	inlineKeyboard := tgbotapi.NewInlineKeyboardMarkup(
-		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("chat", godeepseek.DeepSeekChat),
-		),
-		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("coder", godeepseek.DeepSeekCoder),
-		),
-		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("reasoner", godeepseek.DeepSeekReasoner),
-		),
-		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("llama2", param.LLAVA),
-		),
-	)
+	var inlineKeyboard tgbotapi.InlineKeyboardMarkup
+	if *conf.CustomUrl == "" || *conf.CustomUrl == "https://api.deepseek.com/" {
+		// create inline button
+		inlineKeyboard = tgbotapi.NewInlineKeyboardMarkup(
+			tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonData("chat", godeepseek.DeepSeekChat),
+			),
+			tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonData("coder", godeepseek.DeepSeekCoder),
+			),
+			tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonData("reasoner", godeepseek.DeepSeekReasoner),
+			),
+		)
+	} else {
+		inlineKeyboard = tgbotapi.NewInlineKeyboardMarkup(
+			tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonData(godeepseek.AzureDeepSeekR1, godeepseek.AzureDeepSeekR1),
+			),
+			tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonData(godeepseek.OpenRouterDeepSeekR1, godeepseek.OpenRouterDeepSeekR1),
+			),
+			tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonData(godeepseek.OpenRouterDeepSeekR1DistillLlama70B, godeepseek.OpenRouterDeepSeekR1DistillLlama70B),
+			),
+			tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonData(godeepseek.OpenRouterDeepSeekR1DistillLlama8B, godeepseek.OpenRouterDeepSeekR1DistillLlama8B),
+			),
+			tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonData(godeepseek.OpenRouterDeepSeekR1DistillQwen14B, godeepseek.OpenRouterDeepSeekR1DistillQwen14B),
+			),
+			tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonData(godeepseek.OpenRouterDeepSeekR1DistillQwen1_5B, godeepseek.OpenRouterDeepSeekR1DistillQwen1_5B),
+			),
+			tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonData(godeepseek.OpenRouterDeepSeekR1DistillQwen32B, godeepseek.OpenRouterDeepSeekR1DistillQwen32B),
+			),
+			tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonData("llama2", param.LLAVA),
+			),
+		)
+	}
 
 	i18n.SendMsg(chatID, "chat_mode", bot, &inlineKeyboard, msgId)
 }
@@ -470,8 +497,11 @@ func handleCallbackQuery(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	switch update.CallbackQuery.Data {
 	case godeepseek.DeepSeekChat, godeepseek.DeepSeekCoder, godeepseek.DeepSeekReasoner:
 		handleModeUpdate(update, bot)
-	case param.LLAVA:
-		handleSpecailMode(update, bot)
+	case param.LLAVA, godeepseek.AzureDeepSeekR1, godeepseek.OpenRouterDeepSeekR1,
+		godeepseek.OpenRouterDeepSeekR1DistillLlama70B, godeepseek.OpenRouterDeepSeekR1DistillLlama8B,
+		godeepseek.OpenRouterDeepSeekR1DistillQwen14B, godeepseek.OpenRouterDeepSeekR1DistillQwen1_5B,
+		godeepseek.OpenRouterDeepSeekR1DistillQwen32B:
+		handleLocalMode(update, bot)
 	case "mode":
 		sendModeConfigurationOptions(update, bot)
 	case "balance":
@@ -501,7 +531,7 @@ func handleCallbackQuery(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 
 }
 
-func handleSpecailMode(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
+func handleLocalMode(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 
 	if *conf.CustomUrl == "" || *conf.CustomUrl == "https://api.deepseek.com/" {
 		callback := tgbotapi.NewCallback(update.CallbackQuery.ID, i18n.GetMessage(*conf.Lang, "mode_change_fail", nil))
