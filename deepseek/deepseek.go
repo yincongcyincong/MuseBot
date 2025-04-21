@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -43,6 +44,7 @@ type DeepseekReq struct {
 	Content     string
 	Model       string
 	Token       int
+	Image       string
 
 	ToolCall        []deepseek.ToolCall
 	DeepSeekContent string
@@ -75,7 +77,18 @@ func (d *DeepseekReq) GetContent() {
 		d.Content = FileRecognize(audioContent)
 	}
 
-	if d.Content == "" {
+	if d.Update.Message.Photo != nil {
+		photo := d.Update.Message.Photo
+		fileID := photo[len(photo)-1].FileID
+		file, err := d.Bot.GetFile(tgbotapi.FileConfig{FileID: fileID})
+		if err != nil {
+			logger.Error("create photo url fail", "err", err)
+		} else {
+			d.Image = fmt.Sprintf("https://api.telegram.org/file/bot%s/%s", d.Bot.Token, file.FilePath)
+		}
+	}
+
+	if d.Content == "" && d.Image == "" {
 		logger.Warn("content empty")
 		return
 	}
@@ -134,10 +147,14 @@ func (d *DeepseekReq) callDeepSeekAPI(ctx context.Context, prompt string) error 
 		}
 	}
 
-	messages = append(messages, deepseek.ChatCompletionMessage{
-		Role:    constants.ChatMessageRoleUser,
-		Content: prompt,
-	})
+	if d.Image != "" {
+		//messages = append(messages, deepseek.NewImageMessage(constants.ChatMessageRoleUser, prompt, d.Image))
+	} else {
+		messages = append(messages, deepseek.ChatCompletionMessage{
+			Role:    constants.ChatMessageRoleUser,
+			Content: prompt,
+		})
+	}
 
 	logger.Info("msg receive", "userID", userId, "prompt", prompt)
 
