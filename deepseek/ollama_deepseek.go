@@ -65,6 +65,15 @@ func (d *OllamaDeepseekReq) GetContent() {
 		d.Content = FileRecognize(audioContent)
 	}
 
+	if d.Content == "" && d.Update.Message.Photo != nil {
+		imageContent, err := GetImageContent(utils.GetPhotoContent(d.Update, d.Bot))
+		if err != nil {
+			logger.Warn("get image content err", "err", err)
+			return
+		}
+		d.Content = imageContent
+	}
+
 	if d.Update.Message.Photo != nil {
 		photo := d.Update.Message.Photo
 		fileID := photo[len(photo)-1].FileID
@@ -76,7 +85,7 @@ func (d *OllamaDeepseekReq) GetContent() {
 		}
 	}
 
-	if d.Content == "" && d.Image == "" {
+	if d.Content == "" {
 		logger.Warn("content empty")
 		return
 	}

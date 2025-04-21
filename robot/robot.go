@@ -295,6 +295,16 @@ func sendChatMessage(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 			}
 			messageText = deepseek.FileRecognize(audioContent)
 		}
+
+		if messageText == "" && update.Message.Photo != nil {
+			photoContent, err := deepseek.GetImageContent(utils.GetPhotoContent(update, bot))
+			if err != nil {
+				logger.Warn("get photo content err", "err", err)
+				return
+			}
+			messageText = photoContent
+		}
+
 	} else {
 		update.Message = new(tgbotapi.Message)
 	}
