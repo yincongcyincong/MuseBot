@@ -118,6 +118,10 @@ func InitToolsConf() {
         *NotionAuthorization = os.Getenv("NOTION_AUTHORIZATION")
     }
 
+    if os.Getenv("NOTION_VERSION") != "" {
+        *NotionVersion = os.Getenv("NOTION_VERSION")
+    }
+
     logger.Info("TOOLS_CONF", "AmapApiKey", *AmapApiKey)
     logger.Info("TOOLS_CONF", "AmapTools", *AllTools)
     logger.Info("TOOLS_CONF", "GithubAccessToken", *GithubAccessToken)
@@ -131,6 +135,7 @@ func InitToolsConf() {
     logger.Info("TOOLS_CONF", "FilePath", *FilePath)
     logger.Info("TOOLS_CONF", "GoogleMapApiKey", *GoogleMapApiKey)
     logger.Info("TOOLS_CONF", "NotionAuthorization", *NotionAuthorization)
+    logger.Info("TOOLS_CONF", "NotionVersion", *NotionVersion)
 
 }
 
