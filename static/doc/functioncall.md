@@ -60,15 +60,15 @@ automatically request MCP server data and interact with DeepSeek.
     - Useful for building searchable file databases or document retrieval systems
 
 9. **GoogleMap Service**:
-- Requires setting `GOOGLE_MAP_API_KEY`
-- Provides services such as geocoding, reverse geocoding, place search, and directions
-- Can be used for location-based features and mapping applications
-- Compatible with Google Maps API services for seamless integration
+    - Requires setting `GOOGLE_MAP_API_KEY`
+    - Provides services such as geocoding, reverse geocoding, place search, and directions
+    - Can be used for location-based features and mapping applications
+    - Compatible with Google Maps API services for seamless integration
 
 10. **Notion Service**:
-- Requires setting both `NOTION_AUTHORIZATION` and `NOTION_VERSION` environment variables
-    - `NOTION_AUTHORIZATION`: Bearer token for accessing Notion APIs
-    - `NOTION_VERSION`: API version (e.g., `2022-06-28`)
-- Enables interactions with Notion pages, databases, and blocks
-- Suitable for automated workflows like creating pages, updating content, or syncing data between Notion and other sources
+    - Requires setting both `NOTION_AUTHORIZATION` and `NOTION_VERSION` environment variables
+        - `NOTION_AUTHORIZATION`: Bearer token for accessing Notion APIs
+        - `NOTION_VERSION`: API version (e.g., `2022-06-28`)
+    - Enables interactions with Notion pages, databases, and blocks
+    - Suitable for automated workflows like creating pages, updating content, or syncing data between Notion and other sources
 
