@@ -3,6 +3,9 @@ package conf
 import (
     "context"
     "flag"
+    "os"
+    "strings"
+
     "github.com/cohesion-org/deepseek-go"
     "github.com/volcengine/volcengine-go-sdk/service/arkruntime/model"
     "github.com/yincongcyincong/mcp-client-go/clients"
@@ -10,14 +13,14 @@ import (
     "github.com/yincongcyincong/mcp-client-go/clients/binance"
     "github.com/yincongcyincong/mcp-client-go/clients/filesystem"
     "github.com/yincongcyincong/mcp-client-go/clients/github"
+    "github.com/yincongcyincong/mcp-client-go/clients/googlemap"
+    "github.com/yincongcyincong/mcp-client-go/clients/notion"
     "github.com/yincongcyincong/mcp-client-go/clients/param"
     "github.com/yincongcyincong/mcp-client-go/clients/playwright"
     mcp_time "github.com/yincongcyincong/mcp-client-go/clients/time"
     "github.com/yincongcyincong/mcp-client-go/clients/victoriametrics"
     "github.com/yincongcyincong/mcp-client-go/utils"
     "github.com/yincongcyincong/telegram-deepseek-bot/logger"
-    "os"
-    "strings"
 )
 
 var (
@@ -32,6 +35,9 @@ var (
     PlayWrightSwitch    *bool
     FilecrawlApiKey     *string
     FilePath            *string
+    GoogleMapApiKey     *string
+    NotionAuthorization *string
+    NotionVersion       *string
 
     AllTools *string
 
@@ -52,6 +58,9 @@ func InitToolsConf() {
     PlayWrightSSEServer = flag.String("play_wright_sse_server", "", "playwright sw server")
     FilecrawlApiKey = flag.String("filecrawl_api_key", "", "filecrawl_api_key")
     FilePath = flag.String("file_path", "", "file path")
+    GoogleMapApiKey = flag.String("google_map_api_key", "", "google_map_api_key")
+    NotionAuthorization = flag.String("notion_authorization", "", "notion_authorization")
+    NotionVersion = flag.String("notion_version", "", "notion_version")
 
     if os.Getenv("AMAP_API_KEY") != "" {
         *AmapApiKey = os.Getenv("AMAP_API_KEY")
@@ -101,6 +110,14 @@ func InitToolsConf() {
         *FilePath = os.Getenv("FILE_PATH")
     }
 
+    if os.Getenv("GOOGLE_MAP_API_KEY") != "" {
+        *GoogleMapApiKey = os.Getenv("GOOGLE_MAP_API_KEY")
+    }
+
+    if os.Getenv("NOTION_AUTHORIZATION") != "" {
+        *NotionAuthorization = os.Getenv("NOTION_AUTHORIZATION")
+    }
+
     logger.Info("TOOLS_CONF", "AmapApiKey", *AmapApiKey)
     logger.Info("TOOLS_CONF", "AmapTools", *AllTools)
     logger.Info("TOOLS_CONF", "GithubAccessToken", *GithubAccessToken)
@@ -112,6 +129,8 @@ func InitToolsConf() {
     logger.Info("TOOLS_CONF", "PlayWrightSwitch", *PlayWrightSwitch)
     logger.Info("TOOLS_CONF", "PlayWrightSSEServer", *PlayWrightSSEServer)
     logger.Info("TOOLS_CONF", "FilePath", *FilePath)
+    logger.Info("TOOLS_CONF", "GoogleMapApiKey", *GoogleMapApiKey)
+    logger.Info("TOOLS_CONF", "NotionAuthorization", *NotionAuthorization)
 
 }
 
@@ -173,6 +192,19 @@ func InitTools() {
         }, "", nil, nil, nil))
     }
 
+    if *GoogleMapApiKey != "" {
+        mcpParams = append(mcpParams, googlemap.InitGooglemapMCPClient(&googlemap.GoogleMapParam{
+            GooglemapApiKey: *GoogleMapApiKey,
+        }, "", nil, nil, nil))
+    }
+
+    if *NotionAuthorization != "" && *NotionVersion != "" {
+        mcpParams = append(mcpParams, notion.InitNotionMCPClient(&notion.NotionParam{
+            NotionVersion: *NotionVersion,
+            Authorization: *NotionAuthorization,
+        }, "", nil, nil, nil))
+    }
+
     err := clients.RegisterMCPClient(ctx, mcpParams)
     if len(err) > 0 {
         logger.Error("register mcp client error", "errors", err)
@@ -208,6 +240,14 @@ func InitTools() {
 
     if *FilePath != "" {
         InsertTools(filesystem.NpxFilesystemMcpServer, allTools)
+    }
+
+    if *GoogleMapApiKey != "" {
+        InsertTools(googlemap.NpxGooglemapMcpServer, allTools)
+    }
+
+    if *NotionAuthorization != "" && *NotionVersion != "" {
+        InsertTools(notion.NpxNotionMcpServer, allTools)
     }
 
 }
