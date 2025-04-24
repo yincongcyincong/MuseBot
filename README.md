@@ -198,7 +198,3 @@ Feel free to submit issues and pull requests to improve this bot. 🚀
 ## License
 
 MIT License © 2025 jack yin
-
-## Star History
-
-[![Star History Chart](https://api.star-history.com/svg?repos=yincongcyincong/telegram-deepseek-bot&type=Date)](https://www.star-history.com/#yincongcyincong/telegram-deepseek-bot&Date)
