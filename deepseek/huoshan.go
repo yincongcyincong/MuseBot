@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/cohesion-org/deepseek-go"
 	"io"
 	"net/http"
 	"net/url"
@@ -34,9 +35,10 @@ type HuoshanReq struct {
 	Model       string
 	Token       int
 
-	ToolCall        []*model.ToolCall
-	DeepSeekContent string
-	ToolMessage     []*model.ChatCompletionMessage
+	ToolCall           []*model.ToolCall
+	DeepSeekContent    string
+	ToolMessage        []*model.ChatCompletionMessage
+	CurrentToolMessage []*model.ChatCompletionMessage
 }
 
 func (h *HuoshanReq) GetContent() {
@@ -226,7 +228,7 @@ func (h *HuoshanReq) send(ctx context.Context, messages []*model.ChatCompletionM
 
 	}
 
-	if !hasTools || len(h.ToolCall) == 0 {
+	if !hasTools || len(h.CurrentToolMessage) == 0 {
 		h.MessageChan <- msgInfoContent
 
 		data, _ := json.Marshal(h.ToolMessage)
@@ -237,16 +239,20 @@ func (h *HuoshanReq) send(ctx context.Context, messages []*model.ChatCompletionM
 			Token:    h.Token,
 		}, true)
 	} else {
-		h.ToolMessage = append([]*model.ChatCompletionMessage{
+		h.CurrentToolMessage = append([]*model.ChatCompletionMessage{
 			{
-				Role: constants.ChatMessageRoleAssistant,
+				Role: deepseek.ChatMessageRoleAssistant,
 				Content: &model.ChatCompletionMessageContent{
 					StringValue: &h.DeepSeekContent,
 				},
 				ToolCalls: h.ToolCall,
 			},
-		}, h.ToolMessage...)
-		messages = append(messages, h.ToolMessage...)
+		}, h.CurrentToolMessage...)
+
+		h.ToolMessage = append(h.ToolMessage, h.CurrentToolMessage...)
+		messages = append(messages, h.CurrentToolMessage...)
+		h.CurrentToolMessage = make([]*model.ChatCompletionMessage, 0)
+		h.ToolCall = make([]*model.ToolCall, 0)
 		return h.send(ctx, messages)
 	}
 

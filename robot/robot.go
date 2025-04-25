@@ -84,12 +84,13 @@ func requestDeepseekAndResp(update tgbotapi.Update, bot *tgbotapi.BotAPI, conten
         }
     } else {
         dpReq = &deepseek.HuoshanReq{
-            Content:     content,
-            Update:      update,
-            Bot:         bot,
-            MessageChan: messageChan,
-            ToolCall:    []*model.ToolCall{},
-            ToolMessage: []*model.ChatCompletionMessage{},
+            Content:            content,
+            Update:             update,
+            Bot:                bot,
+            MessageChan:        messageChan,
+            ToolCall:           []*model.ToolCall{},
+            ToolMessage:        []*model.ChatCompletionMessage{},
+            CurrentToolMessage: []*model.ChatCompletionMessage{},
         }
     }
 
