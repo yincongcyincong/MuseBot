@@ -44,9 +44,10 @@ type DeepseekReq struct {
 	Model       string
 	Token       int
 
-	ToolCall        []deepseek.ToolCall
-	DeepSeekContent string
-	ToolMessage     []deepseek.ChatCompletionMessage
+	ToolCall           []deepseek.ToolCall
+	DeepSeekContent    string
+	ToolMessage        []deepseek.ChatCompletionMessage
+	CurrentToolMessage []deepseek.ChatCompletionMessage
 }
 
 // GetContent get comment from deepseek
@@ -243,7 +244,7 @@ func (d *DeepseekReq) send(ctx context.Context, messages []deepseek.ChatCompleti
 		}
 	}
 
-	if !hasTools || len(d.ToolMessage) == 0 {
+	if !hasTools || len(d.CurrentToolMessage) == 0 {
 		d.MessageChan <- msgInfoContent
 
 		data, _ := json.Marshal(d.ToolMessage)
@@ -254,14 +255,18 @@ func (d *DeepseekReq) send(ctx context.Context, messages []deepseek.ChatCompleti
 			Token:    d.Token,
 		}, true)
 	} else {
-		d.ToolMessage = append([]deepseek.ChatCompletionMessage{
+		d.CurrentToolMessage = append([]deepseek.ChatCompletionMessage{
 			{
 				Role:      deepseek.ChatMessageRoleAssistant,
 				Content:   d.DeepSeekContent,
 				ToolCalls: d.ToolCall,
 			},
-		}, d.ToolMessage...)
-		messages = append(messages, d.ToolMessage...)
+		}, d.CurrentToolMessage...)
+
+		d.ToolMessage = append(d.ToolMessage, d.CurrentToolMessage...)
+		messages = append(messages, d.CurrentToolMessage...)
+		d.CurrentToolMessage = make([]deepseek.ChatCompletionMessage, 0)
+		d.ToolCall = make([]deepseek.ToolCall, 0)
 		return d.send(ctx, messages)
 	}
 
@@ -326,11 +331,12 @@ func (d *DeepseekReq) requestToolsCall(ctx context.Context, choice deepseek.Stre
 			logger.Warn("exec tools fail", "err", err)
 			return err
 		}
-		d.ToolMessage = append(d.ToolMessage, deepseek.ChatCompletionMessage{
+		d.CurrentToolMessage = append(d.CurrentToolMessage, deepseek.ChatCompletionMessage{
 			Role:       constants.ChatMessageRoleTool,
 			Content:    toolsData,
 			ToolCallID: d.ToolCall[len(d.ToolCall)-1].ID,
 		})
+
 	}
 
 	logger.Info("send tool request", "function", d.ToolCall[len(d.ToolCall)-1].Function.Name,
