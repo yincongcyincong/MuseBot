@@ -6,18 +6,23 @@ automatically request MCP server data and interact with DeepSeek.
 
 ### Supported Services
 
-| MCP Client       | Description             | Environment Variables                                                                     |
-|------------------|-------------------------|-------------------------------------------------------------------------------------------|
-| AMAP             | AMAP MCP Service        | AMAP_API_KEY: AMAP access token                                                           |
-| GitHub           | GitHub MCP Service      | GITHUB_ACCESS_TOKEN: GitHub access token                                                  |
-| Victoria Metrics | VM Metrics Service      | VMUrl: Single-node VM URL, VMInsertUrl: Cluster write URL, VMSelectUrl: Cluster query URL |
-| Time             | Time MCP Service        | TIME_ZONE: local time zone                                                                |
-| Binance          | Binance MCP Service     | BINANCE_SWITCH                                                                            |
-| Play Wright      | Play Wright MCP Service | PLAY_WRIGHT_SWITCH                                                                        |
-| File System      | File MCP Service        | FILE_PATH: multi computer directory, split by ','                                         |
-| File Crawl       | FILE CRAWL MCP Service  | FILECRAWL_API_KEY                                                                         |
-| GoogleMap        | GoogleMap MCP Service   | GOOGLE_MAP_API_KEY                                                                        |
-| Notion           | Notion MCP Service      | NOTION_AUTHORIZATION  NOTION_VERSION                                                      |
+| MCP Client       | Description             | Environment Variables                                                                       |
+|------------------|-------------------------|---------------------------------------------------------------------------------------------|
+| AMAP             | AMAP MCP Service        | AMAP_API_KEY: AMAP access token                                                             |
+| GitHub           | GitHub MCP Service      | GITHUB_ACCESS_TOKEN: GitHub access token                                                    |
+| Victoria Metrics | VM Metrics Service      | VMUrl: Single-node VM URL, VMInsertUrl: Cluster write URL, VMSelectUrl: Cluster query URL   |
+| Time             | Time MCP Service        | TIME_ZONE: local time zone                                                                  |
+| Binance          | Binance MCP Service     | BINANCE_SWITCH                                                                              |
+| Play Wright      | Play Wright MCP Service | PLAY_WRIGHT_SWITCH                                                                          |
+| File System      | File MCP Service        | FILE_PATH: multi computer directory, split by ','                                           |
+| File Crawl       | FILE CRAWL MCP Service  | FILECRAWL_API_KEY                                                                           |
+| GoogleMap        | GoogleMap MCP Service   | GOOGLE_MAP_API_KEY                                                                          |
+| Notion           | Notion MCP Service      | NOTION_AUTHORIZATION,  NOTION_VERSION                                                       |
+| Aliyun           | Aliyun MCP Service      | ALIYUN_ACCESS_KEY_ID,  ALIYUN_ACCESS_KEY_SECRET                                             |
+| Airbnb           | Airbnb MCP Service      | AIRBNB_SWITCH                                                                               |
+| Twitter          | Twitter MCP Service     | TWITTER_API_KEY,  TWITTER_API_KEY_SECRET, TWITTER_ACCESS_TOKEN, TWITTER_ACCESS_TOKEN_SECRET |
+| Bitcoin          | Bitcoin MCP Service     | BITCOIN_SWITCH                                                                              |
+| Whatsapp         | Whatsapp MCP Service    | WHATSAPP_PATH, WHATSAPP_PYTHON_MAIN_FILE                                                    |
 
 ### Usage Instructions
 
@@ -70,5 +75,44 @@ automatically request MCP server data and interact with DeepSeek.
         - `NOTION_AUTHORIZATION`: Bearer token for accessing Notion APIs
         - `NOTION_VERSION`: API version (e.g., `2022-06-28`)
     - Enables interactions with Notion pages, databases, and blocks
-    - Suitable for automated workflows like creating pages, updating content, or syncing data between Notion and other sources
+    - Suitable for automated workflows like creating pages, updating content, or syncing data between Notion and other
+      sources
+
+11. **Aliyun Service**:
+    - Requires setting both `ALIYUN_ACCESS_KEY_ID` and `ALIYUN_ACCESS_KEY_SECRET` environment variables
+        - `ALIYUN_ACCESS_KEY_ID`: Access key ID for authenticating with Aliyun services
+        - `ALIYUN_ACCESS_KEY_SECRET`: Access key secret corresponding to the access key ID
+    - Enables interactions with Aliyun cloud services like computing, storage, and messaging
+    - Suitable for applications that integrate cloud functionalities provided by Aliyun
+
+
+12. **Airbnb Service**:
+    - Requires setting `AIRBNB_SWITCH` environment variable
+        - `AIRBNB_SWITCH`: A switch (usually `true`/`false`) to enable or disable the Airbnb integration
+    - Enables interactions with Airbnb-related data or services, depending on your application’s needs
+    - Suitable for automating workflows such as syncing listing information or managing bookings
+
+
+13. **Twitter Service**:
+    - Requires setting `TWITTER_API_KEY`, `TWITTER_API_KEY_SECRET`, `TWITTER_ACCESS_TOKEN`, and `TWITTER_ACCESS_TOKEN_SECRET` environment variables
+        - `TWITTER_API_KEY`: API key to authenticate with Twitter API
+        - `TWITTER_API_KEY_SECRET`: Secret key paired with the API key
+        - `TWITTER_ACCESS_TOKEN`: Token representing the user or app access
+        - `TWITTER_ACCESS_TOKEN_SECRET`: Secret corresponding to the access token
+    - Enables posting tweets, reading timelines, managing Twitter accounts, and interacting with Twitter APIs
+    - Suitable for building bots, analytics, or automation tools involving Twitter data
+
+
+14. **Bitcoin Service**:
+    - Requires setting `BITCOIN_SWITCH` environment variable
+        - `BITCOIN_SWITCH`: A switch (usually `true`/`false`) to enable or disable Bitcoin-related services
+    - Enables Bitcoin-related functionalities such as transaction tracking, wallet monitoring, or blockchain queries
+    - Suitable for applications that need to interact with Bitcoin networks or perform crypto-related workflows
+
+15. **Whatsapp Service**:
+    - Requires setting both `WHATSAPP_PATH` and `WHATSAPP_PYTHON_MAIN_FILE` environment variables
+        - `WHATSAPP_PATH`: Path to the Whatsapp service or project folder
+        - `WHATSAPP_PYTHON_MAIN_FILE`: Main Python script that runs the Whatsapp service
+    - Enables automated messaging, chatbots, or notifications through Whatsapp
+    - Suitable for customer service automation, notification systems, or personal chatbots using Whatsapp infrastructure
 

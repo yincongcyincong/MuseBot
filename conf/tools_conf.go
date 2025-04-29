@@ -179,12 +179,12 @@ func InitToolsConf() {
         *TwitterAccessTokenSecret = os.Getenv("TWITTER_ACCESS_TOKEN_SECRET")
     }
 
-    if os.Getenv("Whatsapp_Path") != "" {
-        *WhatsappPath = os.Getenv("Whatsapp_Path")
+    if os.Getenv("WHATSAPP_PATH") != "" {
+        *WhatsappPath = os.Getenv("WHATSAPP_PATH")
     }
 
-    if os.Getenv("Whatsapp_python_main_file") != "" {
-        *WhatsappPythonMainFile = os.Getenv("Whatsapp_python_main_file")
+    if os.Getenv("WHATSAPP_PYTHON_MAIN_FILE") != "" {
+        *WhatsappPythonMainFile = os.Getenv("WHATSAPP_PYTHON_MAIN_FILE")
     }
 
     logger.Info("TOOLS_CONF", "AmapApiKey", *AmapApiKey)
