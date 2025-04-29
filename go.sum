@@ -446,8 +446,8 @@ github.com/volcengine/volcengine-go-sdk v1.1.1/go.mod h1:gfEDc1s7SYaGoY+WH2dRrS3
 github.com/xdg-go/pbkdf2 v1.0.0/go.mod h1:jrpuAogTd400dnrH08LKmI/xc1MbPOebTwRqcT5RDeI=
 github.com/xdg-go/scram v1.0.2/go.mod h1:1WAq6h33pAW+iRreB34OORO2Nf7qel3VV3fjBj+hCSs=
 github.com/xdg-go/stringprep v1.0.2/go.mod h1:8F9zXuvzgwmyT5DUm4GUfZGDdT3W+LCvS6+da4O5kxM=
-github.com/yincongcyincong/mcp-client-go v0.0.8 h1:ueaKVnag89APcAmVISju/0dThs0V9NeuAb6UndBwWaQ=
-github.com/yincongcyincong/mcp-client-go v0.0.8/go.mod h1:0rWXa1HRtmJzQ2tITAiX0SOiku4qjm+ff7Y7l/88wI8=
+github.com/yincongcyincong/mcp-client-go v0.0.10 h1:eUUsiSy1UWkKe5EZmRhOpLFNbrmsc8FgbmKnjmE3gO4=
+github.com/yincongcyincong/mcp-client-go v0.0.10/go.mod h1:0rWXa1HRtmJzQ2tITAiX0SOiku4qjm+ff7Y7l/88wI8=
 github.com/yosida95/uritemplate/v3 v3.0.2 h1:Ed3Oyj9yrmi9087+NczuL5BwkIc4wvTb5zIM+UJPGz4=
 github.com/yosida95/uritemplate/v3 v3.0.2/go.mod h1:ILOh0sOhIJR3+L/8afwt/kE++YT040gmv5BQTMR2HP4=
 github.com/yuin/goldmark v1.1.25/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
