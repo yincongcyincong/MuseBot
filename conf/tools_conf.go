@@ -214,7 +214,7 @@ func InitToolsConf() {
 }
 
 func InitTools() {
-    ctx, _ := context.WithTimeout(context.Background(), 60*time.Second)
+    ctx, _ := context.WithTimeout(context.Background(), 120*time.Second)
 
     allTools := make(map[string]bool)
     for _, tool := range strings.Split(*AllTools, ",") {
@@ -316,9 +316,11 @@ func InitTools() {
             "", nil, nil, nil))
     }
 
-    err := clients.RegisterMCPClient(ctx, mcpParams)
-    if len(err) > 0 {
-        logger.Error("register mcp client error", "errors", err)
+    errs := clients.RegisterMCPClient(ctx, mcpParams)
+    if len(errs) > 0 {
+        for mcpServer, err := range errs {
+            logger.Error("register mcp client error", "server", mcpServer, "error", err)
+        }
     }
 
     if *AmapApiKey != "" {
