@@ -3,10 +3,6 @@ package conf
 import (
     "context"
     "flag"
-    "os"
-    "strings"
-    "time"
-
     "github.com/cohesion-org/deepseek-go"
     "github.com/volcengine/volcengine-go-sdk/service/arkruntime/model"
     "github.com/yincongcyincong/mcp-client-go/clients"
@@ -27,6 +23,8 @@ import (
     "github.com/yincongcyincong/mcp-client-go/clients/whatsapp"
     "github.com/yincongcyincong/mcp-client-go/utils"
     "github.com/yincongcyincong/telegram-deepseek-bot/logger"
+    "os"
+    "strings"
 )
 
 var (
@@ -214,7 +212,7 @@ func InitToolsConf() {
 }
 
 func InitTools() {
-    ctx, _ := context.WithTimeout(context.Background(), 120*time.Second)
+    ctx := context.Background()
 
     allTools := make(map[string]bool)
     for _, tool := range strings.Split(*AllTools, ",") {
