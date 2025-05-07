@@ -3,19 +3,18 @@ package conf
 import (
     "context"
     "flag"
-    "github.com/yincongcyincong/mcp-client-go/clients/airbnb"
-    "github.com/yincongcyincong/mcp-client-go/clients/aliyun"
-    "github.com/yincongcyincong/mcp-client-go/clients/bitcoin"
-    "github.com/yincongcyincong/mcp-client-go/clients/twitter"
-    "github.com/yincongcyincong/mcp-client-go/clients/whatsapp"
     "os"
     "strings"
+    "time"
 
     "github.com/cohesion-org/deepseek-go"
     "github.com/volcengine/volcengine-go-sdk/service/arkruntime/model"
     "github.com/yincongcyincong/mcp-client-go/clients"
+    "github.com/yincongcyincong/mcp-client-go/clients/airbnb"
+    "github.com/yincongcyincong/mcp-client-go/clients/aliyun"
     "github.com/yincongcyincong/mcp-client-go/clients/amap"
     "github.com/yincongcyincong/mcp-client-go/clients/binance"
+    "github.com/yincongcyincong/mcp-client-go/clients/bitcoin"
     "github.com/yincongcyincong/mcp-client-go/clients/filesystem"
     "github.com/yincongcyincong/mcp-client-go/clients/github"
     "github.com/yincongcyincong/mcp-client-go/clients/googlemap"
@@ -23,7 +22,9 @@ import (
     "github.com/yincongcyincong/mcp-client-go/clients/param"
     "github.com/yincongcyincong/mcp-client-go/clients/playwright"
     mcp_time "github.com/yincongcyincong/mcp-client-go/clients/time"
+    "github.com/yincongcyincong/mcp-client-go/clients/twitter"
     "github.com/yincongcyincong/mcp-client-go/clients/victoriametrics"
+    "github.com/yincongcyincong/mcp-client-go/clients/whatsapp"
     "github.com/yincongcyincong/mcp-client-go/utils"
     "github.com/yincongcyincong/telegram-deepseek-bot/logger"
 )
@@ -213,7 +214,7 @@ func InitToolsConf() {
 }
 
 func InitTools() {
-    ctx := context.Background()
+    ctx, _ := context.WithTimeout(context.Background(), 1*time.Second)
 
     allTools := make(map[string]bool)
     for _, tool := range strings.Split(*AllTools, ",") {
