@@ -214,7 +214,7 @@ func InitToolsConf() {
 }
 
 func InitTools() {
-    ctx, _ := context.WithTimeout(context.Background(), 1*time.Second)
+    ctx, _ := context.WithTimeout(context.Background(), 60*time.Second)
 
     allTools := make(map[string]bool)
     for _, tool := range strings.Split(*AllTools, ",") {
