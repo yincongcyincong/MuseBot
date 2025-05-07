@@ -16,15 +16,21 @@ telegram群: https://t.me/+WtaMcDpaMOlhZTE1, 或者尝试一下GWSbot。
 - ⏳ **流式输出**：流式返回回复，减少等待时间。
 - 🎯 **自定义命令**：支持自定义命令扩展功能。
 - 🏗 **简易部署**：支持本地或云服务器部署。
-- 📈 **自定义链式命令**：自定义 HTTP 请求链，结合 DeepSeek 实现数据分析、文章解析等功能 [go](#高级用法)。
+- 👀 **识别图像**: 支持图像输入与 DeepSeek 沟通, 详见 [图像文档](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/static/doc/imageconf_ZH.md).
+- 🎺 **支持语音**: 支持语音输入与 DeepSeek 沟通, 详见 [语音文档](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/static/doc/audioconf_ZH.md).
+- 🐂 **函数调用**: 支持将 mcp 协议转为函数调用, 详见 [函数调用文档](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/static/doc/functioncall_ZH.md).
+
 
 ---
 
-## 🤖 使用示例
+## 🤖 文本示例
+<img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/f6b5cdc7-836f-410f-a784-f7074a672c0e" />
+<img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/621861a4-88d1-4796-bf35-e64698ab1b7b" />
 
-[使用视频](https://github.com/yincongcyincong/telegram-deepseek-bot/wiki/Usage-Video)
+## 🎺 多模态示例
+<img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/b4057dce-9ea9-4fcc-b7fa-bcc297482542" />
+<img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/67ec67e0-37a4-4998-bee0-b50463b87125" />
 
----
 
 ## 📌 环境要求
 
@@ -95,6 +101,7 @@ docker run -d -v /home/user/data:/app/data -e TELEGRAM_BOT_TOKEN="你的Telegram
 | ADMIN_USER_IDS	                | 管理员，逗号分隔，可使用管理员命令                                                                   | -                         |
 | NEED_AT_BOT	                   | 在群组中是否需要at机器人触发                                                                     | false                     |
 | MAX_USER_CHAT	                 | 每个用户的最大现有聊天次数                                                             | 2                         |
+| VIDEO_TOKEN	                   | 火山引擎 Api key[文档](https://www.volcengine.com/docs/82379/1399008#b00dee71)                                                | -                         |
 
 
 ### 其他配置
