@@ -17,7 +17,7 @@ require (
 	github.com/stretchr/testify v1.10.0
 	github.com/volcengine/volc-sdk-golang v1.0.196
 	github.com/volcengine/volcengine-go-sdk v1.1.1
-	github.com/yincongcyincong/mcp-client-go v0.0.10
+	github.com/yincongcyincong/mcp-client-go v0.0.11
 	golang.org/x/text v0.22.0
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 )
@@ -32,7 +32,7 @@ require (
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/joho/godotenv v1.5.1 // indirect
-	github.com/mark3labs/mcp-go v0.18.0 // indirect
+	github.com/mark3labs/mcp-go v0.25.0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
@@ -42,6 +42,7 @@ require (
 	github.com/prometheus/common v0.30.0 // indirect
 	github.com/prometheus/procfs v0.7.3 // indirect
 	github.com/sashabaranov/go-openai v1.38.1 // indirect
+	github.com/spf13/cast v1.7.1 // indirect
 	github.com/yosida95/uritemplate/v3 v3.0.2 // indirect
 	golang.org/x/net v0.35.0 // indirect
 	golang.org/x/sys v0.30.0 // indirect
