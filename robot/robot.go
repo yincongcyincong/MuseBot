@@ -82,6 +82,16 @@ func requestDeepseekAndResp(update tgbotapi.Update, bot *tgbotapi.BotAPI, conten
 			ToolMessage:        []godeepseek.ChatCompletionMessage{},
 			CurrentToolMessage: []godeepseek.ChatCompletionMessage{},
 		}
+	} else if *conf.DeepseekType == param.DeepSeekLlava {
+		dpReq = &deepseek.OllamaDeepseekReq{
+			Content:            content,
+			Update:             update,
+			Bot:                bot,
+			MessageChan:        messageChan,
+			ToolCall:           []godeepseek.ToolCall{},
+			ToolMessage:        []godeepseek.ChatCompletionMessage{},
+			CurrentToolMessage: []godeepseek.ChatCompletionMessage{},
+		}
 	} else {
 		dpReq = &deepseek.HuoshanReq{
 			Content:            content,
