@@ -1,7 +1,8 @@
 package param
 
 const (
-	DeepSeek = "deepseek"
+	DeepSeek      = "deepseek"
+	DeepSeekLlava = "deepseek-ollama"
 
 	LLAVA = "llava:latest"
 
