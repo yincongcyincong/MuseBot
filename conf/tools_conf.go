@@ -9,6 +9,7 @@ import (
 	"github.com/yincongcyincong/mcp-client-go/clients/airbnb"
 	"github.com/yincongcyincong/mcp-client-go/clients/aliyun"
 	"github.com/yincongcyincong/mcp-client-go/clients/amap"
+	"github.com/yincongcyincong/mcp-client-go/clients/baidumap"
 	"github.com/yincongcyincong/mcp-client-go/clients/binance"
 	"github.com/yincongcyincong/mcp-client-go/clients/bitcoin"
 	"github.com/yincongcyincong/mcp-client-go/clients/filesystem"
@@ -53,6 +54,7 @@ var (
 	TwitterAccessTokenSecret *string
 	WhatsappPath             *string
 	WhatsappPythonMainFile   *string
+	BaidumapApiKey           *string
 
 	AllTools *string
 
@@ -86,6 +88,7 @@ func InitToolsConf() {
 	TwitterAccessTokenSecret = flag.String("twitter_access_token_secret", "", "twitter_access_token_secret")
 	WhatsappPath = flag.String("whatapp_path", "", "whatapp_path")
 	WhatsappPythonMainFile = flag.String("wahtsapp_python_main_file", "", "wahtsapp_python_main_file")
+	BaidumapApiKey = flag.String("baidumap_api_key", "", "baidumap_api_key")
 
 	if os.Getenv("AMAP_API_KEY") != "" {
 		*AmapApiKey = os.Getenv("AMAP_API_KEY")
@@ -187,6 +190,10 @@ func InitToolsConf() {
 		*WhatsappPythonMainFile = os.Getenv("WHATSAPP_PYTHON_MAIN_FILE")
 	}
 
+	if os.Getenv("BAIDUMAP_API_KEY") != "" {
+		*BaidumapApiKey = os.Getenv("BAIDUMAP_API_KEY")
+	}
+
 	logger.Info("TOOLS_CONF", "AmapApiKey", *AmapApiKey)
 	logger.Info("TOOLS_CONF", "AmapTools", *AllTools)
 	logger.Info("TOOLS_CONF", "GithubAccessToken", *GithubAccessToken)
@@ -209,6 +216,7 @@ func InitToolsConf() {
 	logger.Info("TOOLS_CONF", "TwitterApiSecretKey", *TwitterApiSecretKey)
 	logger.Info("TOOLS_CONF", "TwitterAccessTokenSecret", *TwitterAccessTokenSecret)
 	logger.Info("TOOLS_CONF", "TwitterAccessToken", *TwitterAccessToken)
+	logger.Info("TOOLS_CONF", "BaidumapApiKey", *BaidumapApiKey)
 
 }
 
@@ -316,6 +324,12 @@ func InitTools() {
 			"", nil, nil, nil))
 	}
 
+	if *BaidumapApiKey != "" {
+		mcpParams = append(mcpParams, baidumap.InitBaidumapMCPClient(&baidumap.BaidumapParam{
+			BaidumapApiKey: *BaidumapApiKey,
+		}, "", nil, nil, nil))
+	}
+
 	errs := clients.RegisterMCPClient(ctx, mcpParams)
 	if len(errs) > 0 {
 		for mcpServer, err := range errs {
@@ -381,6 +395,10 @@ func InitTools() {
 
 	if *WhatsappPath != "" && *WhatsappPythonMainFile != "" {
 		InsertTools(whatsapp.UvWhatsAppMcpServer, allTools)
+	}
+
+	if *BaidumapApiKey != "" {
+		InsertTools(baidumap.NpxBaidumapMcpServer, allTools)
 	}
 
 }
