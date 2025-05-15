@@ -283,6 +283,8 @@ func handleCommand(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 		sendVideo(update, bot)
 	case "help":
 		sendHelpConfigurationOptions(update, bot)
+	case "task":
+		sendTask(update, bot)
 	}
 
 	if checkAdminUser(update) {
@@ -611,6 +613,50 @@ func sendFailMessage(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	i18n.SendMsg(update.CallbackQuery.Message.Chat.ID, "set_mode", bot, nil, update.CallbackQuery.Message.MessageID)
 }
 
+func sendTask(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
+	if utils.CheckUserChatExceed(update, bot) {
+		return
+	}
+
+	defer func() {
+		utils.DecreaseUserChat(update)
+	}()
+
+	chatId, replyToMessageID, userId := utils.GetChatIdAndMsgIdAndUserID(update)
+	if checkUserTokenExceed(update, bot) {
+		logger.Warn("user token exceed", "userID", userId)
+		return
+	}
+
+	prompt := ""
+	if update.Message != nil {
+		prompt = update.Message.Text
+	}
+	prompt = utils.ReplaceCommand(prompt, "/task", bot.Self.UserName)
+	if len(prompt) == 0 {
+		err := utils.ForceReply(chatId, replyToMessageID, "task_empty_content", bot)
+		if err != nil {
+			logger.Warn("force reply fail", "err", err)
+		}
+		return
+	}
+
+	// send response message
+	messageChan := make(chan *param.MsgInfo)
+
+	dpReq := &deepseek.DeepseekTaskReq{
+		Content:     prompt,
+		Update:      update,
+		Bot:         bot,
+		MessageChan: messageChan,
+	}
+
+	go dpReq.ExecuteTask()
+
+	go handleUpdate(messageChan, update, bot)
+
+}
+
 func sendVideo(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	if utils.CheckUserChatExceed(update, bot) {
 		return
@@ -830,5 +876,7 @@ func ExecuteForceReply(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 		sendImg(update, bot)
 	case i18n.GetMessage(*conf.Lang, "video_empty_content", nil):
 		sendVideo(update, bot)
+	case i18n.GetMessage(*conf.Lang, "task_empty_content", nil):
+		sendTask(update, bot)
 	}
 }

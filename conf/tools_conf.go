@@ -29,6 +29,13 @@ import (
 	"time"
 )
 
+type AgentInfo struct {
+	Name         string
+	Description  string
+	DeepseekTool []deepseek.Tool
+	VolTool      []*model.Tool
+}
+
 var (
 	AmapApiKey               *string
 	GithubAccessToken        *string
@@ -60,6 +67,7 @@ var (
 
 	DeepseekTools = make([]deepseek.Tool, 0)
 	VolTools      = make([]*model.Tool, 0)
+	TaskTools     = make(map[string]*AgentInfo)
 )
 
 func InitToolsConf() {
@@ -410,6 +418,12 @@ func InsertTools(clientName string, allTools map[string]bool) {
 	} else {
 		dpTools := utils.TransToolsToDPFunctionCall(c.Tools)
 		volTools := utils.TransToolsToVolFunctionCall(c.Tools)
+		TaskTools[amap.NpxAmapMapsMcpServer] = &AgentInfo{
+			Name:         amap.NpxAmapMapsMcpServer,
+			Description:  "An intelligent agent that provides users with location-based services, including real-time weather forecasts, map-based information retrieval, and geographic insights. Users can ask about the current weather in a specific city, get recommendations based on geographic locations, or query distances and directions between places.",
+			DeepseekTool: dpTools,
+			VolTool:      volTools,
+		}
 
 		if allTools["*"] {
 			DeepseekTools = append(DeepseekTools, dpTools...)
