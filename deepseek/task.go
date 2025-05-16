@@ -322,6 +322,8 @@ func (d *DeepseekTaskReq) send(ctx context.Context, messages []deepseek.ChatComp
 		}
 	}
 
+	d.MessageChan <- msgInfoContent
+
 	return nil
 }
 

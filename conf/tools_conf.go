@@ -63,7 +63,6 @@ var (
 	WhatsappPythonMainFile   *string
 	BaidumapApiKey           *string
 
-	AllTools      *string
 	DeepseekTools = make([]deepseek.Tool, 0)
 	VolTools      = make([]*model.Tool, 0)
 
@@ -121,7 +120,6 @@ var (
 
 func InitToolsConf() {
 	AmapApiKey = flag.String("amap_api_key", "", "amap api key")
-	AllTools = flag.String("allow_tools", "*", "allow tools")
 	GithubAccessToken = flag.String("github_access_token", "", "github access token")
 	VMUrl = flag.String("vm_url", "", "vm url")
 	VMInsertUrl = flag.String("vm_insert_url", "", "vm insert url")
@@ -149,10 +147,6 @@ func InitToolsConf() {
 
 	if os.Getenv("AMAP_API_KEY") != "" {
 		*AmapApiKey = os.Getenv("AMAP_API_KEY")
-	}
-
-	if os.Getenv("ALLOW_TOOLS") != "" {
-		*AllTools = os.Getenv("ALLOW_TOOLS")
 	}
 
 	if os.Getenv("GITHUB_ACCESS_TOKEN") != "" {
@@ -252,7 +246,6 @@ func InitToolsConf() {
 	}
 
 	logger.Info("TOOLS_CONF", "AmapApiKey", *AmapApiKey)
-	logger.Info("TOOLS_CONF", "AmapTools", *AllTools)
 	logger.Info("TOOLS_CONF", "GithubAccessToken", *GithubAccessToken)
 	logger.Info("TOOLS_CONF", "VMUrl", *VMUrl)
 	logger.Info("TOOLS_CONF", "VMInsertUrl", *VMInsertUrl)
