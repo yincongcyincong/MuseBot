@@ -3,17 +3,26 @@ package deepseek
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"github.com/cohesion-org/deepseek-go"
 	"github.com/cohesion-org/deepseek-go/constants"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/yincongcyincong/mcp-client-go/clients"
 	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
 	"github.com/yincongcyincong/telegram-deepseek-bot/i18n"
 	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
+	"github.com/yincongcyincong/telegram-deepseek-bot/metrics"
 	"github.com/yincongcyincong/telegram-deepseek-bot/param"
 	"github.com/yincongcyincong/telegram-deepseek-bot/utils"
+	"io"
 	"net/http"
 	"net/url"
+	"regexp"
 	"time"
+)
+
+var (
+	jsonRe = regexp.MustCompile(`(\{\s*"plan":\s*\[\s*(?:\{\s*"name":\s*"[^"]*",\s*"description":\s*"[^"]*"\s*\}\s*,?\s*)+\]\s*\})`)
 )
 
 type DeepseekTaskReq struct {
@@ -25,9 +34,18 @@ type DeepseekTaskReq struct {
 	Token       int
 }
 
-type TaskInfo struct {
+type Task struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
+}
+
+type TaskInfo struct {
+	Plan []*Task `json:"plan"`
+}
+
+type TaskResult struct {
+	TaskName   string
+	TaskResult string
 }
 
 func (d *DeepseekTaskReq) ExecuteTask() {
@@ -63,9 +81,9 @@ func (d *DeepseekTaskReq) ExecuteTask() {
 	taskParam := make(map[string]interface{})
 	taskParam["assign_param"] = make([]map[string]string, 0)
 	taskParam["user_task"] = d.Content
-	for _, tool := range conf.TaskTools {
+	for name, tool := range conf.TaskTools {
 		taskParam["assign_param"] = append(taskParam["assign_param"].([]map[string]string), map[string]string{
-			"tool_name": tool.Name,
+			"tool_name": name,
 			"tool_desc": tool.Description,
 		})
 	}
@@ -90,6 +108,7 @@ func (d *DeepseekTaskReq) ExecuteTask() {
 		Messages:         messages,
 	}
 
+	// assign task
 	response, err := client.CreateChatCompletion(ctx, request)
 	if err != nil {
 		logger.Error("ChatCompletionStream error", "updateMsgID", updateMsgID, "err", err)
@@ -101,11 +120,223 @@ func (d *DeepseekTaskReq) ExecuteTask() {
 		return
 	}
 
-	plans := make([]*TaskInfo, 0)
-	err = json.Unmarshal([]byte(response.Choices[0].Message.Content), &plans)
-	if err != nil {
-		logger.Error("parse content fail", "err", err)
+	matches := jsonRe.FindAllString(response.Choices[0].Message.Content, -1)
+	plans := new(TaskInfo)
+	for _, match := range matches {
+		err = json.Unmarshal([]byte(match), &plans)
+		if err != nil {
+			logger.Error("json umarshal fail", "err", err)
+		}
+	}
+
+	if len(plans.Plan) == 0 {
+		logger.Error("no plan created!")
 		return
 	}
 
+	summaryMsg := map[string][]deepseek.ChatCompletionMessage{}
+	summaryAQ := map[string]string{}
+	for _, plan := range plans.Plan {
+		if _, ok := summaryMsg[plan.Name]; !ok {
+			summaryMsg[plan.Name] = make([]deepseek.ChatCompletionMessage, 0)
+		}
+
+		summaryMsg[plan.Name] = append(summaryMsg[plan.Name], deepseek.ChatCompletionMessage{
+			Role:    constants.ChatMessageRoleUser,
+			Content: plan.Description,
+		})
+
+		logger.Info("execute task", "task", plan.Name)
+		summaryAQ[plan.Description] = d.requestTask(ctx, summaryMsg, client, plan)
+	}
+
+	// summary
+	summaryParam := make(map[string]interface{})
+	summaryParam["aq"] = make([]map[string]string, 0)
+	summaryParam["user_task"] = d.Content
+	for t, a := range summaryAQ {
+		summaryParam["aq"] = append(summaryParam["aq"].([]map[string]string), map[string]string{
+			"task":   t,
+			"answer": a,
+		})
+	}
+	summaryDPMsg := []deepseek.ChatCompletionMessage{
+		{
+			Role:    constants.ChatMessageRoleUser,
+			Content: i18n.GetMessage(*conf.Lang, "summary_task_prompt", summaryParam),
+		},
+	}
+	err = d.send(ctx, summaryDPMsg)
+	if err != nil {
+		logger.Warn("request summary fail", "err", err)
+	}
+}
+
+func (d *DeepseekTaskReq) requestTask(ctx context.Context, summaryMsg map[string][]deepseek.ChatCompletionMessage,
+	client *deepseek.Client, plan *Task) string {
+	request := &deepseek.ChatCompletionRequest{
+		Model:            d.Model,
+		MaxTokens:        *conf.MaxTokens,
+		TopP:             float32(*conf.TopP),
+		FrequencyPenalty: float32(*conf.FrequencyPenalty),
+		TopLogProbs:      *conf.TopLogProbs,
+		LogProbs:         *conf.LogProbs,
+		Stop:             conf.Stop,
+		PresencePenalty:  float32(*conf.PresencePenalty),
+		Temperature:      float32(*conf.Temperature),
+		Tools:            conf.TaskTools[plan.Name].DeepseekTool,
+		Messages:         summaryMsg[plan.Name],
+	}
+
+	response, err := client.CreateChatCompletion(ctx, request)
+	if err != nil {
+		logger.Error("ChatCompletionStream error", "err", err)
+		return ""
+	}
+
+	hasTools := false
+	msgContent := ""
+	for _, choice := range response.Choices {
+		if len(choice.Message.ToolCalls) > 0 {
+			summaryMsg[plan.Name] = d.requestToolsCall(ctx, choice.Message.ToolCalls, summaryMsg[plan.Name])
+			hasTools = true
+		}
+		msgContent += choice.Message.Content
+	}
+
+	if hasTools {
+		return d.requestTask(ctx, summaryMsg, client, plan)
+	}
+
+	// deepseek merge into msg
+
+	return msgContent
+}
+
+func (d *DeepseekTaskReq) requestToolsCall(ctx context.Context, toolsCall []deepseek.ToolCall,
+	msg []deepseek.ChatCompletionMessage) []deepseek.ChatCompletionMessage {
+	msg = append(msg, deepseek.ChatCompletionMessage{
+		Role:      deepseek.ChatMessageRoleAssistant,
+		Content:   "",
+		ToolCalls: toolsCall,
+	})
+	for _, tool := range toolsCall {
+		property := make(map[string]interface{})
+		err := json.Unmarshal([]byte(tool.Function.Arguments), &property)
+		if err != nil {
+			return nil
+		}
+
+		mc, err := clients.GetMCPClientByToolName(tool.Function.Name)
+		if err != nil {
+			logger.Warn("get mcp fail", "err", err)
+			return nil
+		}
+
+		logger.Info("exec tool", "name", tool.Function.Name)
+		toolsData, err := mc.ExecTools(ctx, tool.Function.Name, property)
+		if err != nil {
+			logger.Warn("exec tools fail", "err", err)
+			return nil
+		}
+		msg = append(msg, deepseek.ChatCompletionMessage{
+			Role:       constants.ChatMessageRoleTool,
+			Content:    toolsData,
+			ToolCallID: tool.ID,
+		})
+	}
+
+	return msg
+}
+
+func (d *DeepseekTaskReq) send(ctx context.Context, messages []deepseek.ChatCompletionMessage) error {
+	_, updateMsgID, _ := utils.GetChatIdAndMsgIdAndUserID(d.Update)
+	// set deepseek proxy
+	httpClient := &http.Client{
+		Timeout: 30 * time.Minute,
+	}
+
+	if *conf.DeepseekProxy != "" {
+		proxy, err := url.Parse(*conf.DeepseekProxy)
+		if err != nil {
+			logger.Error("parse deepseek proxy error", "err", err)
+		} else {
+			httpClient.Transport = &http.Transport{
+				Proxy: http.ProxyURL(proxy),
+			}
+		}
+	}
+
+	client, err := deepseek.NewClientWithOptions(*conf.DeepseekToken,
+		deepseek.WithBaseURL(*conf.CustomUrl), deepseek.WithHTTPClient(httpClient))
+	if err != nil {
+		logger.Error("Error creating deepseek client", "err", err)
+		return err
+	}
+
+	request := &deepseek.StreamChatCompletionRequest{
+		Model:  d.Model,
+		Stream: true,
+		StreamOptions: deepseek.StreamOptions{
+			IncludeUsage: true,
+		},
+		MaxTokens:        *conf.MaxTokens,
+		TopP:             float32(*conf.TopP),
+		FrequencyPenalty: float32(*conf.FrequencyPenalty),
+		TopLogProbs:      *conf.TopLogProbs,
+		LogProbs:         *conf.LogProbs,
+		Stop:             conf.Stop,
+		PresencePenalty:  float32(*conf.PresencePenalty),
+		Temperature:      float32(*conf.Temperature),
+	}
+
+	request.Messages = messages
+
+	stream, err := client.CreateChatCompletionStream(ctx, request)
+	if err != nil {
+		logger.Error("ChatCompletionStream error", "updateMsgID", updateMsgID, "err", err)
+		return err
+	}
+	defer stream.Close()
+	msgInfoContent := &param.MsgInfo{
+		SendLen: FirstSendLen,
+	}
+
+	for {
+		response, err := stream.Recv()
+		if errors.Is(err, io.EOF) {
+			logger.Info("Stream finished", "updateMsgID", updateMsgID)
+			break
+		}
+		if err != nil {
+			logger.Warn("Stream error", "updateMsgID", updateMsgID, "err", err)
+			break
+		}
+		for _, choice := range response.Choices {
+			d.sendMsg(msgInfoContent, choice)
+		}
+
+		if response.Usage != nil {
+			d.Token += response.Usage.TotalTokens
+			metrics.TotalTokens.Add(float64(d.Token))
+		}
+	}
+
+	return nil
+}
+
+func (d *DeepseekTaskReq) sendMsg(msgInfoContent *param.MsgInfo, choice deepseek.StreamChoices) {
+	// exceed max telegram one message length
+	if utils.Utf16len(msgInfoContent.Content) > OneMsgLen {
+		d.MessageChan <- msgInfoContent
+		msgInfoContent = &param.MsgInfo{
+			SendLen: NonFirstSendLen,
+		}
+	}
+
+	msgInfoContent.Content += choice.Delta.Content
+	if len(msgInfoContent.Content) > msgInfoContent.SendLen {
+		d.MessageChan <- msgInfoContent
+		msgInfoContent.SendLen += NonFirstSendLen
+	}
 }

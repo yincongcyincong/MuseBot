@@ -29,11 +29,11 @@ func InitI18n() {
 
 	// 3. Load translation files
 	// English translations
-	if _, err := bundle.LoadMessageFile("./conf/i18n.en.json"); err != nil {
+	if _, err := bundle.LoadMessageFile("./conf/i18n/i18n.en.json"); err != nil {
 		logger.Fatal("Failed to load English translation file", "err", err)
 	}
 	// Chinese translations
-	if _, err := bundle.LoadMessageFile("./conf/i18n.zh.json"); err != nil {
+	if _, err := bundle.LoadMessageFile("./conf/i18n/i18n.zh.json"); err != nil {
 		logger.Fatal("Failed to load Chinese translation file", "err", err)
 	}
 
