@@ -30,10 +30,10 @@ import (
 )
 
 type AgentInfo struct {
-	Name         string
 	Description  string
 	DeepseekTool []deepseek.Tool
 	VolTool      []*model.Tool
+	ToolsName    []string
 }
 
 var (
@@ -63,11 +63,60 @@ var (
 	WhatsappPythonMainFile   *string
 	BaidumapApiKey           *string
 
-	AllTools *string
-
+	AllTools      *string
 	DeepseekTools = make([]deepseek.Tool, 0)
 	VolTools      = make([]*model.Tool, 0)
-	TaskTools     = make(map[string]*AgentInfo)
+
+	TaskTools = map[string]*AgentInfo{
+		"map-agent": {
+			Description:  "Provides geographic services such as location lookup, route planning, and map navigation.",
+			DeepseekTool: make([]deepseek.Tool, 0),
+			VolTool:      make([]*model.Tool, 0),
+			ToolsName:    []string{amap.NpxAmapMapsMcpServer, googlemap.NpxGooglemapMcpServer, baidumap.NpxBaidumapMcpServer},
+		},
+		"git-agent": {
+			Description:  "Performs Git operations and integrates with GitHub to manage repositories, pull requests, issues, and workflows.",
+			DeepseekTool: make([]deepseek.Tool, 0),
+			VolTool:      make([]*model.Tool, 0),
+			ToolsName:    []string{github.NpxModelContextProtocolGithubServer},
+		},
+		"browser-agent": {
+			Description:  "Simulates browser behavior for tasks like web navigation, data scraping, and automated interactions with web pages.",
+			DeepseekTool: make([]deepseek.Tool, 0),
+			VolTool:      make([]*model.Tool, 0),
+			ToolsName:    []string{playwright.SsePlaywrightMcpServer},
+		},
+		"vm-agent": {
+			Description:  "Manages virtual machines, including starting, stopping, rebooting, monitoring status, and executing remote commands.",
+			DeepseekTool: make([]deepseek.Tool, 0),
+			VolTool:      make([]*model.Tool, 0),
+			ToolsName:    []string{victoriametrics.NpxVictoriaMetricsMcpServer},
+		},
+		"time-agent": {
+			Description:  "Handles time-related functions such as retrieving the current time, converting time zones, and scheduling tasks.",
+			DeepseekTool: make([]deepseek.Tool, 0),
+			VolTool:      make([]*model.Tool, 0),
+			ToolsName:    []string{mcp_time.UvTimeMcpServer},
+		},
+		"encrypt-agent": {
+			Description:  "Provides cryptocurrency-related functions including wallet management, real-time market data, and blockchain transactions.",
+			DeepseekTool: make([]deepseek.Tool, 0),
+			VolTool:      make([]*model.Tool, 0),
+			ToolsName:    []string{bitcoin.NpxBitcoinMcpServer, binance.NpxBinanceMcpServer},
+		},
+		"twitter-agent": {
+			Description:  "Integrates with Twitter to post tweets, fetch user data, read timelines, and analyze trends.",
+			DeepseekTool: make([]deepseek.Tool, 0),
+			VolTool:      make([]*model.Tool, 0),
+			ToolsName:    []string{twitter.NpxTwitterMcpServer},
+		},
+		"whatapp-agent": {
+			Description:  "Connects to WhatsApp for sending messages, reading conversations, and managing contacts.",
+			DeepseekTool: make([]deepseek.Tool, 0),
+			VolTool:      make([]*model.Tool, 0),
+			ToolsName:    []string{whatsapp.UvWhatsAppMcpServer},
+		},
+	}
 )
 
 func InitToolsConf() {
@@ -232,11 +281,6 @@ func InitTools() {
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
-	allTools := make(map[string]bool)
-	for _, tool := range strings.Split(*AllTools, ",") {
-		allTools[tool] = true
-	}
-
 	mcpParams := make([]*param.MCPClientConf, 0)
 	if *AmapApiKey != "" {
 		mcpParams = append(mcpParams,
@@ -346,98 +390,91 @@ func InitTools() {
 	}
 
 	if *AmapApiKey != "" {
-		InsertTools(amap.NpxAmapMapsMcpServer, allTools)
+		InsertTools(amap.NpxAmapMapsMcpServer)
 	}
 
 	if *GithubAccessToken != "" {
-		InsertTools(github.NpxModelContextProtocolGithubServer, allTools)
+		InsertTools(github.NpxModelContextProtocolGithubServer)
 	}
 
 	if *VMUrl != "" || *VMInsertUrl != "" || *VMSelectUrl != "" {
-		InsertTools(victoriametrics.NpxVictoriaMetricsMcpServer, allTools)
+		InsertTools(victoriametrics.NpxVictoriaMetricsMcpServer)
 	}
 
 	if *BinanceSwitch {
-		InsertTools(binance.NpxBinanceMcpServer, allTools)
+		InsertTools(binance.NpxBinanceMcpServer)
 	}
 
 	if *TimeZone != "" {
-		InsertTools(mcp_time.UvTimeMcpServer, allTools)
+		InsertTools(mcp_time.UvTimeMcpServer)
 	}
 
 	if *PlayWrightSwitch {
 		if *PlayWrightSSEServer != "" {
-			InsertTools(playwright.SsePlaywrightMcpServer, allTools)
+			InsertTools(playwright.SsePlaywrightMcpServer)
 		} else {
-			InsertTools(playwright.NpxPlaywrightMcpServer, allTools)
+			InsertTools(playwright.NpxPlaywrightMcpServer)
 		}
 	}
 
 	if *FilePath != "" {
-		InsertTools(filesystem.NpxFilesystemMcpServer, allTools)
+		InsertTools(filesystem.NpxFilesystemMcpServer)
 	}
 
 	if *GoogleMapApiKey != "" {
-		InsertTools(googlemap.NpxGooglemapMcpServer, allTools)
+		InsertTools(googlemap.NpxGooglemapMcpServer)
 	}
 
 	if *NotionAuthorization != "" && *NotionVersion != "" {
-		InsertTools(notion.NpxNotionMcpServer, allTools)
+		InsertTools(notion.NpxNotionMcpServer)
 	}
 
 	if *AliyunAccessKeyID != "" && *AliyunAccessKeySecret != "" {
-		InsertTools(aliyun.UvxAliyunMcpServer, allTools)
+		InsertTools(aliyun.UvxAliyunMcpServer)
 	}
 
 	if *AirBnbSwitch {
-		InsertTools(airbnb.NpxAirbnbMcpServer, allTools)
+		InsertTools(airbnb.NpxAirbnbMcpServer)
 	}
 
 	if *BitCoinSwitch {
-		InsertTools(bitcoin.NpxBitcoinMcpServer, allTools)
+		InsertTools(bitcoin.NpxBitcoinMcpServer)
 	}
 
 	if *TwitterApiKey != "" && *TwitterApiSecretKey != "" && *TwitterAccessToken != "" && *TwitterAccessTokenSecret != "" {
-		InsertTools(twitter.NpxTwitterMcpServer, allTools)
+		InsertTools(twitter.NpxTwitterMcpServer)
 	}
 
 	if *WhatsappPath != "" && *WhatsappPythonMainFile != "" {
-		InsertTools(whatsapp.UvWhatsAppMcpServer, allTools)
+		InsertTools(whatsapp.UvWhatsAppMcpServer)
 	}
 
 	if *BaidumapApiKey != "" {
-		InsertTools(baidumap.NpxBaidumapMcpServer, allTools)
+		InsertTools(baidumap.NpxBaidumapMcpServer)
+	}
+
+	for name, tool := range TaskTools {
+		if len(tool.DeepseekTool) == 0 || len(tool.VolTool) == 0 {
+			delete(TaskTools, name)
+		}
 	}
 
 }
 
-func InsertTools(clientName string, allTools map[string]bool) {
+func InsertTools(clientName string) {
 	c, err := clients.GetMCPClient(clientName)
 	if err != nil {
 		logger.Error("get client fail", "err", err)
 	} else {
 		dpTools := utils.TransToolsToDPFunctionCall(c.Tools)
 		volTools := utils.TransToolsToVolFunctionCall(c.Tools)
-		TaskTools[amap.NpxAmapMapsMcpServer] = &AgentInfo{
-			Name:         amap.NpxAmapMapsMcpServer,
-			Description:  "An intelligent agent that provides users with location-based services, including real-time weather forecasts, map-based information retrieval, and geographic insights. Users can ask about the current weather in a specific city, get recommendations based on geographic locations, or query distances and directions between places.",
-			DeepseekTool: dpTools,
-			VolTool:      volTools,
-		}
-
-		if allTools["*"] {
-			DeepseekTools = append(DeepseekTools, dpTools...)
-			VolTools = append(VolTools, volTools...)
-		} else {
-			for _, dpTool := range dpTools {
-				if _, ok := allTools[dpTool.Function.Name]; ok {
-					DeepseekTools = append(DeepseekTools, dpTool)
-				}
-			}
-
-			for _, volTool := range volTools {
-				if _, ok := allTools[volTool.Function.Name]; ok {
-					VolTools = append(VolTools, volTool)
+		DeepseekTools = append(DeepseekTools, dpTools...)
+		VolTools = append(VolTools, volTools...)
+		for _, tool := range TaskTools {
+			for _, n := range tool.ToolsName {
+				if n == clientName {
+					tool.DeepseekTool = dpTools
+					tool.VolTool = volTools
 				}
 			}
 		}

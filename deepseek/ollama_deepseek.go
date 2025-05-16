@@ -156,7 +156,6 @@ func (d *OllamaDeepseekReq) send(ctx context.Context, messages []deepseek.ChatCo
 		Stop:             conf.Stop,
 		PresencePenalty:  float32(*conf.PresencePenalty),
 		Temperature:      float32(*conf.Temperature),
-		Tools:            conf.DeepseekTools,
 	}
 
 	request.Messages = messages

@@ -176,7 +176,6 @@ func (h *HuoshanReq) send(ctx context.Context, messages []*model.ChatCompletionM
 		Stop:             conf.Stop,
 		PresencePenalty:  float32(*conf.PresencePenalty),
 		Temperature:      float32(*conf.Temperature),
-		Tools:            conf.VolTools,
 	}
 
 	stream, err := client.CreateChatCompletionStream(ctx, req)
