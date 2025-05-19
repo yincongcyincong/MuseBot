@@ -28,6 +28,8 @@ var (
 	NeedATBOt     *bool
 	MaxUserChat   *int
 	VideoToken    *string
+	HTTPPort      *int
+	UseTools      *bool
 
 	AllowedTelegramUserIds  = make(map[int64]bool)
 	AllowedTelegramGroupIds = make(map[int64]bool)
@@ -54,6 +56,8 @@ func InitConf() {
 	NeedATBOt = flag.Bool("need_at_bot", false, "need at bot")
 	MaxUserChat = flag.Int("max_user_chat", 2, "max chat per user")
 	VideoToken = flag.String("video_token", "", "video token")
+	HTTPPort = flag.Int("http_port", 36060, "http server port")
+	UseTools = flag.Bool("use_tools", true, "use tools")
 
 	adminUserIds := flag.String("admin_user_ids", "", "admin user ids")
 	allowedUserIds := flag.String("allowed_telegram_user_ids", "", "allowed telegram user ids")
@@ -138,6 +142,14 @@ func InitConf() {
 		*VideoToken = os.Getenv("VIDEO_TOKEN")
 	}
 
+	if os.Getenv("HTTP_PORT") != "" {
+		*HTTPPort, _ = strconv.Atoi(os.Getenv("HTTP_PORT"))
+	}
+
+	if os.Getenv("USE_TOOLS") == "false" {
+		*UseTools = false
+	}
+
 	for _, userIdStr := range strings.Split(*allowedUserIds, ",") {
 		userId, err := strconv.Atoi(userIdStr)
 		if err != nil {
@@ -183,6 +195,8 @@ func InitConf() {
 	logger.Info("CONF", "NeedATBOt", *NeedATBOt)
 	logger.Info("CONF", "MaxUserChat", *MaxUserChat)
 	logger.Info("CONF", "VideoToken", *VideoToken)
+	logger.Info("CONF", "HTTPPort", *HTTPPort)
+	logger.Info("CONF", "UseTools", *UseTools)
 
 	if *BotToken == "" || *DeepseekToken == "" {
 		panic("Bot token and deepseek token are required")

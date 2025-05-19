@@ -461,8 +461,10 @@ func InsertTools(clientName string) {
 	} else {
 		dpTools := utils.TransToolsToDPFunctionCall(c.Tools)
 		volTools := utils.TransToolsToVolFunctionCall(c.Tools)
-		DeepseekTools = append(DeepseekTools, dpTools...)
-		VolTools = append(VolTools, volTools...)
+		if *UseTools {
+			DeepseekTools = append(DeepseekTools, dpTools...)
+			VolTools = append(VolTools, volTools...)
+		}
 		for _, tool := range TaskTools {
 			for _, n := range tool.ToolsName {
 				if n == clientName {

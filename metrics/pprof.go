@@ -1,7 +1,9 @@
 package metrics
 
 import (
+	"fmt"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
 	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
 	"net/http"
 	_ "net/http/pprof"
@@ -12,7 +14,7 @@ type PProfServer struct {
 }
 
 func InitPprof() {
-	pprofServer := NewPProfServer(":36060")
+	pprofServer := NewPProfServer(fmt.Sprintf(":%d", *conf.HTTPPort))
 	pprofServer.Start()
 }
 

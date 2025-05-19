@@ -208,7 +208,11 @@ func (d *DeepseekTaskReq) requestTask(ctx context.Context, summaryMsg map[string
 		return d.requestTask(ctx, summaryMsg, client, plan)
 	}
 
-	// deepseek merge into msg
+	// deepseek response merge into msg
+	summaryMsg[plan.Name] = append(summaryMsg[plan.Name], deepseek.ChatCompletionMessage{
+		Role:    constants.ChatMessageRoleAssistant,
+		Content: msgContent,
+	})
 
 	return msgContent
 }
