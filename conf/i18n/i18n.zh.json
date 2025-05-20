@@ -20,5 +20,6 @@
 	"photo_empty_content": "请输入图片prompt",
 	"mode_change_fail": "此mode仅自部署deepseek可用",
 	"assign_task_prompt": "",
+	"loop_task_prompt": "",
 	"summary_task_prompt": ""
 }
