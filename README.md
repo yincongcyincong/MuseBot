@@ -122,10 +122,10 @@ choose a language for bot, English or Chinese.
 
 ### other config
 
-[deepseek_conf](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/static/doc/deepseekconf.md)
-[photo_conf](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/static/doc/photoconf.md)
-[video_conf](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/static/doc/videoconf.md)
-[audio_conf](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/static/doc/audioconf.md)
+[deepseek_conf](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/static/doc/deepseekconf.md)    
+[photo_conf](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/static/doc/photoconf.md)    
+[video_conf](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/static/doc/videoconf.md)    
+[audio_conf](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/static/doc/audioconf.md)    
 
 ## Command
 
@@ -140,7 +140,7 @@ retry last question.
 ### /mode
 
 chose deepseek mode, include chat, coder, reasoner
-chat and coder means DeepSeek-V3, reasoner means DeepSeek-R1.
+chat and coder means DeepSeek-V3, reasoner means DeepSeek-R1.    
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/55ac3101-92d2-490d-8ee0-31a5b297e56e" />
 
 ### /balance
@@ -149,24 +149,24 @@ chat and coder means DeepSeek-V3, reasoner means DeepSeek-R1.
 
 ### /state
 
-calculate one user token usage.
+calculate one user token usage.    
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/0814b3ac-dcf6-4ec7-ae6b-3b8d190a0132" />
 
 ### /photo
 
-using volcengine photo model create photo, deepseek don't support to create photo now. VOLC_AK and VOLC_SK is
-necessary.[doc](https://www.volcengine.com/docs/6444/1340578)
+using volcengine photo model create photo, deepseek don't support to create photo now. VOLC_AK and VOLC_SK is    
+necessary.[doc](https://www.volcengine.com/docs/6444/1340578)    
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/c8072d7d-74e6-4270-8496-1b4e7532134b" />
 
 ### /video
 
-create video. `DEEPSEEK_TOKEN` must be volcengine Api key. deepseek don't support to create video
-now. [doc](https://www.volcengine.com/docs/82379/1399008#b00dee71)
+create video. `DEEPSEEK_TOKEN` must be volcengine Api key. deepseek don't support to create video    
+now. [doc](https://www.volcengine.com/docs/82379/1399008#b00dee71)    
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/884eeb48-76c4-4329-9446-5cd3822a5d16" />
 
 ### /chat
 
-allows the bot to chat through /chat command in groups, without the bot being set as admin of the group.
+allows the bot to chat through /chat command in groups, without the bot being set as admin of the group.    
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/00a0faf3-6037-4d84-9a33-9aa6c320e44d" />
 
 ### /help
@@ -181,7 +181,7 @@ multi agent communicate with each other!
 
 ### /addtoken
 
-add token for user.
+add token for user.    
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/12d98272-0718-4c9b-bc5c-e0a92e6c8664" />
 
 ## Deployment
