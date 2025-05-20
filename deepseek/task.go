@@ -134,21 +134,12 @@ func (d *DeepseekTaskReq) ExecuteTask() {
 		return
 	}
 
-	summaryMsg := map[string][]deepseek.ChatCompletionMessage{}
-	summaryAQ := map[string]string{}
-	for _, plan := range plans.Plan {
-		if _, ok := summaryMsg[plan.Name]; !ok {
-			summaryMsg[plan.Name] = make([]deepseek.ChatCompletionMessage, 0)
-		}
-
-		summaryMsg[plan.Name] = append(summaryMsg[plan.Name], deepseek.ChatCompletionMessage{
-			Role:    constants.ChatMessageRoleUser,
-			Content: plan.Description,
-		})
-
-		logger.Info("execute task", "task", plan.Name)
-		summaryAQ[plan.Description] = d.requestTask(ctx, summaryMsg, client, plan)
-	}
+	messages = append(messages, deepseek.ChatCompletionMessage{
+		Role:    constants.ChatMessageRoleAssistant,
+		Content: response.Choices[0].Message.Content,
+	})
+	summaryAQ := make(map[string]string)
+	messages = d.loopTask(ctx, plans, client, messages, summaryAQ, response.Choices[0].Message.Content)
 
 	// summary
 	summaryParam := make(map[string]interface{})
@@ -166,10 +157,86 @@ func (d *DeepseekTaskReq) ExecuteTask() {
 			Content: i18n.GetMessage(*conf.Lang, "summary_task_prompt", summaryParam),
 		},
 	}
-	err = d.send(ctx, summaryDPMsg)
+	err = d.send(ctx, append(messages, summaryDPMsg...))
 	if err != nil {
 		logger.Warn("request summary fail", "err", err)
 	}
+}
+
+func (d *DeepseekTaskReq) loopTask(ctx context.Context, plans *TaskInfo, client *deepseek.Client,
+	messages []deepseek.ChatCompletionMessage, summaryAQ map[string]string, lastPlan string) []deepseek.ChatCompletionMessage {
+	summaryMsg := map[string][]deepseek.ChatCompletionMessage{}
+	completeTasks := map[string]bool{}
+	for _, plan := range plans.Plan {
+		if _, ok := summaryMsg[plan.Name]; !ok {
+			summaryMsg[plan.Name] = make([]deepseek.ChatCompletionMessage, 0)
+		}
+
+		summaryMsg[plan.Name] = append(summaryMsg[plan.Name], deepseek.ChatCompletionMessage{
+			Role:    constants.ChatMessageRoleUser,
+			Content: plan.Description,
+		})
+
+		logger.Info("execute task", "task", plan.Name)
+		summaryAQ[plan.Description] = d.requestTask(ctx, summaryMsg, client, plan)
+		completeTasks[plan.Description] = true
+	}
+
+	taskParam := map[string]interface{}{
+		"user_task":      d.Content,
+		"complete_tasks": completeTasks,
+		"last_plan":      lastPlan,
+	}
+
+	messages = append(messages, deepseek.ChatCompletionMessage{
+		Role:    constants.ChatMessageRoleUser,
+		Content: i18n.GetMessage(*conf.Lang, "loop_task_prompt", taskParam),
+	})
+
+	request := &deepseek.ChatCompletionRequest{
+		Model:            d.Model,
+		MaxTokens:        *conf.MaxTokens,
+		TopP:             float32(*conf.TopP),
+		FrequencyPenalty: float32(*conf.FrequencyPenalty),
+		TopLogProbs:      *conf.TopLogProbs,
+		LogProbs:         *conf.LogProbs,
+		Stop:             conf.Stop,
+		PresencePenalty:  float32(*conf.PresencePenalty),
+		Temperature:      float32(*conf.Temperature),
+		Messages:         messages,
+	}
+
+	// assign task
+	response, err := client.CreateChatCompletion(ctx, request)
+	if err != nil {
+		logger.Error("ChatCompletionStream error", "err", err)
+		return messages
+	}
+
+	if len(response.Choices) == 0 {
+		logger.Error("response is emtpy", "response", response)
+		return messages
+	}
+
+	matches := jsonRe.FindAllString(response.Choices[0].Message.Content, -1)
+	plans = new(TaskInfo)
+	for _, match := range matches {
+		err := json.Unmarshal([]byte(match), &plans)
+		if err != nil {
+			logger.Error("json umarshal fail", "err", err)
+		}
+	}
+
+	messages = append(messages, deepseek.ChatCompletionMessage{
+		Role:    constants.ChatMessageRoleAssistant,
+		Content: response.Choices[0].Message.Content,
+	})
+
+	if len(plans.Plan) == 0 {
+		return messages
+	}
+
+	return d.loopTask(ctx, plans, client, messages, summaryAQ, response.Choices[0].Message.Content)
 }
 
 func (d *DeepseekTaskReq) requestTask(ctx context.Context, summaryMsg map[string][]deepseek.ChatCompletionMessage,

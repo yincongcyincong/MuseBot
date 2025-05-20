@@ -268,6 +268,10 @@ func CreateBot() *tgbotapi.BotAPI {
 			Command:     "chat",
 			Description: "allows the bot to chat through /chat command in groups, without the bot being set as admin of the group.",
 		},
+		tgbotapi.BotCommand{
+			Command:     "task",
+			Description: "multi agents communicate with each other, get the result.",
+		},
 	)
 	Bot.Send(cmdCfg)
 
