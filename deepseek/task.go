@@ -49,7 +49,7 @@ type TaskResult struct {
 }
 
 func (d *DeepseekTaskReq) ExecuteTask() {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
 	defer cancel()
 
 	d.Model = deepseek.DeepSeekChat
