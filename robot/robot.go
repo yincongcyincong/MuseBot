@@ -1,8 +1,12 @@
 package robot
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"github.com/yincongcyincong/langchaingo/chains"
+	"github.com/yincongcyincong/langchaingo/vectorstores"
+	"github.com/yincongcyincong/telegram-deepseek-bot/rag"
 	"runtime/debug"
 	"strings"
 	"time"
@@ -69,8 +73,55 @@ func requestDeepseekAndResp(update tgbotapi.Update, bot *tgbotapi.BotAPI, conten
 		return
 	}
 
+	if conf.Store != nil {
+		executeChain(update, bot, content)
+	} else {
+		executeLLM(update, bot, content)
+	}
+
+}
+
+func executeChain(update tgbotapi.Update, bot *tgbotapi.BotAPI, content string) {
 	messageChan := make(chan *param.MsgInfo)
 
+	go func() {
+		defer func() {
+			if err := recover(); err != nil {
+				logger.Error("GetContent panic err", "err", err)
+			}
+			utils.DecreaseUserChat(update)
+			close(messageChan)
+		}()
+
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+		defer cancel()
+
+		text, err := deepseek.GetContent(update, bot, content)
+		if err != nil {
+			logger.Error("get content fail", "err", err)
+			return
+		}
+
+		dpLLM := rag.NewDeepSeekLLM(rag.WithBot(bot), rag.WithUpdate(update),
+			rag.WithMessageChan(messageChan), rag.WithContent(content))
+
+		qaChain := chains.NewRetrievalQAFromLLM(
+			dpLLM,
+			vectorstores.ToRetriever(conf.Store, 3),
+		)
+		_, err = chains.Run(ctx, qaChain, text)
+		if err != nil {
+			logger.Warn("execute chain fail", "err", err)
+		}
+	}()
+
+	// send response message
+	go handleUpdate(messageChan, update, bot)
+
+}
+
+func executeLLM(update tgbotapi.Update, bot *tgbotapi.BotAPI, content string) {
+	messageChan := make(chan *param.MsgInfo)
 	var dpReq deepseek.Deepseek
 	if *conf.DeepseekType == param.DeepSeek {
 		dpReq = &deepseek.DeepseekReq{
@@ -109,6 +160,7 @@ func requestDeepseekAndResp(update tgbotapi.Update, bot *tgbotapi.BotAPI, conten
 
 	// send response message
 	go handleUpdate(messageChan, update, bot)
+
 }
 
 // handleUpdate handle robot msg sending

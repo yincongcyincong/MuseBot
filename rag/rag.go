@@ -7,7 +7,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"strings"
 	"time"
 
 	"github.com/cohesion-org/deepseek-go"
@@ -17,7 +16,6 @@ import (
 	"github.com/yincongcyincong/mcp-client-go/clients"
 	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
 	"github.com/yincongcyincong/telegram-deepseek-bot/db"
-	localdeepseek "github.com/yincongcyincong/telegram-deepseek-bot/deepseek"
 	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
 	"github.com/yincongcyincong/telegram-deepseek-bot/metrics"
 	"github.com/yincongcyincong/telegram-deepseek-bot/param"
@@ -72,6 +70,12 @@ func WithModel(model string) Option {
 	}
 }
 
+func WithContent(content string) Option {
+	return func(p *DeepSeekLLM) {
+		p.Content = content
+	}
+}
+
 func WithUpdate(update tgbotapi.Update) Option {
 	return func(p *DeepSeekLLM) {
 		p.Update = update
@@ -95,12 +99,25 @@ func (l *DeepSeekLLM) Call(ctx context.Context, prompt string, options ...llms.C
 }
 
 func (l *DeepSeekLLM) GenerateContent(ctx context.Context, messages []llms.MessageContent, options ...llms.CallOption) (*llms.ContentResponse, error) {
-	l.GetContent()
+	opts := &llms.CallOptions{}
+	for _, opt := range options {
+		opt(opts)
+	}
+
+	msg0 := messages[0]
+	part := msg0.Parts[0]
+	l.Content = part.(llms.TextContent).Text
+
+	err := l.callDeepSeekAPI(ctx, l.Content)
+	if err != nil {
+		logger.Error("error calling DeepSeek API", "err", err)
+		return nil, errors.New("error calling DeepSeek API")
+	}
 
 	resp := &llms.ContentResponse{
 		Choices: []*llms.ContentChoice{
 			{
-				Content: "",
+				Content: l.DeepSeekContent,
 			},
 		},
 	}
@@ -108,64 +125,17 @@ func (l *DeepSeekLLM) GenerateContent(ctx context.Context, messages []llms.Messa
 	return resp, nil
 }
 
-// GetContent get comment from deepseek
-func (d *DeepSeekLLM) GetContent() {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
-	defer cancel()
-	// check user chat exceed max count
-	if utils.CheckUserChatExceed(d.Update, d.Bot) {
-		return
-	}
-
-	defer func() {
-		if err := recover(); err != nil {
-			logger.Error("GetContent panic err", "err", err)
-		}
-		utils.DecreaseUserChat(d.Update)
-		close(d.MessageChan)
-	}()
-
-	if d.Content == "" && d.Update.Message.Voice != nil && *conf.AudioAppID != "" {
-		audioContent := utils.GetAudioContent(d.Update, d.Bot)
-		if audioContent == nil {
-			logger.Warn("audio url empty")
-			return
-		}
-		d.Content = localdeepseek.FileRecognize(audioContent)
-	}
-
-	if d.Content == "" && d.Update.Message.Photo != nil {
-		imageContent, err := localdeepseek.GetImageContent(utils.GetPhotoContent(d.Update, d.Bot))
-		if err != nil {
-			logger.Warn("get image content err", "err", err)
-			return
-		}
-		d.Content = imageContent
-	}
-
-	if d.Content == "" {
-		logger.Warn("content empty")
-		return
-	}
-
-	text := strings.ReplaceAll(d.Content, "@"+d.Bot.Self.UserName, "")
-	err := d.callDeepSeekAPI(ctx, text)
-	if err != nil {
-		logger.Error("Error calling DeepSeek API", "err", err)
-	}
-}
-
 // callDeepSeekAPI request DeepSeek API and get response
-func (d *DeepSeekLLM) callDeepSeekAPI(ctx context.Context, prompt string) error {
-	_, _, userId := utils.GetChatIdAndMsgIdAndUserID(d.Update)
-	d.Model = deepseek.DeepSeekChat
+func (l *DeepSeekLLM) callDeepSeekAPI(ctx context.Context, prompt string) error {
+	_, _, userId := utils.GetChatIdAndMsgIdAndUserID(l.Update)
+	l.Model = deepseek.DeepSeekChat
 	userInfo, err := db.GetUserByID(userId)
 	if err != nil {
 		logger.Error("Error getting user info", "err", err)
 	}
 	if userInfo != nil && userInfo.Mode != "" {
 		logger.Info("User info", "userID", userInfo.UserId, "mode", userInfo.Mode)
-		d.Model = userInfo.Mode
+		l.Model = userInfo.Mode
 	}
 
 	messages := make([]deepseek.ChatCompletionMessage, 0)
@@ -209,12 +179,12 @@ func (d *DeepSeekLLM) callDeepSeekAPI(ctx context.Context, prompt string) error 
 
 	logger.Info("msg receive", "userID", userId, "prompt", prompt)
 
-	return d.send(ctx, messages)
+	return l.send(ctx, messages)
 }
 
-func (d *DeepSeekLLM) send(ctx context.Context, messages []deepseek.ChatCompletionMessage) error {
+func (l *DeepSeekLLM) send(ctx context.Context, messages []deepseek.ChatCompletionMessage) error {
 	start := time.Now()
-	_, updateMsgID, userId := utils.GetChatIdAndMsgIdAndUserID(d.Update)
+	_, updateMsgID, userId := utils.GetChatIdAndMsgIdAndUserID(l.Update)
 	// set deepseek proxy
 	httpClient := &http.Client{
 		Timeout: 30 * time.Minute,
@@ -239,7 +209,7 @@ func (d *DeepSeekLLM) send(ctx context.Context, messages []deepseek.ChatCompleti
 	}
 
 	request := &deepseek.StreamChatCompletionRequest{
-		Model:  d.Model,
+		Model:  l.Model,
 		Stream: true,
 		StreamOptions: deepseek.StreamOptions{
 			IncludeUsage: true,
@@ -280,7 +250,7 @@ func (d *DeepSeekLLM) send(ctx context.Context, messages []deepseek.ChatCompleti
 		for _, choice := range response.Choices {
 			if len(choice.Delta.ToolCalls) > 0 {
 				hasTools = true
-				err = d.requestToolsCall(ctx, choice)
+				err = l.requestToolsCall(ctx, choice)
 				if err != nil {
 					if errors.Is(err, toolsJsonErr) {
 						continue
@@ -291,40 +261,40 @@ func (d *DeepSeekLLM) send(ctx context.Context, messages []deepseek.ChatCompleti
 			}
 
 			if !hasTools {
-				d.sendMsg(msgInfoContent, choice)
+				l.sendMsg(msgInfoContent, choice)
 			}
 		}
 
 		if response.Usage != nil {
-			d.Token += response.Usage.TotalTokens
-			metrics.TotalTokens.Add(float64(d.Token))
+			l.Token += response.Usage.TotalTokens
+			metrics.TotalTokens.Add(float64(l.Token))
 		}
 	}
 
-	if !hasTools || len(d.CurrentToolMessage) == 0 {
-		d.MessageChan <- msgInfoContent
+	if !hasTools || len(l.CurrentToolMessage) == 0 {
+		l.MessageChan <- msgInfoContent
 
-		data, _ := json.Marshal(d.ToolMessage)
+		data, _ := json.Marshal(l.ToolMessage)
 		db.InsertMsgRecord(userId, &db.AQ{
-			Question: d.Content,
-			Answer:   d.DeepSeekContent,
+			Question: l.Content,
+			Answer:   l.DeepSeekContent,
 			Content:  string(data),
-			Token:    d.Token,
+			Token:    l.Token,
 		}, true)
 	} else {
-		d.CurrentToolMessage = append([]deepseek.ChatCompletionMessage{
+		l.CurrentToolMessage = append([]deepseek.ChatCompletionMessage{
 			{
 				Role:      deepseek.ChatMessageRoleAssistant,
-				Content:   d.DeepSeekContent,
-				ToolCalls: d.ToolCall,
+				Content:   l.DeepSeekContent,
+				ToolCalls: l.ToolCall,
 			},
-		}, d.CurrentToolMessage...)
+		}, l.CurrentToolMessage...)
 
-		d.ToolMessage = append(d.ToolMessage, d.CurrentToolMessage...)
-		messages = append(messages, d.CurrentToolMessage...)
-		d.CurrentToolMessage = make([]deepseek.ChatCompletionMessage, 0)
-		d.ToolCall = make([]deepseek.ToolCall, 0)
-		return d.send(ctx, messages)
+		l.ToolMessage = append(l.ToolMessage, l.CurrentToolMessage...)
+		messages = append(messages, l.CurrentToolMessage...)
+		l.CurrentToolMessage = make([]deepseek.ChatCompletionMessage, 0)
+		l.ToolCall = make([]deepseek.ToolCall, 0)
+		return l.send(ctx, messages)
 	}
 
 	// record time costing in dialog
@@ -333,71 +303,71 @@ func (d *DeepSeekLLM) send(ctx context.Context, messages []deepseek.ChatCompleti
 	return nil
 }
 
-func (d *DeepSeekLLM) sendMsg(msgInfoContent *param.MsgInfo, choice deepseek.StreamChoices) {
+func (l *DeepSeekLLM) sendMsg(msgInfoContent *param.MsgInfo, choice deepseek.StreamChoices) {
 	// exceed max telegram one message length
 	if utils.Utf16len(msgInfoContent.Content) > OneMsgLen {
-		d.MessageChan <- msgInfoContent
+		l.MessageChan <- msgInfoContent
 		msgInfoContent = &param.MsgInfo{
 			SendLen: NonFirstSendLen,
 		}
 	}
 
 	msgInfoContent.Content += choice.Delta.Content
-	d.DeepSeekContent += choice.Delta.Content
+	l.DeepSeekContent += choice.Delta.Content
 	if len(msgInfoContent.Content) > msgInfoContent.SendLen {
-		d.MessageChan <- msgInfoContent
+		l.MessageChan <- msgInfoContent
 		msgInfoContent.SendLen += NonFirstSendLen
 	}
 }
 
-func (d *DeepSeekLLM) requestToolsCall(ctx context.Context, choice deepseek.StreamChoices) error {
+func (l *DeepSeekLLM) requestToolsCall(ctx context.Context, choice deepseek.StreamChoices) error {
 
 	for _, toolCall := range choice.Delta.ToolCalls {
 		property := make(map[string]interface{})
 
 		if toolCall.Function.Name != "" {
-			d.ToolCall = append(d.ToolCall, toolCall)
-			d.ToolCall[len(d.ToolCall)-1].Function.Name = toolCall.Function.Name
+			l.ToolCall = append(l.ToolCall, toolCall)
+			l.ToolCall[len(l.ToolCall)-1].Function.Name = toolCall.Function.Name
 		}
 
 		if toolCall.ID != "" {
-			d.ToolCall[len(d.ToolCall)-1].ID = toolCall.ID
+			l.ToolCall[len(l.ToolCall)-1].ID = toolCall.ID
 		}
 
 		if toolCall.Type != "" {
-			d.ToolCall[len(d.ToolCall)-1].Type = toolCall.Type
+			l.ToolCall[len(l.ToolCall)-1].Type = toolCall.Type
 		}
 
 		if toolCall.Function.Arguments != "" {
-			d.ToolCall[len(d.ToolCall)-1].Function.Arguments += toolCall.Function.Arguments
+			l.ToolCall[len(l.ToolCall)-1].Function.Arguments += toolCall.Function.Arguments
 		}
 
-		err := json.Unmarshal([]byte(d.ToolCall[len(d.ToolCall)-1].Function.Arguments), &property)
+		err := json.Unmarshal([]byte(l.ToolCall[len(l.ToolCall)-1].Function.Arguments), &property)
 		if err != nil {
 			return toolsJsonErr
 		}
 
-		mc, err := clients.GetMCPClientByToolName(d.ToolCall[len(d.ToolCall)-1].Function.Name)
+		mc, err := clients.GetMCPClientByToolName(l.ToolCall[len(l.ToolCall)-1].Function.Name)
 		if err != nil {
 			logger.Warn("get mcp fail", "err", err)
 			return err
 		}
 
-		toolsData, err := mc.ExecTools(ctx, d.ToolCall[len(d.ToolCall)-1].Function.Name, property)
+		toolsData, err := mc.ExecTools(ctx, l.ToolCall[len(l.ToolCall)-1].Function.Name, property)
 		if err != nil {
 			logger.Warn("exec tools fail", "err", err)
 			return err
 		}
-		d.CurrentToolMessage = append(d.CurrentToolMessage, deepseek.ChatCompletionMessage{
+		l.CurrentToolMessage = append(l.CurrentToolMessage, deepseek.ChatCompletionMessage{
 			Role:       constants.ChatMessageRoleTool,
 			Content:    toolsData,
-			ToolCallID: d.ToolCall[len(d.ToolCall)-1].ID,
+			ToolCallID: l.ToolCall[len(l.ToolCall)-1].ID,
 		})
 
 	}
 
-	logger.Info("send tool request", "function", d.ToolCall[len(d.ToolCall)-1].Function.Name,
-		"toolCall", d.ToolCall[len(d.ToolCall)-1].ID, "argument", d.ToolCall[len(d.ToolCall)-1].Function.Arguments)
+	logger.Info("send tool request", "function", l.ToolCall[len(l.ToolCall)-1].Function.Name,
+		"toolCall", l.ToolCall[len(l.ToolCall)-1].ID, "argument", l.ToolCall[len(l.ToolCall)-1].Function.Arguments)
 
 	return nil
 
