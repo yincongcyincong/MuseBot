@@ -16,6 +16,7 @@ func main() {
 	db.InitTable()
 	db.UpdateUserTime()
 	conf.InitTools()
+	conf.InitRag()
 	metrics.InitPprof()
 	metrics.RegisterMetrics()
 	robot.StartListenRobot()

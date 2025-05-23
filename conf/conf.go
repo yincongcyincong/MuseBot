@@ -15,6 +15,11 @@ import (
 var (
 	BotToken      *string
 	DeepseekToken *string
+	OpenAIToken   *string
+	GeminiToken   *string
+	ErnieAK       *string
+	ErnieSK       *string
+
 	DeepseekType  *string // simple complex
 	CustomUrl     *string
 	VolcAK        *string
@@ -43,10 +48,15 @@ var (
 func InitConf() {
 	BotToken = flag.String("telegram_bot_token", "", "Comma-separated list of Telegram bot tokens")
 	DeepseekToken = flag.String("deepseek_token", "", "deepseek auth token")
-	CustomUrl = flag.String("custom_url", "https://api.deepseek.com/", "deepseek custom url")
-	DeepseekType = flag.String("deepseek_type", "deepseek", "deepseek auth type")
+	OpenAIToken = flag.String("openai_token", "", "openai auth token")
+	GeminiToken = flag.String("gemini_token", "", "gemini auth token")
+	ErnieAK = flag.String("ernie_ak", "", "ernie ak")
+	ErnieSK = flag.String("ernie_sk", "", "ernie sk")
 	VolcAK = flag.String("volc_ak", "", "volc ak")
 	VolcSK = flag.String("volc_sk", "", "volc sk")
+
+	CustomUrl = flag.String("custom_url", "https://api.deepseek.com/", "deepseek custom url")
+	DeepseekType = flag.String("deepseek_type", "deepseek", "deepseek auth type")
 	DBType = flag.String("db_type", "sqlite3", "db type")
 	DBConf = flag.String("db_conf", "./data/telegram_bot.db", "db conf")
 	DeepseekProxy = flag.String("deepseek_proxy", "", "db conf")
@@ -68,6 +78,7 @@ func InitConf() {
 	InitVideoConf()
 	InitAudioConf()
 	InitToolsConf()
+	InitRagConf()
 	flag.Parse()
 
 	if os.Getenv("TELEGRAM_BOT_TOKEN") != "" {
@@ -150,6 +161,22 @@ func InitConf() {
 		*UseTools = false
 	}
 
+	if os.Getenv("OPENAI_TOKEN") != "" {
+		*OpenAIToken = os.Getenv("OPENAI_TOKEN")
+	}
+
+	if os.Getenv("GEMINI_TOKEN") != "" {
+		*GeminiToken = os.Getenv("GEMINI_TOKEN")
+	}
+
+	if os.Getenv("ERNIE_AK") != "" {
+		*ErnieAK = os.Getenv("ERNIE_AK")
+	}
+
+	if os.Getenv("ERNIE_SK") != "" {
+		*ErnieSK = os.Getenv("ERNIE_SK")
+	}
+
 	for _, userIdStr := range strings.Split(*allowedUserIds, ",") {
 		userId, err := strconv.Atoi(userIdStr)
 		if err != nil {
@@ -196,7 +223,10 @@ func InitConf() {
 	logger.Info("CONF", "MaxUserChat", *MaxUserChat)
 	logger.Info("CONF", "VideoToken", *VideoToken)
 	logger.Info("CONF", "HTTPPort", *HTTPPort)
-	logger.Info("CONF", "UseTools", *UseTools)
+	logger.Info("CONF", "OpenAIToken", *OpenAIToken)
+	logger.Info("CONF", "GeminiToken", *GeminiToken)
+	logger.Info("CONF", "ErnieAK", *ErnieAK)
+	logger.Info("CONF", "ErnieSK", *ErnieSK)
 
 	if *BotToken == "" || *DeepseekToken == "" {
 		panic("Bot token and deepseek token are required")
