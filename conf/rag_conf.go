@@ -27,6 +27,8 @@ var (
 
 	ChromaURL   *string
 	ChromaSpace *string
+
+	Store vectorstores.VectorStore
 )
 
 func InitRagConf() {
@@ -91,10 +93,9 @@ func InitRag() {
 		return
 	}
 
-	var store vectorstores.VectorStore
 	switch *VectorDBType {
 	case "chroma":
-		store, err = chroma.NewV2(
+		Store, err = chroma.NewV2(
 			chroma.WithChromaURLV2("http://localhost:8000"),
 			chroma.WithEmbedderV2(embedder),
 			chroma.WithNameSpaceV2("deepseek-rag"),
@@ -109,14 +110,14 @@ func InitRag() {
 		return
 	}
 
-	docs, err := handleKnowledgeBase(ctx, store)
+	docs, err := handleKnowledgeBase(ctx, Store)
 	if err != nil {
 		logger.Error("get doc fail", "err", err)
 		return
 	}
 
 	if len(docs) > 0 {
-		_, err = store.AddDocuments(context.Background(), docs)
+		_, err = Store.AddDocuments(context.Background(), docs)
 		if err != nil {
 			logger.Error("get save doc fail", "err", err)
 			return
@@ -154,7 +155,7 @@ func handleKnowledgeBase(ctx context.Context, store vectorstores.VectorStore) ([
 			}
 
 			for _, doc := range docs {
-				existingDocs, err := store.SimilaritySearch(context.Background(), doc.PageContent, 1)
+				existingDocs, err := store.SimilaritySearch(ctx, doc.PageContent, 1)
 				if err == nil && len(existingDocs) > 0 && existingDocs[0].PageContent == doc.PageContent {
 					continue
 				}

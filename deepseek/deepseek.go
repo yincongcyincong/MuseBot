@@ -54,10 +54,6 @@ type DeepseekReq struct {
 func (d *DeepseekReq) GetContent() {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
-	// check user chat exceed max count
-	if utils.CheckUserChatExceed(d.Update, d.Bot) {
-		return
-	}
 
 	defer func() {
 		if err := recover(); err != nil {
@@ -67,31 +63,12 @@ func (d *DeepseekReq) GetContent() {
 		close(d.MessageChan)
 	}()
 
-	if d.Content == "" && d.Update.Message.Voice != nil && *conf.AudioAppID != "" {
-		audioContent := utils.GetAudioContent(d.Update, d.Bot)
-		if audioContent == nil {
-			logger.Warn("audio url empty")
-			return
-		}
-		d.Content = FileRecognize(audioContent)
-	}
-
-	if d.Content == "" && d.Update.Message.Photo != nil {
-		imageContent, err := GetImageContent(utils.GetPhotoContent(d.Update, d.Bot))
-		if err != nil {
-			logger.Warn("get image content err", "err", err)
-			return
-		}
-		d.Content = imageContent
-	}
-
-	if d.Content == "" {
-		logger.Warn("content empty")
+	text, err := GetContent(d.Update, d.Bot, d.Content)
+	if err != nil {
+		logger.Error("get content fail", "err", err)
 		return
 	}
-
-	text := strings.ReplaceAll(d.Content, "@"+d.Bot.Self.UserName, "")
-	err := d.callDeepSeekAPI(ctx, text)
+	err = d.callDeepSeekAPI(ctx, text)
 	if err != nil {
 		logger.Error("Error calling DeepSeek API", "err", err)
 	}
@@ -360,4 +337,37 @@ func GetBalanceInfo() *deepseek.BalanceResponse {
 	}
 
 	return balance
+}
+
+func GetContent(update tgbotapi.Update, bot *tgbotapi.BotAPI, content string) (string, error) {
+	// check user chat exceed max count
+	if utils.CheckUserChatExceed(update, bot) {
+		return "", errors.New("token exceed")
+	}
+
+	if content == "" && update.Message.Voice != nil && *conf.AudioAppID != "" {
+		audioContent := utils.GetAudioContent(update, bot)
+		if audioContent == nil {
+			logger.Warn("audio url empty")
+			return "", errors.New("audio url empty")
+		}
+		content = FileRecognize(audioContent)
+	}
+
+	if content == "" && update.Message.Photo != nil {
+		imageContent, err := GetImageContent(utils.GetPhotoContent(update, bot))
+		if err != nil {
+			logger.Warn("get image content err", "err", err)
+			return "", err
+		}
+		content = imageContent
+	}
+
+	if content == "" {
+		logger.Warn("content empty")
+		return "", errors.New("content empty")
+	}
+
+	text := strings.ReplaceAll(content, "@"+bot.Self.UserName, "")
+	return text, nil
 }
