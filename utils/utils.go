@@ -1,6 +1,8 @@
 package utils
 
 import (
+	"crypto/md5"
+	"encoding/hex"
 	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
 	"github.com/yincongcyincong/telegram-deepseek-bot/i18n"
 	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
@@ -203,4 +205,13 @@ func GetPhotoContent(update tgbotapi.Update, bot *tgbotapi.BotAPI) []byte {
 	}
 
 	return photoContent
+}
+
+func MD5(input string) string {
+	// 计算 MD5
+	hash := md5.Sum([]byte(input))
+
+	// 转换为 16 进制字符串
+	md5Str := hex.EncodeToString(hash[:])
+	return md5Str
 }
