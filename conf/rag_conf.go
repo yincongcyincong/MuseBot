@@ -28,7 +28,11 @@ var (
 	ChromaURL   *string
 	ChromaSpace *string
 
-	Store vectorstores.VectorStore
+	ChunkSize    *int
+	ChunkOverlap *int
+
+	Store    vectorstores.VectorStore
+	Embedder embeddings.Embedder
 )
 
 func InitRagConf() {
@@ -38,6 +42,9 @@ func InitRagConf() {
 
 	ChromaURL = flag.String("chroma_url", "http://localhost:8000", "chroma url")
 	ChromaSpace = flag.String("chroma_space", "telegram-deepseek-bot", "chroma space")
+
+	ChunkSize = flag.Int("chunk_size", 500, "rag file chunk size")
+	ChunkOverlap = flag.Int("chunk_overlap", 50, "rag file chunk overlap")
 
 	if os.Getenv("EMBEDDING_TYPE") != "" {
 		*EmbeddingType = os.Getenv("EMBEDDING_TYPE")
@@ -74,15 +81,14 @@ func InitRag() {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
 	defer cancel()
 
-	var embedder embeddings.Embedder
 	var err error
 	switch *EmbeddingType {
 	case "openai":
-		embedder, err = initOpenAIEmbedding()
+		Embedder, err = initOpenAIEmbedding()
 	case "gemini":
-		embedder, err = initGeminiEmbedding(ctx)
+		Embedder, err = initGeminiEmbedding(ctx)
 	case "ernie":
-		embedder, err = initErnieEmbedding()
+		Embedder, err = initErnieEmbedding()
 	default:
 		logger.Error("embedding type not exist", "embedding type", *EmbeddingType)
 		return
@@ -96,8 +102,8 @@ func InitRag() {
 	switch *VectorDBType {
 	case "chroma":
 		Store, err = chroma.NewV2(
-			chroma.WithChromaURLV2("http://localhost:8000"),
-			chroma.WithEmbedderV2(embedder),
+			chroma.WithChromaURLV2(*ChromaURL),
+			chroma.WithEmbedderV2(Embedder),
 			chroma.WithNameSpaceV2("deepseek-rag"),
 		)
 	default:
@@ -144,8 +150,9 @@ func handleKnowledgeBase(ctx context.Context, store vectorstores.VectorStore) ([
 			}
 			loader := documentloaders.NewText(f)
 			splitter := textsplitter.NewRecursiveCharacter(
-				textsplitter.WithChunkSize(500),
-				textsplitter.WithChunkOverlap(50),
+				textsplitter.WithChunkSize(*ChunkSize),
+				textsplitter.WithChunkOverlap(*ChunkOverlap),
+				textsplitter.WithSeparators([]string{"\n\n", "\n", "。", "！", "？", ".", " "}),
 			)
 
 			docs, err := loader.LoadAndSplit(ctx, splitter)

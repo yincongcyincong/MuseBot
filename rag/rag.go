@@ -104,11 +104,21 @@ func (l *DeepSeekLLM) GenerateContent(ctx context.Context, messages []llms.Messa
 		opt(opts)
 	}
 
-	msg0 := messages[0]
-	part := msg0.Parts[0]
-	l.Content = part.(llms.TextContent).Text
+	doc, err := conf.Store.SimilaritySearch(ctx, l.Content, 3)
+	if err != nil {
+		logger.Error("request vector db fail", "err", err)
+	}
+	if len(doc) != 0 {
+		tmpContent := ""
+		for _, msg := range messages {
+			for _, part := range msg.Parts {
+				tmpContent += part.(llms.TextContent).Text
+			}
+		}
+		l.Content = tmpContent
+	}
 
-	err := l.callDeepSeekAPI(ctx, l.Content)
+	err = l.callDeepSeekAPI(ctx, l.Content)
 	if err != nil {
 		logger.Error("error calling DeepSeek API", "err", err)
 		return nil, errors.New("error calling DeepSeek API")
