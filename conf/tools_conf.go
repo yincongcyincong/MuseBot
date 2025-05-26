@@ -279,14 +279,14 @@ func InitTools() {
 		mcpParams = append(mcpParams,
 			amap.InitAmapMCPClient(&amap.AmapParam{
 				AmapApiKey: *AmapApiKey,
-			}, "", nil, nil, nil))
+			}))
 	}
 
 	if *GithubAccessToken != "" {
 		mcpParams = append(mcpParams,
 			github.InitModelContextProtocolGithubMCPClient(&github.GithubParam{
 				GithubAccessToken: *GithubAccessToken,
-			}, "", nil, nil, nil))
+			}))
 	}
 
 	if *VMUrl != "" || *VMInsertUrl != "" || *VMSelectUrl != "" {
@@ -294,62 +294,62 @@ func InitTools() {
 			VMUrl:       *VMUrl,
 			VMInsertUrl: *VMInsertUrl,
 			VMSelectUrl: *VMSelectUrl,
-		}, "", nil, nil, nil))
+		}))
 	}
 
 	if *BinanceSwitch {
-		mcpParams = append(mcpParams, binance.InitBinanceMCPClient(&binance.BinanceParam{},
-			"", nil, nil, nil))
+		mcpParams = append(mcpParams, binance.InitBinanceMCPClient(&binance.BinanceParam{}))
 	}
 
 	if *TimeZone != "" {
-		mcpParams = append(mcpParams, mcp_time.InitTimeMCPClient(&mcp_time.TimeParma{
+		mcpParams = append(mcpParams, mcp_time.InitTimeMCPClient(&mcp_time.TimeParam{
 			LocalTimezone: *TimeZone,
-		}, "", nil, nil, nil))
+		}))
 	}
 
 	if *PlayWrightSwitch {
 		if *PlayWrightSSEServer != "" {
-			mcpParams = append(mcpParams, playwright.InitPlaywrightSSEMCPClient(*PlayWrightSSEServer,
-				nil, "", nil, nil, nil))
+			mcpParams = append(mcpParams, playwright.InitPlaywrightSSEMCPClient(
+				&playwright.PlaywrightParam{
+					BaseUrl: *PlayWrightSSEServer,
+				}))
 		} else {
-			mcpParams = append(mcpParams, playwright.InitPlaywrightMCPClient(&playwright.PlaywrightParam{},
-				"", nil, nil, nil))
+			mcpParams = append(mcpParams, playwright.InitPlaywrightMCPClient(&playwright.PlaywrightParam{}))
 		}
 	}
 
 	if *FilePath != "" {
 		mcpParams = append(mcpParams, filesystem.InitFilesystemMCPClient(&filesystem.FilesystemParam{
 			Paths: strings.Split(*FilePath, ","),
-		}, "", nil, nil, nil))
+		}))
 	}
 
 	if *GoogleMapApiKey != "" {
 		mcpParams = append(mcpParams, googlemap.InitGooglemapMCPClient(&googlemap.GoogleMapParam{
 			GooglemapApiKey: *GoogleMapApiKey,
-		}, "", nil, nil, nil))
+		}))
 	}
 
 	if *NotionAuthorization != "" && *NotionVersion != "" {
 		mcpParams = append(mcpParams, notion.InitNotionMCPClient(&notion.NotionParam{
 			NotionVersion: *NotionVersion,
 			Authorization: *NotionAuthorization,
-		}, "", nil, nil, nil))
+		}))
 	}
 
 	if *AliyunAccessKeyID != "" && *AliyunAccessKeySecret != "" {
 		mcpParams = append(mcpParams, aliyun.InitAliyunMCPClient(&aliyun.AliyunParams{
 			AliyunAccessKeyID:     *AliyunAccessKeySecret,
 			AliyunAccessKeySecret: *AliyunAccessKeySecret,
-		}, "", nil, nil, nil))
+		}))
 	}
 
 	if *AirBnbSwitch {
-		mcpParams = append(mcpParams, airbnb.InitAirbnbMCPClient(&airbnb.AirbnbParam{}, "", nil, nil, nil))
+		mcpParams = append(mcpParams, airbnb.InitAirbnbMCPClient(&airbnb.AirbnbParam{}))
 	}
 
 	if *BitCoinSwitch {
-		mcpParams = append(mcpParams, bitcoin.InitBitcoinMCPClient(&bitcoin.BitcoinParam{}, "", nil, nil, nil))
+		mcpParams = append(mcpParams, bitcoin.InitBitcoinMCPClient(&bitcoin.BitcoinParam{}))
 	}
 
 	if *TwitterApiSecretKey != "" && *TwitterAccessToken != "" && *TwitterAccessTokenSecret != "" && *TwitterApiKey != "" {
@@ -358,21 +358,20 @@ func InitTools() {
 			ApiSecretKey:      *TwitterApiSecretKey,
 			AccessToken:       *TwitterAccessToken,
 			AccessTokenSecret: *TwitterAccessTokenSecret,
-		}, "", nil, nil, nil))
+		}))
 	}
 
 	if *WhatsappPath != "" && *WhatsappPythonMainFile != "" {
 		mcpParams = append(mcpParams, whatsapp.InitWhatsappMCPClient(&whatsapp.WhaPsAppParam{
 			WhatsappPath:   *WhatsappPath,
 			PythonMainFile: *WhatsappPythonMainFile,
-		},
-			"", nil, nil, nil))
+		}))
 	}
 
 	if *BaidumapApiKey != "" {
 		mcpParams = append(mcpParams, baidumap.InitBaidumapMCPClient(&baidumap.BaidumapParam{
 			BaidumapApiKey: *BaidumapApiKey,
-		}, "", nil, nil, nil))
+		}))
 	}
 
 	errs := clients.RegisterMCPClient(ctx, mcpParams)
