@@ -4,6 +4,25 @@ const (
 	DeepSeek      = "deepseek"
 	DeepSeekLlava = "deepseek-ollama"
 
+	Gemini                        = "gemini"
+	ModelGemini25Pro       string = "gemini-2.5-pro"
+	ModelGemini25Flash     string = "gemini-2.5-flash"
+	ModelGemini20Flash     string = "gemini-2.0-flash"
+	ModelGemini20FlashLite string = "gemini-2.0-flash-lite"
+	ModelGemini15Pro       string = "gemini-1.5-pro"
+	ModelGemini15Flash     string = "gemini-1.5-flash"
+	ModelGemini10Ultra     string = "gemini-1.0-ultra"
+	ModelGemini10Pro       string = "gemini-1.0-pro"
+	ModelGemini10Nano      string = "gemini-1.0-nano"
+
+	// 特定功能模型
+	ModelGeminiFlashPreviewTTS string = "gemini-flash-preview-tts"
+	ModelGeminiEmbedding       string = "gemini-embedding"
+	ModelImagen3               string = "imagen-3"
+	ModelVeo2                  string = "veo-2"
+
+	OpenAi = "openai"
+
 	LLAVA = "llava:latest"
 
 	ImageTokenUsage = 10000

@@ -4,12 +4,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/yincongcyincong/langchaingo/chains"
-	"github.com/yincongcyincong/langchaingo/vectorstores"
-	"github.com/yincongcyincong/telegram-deepseek-bot/rag"
 	"runtime/debug"
 	"strings"
 	"time"
+
+	"github.com/sashabaranov/go-openai"
+	"github.com/yincongcyincong/langchaingo/chains"
+	"github.com/yincongcyincong/langchaingo/vectorstores"
+	"github.com/yincongcyincong/telegram-deepseek-bot/rag"
+	"google.golang.org/genai"
 
 	godeepseek "github.com/cohesion-org/deepseek-go"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -143,6 +146,27 @@ func executeLLM(update tgbotapi.Update, bot *tgbotapi.BotAPI, content string) {
 			ToolMessage:        []godeepseek.ChatCompletionMessage{},
 			CurrentToolMessage: []godeepseek.ChatCompletionMessage{},
 		}
+	} else if *conf.DeepseekType == param.Gemini {
+		dpReq = &deepseek.GeminiReq{
+			Content:            content,
+			Update:             update,
+			Bot:                bot,
+			MessageChan:        messageChan,
+			ToolCall:           []*genai.FunctionCall{},
+			ToolMessage:        []*genai.Content{},
+			CurrentToolMessage: []*genai.Content{},
+		}
+	} else if *conf.DeepseekType == param.OpenAi {
+		dpReq = &deepseek.OpenAIReq{
+			Content:            content,
+			Update:             update,
+			Bot:                bot,
+			MessageChan:        messageChan,
+			ToolCall:           []openai.ToolCall{},
+			ToolMessage:        []openai.ChatCompletionMessage{},
+			CurrentToolMessage: []openai.ChatCompletionMessage{},
+		}
+
 	} else {
 		dpReq = &deepseek.HuoshanReq{
 			Content:            content,
