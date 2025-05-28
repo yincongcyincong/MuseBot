@@ -242,6 +242,11 @@ func (d *DeepseekTaskReq) loopTask(ctx context.Context, plans *TaskInfo, client 
 
 func (d *DeepseekTaskReq) requestTask(ctx context.Context, summaryMsg map[string][]deepseek.ChatCompletionMessage,
 	client *deepseek.Client, plan *Task) string {
+	var tools []deepseek.Tool
+	if _, ok := conf.TaskTools[plan.Name]; ok {
+		tools = conf.TaskTools[plan.Name].DeepseekTool
+	}
+
 	request := &deepseek.ChatCompletionRequest{
 		Model:            d.Model,
 		MaxTokens:        *conf.MaxTokens,
@@ -252,7 +257,7 @@ func (d *DeepseekTaskReq) requestTask(ctx context.Context, summaryMsg map[string
 		Stop:             conf.Stop,
 		PresencePenalty:  float32(*conf.PresencePenalty),
 		Temperature:      float32(*conf.Temperature),
-		Tools:            conf.TaskTools[plan.Name].DeepseekTool,
+		Tools:            tools,
 		Messages:         summaryMsg[plan.Name],
 	}
 
