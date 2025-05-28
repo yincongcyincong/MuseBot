@@ -79,6 +79,7 @@ func (d *DeepseekTaskReq) ExecuteTask() {
 		return
 	}
 
+	logger.Info("task content", "content", d.Content)
 	taskParam := make(map[string]interface{})
 	taskParam["assign_param"] = make([]map[string]string, 0)
 	taskParam["user_task"] = d.Content
