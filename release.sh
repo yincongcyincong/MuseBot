@@ -36,7 +36,6 @@ compile_and_package() {
 # 开始编译
 compile_and_package linux amd64
 compile_and_package darwin amd64
-compile_and_package darwin arm64
 #compile_and_package windows amd64
 
 # 清理临时文件
