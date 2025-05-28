@@ -4,6 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
+	"net/http"
+	"net/url"
+	"regexp"
+	"time"
+
 	"github.com/cohesion-org/deepseek-go"
 	"github.com/cohesion-org/deepseek-go/constants"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -14,11 +20,6 @@ import (
 	"github.com/yincongcyincong/telegram-deepseek-bot/metrics"
 	"github.com/yincongcyincong/telegram-deepseek-bot/param"
 	"github.com/yincongcyincong/telegram-deepseek-bot/utils"
-	"io"
-	"net/http"
-	"net/url"
-	"regexp"
-	"time"
 )
 
 var (

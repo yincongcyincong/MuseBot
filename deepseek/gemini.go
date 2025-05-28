@@ -144,7 +144,17 @@ func (h *GeminiReq) send(ctx context.Context, messages []*genai.Content, prompt 
 		Temperature:      genai.Ptr[float32](float32(*conf.Temperature)),
 	}
 
-	chat, err := client.Chats.Create(ctx, param.ModelGemini25Flash, config, messages)
+	h.Model = param.ModelGemini20Flash
+	userInfo, err := db.GetUserByID(userId)
+	if err != nil {
+		logger.Error("Error getting user info", "err", err)
+	}
+	if userInfo != nil && userInfo.Mode != "" && param.GeminiModels[userInfo.Mode] {
+		logger.Info("User info", "userID", userInfo.UserId, "mode", userInfo.Mode)
+		h.Model = userInfo.Mode
+	}
+
+	chat, err := client.Chats.Create(ctx, h.Model, config, messages)
 	if err != nil {
 		logger.Error("create chat fail", "err", err)
 		return err
