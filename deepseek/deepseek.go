@@ -82,7 +82,7 @@ func (d *DeepseekReq) callDeepSeekAPI(ctx context.Context, prompt string) error 
 	if err != nil {
 		logger.Error("Error getting user info", "err", err)
 	}
-	if userInfo != nil && userInfo.Mode != "" {
+	if userInfo != nil && userInfo.Mode != "" && param.DeepseekModels[userInfo.Mode] {
 		logger.Info("User info", "userID", userInfo.UserId, "mode", userInfo.Mode)
 		d.Model = userInfo.Mode
 	}

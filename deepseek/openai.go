@@ -120,6 +120,18 @@ func (d *OpenAIReq) callDeepSeekAPI(ctx context.Context, prompt string) error {
 func (d *OpenAIReq) send(ctx context.Context, messages []openai.ChatCompletionMessage) error {
 	start := time.Now()
 	_, updateMsgID, userId := utils.GetChatIdAndMsgIdAndUserID(d.Update)
+
+	userInfo, err := db.GetUserByID(userId)
+	if err != nil {
+		logger.Error("Error getting user info", "err", err)
+	}
+
+	d.Model = openai.GPT3Dot5Turbo0125
+	if userInfo != nil && userInfo.Mode != "" && param.OpenAIModels[userInfo.Mode] {
+		logger.Info("User info", "userID", userInfo.UserId, "mode", userInfo.Mode)
+		d.Model = userInfo.Mode
+	}
+
 	// set deepseek proxy
 	httpClient := &http.Client{
 		Timeout: 30 * time.Minute,
@@ -145,7 +157,7 @@ func (d *OpenAIReq) send(ctx context.Context, messages []openai.ChatCompletionMe
 	client := openai.NewClientWithConfig(openaiConfig)
 
 	request := openai.ChatCompletionRequest{
-		Model:  openai.GPT3Dot5Turbo0125,
+		Model:  d.Model,
 		Stream: true,
 		StreamOptions: &openai.StreamOptions{
 			IncludeUsage: true,
