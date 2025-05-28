@@ -1,3 +1,5 @@
+//go:build !libtokenizers
+
 package main
 
 import (

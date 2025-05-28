@@ -8,22 +8,21 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sashabaranov/go-openai"
-	"github.com/yincongcyincong/langchaingo/chains"
-	"github.com/yincongcyincong/langchaingo/vectorstores"
-	"github.com/yincongcyincong/telegram-deepseek-bot/rag"
-	"google.golang.org/genai"
-
 	godeepseek "github.com/cohesion-org/deepseek-go"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/sashabaranov/go-openai"
 	"github.com/volcengine/volcengine-go-sdk/service/arkruntime/model"
+	"github.com/yincongcyincong/langchaingo/chains"
+	"github.com/yincongcyincong/langchaingo/vectorstores"
 	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
 	"github.com/yincongcyincong/telegram-deepseek-bot/db"
 	"github.com/yincongcyincong/telegram-deepseek-bot/deepseek"
 	"github.com/yincongcyincong/telegram-deepseek-bot/i18n"
 	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
 	"github.com/yincongcyincong/telegram-deepseek-bot/param"
+	"github.com/yincongcyincong/telegram-deepseek-bot/rag"
 	"github.com/yincongcyincong/telegram-deepseek-bot/utils"
+	"google.golang.org/genai"
 )
 
 // StartListenRobot start listen robot callback
