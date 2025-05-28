@@ -1,25 +1,44 @@
 #!/bin/bash
+
+# 清理旧文件
+rm -rf ./output ./release
+mkdir -p ./output ./release
+
+# 检查是否安装xgo
+if ! command -v xgo &> /dev/null; then
+    echo "正在安装 xgo..."
+    go install src.techknowlogick.com/xgo@latest
+fi
+
+# 编译函数
+compile_and_package() {
+    local os=$1
+    local arch=$2
+    local ext=""
+    [[ "$os" == "windows" ]] && ext=".exe"
+
+    echo "正在编译 $os/$arch ..."
+
+    # 使用xgo直接编译
+    xgo -v -x \
+        -targets="$os/$arch" \
+        .
+
+    # 打包
+    local binary_name="telegram-deepseek-bot-${os}-${arch}${ext}"
+    local release_name="telegram-deepseek-bot-${os}-${arch}.tar.gz"
+
+    mv "./github.com/yincongcyincong/telegram-deepseek-bot-${os}"* "./output/$binary_name"
+    tar zcfv "release/$release_name" -C ./output "$binary_name"
+    rm -rf output github.com
+}
+
+# 开始编译
+compile_and_package linux amd64
+compile_and_package darwin amd64
+compile_and_package darwin arm64
+#compile_and_package windows amd64
+
+# 清理临时文件
 rm -rf ./output
-rm -rf ./release
-mkdir ./output
-mkdir ./release
-set CGO_ENABLED=0
-#linux
-GOOS=linux GOARCH=386 go build && mv telegram-deepseek-bot output/telegram-deepseek-bot && tar zcfv "release/telegram-deepseek-bot-linux-386.tar.gz" ./output/telegram-deepseek-bot
-rm -rf ./output/*
-GOOS=linux GOARCH=amd64 go build && mv telegram-deepseek-bot output/telegram-deepseek-bot && tar zcfv "release/telegram-deepseek-bot-linux-amd64.tar.gz" ./output/telegram-deepseek-bot
-rm -rf ./output/*
-
-#darwin
-GOOS=darwin GOARCH=amd64 go build && mv telegram-deepseek-bot output/telegram-deepseek-bot && tar zcfv "release/telegram-deepseek-bot-darwin-amd64.tar.gz" ./output/telegram-deepseek-bot
-rm -rf ./output/*
-GOOS=darwin GOARCH=arm64 go build && mv telegram-deepseek-bot output/telegram-deepseek-bot && tar zcfv "release/telegram-deepseek-bot-darwin-arm64.tar.gz" ./output/telegram-deepseek-bot
-#windows
-rm -rf telegram-deepseek-bot
-
-GOOS=windows GOARCH=386 go build && mv telegram-deepseek-bot.exe output/telegram-deepseek-bot.exe && tar zcfv "release/telegram-deepseek-bot-windows-386.tar.gz" ./output/telegram-deepseek-bot.exe
-rm -rf ./output/*
-GOOS=windows GOARCH=amd64 go build && mv telegram-deepseek-bot.exe output/telegram-deepseek-bot.exe && tar zcfv "release/telegram-deepseek-bot-windows-amd64.tar.gz" ./output/telegram-deepseek-bot.exe
-
-rm -rf ./output
-rm -rf telegram-deepseek-bot telegram-deepseek-bot.exe
+echo "所有平台编译完成！结果保存在 ./release 目录"

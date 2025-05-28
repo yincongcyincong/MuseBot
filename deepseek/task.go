@@ -132,7 +132,16 @@ func (d *DeepseekTaskReq) ExecuteTask() {
 	}
 
 	if len(plans.Plan) == 0 {
-		logger.Error("no plan created!")
+		logger.Warn("no plan created!")
+		err = d.send(ctx, []deepseek.ChatCompletionMessage{
+			{
+				Role:    constants.ChatMessageRoleUser,
+				Content: d.Content,
+			},
+		})
+		if err != nil {
+			logger.Warn("request summary fail", "err", err)
+		}
 		return
 	}
 
