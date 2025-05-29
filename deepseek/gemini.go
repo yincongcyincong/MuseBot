@@ -142,6 +142,7 @@ func (h *GeminiReq) send(ctx context.Context, messages []*genai.Content, prompt 
 		FrequencyPenalty: genai.Ptr[float32](float32(*conf.FrequencyPenalty)),
 		PresencePenalty:  genai.Ptr[float32](float32(*conf.PresencePenalty)),
 		Temperature:      genai.Ptr[float32](float32(*conf.Temperature)),
+		Tools:            conf.GeminiTools,
 	}
 
 	h.Model = param.ModelGemini20Flash

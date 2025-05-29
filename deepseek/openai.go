@@ -153,6 +153,7 @@ func (d *OpenAIReq) send(ctx context.Context, messages []openai.ChatCompletionMe
 		openaiConfig.BaseURL = *conf.CustomUrl
 	}
 
+	openaiConfig.BaseURL = "https://api.chatanywhere.org"
 	openaiConfig.HTTPClient = httpClient
 	client := openai.NewClientWithConfig(openaiConfig)
 
@@ -170,6 +171,7 @@ func (d *OpenAIReq) send(ctx context.Context, messages []openai.ChatCompletionMe
 		Stop:             conf.Stop,
 		PresencePenalty:  float32(*conf.PresencePenalty),
 		Temperature:      float32(*conf.Temperature),
+		Tools:            conf.OpenAITools,
 	}
 
 	request.Messages = messages
