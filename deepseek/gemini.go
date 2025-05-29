@@ -61,6 +61,16 @@ func (h *GeminiReq) GetContent() {
 func (h *GeminiReq) getContent(ctx context.Context, prompt string) error {
 	_, _, userId := utils.GetChatIdAndMsgIdAndUserID(h.Update)
 
+	h.Model = param.ModelGemini20Flash
+	userInfo, err := db.GetUserByID(userId)
+	if err != nil {
+		logger.Error("Error getting user info", "err", err)
+	}
+	if userInfo != nil && userInfo.Mode != "" && param.GeminiModels[userInfo.Mode] {
+		logger.Info("User info", "userID", userInfo.UserId, "mode", userInfo.Mode)
+		h.Model = userInfo.Mode
+	}
+
 	messages := make([]*genai.Content, 0)
 
 	msgRecords := db.GetMsgRecord(userId)
@@ -145,16 +155,6 @@ func (h *GeminiReq) send(ctx context.Context, messages []*genai.Content, prompt 
 		Tools:            conf.GeminiTools,
 	}
 
-	h.Model = param.ModelGemini20Flash
-	userInfo, err := db.GetUserByID(userId)
-	if err != nil {
-		logger.Error("Error getting user info", "err", err)
-	}
-	if userInfo != nil && userInfo.Mode != "" && param.GeminiModels[userInfo.Mode] {
-		logger.Info("User info", "userID", userInfo.UserId, "mode", userInfo.Mode)
-		h.Model = userInfo.Mode
-	}
-
 	chat, err := client.Chats.Create(ctx, h.Model, config, messages)
 	if err != nil {
 		logger.Error("create chat fail", "err", err)
@@ -166,7 +166,7 @@ func (h *GeminiReq) send(ctx context.Context, messages []*genai.Content, prompt 
 	}
 
 	hasTools := false
-	for response, err := range chat.SendMessageStream(ctx, genai.Part{Text: prompt}) {
+	for response, err := range chat.SendMessageStream(ctx, *genai.NewPartFromText(prompt)) {
 		if errors.Is(err, io.EOF) {
 			logger.Info("stream finished", "updateMsgID", updateMsgID)
 			break
@@ -216,7 +216,7 @@ func (h *GeminiReq) send(ctx context.Context, messages []*genai.Content, prompt 
 		messages = append(messages, h.CurrentToolMessage...)
 		h.CurrentToolMessage = make([]*genai.Content, 0)
 		h.ToolCall = make([]*genai.FunctionCall, 0)
-		return h.send(ctx, messages, "")
+		return h.send(ctx, messages, prompt)
 	}
 
 	// record time costing in dialog
@@ -228,7 +228,6 @@ func (h *GeminiReq) send(ctx context.Context, messages []*genai.Content, prompt 
 func (h *GeminiReq) requestToolsCall(ctx context.Context, response *genai.GenerateContentResponse) error {
 
 	for _, toolCall := range response.FunctionCalls() {
-		property := make(map[string]interface{})
 
 		if toolCall.Name != "" {
 			h.ToolCall = append(h.ToolCall, toolCall)
@@ -249,7 +248,7 @@ func (h *GeminiReq) requestToolsCall(ctx context.Context, response *genai.Genera
 			return err
 		}
 
-		toolsData, err := mc.ExecTools(ctx, h.ToolCall[len(h.ToolCall)-1].Name, property)
+		toolsData, err := mc.ExecTools(ctx, h.ToolCall[len(h.ToolCall)-1].Name, h.ToolCall[len(h.ToolCall)-1].Args)
 		if err != nil {
 			logger.Warn("exec tools fail", "err", err)
 			return err
@@ -258,11 +257,24 @@ func (h *GeminiReq) requestToolsCall(ctx context.Context, response *genai.Genera
 			Role: genai.RoleModel,
 			Parts: []*genai.Part{
 				{
-					Text:         toolsData,
 					FunctionCall: toolCall,
 				},
 			},
 		})
+
+		h.CurrentToolMessage = append(h.CurrentToolMessage, &genai.Content{
+			Role: genai.RoleModel,
+			Parts: []*genai.Part{
+				{
+					FunctionResponse: &genai.FunctionResponse{
+						Response: map[string]any{"output": toolsData},
+						ID:       h.ToolCall[len(h.ToolCall)-1].ID,
+						Name:     h.ToolCall[len(h.ToolCall)-1].Name,
+					},
+				},
+			},
+		})
+
 	}
 
 	logger.Info("send tool request", "function", h.ToolCall[len(h.ToolCall)-1].Name,
