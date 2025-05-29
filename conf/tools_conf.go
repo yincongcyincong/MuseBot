@@ -3,7 +3,12 @@ package conf
 import (
 	"context"
 	"flag"
+	"os"
+	"strings"
+	"time"
+
 	"github.com/cohesion-org/deepseek-go"
+	"github.com/sashabaranov/go-openai"
 	"github.com/volcengine/volcengine-go-sdk/service/arkruntime/model"
 	"github.com/yincongcyincong/mcp-client-go/clients"
 	"github.com/yincongcyincong/mcp-client-go/clients/airbnb"
@@ -24,9 +29,7 @@ import (
 	"github.com/yincongcyincong/mcp-client-go/clients/whatsapp"
 	"github.com/yincongcyincong/mcp-client-go/utils"
 	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
-	"os"
-	"strings"
-	"time"
+	"google.golang.org/genai"
 )
 
 type AgentInfo struct {
@@ -65,6 +68,8 @@ var (
 
 	DeepseekTools = make([]deepseek.Tool, 0)
 	VolTools      = make([]*model.Tool, 0)
+	OpenAITools   = make([]openai.Tool, 0)
+	GeminiTools   = make([]*genai.Tool, 0)
 
 	TaskTools = map[string]*AgentInfo{
 		"map-agent": {
@@ -460,9 +465,14 @@ func InsertTools(clientName string) {
 	} else {
 		dpTools := utils.TransToolsToDPFunctionCall(c.Tools)
 		volTools := utils.TransToolsToVolFunctionCall(c.Tools)
+		oaTools := utils.TransToolsToChatGPTFunctionCall(c.Tools)
+		gmTools := utils.TransToolsToGeminiFunctionCall(c.Tools)
+
 		if *UseTools {
 			DeepseekTools = append(DeepseekTools, dpTools...)
 			VolTools = append(VolTools, volTools...)
+			OpenAITools = append(OpenAITools, oaTools...)
+			GeminiTools = append(GeminiTools, gmTools...)
 		}
 		for _, tool := range TaskTools {
 			for _, n := range tool.ToolsName {

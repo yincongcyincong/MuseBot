@@ -18,9 +18,9 @@ require (
 	github.com/volcengine/volc-sdk-golang v1.0.196
 	github.com/volcengine/volcengine-go-sdk v1.1.1
 	github.com/yincongcyincong/langchaingo v0.0.2
-	github.com/yincongcyincong/mcp-client-go v0.0.15
+	github.com/yincongcyincong/mcp-client-go v0.0.16
 	golang.org/x/text v0.24.0
-	google.golang.org/genai v1.6.0
+	google.golang.org/genai v1.7.0
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 )
 
