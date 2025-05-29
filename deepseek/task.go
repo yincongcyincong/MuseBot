@@ -15,6 +15,7 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/yincongcyincong/mcp-client-go/clients"
 	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
+	"github.com/yincongcyincong/telegram-deepseek-bot/db"
 	"github.com/yincongcyincong/telegram-deepseek-bot/i18n"
 	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
 	"github.com/yincongcyincong/telegram-deepseek-bot/metrics"
@@ -120,6 +121,11 @@ func (d *DeepseekTaskReq) ExecuteTask() {
 	if len(response.Choices) == 0 {
 		logger.Error("response is emtpy", "response", response)
 		return
+	}
+
+	if response.Usage.TotalTokens != 0 {
+		d.Token += response.Usage.TotalTokens
+		metrics.TotalTokens.Add(float64(d.Token))
 	}
 
 	matches := jsonRe.FindAllString(response.Choices[0].Message.Content, -1)
@@ -229,6 +235,11 @@ func (d *DeepseekTaskReq) loopTask(ctx context.Context, plans *TaskInfo, client 
 		return messages
 	}
 
+	if response.Usage.TotalTokens != 0 {
+		d.Token += response.Usage.TotalTokens
+		metrics.TotalTokens.Add(float64(d.Token))
+	}
+
 	matches := jsonRe.FindAllString(response.Choices[0].Message.Content, -1)
 	plans = new(TaskInfo)
 	for _, match := range matches {
@@ -275,6 +286,11 @@ func (d *DeepseekTaskReq) requestTask(ctx context.Context, summaryMsg map[string
 	if err != nil {
 		logger.Error("ChatCompletionStream error", "err", err)
 		return ""
+	}
+
+	if response.Usage.TotalTokens != 0 {
+		d.Token += response.Usage.TotalTokens
+		metrics.TotalTokens.Add(float64(d.Token))
 	}
 
 	hasTools := false
@@ -337,7 +353,7 @@ func (d *DeepseekTaskReq) requestToolsCall(ctx context.Context, toolsCall []deep
 }
 
 func (d *DeepseekTaskReq) send(ctx context.Context, messages []deepseek.ChatCompletionMessage) error {
-	_, updateMsgID, _ := utils.GetChatIdAndMsgIdAndUserID(d.Update)
+	_, updateMsgID, userID := utils.GetChatIdAndMsgIdAndUserID(d.Update)
 	// set deepseek proxy
 	httpClient := &http.Client{
 		Timeout: 30 * time.Minute,
@@ -410,6 +426,11 @@ func (d *DeepseekTaskReq) send(ctx context.Context, messages []deepseek.ChatComp
 	}
 
 	d.MessageChan <- msgInfoContent
+
+	err = db.UpdateUserToken(userID, d.Token)
+	if err != nil {
+		logger.Error("Error update token by user", "err", err)
+	}
 
 	return nil
 }
