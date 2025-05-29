@@ -5,6 +5,7 @@ import (
 	"flag"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -64,6 +65,14 @@ func InitRagConf() {
 
 	if os.Getenv("CHROMA_SPACE") != "" {
 		*ChromaSpace = os.Getenv("CHROMA_SPACE")
+	}
+
+	if os.Getenv("CHUNK_SIZE") != "" {
+		*ChunkSize, _ = strconv.Atoi(os.Getenv("CHUNK_SIZE"))
+	}
+
+	if os.Getenv("CHUNK_OVERLAP") != "" {
+		*ChunkOverlap, _ = strconv.Atoi(os.Getenv("CHUNK_OVERLAP"))
 	}
 
 	logger.Info("RAG_CONF", "EmbeddingType", *EmbeddingType)
