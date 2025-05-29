@@ -20,6 +20,8 @@ AI-powered responses. The bot supports **streaming replies**, making interaction
   see [doc](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/static/doc/audioconf.md).
 - 🐂 **Function Call**: transform mcp protocol to function call,
   see [doc](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/static/doc/functioncall.md).
+- 🌊 **RAG**: Support Rag to fill context,
+	see [doc](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/static/doc/rag.md).
 
 ## 🤖 Text Example
 
