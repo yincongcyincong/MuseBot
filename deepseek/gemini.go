@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-	"net/http"
-	"net/url"
 	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -71,6 +69,13 @@ func (h *GeminiReq) getContent(ctx context.Context, prompt string) error {
 		h.Model = userInfo.Mode
 	}
 
+	messages := h.getMessages(userId)
+
+	logger.Info("msg receive", "userID", userId, "prompt", h.Content)
+	return h.send(ctx, messages, prompt)
+}
+
+func (h *GeminiReq) getMessages(userId int64) []*genai.Content {
 	messages := make([]*genai.Content, 0)
 
 	msgRecords := db.GetMsgRecord(userId)
@@ -116,27 +121,13 @@ func (h *GeminiReq) getContent(ctx context.Context, prompt string) error {
 		}
 	}
 
-	logger.Info("msg receive", "userID", userId, "prompt", h.Content)
-	return h.send(ctx, messages, prompt)
+	return messages
 }
 
 func (h *GeminiReq) send(ctx context.Context, messages []*genai.Content, prompt string) error {
 	start := time.Now()
 	_, updateMsgID, userId := utils.GetChatIdAndMsgIdAndUserID(h.Update)
-	httpClient := &http.Client{
-		Timeout: 5 * time.Minute,
-	}
-
-	if *conf.DeepseekProxy != "" {
-		proxy, err := url.Parse(*conf.DeepseekProxy)
-		if err != nil {
-			logger.Error("parse deepseek proxy error", "err", err)
-		} else {
-			httpClient.Transport = &http.Transport{
-				Proxy: http.ProxyURL(proxy),
-			}
-		}
-	}
+	httpClient := utils.GetDeepseekProxyClient()
 
 	client, err := genai.NewClient(ctx, &genai.ClientConfig{
 		HTTPClient: httpClient,

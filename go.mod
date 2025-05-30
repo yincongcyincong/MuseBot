@@ -21,6 +21,7 @@ require (
 	github.com/yincongcyincong/mcp-client-go v0.0.16
 	golang.org/x/text v0.24.0
 	google.golang.org/genai v1.7.0
+	gopkg.in/h2non/gock.v1 v1.1.2
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 )
 
@@ -65,6 +66,7 @@ require (
 	github.com/googleapis/gax-go/v2 v2.14.1 // indirect
 	github.com/goph/emperror v0.17.2 // indirect
 	github.com/gorilla/css v1.0.0 // indirect
+	github.com/h2non/parth v0.0.0-20190131123155-b4df798d6542 // indirect
 	github.com/huandu/xstrings v1.3.3 // indirect
 	github.com/imdario/mergo v0.3.13 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect

@@ -58,20 +58,7 @@ func (d *DeepseekTaskReq) ExecuteTask() {
 	_, updateMsgID, _ := utils.GetChatIdAndMsgIdAndUserID(d.Update)
 
 	// set deepseek proxy
-	httpClient := &http.Client{
-		Timeout: 30 * time.Minute,
-	}
-
-	if *conf.DeepseekProxy != "" {
-		proxy, err := url.Parse(*conf.DeepseekProxy)
-		if err != nil {
-			logger.Error("parse deepseek proxy error", "err", err)
-		} else {
-			httpClient.Transport = &http.Transport{
-				Proxy: http.ProxyURL(proxy),
-			}
-		}
-	}
+	httpClient := utils.GetDeepseekProxyClient()
 
 	client, err := deepseek.NewClientWithOptions(*conf.DeepseekToken,
 		deepseek.WithBaseURL(*conf.CustomUrl), deepseek.WithHTTPClient(httpClient))

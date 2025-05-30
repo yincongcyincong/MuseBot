@@ -68,6 +68,13 @@ func (h *HuoshanReq) GetContent() {
 func (h *HuoshanReq) getContentFromHS(ctx context.Context, prompt string) error {
 	_, _, userId := utils.GetChatIdAndMsgIdAndUserID(h.Update)
 
+	messages := h.getMessages(userId, prompt)
+
+	logger.Info("msg receive", "userID", userId, "prompt", h.Content)
+	return h.send(ctx, messages)
+}
+
+func (h *HuoshanReq) getMessages(userId int64, prompt string) []*model.ChatCompletionMessage {
 	messages := make([]*model.ChatCompletionMessage, 0)
 
 	msgRecords := db.GetMsgRecord(userId)
@@ -115,28 +122,14 @@ func (h *HuoshanReq) getContentFromHS(ctx context.Context, prompt string) error 
 		},
 	})
 
-	logger.Info("msg receive", "userID", userId, "prompt", h.Content)
-	return h.send(ctx, messages)
+	return messages
 }
 
 func (h *HuoshanReq) send(ctx context.Context, messages []*model.ChatCompletionMessage) error {
 	start := time.Now()
 	_, updateMsgID, userId := utils.GetChatIdAndMsgIdAndUserID(h.Update)
 	// set deepseek proxy
-	httpClient := &http.Client{
-		Timeout: 5 * time.Minute,
-	}
-
-	if *conf.DeepseekProxy != "" {
-		proxy, err := url.Parse(*conf.DeepseekProxy)
-		if err != nil {
-			logger.Error("parse deepseek proxy error", "err", err)
-		} else {
-			httpClient.Transport = &http.Transport{
-				Proxy: http.ProxyURL(proxy),
-			}
-		}
-	}
+	httpClient := utils.GetDeepseekProxyClient()
 
 	client := arkruntime.NewClientWithApiKey(
 		*conf.DeepseekToken,

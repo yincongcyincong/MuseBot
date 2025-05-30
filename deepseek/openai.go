@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-	"net/http"
-	"net/url"
 	"time"
 
 	"github.com/cohesion-org/deepseek-go"
@@ -73,6 +71,14 @@ func (d *OpenAIReq) callDeepSeekAPI(ctx context.Context, prompt string) error {
 		d.Model = userInfo.Mode
 	}
 
+	messages := d.getMessages(userId, prompt)
+
+	logger.Info("msg receive", "userID", userId, "prompt", prompt)
+
+	return d.send(ctx, messages)
+}
+
+func (d *OpenAIReq) getMessages(userId int64, prompt string) []openai.ChatCompletionMessage {
 	messages := make([]openai.ChatCompletionMessage, 0)
 
 	msgRecords := db.GetMsgRecord(userId)
@@ -92,7 +98,7 @@ func (d *OpenAIReq) callDeepSeekAPI(ctx context.Context, prompt string) error {
 				})
 				if record.Content != "" {
 					toolsMsgs := make([]openai.ChatCompletionMessage, 0)
-					err = json.Unmarshal([]byte(record.Content), &toolsMsgs)
+					err := json.Unmarshal([]byte(record.Content), &toolsMsgs)
 					if err != nil {
 						logger.Error("Error unmarshalling tools json", "err", err)
 					} else {
@@ -112,9 +118,7 @@ func (d *OpenAIReq) callDeepSeekAPI(ctx context.Context, prompt string) error {
 		Content: prompt,
 	})
 
-	logger.Info("msg receive", "userID", userId, "prompt", prompt)
-
-	return d.send(ctx, messages)
+	return messages
 }
 
 func (d *OpenAIReq) send(ctx context.Context, messages []openai.ChatCompletionMessage) error {
@@ -133,20 +137,7 @@ func (d *OpenAIReq) send(ctx context.Context, messages []openai.ChatCompletionMe
 	}
 
 	// set deepseek proxy
-	httpClient := &http.Client{
-		Timeout: 30 * time.Minute,
-	}
-
-	if *conf.DeepseekProxy != "" {
-		proxy, err := url.Parse(*conf.DeepseekProxy)
-		if err != nil {
-			logger.Error("parse deepseek proxy error", "err", err)
-		} else {
-			httpClient.Transport = &http.Transport{
-				Proxy: http.ProxyURL(proxy),
-			}
-		}
-	}
+	httpClient := utils.GetDeepseekProxyClient()
 
 	openaiConfig := openai.DefaultConfig(*conf.OpenAIToken)
 	if *conf.CustomUrl != "" {
