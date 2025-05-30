@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-	"net/http"
-	"net/url"
 	"strings"
 	"time"
 
@@ -87,6 +85,14 @@ func (d *DeepseekReq) callDeepSeekAPI(ctx context.Context, prompt string) error 
 		d.Model = userInfo.Mode
 	}
 
+	messages := d.getMessages(userId, prompt)
+
+	logger.Info("msg receive", "userID", userId, "prompt", prompt)
+
+	return d.send(ctx, messages)
+}
+
+func (d *DeepseekReq) getMessages(userId int64, prompt string) []deepseek.ChatCompletionMessage {
 	messages := make([]deepseek.ChatCompletionMessage, 0)
 
 	msgRecords := db.GetMsgRecord(userId)
@@ -106,7 +112,7 @@ func (d *DeepseekReq) callDeepSeekAPI(ctx context.Context, prompt string) error 
 				})
 				if record.Content != "" {
 					toolsMsgs := make([]deepseek.ChatCompletionMessage, 0)
-					err = json.Unmarshal([]byte(record.Content), &toolsMsgs)
+					err := json.Unmarshal([]byte(record.Content), &toolsMsgs)
 					if err != nil {
 						logger.Error("Error unmarshalling tools json", "err", err)
 					} else {
@@ -120,35 +126,19 @@ func (d *DeepseekReq) callDeepSeekAPI(ctx context.Context, prompt string) error 
 			}
 		}
 	}
-
 	messages = append(messages, deepseek.ChatCompletionMessage{
 		Role:    constants.ChatMessageRoleUser,
 		Content: prompt,
 	})
 
-	logger.Info("msg receive", "userID", userId, "prompt", prompt)
-
-	return d.send(ctx, messages)
+	return messages
 }
 
 func (d *DeepseekReq) send(ctx context.Context, messages []deepseek.ChatCompletionMessage) error {
 	start := time.Now()
 	_, updateMsgID, userId := utils.GetChatIdAndMsgIdAndUserID(d.Update)
 	// set deepseek proxy
-	httpClient := &http.Client{
-		Timeout: 30 * time.Minute,
-	}
-
-	if *conf.DeepseekProxy != "" {
-		proxy, err := url.Parse(*conf.DeepseekProxy)
-		if err != nil {
-			logger.Error("parse deepseek proxy error", "err", err)
-		} else {
-			httpClient.Transport = &http.Transport{
-				Proxy: http.ProxyURL(proxy),
-			}
-		}
-	}
+	httpClient := utils.GetDeepseekProxyClient()
 
 	client, err := deepseek.NewClientWithOptions(*conf.DeepseekToken,
 		deepseek.WithBaseURL(*conf.CustomUrl), deepseek.WithHTTPClient(httpClient))

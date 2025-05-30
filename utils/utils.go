@@ -3,9 +3,6 @@ package utils
 import (
 	"crypto/md5"
 	"encoding/hex"
-	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
-	"github.com/yincongcyincong/telegram-deepseek-bot/i18n"
-	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
 	"io"
 	"net/http"
 	"net/url"
@@ -15,6 +12,9 @@ import (
 	"unicode/utf16"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
+	"github.com/yincongcyincong/telegram-deepseek-bot/i18n"
+	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
 )
 
 func GetChatIdAndMsgIdAndUserID(update tgbotapi.Update) (int64, int, int64) {
@@ -172,26 +172,9 @@ func GetPhotoContent(update tgbotapi.Update, bot *tgbotapi.BotAPI) []byte {
 		return nil
 	}
 
-	// 构造下载 URL
 	downloadURL := file.Link(bot.Token)
 
-	transport := &http.Transport{}
-
-	if *conf.TelegramProxy != "" {
-		proxy, err := url.Parse(*conf.TelegramProxy)
-		if err != nil {
-			logger.Warn("parse proxy url fail", "err", err)
-			return nil
-		}
-		transport.Proxy = http.ProxyURL(proxy)
-	}
-
-	client := &http.Client{
-		Transport: transport,
-		Timeout:   30 * time.Second, // 设置超时
-	}
-
-	// 通过代理下载
+	client := GetTelegramProxyClient()
 	resp, err := client.Get(downloadURL)
 	if err != nil {
 		logger.Warn("download fail", "err", err)
@@ -214,4 +197,100 @@ func MD5(input string) string {
 	// 转换为 16 进制字符串
 	md5Str := hex.EncodeToString(hash[:])
 	return md5Str
+}
+
+func GetTelegramProxyClient() *http.Client {
+	transport := &http.Transport{}
+
+	if *conf.TelegramProxy != "" {
+		proxy, err := url.Parse(*conf.TelegramProxy)
+		if err != nil {
+			logger.Warn("parse proxy url fail", "err", err)
+		}
+		transport.Proxy = http.ProxyURL(proxy)
+	}
+
+	return &http.Client{
+		Transport: transport,
+		Timeout:   30 * time.Second, // 设置超时
+	}
+}
+
+func GetDeepseekProxyClient() *http.Client {
+	transport := &http.Transport{}
+
+	if *conf.DeepseekProxy != "" {
+		proxy, err := url.Parse(*conf.DeepseekProxy)
+		if err != nil {
+			logger.Warn("parse proxy url fail", "err", err)
+		}
+		transport.Proxy = http.ProxyURL(proxy)
+	}
+
+	return &http.Client{
+		Transport: transport,
+		Timeout:   30 * time.Second, // 设置超时
+	}
+}
+
+func CreateBot() *tgbotapi.BotAPI {
+	// 配置自定义 HTTP Client 并设置代理
+	client := GetTelegramProxyClient()
+
+	var err error
+	conf.Bot, err = tgbotapi.NewBotAPIWithClient(*conf.BotToken, tgbotapi.APIEndpoint, client)
+	if err != nil {
+		panic("Init bot fail" + err.Error())
+	}
+
+	if *logger.LogLevel == "debug" {
+		conf.Bot.Debug = true
+	}
+
+	// set command
+	cmdCfg := tgbotapi.NewSetMyCommands(
+		tgbotapi.BotCommand{
+			Command:     "help",
+			Description: "help",
+		},
+		tgbotapi.BotCommand{
+			Command:     "clear",
+			Description: "clear all of your communication record with deepseek.",
+		},
+		tgbotapi.BotCommand{
+			Command:     "retry",
+			Description: "retry last question.",
+		},
+		tgbotapi.BotCommand{
+			Command:     "mode",
+			Description: "chose deepseek mode, include chat, coder, reasoner",
+		},
+		tgbotapi.BotCommand{
+			Command:     "balance",
+			Description: "show deepseek balance.",
+		},
+		tgbotapi.BotCommand{
+			Command:     "state",
+			Description: "calculate one user token usage.",
+		},
+		tgbotapi.BotCommand{
+			Command:     "photo",
+			Description: "using volcengine photo model create photo.",
+		},
+		tgbotapi.BotCommand{
+			Command:     "video",
+			Description: "using volcengine video model create video.",
+		},
+		tgbotapi.BotCommand{
+			Command:     "chat",
+			Description: "allows the bot to chat through /chat command in groups, without the bot being set as admin of the group.",
+		},
+		tgbotapi.BotCommand{
+			Command:     "task",
+			Description: "multi agents communicate with each other, get the result.",
+		},
+	)
+	conf.Bot.Send(cmdCfg)
+
+	return conf.Bot
 }

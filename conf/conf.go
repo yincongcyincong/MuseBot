@@ -2,8 +2,6 @@ package conf
 
 import (
 	"flag"
-	"net/http"
-	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -232,78 +230,4 @@ func InitConf() {
 		panic("Bot token and deepseek token are required")
 	}
 
-}
-
-func CreateBot() *tgbotapi.BotAPI {
-	// 配置自定义 HTTP Client 并设置代理
-	client := &http.Client{}
-
-	// parse proxy URL
-	if *TelegramProxy != "" {
-		proxy, err := url.Parse(*TelegramProxy)
-		if err != nil {
-			logger.Info("Failed to parse proxy URL", err)
-		} else {
-			client.Transport = &http.Transport{
-				Proxy: http.ProxyURL(proxy),
-			}
-		}
-	}
-
-	var err error
-	Bot, err = tgbotapi.NewBotAPIWithClient(*BotToken, tgbotapi.APIEndpoint, client)
-	if err != nil {
-		panic("Init bot fail" + err.Error())
-	}
-
-	if *logger.LogLevel == "debug" {
-		Bot.Debug = true
-	}
-
-	// set command
-	cmdCfg := tgbotapi.NewSetMyCommands(
-		tgbotapi.BotCommand{
-			Command:     "help",
-			Description: "help",
-		},
-		tgbotapi.BotCommand{
-			Command:     "clear",
-			Description: "clear all of your communication record with deepseek.",
-		},
-		tgbotapi.BotCommand{
-			Command:     "retry",
-			Description: "retry last question.",
-		},
-		tgbotapi.BotCommand{
-			Command:     "mode",
-			Description: "chose deepseek mode, include chat, coder, reasoner",
-		},
-		tgbotapi.BotCommand{
-			Command:     "balance",
-			Description: "show deepseek balance.",
-		},
-		tgbotapi.BotCommand{
-			Command:     "state",
-			Description: "calculate one user token usage.",
-		},
-		tgbotapi.BotCommand{
-			Command:     "photo",
-			Description: "using volcengine photo model create photo.",
-		},
-		tgbotapi.BotCommand{
-			Command:     "video",
-			Description: "using volcengine video model create video.",
-		},
-		tgbotapi.BotCommand{
-			Command:     "chat",
-			Description: "allows the bot to chat through /chat command in groups, without the bot being set as admin of the group.",
-		},
-		tgbotapi.BotCommand{
-			Command:     "task",
-			Description: "multi agents communicate with each other, get the result.",
-		},
-	)
-	Bot.Send(cmdCfg)
-
-	return Bot
 }

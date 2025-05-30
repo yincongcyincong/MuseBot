@@ -7,11 +7,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
+	"net/http"
+
 	"github.com/gorilla/websocket"
 	"github.com/satori/go.uuid"
 	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
-	"io/ioutil"
-	"net/http"
 )
 
 type ProtocolVersion byte

@@ -29,7 +29,7 @@ import (
 func StartListenRobot() {
 	for {
 
-		bot := conf.CreateBot()
+		bot := utils.CreateBot()
 		logger.Info("telegramBot Info", "username", bot.Self.UserName)
 
 		u := tgbotapi.NewUpdate(0)
