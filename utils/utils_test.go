@@ -2,13 +2,13 @@ package utils
 
 import (
 	"fmt"
-	"io"
 	"net/http"
 	"testing"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
+	"github.com/yincongcyincong/telegram-deepseek-bot/test"
 )
 
 func TestGetChatIdAndMsgIdAndUserName_MessageUpdate(t *testing.T) {
@@ -128,45 +128,15 @@ func TestCheckMsgIsCallback(t *testing.T) {
 	assert.False(t, CheckMsgIsCallback(updateEmpty))
 }
 
-type MockHTTPClient struct {
-	DoFunc func(req *http.Request) (*http.Response, error)
-}
-
-func (m *MockHTTPClient) Do(req *http.Request) (*http.Response, error) {
-	return m.DoFunc(req)
-}
-
-type MockBody struct {
-	data []byte
-	read int
-}
-
-func NewMockBody(data string) *MockBody {
-	return &MockBody{data: []byte(data)}
-}
-
-func (m *MockBody) Read(p []byte) (n int, err error) {
-	if m.read >= len(m.data) {
-		return 0, io.EOF
-	}
-	n = copy(p, m.data[m.read:])
-	m.read += n
-	return n, nil
-}
-
-func (m *MockBody) Close() error {
-	return nil
-}
-
 func TestGetPhotoContent(t *testing.T) {
 
 	// 调用被测函数
-	mockClient := &MockHTTPClient{
+	mockClient := &test.MockHTTPClient{
 		DoFunc: func(req *http.Request) (*http.Response, error) {
 			// 返回模拟响应
 			return &http.Response{
 				StatusCode: http.StatusOK,
-				Body: NewMockBody(`{
+				Body: test.NewMockBody(`{
   "ok": true,
   "result": {
     "file_id": "ABCD1234",
