@@ -1,12 +1,13 @@
 package db
 
 import (
-	"github.com/stretchr/testify/assert"
-	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
 	"os"
 	"strconv"
 	"sync"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
 )
 
 func TestMain(m *testing.M) {
@@ -61,4 +62,68 @@ func TestDeleteMsgRecord(t *testing.T) {
 
 	record := GetMsgRecord(userId)
 	assert.Nil(t, record, "Record should be deleted")
+}
+
+func TestInsertRecordInfoAndGetRecords(t *testing.T) {
+
+	userId := int64(12345)
+	InsertUser(userId, "default")
+
+	record := &Record{
+		UserId:    userId,
+		Question:  "What is AI?",
+		Answer:    "AI is Artificial Intelligence.",
+		Content:   "extra",
+		Token:     5,
+		IsDeleted: 0,
+	}
+	InsertRecordInfo(record)
+
+	records, err := getRecordsByUserId(userId)
+	if err != nil {
+		t.Fatalf("getRecordsByUserId failed: %v", err)
+	}
+	if len(records) != 1 {
+		t.Fatalf("expected 1 record, got %d", len(records))
+	}
+	if records[0].Question != "What is AI?" {
+		t.Errorf("unexpected question: %s", records[0].Question)
+	}
+
+	DeleteMsgRecord(userId)
+}
+
+func TestDeleteRecord(t *testing.T) {
+
+	userId := int64(456)
+	InsertUser(userId, "default")
+
+	// 插入未删除记录
+	record := &Record{
+		UserId:    userId,
+		Question:  "Delete me?",
+		Answer:    "Yes",
+		Content:   "data",
+		Token:     1,
+		IsDeleted: 0,
+	}
+	InsertRecordInfo(record)
+
+	// 删除
+	err := DeleteRecord(userId)
+	if err != nil {
+		t.Fatalf("DeleteRecord failed: %v", err)
+	}
+
+	// 确认记录被标记为删除
+	rows, _ := DB.Query("SELECT is_deleted FROM records WHERE user_id = ?", userId)
+	defer rows.Close()
+
+	for rows.Next() {
+		var isDeleted int
+		rows.Scan(&isDeleted)
+		if isDeleted != 1 {
+			t.Errorf("record not marked as deleted")
+		}
+	}
 }

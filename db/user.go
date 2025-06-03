@@ -2,9 +2,10 @@ package db
 
 import (
 	"database/sql"
+	"time"
+
 	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
 	"github.com/yincongcyincong/telegram-deepseek-bot/metrics"
-	"time"
 )
 
 type User struct {
@@ -37,12 +38,12 @@ func InsertUser(userId int64, mode string) (int64, error) {
 // GetUserByID get user by userId
 func GetUserByID(userId int64) (*User, error) {
 	// select one use base on name
-	querySQL := `SELECT id, user_id, mode, token, avail_token FROM users WHERE user_id = ?`
+	querySQL := `SELECT id, user_id, mode, token, avail_token, updatetime FROM users WHERE user_id = ?`
 	row := DB.QueryRow(querySQL, userId)
 
 	// scan row get result
 	var user User
-	err := row.Scan(&user.ID, &user.UserId, &user.Mode, &user.Token, &user.AvailToken)
+	err := row.Scan(&user.ID, &user.UserId, &user.Mode, &user.Token, &user.AvailToken, &user.Updatetime)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			// 如果没有找到数据，返回 nil
@@ -86,7 +87,7 @@ func UpdateUserMode(userId int64, mode string) error {
 
 // UpdateUserUpdateTime update user updateTime
 func UpdateUserUpdateTime(userId int64, updateTime int64) error {
-	updateSQL := `UPDATE users SET updateTime = ? WHERE user_id = ?`
+	updateSQL := `UPDATE users SET updatetime = ? WHERE user_id = ?`
 	_, err := DB.Exec(updateSQL, updateTime, userId)
 	return err
 }
