@@ -2,7 +2,9 @@ package utils
 
 import (
 	"crypto/md5"
+	"encoding/base64"
 	"encoding/hex"
+	"errors"
 	"io"
 	"net/http"
 	"net/url"
@@ -12,6 +14,7 @@ import (
 	"unicode/utf16"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/volcengine/volc-sdk-golang/service/visual"
 	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
 	"github.com/yincongcyincong/telegram-deepseek-bot/i18n"
 	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
@@ -293,4 +296,80 @@ func CreateBot() *tgbotapi.BotAPI {
 	conf.Bot.Send(cmdCfg)
 
 	return conf.Bot
+}
+
+func GetContent(update tgbotapi.Update, bot *tgbotapi.BotAPI, content string) (string, error) {
+	// check user chat exceed max count
+	if CheckUserChatExceed(update, bot) {
+		return "", errors.New("token exceed")
+	}
+
+	if content == "" && update.Message.Voice != nil && *conf.AudioAppID != "" {
+		audioContent := GetAudioContent(update, bot)
+		if audioContent == nil {
+			logger.Warn("audio url empty")
+			return "", errors.New("audio url empty")
+		}
+		content = FileRecognize(audioContent)
+	}
+
+	if content == "" && update.Message.Photo != nil {
+		imageContent, err := GetImageContent(GetPhotoContent(update, bot))
+		if err != nil {
+			logger.Warn("get image content err", "err", err)
+			return "", err
+		}
+		content = imageContent
+	}
+
+	if content == "" {
+		logger.Warn("content empty")
+		return "", errors.New("content empty")
+	}
+
+	text := strings.ReplaceAll(content, "@"+bot.Self.UserName, "")
+	return text, nil
+}
+
+func FileRecognize(audioContent []byte) string {
+
+	client := BuildAsrClient()
+	client.Appid = *conf.AudioAppID
+	client.Token = *conf.AudioToken
+	client.Cluster = *conf.AudioCluster
+
+	asrResponse, err := client.RequestAsr(audioContent)
+	if err != nil {
+		logger.Error("fail to request asr ", "err", err)
+		return ""
+	}
+
+	if len(asrResponse.Results) == 0 {
+		logger.Error("fail to request asr", "results", asrResponse.Results)
+		return ""
+	}
+
+	return asrResponse.Results[0].Text
+
+}
+
+func GetImageContent(imageContent []byte) (string, error) {
+	visual.DefaultInstance.Client.SetAccessKey(*conf.VolcAK)
+	visual.DefaultInstance.Client.SetSecretKey(*conf.VolcSK)
+
+	form := url.Values{}
+	form.Add("image_base64", base64.StdEncoding.EncodeToString(imageContent))
+
+	resp, _, err := visual.DefaultInstance.OCRNormal(form)
+	if err != nil {
+		logger.Error("request img api fail", "err", err)
+		return "", err
+	}
+
+	if resp.Code != 10000 {
+		logger.Error("request img api fail", "code", resp.Code, "msg", resp.Message)
+		return "", errors.New("request img api fail")
+	}
+
+	return strings.Join(resp.Data.LineTexts, ","), nil
 }

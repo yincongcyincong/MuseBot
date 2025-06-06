@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-	"strings"
 	"time"
 
 	"github.com/cohesion-org/deepseek-go"
@@ -61,7 +60,7 @@ func (d *DeepseekReq) GetContent() {
 		close(d.MessageChan)
 	}()
 
-	text, err := GetContent(d.Update, d.Bot, d.Content)
+	text, err := utils.GetContent(d.Update, d.Bot, d.Content)
 	if err != nil {
 		logger.Error("get content fail", "err", err)
 		return
@@ -327,37 +326,4 @@ func GetBalanceInfo() *deepseek.BalanceResponse {
 	}
 
 	return balance
-}
-
-func GetContent(update tgbotapi.Update, bot *tgbotapi.BotAPI, content string) (string, error) {
-	// check user chat exceed max count
-	if utils.CheckUserChatExceed(update, bot) {
-		return "", errors.New("token exceed")
-	}
-
-	if content == "" && update.Message.Voice != nil && *conf.AudioAppID != "" {
-		audioContent := utils.GetAudioContent(update, bot)
-		if audioContent == nil {
-			logger.Warn("audio url empty")
-			return "", errors.New("audio url empty")
-		}
-		content = FileRecognize(audioContent)
-	}
-
-	if content == "" && update.Message.Photo != nil {
-		imageContent, err := GetImageContent(utils.GetPhotoContent(update, bot))
-		if err != nil {
-			logger.Warn("get image content err", "err", err)
-			return "", err
-		}
-		content = imageContent
-	}
-
-	if content == "" {
-		logger.Warn("content empty")
-		return "", errors.New("content empty")
-	}
-
-	text := strings.ReplaceAll(content, "@"+bot.Self.UserName, "")
-	return text, nil
 }

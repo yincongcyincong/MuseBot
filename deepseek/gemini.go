@@ -44,7 +44,7 @@ func (h *GeminiReq) GetContent() {
 		close(h.MessageChan)
 	}()
 
-	text, err := GetContent(h.Update, h.Bot, h.Content)
+	text, err := utils.GetContent(h.Update, h.Bot, h.Content)
 	if err != nil {
 		logger.Error("get content fail", "err", err)
 		return

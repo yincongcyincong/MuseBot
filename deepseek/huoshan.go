@@ -2,14 +2,12 @@ package deepseek
 
 import (
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
-	"strings"
 	"time"
 
 	"github.com/cohesion-org/deepseek-go"
@@ -53,7 +51,7 @@ func (h *HuoshanReq) GetContent() {
 		close(h.MessageChan)
 	}()
 
-	text, err := GetContent(h.Update, h.Bot, h.Content)
+	text, err := utils.GetContent(h.Update, h.Bot, h.Content)
 	if err != nil {
 		logger.Error("get content fail", "err", err)
 		return
@@ -426,48 +424,4 @@ func GenerateVideo(prompt string) (string, error) {
 			return "", errors.New("create video fail")
 		}
 	}
-
-}
-
-func FileRecognize(audioContent []byte) string {
-
-	client := utils.BuildAsrClient()
-	client.Appid = *conf.AudioAppID
-	client.Token = *conf.AudioToken
-	client.Cluster = *conf.AudioCluster
-
-	asrResponse, err := client.RequestAsr(audioContent)
-	if err != nil {
-		logger.Error("fail to request asr ", "err", err)
-		return ""
-	}
-
-	if len(asrResponse.Results) == 0 {
-		logger.Error("fail to request asr", "results", asrResponse.Results)
-		return ""
-	}
-
-	return asrResponse.Results[0].Text
-
-}
-
-func GetImageContent(imageContent []byte) (string, error) {
-	visual.DefaultInstance.Client.SetAccessKey(*conf.VolcAK)
-	visual.DefaultInstance.Client.SetSecretKey(*conf.VolcSK)
-
-	form := url.Values{}
-	form.Add("image_base64", base64.StdEncoding.EncodeToString(imageContent))
-
-	resp, _, err := visual.DefaultInstance.OCRNormal(form)
-	if err != nil {
-		logger.Error("request img api fail", "err", err)
-		return "", err
-	}
-
-	if resp.Code != 10000 {
-		logger.Error("request img api fail", "code", resp.Code, "msg", resp.Message)
-		return "", errors.New("request img api fail")
-	}
-
-	return strings.Join(resp.Data.LineTexts, ","), nil
 }
