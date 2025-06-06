@@ -136,7 +136,7 @@ func (h *HuoshanReq) send(ctx context.Context, messages []*model.ChatCompletionM
 	)
 
 	req := model.ChatCompletionRequest{
-		Model:    *conf.DeepseekType,
+		Model:    *conf.Type,
 		Messages: messages,
 		StreamOptions: &model.StreamOptions{
 			IncludeUsage: true,

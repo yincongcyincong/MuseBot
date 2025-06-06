@@ -128,7 +128,7 @@ func executeLLM(update tgbotapi.Update, bot *tgbotapi.BotAPI, content string) {
 	messageChan := make(chan *param.MsgInfo)
 	var dpReq deepseek.Deepseek
 
-	switch *conf.DeepseekType {
+	switch *conf.Type {
 	case param.DeepSeek:
 		dpReq = &deepseek.DeepseekReq{
 			Content:            content,
@@ -450,7 +450,7 @@ func addToken(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 func showBalanceInfo(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	chatId, msgId, _ := utils.GetChatIdAndMsgIdAndUserID(update)
 
-	if *conf.DeepseekType != param.DeepSeek {
+	if *conf.Type != param.DeepSeek {
 		i18n.SendMsg(chatId, "not_deepseek", bot, nil, msgId)
 		return
 	}
@@ -518,7 +518,7 @@ func sendModeConfigurationOptions(update tgbotapi.Update, bot *tgbotapi.BotAPI) 
 
 	var inlineKeyboard tgbotapi.InlineKeyboardMarkup
 	inlineButton := make([][]tgbotapi.InlineKeyboardButton, 0)
-	switch *conf.DeepseekType {
+	switch *conf.Type {
 	case param.DeepSeek:
 		if *conf.CustomUrl == "" || *conf.CustomUrl == "https://api.deepseek.com/" {
 			for k := range param.DeepseekModels {

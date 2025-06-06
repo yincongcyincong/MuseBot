@@ -18,7 +18,7 @@ var (
 	ErnieAK       *string
 	ErnieSK       *string
 
-	DeepseekType  *string // simple complex
+	Type          *string // simple complex
 	CustomUrl     *string
 	VolcAK        *string
 	VolcSK        *string
@@ -54,7 +54,7 @@ func InitConf() {
 	VolcSK = flag.String("volc_sk", "", "volc sk")
 
 	CustomUrl = flag.String("custom_url", "https://api.deepseek.com/", "deepseek custom url")
-	DeepseekType = flag.String("deepseek_type", "deepseek", "deepseek auth type")
+	Type = flag.String("type", "deepseek", "llm type: deepseek gemini openai")
 	DBType = flag.String("db_type", "sqlite3", "db type")
 	DBConf = flag.String("db_conf", "./data/telegram_bot.db", "db conf")
 	DeepseekProxy = flag.String("deepseek_proxy", "", "db conf")
@@ -91,8 +91,8 @@ func InitConf() {
 		*CustomUrl = os.Getenv("CUSTOM_URL")
 	}
 
-	if os.Getenv("DEEPSEEK_TYPE") != "" {
-		*DeepseekType = os.Getenv("DEEPSEEK_TYPE")
+	if os.Getenv("TYPE") != "" {
+		*Type = os.Getenv("TYPE")
 	}
 
 	if os.Getenv("VOLC_AK") != "" {
@@ -205,7 +205,7 @@ func InitConf() {
 	logger.Info("CONF", "TelegramBotToken", *BotToken)
 	logger.Info("CONF", "DeepseekToken", *DeepseekToken)
 	logger.Info("CONF", "CustomUrl", *CustomUrl)
-	logger.Info("CONF", "DeepseekType", *DeepseekType)
+	logger.Info("CONF", "Type", *Type)
 	logger.Info("CONF", "VolcAK", *VolcAK)
 	logger.Info("CONF", "VolcSK", *VolcSK)
 	logger.Info("CONF", "DBType", *DBType)
