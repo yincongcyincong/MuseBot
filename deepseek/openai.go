@@ -46,8 +46,8 @@ func (d *OpenAIReq) GetContent() {
 		utils.DecreaseUserChat(d.Update)
 		close(d.MessageChan)
 	}()
-
-	text, err := GetContent(d.Update, d.Bot, d.Content)
+	
+	text, err := utils.GetContent(d.Update, d.Bot, d.Content)
 	if err != nil {
 		logger.Error("get content fail", "err", err)
 		return

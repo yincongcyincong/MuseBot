@@ -37,12 +37,13 @@ func StartListenRobot() {
 
 		updates := bot.GetUpdatesChan(u)
 		for update := range updates {
-			ExecUpdate(update, bot)
+			execUpdate(update, bot)
 		}
 	}
 }
 
-func ExecUpdate(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
+// execUpdate exec telegram message
+func execUpdate(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	chatId, msgId, userId := utils.GetChatIdAndMsgIdAndUserID(update)
 
 	if !checkUserAllow(update) && !checkGroupAllow(update) {
@@ -57,7 +58,6 @@ func ExecUpdate(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	}
 	// check whether you have new message
 	if update.Message != nil {
-
 		if skipThisMsg(update, bot) {
 			logger.Warn("skip this msg", "msgId", msgId, "chat", chatId)
 			return
@@ -83,6 +83,7 @@ func requestDeepseekAndResp(update tgbotapi.Update, bot *tgbotapi.BotAPI, conten
 
 }
 
+// executeChain use langchain to interact llm
 func executeChain(update tgbotapi.Update, bot *tgbotapi.BotAPI, content string) {
 	messageChan := make(chan *param.MsgInfo)
 
@@ -98,7 +99,7 @@ func executeChain(update tgbotapi.Update, bot *tgbotapi.BotAPI, content string) 
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 		defer cancel()
 
-		text, err := deepseek.GetContent(update, bot, content)
+		text, err := utils.GetContent(update, bot, content)
 		if err != nil {
 			logger.Error("get content fail", "err", err)
 			return
@@ -122,6 +123,7 @@ func executeChain(update tgbotapi.Update, bot *tgbotapi.BotAPI, content string) 
 
 }
 
+// executeLLM directly interact llm
 func executeLLM(update tgbotapi.Update, bot *tgbotapi.BotAPI, content string) {
 	messageChan := make(chan *param.MsgInfo)
 	var dpReq deepseek.Deepseek
@@ -236,16 +238,9 @@ func handleUpdate(messageChan chan *param.MsgInfo, update tgbotapi.Update, bot *
 			}
 			msg.MsgId = sendInfo.MessageID
 		} else {
-			updateMsg := tgbotapi.EditMessageTextConfig{
-				BaseEdit: tgbotapi.BaseEdit{
-					ChatID:    chatId,
-					MessageID: msg.MsgId,
-				},
-				Text:      msg.Content,
-				ParseMode: parseMode,
-			}
+			updateMsg := tgbotapi.NewEditMessageText(chatId, msg.MsgId, msg.Content)
+			updateMsg.ParseMode = parseMode
 			_, err = bot.Send(updateMsg)
-
 			if err != nil {
 				// try again
 				if sleepUtilNoLimit(msgId, err) {
@@ -266,6 +261,7 @@ func handleUpdate(messageChan chan *param.MsgInfo, update tgbotapi.Update, bot *
 	}
 }
 
+// sleepUtilNoLimit handle "Too Many Requests" error
 func sleepUtilNoLimit(msgId int, err error) bool {
 	var apiErr *tgbotapi.Error
 	if errors.As(err, &apiErr) && apiErr.Message == "Too Many Requests" {
@@ -278,6 +274,7 @@ func sleepUtilNoLimit(msgId int, err error) bool {
 	return false
 }
 
+// handleCommandAndCallback telegram command and callback function
 func handleCommandAndCallback(update tgbotapi.Update, bot *tgbotapi.BotAPI) bool {
 	// if it's command, directly
 	if update.Message != nil && update.Message.IsCommand() {
@@ -299,6 +296,7 @@ func handleCommandAndCallback(update tgbotapi.Update, bot *tgbotapi.BotAPI) bool
 	return false
 }
 
+// skipThisMsg check if msg trigger llm
 func skipThisMsg(update tgbotapi.Update, bot *tgbotapi.BotAPI) bool {
 	if update.Message.Chat.Type == "private" {
 		if strings.TrimSpace(update.Message.Text) == "" &&
@@ -321,6 +319,7 @@ func skipThisMsg(update tgbotapi.Update, bot *tgbotapi.BotAPI) bool {
 	return false
 }
 
+// handleCommand handle multiple commands
 func handleCommand(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	defer func() {
 		if err := recover(); err != nil {
@@ -371,6 +370,7 @@ func handleCommand(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	}
 }
 
+// sendChatMessage response chat command to telegram
 func sendChatMessage(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	chatId, msgID, _ := utils.GetChatIdAndMsgIdAndUserID(update)
 
@@ -383,11 +383,11 @@ func sendChatMessage(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 				logger.Warn("audio url empty")
 				return
 			}
-			messageText = deepseek.FileRecognize(audioContent)
+			messageText = utils.FileRecognize(audioContent)
 		}
 
 		if messageText == "" && update.Message.Photo != nil {
-			photoContent, err := deepseek.GetImageContent(utils.GetPhotoContent(update, bot))
+			photoContent, err := utils.GetImageContent(utils.GetPhotoContent(update, bot))
 			if err != nil {
 				logger.Warn("get photo content err", "err", err)
 				return
@@ -414,6 +414,8 @@ func sendChatMessage(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	// Reply to the chat content
 	requestDeepseekAndResp(update, bot, content)
 }
+
+// retryLastQuestion retry last question
 func retryLastQuestion(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	chatId, msgId, userId := utils.GetChatIdAndMsgIdAndUserID(update)
 
@@ -583,6 +585,7 @@ func sendModeConfigurationOptions(update tgbotapi.Update, bot *tgbotapi.BotAPI) 
 	i18n.SendMsg(chatID, "chat_mode", bot, &inlineKeyboard, msgId)
 }
 
+// sendHelpConfigurationOptions
 func sendHelpConfigurationOptions(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	chatID, msgId, _ := utils.GetChatIdAndMsgIdAndUserID(update)
 
@@ -652,20 +655,6 @@ func handleCallbackQuery(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 
 }
 
-func handleLocalMode(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
-
-	if *conf.CustomUrl == "" || *conf.CustomUrl == "https://api.deepseek.com/" {
-		callback := tgbotapi.NewCallback(update.CallbackQuery.ID, i18n.GetMessage(*conf.Lang, "mode_change_fail", nil))
-		if _, err := bot.Request(callback); err != nil {
-			logger.Warn("request callback fail", "err", err)
-		}
-		return
-	}
-
-	handleModeUpdate(update, bot)
-
-}
-
 // handleModeUpdate handle mode update
 func handleModeUpdate(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	userInfo, err := db.GetUserByID(update.CallbackQuery.From.ID)
@@ -701,6 +690,7 @@ func handleModeUpdate(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	//	i18n.GetMessage(*conf.Lang, "mode_choose", nil)+update.CallbackQuery.Data, bot, update.CallbackQuery.Message.MessageID)
 }
 
+// sendFailMessage send set mode fail msg
 func sendFailMessage(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	callback := tgbotapi.NewCallback(update.CallbackQuery.ID, i18n.GetMessage(*conf.Lang, "set_mode", nil))
 	if _, err := bot.Request(callback); err != nil {
@@ -710,6 +700,7 @@ func sendFailMessage(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	i18n.SendMsg(update.CallbackQuery.Message.Chat.ID, "set_mode", bot, nil, update.CallbackQuery.Message.MessageID)
 }
 
+// sendTask trigger task command
 func sendTask(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	if utils.CheckUserChatExceed(update, bot) {
 		return
@@ -754,6 +745,7 @@ func sendTask(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 
 }
 
+// sendVideo send video to telegram
 func sendVideo(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	if utils.CheckUserChatExceed(update, bot) {
 		return
@@ -820,6 +812,7 @@ func sendVideo(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	return
 }
 
+// sendImg send img to telegram
 func sendImg(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	if utils.CheckUserChatExceed(update, bot) {
 		return
@@ -887,6 +880,7 @@ func sendImg(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	return
 }
 
+// checkUserAllow check use can use telegram bot or not
 func checkUserAllow(update tgbotapi.Update) bool {
 	if len(conf.AllowedTelegramUserIds) == 0 {
 		return true
@@ -921,6 +915,7 @@ func checkGroupAllow(update tgbotapi.Update) bool {
 	return false
 }
 
+// checkUserTokenExceed check use token exceeded
 func checkUserTokenExceed(update tgbotapi.Update, bot *tgbotapi.BotAPI) bool {
 	if *conf.TokenPerUser == 0 {
 		return false
@@ -949,6 +944,7 @@ func checkUserTokenExceed(update tgbotapi.Update, bot *tgbotapi.BotAPI) bool {
 	return false
 }
 
+// checkAdminUser check user is admin
 func checkAdminUser(update tgbotapi.Update) bool {
 	if len(conf.AdminUserIds) == 0 {
 		return false
@@ -959,6 +955,7 @@ func checkAdminUser(update tgbotapi.Update) bool {
 	return ok
 }
 
+// ExecuteForceReply use force reply interact with user
 func ExecuteForceReply(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	defer func() {
 		if err := recover(); err != nil {
