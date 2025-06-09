@@ -126,7 +126,7 @@ func executeChain(update tgbotapi.Update, bot *tgbotapi.BotAPI, content string) 
 // executeLLM directly interact llm
 func executeLLM(update tgbotapi.Update, bot *tgbotapi.BotAPI, content string) {
 	messageChan := make(chan *param.MsgInfo)
-	var dpReq deepseek.Deepseek
+	var dpReq deepseek.LLM
 
 	switch *conf.Type {
 	case param.DeepSeek:
