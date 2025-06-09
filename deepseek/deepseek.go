@@ -29,7 +29,7 @@ var (
 	toolsJsonErr = errors.New("tools json error")
 )
 
-type Deepseek interface {
+type LLM interface {
 	GetContent()
 }
 
@@ -65,14 +65,14 @@ func (d *DeepseekReq) GetContent() {
 		logger.Error("get content fail", "err", err)
 		return
 	}
-	err = d.callDeepSeekAPI(ctx, text)
+	err = d.CallDeepSeekAPI(ctx, text)
 	if err != nil {
 		logger.Error("Error calling DeepSeek API", "err", err)
 	}
 }
 
-// callDeepSeekAPI request DeepSeek API and get response
-func (d *DeepseekReq) callDeepSeekAPI(ctx context.Context, prompt string) error {
+// CallDeepSeekAPI request DeepSeek API and get response
+func (d *DeepseekReq) CallDeepSeekAPI(ctx context.Context, prompt string) error {
 	_, _, userId := utils.GetChatIdAndMsgIdAndUserID(d.Update)
 	d.Model = deepseek.DeepSeekChat
 	userInfo, err := db.GetUserByID(userId)
