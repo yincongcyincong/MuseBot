@@ -1,4 +1,4 @@
-package deepseek
+package llm
 
 import (
 	"context"
@@ -19,21 +19,7 @@ import (
 	"github.com/yincongcyincong/telegram-deepseek-bot/utils"
 )
 
-const (
-	OneMsgLen       = 3896
-	FirstSendLen    = 30
-	NonFirstSendLen = 500
-)
-
-var (
-	toolsJsonErr = errors.New("tools json error")
-)
-
-type LLM interface {
-	GetContent()
-}
-
-type DeepseekReq struct {
+type OllamaDeepseekReq struct {
 	MessageChan chan *param.MsgInfo
 	Update      tgbotapi.Update
 	Bot         *tgbotapi.BotAPI
@@ -48,7 +34,7 @@ type DeepseekReq struct {
 }
 
 // GetContent get comment from deepseek
-func (d *DeepseekReq) GetContent() {
+func (d *OllamaDeepseekReq) GetContent() {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
@@ -65,33 +51,25 @@ func (d *DeepseekReq) GetContent() {
 		logger.Error("get content fail", "err", err)
 		return
 	}
-	err = d.CallDeepSeekAPI(ctx, text)
+	err = d.CallLLMAPI(ctx, text)
 	if err != nil {
 		logger.Error("Error calling DeepSeek API", "err", err)
 	}
 }
 
-// CallDeepSeekAPI request DeepSeek API and get response
-func (d *DeepseekReq) CallDeepSeekAPI(ctx context.Context, prompt string) error {
+// CallLLMAPI request DeepSeek API and get response
+func (d *OllamaDeepseekReq) CallLLMAPI(ctx context.Context, prompt string) error {
 	_, _, userId := utils.GetChatIdAndMsgIdAndUserID(d.Update)
 	d.Model = deepseek.DeepSeekChat
 	userInfo, err := db.GetUserByID(userId)
 	if err != nil {
 		logger.Error("Error getting user info", "err", err)
 	}
-	if userInfo != nil && userInfo.Mode != "" && param.DeepseekModels[userInfo.Mode] {
+	if userInfo != nil && userInfo.Mode != "" {
 		logger.Info("User info", "userID", userInfo.UserId, "mode", userInfo.Mode)
 		d.Model = userInfo.Mode
 	}
 
-	messages := d.getMessages(userId, prompt)
-
-	logger.Info("msg receive", "userID", userId, "prompt", prompt)
-
-	return d.send(ctx, messages)
-}
-
-func (d *DeepseekReq) getMessages(userId int64, prompt string) []deepseek.ChatCompletionMessage {
 	messages := make([]deepseek.ChatCompletionMessage, 0)
 
 	msgRecords := db.GetMsgRecord(userId)
@@ -111,7 +89,7 @@ func (d *DeepseekReq) getMessages(userId int64, prompt string) []deepseek.ChatCo
 				})
 				if record.Content != "" {
 					toolsMsgs := make([]deepseek.ChatCompletionMessage, 0)
-					err := json.Unmarshal([]byte(record.Content), &toolsMsgs)
+					err = json.Unmarshal([]byte(record.Content), &toolsMsgs)
 					if err != nil {
 						logger.Error("Error unmarshalling tools json", "err", err)
 					} else {
@@ -125,29 +103,23 @@ func (d *DeepseekReq) getMessages(userId int64, prompt string) []deepseek.ChatCo
 			}
 		}
 	}
+
 	messages = append(messages, deepseek.ChatCompletionMessage{
 		Role:    constants.ChatMessageRoleUser,
 		Content: prompt,
 	})
 
-	return messages
+	logger.Info("msg receive", "userID", userId, "prompt", prompt)
+
+	return d.send(ctx, messages)
 }
 
-func (d *DeepseekReq) send(ctx context.Context, messages []deepseek.ChatCompletionMessage) error {
+func (d *OllamaDeepseekReq) send(ctx context.Context, messages []deepseek.ChatCompletionMessage) error {
 	start := time.Now()
 	_, updateMsgID, userId := utils.GetChatIdAndMsgIdAndUserID(d.Update)
-	// set deepseek proxy
-	httpClient := utils.GetDeepseekProxyClient()
-
-	client, err := deepseek.NewClientWithOptions(*conf.DeepseekToken,
-		deepseek.WithBaseURL(*conf.CustomUrl), deepseek.WithHTTPClient(httpClient))
-	if err != nil {
-		logger.Error("Error creating deepseek client", "err", err)
-		return err
-	}
 
 	request := &deepseek.StreamChatCompletionRequest{
-		Model:  d.Model,
+		Model:  "llava:latest",
 		Stream: true,
 		StreamOptions: deepseek.StreamOptions{
 			IncludeUsage: true,
@@ -164,7 +136,7 @@ func (d *DeepseekReq) send(ctx context.Context, messages []deepseek.ChatCompleti
 
 	request.Messages = messages
 
-	stream, err := client.CreateChatCompletionStream(ctx, request)
+	stream, err := deepseek.CreateOllamaChatCompletionStream(ctx, request)
 	if err != nil {
 		logger.Error("ChatCompletionStream error", "updateMsgID", updateMsgID, "err", err)
 		return err
@@ -241,7 +213,7 @@ func (d *DeepseekReq) send(ctx context.Context, messages []deepseek.ChatCompleti
 	return nil
 }
 
-func (d *DeepseekReq) sendMsg(msgInfoContent *param.MsgInfo, choice deepseek.StreamChoices) {
+func (d *OllamaDeepseekReq) sendMsg(msgInfoContent *param.MsgInfo, choice deepseek.StreamChoices) {
 	// exceed max telegram one message length
 	if utils.Utf16len(msgInfoContent.Content) > OneMsgLen {
 		d.MessageChan <- msgInfoContent
@@ -258,7 +230,7 @@ func (d *DeepseekReq) sendMsg(msgInfoContent *param.MsgInfo, choice deepseek.Str
 	}
 }
 
-func (d *DeepseekReq) requestToolsCall(ctx context.Context, choice deepseek.StreamChoices) error {
+func (d *OllamaDeepseekReq) requestToolsCall(ctx context.Context, choice deepseek.StreamChoices) error {
 
 	for _, toolCall := range choice.Delta.ToolCalls {
 		property := make(map[string]interface{})
@@ -309,21 +281,4 @@ func (d *DeepseekReq) requestToolsCall(ctx context.Context, choice deepseek.Stre
 
 	return nil
 
-}
-
-// GetBalanceInfo get balance info
-func GetBalanceInfo() *deepseek.BalanceResponse {
-	client := deepseek.NewClient(*conf.DeepseekToken)
-	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
-	defer cancel()
-	balance, err := deepseek.GetBalance(client, ctx)
-	if err != nil {
-		logger.Error("Error getting balance", "err", err)
-	}
-
-	if balance == nil || len(balance.BalanceInfos) == 0 {
-		logger.Error("No balance information returned")
-	}
-
-	return balance
 }

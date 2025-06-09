@@ -8,32 +8,22 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/yincongcyincong/langchaingo/llms"
 	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
-	local_deepseek "github.com/yincongcyincong/telegram-deepseek-bot/deepseek"
+	"github.com/yincongcyincong/telegram-deepseek-bot/llm"
 	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
 	"github.com/yincongcyincong/telegram-deepseek-bot/param"
-)
-
-const (
-	OneMsgLen       = 3896
-	FirstSendLen    = 30
-	NonFirstSendLen = 500
-)
-
-var (
-	toolsJsonErr = errors.New("tools json error")
 )
 
 type DeepSeekLLM struct {
 	Client *deepseek.Client
 
-	DpReq *local_deepseek.DeepseekReq
+	DpReq *llm.DeepseekReq
 }
 
 func NewDeepSeekLLM(options ...Option) *DeepSeekLLM {
 	dp := &DeepSeekLLM{
 		Client: deepseek.NewClient(*conf.DeepseekToken),
 
-		DpReq: &local_deepseek.DeepseekReq{
+		DpReq: &llm.DeepseekReq{
 			ToolCall:           []deepseek.ToolCall{},
 			ToolMessage:        []deepseek.ChatCompletionMessage{},
 			CurrentToolMessage: []deepseek.ChatCompletionMessage{},
@@ -102,7 +92,7 @@ func (l *DeepSeekLLM) GenerateContent(ctx context.Context, messages []llms.Messa
 		l.DpReq.Content = tmpContent
 	}
 
-	err = l.DpReq.CallDeepSeekAPI(ctx, l.DpReq.Content)
+	err = l.DpReq.CallLLMAPI(ctx, l.DpReq.Content)
 	if err != nil {
 		logger.Error("error calling DeepSeek API", "err", err)
 		return nil, errors.New("error calling DeepSeek API")
