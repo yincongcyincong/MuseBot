@@ -1,4 +1,4 @@
-package deepseek
+package llm
 
 import (
 	"context"
@@ -49,14 +49,14 @@ func (h *GeminiReq) GetContent() {
 		logger.Error("get content fail", "err", err)
 		return
 	}
-	err = h.getContent(ctx, text)
+	err = h.CallLLMAPI(ctx, text)
 	if err != nil {
 		logger.Error("Error calling DeepSeek API", "err", err)
 	}
 
 }
 
-func (h *GeminiReq) getContent(ctx context.Context, prompt string) error {
+func (h *GeminiReq) CallLLMAPI(ctx context.Context, prompt string) error {
 	_, _, userId := utils.GetChatIdAndMsgIdAndUserID(h.Update)
 
 	h.Model = param.ModelGemini20Flash

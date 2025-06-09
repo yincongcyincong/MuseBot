@@ -1,4 +1,4 @@
-package deepseek
+package llm
 
 import (
 	"context"
@@ -6,8 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"net/http"
-	"net/url"
 	"time"
 
 	"github.com/cohesion-org/deepseek-go"
@@ -56,14 +54,14 @@ func (h *HuoshanReq) GetContent() {
 		logger.Error("get content fail", "err", err)
 		return
 	}
-	err = h.getContentFromHS(ctx, text)
+	err = h.CallLLMAPI(ctx, text)
 	if err != nil {
 		logger.Error("Error calling DeepSeek API", "err", err)
 	}
 
 }
 
-func (h *HuoshanReq) getContentFromHS(ctx context.Context, prompt string) error {
+func (h *HuoshanReq) CallLLMAPI(ctx context.Context, prompt string) error {
 	_, _, userId := utils.GetChatIdAndMsgIdAndUserID(h.Update)
 
 	messages := h.getMessages(userId, prompt)
@@ -357,20 +355,7 @@ func GenerateVideo(prompt string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
-	httpClient := &http.Client{
-		Timeout: 5 * time.Minute,
-	}
-
-	if *conf.DeepseekProxy != "" {
-		proxy, err := url.Parse(*conf.DeepseekProxy)
-		if err != nil {
-			logger.Error("parse deepseek proxy error", "err", err)
-		} else {
-			httpClient.Transport = &http.Transport{
-				Proxy: http.ProxyURL(proxy),
-			}
-		}
-	}
+	httpClient := utils.GetDeepseekProxyClient()
 
 	client := arkruntime.NewClientWithApiKey(
 		*conf.VideoToken,

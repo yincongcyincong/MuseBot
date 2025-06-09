@@ -2,10 +2,10 @@ package i18n
 
 import (
 	"encoding/json"
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
 
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
+	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
 	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
 	"golang.org/x/text/language"
 )

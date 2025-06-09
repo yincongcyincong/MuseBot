@@ -1,4 +1,4 @@
-package deepseek
+package llm
 
 import (
 	"context"
@@ -10,6 +10,7 @@ import (
 	"github.com/cohesion-org/deepseek-go"
 	"github.com/cohesion-org/deepseek-go/constants"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/sashabaranov/go-openai"
 	"github.com/yincongcyincong/mcp-client-go/clients"
 	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
 	"github.com/yincongcyincong/telegram-deepseek-bot/db"
@@ -19,7 +20,7 @@ import (
 	"github.com/yincongcyincong/telegram-deepseek-bot/utils"
 )
 
-type OllamaDeepseekReq struct {
+type OpenAIReq struct {
 	MessageChan chan *param.MsgInfo
 	Update      tgbotapi.Update
 	Bot         *tgbotapi.BotAPI
@@ -27,14 +28,14 @@ type OllamaDeepseekReq struct {
 	Model       string
 	Token       int
 
-	ToolCall           []deepseek.ToolCall
+	ToolCall           []openai.ToolCall
 	DeepSeekContent    string
-	ToolMessage        []deepseek.ChatCompletionMessage
-	CurrentToolMessage []deepseek.ChatCompletionMessage
+	ToolMessage        []openai.ChatCompletionMessage
+	CurrentToolMessage []openai.ChatCompletionMessage
 }
 
 // GetContent get comment from deepseek
-func (d *OllamaDeepseekReq) GetContent() {
+func (d *OpenAIReq) GetContent() {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
@@ -51,16 +52,16 @@ func (d *OllamaDeepseekReq) GetContent() {
 		logger.Error("get content fail", "err", err)
 		return
 	}
-	err = d.callDeepSeekAPI(ctx, text)
+	err = d.CallLLMAPI(ctx, text)
 	if err != nil {
 		logger.Error("Error calling DeepSeek API", "err", err)
 	}
 }
 
-// callDeepSeekAPI request DeepSeek API and get response
-func (d *OllamaDeepseekReq) callDeepSeekAPI(ctx context.Context, prompt string) error {
+// CallLLMAPI request DeepSeek API and get response
+func (d *OpenAIReq) CallLLMAPI(ctx context.Context, prompt string) error {
 	_, _, userId := utils.GetChatIdAndMsgIdAndUserID(d.Update)
-	d.Model = deepseek.DeepSeekChat
+	d.Model = openai.GPT3Dot5Turbo0125
 	userInfo, err := db.GetUserByID(userId)
 	if err != nil {
 		logger.Error("Error getting user info", "err", err)
@@ -70,7 +71,15 @@ func (d *OllamaDeepseekReq) callDeepSeekAPI(ctx context.Context, prompt string) 
 		d.Model = userInfo.Mode
 	}
 
-	messages := make([]deepseek.ChatCompletionMessage, 0)
+	messages := d.getMessages(userId, prompt)
+
+	logger.Info("msg receive", "userID", userId, "prompt", prompt)
+
+	return d.send(ctx, messages)
+}
+
+func (d *OpenAIReq) getMessages(userId int64, prompt string) []openai.ChatCompletionMessage {
+	messages := make([]openai.ChatCompletionMessage, 0)
 
 	msgRecords := db.GetMsgRecord(userId)
 	if msgRecords != nil {
@@ -83,20 +92,20 @@ func (d *OllamaDeepseekReq) callDeepSeekAPI(ctx context.Context, prompt string) 
 			if record.Answer != "" && record.Question != "" {
 				logger.Info("context content", "dialog", i, "question:", record.Question,
 					"toolContent", record.Content, "answer:", record.Answer)
-				messages = append(messages, deepseek.ChatCompletionMessage{
+				messages = append(messages, openai.ChatCompletionMessage{
 					Role:    constants.ChatMessageRoleUser,
 					Content: record.Question,
 				})
 				if record.Content != "" {
-					toolsMsgs := make([]deepseek.ChatCompletionMessage, 0)
-					err = json.Unmarshal([]byte(record.Content), &toolsMsgs)
+					toolsMsgs := make([]openai.ChatCompletionMessage, 0)
+					err := json.Unmarshal([]byte(record.Content), &toolsMsgs)
 					if err != nil {
 						logger.Error("Error unmarshalling tools json", "err", err)
 					} else {
 						messages = append(messages, toolsMsgs...)
 					}
 				}
-				messages = append(messages, deepseek.ChatCompletionMessage{
+				messages = append(messages, openai.ChatCompletionMessage{
 					Role:    constants.ChatMessageRoleAssistant,
 					Content: record.Answer,
 				})
@@ -104,24 +113,45 @@ func (d *OllamaDeepseekReq) callDeepSeekAPI(ctx context.Context, prompt string) 
 		}
 	}
 
-	messages = append(messages, deepseek.ChatCompletionMessage{
+	messages = append(messages, openai.ChatCompletionMessage{
 		Role:    constants.ChatMessageRoleUser,
 		Content: prompt,
 	})
 
-	logger.Info("msg receive", "userID", userId, "prompt", prompt)
-
-	return d.send(ctx, messages)
+	return messages
 }
 
-func (d *OllamaDeepseekReq) send(ctx context.Context, messages []deepseek.ChatCompletionMessage) error {
+func (d *OpenAIReq) send(ctx context.Context, messages []openai.ChatCompletionMessage) error {
 	start := time.Now()
 	_, updateMsgID, userId := utils.GetChatIdAndMsgIdAndUserID(d.Update)
 
-	request := &deepseek.StreamChatCompletionRequest{
-		Model:  "llava:latest",
+	userInfo, err := db.GetUserByID(userId)
+	if err != nil {
+		logger.Error("Error getting user info", "err", err)
+	}
+
+	d.Model = openai.GPT3Dot5Turbo0125
+	if userInfo != nil && userInfo.Mode != "" && param.OpenAIModels[userInfo.Mode] {
+		logger.Info("User info", "userID", userInfo.UserId, "mode", userInfo.Mode)
+		d.Model = userInfo.Mode
+	}
+
+	// set deepseek proxy
+	httpClient := utils.GetDeepseekProxyClient()
+
+	openaiConfig := openai.DefaultConfig(*conf.OpenAIToken)
+	if *conf.CustomUrl != "" {
+		openaiConfig.BaseURL = *conf.CustomUrl
+	}
+
+	openaiConfig.BaseURL = "https://api.chatanywhere.org"
+	openaiConfig.HTTPClient = httpClient
+	client := openai.NewClientWithConfig(openaiConfig)
+
+	request := openai.ChatCompletionRequest{
+		Model:  d.Model,
 		Stream: true,
-		StreamOptions: deepseek.StreamOptions{
+		StreamOptions: &openai.StreamOptions{
 			IncludeUsage: true,
 		},
 		MaxTokens:        *conf.MaxTokens,
@@ -132,11 +162,12 @@ func (d *OllamaDeepseekReq) send(ctx context.Context, messages []deepseek.ChatCo
 		Stop:             conf.Stop,
 		PresencePenalty:  float32(*conf.PresencePenalty),
 		Temperature:      float32(*conf.Temperature),
+		Tools:            conf.OpenAITools,
 	}
 
 	request.Messages = messages
 
-	stream, err := deepseek.CreateOllamaChatCompletionStream(ctx, request)
+	stream, err := client.CreateChatCompletionStream(ctx, request)
 	if err != nil {
 		logger.Error("ChatCompletionStream error", "updateMsgID", updateMsgID, "err", err)
 		return err
@@ -192,7 +223,7 @@ func (d *OllamaDeepseekReq) send(ctx context.Context, messages []deepseek.ChatCo
 			Token:    d.Token,
 		}, true)
 	} else {
-		d.CurrentToolMessage = append([]deepseek.ChatCompletionMessage{
+		d.CurrentToolMessage = append([]openai.ChatCompletionMessage{
 			{
 				Role:      deepseek.ChatMessageRoleAssistant,
 				Content:   d.DeepSeekContent,
@@ -202,8 +233,8 @@ func (d *OllamaDeepseekReq) send(ctx context.Context, messages []deepseek.ChatCo
 
 		d.ToolMessage = append(d.ToolMessage, d.CurrentToolMessage...)
 		messages = append(messages, d.CurrentToolMessage...)
-		d.CurrentToolMessage = make([]deepseek.ChatCompletionMessage, 0)
-		d.ToolCall = make([]deepseek.ToolCall, 0)
+		d.CurrentToolMessage = make([]openai.ChatCompletionMessage, 0)
+		d.ToolCall = make([]openai.ToolCall, 0)
 		return d.send(ctx, messages)
 	}
 
@@ -213,7 +244,7 @@ func (d *OllamaDeepseekReq) send(ctx context.Context, messages []deepseek.ChatCo
 	return nil
 }
 
-func (d *OllamaDeepseekReq) sendMsg(msgInfoContent *param.MsgInfo, choice deepseek.StreamChoices) {
+func (d *OpenAIReq) sendMsg(msgInfoContent *param.MsgInfo, choice openai.ChatCompletionStreamChoice) {
 	// exceed max telegram one message length
 	if utils.Utf16len(msgInfoContent.Content) > OneMsgLen {
 		d.MessageChan <- msgInfoContent
@@ -230,8 +261,7 @@ func (d *OllamaDeepseekReq) sendMsg(msgInfoContent *param.MsgInfo, choice deepse
 	}
 }
 
-func (d *OllamaDeepseekReq) requestToolsCall(ctx context.Context, choice deepseek.StreamChoices) error {
-
+func (d *OpenAIReq) requestToolsCall(ctx context.Context, choice openai.ChatCompletionStreamChoice) error {
 	for _, toolCall := range choice.Delta.ToolCalls {
 		property := make(map[string]interface{})
 
@@ -268,7 +298,7 @@ func (d *OllamaDeepseekReq) requestToolsCall(ctx context.Context, choice deepsee
 			logger.Warn("exec tools fail", "err", err)
 			return err
 		}
-		d.CurrentToolMessage = append(d.CurrentToolMessage, deepseek.ChatCompletionMessage{
+		d.CurrentToolMessage = append(d.CurrentToolMessage, openai.ChatCompletionMessage{
 			Role:       constants.ChatMessageRoleTool,
 			Content:    toolsData,
 			ToolCallID: d.ToolCall[len(d.ToolCall)-1].ID,

@@ -232,7 +232,7 @@ func GetDeepseekProxyClient() *http.Client {
 
 	return &http.Client{
 		Transport: transport,
-		Timeout:   30 * time.Second, // 设置超时
+		Timeout:   5 * time.Minute, // 设置超时
 	}
 }
 

@@ -16,8 +16,8 @@ import (
 	"github.com/yincongcyincong/langchaingo/vectorstores"
 	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
 	"github.com/yincongcyincong/telegram-deepseek-bot/db"
-	"github.com/yincongcyincong/telegram-deepseek-bot/deepseek"
 	"github.com/yincongcyincong/telegram-deepseek-bot/i18n"
+	"github.com/yincongcyincong/telegram-deepseek-bot/llm"
 	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
 	"github.com/yincongcyincong/telegram-deepseek-bot/param"
 	"github.com/yincongcyincong/telegram-deepseek-bot/rag"
@@ -126,11 +126,11 @@ func executeChain(update tgbotapi.Update, bot *tgbotapi.BotAPI, content string) 
 // executeLLM directly interact llm
 func executeLLM(update tgbotapi.Update, bot *tgbotapi.BotAPI, content string) {
 	messageChan := make(chan *param.MsgInfo)
-	var dpReq deepseek.LLM
+	var dpReq llm.LLM
 
 	switch *conf.Type {
 	case param.DeepSeek:
-		dpReq = &deepseek.DeepseekReq{
+		dpReq = &llm.DeepseekReq{
 			Content:            content,
 			Update:             update,
 			Bot:                bot,
@@ -140,7 +140,7 @@ func executeLLM(update tgbotapi.Update, bot *tgbotapi.BotAPI, content string) {
 			CurrentToolMessage: []godeepseek.ChatCompletionMessage{},
 		}
 	case param.DeepSeekLlava:
-		dpReq = &deepseek.OllamaDeepseekReq{
+		dpReq = &llm.OllamaDeepseekReq{
 			Content:            content,
 			Update:             update,
 			Bot:                bot,
@@ -150,7 +150,7 @@ func executeLLM(update tgbotapi.Update, bot *tgbotapi.BotAPI, content string) {
 			CurrentToolMessage: []godeepseek.ChatCompletionMessage{},
 		}
 	case param.Gemini:
-		dpReq = &deepseek.GeminiReq{
+		dpReq = &llm.GeminiReq{
 			Content:            content,
 			Update:             update,
 			Bot:                bot,
@@ -160,7 +160,7 @@ func executeLLM(update tgbotapi.Update, bot *tgbotapi.BotAPI, content string) {
 			CurrentToolMessage: []*genai.Content{},
 		}
 	case param.OpenAi:
-		dpReq = &deepseek.OpenAIReq{
+		dpReq = &llm.OpenAIReq{
 			Content:            content,
 			Update:             update,
 			Bot:                bot,
@@ -170,7 +170,7 @@ func executeLLM(update tgbotapi.Update, bot *tgbotapi.BotAPI, content string) {
 			CurrentToolMessage: []openai.ChatCompletionMessage{},
 		}
 	default:
-		dpReq = &deepseek.HuoshanReq{
+		dpReq = &llm.HuoshanReq{
 			Content:            content,
 			Update:             update,
 			Bot:                bot,
@@ -455,7 +455,7 @@ func showBalanceInfo(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 		return
 	}
 
-	balance := deepseek.GetBalanceInfo()
+	balance := llm.GetBalanceInfo()
 
 	// handle balance info msg
 	msgContent := fmt.Sprintf(i18n.GetMessage(*conf.Lang, "balance_title", nil), balance.IsAvailable)
@@ -732,7 +732,7 @@ func sendTask(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	// send response message
 	messageChan := make(chan *param.MsgInfo)
 
-	dpReq := &deepseek.DeepseekTaskReq{
+	dpReq := &llm.DeepseekTaskReq{
 		Content:     prompt,
 		Update:      update,
 		Bot:         bot,
@@ -776,7 +776,7 @@ func sendVideo(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	}
 
 	thinkingMsgId := i18n.SendMsg(chatId, "thinking", bot, nil, replyToMessageID)
-	videoUrl, err := deepseek.GenerateVideo(prompt)
+	videoUrl, err := llm.GenerateVideo(prompt)
 	if err != nil {
 		logger.Warn("generate video fail", "err", err)
 		return
@@ -843,7 +843,7 @@ func sendImg(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	}
 
 	thinkingMsgId := i18n.SendMsg(chatId, "thinking", bot, nil, replyToMessageID)
-	data, err := deepseek.GenerateImg(prompt)
+	data, err := llm.GenerateImg(prompt)
 	if err != nil {
 		logger.Warn("generate image fail", "err", err)
 		return
