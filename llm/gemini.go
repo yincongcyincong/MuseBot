@@ -7,7 +7,6 @@ import (
 	"io"
 	"time"
 
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/yincongcyincong/mcp-client-go/clients"
 	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
 	"github.com/yincongcyincong/telegram-deepseek-bot/db"
@@ -19,60 +18,28 @@ import (
 )
 
 type GeminiReq struct {
-	MessageChan chan *param.MsgInfo
-	Update      tgbotapi.Update
-	Bot         *tgbotapi.BotAPI
-	Content     string
-	Model       string
-	Token       int
-
 	ToolCall           []*genai.FunctionCall
-	DeepSeekContent    string
 	ToolMessage        []*genai.Content
 	CurrentToolMessage []*genai.Content
 }
 
-func (h *GeminiReq) GetContent() {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
-	defer cancel()
+func (h *GeminiReq) CallLLMAPI(ctx context.Context, prompt string, l *LLM) error {
+	_, _, userId := utils.GetChatIdAndMsgIdAndUserID(l.Update)
 
-	defer func() {
-		if err := recover(); err != nil {
-			logger.Error("GetContent panic err", "err", err)
-		}
-		utils.DecreaseUserChat(h.Update)
-		close(h.MessageChan)
-	}()
-
-	text, err := utils.GetContent(h.Update, h.Bot, h.Content)
-	if err != nil {
-		logger.Error("get content fail", "err", err)
-		return
-	}
-	err = h.CallLLMAPI(ctx, text)
-	if err != nil {
-		logger.Error("Error calling DeepSeek API", "err", err)
-	}
-
-}
-
-func (h *GeminiReq) CallLLMAPI(ctx context.Context, prompt string) error {
-	_, _, userId := utils.GetChatIdAndMsgIdAndUserID(h.Update)
-
-	h.Model = param.ModelGemini20Flash
+	l.Model = param.ModelGemini20Flash
 	userInfo, err := db.GetUserByID(userId)
 	if err != nil {
 		logger.Error("Error getting user info", "err", err)
 	}
 	if userInfo != nil && userInfo.Mode != "" && param.GeminiModels[userInfo.Mode] {
 		logger.Info("User info", "userID", userInfo.UserId, "mode", userInfo.Mode)
-		h.Model = userInfo.Mode
+		l.Model = userInfo.Mode
 	}
 
 	messages := h.getMessages(userId)
 
-	logger.Info("msg receive", "userID", userId, "prompt", h.Content)
-	return h.send(ctx, messages, prompt)
+	logger.Info("msg receive", "userID", userId, "prompt", l.Content)
+	return h.send(ctx, messages, prompt, l)
 }
 
 func (h *GeminiReq) getMessages(userId int64) []*genai.Content {
@@ -124,9 +91,9 @@ func (h *GeminiReq) getMessages(userId int64) []*genai.Content {
 	return messages
 }
 
-func (h *GeminiReq) send(ctx context.Context, messages []*genai.Content, prompt string) error {
+func (h *GeminiReq) send(ctx context.Context, messages []*genai.Content, prompt string, l *LLM) error {
 	start := time.Now()
-	_, updateMsgID, userId := utils.GetChatIdAndMsgIdAndUserID(h.Update)
+	_, updateMsgID, userId := utils.GetChatIdAndMsgIdAndUserID(l.Update)
 	httpClient := utils.GetDeepseekProxyClient()
 
 	client, err := genai.NewClient(ctx, &genai.ClientConfig{
@@ -146,7 +113,7 @@ func (h *GeminiReq) send(ctx context.Context, messages []*genai.Content, prompt 
 		Tools:            conf.GeminiTools,
 	}
 
-	chat, err := client.Chats.Create(ctx, h.Model, config, messages)
+	chat, err := client.Chats.Create(ctx, l.Model, config, messages)
 	if err != nil {
 		logger.Error("create chat fail", "err", err)
 		return err
@@ -173,7 +140,7 @@ func (h *GeminiReq) send(ctx context.Context, messages []*genai.Content, prompt 
 			hasTools = true
 			err = h.requestToolsCall(ctx, response)
 			if err != nil {
-				if errors.Is(err, toolsJsonErr) {
+				if errors.Is(err, ToolsJsonErr) {
 					continue
 				} else {
 					logger.Error("requestToolsCall error", "updateMsgID", updateMsgID, "err", err)
@@ -182,32 +149,32 @@ func (h *GeminiReq) send(ctx context.Context, messages []*genai.Content, prompt 
 		}
 
 		if !hasTools {
-			h.sendMsg(msgInfoContent, response)
+			l.sendMsg(msgInfoContent, response.Text())
 		}
 
 		if response.UsageMetadata != nil {
-			h.Token += int(response.UsageMetadata.TotalTokenCount)
-			metrics.TotalTokens.Add(float64(h.Token))
+			l.Token += int(response.UsageMetadata.TotalTokenCount)
+			metrics.TotalTokens.Add(float64(l.Token))
 		}
 
 	}
 
 	if !hasTools || len(h.CurrentToolMessage) == 0 {
-		h.MessageChan <- msgInfoContent
+		l.MessageChan <- msgInfoContent
 
 		data, _ := json.Marshal(h.ToolMessage)
 		db.InsertMsgRecord(userId, &db.AQ{
-			Question: h.Content,
-			Answer:   h.DeepSeekContent,
+			Question: l.Content,
+			Answer:   l.WholeContent,
 			Content:  string(data),
-			Token:    h.Token,
+			Token:    l.Token,
 		}, true)
 	} else {
 		h.ToolMessage = append(h.ToolMessage, h.CurrentToolMessage...)
 		messages = append(messages, h.CurrentToolMessage...)
 		h.CurrentToolMessage = make([]*genai.Content, 0)
 		h.ToolCall = make([]*genai.FunctionCall, 0)
-		return h.send(ctx, messages, prompt)
+		return h.send(ctx, messages, prompt, l)
 	}
 
 	// record time costing in dialog
@@ -272,21 +239,4 @@ func (h *GeminiReq) requestToolsCall(ctx context.Context, response *genai.Genera
 		"toolCall", h.ToolCall[len(h.ToolCall)-1].ID, "argument", h.ToolCall[len(h.ToolCall)-1].Args)
 
 	return nil
-}
-
-func (h *GeminiReq) sendMsg(msgInfoContent *param.MsgInfo, response *genai.GenerateContentResponse) {
-	// exceed max telegram one message length
-	if utils.Utf16len(msgInfoContent.Content) > OneMsgLen {
-		h.MessageChan <- msgInfoContent
-		msgInfoContent = &param.MsgInfo{
-			SendLen: NonFirstSendLen,
-		}
-	}
-
-	msgInfoContent.Content += response.Text()
-	h.DeepSeekContent += response.Text()
-	if len(msgInfoContent.Content) > msgInfoContent.SendLen {
-		h.MessageChan <- msgInfoContent
-		msgInfoContent.SendLen += NonFirstSendLen
-	}
 }

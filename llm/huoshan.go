@@ -10,7 +10,6 @@ import (
 
 	"github.com/cohesion-org/deepseek-go"
 	"github.com/cohesion-org/deepseek-go/constants"
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/volcengine/volc-sdk-golang/service/visual"
 	"github.com/volcengine/volcengine-go-sdk/service/arkruntime"
 	"github.com/volcengine/volcengine-go-sdk/service/arkruntime/model"
@@ -24,50 +23,18 @@ import (
 )
 
 type HuoshanReq struct {
-	MessageChan chan *param.MsgInfo
-	Update      tgbotapi.Update
-	Bot         *tgbotapi.BotAPI
-	Content     string
-	Model       string
-	Token       int
-
 	ToolCall           []*model.ToolCall
-	DeepSeekContent    string
 	ToolMessage        []*model.ChatCompletionMessage
 	CurrentToolMessage []*model.ChatCompletionMessage
 }
 
-func (h *HuoshanReq) GetContent() {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
-	defer cancel()
-
-	defer func() {
-		if err := recover(); err != nil {
-			logger.Error("GetContent panic err", "err", err)
-		}
-		utils.DecreaseUserChat(h.Update)
-		close(h.MessageChan)
-	}()
-
-	text, err := utils.GetContent(h.Update, h.Bot, h.Content)
-	if err != nil {
-		logger.Error("get content fail", "err", err)
-		return
-	}
-	err = h.CallLLMAPI(ctx, text)
-	if err != nil {
-		logger.Error("Error calling DeepSeek API", "err", err)
-	}
-
-}
-
-func (h *HuoshanReq) CallLLMAPI(ctx context.Context, prompt string) error {
-	_, _, userId := utils.GetChatIdAndMsgIdAndUserID(h.Update)
+func (h *HuoshanReq) CallLLMAPI(ctx context.Context, prompt string, l *LLM) error {
+	_, _, userId := utils.GetChatIdAndMsgIdAndUserID(l.Update)
 
 	messages := h.getMessages(userId, prompt)
 
-	logger.Info("msg receive", "userID", userId, "prompt", h.Content)
-	return h.send(ctx, messages)
+	logger.Info("msg receive", "userID", userId, "prompt", l.Content)
+	return h.send(ctx, messages, l)
 }
 
 func (h *HuoshanReq) getMessages(userId int64, prompt string) []*model.ChatCompletionMessage {
@@ -121,9 +88,9 @@ func (h *HuoshanReq) getMessages(userId int64, prompt string) []*model.ChatCompl
 	return messages
 }
 
-func (h *HuoshanReq) send(ctx context.Context, messages []*model.ChatCompletionMessage) error {
+func (h *HuoshanReq) send(ctx context.Context, messages []*model.ChatCompletionMessage, l *LLM) error {
 	start := time.Now()
-	_, updateMsgID, userId := utils.GetChatIdAndMsgIdAndUserID(h.Update)
+	_, updateMsgID, userId := utils.GetChatIdAndMsgIdAndUserID(l.Update)
 	// set deepseek proxy
 	httpClient := utils.GetDeepseekProxyClient()
 
@@ -147,6 +114,7 @@ func (h *HuoshanReq) send(ctx context.Context, messages []*model.ChatCompletionM
 		Stop:             conf.Stop,
 		PresencePenalty:  float32(*conf.PresencePenalty),
 		Temperature:      float32(*conf.Temperature),
+		Tools:            conf.VolTools,
 	}
 
 	stream, err := client.CreateChatCompletionStream(ctx, req)
@@ -178,7 +146,7 @@ func (h *HuoshanReq) send(ctx context.Context, messages []*model.ChatCompletionM
 				hasTools = true
 				err = h.requestToolsCall(ctx, choice)
 				if err != nil {
-					if errors.Is(err, toolsJsonErr) {
+					if errors.Is(err, ToolsJsonErr) {
 						continue
 					} else {
 						logger.Error("requestToolsCall error", "updateMsgID", updateMsgID, "err", err)
@@ -187,33 +155,33 @@ func (h *HuoshanReq) send(ctx context.Context, messages []*model.ChatCompletionM
 			}
 
 			if !hasTools {
-				h.sendMsg(msgInfoContent, choice)
+				l.sendMsg(msgInfoContent, choice.Delta.Content)
 			}
 		}
 
 		if response.Usage != nil {
-			h.Token += response.Usage.TotalTokens
-			metrics.TotalTokens.Add(float64(h.Token))
+			l.Token += response.Usage.TotalTokens
+			metrics.TotalTokens.Add(float64(l.Token))
 		}
 
 	}
 
 	if !hasTools || len(h.CurrentToolMessage) == 0 {
-		h.MessageChan <- msgInfoContent
+		l.MessageChan <- msgInfoContent
 
 		data, _ := json.Marshal(h.ToolMessage)
 		db.InsertMsgRecord(userId, &db.AQ{
-			Question: h.Content,
-			Answer:   h.DeepSeekContent,
+			Question: l.Content,
+			Answer:   l.WholeContent,
 			Content:  string(data),
-			Token:    h.Token,
+			Token:    l.Token,
 		}, true)
 	} else {
 		h.CurrentToolMessage = append([]*model.ChatCompletionMessage{
 			{
 				Role: deepseek.ChatMessageRoleAssistant,
 				Content: &model.ChatCompletionMessageContent{
-					StringValue: &h.DeepSeekContent,
+					StringValue: &l.WholeContent,
 				},
 				ToolCalls: h.ToolCall,
 			},
@@ -223,7 +191,7 @@ func (h *HuoshanReq) send(ctx context.Context, messages []*model.ChatCompletionM
 		messages = append(messages, h.CurrentToolMessage...)
 		h.CurrentToolMessage = make([]*model.ChatCompletionMessage, 0)
 		h.ToolCall = make([]*model.ToolCall, 0)
-		return h.send(ctx, messages)
+		return h.send(ctx, messages, l)
 	}
 
 	// record time costing in dialog
@@ -255,7 +223,7 @@ func (h *HuoshanReq) requestToolsCall(ctx context.Context, choice *model.ChatCom
 
 		err := json.Unmarshal([]byte(h.ToolCall[len(h.ToolCall)-1].Function.Arguments), &property)
 		if err != nil {
-			return toolsJsonErr
+			return ToolsJsonErr
 		}
 
 		mc, err := clients.GetMCPClientByToolName(h.ToolCall[len(h.ToolCall)-1].Function.Name)
@@ -282,23 +250,6 @@ func (h *HuoshanReq) requestToolsCall(ctx context.Context, choice *model.ChatCom
 		"toolCall", h.ToolCall[len(h.ToolCall)-1].ID, "argument", h.ToolCall[len(h.ToolCall)-1].Function.Arguments)
 
 	return nil
-}
-
-func (h *HuoshanReq) sendMsg(msgInfoContent *param.MsgInfo, choice *model.ChatCompletionStreamChoice) {
-	// exceed max telegram one message length
-	if utils.Utf16len(msgInfoContent.Content) > OneMsgLen {
-		h.MessageChan <- msgInfoContent
-		msgInfoContent = &param.MsgInfo{
-			SendLen: NonFirstSendLen,
-		}
-	}
-
-	msgInfoContent.Content += choice.Delta.Content
-	h.DeepSeekContent += choice.Delta.Content
-	if len(msgInfoContent.Content) > msgInfoContent.SendLen {
-		h.MessageChan <- msgInfoContent
-		msgInfoContent.SendLen += NonFirstSendLen
-	}
 }
 
 // GenerateImg generate image

@@ -1,0 +1,159 @@
+package llm
+
+import (
+	"context"
+	"errors"
+	"time"
+
+	godeepseek "github.com/cohesion-org/deepseek-go"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/sashabaranov/go-openai"
+	"github.com/volcengine/volcengine-go-sdk/service/arkruntime/model"
+	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
+	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
+	"github.com/yincongcyincong/telegram-deepseek-bot/param"
+	"github.com/yincongcyincong/telegram-deepseek-bot/utils"
+	"google.golang.org/genai"
+)
+
+const (
+	OneMsgLen       = 3896
+	FirstSendLen    = 30
+	NonFirstSendLen = 500
+)
+
+var (
+	ToolsJsonErr = errors.New("tools json error")
+)
+
+type LLM struct {
+	MessageChan chan *param.MsgInfo
+	Update      tgbotapi.Update
+	Bot         *tgbotapi.BotAPI
+	Content     string // question from user
+	Model       string
+	Token       int
+
+	LLMClient LLMClient
+
+	WholeContent string // whole answer from llm
+}
+
+type LLMClient interface {
+	CallLLMAPI(ctx context.Context, prompt string, l *LLM) error
+}
+
+func (l *LLM) GetContent() {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+
+	defer func() {
+		if err := recover(); err != nil {
+			logger.Error("GetContent panic err", "err", err)
+		}
+		utils.DecreaseUserChat(l.Update)
+		close(l.MessageChan)
+	}()
+
+	text, err := utils.GetContent(l.Update, l.Bot, l.Content)
+	if err != nil {
+		logger.Error("get content fail", "err", err)
+		return
+	}
+	err = l.LLMClient.CallLLMAPI(ctx, text, l)
+	if err != nil {
+		logger.Error("Error calling DeepSeek API", "err", err)
+	}
+}
+
+func NewLLM(opts ...Option) *LLM {
+
+	l := new(LLM)
+	for _, opt := range opts {
+		opt(l)
+	}
+
+	switch *conf.Type {
+	case param.DeepSeek:
+		l.LLMClient = &DeepseekReq{
+			ToolCall:           []godeepseek.ToolCall{},
+			ToolMessage:        []godeepseek.ChatCompletionMessage{},
+			CurrentToolMessage: []godeepseek.ChatCompletionMessage{},
+		}
+	case param.DeepSeekLlava:
+		l.LLMClient = &OllamaDeepseekReq{
+			ToolCall:           []godeepseek.ToolCall{},
+			ToolMessage:        []godeepseek.ChatCompletionMessage{},
+			CurrentToolMessage: []godeepseek.ChatCompletionMessage{},
+		}
+	case param.Gemini:
+		l.LLMClient = &GeminiReq{
+			ToolCall:           []*genai.FunctionCall{},
+			ToolMessage:        []*genai.Content{},
+			CurrentToolMessage: []*genai.Content{},
+		}
+	case param.OpenAi:
+		l.LLMClient = &OpenAIReq{
+			ToolCall:           []openai.ToolCall{},
+			ToolMessage:        []openai.ChatCompletionMessage{},
+			CurrentToolMessage: []openai.ChatCompletionMessage{},
+		}
+	default:
+		l.LLMClient = &HuoshanReq{
+			ToolCall:           []*model.ToolCall{},
+			ToolMessage:        []*model.ChatCompletionMessage{},
+			CurrentToolMessage: []*model.ChatCompletionMessage{},
+		}
+	}
+
+	return l
+}
+
+func (l *LLM) sendMsg(msgInfoContent *param.MsgInfo, content string) {
+	// exceed max telegram one message length
+	if utils.Utf16len(msgInfoContent.Content) > OneMsgLen {
+		l.MessageChan <- msgInfoContent
+		msgInfoContent = &param.MsgInfo{
+			SendLen: NonFirstSendLen,
+		}
+	}
+
+	msgInfoContent.Content += content
+	l.WholeContent += content
+	if len(msgInfoContent.Content) > msgInfoContent.SendLen {
+		l.MessageChan <- msgInfoContent
+		msgInfoContent.SendLen += NonFirstSendLen
+	}
+}
+
+type Option func(p *LLM)
+
+func WithModel(model string) Option {
+	return func(p *LLM) {
+		p.Model = model
+	}
+}
+
+func WithContent(content string) Option {
+	return func(p *LLM) {
+		p.Content = content
+	}
+}
+
+func WithUpdate(update tgbotapi.Update) Option {
+	return func(p *LLM) {
+		p.Update = update
+	}
+}
+
+func WithBot(bot *tgbotapi.BotAPI) Option {
+	return func(p *LLM) {
+		p.Bot = bot
+	}
+}
+
+func WithMessageChan(messageChan chan *param.MsgInfo) Option {
+	return func(p *LLM) {
+		p.MessageChan = messageChan
+	}
+}
