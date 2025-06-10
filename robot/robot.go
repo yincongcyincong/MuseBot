@@ -10,8 +10,6 @@ import (
 
 	godeepseek "github.com/cohesion-org/deepseek-go"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	"github.com/sashabaranov/go-openai"
-	"github.com/volcengine/volcengine-go-sdk/service/arkruntime/model"
 	"github.com/yincongcyincong/langchaingo/chains"
 	"github.com/yincongcyincong/langchaingo/vectorstores"
 	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
@@ -22,7 +20,6 @@ import (
 	"github.com/yincongcyincong/telegram-deepseek-bot/param"
 	"github.com/yincongcyincong/telegram-deepseek-bot/rag"
 	"github.com/yincongcyincong/telegram-deepseek-bot/utils"
-	"google.golang.org/genai"
 )
 
 // StartListenRobot start listen robot callback
@@ -105,8 +102,8 @@ func executeChain(update tgbotapi.Update, bot *tgbotapi.BotAPI, content string) 
 			return
 		}
 
-		dpLLM := rag.NewDeepSeekLLM(rag.WithBot(bot), rag.WithUpdate(update),
-			rag.WithMessageChan(messageChan), rag.WithContent(content))
+		dpLLM := rag.NewDeepSeekLLM(llm.WithBot(bot), llm.WithUpdate(update),
+			llm.WithMessageChan(messageChan), llm.WithContent(content))
 
 		qaChain := chains.NewRetrievalQAFromLLM(
 			dpLLM,
@@ -126,63 +123,11 @@ func executeChain(update tgbotapi.Update, bot *tgbotapi.BotAPI, content string) 
 // executeLLM directly interact llm
 func executeLLM(update tgbotapi.Update, bot *tgbotapi.BotAPI, content string) {
 	messageChan := make(chan *param.MsgInfo)
-	var dpReq llm.LLM
-
-	switch *conf.Type {
-	case param.DeepSeek:
-		dpReq = &llm.DeepseekReq{
-			Content:            content,
-			Update:             update,
-			Bot:                bot,
-			MessageChan:        messageChan,
-			ToolCall:           []godeepseek.ToolCall{},
-			ToolMessage:        []godeepseek.ChatCompletionMessage{},
-			CurrentToolMessage: []godeepseek.ChatCompletionMessage{},
-		}
-	case param.DeepSeekLlava:
-		dpReq = &llm.OllamaDeepseekReq{
-			Content:            content,
-			Update:             update,
-			Bot:                bot,
-			MessageChan:        messageChan,
-			ToolCall:           []godeepseek.ToolCall{},
-			ToolMessage:        []godeepseek.ChatCompletionMessage{},
-			CurrentToolMessage: []godeepseek.ChatCompletionMessage{},
-		}
-	case param.Gemini:
-		dpReq = &llm.GeminiReq{
-			Content:            content,
-			Update:             update,
-			Bot:                bot,
-			MessageChan:        messageChan,
-			ToolCall:           []*genai.FunctionCall{},
-			ToolMessage:        []*genai.Content{},
-			CurrentToolMessage: []*genai.Content{},
-		}
-	case param.OpenAi:
-		dpReq = &llm.OpenAIReq{
-			Content:            content,
-			Update:             update,
-			Bot:                bot,
-			MessageChan:        messageChan,
-			ToolCall:           []openai.ToolCall{},
-			ToolMessage:        []openai.ChatCompletionMessage{},
-			CurrentToolMessage: []openai.ChatCompletionMessage{},
-		}
-	default:
-		dpReq = &llm.HuoshanReq{
-			Content:            content,
-			Update:             update,
-			Bot:                bot,
-			MessageChan:        messageChan,
-			ToolCall:           []*model.ToolCall{},
-			ToolMessage:        []*model.ChatCompletionMessage{},
-			CurrentToolMessage: []*model.ChatCompletionMessage{},
-		}
-	}
+	l := llm.NewLLM(llm.WithBot(bot), llm.WithUpdate(update),
+		llm.WithMessageChan(messageChan), llm.WithContent(content))
 
 	// request DeepSeek API
-	go dpReq.GetContent()
+	go l.GetContent()
 
 	// send response message
 	go handleUpdate(messageChan, update, bot)

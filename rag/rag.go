@@ -5,67 +5,29 @@ import (
 	"errors"
 
 	"github.com/cohesion-org/deepseek-go"
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/yincongcyincong/langchaingo/llms"
 	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
 	"github.com/yincongcyincong/telegram-deepseek-bot/llm"
 	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
-	"github.com/yincongcyincong/telegram-deepseek-bot/param"
 )
 
 type DeepSeekLLM struct {
 	Client *deepseek.Client
 
-	DpReq *llm.DeepseekReq
+	LLM *llm.LLM
 }
 
-func NewDeepSeekLLM(options ...Option) *DeepSeekLLM {
+func NewDeepSeekLLM(options ...llm.Option) *DeepSeekLLM {
 	dp := &DeepSeekLLM{
 		Client: deepseek.NewClient(*conf.DeepseekToken),
 
-		DpReq: &llm.DeepseekReq{
-			ToolCall:           []deepseek.ToolCall{},
-			ToolMessage:        []deepseek.ChatCompletionMessage{},
-			CurrentToolMessage: []deepseek.ChatCompletionMessage{},
-		},
+		LLM: llm.NewLLM(options...),
 	}
 
 	for _, o := range options {
-		o(dp)
+		o(dp.LLM)
 	}
 	return dp
-}
-
-type Option func(p *DeepSeekLLM)
-
-func WithModel(model string) Option {
-	return func(p *DeepSeekLLM) {
-		p.DpReq.Model = model
-	}
-}
-
-func WithContent(content string) Option {
-	return func(p *DeepSeekLLM) {
-		p.DpReq.Content = content
-	}
-}
-
-func WithUpdate(update tgbotapi.Update) Option {
-	return func(p *DeepSeekLLM) {
-		p.DpReq.Update = update
-	}
-}
-
-func WithBot(bot *tgbotapi.BotAPI) Option {
-	return func(p *DeepSeekLLM) {
-		p.DpReq.Bot = bot
-	}
-}
-
-func WithMessageChan(messageChan chan *param.MsgInfo) Option {
-	return func(p *DeepSeekLLM) {
-		p.DpReq.MessageChan = messageChan
-	}
 }
 
 func (l *DeepSeekLLM) Call(ctx context.Context, prompt string, options ...llms.CallOption) (string, error) {
@@ -78,7 +40,7 @@ func (l *DeepSeekLLM) GenerateContent(ctx context.Context, messages []llms.Messa
 		opt(opts)
 	}
 
-	doc, err := conf.Store.SimilaritySearch(ctx, l.DpReq.Content, 3)
+	doc, err := conf.Store.SimilaritySearch(ctx, l.LLM.Content, 3)
 	if err != nil {
 		logger.Error("request vector db fail", "err", err)
 	}
@@ -89,10 +51,10 @@ func (l *DeepSeekLLM) GenerateContent(ctx context.Context, messages []llms.Messa
 				tmpContent += part.(llms.TextContent).Text
 			}
 		}
-		l.DpReq.Content = tmpContent
+		l.LLM.Content = tmpContent
 	}
 
-	err = l.DpReq.CallLLMAPI(ctx, l.DpReq.Content)
+	err = l.LLM.LLMClient.CallLLMAPI(ctx, l.LLM.Content, l.LLM)
 	if err != nil {
 		logger.Error("error calling DeepSeek API", "err", err)
 		return nil, errors.New("error calling DeepSeek API")
@@ -101,7 +63,7 @@ func (l *DeepSeekLLM) GenerateContent(ctx context.Context, messages []llms.Messa
 	resp := &llms.ContentResponse{
 		Choices: []*llms.ContentChoice{
 			{
-				Content: l.DpReq.DeepSeekContent,
+				Content: l.LLM.WholeContent,
 			},
 		},
 	}
