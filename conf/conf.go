@@ -56,7 +56,7 @@ func InitConf() {
 	VolcSK = flag.String("volc_sk", "", "volc sk")
 
 	CustomUrl = flag.String("custom_url", "https://api.deepseek.com/", "deepseek custom url")
-	Type = flag.String("type", "deepseek", "llm type: deepseek gemini openai")
+	Type = flag.String("type", "deepseek", "llm type: deepseek gemini openai openrouter")
 	DBType = flag.String("db_type", "sqlite3", "db type")
 	DBConf = flag.String("db_conf", "./data/telegram_bot.db", "db conf")
 	DeepseekProxy = flag.String("deepseek_proxy", "", "db conf")
