@@ -647,6 +647,7 @@ const (
 	LLMMetaLlama = "meta-llama"
 	LLMMicrosoft = "microsoft"
 	LLMAnthropic = "anthropic"
+	LLMMistralai = "mistralai"
 )
 
 var (
@@ -676,6 +677,7 @@ var (
 		LLMMetaLlama: true,
 		LLMMicrosoft: true,
 		LLMAnthropic: true,
+		LLMMistralai: true,
 	}
 
 	OpenRouterModels = map[string]bool{
