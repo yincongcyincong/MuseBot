@@ -469,13 +469,14 @@ func InsertTools(clientName string) {
 		volTools := utils.TransToolsToVolFunctionCall(c.Tools)
 		oaTools := utils.TransToolsToChatGPTFunctionCall(c.Tools)
 		gmTools := utils.TransToolsToGeminiFunctionCall(c.Tools)
+		orTools := utils.TransToolsToOpenRouterFunctionCall(c.Tools)
 
 		if *UseTools {
 			DeepseekTools = append(DeepseekTools, dpTools...)
 			VolTools = append(VolTools, volTools...)
 			OpenAITools = append(OpenAITools, oaTools...)
 			GeminiTools = append(GeminiTools, gmTools...)
-			OpenRouterTools = append(OpenRouterTools)
+			OpenRouterTools = append(OpenRouterTools, orTools...)
 		}
 		for _, tool := range TaskTools {
 			for _, n := range tool.ToolsName {
