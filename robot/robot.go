@@ -515,6 +515,12 @@ func sendModeConfigurationOptions(update tgbotapi.Update, bot *tgbotapi.BotAPI) 
 		inlineKeyboard = tgbotapi.NewInlineKeyboardMarkup(tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("llama2", param.LLAVA),
 		))
+	case param.OpenRouter:
+		for k := range param.OpenRouterModelTypes {
+			inlineButton = append(inlineButton, tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonData(k, k),
+			))
+		}
 	default:
 		// create inline button
 		for k := range param.DeepseekModels {
@@ -593,8 +599,23 @@ func handleCallbackQuery(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 		sendChatMessage(update, bot)
 	default:
 		if param.GeminiModels[update.CallbackQuery.Data] || param.OpenAIModels[update.CallbackQuery.Data] ||
-			param.DeepseekModels[update.CallbackQuery.Data] || param.DeepseekLocalModels[update.CallbackQuery.Data] {
+			param.DeepseekModels[update.CallbackQuery.Data] || param.DeepseekLocalModels[update.CallbackQuery.Data] ||
+			param.OpenRouterModels[update.CallbackQuery.Data] {
 			handleModeUpdate(update, bot)
+		}
+		if param.OpenRouterModelTypes[update.CallbackQuery.Data] {
+			chatID, msgId, _ := utils.GetChatIdAndMsgIdAndUserID(update)
+			inlineButton := make([][]tgbotapi.InlineKeyboardButton, 0)
+			for k := range param.OpenRouterModels {
+				if strings.Contains(k, update.CallbackQuery.Data+"/") {
+					inlineButton = append(inlineButton, tgbotapi.NewInlineKeyboardRow(
+						tgbotapi.NewInlineKeyboardButtonData(k, k),
+					))
+				}
+			}
+			inlineKeyboard := tgbotapi.NewInlineKeyboardMarkup(inlineButton...)
+			i18n.SendMsg(chatID, "chat_mode", bot, &inlineKeyboard, msgId)
+
 		}
 	}
 

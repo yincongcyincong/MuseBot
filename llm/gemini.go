@@ -149,7 +149,7 @@ func (h *GeminiReq) send(ctx context.Context, messages []*genai.Content, prompt 
 		}
 
 		if !hasTools {
-			l.sendMsg(msgInfoContent, response.Text())
+			msgInfoContent = l.sendMsg(msgInfoContent, response.Text())
 		}
 
 		if response.UsageMetadata != nil {

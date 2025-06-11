@@ -138,7 +138,7 @@ func (d *OllamaDeepseekReq) send(ctx context.Context, messages []deepseek.ChatCo
 			}
 
 			if !hasTools {
-				l.sendMsg(msgInfoContent, choice.Delta.Content)
+				msgInfoContent = l.sendMsg(msgInfoContent, choice.Delta.Content)
 			}
 		}
 

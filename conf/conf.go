@@ -11,12 +11,13 @@ import (
 )
 
 var (
-	BotToken      *string
-	DeepseekToken *string
-	OpenAIToken   *string
-	GeminiToken   *string
-	ErnieAK       *string
-	ErnieSK       *string
+	BotToken        *string
+	DeepseekToken   *string
+	OpenAIToken     *string
+	GeminiToken     *string
+	OpenRouterToken *string
+	ErnieAK         *string
+	ErnieSK         *string
 
 	Type          *string // simple complex
 	CustomUrl     *string
@@ -48,6 +49,7 @@ func InitConf() {
 	DeepseekToken = flag.String("deepseek_token", "", "deepseek auth token")
 	OpenAIToken = flag.String("openai_token", "", "openai auth token")
 	GeminiToken = flag.String("gemini_token", "", "gemini auth token")
+	OpenRouterToken = flag.String("openrouter_token", "", "openrouter.ai auth token")
 	ErnieAK = flag.String("ernie_ak", "", "ernie ak")
 	ErnieSK = flag.String("ernie_sk", "", "ernie sk")
 	VolcAK = flag.String("volc_ak", "", "volc ak")
@@ -175,6 +177,10 @@ func InitConf() {
 		*ErnieSK = os.Getenv("ERNIE_SK")
 	}
 
+	if os.Getenv("OPEN_ROUTER_TOKEN") != "" {
+		*OpenRouterToken = os.Getenv("OPEN_ROUTER_TOKEN")
+	}
+
 	for _, userIdStr := range strings.Split(*allowedUserIds, ",") {
 		userId, err := strconv.Atoi(userIdStr)
 		if err != nil {
@@ -223,6 +229,7 @@ func InitConf() {
 	logger.Info("CONF", "HTTPPort", *HTTPPort)
 	logger.Info("CONF", "OpenAIToken", *OpenAIToken)
 	logger.Info("CONF", "GeminiToken", *GeminiToken)
+	logger.Info("CONF", "OpenRouterToken", OpenRouterToken)
 	logger.Info("CONF", "ErnieAK", *ErnieAK)
 	logger.Info("CONF", "ErnieSK", *ErnieSK)
 

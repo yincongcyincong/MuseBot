@@ -3,7 +3,7 @@ module github.com/yincongcyincong/telegram-deepseek-bot
 go 1.24.0
 
 require (
-	github.com/cohesion-org/deepseek-go v1.3.0
+	github.com/cohesion-org/deepseek-go v1.3.2
 	github.com/go-sql-driver/mysql v1.9.0
 	github.com/go-telegram-bot-api/telegram-bot-api/v5 v5.5.1
 	github.com/gorilla/websocket v1.5.3
@@ -11,7 +11,8 @@ require (
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d
 	github.com/nicksnyder/go-i18n/v2 v2.5.1
 	github.com/prometheus/client_golang v1.11.1
-	github.com/rs/zerolog v1.33.0
+	github.com/revrost/go-openrouter v0.1.6
+	github.com/rs/zerolog v1.34.0
 	github.com/sashabaranov/go-openai v1.38.1
 	github.com/satori/go.uuid v1.2.0
 	github.com/stretchr/testify v1.10.0

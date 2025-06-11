@@ -153,7 +153,7 @@ func (d *DeepseekReq) send(ctx context.Context, messages []deepseek.ChatCompleti
 			}
 
 			if !hasTools {
-				l.sendMsg(msgInfoContent, choice.Delta.Content)
+				msgInfoContent = l.sendMsg(msgInfoContent, choice.Delta.Content)
 			}
 		}
 
