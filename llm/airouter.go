@@ -7,8 +7,8 @@ import (
 	"io"
 	"time"
 
-	"github.com/cohesion-org/deepseek-go"
 	"github.com/cohesion-org/deepseek-go/constants"
+	openrouter "github.com/revrost/go-openrouter"
 	"github.com/yincongcyincong/mcp-client-go/clients"
 	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
 	"github.com/yincongcyincong/telegram-deepseek-bot/db"
@@ -18,21 +18,21 @@ import (
 	"github.com/yincongcyincong/telegram-deepseek-bot/utils"
 )
 
-type DeepseekReq struct {
-	ToolCall           []deepseek.ToolCall
-	ToolMessage        []deepseek.ChatCompletionMessage
-	CurrentToolMessage []deepseek.ChatCompletionMessage
+type AIRouterReq struct {
+	ToolCall           []openrouter.ToolCall
+	ToolMessage        []openrouter.ChatCompletionMessage
+	CurrentToolMessage []openrouter.ChatCompletionMessage
 }
 
 // CallLLMAPI request DeepSeek API and get response
-func (d *DeepseekReq) CallLLMAPI(ctx context.Context, prompt string, l *LLM) error {
+func (d *AIRouterReq) CallLLMAPI(ctx context.Context, prompt string, l *LLM) error {
 	_, _, userId := utils.GetChatIdAndMsgIdAndUserID(l.Update)
-	l.Model = deepseek.DeepSeekChat
+	l.Model = param.DeepseekDeepseekR1_0528Free
 	userInfo, err := db.GetUserByID(userId)
 	if err != nil {
 		logger.Error("Error getting user info", "err", err)
 	}
-	if userInfo != nil && userInfo.Mode != "" && param.DeepseekModels[userInfo.Mode] {
+	if userInfo != nil && userInfo.Mode != "" && param.OpenRouterModels[userInfo.Mode] {
 		logger.Info("User info", "userID", userInfo.UserId, "mode", userInfo.Mode)
 		l.Model = userInfo.Mode
 	}
@@ -44,8 +44,8 @@ func (d *DeepseekReq) CallLLMAPI(ctx context.Context, prompt string, l *LLM) err
 	return d.send(ctx, messages, l)
 }
 
-func (d *DeepseekReq) getMessages(userId int64, prompt string) []deepseek.ChatCompletionMessage {
-	messages := make([]deepseek.ChatCompletionMessage, 0)
+func (d *AIRouterReq) getMessages(userId int64, prompt string) []openrouter.ChatCompletionMessage {
+	messages := make([]openrouter.ChatCompletionMessage, 0)
 
 	msgRecords := db.GetMsgRecord(userId)
 	if msgRecords != nil {
@@ -58,12 +58,14 @@ func (d *DeepseekReq) getMessages(userId int64, prompt string) []deepseek.ChatCo
 			if record.Answer != "" && record.Question != "" {
 				logger.Info("context content", "dialog", i, "question:", record.Question,
 					"toolContent", record.Content, "answer:", record.Answer)
-				messages = append(messages, deepseek.ChatCompletionMessage{
-					Role:    constants.ChatMessageRoleUser,
-					Content: record.Question,
+				messages = append(messages, openrouter.ChatCompletionMessage{
+					Role: constants.ChatMessageRoleUser,
+					Content: openrouter.Content{
+						Text: record.Question,
+					},
 				})
 				if record.Content != "" {
-					toolsMsgs := make([]deepseek.ChatCompletionMessage, 0)
+					toolsMsgs := make([]openrouter.ChatCompletionMessage, 0)
 					err := json.Unmarshal([]byte(record.Content), &toolsMsgs)
 					if err != nil {
 						logger.Error("Error unmarshalling tools json", "err", err)
@@ -71,38 +73,37 @@ func (d *DeepseekReq) getMessages(userId int64, prompt string) []deepseek.ChatCo
 						messages = append(messages, toolsMsgs...)
 					}
 				}
-				messages = append(messages, deepseek.ChatCompletionMessage{
-					Role:    constants.ChatMessageRoleAssistant,
-					Content: record.Answer,
+				messages = append(messages, openrouter.ChatCompletionMessage{
+					Role: constants.ChatMessageRoleAssistant,
+					Content: openrouter.Content{
+						Text: record.Answer,
+					},
 				})
 			}
 		}
 	}
-	messages = append(messages, deepseek.ChatCompletionMessage{
-		Role:    constants.ChatMessageRoleUser,
-		Content: prompt,
+	messages = append(messages, openrouter.ChatCompletionMessage{
+		Role: constants.ChatMessageRoleUser,
+		Content: openrouter.Content{
+			Text: prompt,
+		},
 	})
 
 	return messages
 }
 
-func (d *DeepseekReq) send(ctx context.Context, messages []deepseek.ChatCompletionMessage, l *LLM) error {
+func (d *AIRouterReq) send(ctx context.Context, messages []openrouter.ChatCompletionMessage, l *LLM) error {
 	start := time.Now()
 	_, updateMsgID, userId := utils.GetChatIdAndMsgIdAndUserID(l.Update)
 	// set deepseek proxy
-	httpClient := utils.GetDeepseekProxyClient()
+	config := openrouter.DefaultConfig(*conf.OpenRouterToken)
+	config.HTTPClient = utils.GetDeepseekProxyClient()
+	client := openrouter.NewClientWithConfig(*config)
 
-	client, err := deepseek.NewClientWithOptions(*conf.DeepseekToken,
-		deepseek.WithBaseURL(*conf.CustomUrl), deepseek.WithHTTPClient(httpClient))
-	if err != nil {
-		logger.Error("Error creating deepseek client", "err", err)
-		return err
-	}
-
-	request := &deepseek.StreamChatCompletionRequest{
+	request := openrouter.ChatCompletionRequest{
 		Model:  l.Model,
 		Stream: true,
-		StreamOptions: deepseek.StreamOptions{
+		StreamOptions: &openrouter.StreamOptions{
 			IncludeUsage: true,
 		},
 		MaxTokens:        *conf.MaxTokens,
@@ -113,7 +114,7 @@ func (d *DeepseekReq) send(ctx context.Context, messages []deepseek.ChatCompleti
 		Stop:             conf.Stop,
 		PresencePenalty:  float32(*conf.PresencePenalty),
 		Temperature:      float32(*conf.Temperature),
-		Tools:            conf.DeepseekTools,
+		Tools:            conf.OpenRouterTools,
 	}
 
 	request.Messages = messages
@@ -174,18 +175,20 @@ func (d *DeepseekReq) send(ctx context.Context, messages []deepseek.ChatCompleti
 			Token:    l.Token,
 		}, true)
 	} else {
-		d.CurrentToolMessage = append([]deepseek.ChatCompletionMessage{
+		d.CurrentToolMessage = append([]openrouter.ChatCompletionMessage{
 			{
-				Role:      deepseek.ChatMessageRoleAssistant,
-				Content:   l.WholeContent,
+				Role: openrouter.ChatMessageRoleAssistant,
+				Content: openrouter.Content{
+					Text: l.WholeContent,
+				},
 				ToolCalls: d.ToolCall,
 			},
 		}, d.CurrentToolMessage...)
 
 		d.ToolMessage = append(d.ToolMessage, d.CurrentToolMessage...)
 		messages = append(messages, d.CurrentToolMessage...)
-		d.CurrentToolMessage = make([]deepseek.ChatCompletionMessage, 0)
-		d.ToolCall = make([]deepseek.ToolCall, 0)
+		d.CurrentToolMessage = make([]openrouter.ChatCompletionMessage, 0)
+		d.ToolCall = make([]openrouter.ToolCall, 0)
 		return d.send(ctx, messages, l)
 	}
 
@@ -195,7 +198,7 @@ func (d *DeepseekReq) send(ctx context.Context, messages []deepseek.ChatCompleti
 	return nil
 }
 
-func (d *DeepseekReq) requestToolsCall(ctx context.Context, choice deepseek.StreamChoices) error {
+func (d *AIRouterReq) requestToolsCall(ctx context.Context, choice openrouter.ChatCompletionStreamChoice) error {
 
 	for _, toolCall := range choice.Delta.ToolCalls {
 		property := make(map[string]interface{})
@@ -233,9 +236,11 @@ func (d *DeepseekReq) requestToolsCall(ctx context.Context, choice deepseek.Stre
 			logger.Warn("exec tools fail", "err", err)
 			return err
 		}
-		d.CurrentToolMessage = append(d.CurrentToolMessage, deepseek.ChatCompletionMessage{
-			Role:       constants.ChatMessageRoleTool,
-			Content:    toolsData,
+		d.CurrentToolMessage = append(d.CurrentToolMessage, openrouter.ChatCompletionMessage{
+			Role: constants.ChatMessageRoleTool,
+			Content: openrouter.Content{
+				Text: toolsData,
+			},
 			ToolCallID: d.ToolCall[len(d.ToolCall)-1].ID,
 		})
 
@@ -246,21 +251,4 @@ func (d *DeepseekReq) requestToolsCall(ctx context.Context, choice deepseek.Stre
 
 	return nil
 
-}
-
-// GetBalanceInfo get balance info
-func GetBalanceInfo() *deepseek.BalanceResponse {
-	client := deepseek.NewClient(*conf.DeepseekToken)
-	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
-	defer cancel()
-	balance, err := deepseek.GetBalance(client, ctx)
-	if err != nil {
-		logger.Error("Error getting balance", "err", err)
-	}
-
-	if balance == nil || len(balance.BalanceInfos) == 0 {
-		logger.Error("No balance information returned")
-	}
-
-	return balance
 }

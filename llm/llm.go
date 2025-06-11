@@ -7,6 +7,7 @@ import (
 
 	godeepseek "github.com/cohesion-org/deepseek-go"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/revrost/go-openrouter"
 	"github.com/sashabaranov/go-openai"
 	"github.com/volcengine/volcengine-go-sdk/service/arkruntime/model"
 	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
@@ -98,6 +99,12 @@ func NewLLM(opts ...Option) *LLM {
 			ToolMessage:        []openai.ChatCompletionMessage{},
 			CurrentToolMessage: []openai.ChatCompletionMessage{},
 		}
+	case param.OpenRouter:
+		l.LLMClient = &AIRouterReq{
+			ToolCall:           []openrouter.ToolCall{},
+			ToolMessage:        []openrouter.ChatCompletionMessage{},
+			CurrentToolMessage: []openrouter.ChatCompletionMessage{},
+		}
 	default:
 		l.LLMClient = &HuoshanReq{
 			ToolCall:           []*model.ToolCall{},
@@ -109,7 +116,7 @@ func NewLLM(opts ...Option) *LLM {
 	return l
 }
 
-func (l *LLM) sendMsg(msgInfoContent *param.MsgInfo, content string) {
+func (l *LLM) sendMsg(msgInfoContent *param.MsgInfo, content string) *param.MsgInfo {
 	// exceed max telegram one message length
 	if utils.Utf16len(msgInfoContent.Content) > OneMsgLen {
 		l.MessageChan <- msgInfoContent
@@ -124,6 +131,8 @@ func (l *LLM) sendMsg(msgInfoContent *param.MsgInfo, content string) {
 		l.MessageChan <- msgInfoContent
 		msgInfoContent.SendLen += NonFirstSendLen
 	}
+
+	return msgInfoContent
 }
 
 type Option func(p *LLM)

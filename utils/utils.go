@@ -215,7 +215,6 @@ func GetTelegramProxyClient() *http.Client {
 
 	return &http.Client{
 		Transport: transport,
-		Timeout:   30 * time.Second, // 设置超时
 	}
 }
 

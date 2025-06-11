@@ -155,7 +155,7 @@ func (h *HuoshanReq) send(ctx context.Context, messages []*model.ChatCompletionM
 			}
 
 			if !hasTools {
-				l.sendMsg(msgInfoContent, choice.Delta.Content)
+				msgInfoContent = l.sendMsg(msgInfoContent, choice.Delta.Content)
 			}
 		}
 

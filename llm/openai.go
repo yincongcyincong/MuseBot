@@ -169,7 +169,7 @@ func (d *OpenAIReq) send(ctx context.Context, messages []openai.ChatCompletionMe
 			}
 
 			if !hasTools {
-				l.sendMsg(msgInfoContent, choice.Delta.Content)
+				msgInfoContent = l.sendMsg(msgInfoContent, choice.Delta.Content)
 			}
 		}
 

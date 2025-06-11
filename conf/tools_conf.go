@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/cohesion-org/deepseek-go"
+	"github.com/revrost/go-openrouter"
 	"github.com/sashabaranov/go-openai"
 	"github.com/volcengine/volcengine-go-sdk/service/arkruntime/model"
 	"github.com/yincongcyincong/mcp-client-go/clients"
@@ -66,10 +67,11 @@ var (
 	WhatsappPythonMainFile   *string
 	BaidumapApiKey           *string
 
-	DeepseekTools = make([]deepseek.Tool, 0)
-	VolTools      = make([]*model.Tool, 0)
-	OpenAITools   = make([]openai.Tool, 0)
-	GeminiTools   = make([]*genai.Tool, 0)
+	DeepseekTools   = make([]deepseek.Tool, 0)
+	VolTools        = make([]*model.Tool, 0)
+	OpenAITools     = make([]openai.Tool, 0)
+	GeminiTools     = make([]*genai.Tool, 0)
+	OpenRouterTools = make([]openrouter.Tool, 0)
 
 	TaskTools = map[string]*AgentInfo{
 		"map-agent": {
@@ -473,6 +475,7 @@ func InsertTools(clientName string) {
 			VolTools = append(VolTools, volTools...)
 			OpenAITools = append(OpenAITools, oaTools...)
 			GeminiTools = append(GeminiTools, gmTools...)
+			OpenRouterTools = append(OpenRouterTools)
 		}
 		for _, tool := range TaskTools {
 			for _, n := range tool.ToolsName {
