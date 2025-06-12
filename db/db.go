@@ -37,7 +37,8 @@ const (
 				file_name VARCHAR(255) NOT NULL DEFAULT '',
 				file_md5 VARCHAR(255) NOT NULL DEFAULT '',
 				create_time int(10) NOT NULL DEFAULT '0',
-				update_time int(10) NOT NULL DEFAULT '0'
+				update_time int(10) NOT NULL DEFAULT '0',
+				is_deleted int(10) NOT NULL DEFAULT '0'
 			);
 			CREATE INDEX idx_records_user_id ON records(user_id);
 			CREATE INDEX idx_records_create_time ON records(create_time);`
