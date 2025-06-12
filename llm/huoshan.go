@@ -289,7 +289,13 @@ func GenerateImg(prompt string) (*param.ImgResponse, error) {
 
 	respByte, _ := json.Marshal(resp)
 	data := &param.ImgResponse{}
-	json.Unmarshal(respByte, data)
+	err = json.Unmarshal(respByte, data)
+	if err != nil {
+		logger.Error("unmarshal response fail", "err", err)
+		return nil, err
+	}
+
+	logger.Info("image response", "respByte", respByte)
 
 	// generate image time costing
 	totalDuration := time.Since(start).Seconds()

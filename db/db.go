@@ -32,29 +32,46 @@ const (
 				is_deleted int(10) NOT NULL DEFAULT '0',
 				token int(10) NOT NULL DEFAULT 0
 			);
+			CREATE TABLE rag_files (
+				id INTEGER PRIMARY KEY AUTOINCREMENT,
+				file_name VARCHAR(255) NOT NULL DEFAULT '',
+				file_md5 VARCHAR(255) NOT NULL DEFAULT '',
+				create_time int(10) NOT NULL DEFAULT '0',
+				update_time int(10) NOT NULL DEFAULT '0'
+			);
 			CREATE INDEX idx_records_user_id ON records(user_id);
 			CREATE INDEX idx_records_create_time ON records(create_time);`
+
 	mysqlCreateUsersSQL = `
-CREATE TABLE IF NOT EXISTS users (
-    id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    user_id BIGINT(20) NOT NULL DEFAULT 0,
-    mode VARCHAR(100) NOT NULL DEFAULT '',
-    updatetime INT(10) NOT NULL DEFAULT 0,
-    token int(10) NOT NULL DEFAULT 0,
-    avail_token int(10) NOT NULL DEFAULT 0
-);`
+			CREATE TABLE IF NOT EXISTS users (
+				id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+				user_id BIGINT(20) NOT NULL DEFAULT 0,
+				mode VARCHAR(100) NOT NULL DEFAULT '',
+				updatetime INT(10) NOT NULL DEFAULT 0,
+				token int(10) NOT NULL DEFAULT 0,
+				avail_token int(10) NOT NULL DEFAULT 0
+			);`
 
 	mysqlCreateRecordsSQL = `
-CREATE TABLE IF NOT EXISTS records (
-    id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    user_id BIGINT(20) NOT NULL DEFAULT 0,
-    question TEXT NOT NULL,
-    answer TEXT NOT NULL,
-    content TEXT NOT NULL,
-    create_time int(10) NOT NULL DEFAULT '0',
-    is_deleted int(10) NOT NULL DEFAULT '0',
-    token int(10) NOT NULL DEFAULT 0
-);`
+			CREATE TABLE IF NOT EXISTS records (
+				id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+				user_id BIGINT(20) NOT NULL DEFAULT 0,
+				question TEXT NOT NULL,
+				answer TEXT NOT NULL,
+				content TEXT NOT NULL,
+				create_time int(10) NOT NULL DEFAULT '0',
+				is_deleted int(10) NOT NULL DEFAULT '0',
+				token int(10) NOT NULL DEFAULT 0
+			);`
+
+	mysqlCreateRagFileSQL = `CREATE TABLE IF NOT EXISTS rag_files (
+				id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+				file_name VARCHAR(255) NOT NULL DEFAULT '',
+				file_md5 VARCHAR(255) NOT NULL DEFAULT '',
+				create_time int(10) NOT NULL DEFAULT '0',
+				update_time int(10) NOT NULL DEFAULT '0',
+				is_deleted int(10) NOT NULL DEFAULT '0'
+			);`
 
 	mysqlCreateIndexSQL   = `CREATE INDEX idx_records_user_id ON records(user_id);`
 	mysqlCreateCTIndexSQL = `CREATE INDEX idx_records_create_time ON records(create_time);`
@@ -95,6 +112,10 @@ func InitTable() {
 		}
 
 		if err := initializeMysqlTable(DB, "records", mysqlCreateRecordsSQL); err != nil {
+			logger.Fatal("create mysql table fail", "err", err)
+		}
+
+		if err := initializeMysqlTable(DB, "rag_files", mysqlCreateRagFileSQL); err != nil {
 			logger.Fatal("create mysql table fail", "err", err)
 		}
 	}

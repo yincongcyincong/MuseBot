@@ -1346,7 +1346,7 @@ type ImgResponse struct {
 	Code    int              `json:"code"`
 	Data    *ImgResponseData `json:"data"`
 	Message string           `json:"message"`
-	Status  string           `json:"status"`
+	Status  int              `json:"status"`
 }
 
 type ImgResponseData struct {
