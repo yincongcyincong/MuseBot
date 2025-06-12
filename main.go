@@ -8,6 +8,7 @@ import (
 	"github.com/yincongcyincong/telegram-deepseek-bot/i18n"
 	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
 	"github.com/yincongcyincong/telegram-deepseek-bot/metrics"
+	"github.com/yincongcyincong/telegram-deepseek-bot/rag"
 	"github.com/yincongcyincong/telegram-deepseek-bot/robot"
 )
 
@@ -18,7 +19,7 @@ func main() {
 	db.InitTable()
 	db.UpdateUserTime()
 	conf.InitTools()
-	conf.InitRag()
+	rag.InitRag()
 	metrics.InitPprof()
 	metrics.RegisterMetrics()
 	robot.StartListenRobot()

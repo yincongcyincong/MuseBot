@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-	"strings"
 	"time"
 
 	"github.com/cohesion-org/deepseek-go/constants"
@@ -40,11 +39,6 @@ func (d *AIRouterReq) CallLLMAPI(ctx context.Context, prompt string, l *LLM) err
 
 	messages := d.getMessages(userId, prompt)
 
-	// change gemini message content
-	if strings.Contains(l.Model, param.LLMGoogle+"/") {
-		messages = d.changeMessageContent(messages)
-	}
-
 	logger.Info("msg receive", "userID", userId, "prompt", prompt)
 
 	return d.send(ctx, messages, l)
@@ -67,7 +61,12 @@ func (d *AIRouterReq) getMessages(userId int64, prompt string) []openrouter.Chat
 				messages = append(messages, openrouter.ChatCompletionMessage{
 					Role: constants.ChatMessageRoleUser,
 					Content: openrouter.Content{
-						Text: record.Question,
+						Multi: []openrouter.ChatMessagePart{
+							{
+								Type: openrouter.ChatMessagePartTypeText,
+								Text: record.Question,
+							},
+						},
 					},
 				})
 				if record.Content != "" {
@@ -82,7 +81,12 @@ func (d *AIRouterReq) getMessages(userId int64, prompt string) []openrouter.Chat
 				messages = append(messages, openrouter.ChatCompletionMessage{
 					Role: constants.ChatMessageRoleAssistant,
 					Content: openrouter.Content{
-						Text: record.Answer,
+						Multi: []openrouter.ChatMessagePart{
+							{
+								Type: openrouter.ChatMessagePartTypeText,
+								Text: record.Answer,
+							},
+						},
 					},
 				})
 			}
@@ -91,7 +95,12 @@ func (d *AIRouterReq) getMessages(userId int64, prompt string) []openrouter.Chat
 	messages = append(messages, openrouter.ChatCompletionMessage{
 		Role: constants.ChatMessageRoleUser,
 		Content: openrouter.Content{
-			Text: prompt,
+			Multi: []openrouter.ChatMessagePart{
+				{
+					Type: openrouter.ChatMessagePartTypeText,
+					Text: prompt,
+				},
+			},
 		},
 	})
 
@@ -256,19 +265,4 @@ func (d *AIRouterReq) requestToolsCall(ctx context.Context, choice openrouter.Ch
 		"toolCall", d.ToolCall[len(d.ToolCall)-1].ID, "argument", d.ToolCall[len(d.ToolCall)-1].Function.Arguments)
 
 	return nil
-}
-
-func (d *AIRouterReq) changeMessageContent(messages []openrouter.ChatCompletionMessage) []openrouter.ChatCompletionMessage {
-	for _, msg := range messages {
-		msg.Content = openrouter.Content{
-			Multi: []openrouter.ChatMessagePart{
-				{
-					Type: openrouter.ChatMessagePartTypeText,
-					Text: msg.Content.Text,
-				},
-			},
-		}
-	}
-
-	return messages
 }
