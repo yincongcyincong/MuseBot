@@ -2,16 +2,15 @@ package rag
 
 import (
 	"context"
-	"crypto/md5"
 	"errors"
-	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/cohesion-org/deepseek-go"
+	"github.com/milvus-io/milvus-sdk-go/v2/client"
+	"github.com/milvus-io/milvus-sdk-go/v2/entity"
 	"github.com/yincongcyincong/langchaingo/documentloaders"
 	"github.com/yincongcyincong/langchaingo/embeddings"
 	"github.com/yincongcyincong/langchaingo/llms"
@@ -21,10 +20,13 @@ import (
 	"github.com/yincongcyincong/langchaingo/schema"
 	"github.com/yincongcyincong/langchaingo/textsplitter"
 	"github.com/yincongcyincong/langchaingo/vectorstores/chroma"
+	"github.com/yincongcyincong/langchaingo/vectorstores/milvus"
+	"github.com/yincongcyincong/langchaingo/vectorstores/weaviate"
 	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
 	"github.com/yincongcyincong/telegram-deepseek-bot/db"
 	"github.com/yincongcyincong/telegram-deepseek-bot/llm"
 	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
+	"github.com/yincongcyincong/telegram-deepseek-bot/utils"
 )
 
 type DeepSeekLLM struct {
@@ -88,7 +90,7 @@ func (l *DeepSeekLLM) GenerateContent(ctx context.Context, messages []llms.Messa
 }
 
 func InitRag() {
-	if *conf.EmbeddingType == "" {
+	if *conf.EmbeddingType == "" || *conf.VectorDBType == "" {
 		return
 	}
 
@@ -118,8 +120,26 @@ func InitRag() {
 		conf.Store, err = chroma.NewV2(
 			chroma.WithChromaURLV2(*conf.ChromaURL),
 			chroma.WithEmbedderV2(conf.Embedder),
-			chroma.WithNameSpaceV2("deepseek-rag"),
+			chroma.WithNameSpaceV2(*conf.Space),
 		)
+	case "milvus":
+		idx, err := entity.NewIndexAUTOINDEX(entity.L2)
+		if err != nil {
+			logger.Error("get index fail", "err", err)
+			return
+		}
+
+		conf.Store, err = milvus.New(ctx, client.Config{
+			Address: *conf.MilvusURL,
+		}, milvus.WithCollectionName(*conf.Space),
+			milvus.WithEmbedder(conf.Embedder),
+			milvus.WithIndex(idx))
+	case "weaviate":
+		conf.Store, err = weaviate.New(
+			weaviate.WithEmbedder(conf.Embedder),
+			weaviate.WithScheme(*conf.WeaviateScheme),
+			weaviate.WithHost(*conf.WeaviateURL),
+			weaviate.WithIndexName("Text"))
 	default:
 		logger.Error("vector db not exist", "VectorDBTypee", *conf.VectorDBType)
 		return
@@ -241,7 +261,7 @@ func initGeminiEmbedding(ctx context.Context) (embeddings.Embedder, error) {
 func getFileResource(entry os.DirEntry) (*os.File, error) {
 	fullPath := filepath.Join(*conf.KnowledgePath, entry.Name())
 
-	fileMd5, err := FileToMd5(fullPath)
+	fileMd5, err := utils.FileToMd5(fullPath)
 	if err != nil {
 		logger.Error("file to md5 fail", "err", err)
 		return nil, err
@@ -345,23 +365,4 @@ func saveDocIntoStore(ctx context.Context, loader documentloaders.Loader) ([]sch
 	}
 
 	return docs, nil
-}
-
-func FileToMd5(filePath string) (string, error) {
-	file, err := os.Open(filePath)
-	if err != nil {
-		return "", err
-	}
-	defer file.Close()
-
-	hash := md5.New()
-
-	// 将文件内容流式拷贝到 hash 计算器中
-	if _, err := io.Copy(hash, file); err != nil {
-		return "", err
-	}
-
-	// 计算并格式化为16进制字符串
-	md5sum := fmt.Sprintf("%x", hash.Sum(nil))
-	return md5sum, nil
 }

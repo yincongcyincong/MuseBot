@@ -44,7 +44,9 @@ func InitPhotoConf() {
 	Language = flag.Int("language", 1, "language")
 	Opacity = flag.Float64("opacity", 0.3, "opacity")
 	LogoTextContent = flag.String("logo_text_content", "", "logo text content")
+}
 
+func EnvPhotoConf() {
 	if os.Getenv("REQ_KEY") != "" {
 		*ReqKey = os.Getenv("REQ_KEY")
 	}
@@ -125,5 +127,4 @@ func InitPhotoConf() {
 	logger.Info("PHOTO_CONF", "Language", *Language)
 	logger.Info("PHOTO_CONF", "Opacity", *Opacity)
 	logger.Info("PHOTO_CONF", "LogoTextContent", *LogoTextContent)
-
 }

@@ -2,8 +2,9 @@ package conf
 
 import (
 	"flag"
-	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
 	"os"
+
+	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
 )
 
 var (
@@ -17,6 +18,9 @@ func InitAudioConf() {
 	AudioToken = flag.String("audio_token", "", "audio token")
 	AudioCluster = flag.String("audio_cluster", "", "audio cluster")
 
+}
+
+func EnvAudioConf() {
 	if os.Getenv("AUDIO_APP_ID") != "" {
 		*AudioAppID = os.Getenv("AUDIO_APP_ID")
 	}
