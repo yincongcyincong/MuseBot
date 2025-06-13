@@ -240,8 +240,8 @@ func InitConf() {
 	EnvToolsConf()
 	EnvVideoConf()
 
-	if *BotToken == "" || *DeepseekToken == "" {
-		panic("Bot token and deepseek token are required")
+	if *BotToken == "" {
+		panic("Bot token and llm token are required")
 	}
 
 }

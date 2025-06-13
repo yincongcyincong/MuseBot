@@ -102,7 +102,7 @@ func executeChain(update tgbotapi.Update, bot *tgbotapi.BotAPI, content string) 
 			return
 		}
 
-		dpLLM := rag.NewDeepSeekLLM(llm.WithBot(bot), llm.WithUpdate(update),
+		dpLLM := rag.NewRag(llm.WithBot(bot), llm.WithUpdate(update),
 			llm.WithMessageChan(messageChan), llm.WithContent(content))
 
 		qaChain := chains.NewRetrievalQAFromLLM(

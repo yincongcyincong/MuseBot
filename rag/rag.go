@@ -29,14 +29,14 @@ import (
 	"github.com/yincongcyincong/telegram-deepseek-bot/utils"
 )
 
-type DeepSeekLLM struct {
+type Rag struct {
 	Client *deepseek.Client
 
 	LLM *llm.LLM
 }
 
-func NewDeepSeekLLM(options ...llm.Option) *DeepSeekLLM {
-	dp := &DeepSeekLLM{
+func NewRag(options ...llm.Option) *Rag {
+	dp := &Rag{
 		Client: deepseek.NewClient(*conf.DeepseekToken),
 
 		LLM: llm.NewLLM(options...),
@@ -48,11 +48,11 @@ func NewDeepSeekLLM(options ...llm.Option) *DeepSeekLLM {
 	return dp
 }
 
-func (l *DeepSeekLLM) Call(ctx context.Context, prompt string, options ...llms.CallOption) (string, error) {
+func (l *Rag) Call(ctx context.Context, prompt string, options ...llms.CallOption) (string, error) {
 	return llms.GenerateFromSinglePrompt(ctx, l, prompt, options...)
 }
 
-func (l *DeepSeekLLM) GenerateContent(ctx context.Context, messages []llms.MessageContent, options ...llms.CallOption) (*llms.ContentResponse, error) {
+func (l *Rag) GenerateContent(ctx context.Context, messages []llms.MessageContent, options ...llms.CallOption) (*llms.ContentResponse, error) {
 	opts := &llms.CallOptions{}
 	for _, opt := range options {
 		opt(opts)
