@@ -152,6 +152,9 @@ func InitToolsConf() {
 	WhatsappPythonMainFile = flag.String("wahtsapp_python_main_file", "", "wahtsapp_python_main_file")
 	BaidumapApiKey = flag.String("baidumap_api_key", "", "baidumap_api_key")
 
+}
+
+func EnvToolsConf() {
 	if os.Getenv("AMAP_API_KEY") != "" {
 		*AmapApiKey = os.Getenv("AMAP_API_KEY")
 	}
@@ -274,7 +277,6 @@ func InitToolsConf() {
 	logger.Info("TOOLS_CONF", "TwitterAccessTokenSecret", *TwitterAccessTokenSecret)
 	logger.Info("TOOLS_CONF", "TwitterAccessToken", *TwitterAccessToken)
 	logger.Info("TOOLS_CONF", "BaidumapApiKey", *BaidumapApiKey)
-
 }
 
 func InitTools() {

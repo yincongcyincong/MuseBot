@@ -5,9 +5,11 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -371,4 +373,23 @@ func GetImageContent(imageContent []byte) (string, error) {
 	}
 
 	return strings.Join(resp.Data.LineTexts, ","), nil
+}
+
+func FileToMd5(filePath string) (string, error) {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
+
+	hash := md5.New()
+
+	// 将文件内容流式拷贝到 hash 计算器中
+	if _, err := io.Copy(hash, file); err != nil {
+		return "", err
+	}
+
+	// 计算并格式化为16进制字符串
+	md5sum := fmt.Sprintf("%x", hash.Sum(nil))
+	return md5sum, nil
 }

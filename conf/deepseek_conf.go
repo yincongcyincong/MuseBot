@@ -18,6 +18,8 @@ var (
 	Stop             []string
 	LogProbs         *bool
 	TopLogProbs      *int
+
+	stop *string
 )
 
 func InitDeepseekConf() {
@@ -29,8 +31,10 @@ func InitDeepseekConf() {
 	LogProbs = flag.Bool("log_probs", false, "log probs")
 	TopLogProbs = flag.Int("top_log_probs", 0, "number of top log probs to return")
 
-	stop := flag.String("stop", "", "stop sequence")
+	stop = flag.String("stop", "", "stop sequence")
+}
 
+func EnvDeepseekConf() {
 	if os.Getenv("FREQUENCY_PENALTY") != "" {
 		*FrequencyPenalty, _ = strconv.ParseFloat(os.Getenv("FREQUENCY_PENALTY"), 64)
 	}

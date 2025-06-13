@@ -25,6 +25,9 @@ func InitVideoConf() {
 	Resolution = flag.String("resolution", "480p", "the resolution of video, only support 480p / 720p")
 	Watermark = flag.Bool("watermark", false, "include watermark")
 
+}
+
+func EnvVideoConf() {
 	if os.Getenv("VIDEO_MODEL") != "" {
 		*VideoModel = os.Getenv("VIDEO_MODEL")
 	}
@@ -55,5 +58,4 @@ func InitVideoConf() {
 	logger.Info("VIDEO_CONF", "FPS", *FPS)
 	logger.Info("VIDEO_CONF", "RESOLUTION", *Resolution)
 	logger.Info("VIDEO_CONF", "WATERMARK", *Watermark)
-
 }

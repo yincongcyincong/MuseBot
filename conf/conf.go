@@ -233,6 +233,13 @@ func InitConf() {
 	logger.Info("CONF", "ErnieAK", *ErnieAK)
 	logger.Info("CONF", "ErnieSK", *ErnieSK)
 
+	EnvAudioConf()
+	EnvRagConf()
+	EnvDeepseekConf()
+	EnvPhotoConf()
+	EnvToolsConf()
+	EnvVideoConf()
+
 	if *BotToken == "" || *DeepseekToken == "" {
 		panic("Bot token and deepseek token are required")
 	}

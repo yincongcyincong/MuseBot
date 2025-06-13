@@ -72,7 +72,7 @@ func TestInitConf_AllEnvVars(t *testing.T) {
 	os.Setenv("KNOWLEDGE_PATH", "/data/knowledge")
 	os.Setenv("VECTOR_DB_TYPE", "chroma")
 	os.Setenv("CHROMA_URL", "http://localhost:8000")
-	os.Setenv("CHROMA_SPACE", "test-space")
+	os.Setenv("SPACE", "test-space")
 	os.Setenv("CHUNK_SIZE", "500")
 	os.Setenv("CHUNK_OVERLAP", "50")
 
@@ -172,7 +172,7 @@ func TestInitConf_AllEnvVars(t *testing.T) {
 	assertEqual(t, *KnowledgePath, "/data/knowledge", "KnowledgePath")
 	assertEqual(t, *VectorDBType, "chroma", "VectorDBType")
 	assertEqual(t, *ChromaURL, "http://localhost:8000", "ChromaURL")
-	assertEqual(t, *ChromaSpace, "test-space", "ChromaSpace")
+	assertEqual(t, *Space, "test-space", "ChromaSpace")
 	assertInt(t, *ChunkSize, 500, "ChunkSize")
 	assertInt(t, *ChunkOverlap, 50, "ChunkOverlap")
 
