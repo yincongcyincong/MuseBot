@@ -56,7 +56,7 @@ func execUpdate(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	// check whether you have new message
 	if update.Message != nil {
 		if skipThisMsg(update, bot) {
-			logger.Warn("skip this msg", "msgId", msgId, "chat", chatId)
+			logger.Warn("skip this msg", "msgId", msgId, "chat", chatId, "type", update.Message.Chat.Type, "content", update.Message.Text)
 			return
 		}
 		requestDeepseekAndResp(update, bot, update.Message.Text)
