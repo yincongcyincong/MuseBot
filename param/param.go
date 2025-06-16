@@ -648,6 +648,8 @@ const (
 	LLMMicrosoft = "microsoft"
 	LLMAnthropic = "anthropic"
 	LLMMistralai = "mistralai"
+	LLMXAI       = "x-ai"
+	LLMNvidia    = "nvidia"
 )
 
 var (
@@ -678,6 +680,8 @@ var (
 		LLMMicrosoft: true,
 		LLMAnthropic: true,
 		LLMMistralai: true,
+		LLMXAI:       true,
+		LLMNvidia:    true,
 	}
 
 	OpenRouterModels = map[string]bool{
