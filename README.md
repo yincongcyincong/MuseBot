@@ -22,7 +22,7 @@ AI-powered responses. The bot supports **streaming replies**, making interaction
   see [doc](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/static/doc/functioncall.md).
 - 🌊 **RAG**: Support Rag to fill context,
   see [doc](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/static/doc/rag.md).
-- ⛰️**OpenRouter**: Support OpenRouter more zhan 400 llms, see [doc](https://openrouter.ai/docs/quickstart).
+- ⛰️**OpenRouter**: Support OpenRouter more than 400 llms, see [doc](https://openrouter.ai/docs/quickstart).
 
 ## 🤖 Text Example
 
