@@ -135,12 +135,10 @@
 ./telegram-deepseek-bot \
 -telegram_bot_token=xxxx \
 -deepseek_token=sk-xxx \
--amap_api_key=xxx \
 -use_tools=true
 ```
 
-* `-amap_api_key`: 您的高德地图 API Key。
-* `-use_tools`: 启用工具使用功能，设置为 `true`。
+* `-use_tools`: 启用工具使用功能，设置为 `true`，默认为`false`。
 
 #### 10\. RAG (Retrieval Augmented Generation) - ChromaDB (`rag chroma`)
 

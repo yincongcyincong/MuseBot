@@ -127,7 +127,7 @@ To integrate with VolcEngine's voice recognition feature.
 
 For more details, please refer to: [VolcEngine Voice Recognition Documentation](https://www.volcengine.com/docs/6561/80816)
 
-#### 9\. Amap MCP (`amap mcp`)
+#### 9\. MCP (`mcp`)
 
 If your bot needs to use Amap (Gaode Map) related tools, such as geolocation queries.
 
@@ -135,12 +135,9 @@ If your bot needs to use Amap (Gaode Map) related tools, such as geolocation que
 ./telegram-deepseek-bot \
 -telegram_bot_token=xxxx \
 -deepseek_token=sk-xxx \
--amap_api_key=xxx \
 -use_tools=true
 ```
-
-* `-amap_api_key`: Your Amap API Key.
-* `-use_tools`: Enables tool usage functionality, set to `true`.
+* `-use_tools`: Enables tool usage functionality, set to `true` default is `false`.
 
 #### 10\. RAG (Retrieval Augmented Generation) - ChromaDB (`rag chroma`)
 
