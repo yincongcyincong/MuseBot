@@ -27,7 +27,10 @@ compile_and_package() {
     local release_name="telegram-deepseek-bot-${os}-${arch}.tar.gz"
 
     mv "./github.com/yincongcyincong/telegram-deepseek-bot-${os}"* "./output/$binary_name"
-    tar zcfv "release/$release_name" -C ./output "$binary_name"
+    mkdir ./output/conf/
+    cp -r ./conf/i18n/ ./output/conf/i18n/
+    cp -r ./conf/mcp/ ./output/conf/mcp/
+    tar zcfv "release/$release_name" ./output
     rm -rf ./output/* ./github.com/*
 }
 
