@@ -1,115 +1,105 @@
-## 功能调用规范（Function Call Specification）
+---
+## 配置 `MCP_CONF_PATH` 环境变量以使用 MCP 服务器 (Go 二进制文件)
 
-`telegram-deepseek-bot` 通过集成 MCP 客户端（[https://github.com/yincongcyincong/mcp-client-go](https://github.com/yincongcyincong/mcp-client-go)）自动请求 MCP 服务端数据并与 DeepSeek 进行交互。
+本文档将指导您如何在 `telegram-deepseek-bot` 项目中使用 Go 二进制文件时配置 `MCP_CONF_PATH` 环境变量，以便使用自定义的 MCP 服务器配置。
 
-### 支持的服务
+### 1. 创建 MCP 配置文件
 
-| MCP 客户端          | 描述            | 环境变量                                                                                               |
-| ---------------- | ------------- | -------------------------------------------------------------------------------------------------- |
-| AMAP             | 高德地图 MCP 服务   | `AMAP_API_KEY`: 高德地图访问令牌                                                                           |
-| GitHub           | GitHub MCP 服务 | `GITHUB_ACCESS_TOKEN`: GitHub 访问令牌                                                                 |
-| Victoria Metrics | VM 指标服务       | `VMUrl`: 单节点地址，`VMInsertUrl`: 集群写入地址，`VMSelectUrl`: 集群查询地址                                         |
-| Time             | 时间服务          | `TIME_ZONE`: 本地时区                                                                                  |
-| Binance          | 币安服务          | `BINANCE_SWITCH`: 启用开关                                                                             |
-| Play Wright      | 浏览器自动化服务      | `PLAY_WRIGHT_SWITCH`: 启用开关                                                                         |
-| File System      | 文件系统服务        | `FILE_PATH`: 多设备路径，使用英文逗号分隔                                                                        |
-| File Crawl       | 文件爬取服务        | `FILECRAWL_API_KEY`: 文件抓取的 API 密钥                                                                  |
-| GoogleMap        | 谷歌地图服务        | `GOOGLE_MAP_API_KEY`: 谷歌地图访问密钥                                                                     |
-| Notion           | Notion 服务     | `NOTION_AUTHORIZATION`, `NOTION_VERSION`: 授权令牌与 API 版本                                             |
-| Aliyun           | 阿里云服务         | `ALIYUN_ACCESS_KEY_ID`, `ALIYUN_ACCESS_KEY_SECRET`: 阿里云密钥对                                         |
-| Airbnb           | Airbnb 服务     | `AIRBNB_SWITCH`: 启用开关                                                                              |
-| Twitter          | 推特服务          | `TWITTER_API_KEY`, `TWITTER_API_KEY_SECRET`, `TWITTER_ACCESS_TOKEN`, `TWITTER_ACCESS_TOKEN_SECRET` |
-| Bitcoin          | 比特币服务         | `BITCOIN_SWITCH`: 启用开关                                                                             |
-| Whatsapp         | Whatsapp 服务   | `WHATSAPP_PATH`, `WHATSAPP_PYTHON_MAIN_FILE`: 服务路径与主程序路径                                           |
+首先，您需要创建一个 JSON 文件来定义您的 MCP 服务器。以下是一个示例配置，其中包含了 GitHub、Playwright、高德地图 (amap-mcp-server) 和高德地图 (amap-maps) 的 MCP 服务器设置。您可以根据您的需求修改此文件。
 
-### 使用说明
+```json
+{
+    "mcpServers": {
+       "github": {
+          "command": "docker",
+          "description": "执行 Git 操作并与 GitHub 集成，用于管理仓库、拉取请求、问题和工作流。",
+          "args": [
+             "run",
+             "-i",
+             "--rm",
+             "-e",
+             "GITHUB_PERSONAL_ACCESS_TOKEN",
+             "ghcr.io/github/github-mcp-server"
+          ],
+          "env": {
+             "GITHUB_PERSONAL_ACCESS_TOKEN": "<YOUR_TOKEN>"
+          }
+       },
+       "playwright": {
+          "description": "模拟浏览器行为，用于网页导航、数据抓取和网页自动化交互等任务。",
+          "url": "http://localhost:8931/sse"
+       },
+       "amap-mcp-server": {
+          "description": "提供地理服务，如位置查找、路线规划和地图导航。",
+          "url": "http://localhost:8000/mcp"
+       },
+       "amap-maps": {
+          "command": "npx",
+          "description": "提供地理服务，如位置查找、路线规划和地图导航。",
+          "args": [
+             "-y",
+             "@amap/amap-maps-mcp-server"
+          ],
+          "env": {
+             "AMAP_MAPS_API_KEY": "<YOUR_TOKEN>"
+          }
+       }
+    }
+}
+```
 
-1. **AMAP 服务**：
+**请注意：**
 
-    * 需要设置 `AMAP_API_KEY`
-    * 支持地理编码、逆地理编码、IP定位、路径规划等功能
+* 将 **<YOUR\_TOKEN>** 替换为您的实际 GitHub 个人访问令牌和高德地图 API 密钥。
+* `amap-mcp-server` 和 `playwright` MCP 服务器的 `url` 字段指向本地运行的服务。您需要确保这些服务正在运行并可访问。
+* 您可以根据需要添加或删除 MCP 服务器配置。
 
-2. **GitHub 服务**：
+将此文件保存到您选择的目录，例如，您可以将其命名为 **mcp\_config.json** 并放置在项目根目录下。
 
-    * 需要设置 `GITHUB_ACCESS_TOKEN`
-    * 可获取仓库信息、用户资料、提交历史和组织信息等
+### 2. 设置 `MCP_CONF_PATH` 环境变量
 
-3. **Victoria Metrics 服务**：
+对于 Go 二进制文件，设置 `MCP_CONF_PATH` 环境变量的方法与 Python 脚本类似，主要是在运行二进制文件之前，确保环境变量已被正确设置。
 
-    * 支持单节点和集群模式
-    * 单节点模式需配置 `VMUrl`
-    * 集群模式需分别配置写入地址 `VMInsertUrl` 和查询地址 `VMSelectUrl`
+#### 方法一：直接在命令行中设置 (临时)
 
-4. **Time 服务**：
+如果您只是想临时运行二进制文件并测试配置，可以在运行之前在命令行中设置环境变量：
 
-    * 需配置 `TIME_ZONE`（如 `Asia/Shanghai`、`UTC`）
-    * 返回当前本地时间
-    * 适用于基于时间的自动化和上下文响应
+**Linux/macOS:**
 
-5. **Binance 服务**：
+```bash
+export MCP_CONF_PATH=/path/to/your/mcp_config.json
+./telegram-deepseek-bot # 假设这是您的 Go 二进制文件
+```
 
-    * 需设置 `BINANCE_SWITCH` 为 `true` 启用
-    * 获取实时加密货币数据，如价格、行情、交易量等
-    * 支持根据币种（如 BTC, ETH）查询
+#### 方法二：在 Docker Compose 或 Dockerfile 中设置 (如果您使用 Docker)
 
-6. **Play Wright 服务**：
+如果您通过 Docker 部署 `telegram-deepseek-bot`，您可以在文件 `Dockerfile` 中设置环境变量。
 
-    * 需设置 `PLAY_WRIGHT_SWITCH` 为 `true` 启用
-    * 支持自动化浏览器操作，如抓取、截图、无头浏览等
-    * 适用于无法通过 API 获取数据的网页交互
 
-7. **File System 服务**：
+**在 `Dockerfile` 中设置：**
 
-    * 需设置 `FILE_PATH`（如 `/mnt/data1,/mnt/data2`）
-    * 支持从本地或挂载路径读取文件
-    * 可用于搜索、读取、列出多设备上的文件
+```dockerfile
+# ... 其他 Dockerfile 指令 ...
 
-8. **File CRAWL 服务**：
+COPY mcp_config.json /app/mcp_config.json
 
-    * 需设置 `FILECRAWL_API_KEY`
-    * 可从路径或 URL 抓取并索引文件
-    * 适合构建可搜索的文档数据库或检索系统
+ENV MCP_CONF_PATH /app/mcp_config.json
 
-9. **GoogleMap 服务**：
+# ... 其他 Dockerfile 指令 ...
+```
 
-    * 需设置 `GOOGLE_MAP_API_KEY`
-    * 支持地理编码、地点搜索、导航等功能
-    * 适用于基于位置的应用与地图服务整合
+### 3. 运行 `telegram-deepseek-bot` Go 二进制文件
 
-10. **Notion 服务**：
+在设置好 `MCP_CONF_PATH` 环境变量后，您可以正常运行 `telegram-deepseek-bot` 的 Go 二进制文件。项目将加载您指定的 MCP 配置文件，并能够使用其中定义的 MCP 服务器。
 
-    * 需设置 `NOTION_AUTHORIZATION` 和 `NOTION_VERSION`
-    * 支持页面、数据库、块等的读写操作
-    * 可实现自动化页面创建、内容更新、与其他系统的数据同步
+例如：
 
-11. **Aliyun 服务**：
+```bash
+./telegram-deepseek-bot \
+-telegram_bot_token=xxxx \
+-deepseek_token=sk-xxx \
+-use_tools=true
+```
 
-    * 需设置 `ALIYUN_ACCESS_KEY_ID` 与 `ALIYUN_ACCESS_KEY_SECRET`
-    * 可使用阿里云计算、存储、消息等服务
-    * 适合接入阿里云提供的各类云服务功能
-
-12. **Airbnb 服务**：
-
-    * 需设置 `AIRBNB_SWITCH`（如 `true`）
-    * 接入 Airbnb 数据或服务
-    * 适合自动同步房源信息或管理预订工作流
-
-13. **Twitter 服务**：
-
-    * 需设置所有 Twitter API 凭证
-    * 支持发推文、获取时间线、管理账号等操作
-    * 适合构建推特机器人、数据分析工具或自动化平台
-
-14. **Bitcoin 服务**：
-
-    * 需设置 `BITCOIN_SWITCH`（如 `true`）
-    * 可进行交易追踪、钱包监控、区块链查询等
-    * 适用于涉及比特币网络或加密应用的场景
-
-15. **Whatsapp 服务**：
-
-    * 需设置 `WHATSAPP_PATH` 与 `WHATSAPP_PYTHON_MAIN_FILE`
-    * 实现自动消息发送、聊天机器人、通知功能
-    * 可用于客服自动化、通知推送、个人助手等场景
-
+现在，您的 `telegram-deepseek-bot` 应该能够与您配置的 MCP 服务器进行交互。
 ---
