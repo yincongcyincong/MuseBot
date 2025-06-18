@@ -923,8 +923,8 @@ github.com/yargevad/filepathx v1.0.0 h1:SYcT+N3tYGi+NvazubCNlvgIPbzAk7i7y2dwg3I5
 github.com/yargevad/filepathx v1.0.0/go.mod h1:BprfX/gpYNJHJfc35GjRRpVcwWXS89gGulUIU5tK3tA=
 github.com/yincongcyincong/langchaingo v0.0.2 h1:OfxDEwqWpqQtfZl6EEOngdtg9ZYsQ17xLBvXV4MwVVM=
 github.com/yincongcyincong/langchaingo v0.0.2/go.mod h1:v2Dur3U1O8d784WHdb61dEQjB+rJVyxKSeWoYqmEWnU=
-github.com/yincongcyincong/mcp-client-go v0.0.19 h1:Ck4piC6fddXcQTj2x7eOk0hAQTiQaM4JknC1+VkEa/4=
-github.com/yincongcyincong/mcp-client-go v0.0.19/go.mod h1:FC0h8rguFSmHeJg/EdUUYMh9aAV6OQcDUPVfpSz1XXo=
+github.com/yincongcyincong/mcp-client-go v0.0.21 h1:ngAxdWQhuVMNLb+vwaKYpw5fYjZ1pL+Gogq2683fyzo=
+github.com/yincongcyincong/mcp-client-go v0.0.21/go.mod h1:FC0h8rguFSmHeJg/EdUUYMh9aAV6OQcDUPVfpSz1XXo=
 github.com/yosida95/uritemplate/v3 v3.0.2 h1:Ed3Oyj9yrmi9087+NczuL5BwkIc4wvTb5zIM+UJPGz4=
 github.com/yosida95/uritemplate/v3 v3.0.2/go.mod h1:ILOh0sOhIJR3+L/8afwt/kE++YT040gmv5BQTMR2HP4=
 github.com/youmark/pkcs8 v0.0.0-20181117223130-1be2e3e5546d/go.mod h1:rHwXgn7JulP+udvsHwJoVG1YGAP6VLg4y9I5dyZdqmA=
