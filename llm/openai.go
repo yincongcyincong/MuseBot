@@ -38,14 +38,14 @@ func (d *OpenAIReq) CallLLMAPI(ctx context.Context, prompt string, l *LLM) error
 		l.Model = userInfo.Mode
 	}
 
-	messages := d.getMessages(userId, prompt)
+	d.GetMessages(userId, prompt, l)
 
 	logger.Info("msg receive", "userID", userId, "prompt", prompt)
 
-	return d.send(ctx, messages, l)
+	return d.Send(ctx, l)
 }
 
-func (d *OpenAIReq) getMessages(userId int64, prompt string) []openai.ChatCompletionMessage {
+func (d *OpenAIReq) GetMessages(userId int64, prompt string, l *LLM) {
 	messages := make([]openai.ChatCompletionMessage, 0)
 
 	msgRecords := db.GetMsgRecord(userId)
@@ -85,10 +85,10 @@ func (d *OpenAIReq) getMessages(userId int64, prompt string) []openai.ChatComple
 		Content: prompt,
 	})
 
-	return messages
+	l.OpenAIMsgs = messages
 }
 
-func (d *OpenAIReq) send(ctx context.Context, messages []openai.ChatCompletionMessage, l *LLM) error {
+func (d *OpenAIReq) Send(ctx context.Context, l *LLM) error {
 	start := time.Now()
 	_, updateMsgID, userId := utils.GetChatIdAndMsgIdAndUserID(l.Update)
 
@@ -129,10 +129,10 @@ func (d *OpenAIReq) send(ctx context.Context, messages []openai.ChatCompletionMe
 		Stop:             conf.Stop,
 		PresencePenalty:  float32(*conf.PresencePenalty),
 		Temperature:      float32(*conf.Temperature),
-		Tools:            conf.OpenAITools,
+		Tools:            l.OpenAITools,
 	}
 
-	request.Messages = messages
+	request.Messages = l.OpenAIMsgs
 
 	stream, err := client.CreateChatCompletionStream(ctx, request)
 	if err != nil {
@@ -199,10 +199,10 @@ func (d *OpenAIReq) send(ctx context.Context, messages []openai.ChatCompletionMe
 		}, d.CurrentToolMessage...)
 
 		d.ToolMessage = append(d.ToolMessage, d.CurrentToolMessage...)
-		messages = append(messages, d.CurrentToolMessage...)
+		l.OpenAIMsgs = append(l.OpenAIMsgs, d.CurrentToolMessage...)
 		d.CurrentToolMessage = make([]openai.ChatCompletionMessage, 0)
 		d.ToolCall = make([]openai.ToolCall, 0)
-		return d.send(ctx, messages, l)
+		return d.Send(ctx, l)
 	}
 
 	// record time costing in dialog

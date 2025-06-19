@@ -1,38 +1,8 @@
 {
 	"mcpServers": {
-		"github": {
-			"command": "docker",
-			"description": "Performs Git operations and integrates with GitHub to manage repositories, pull requests, issues, and workflows.",
-			"args": [
-				"run",
-				"-i",
-				"--rm",
-				"-e",
-				"GITHUB_PERSONAL_ACCESS_TOKEN",
-				"ghcr.io/github/github-mcp-server"
-			],
-			"env": {
-				"GITHUB_PERSONAL_ACCESS_TOKEN": "<YOUR_TOKEN>"
-			}
-		},
 		"playwright": {
 			"description": "Simulates browser behavior for tasks like web navigation, data scraping, and automated interactions with web pages.",
 			"url": "http://localhost:8931/sse"
-		},
-		"amap-mcp-server": {
-			"description": "Provides geographic services such as location lookup, route planning, and map navigation.",
-			"url": "http://localhost:8000/mcp"
-		},
-		"amap-maps": {
-			"command": "npx",
-			"description": "Provides geographic services such as location lookup, route planning, and map navigation.",
-			"args": [
-				"-y",
-				"@amap/amap-maps-mcp-server"
-			],
-			"env": {
-				"AMAP_MAPS_API_KEY": "<YOUR_TOKEN>"
-			}
 		}
 	}
 }

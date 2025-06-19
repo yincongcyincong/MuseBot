@@ -97,8 +97,8 @@ func InsertTools(clientName string) {
 		if c.Conf.Description != "" {
 			TaskTools[clientName] = &AgentInfo{
 				Description:  c.Conf.Description,
-				DeepseekTool: DeepseekTools,
-				VolTool:      VolTools,
+				DeepseekTool: dpTools,
+				VolTool:      volTools,
 				ToolsName:    []string{clientName},
 			}
 		}

@@ -37,14 +37,14 @@ func (d *AIRouterReq) CallLLMAPI(ctx context.Context, prompt string, l *LLM) err
 		l.Model = userInfo.Mode
 	}
 
-	messages := d.getMessages(userId, prompt)
+	d.GetMessages(userId, prompt, l)
 
 	logger.Info("msg receive", "userID", userId, "prompt", prompt)
 
-	return d.send(ctx, messages, l)
+	return d.Send(ctx, l)
 }
 
-func (d *AIRouterReq) getMessages(userId int64, prompt string) []openrouter.ChatCompletionMessage {
+func (d *AIRouterReq) GetMessages(userId int64, prompt string, l *LLM) {
 	messages := make([]openrouter.ChatCompletionMessage, 0)
 
 	msgRecords := db.GetMsgRecord(userId)
@@ -104,10 +104,10 @@ func (d *AIRouterReq) getMessages(userId int64, prompt string) []openrouter.Chat
 		},
 	})
 
-	return messages
+	l.OpenRouterMsgs = messages
 }
 
-func (d *AIRouterReq) send(ctx context.Context, messages []openrouter.ChatCompletionMessage, l *LLM) error {
+func (d *AIRouterReq) Send(ctx context.Context, l *LLM) error {
 	start := time.Now()
 	_, updateMsgID, userId := utils.GetChatIdAndMsgIdAndUserID(l.Update)
 	// set deepseek proxy
@@ -129,10 +129,10 @@ func (d *AIRouterReq) send(ctx context.Context, messages []openrouter.ChatComple
 		Stop:             conf.Stop,
 		PresencePenalty:  float32(*conf.PresencePenalty),
 		Temperature:      float32(*conf.Temperature),
-		Tools:            conf.OpenRouterTools,
+		Tools:            l.OpenRouterTools,
 	}
 
-	request.Messages = messages
+	request.Messages = l.OpenRouterMsgs
 
 	stream, err := client.CreateChatCompletionStream(ctx, request)
 	if err != nil {
@@ -201,10 +201,10 @@ func (d *AIRouterReq) send(ctx context.Context, messages []openrouter.ChatComple
 		}, d.CurrentToolMessage...)
 
 		d.ToolMessage = append(d.ToolMessage, d.CurrentToolMessage...)
-		messages = append(messages, d.CurrentToolMessage...)
+		l.OpenRouterMsgs = append(l.OpenRouterMsgs, d.CurrentToolMessage...)
 		d.CurrentToolMessage = make([]openrouter.ChatCompletionMessage, 0)
 		d.ToolCall = make([]openrouter.ToolCall, 0)
-		return d.send(ctx, messages, l)
+		return d.Send(ctx, l)
 	}
 
 	// record time costing in dialog

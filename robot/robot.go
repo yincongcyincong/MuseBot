@@ -124,7 +124,10 @@ func executeChain(update tgbotapi.Update, bot *tgbotapi.BotAPI, content string) 
 func executeLLM(update tgbotapi.Update, bot *tgbotapi.BotAPI, content string) {
 	messageChan := make(chan *param.MsgInfo)
 	l := llm.NewLLM(llm.WithBot(bot), llm.WithUpdate(update),
-		llm.WithMessageChan(messageChan), llm.WithContent(content))
+		llm.WithMessageChan(messageChan), llm.WithContent(content),
+		llm.WithDeepseekTools(conf.DeepseekTools), llm.WithGeminiTools(conf.GeminiTools),
+		llm.WithOpenAITools(conf.OpenAITools), llm.WithVolTools(conf.VolTools),
+		llm.WithOpenRouterTools(conf.OpenRouterTools))
 
 	// request DeepSeek API
 	go l.GetContent()
@@ -304,7 +307,9 @@ func handleCommand(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	case "help":
 		sendHelpConfigurationOptions(update, bot)
 	case "task":
-		sendTask(update, bot)
+		sendMultiAgent(update, bot, "task_empty_content")
+	case "mcp":
+		sendMultiAgent(update, bot, "mcp_empty_content")
 	}
 
 	if checkAdminUser(update) {
@@ -666,8 +671,7 @@ func sendFailMessage(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	i18n.SendMsg(update.CallbackQuery.Message.Chat.ID, "set_mode", bot, nil, update.CallbackQuery.Message.MessageID)
 }
 
-// sendTask trigger task command
-func sendTask(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
+func sendMultiAgent(update tgbotapi.Update, bot *tgbotapi.BotAPI, agentType string) {
 	if utils.CheckUserChatExceed(update, bot) {
 		return
 	}
@@ -686,9 +690,9 @@ func sendTask(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	if update.Message != nil {
 		prompt = update.Message.Text
 	}
-	prompt = utils.ReplaceCommand(prompt, "/task", bot.Self.UserName)
+	prompt = utils.ReplaceCommand(prompt, "/mcp", bot.Self.UserName)
 	if len(prompt) == 0 {
-		err := utils.ForceReply(chatId, replyToMessageID, "task_empty_content", bot)
+		err := utils.ForceReply(chatId, replyToMessageID, agentType, bot)
 		if err != nil {
 			logger.Warn("force reply fail", "err", err)
 		}
@@ -705,10 +709,9 @@ func sendTask(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 		MessageChan: messageChan,
 	}
 
-	go dpReq.ExecuteTask()
+	go dpReq.ExecuteMcp()
 
 	go handleUpdate(messageChan, update, bot)
-
 }
 
 // sendVideo send video to telegram
@@ -937,6 +940,8 @@ func ExecuteForceReply(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	case i18n.GetMessage(*conf.Lang, "video_empty_content", nil):
 		sendVideo(update, bot)
 	case i18n.GetMessage(*conf.Lang, "task_empty_content", nil):
-		sendTask(update, bot)
+		sendMultiAgent(update, bot, "task_empty_content")
+	case i18n.GetMessage(*conf.Lang, "mcp_empty_content", nil):
+		sendMultiAgent(update, bot, "mcp_empty_content")
 	}
 }

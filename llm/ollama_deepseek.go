@@ -27,16 +27,15 @@ type OllamaDeepseekReq struct {
 // CallLLMAPI request DeepSeek API and get response
 func (d *OllamaDeepseekReq) CallLLMAPI(ctx context.Context, prompt string, l *LLM) error {
 	_, _, userId := utils.GetChatIdAndMsgIdAndUserID(l.Update)
-	l.Model = deepseek.DeepSeekChat
-	userInfo, err := db.GetUserByID(userId)
-	if err != nil {
-		logger.Error("Error getting user info", "err", err)
-	}
-	if userInfo != nil && userInfo.Mode != "" {
-		logger.Info("User info", "userID", userInfo.UserId, "mode", userInfo.Mode)
-		l.Model = userInfo.Mode
-	}
 
+	d.GetMessages(userId, prompt, l)
+
+	logger.Info("msg receive", "userID", userId, "prompt", prompt)
+
+	return d.Send(ctx, l)
+}
+
+func (d *OllamaDeepseekReq) GetMessages(userId int64, prompt string, l *LLM) {
 	messages := make([]deepseek.ChatCompletionMessage, 0)
 
 	msgRecords := db.GetMsgRecord(userId)
@@ -56,7 +55,7 @@ func (d *OllamaDeepseekReq) CallLLMAPI(ctx context.Context, prompt string, l *LL
 				})
 				if record.Content != "" {
 					toolsMsgs := make([]deepseek.ChatCompletionMessage, 0)
-					err = json.Unmarshal([]byte(record.Content), &toolsMsgs)
+					err := json.Unmarshal([]byte(record.Content), &toolsMsgs)
 					if err != nil {
 						logger.Error("Error unmarshalling tools json", "err", err)
 					} else {
@@ -70,18 +69,15 @@ func (d *OllamaDeepseekReq) CallLLMAPI(ctx context.Context, prompt string, l *LL
 			}
 		}
 	}
-
 	messages = append(messages, deepseek.ChatCompletionMessage{
 		Role:    constants.ChatMessageRoleUser,
 		Content: prompt,
 	})
 
-	logger.Info("msg receive", "userID", userId, "prompt", prompt)
-
-	return d.send(ctx, messages, l)
+	l.DeepseekMsgs = messages
 }
 
-func (d *OllamaDeepseekReq) send(ctx context.Context, messages []deepseek.ChatCompletionMessage, l *LLM) error {
+func (d *OllamaDeepseekReq) Send(ctx context.Context, l *LLM) error {
 	start := time.Now()
 	_, updateMsgID, userId := utils.GetChatIdAndMsgIdAndUserID(l.Update)
 
@@ -101,7 +97,7 @@ func (d *OllamaDeepseekReq) send(ctx context.Context, messages []deepseek.ChatCo
 		Temperature:      float32(*conf.Temperature),
 	}
 
-	request.Messages = messages
+	request.Messages = l.DeepseekMsgs
 
 	stream, err := deepseek.CreateOllamaChatCompletionStream(ctx, request)
 	if err != nil {
@@ -168,10 +164,10 @@ func (d *OllamaDeepseekReq) send(ctx context.Context, messages []deepseek.ChatCo
 		}, d.CurrentToolMessage...)
 
 		d.ToolMessage = append(d.ToolMessage, d.CurrentToolMessage...)
-		messages = append(messages, d.CurrentToolMessage...)
+		l.DeepseekMsgs = append(l.DeepseekMsgs, d.CurrentToolMessage...)
 		d.CurrentToolMessage = make([]deepseek.ChatCompletionMessage, 0)
 		d.ToolCall = make([]deepseek.ToolCall, 0)
-		return d.send(ctx, messages, l)
+		return d.Send(ctx, l)
 	}
 
 	// record time costing in dialog

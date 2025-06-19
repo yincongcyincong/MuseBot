@@ -37,14 +37,14 @@ func (d *DeepseekReq) CallLLMAPI(ctx context.Context, prompt string, l *LLM) err
 		l.Model = userInfo.Mode
 	}
 
-	messages := d.getMessages(userId, prompt)
+	d.GetMessages(userId, prompt, l)
 
 	logger.Info("msg receive", "userID", userId, "prompt", prompt)
 
-	return d.send(ctx, messages, l)
+	return d.Send(ctx, l)
 }
 
-func (d *DeepseekReq) getMessages(userId int64, prompt string) []deepseek.ChatCompletionMessage {
+func (d *DeepseekReq) GetMessages(userId int64, prompt string, l *LLM) {
 	messages := make([]deepseek.ChatCompletionMessage, 0)
 
 	msgRecords := db.GetMsgRecord(userId)
@@ -83,10 +83,10 @@ func (d *DeepseekReq) getMessages(userId int64, prompt string) []deepseek.ChatCo
 		Content: prompt,
 	})
 
-	return messages
+	l.DeepseekMsgs = messages
 }
 
-func (d *DeepseekReq) send(ctx context.Context, messages []deepseek.ChatCompletionMessage, l *LLM) error {
+func (d *DeepseekReq) Send(ctx context.Context, l *LLM) error {
 	start := time.Now()
 	_, updateMsgID, userId := utils.GetChatIdAndMsgIdAndUserID(l.Update)
 	// set deepseek proxy
@@ -113,10 +113,10 @@ func (d *DeepseekReq) send(ctx context.Context, messages []deepseek.ChatCompleti
 		Stop:             conf.Stop,
 		PresencePenalty:  float32(*conf.PresencePenalty),
 		Temperature:      float32(*conf.Temperature),
-		Tools:            conf.DeepseekTools,
+		Tools:            l.DeepseekTools,
 	}
 
-	request.Messages = messages
+	request.Messages = l.DeepseekMsgs
 
 	stream, err := client.CreateChatCompletionStream(ctx, request)
 	if err != nil {
@@ -183,10 +183,10 @@ func (d *DeepseekReq) send(ctx context.Context, messages []deepseek.ChatCompleti
 		}, d.CurrentToolMessage...)
 
 		d.ToolMessage = append(d.ToolMessage, d.CurrentToolMessage...)
-		messages = append(messages, d.CurrentToolMessage...)
+		l.DeepseekMsgs = append(l.DeepseekMsgs, d.CurrentToolMessage...)
 		d.CurrentToolMessage = make([]deepseek.ChatCompletionMessage, 0)
 		d.ToolCall = make([]deepseek.ToolCall, 0)
-		return d.send(ctx, messages, l)
+		return d.Send(ctx, l)
 	}
 
 	// record time costing in dialog
