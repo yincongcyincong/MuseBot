@@ -22,6 +22,8 @@ type AIRouterReq struct {
 	ToolCall           []openrouter.ToolCall
 	ToolMessage        []openrouter.ChatCompletionMessage
 	CurrentToolMessage []openrouter.ChatCompletionMessage
+
+	OpenRouterMsgs []openrouter.ChatCompletionMessage
 }
 
 // CallLLMAPI request DeepSeek API and get response
@@ -37,14 +39,14 @@ func (d *AIRouterReq) CallLLMAPI(ctx context.Context, prompt string, l *LLM) err
 		l.Model = userInfo.Mode
 	}
 
-	d.GetMessages(userId, prompt, l)
+	d.GetMessages(userId, prompt)
 
 	logger.Info("msg receive", "userID", userId, "prompt", prompt)
 
 	return d.Send(ctx, l)
 }
 
-func (d *AIRouterReq) GetMessages(userId int64, prompt string, l *LLM) {
+func (d *AIRouterReq) GetMessages(userId int64, prompt string) {
 	messages := make([]openrouter.ChatCompletionMessage, 0)
 
 	msgRecords := db.GetMsgRecord(userId)
@@ -104,7 +106,7 @@ func (d *AIRouterReq) GetMessages(userId int64, prompt string, l *LLM) {
 		},
 	})
 
-	l.OpenRouterMsgs = messages
+	d.OpenRouterMsgs = messages
 }
 
 func (d *AIRouterReq) Send(ctx context.Context, l *LLM) error {
@@ -132,7 +134,7 @@ func (d *AIRouterReq) Send(ctx context.Context, l *LLM) error {
 		Tools:            l.OpenRouterTools,
 	}
 
-	request.Messages = l.OpenRouterMsgs
+	request.Messages = d.OpenRouterMsgs
 
 	stream, err := client.CreateChatCompletionStream(ctx, request)
 	if err != nil {
@@ -201,7 +203,7 @@ func (d *AIRouterReq) Send(ctx context.Context, l *LLM) error {
 		}, d.CurrentToolMessage...)
 
 		d.ToolMessage = append(d.ToolMessage, d.CurrentToolMessage...)
-		l.OpenRouterMsgs = append(l.OpenRouterMsgs, d.CurrentToolMessage...)
+		d.OpenRouterMsgs = append(d.OpenRouterMsgs, d.CurrentToolMessage...)
 		d.CurrentToolMessage = make([]openrouter.ChatCompletionMessage, 0)
 		d.ToolCall = make([]openrouter.ToolCall, 0)
 		return d.Send(ctx, l)

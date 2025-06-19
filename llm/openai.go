@@ -23,6 +23,8 @@ type OpenAIReq struct {
 	ToolCall           []openai.ToolCall
 	ToolMessage        []openai.ChatCompletionMessage
 	CurrentToolMessage []openai.ChatCompletionMessage
+
+	OpenAIMsgs []openai.ChatCompletionMessage
 }
 
 // CallLLMAPI request DeepSeek API and get response
@@ -38,14 +40,14 @@ func (d *OpenAIReq) CallLLMAPI(ctx context.Context, prompt string, l *LLM) error
 		l.Model = userInfo.Mode
 	}
 
-	d.GetMessages(userId, prompt, l)
+	d.GetMessages(userId, prompt)
 
 	logger.Info("msg receive", "userID", userId, "prompt", prompt)
 
 	return d.Send(ctx, l)
 }
 
-func (d *OpenAIReq) GetMessages(userId int64, prompt string, l *LLM) {
+func (d *OpenAIReq) GetMessages(userId int64, prompt string) {
 	messages := make([]openai.ChatCompletionMessage, 0)
 
 	msgRecords := db.GetMsgRecord(userId)
@@ -85,7 +87,7 @@ func (d *OpenAIReq) GetMessages(userId int64, prompt string, l *LLM) {
 		Content: prompt,
 	})
 
-	l.OpenAIMsgs = messages
+	d.OpenAIMsgs = messages
 }
 
 func (d *OpenAIReq) Send(ctx context.Context, l *LLM) error {
@@ -132,7 +134,7 @@ func (d *OpenAIReq) Send(ctx context.Context, l *LLM) error {
 		Tools:            l.OpenAITools,
 	}
 
-	request.Messages = l.OpenAIMsgs
+	request.Messages = d.OpenAIMsgs
 
 	stream, err := client.CreateChatCompletionStream(ctx, request)
 	if err != nil {
@@ -199,7 +201,7 @@ func (d *OpenAIReq) Send(ctx context.Context, l *LLM) error {
 		}, d.CurrentToolMessage...)
 
 		d.ToolMessage = append(d.ToolMessage, d.CurrentToolMessage...)
-		l.OpenAIMsgs = append(l.OpenAIMsgs, d.CurrentToolMessage...)
+		d.OpenAIMsgs = append(d.OpenAIMsgs, d.CurrentToolMessage...)
 		d.CurrentToolMessage = make([]openai.ChatCompletionMessage, 0)
 		d.ToolCall = make([]openai.ToolCall, 0)
 		return d.Send(ctx, l)

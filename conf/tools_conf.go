@@ -17,10 +17,14 @@ import (
 )
 
 type AgentInfo struct {
-	Description  string
-	DeepseekTool []deepseek.Tool
-	VolTool      []*model.Tool
-	ToolsName    []string
+	Description string
+	ToolsName   []string
+
+	DeepseekTool    []deepseek.Tool
+	VolTool         []*model.Tool
+	OpenAITools     []openai.Tool
+	GeminiTools     []*genai.Tool
+	OpenRouterTools []openrouter.Tool
 }
 
 var (
@@ -96,10 +100,13 @@ func InsertTools(clientName string) {
 
 		if c.Conf.Description != "" {
 			TaskTools[clientName] = &AgentInfo{
-				Description:  c.Conf.Description,
-				DeepseekTool: dpTools,
-				VolTool:      volTools,
-				ToolsName:    []string{clientName},
+				Description:     c.Conf.Description,
+				DeepseekTool:    dpTools,
+				VolTool:         volTools,
+				GeminiTools:     gmTools,
+				OpenAITools:     OpenAITools,
+				OpenRouterTools: OpenRouterTools,
+				ToolsName:       []string{clientName},
 			}
 		}
 	}

@@ -91,14 +91,9 @@ func (d *DeepseekTaskReq) ExecuteMcp() {
 		}
 	}
 
-	tools := make([]deepseek.Tool, 0)
-	if _, ok := conf.TaskTools[mcpResult.Agent]; ok {
-		tools = conf.TaskTools[mcpResult.Agent].DeepseekTool
-	}
-
+	taskTool := conf.TaskTools[mcpResult.Agent]
 	llm := NewLLM(WithBot(d.Bot), WithUpdate(d.Update),
-		WithMessageChan(d.MessageChan), WithContent(d.Content),
-		WithDeepseekTools(tools))
+		WithMessageChan(d.MessageChan), WithContent(d.Content), WithTaskTools(taskTool))
 
 	err = llm.LLMClient.CallLLMAPI(ctx, d.Content, llm)
 	if err != nil {

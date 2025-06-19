@@ -21,6 +21,8 @@ type GeminiReq struct {
 	ToolCall           []*genai.FunctionCall
 	ToolMessage        []*genai.Content
 	CurrentToolMessage []*genai.Content
+
+	GeminiMsgs []*genai.Content
 }
 
 func (h *GeminiReq) CallLLMAPI(ctx context.Context, prompt string, l *LLM) error {
@@ -36,13 +38,13 @@ func (h *GeminiReq) CallLLMAPI(ctx context.Context, prompt string, l *LLM) error
 		l.Model = userInfo.Mode
 	}
 
-	h.GetMessages(userId, prompt, l)
+	h.GetMessages(userId, prompt)
 
 	logger.Info("msg receive", "userID", userId, "prompt", l.Content)
 	return h.Send(ctx, l)
 }
 
-func (h *GeminiReq) GetMessages(userId int64, prompt string, l *LLM) {
+func (h *GeminiReq) GetMessages(userId int64, prompt string) {
 	messages := make([]*genai.Content, 0)
 
 	msgRecords := db.GetMsgRecord(userId)
@@ -88,7 +90,7 @@ func (h *GeminiReq) GetMessages(userId int64, prompt string, l *LLM) {
 		}
 	}
 
-	l.GeminiMsgs = messages
+	h.GeminiMsgs = messages
 }
 
 func (h *GeminiReq) Send(ctx context.Context, l *LLM) error {
@@ -113,7 +115,7 @@ func (h *GeminiReq) Send(ctx context.Context, l *LLM) error {
 		Tools:            l.GeminiTools,
 	}
 
-	chat, err := client.Chats.Create(ctx, l.Model, config, l.GeminiMsgs)
+	chat, err := client.Chats.Create(ctx, l.Model, config, h.GeminiMsgs)
 	if err != nil {
 		logger.Error("create chat fail", "err", err)
 		return err
@@ -170,7 +172,7 @@ func (h *GeminiReq) Send(ctx context.Context, l *LLM) error {
 		}, true)
 	} else {
 		h.ToolMessage = append(h.ToolMessage, h.CurrentToolMessage...)
-		l.GeminiMsgs = append(l.GeminiMsgs, h.CurrentToolMessage...)
+		h.GeminiMsgs = append(h.GeminiMsgs, h.CurrentToolMessage...)
 		h.CurrentToolMessage = make([]*genai.Content, 0)
 		h.ToolCall = make([]*genai.FunctionCall, 0)
 		return h.Send(ctx, l)
