@@ -30,6 +30,17 @@ type OpenAIReq struct {
 // CallLLMAPI request DeepSeek API and get response
 func (d *OpenAIReq) CallLLMAPI(ctx context.Context, prompt string, l *LLM) error {
 	_, _, userId := utils.GetChatIdAndMsgIdAndUserID(l.Update)
+	d.GetModel(l)
+
+	d.GetMessages(userId, prompt)
+
+	logger.Info("msg receive", "userID", userId, "prompt", prompt)
+
+	return d.Send(ctx, l)
+}
+
+func (d *OpenAIReq) GetModel(l *LLM) {
+	_, _, userId := utils.GetChatIdAndMsgIdAndUserID(l.Update)
 	l.Model = openai.GPT3Dot5Turbo0125
 	userInfo, err := db.GetUserByID(userId)
 	if err != nil {
@@ -39,12 +50,6 @@ func (d *OpenAIReq) CallLLMAPI(ctx context.Context, prompt string, l *LLM) error
 		logger.Info("User info", "userID", userInfo.UserId, "mode", userInfo.Mode)
 		l.Model = userInfo.Mode
 	}
-
-	d.GetMessages(userId, prompt)
-
-	logger.Info("msg receive", "userID", userId, "prompt", prompt)
-
-	return d.Send(ctx, l)
 }
 
 func (d *OpenAIReq) GetMessages(userId int64, prompt string) {
@@ -94,17 +99,6 @@ func (d *OpenAIReq) Send(ctx context.Context, l *LLM) error {
 	start := time.Now()
 	_, updateMsgID, userId := utils.GetChatIdAndMsgIdAndUserID(l.Update)
 
-	userInfo, err := db.GetUserByID(userId)
-	if err != nil {
-		logger.Error("Error getting user info", "err", err)
-	}
-
-	l.Model = openai.GPT3Dot5Turbo0125
-	if userInfo != nil && userInfo.Mode != "" && param.OpenAIModels[userInfo.Mode] {
-		logger.Info("User info", "userID", userInfo.UserId, "mode", userInfo.Mode)
-		l.Model = userInfo.Mode
-	}
-
 	// set deepseek proxy
 	httpClient := utils.GetDeepseekProxyClient()
 
@@ -113,7 +107,7 @@ func (d *OpenAIReq) Send(ctx context.Context, l *LLM) error {
 		openaiConfig.BaseURL = *conf.CustomUrl
 	}
 
-	openaiConfig.BaseURL = "https://api.chatanywhere.org"
+	//openaiConfig.BaseURL = "https://api.chatanywhere.org"
 	openaiConfig.HTTPClient = httpClient
 	client := openai.NewClientWithConfig(openaiConfig)
 
@@ -211,6 +205,63 @@ func (d *OpenAIReq) Send(ctx context.Context, l *LLM) error {
 	totalDuration := time.Since(start).Seconds()
 	metrics.ConversationDuration.Observe(totalDuration)
 	return nil
+}
+
+func (d *OpenAIReq) GetMessage(msg string) {
+	d.OpenAIMsgs = []openai.ChatCompletionMessage{
+		{
+			Role:    constants.ChatMessageRoleUser,
+			Content: msg,
+		},
+	}
+}
+
+func (d *OpenAIReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
+	_, updateMsgID, _ := utils.GetChatIdAndMsgIdAndUserID(l.Update)
+	// set deepseek proxy
+	d.GetModel(l)
+	httpClient := utils.GetDeepseekProxyClient()
+
+	openaiConfig := openai.DefaultConfig(*conf.OpenAIToken)
+	if *conf.CustomUrl != "" {
+		openaiConfig.BaseURL = *conf.CustomUrl
+	}
+
+	//openaiConfig.BaseURL = "https://api.chatanywhere.org"
+	openaiConfig.HTTPClient = httpClient
+	client := openai.NewClientWithConfig(openaiConfig)
+
+	request := openai.ChatCompletionRequest{
+		Model:  l.Model,
+		Stream: true,
+		StreamOptions: &openai.StreamOptions{
+			IncludeUsage: true,
+		},
+		MaxTokens:        *conf.MaxTokens,
+		TopP:             float32(*conf.TopP),
+		FrequencyPenalty: float32(*conf.FrequencyPenalty),
+		TopLogProbs:      *conf.TopLogProbs,
+		LogProbs:         *conf.LogProbs,
+		Stop:             conf.Stop,
+		PresencePenalty:  float32(*conf.PresencePenalty),
+		Temperature:      float32(*conf.Temperature),
+		Tools:            l.OpenAITools,
+	}
+
+	request.Messages = d.OpenAIMsgs
+
+	response, err := client.CreateChatCompletion(ctx, request)
+	if err != nil {
+		logger.Error("ChatCompletionStream error", "updateMsgID", updateMsgID, "err", err)
+		return "", err
+	}
+
+	if len(response.Choices) == 0 {
+		logger.Error("response is emtpy", "response", response)
+		return "", errors.New("response is empty")
+	}
+
+	return response.Choices[0].Message.Content, nil
 }
 
 func (d *OpenAIReq) requestToolsCall(ctx context.Context, choice openai.ChatCompletionStreamChoice) error {

@@ -294,7 +294,7 @@ func CreateBot() *tgbotapi.BotAPI {
 			Description: "multi agents communicate with each other, get the result.",
 		},
 		tgbotapi.BotCommand{
-			Command:     "task",
+			Command:     "mcp",
 			Description: "multi agents communicate with each other base on mcp server, get the result.",
 		},
 	)

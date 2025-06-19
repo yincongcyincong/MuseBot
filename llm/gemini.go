@@ -28,15 +28,7 @@ type GeminiReq struct {
 func (h *GeminiReq) CallLLMAPI(ctx context.Context, prompt string, l *LLM) error {
 	_, _, userId := utils.GetChatIdAndMsgIdAndUserID(l.Update)
 
-	l.Model = param.ModelGemini20Flash
-	userInfo, err := db.GetUserByID(userId)
-	if err != nil {
-		logger.Error("Error getting user info", "err", err)
-	}
-	if userInfo != nil && userInfo.Mode != "" && param.GeminiModels[userInfo.Mode] {
-		logger.Info("User info", "userID", userInfo.UserId, "mode", userInfo.Mode)
-		l.Model = userInfo.Mode
-	}
+	h.GetModel(l)
 
 	h.GetMessages(userId, prompt)
 
@@ -184,6 +176,45 @@ func (h *GeminiReq) Send(ctx context.Context, l *LLM) error {
 	return nil
 }
 
+func (h *GeminiReq) GetMessage(msg string) {}
+
+func (h *GeminiReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
+	_, updateMsgID, _ := utils.GetChatIdAndMsgIdAndUserID(l.Update)
+	h.GetModel(l)
+
+	httpClient := utils.GetDeepseekProxyClient()
+	client, err := genai.NewClient(ctx, &genai.ClientConfig{
+		HTTPClient: httpClient,
+		APIKey:     *conf.GeminiToken,
+	})
+	if err != nil {
+		logger.Error("init gemini client fail", "err", err)
+		return "", err
+	}
+
+	config := &genai.GenerateContentConfig{
+		TopP:             genai.Ptr[float32](float32(*conf.TopP)),
+		FrequencyPenalty: genai.Ptr[float32](float32(*conf.FrequencyPenalty)),
+		PresencePenalty:  genai.Ptr[float32](float32(*conf.PresencePenalty)),
+		Temperature:      genai.Ptr[float32](float32(*conf.Temperature)),
+		Tools:            l.GeminiTools,
+	}
+
+	chat, err := client.Chats.Create(ctx, l.Model, config, h.GeminiMsgs)
+	if err != nil {
+		logger.Error("create chat fail", "updateMsgID", updateMsgID, "err", err)
+		return "", err
+	}
+
+	response, err := chat.Send(ctx, genai.NewPartFromText(l.Content))
+	if err != nil {
+		logger.Error("create chat fail", "err", err)
+		return "", err
+	}
+
+	return response.Text(), nil
+}
+
 func (h *GeminiReq) requestToolsCall(ctx context.Context, response *genai.GenerateContentResponse) error {
 
 	for _, toolCall := range response.FunctionCalls() {
@@ -240,4 +271,18 @@ func (h *GeminiReq) requestToolsCall(ctx context.Context, response *genai.Genera
 		"toolCall", h.ToolCall[len(h.ToolCall)-1].ID, "argument", h.ToolCall[len(h.ToolCall)-1].Args)
 
 	return nil
+}
+
+func (h *GeminiReq) GetModel(l *LLM) {
+	_, _, userId := utils.GetChatIdAndMsgIdAndUserID(l.Update)
+
+	l.Model = param.ModelGemini20Flash
+	userInfo, err := db.GetUserByID(userId)
+	if err != nil {
+		logger.Error("Error getting user info", "err", err)
+	}
+	if userInfo != nil && userInfo.Mode != "" && param.GeminiModels[userInfo.Mode] {
+		logger.Info("User info", "userID", userInfo.UserId, "mode", userInfo.Mode)
+		l.Model = userInfo.Mode
+	}
 }

@@ -39,6 +39,8 @@ func (h *HuoshanReq) CallLLMAPI(ctx context.Context, prompt string, l *LLM) erro
 	return h.Send(ctx, l)
 }
 
+func (h *HuoshanReq) GetModel(l *LLM) {}
+
 func (h *HuoshanReq) GetMessages(userId int64, prompt string) {
 	messages := make([]*model.ChatCompletionMessage, 0)
 
@@ -252,6 +254,59 @@ func (h *HuoshanReq) requestToolsCall(ctx context.Context, choice *model.ChatCom
 		"toolCall", h.ToolCall[len(h.ToolCall)-1].ID, "argument", h.ToolCall[len(h.ToolCall)-1].Function.Arguments)
 
 	return nil
+}
+
+func (h *HuoshanReq) GetMessage(msg string) {
+	h.VolMsgs = []*model.ChatCompletionMessage{
+		{
+			Role: constants.ChatMessageRoleUser,
+			Content: &model.ChatCompletionMessageContent{
+				StringValue: &msg,
+			},
+		},
+	}
+}
+
+func (h *HuoshanReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
+	_, updateMsgID, _ := utils.GetChatIdAndMsgIdAndUserID(l.Update)
+
+	httpClient := utils.GetDeepseekProxyClient()
+
+	client := arkruntime.NewClientWithApiKey(
+		*conf.DeepseekToken,
+		arkruntime.WithTimeout(5*time.Minute),
+		arkruntime.WithHTTPClient(httpClient),
+	)
+
+	req := model.ChatCompletionRequest{
+		Model:    *conf.Type,
+		Messages: h.VolMsgs,
+		StreamOptions: &model.StreamOptions{
+			IncludeUsage: true,
+		},
+		MaxTokens:        *conf.MaxTokens,
+		TopP:             float32(*conf.TopP),
+		FrequencyPenalty: float32(*conf.FrequencyPenalty),
+		TopLogProbs:      *conf.TopLogProbs,
+		LogProbs:         *conf.LogProbs,
+		Stop:             conf.Stop,
+		PresencePenalty:  float32(*conf.PresencePenalty),
+		Temperature:      float32(*conf.Temperature),
+		Tools:            l.VolTools,
+	}
+
+	response, err := client.CreateChatCompletion(ctx, req)
+	if err != nil {
+		logger.Error("CreateChatCompletion error", "updateMsgID", updateMsgID, "err", err)
+		return "", err
+	}
+
+	if len(response.Choices) == 0 {
+		logger.Error("response is emtpy", "response", response)
+		return "", errors.New("response is empty")
+	}
+
+	return *response.Choices[0].Message.Content.StringValue, nil
 }
 
 // GenerateImg generate image

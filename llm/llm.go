@@ -52,6 +52,12 @@ type LLMClient interface {
 	GetMessages(userId int64, prompt string)
 
 	Send(ctx context.Context, l *LLM) error
+
+	GetMessage(msg string)
+
+	SyncSend(ctx context.Context, l *LLM) (string, error)
+
+	GetModel(l *LLM)
 }
 
 func (l *LLM) GetContent() {
