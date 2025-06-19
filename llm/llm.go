@@ -43,19 +43,13 @@ type LLM struct {
 	GeminiTools     []*genai.Tool
 	OpenRouterTools []openrouter.Tool
 
-	DeepseekMsgs   []godeepseek.ChatCompletionMessage
-	VolMsgs        []*model.ChatCompletionMessage
-	OpenAIMsgs     []openai.ChatCompletionMessage
-	GeminiMsgs     []*genai.Content
-	OpenRouterMsgs []openrouter.ChatCompletionMessage
-
 	WholeContent string // whole answer from llm
 }
 
 type LLMClient interface {
 	CallLLMAPI(ctx context.Context, prompt string, l *LLM) error
 
-	GetMessages(userId int64, prompt string, l *LLM)
+	GetMessages(userId int64, prompt string)
 
 	Send(ctx context.Context, l *LLM) error
 }
@@ -184,32 +178,15 @@ func WithMessageChan(messageChan chan *param.MsgInfo) Option {
 	}
 }
 
-func WithDeepseekTools(deepseekTools []godeepseek.Tool) Option {
+func WithTaskTools(taskTool *conf.AgentInfo) Option {
 	return func(p *LLM) {
-		p.DeepseekTools = deepseekTools
-	}
-}
-
-func WithGeminiTools(geminiTools []*genai.Tool) Option {
-	return func(p *LLM) {
-		p.GeminiTools = geminiTools
-	}
-}
-
-func WithOpenAITools(openaiTools []openai.Tool) Option {
-	return func(p *LLM) {
-		p.OpenAITools = openaiTools
-	}
-}
-
-func WithOpenRouterTools(openrouterTools []openrouter.Tool) Option {
-	return func(p *LLM) {
-		p.OpenRouterTools = openrouterTools
-	}
-}
-
-func WithVolTools(volTools []*model.Tool) Option {
-	return func(p *LLM) {
-		p.VolTools = volTools
+		if taskTool == nil {
+			return
+		}
+		p.DeepseekTools = taskTool.DeepseekTool
+		p.VolTools = taskTool.VolTool
+		p.OpenAITools = taskTool.OpenAITools
+		p.GeminiTools = taskTool.GeminiTools
+		p.OpenRouterTools = taskTool.OpenRouterTools
 	}
 }

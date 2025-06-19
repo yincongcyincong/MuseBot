@@ -26,18 +26,20 @@ type HuoshanReq struct {
 	ToolCall           []*model.ToolCall
 	ToolMessage        []*model.ChatCompletionMessage
 	CurrentToolMessage []*model.ChatCompletionMessage
+
+	VolMsgs []*model.ChatCompletionMessage
 }
 
 func (h *HuoshanReq) CallLLMAPI(ctx context.Context, prompt string, l *LLM) error {
 	_, _, userId := utils.GetChatIdAndMsgIdAndUserID(l.Update)
 
-	h.GetMessages(userId, prompt, l)
+	h.GetMessages(userId, prompt)
 
 	logger.Info("msg receive", "userID", userId, "prompt", l.Content)
 	return h.Send(ctx, l)
 }
 
-func (h *HuoshanReq) GetMessages(userId int64, prompt string, l *LLM) {
+func (h *HuoshanReq) GetMessages(userId int64, prompt string) {
 	messages := make([]*model.ChatCompletionMessage, 0)
 
 	msgRecords := db.GetMsgRecord(userId)
@@ -85,7 +87,7 @@ func (h *HuoshanReq) GetMessages(userId int64, prompt string, l *LLM) {
 		},
 	})
 
-	l.VolMsgs = messages
+	h.VolMsgs = messages
 }
 
 func (h *HuoshanReq) Send(ctx context.Context, l *LLM) error {
@@ -102,7 +104,7 @@ func (h *HuoshanReq) Send(ctx context.Context, l *LLM) error {
 
 	req := model.ChatCompletionRequest{
 		Model:    *conf.Type,
-		Messages: l.VolMsgs,
+		Messages: h.VolMsgs,
 		StreamOptions: &model.StreamOptions{
 			IncludeUsage: true,
 		},
@@ -188,7 +190,7 @@ func (h *HuoshanReq) Send(ctx context.Context, l *LLM) error {
 		}, h.CurrentToolMessage...)
 
 		h.ToolMessage = append(h.ToolMessage, h.CurrentToolMessage...)
-		l.VolMsgs = append(l.VolMsgs, h.CurrentToolMessage...)
+		h.VolMsgs = append(h.VolMsgs, h.CurrentToolMessage...)
 		h.CurrentToolMessage = make([]*model.ChatCompletionMessage, 0)
 		h.ToolCall = make([]*model.ToolCall, 0)
 		return h.Send(ctx, l)

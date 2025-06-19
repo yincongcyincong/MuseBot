@@ -22,6 +22,8 @@ type DeepseekReq struct {
 	ToolCall           []deepseek.ToolCall
 	ToolMessage        []deepseek.ChatCompletionMessage
 	CurrentToolMessage []deepseek.ChatCompletionMessage
+
+	DeepseekMsgs []deepseek.ChatCompletionMessage
 }
 
 // CallLLMAPI request DeepSeek API and get response
@@ -37,14 +39,14 @@ func (d *DeepseekReq) CallLLMAPI(ctx context.Context, prompt string, l *LLM) err
 		l.Model = userInfo.Mode
 	}
 
-	d.GetMessages(userId, prompt, l)
+	d.GetMessages(userId, prompt)
 
 	logger.Info("msg receive", "userID", userId, "prompt", prompt)
 
 	return d.Send(ctx, l)
 }
 
-func (d *DeepseekReq) GetMessages(userId int64, prompt string, l *LLM) {
+func (d *DeepseekReq) GetMessages(userId int64, prompt string) {
 	messages := make([]deepseek.ChatCompletionMessage, 0)
 
 	msgRecords := db.GetMsgRecord(userId)
@@ -83,7 +85,7 @@ func (d *DeepseekReq) GetMessages(userId int64, prompt string, l *LLM) {
 		Content: prompt,
 	})
 
-	l.DeepseekMsgs = messages
+	d.DeepseekMsgs = messages
 }
 
 func (d *DeepseekReq) Send(ctx context.Context, l *LLM) error {
@@ -116,7 +118,7 @@ func (d *DeepseekReq) Send(ctx context.Context, l *LLM) error {
 		Tools:            l.DeepseekTools,
 	}
 
-	request.Messages = l.DeepseekMsgs
+	request.Messages = d.DeepseekMsgs
 
 	stream, err := client.CreateChatCompletionStream(ctx, request)
 	if err != nil {
@@ -183,7 +185,7 @@ func (d *DeepseekReq) Send(ctx context.Context, l *LLM) error {
 		}, d.CurrentToolMessage...)
 
 		d.ToolMessage = append(d.ToolMessage, d.CurrentToolMessage...)
-		l.DeepseekMsgs = append(l.DeepseekMsgs, d.CurrentToolMessage...)
+		d.DeepseekMsgs = append(d.DeepseekMsgs, d.CurrentToolMessage...)
 		d.CurrentToolMessage = make([]deepseek.ChatCompletionMessage, 0)
 		d.ToolCall = make([]deepseek.ToolCall, 0)
 		return d.Send(ctx, l)

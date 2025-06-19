@@ -125,9 +125,13 @@ func executeLLM(update tgbotapi.Update, bot *tgbotapi.BotAPI, content string) {
 	messageChan := make(chan *param.MsgInfo)
 	l := llm.NewLLM(llm.WithBot(bot), llm.WithUpdate(update),
 		llm.WithMessageChan(messageChan), llm.WithContent(content),
-		llm.WithDeepseekTools(conf.DeepseekTools), llm.WithGeminiTools(conf.GeminiTools),
-		llm.WithOpenAITools(conf.OpenAITools), llm.WithVolTools(conf.VolTools),
-		llm.WithOpenRouterTools(conf.OpenRouterTools))
+		llm.WithTaskTools(&conf.AgentInfo{
+			DeepseekTool:    conf.DeepseekTools,
+			VolTool:         conf.VolTools,
+			OpenAITools:     conf.OpenAITools,
+			GeminiTools:     conf.GeminiTools,
+			OpenRouterTools: conf.OpenRouterTools,
+		}))
 
 	// request DeepSeek API
 	go l.GetContent()
