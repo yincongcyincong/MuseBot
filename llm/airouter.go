@@ -29,6 +29,17 @@ type AIRouterReq struct {
 // CallLLMAPI request DeepSeek API and get response
 func (d *AIRouterReq) CallLLMAPI(ctx context.Context, prompt string, l *LLM) error {
 	_, _, userId := utils.GetChatIdAndMsgIdAndUserID(l.Update)
+	d.GetModel(l)
+
+	d.GetMessages(userId, prompt)
+
+	logger.Info("msg receive", "userID", userId, "prompt", prompt)
+
+	return d.Send(ctx, l)
+}
+
+func (d *AIRouterReq) GetModel(l *LLM) {
+	_, _, userId := utils.GetChatIdAndMsgIdAndUserID(l.Update)
 	l.Model = param.DeepseekDeepseekR1_0528Free
 	userInfo, err := db.GetUserByID(userId)
 	if err != nil {
@@ -38,12 +49,6 @@ func (d *AIRouterReq) CallLLMAPI(ctx context.Context, prompt string, l *LLM) err
 		logger.Info("User info", "userID", userInfo.UserId, "mode", userInfo.Mode)
 		l.Model = userInfo.Mode
 	}
-
-	d.GetMessages(userId, prompt)
-
-	logger.Info("msg receive", "userID", userId, "prompt", prompt)
-
-	return d.Send(ctx, l)
 }
 
 func (d *AIRouterReq) GetMessages(userId int64, prompt string) {
@@ -213,6 +218,62 @@ func (d *AIRouterReq) Send(ctx context.Context, l *LLM) error {
 	totalDuration := time.Since(start).Seconds()
 	metrics.ConversationDuration.Observe(totalDuration)
 	return nil
+}
+
+func (d *AIRouterReq) GetMessage(msg string) {
+	d.OpenRouterMsgs = []openrouter.ChatCompletionMessage{
+		{
+			Role: constants.ChatMessageRoleAssistant,
+			Content: openrouter.Content{
+				Multi: []openrouter.ChatMessagePart{
+					{
+						Type: openrouter.ChatMessagePartTypeText,
+						Text: msg,
+					},
+				},
+			},
+		},
+	}
+}
+
+func (d *AIRouterReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
+	_, updateMsgID, _ := utils.GetChatIdAndMsgIdAndUserID(l.Update)
+
+	d.GetModel(l)
+	config := openrouter.DefaultConfig(*conf.OpenRouterToken)
+	config.HTTPClient = utils.GetDeepseekProxyClient()
+	client := openrouter.NewClientWithConfig(*config)
+
+	request := openrouter.ChatCompletionRequest{
+		Model:  l.Model,
+		Stream: true,
+		StreamOptions: &openrouter.StreamOptions{
+			IncludeUsage: true,
+		},
+		MaxTokens:        *conf.MaxTokens,
+		TopP:             float32(*conf.TopP),
+		FrequencyPenalty: float32(*conf.FrequencyPenalty),
+		TopLogProbs:      *conf.TopLogProbs,
+		LogProbs:         *conf.LogProbs,
+		Stop:             conf.Stop,
+		PresencePenalty:  float32(*conf.PresencePenalty),
+		Temperature:      float32(*conf.Temperature),
+		Tools:            l.OpenRouterTools,
+	}
+
+	// assign task
+	response, err := client.CreateChatCompletion(ctx, request)
+	if err != nil {
+		logger.Error("ChatCompletionStream error", "updateMsgID", updateMsgID, "err", err)
+		return "", err
+	}
+
+	if len(response.Choices) == 0 {
+		logger.Error("response is emtpy", "response", response)
+		return "", errors.New("response is empty")
+	}
+
+	return response.Choices[0].Message.Content.Text, nil
 }
 
 func (d *AIRouterReq) requestToolsCall(ctx context.Context, choice openrouter.ChatCompletionStreamChoice) error {

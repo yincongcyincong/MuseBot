@@ -6,12 +6,9 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/cohesion-org/deepseek-go"
-	"github.com/cohesion-org/deepseek-go/constants"
 	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
 	"github.com/yincongcyincong/telegram-deepseek-bot/i18n"
 	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
-	"github.com/yincongcyincong/telegram-deepseek-bot/utils"
 )
 
 var (
@@ -26,19 +23,6 @@ func (d *DeepseekTaskReq) ExecuteMcp() {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
 	defer cancel()
 
-	d.Model = deepseek.DeepSeekChat
-	_, updateMsgID, _ := utils.GetChatIdAndMsgIdAndUserID(d.Update)
-
-	// set deepseek proxy
-	httpClient := utils.GetDeepseekProxyClient()
-
-	client, err := deepseek.NewClientWithOptions(*conf.DeepseekToken,
-		deepseek.WithBaseURL(*conf.CustomUrl), deepseek.WithHTTPClient(httpClient))
-	if err != nil {
-		logger.Error("Error creating deepseek client", "err", err)
-		return
-	}
-
 	logger.Info("mcp content", "content", d.Content)
 	taskParam := make(map[string]interface{})
 	taskParam["assign_param"] = make([]map[string]string, 0)
@@ -50,39 +34,20 @@ func (d *DeepseekTaskReq) ExecuteMcp() {
 		})
 	}
 
-	messages := []deepseek.ChatCompletionMessage{
-		{
-			Role:    constants.ChatMessageRoleUser,
-			Content: i18n.GetMessage(*conf.Lang, "mcp_prompt", taskParam),
-		},
-	}
+	// get mcp request
+	llm := NewLLM(WithBot(d.Bot), WithUpdate(d.Update),
+		WithMessageChan(d.MessageChan), WithContent(d.Content))
 
-	request := &deepseek.ChatCompletionRequest{
-		Model:            d.Model,
-		MaxTokens:        *conf.MaxTokens,
-		TopP:             float32(*conf.TopP),
-		FrequencyPenalty: float32(*conf.FrequencyPenalty),
-		TopLogProbs:      *conf.TopLogProbs,
-		LogProbs:         *conf.LogProbs,
-		Stop:             conf.Stop,
-		PresencePenalty:  float32(*conf.PresencePenalty),
-		Temperature:      float32(*conf.Temperature),
-		Messages:         messages,
-	}
-
-	// assign task
-	response, err := client.CreateChatCompletion(ctx, request)
+	prompt := i18n.GetMessage(*conf.Lang, "mcp_prompt", taskParam)
+	llm.LLMClient.GetMessage(prompt)
+	llm.Content = prompt
+	c, err := llm.LLMClient.SyncSend(ctx, llm)
 	if err != nil {
-		logger.Error("ChatCompletionStream error", "updateMsgID", updateMsgID, "err", err)
+		logger.Error("get message fail", "err", err)
 		return
 	}
 
-	if len(response.Choices) == 0 {
-		logger.Error("response is emtpy", "response", response)
-		return
-	}
-
-	matches := mcpRe.FindAllString(response.Choices[0].Message.Content, -1)
+	matches := mcpRe.FindAllString(c, -1)
 	mcpResult := new(McpResult)
 	for _, match := range matches {
 		err := json.Unmarshal([]byte(match), mcpResult)
@@ -91,10 +56,10 @@ func (d *DeepseekTaskReq) ExecuteMcp() {
 		}
 	}
 
+	// execute mcp request
 	taskTool := conf.TaskTools[mcpResult.Agent]
-	llm := NewLLM(WithBot(d.Bot), WithUpdate(d.Update),
+	llm = NewLLM(WithBot(d.Bot), WithUpdate(d.Update),
 		WithMessageChan(d.MessageChan), WithContent(d.Content), WithTaskTools(taskTool))
-
 	err = llm.LLMClient.CallLLMAPI(ctx, d.Content, llm)
 	if err != nil {
 		logger.Error("execute conversation fail", "err", err)

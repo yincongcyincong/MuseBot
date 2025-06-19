@@ -37,6 +37,10 @@ func (d *OllamaDeepseekReq) CallLLMAPI(ctx context.Context, prompt string, l *LL
 	return d.Send(ctx, l)
 }
 
+func (d *OllamaDeepseekReq) GetModel(l *LLM) {
+	l.Model = "llava:latest"
+}
+
 func (d *OllamaDeepseekReq) GetMessages(userId int64, prompt string) {
 	messages := make([]deepseek.ChatCompletionMessage, 0)
 
@@ -176,6 +180,56 @@ func (d *OllamaDeepseekReq) Send(ctx context.Context, l *LLM) error {
 	totalDuration := time.Since(start).Seconds()
 	metrics.ConversationDuration.Observe(totalDuration)
 	return nil
+}
+
+func (d *OllamaDeepseekReq) GetMessage(msg string) {
+	d.DeepseekMsgs = []deepseek.ChatCompletionMessage{
+		{
+			Role:    constants.ChatMessageRoleUser,
+			Content: msg,
+		},
+	}
+}
+
+func (d *OllamaDeepseekReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
+	_, updateMsgID, _ := utils.GetChatIdAndMsgIdAndUserID(l.Update)
+
+	httpClient := utils.GetDeepseekProxyClient()
+
+	client, err := deepseek.NewClientWithOptions(*conf.DeepseekToken,
+		deepseek.WithBaseURL(*conf.CustomUrl), deepseek.WithHTTPClient(httpClient))
+	if err != nil {
+		logger.Error("Error creating deepseek client", "err", err)
+		return "", err
+	}
+
+	request := &deepseek.ChatCompletionRequest{
+		Model:            l.Model,
+		MaxTokens:        *conf.MaxTokens,
+		TopP:             float32(*conf.TopP),
+		FrequencyPenalty: float32(*conf.FrequencyPenalty),
+		TopLogProbs:      *conf.TopLogProbs,
+		LogProbs:         *conf.LogProbs,
+		Stop:             conf.Stop,
+		PresencePenalty:  float32(*conf.PresencePenalty),
+		Temperature:      float32(*conf.Temperature),
+		Messages:         d.DeepseekMsgs,
+		Tools:            l.DeepseekTools,
+	}
+
+	// assign task
+	response, err := client.CreateChatCompletion(ctx, request)
+	if err != nil {
+		logger.Error("ChatCompletionStream error", "updateMsgID", updateMsgID, "err", err)
+		return "", err
+	}
+
+	if len(response.Choices) == 0 {
+		logger.Error("response is emtpy", "response", response)
+		return "", errors.New("response is empty")
+	}
+
+	return response.Choices[0].Message.Content, nil
 }
 
 func (d *OllamaDeepseekReq) requestToolsCall(ctx context.Context, choice deepseek.StreamChoices) error {
