@@ -37,11 +37,27 @@ type LLM struct {
 
 	LLMClient LLMClient
 
+	DeepseekTools   []godeepseek.Tool
+	VolTools        []*model.Tool
+	OpenAITools     []openai.Tool
+	GeminiTools     []*genai.Tool
+	OpenRouterTools []openrouter.Tool
+
+	DeepseekMsgs   []godeepseek.ChatCompletionMessage
+	VolMsgs        []*model.ChatCompletionMessage
+	OpenAIMsgs     []openai.ChatCompletionMessage
+	GeminiMsgs     []*genai.Content
+	OpenRouterMsgs []openrouter.ChatCompletionMessage
+
 	WholeContent string // whole answer from llm
 }
 
 type LLMClient interface {
 	CallLLMAPI(ctx context.Context, prompt string, l *LLM) error
+
+	GetMessages(userId int64, prompt string, l *LLM)
+
+	Send(ctx context.Context, l *LLM) error
 }
 
 func (l *LLM) GetContent() {
@@ -61,6 +77,7 @@ func (l *LLM) GetContent() {
 		logger.Error("get content fail", "err", err)
 		return
 	}
+	l.Content = text
 	err = l.LLMClient.CallLLMAPI(ctx, text, l)
 	if err != nil {
 		logger.Error("Error calling DeepSeek API", "err", err)
@@ -164,5 +181,35 @@ func WithBot(bot *tgbotapi.BotAPI) Option {
 func WithMessageChan(messageChan chan *param.MsgInfo) Option {
 	return func(p *LLM) {
 		p.MessageChan = messageChan
+	}
+}
+
+func WithDeepseekTools(deepseekTools []godeepseek.Tool) Option {
+	return func(p *LLM) {
+		p.DeepseekTools = deepseekTools
+	}
+}
+
+func WithGeminiTools(geminiTools []*genai.Tool) Option {
+	return func(p *LLM) {
+		p.GeminiTools = geminiTools
+	}
+}
+
+func WithOpenAITools(openaiTools []openai.Tool) Option {
+	return func(p *LLM) {
+		p.OpenAITools = openaiTools
+	}
+}
+
+func WithOpenRouterTools(openrouterTools []openrouter.Tool) Option {
+	return func(p *LLM) {
+		p.OpenRouterTools = openrouterTools
+	}
+}
+
+func WithVolTools(volTools []*model.Tool) Option {
+	return func(p *LLM) {
+		p.VolTools = volTools
 	}
 }

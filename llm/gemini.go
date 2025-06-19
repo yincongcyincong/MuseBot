@@ -36,13 +36,13 @@ func (h *GeminiReq) CallLLMAPI(ctx context.Context, prompt string, l *LLM) error
 		l.Model = userInfo.Mode
 	}
 
-	messages := h.getMessages(userId)
+	h.GetMessages(userId, prompt, l)
 
 	logger.Info("msg receive", "userID", userId, "prompt", l.Content)
-	return h.send(ctx, messages, prompt, l)
+	return h.Send(ctx, l)
 }
 
-func (h *GeminiReq) getMessages(userId int64) []*genai.Content {
+func (h *GeminiReq) GetMessages(userId int64, prompt string, l *LLM) {
 	messages := make([]*genai.Content, 0)
 
 	msgRecords := db.GetMsgRecord(userId)
@@ -88,10 +88,10 @@ func (h *GeminiReq) getMessages(userId int64) []*genai.Content {
 		}
 	}
 
-	return messages
+	l.GeminiMsgs = messages
 }
 
-func (h *GeminiReq) send(ctx context.Context, messages []*genai.Content, prompt string, l *LLM) error {
+func (h *GeminiReq) Send(ctx context.Context, l *LLM) error {
 	start := time.Now()
 	_, updateMsgID, userId := utils.GetChatIdAndMsgIdAndUserID(l.Update)
 	httpClient := utils.GetDeepseekProxyClient()
@@ -110,10 +110,10 @@ func (h *GeminiReq) send(ctx context.Context, messages []*genai.Content, prompt 
 		FrequencyPenalty: genai.Ptr[float32](float32(*conf.FrequencyPenalty)),
 		PresencePenalty:  genai.Ptr[float32](float32(*conf.PresencePenalty)),
 		Temperature:      genai.Ptr[float32](float32(*conf.Temperature)),
-		Tools:            conf.GeminiTools,
+		Tools:            l.GeminiTools,
 	}
 
-	chat, err := client.Chats.Create(ctx, l.Model, config, messages)
+	chat, err := client.Chats.Create(ctx, l.Model, config, l.GeminiMsgs)
 	if err != nil {
 		logger.Error("create chat fail", "err", err)
 		return err
@@ -124,7 +124,7 @@ func (h *GeminiReq) send(ctx context.Context, messages []*genai.Content, prompt 
 	}
 
 	hasTools := false
-	for response, err := range chat.SendMessageStream(ctx, *genai.NewPartFromText(prompt)) {
+	for response, err := range chat.SendMessageStream(ctx, *genai.NewPartFromText(l.Content)) {
 		if errors.Is(err, io.EOF) {
 			logger.Info("stream finished", "updateMsgID", updateMsgID)
 			break
@@ -134,7 +134,6 @@ func (h *GeminiReq) send(ctx context.Context, messages []*genai.Content, prompt 
 			break
 		}
 
-		response.Text()
 		toolCalls := response.FunctionCalls()
 		if len(toolCalls) > 0 {
 			hasTools = true
@@ -171,10 +170,10 @@ func (h *GeminiReq) send(ctx context.Context, messages []*genai.Content, prompt 
 		}, true)
 	} else {
 		h.ToolMessage = append(h.ToolMessage, h.CurrentToolMessage...)
-		messages = append(messages, h.CurrentToolMessage...)
+		l.GeminiMsgs = append(l.GeminiMsgs, h.CurrentToolMessage...)
 		h.CurrentToolMessage = make([]*genai.Content, 0)
 		h.ToolCall = make([]*genai.FunctionCall, 0)
-		return h.send(ctx, messages, prompt, l)
+		return h.Send(ctx, l)
 	}
 
 	// record time costing in dialog

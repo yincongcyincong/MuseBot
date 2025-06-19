@@ -31,13 +31,13 @@ type HuoshanReq struct {
 func (h *HuoshanReq) CallLLMAPI(ctx context.Context, prompt string, l *LLM) error {
 	_, _, userId := utils.GetChatIdAndMsgIdAndUserID(l.Update)
 
-	messages := h.getMessages(userId, prompt)
+	h.GetMessages(userId, prompt, l)
 
 	logger.Info("msg receive", "userID", userId, "prompt", l.Content)
-	return h.send(ctx, messages, l)
+	return h.Send(ctx, l)
 }
 
-func (h *HuoshanReq) getMessages(userId int64, prompt string) []*model.ChatCompletionMessage {
+func (h *HuoshanReq) GetMessages(userId int64, prompt string, l *LLM) {
 	messages := make([]*model.ChatCompletionMessage, 0)
 
 	msgRecords := db.GetMsgRecord(userId)
@@ -85,10 +85,10 @@ func (h *HuoshanReq) getMessages(userId int64, prompt string) []*model.ChatCompl
 		},
 	})
 
-	return messages
+	l.VolMsgs = messages
 }
 
-func (h *HuoshanReq) send(ctx context.Context, messages []*model.ChatCompletionMessage, l *LLM) error {
+func (h *HuoshanReq) Send(ctx context.Context, l *LLM) error {
 	start := time.Now()
 	_, updateMsgID, userId := utils.GetChatIdAndMsgIdAndUserID(l.Update)
 	// set deepseek proxy
@@ -102,7 +102,7 @@ func (h *HuoshanReq) send(ctx context.Context, messages []*model.ChatCompletionM
 
 	req := model.ChatCompletionRequest{
 		Model:    *conf.Type,
-		Messages: messages,
+		Messages: l.VolMsgs,
 		StreamOptions: &model.StreamOptions{
 			IncludeUsage: true,
 		},
@@ -114,7 +114,7 @@ func (h *HuoshanReq) send(ctx context.Context, messages []*model.ChatCompletionM
 		Stop:             conf.Stop,
 		PresencePenalty:  float32(*conf.PresencePenalty),
 		Temperature:      float32(*conf.Temperature),
-		Tools:            conf.VolTools,
+		Tools:            l.VolTools,
 	}
 
 	stream, err := client.CreateChatCompletionStream(ctx, req)
@@ -188,10 +188,10 @@ func (h *HuoshanReq) send(ctx context.Context, messages []*model.ChatCompletionM
 		}, h.CurrentToolMessage...)
 
 		h.ToolMessage = append(h.ToolMessage, h.CurrentToolMessage...)
-		messages = append(messages, h.CurrentToolMessage...)
+		l.VolMsgs = append(l.VolMsgs, h.CurrentToolMessage...)
 		h.CurrentToolMessage = make([]*model.ChatCompletionMessage, 0)
 		h.ToolCall = make([]*model.ToolCall, 0)
-		return h.send(ctx, messages, l)
+		return h.Send(ctx, l)
 	}
 
 	// record time costing in dialog
