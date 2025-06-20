@@ -80,10 +80,11 @@ You can configure the bot via environment variables:
 | Variable Name                  | 	Description                                                                                                                   | Default Value             |
 |--------------------------------|--------------------------------------------------------------------------------------------------------------------------------|---------------------------|
 | TELEGRAM_BOT_TOKEN (required)	 | Your Telegram bot token                                                                                                        | -                         |
-| DEEPSEEK_TOKEN	  (required)    | DeepSeek Api Key / volcengine Api key[doc](https://www.volcengine.com/docs/82379/1399008#b00dee71)                             | -                         |
+| DEEPSEEK_TOKEN	  (required)    | DeepSeek Api Key                                                                                                               | -                         |
 | OPENAI_TOKEN	                  | Open AI Token                                                                                                                  | -                         |
 | GEMINI_TOKEN	                  | Gemini Token                                                                                                                   | -                         |
 | OPEN_ROUTER_TOKEN	             | OpenRouter Token  [doc](https://openrouter.ai/docs/quickstart)                                                                 | -                         |
+| VOL_TOKEN	                     | Vol Token  [doc](https://www.volcengine.com/docs/82379/1399008#b00dee71)                                                       | -                         |
 | CUSTOM_URL	                    | custom deepseek url                                                                                                            | https://api.deepseek.com/ |
 | TYPE	                          | deepseek/openai/gemini/openrouter/vol                                                                                          | deepseek                  |
 | VOLC_AK	                       | volcengine photo model ak     [doc](https://www.volcengine.com/docs/6444/1340578)                                              | -                         |
