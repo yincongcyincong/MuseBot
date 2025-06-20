@@ -29,7 +29,6 @@ type AIRouterReq struct {
 // CallLLMAPI request DeepSeek API and get response
 func (d *AIRouterReq) CallLLMAPI(ctx context.Context, prompt string, l *LLM) error {
 	_, _, userId := utils.GetChatIdAndMsgIdAndUserID(l.Update)
-	d.GetModel(l)
 
 	d.GetMessages(userId, prompt)
 
@@ -117,6 +116,8 @@ func (d *AIRouterReq) GetMessages(userId int64, prompt string) {
 func (d *AIRouterReq) Send(ctx context.Context, l *LLM) error {
 	start := time.Now()
 	_, updateMsgID, userId := utils.GetChatIdAndMsgIdAndUserID(l.Update)
+	d.GetModel(l)
+
 	// set deepseek proxy
 	config := openrouter.DefaultConfig(*conf.OpenRouterToken)
 	config.HTTPClient = utils.GetDeepseekProxyClient()
@@ -272,6 +273,8 @@ func (d *AIRouterReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 		logger.Error("response is emtpy", "response", response)
 		return "", errors.New("response is empty")
 	}
+
+	l.Token += response.Usage.TotalTokens
 
 	return response.Choices[0].Message.Content.Text, nil
 }

@@ -30,7 +30,6 @@ type DeepseekReq struct {
 func (d *DeepseekReq) CallLLMAPI(ctx context.Context, prompt string, l *LLM) error {
 	_, _, userId := utils.GetChatIdAndMsgIdAndUserID(l.Update)
 
-	d.GetModel(l)
 	d.GetMessages(userId, prompt)
 
 	logger.Info("msg receive", "userID", userId, "prompt", prompt)
@@ -97,6 +96,8 @@ func (d *DeepseekReq) GetMessages(userId int64, prompt string) {
 func (d *DeepseekReq) Send(ctx context.Context, l *LLM) error {
 	start := time.Now()
 	_, updateMsgID, userId := utils.GetChatIdAndMsgIdAndUserID(l.Update)
+	d.GetModel(l)
+
 	// set deepseek proxy
 	httpClient := utils.GetDeepseekProxyClient()
 
@@ -251,6 +252,8 @@ func (d *DeepseekReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 		logger.Error("response is emtpy", "response", response)
 		return "", errors.New("response is empty")
 	}
+
+	l.Token += response.Usage.TotalTokens
 
 	return response.Choices[0].Message.Content, nil
 }
