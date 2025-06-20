@@ -22,7 +22,7 @@ import (
 	"github.com/yincongcyincong/telegram-deepseek-bot/utils"
 )
 
-type HuoshanReq struct {
+type VolReq struct {
 	ToolCall           []*model.ToolCall
 	ToolMessage        []*model.ChatCompletionMessage
 	CurrentToolMessage []*model.ChatCompletionMessage
@@ -30,18 +30,31 @@ type HuoshanReq struct {
 	VolMsgs []*model.ChatCompletionMessage
 }
 
-func (h *HuoshanReq) CallLLMAPI(ctx context.Context, prompt string, l *LLM) error {
+func (h *VolReq) CallLLMAPI(ctx context.Context, prompt string, l *LLM) error {
 	_, _, userId := utils.GetChatIdAndMsgIdAndUserID(l.Update)
 
+	h.GetModel(l)
 	h.GetMessages(userId, prompt)
 
 	logger.Info("msg receive", "userID", userId, "prompt", l.Content)
 	return h.Send(ctx, l)
 }
 
-func (h *HuoshanReq) GetModel(l *LLM) {}
+func (h *VolReq) GetModel(l *LLM) {
+	_, _, userId := utils.GetChatIdAndMsgIdAndUserID(l.Update)
 
-func (h *HuoshanReq) GetMessages(userId int64, prompt string) {
+	l.Model = param.ModelDeepSeekR1_528
+	userInfo, err := db.GetUserByID(userId)
+	if err != nil {
+		logger.Error("Error getting user info", "err", err)
+	}
+	if userInfo != nil && userInfo.Mode != "" && param.VolModels[userInfo.Mode] {
+		logger.Info("User info", "userID", userInfo.UserId, "mode", userInfo.Mode)
+		l.Model = userInfo.Mode
+	}
+}
+
+func (h *VolReq) GetMessages(userId int64, prompt string) {
 	messages := make([]*model.ChatCompletionMessage, 0)
 
 	msgRecords := db.GetMsgRecord(userId)
@@ -92,20 +105,20 @@ func (h *HuoshanReq) GetMessages(userId int64, prompt string) {
 	h.VolMsgs = messages
 }
 
-func (h *HuoshanReq) Send(ctx context.Context, l *LLM) error {
+func (h *VolReq) Send(ctx context.Context, l *LLM) error {
 	start := time.Now()
 	_, updateMsgID, userId := utils.GetChatIdAndMsgIdAndUserID(l.Update)
 	// set deepseek proxy
 	httpClient := utils.GetDeepseekProxyClient()
 
 	client := arkruntime.NewClientWithApiKey(
-		*conf.DeepseekToken,
+		*conf.VolToken,
 		arkruntime.WithTimeout(5*time.Minute),
 		arkruntime.WithHTTPClient(httpClient),
 	)
 
 	req := model.ChatCompletionRequest{
-		Model:    *conf.Type,
+		Model:    l.Model,
 		Messages: h.VolMsgs,
 		StreamOptions: &model.StreamOptions{
 			IncludeUsage: true,
@@ -204,7 +217,7 @@ func (h *HuoshanReq) Send(ctx context.Context, l *LLM) error {
 	return nil
 }
 
-func (h *HuoshanReq) requestToolsCall(ctx context.Context, choice *model.ChatCompletionStreamChoice) error {
+func (h *VolReq) requestToolsCall(ctx context.Context, choice *model.ChatCompletionStreamChoice) error {
 	for _, toolCall := range choice.Delta.ToolCalls {
 		property := make(map[string]interface{})
 
@@ -256,7 +269,7 @@ func (h *HuoshanReq) requestToolsCall(ctx context.Context, choice *model.ChatCom
 	return nil
 }
 
-func (h *HuoshanReq) GetMessage(msg string) {
+func (h *VolReq) GetMessage(msg string) {
 	h.VolMsgs = []*model.ChatCompletionMessage{
 		{
 			Role: constants.ChatMessageRoleUser,
@@ -267,7 +280,7 @@ func (h *HuoshanReq) GetMessage(msg string) {
 	}
 }
 
-func (h *HuoshanReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
+func (h *VolReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 	_, updateMsgID, _ := utils.GetChatIdAndMsgIdAndUserID(l.Update)
 
 	httpClient := utils.GetDeepseekProxyClient()

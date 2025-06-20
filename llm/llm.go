@@ -122,8 +122,8 @@ func NewLLM(opts ...Option) *LLM {
 			ToolMessage:        []openrouter.ChatCompletionMessage{},
 			CurrentToolMessage: []openrouter.ChatCompletionMessage{},
 		}
-	default:
-		l.LLMClient = &HuoshanReq{
+	case param.Vol:
+		l.LLMClient = &VolReq{
 			ToolCall:           []*model.ToolCall{},
 			ToolMessage:        []*model.ChatCompletionMessage{},
 			CurrentToolMessage: []*model.ChatCompletionMessage{},
