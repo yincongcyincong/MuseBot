@@ -33,7 +33,6 @@ type VolReq struct {
 func (h *VolReq) CallLLMAPI(ctx context.Context, prompt string, l *LLM) error {
 	_, _, userId := utils.GetChatIdAndMsgIdAndUserID(l.Update)
 
-	h.GetModel(l)
 	h.GetMessages(userId, prompt)
 
 	logger.Info("msg receive", "userID", userId, "prompt", l.Content)
@@ -108,6 +107,8 @@ func (h *VolReq) GetMessages(userId int64, prompt string) {
 func (h *VolReq) Send(ctx context.Context, l *LLM) error {
 	start := time.Now()
 	_, updateMsgID, userId := utils.GetChatIdAndMsgIdAndUserID(l.Update)
+	h.GetModel(l)
+
 	// set deepseek proxy
 	httpClient := utils.GetDeepseekProxyClient()
 
@@ -282,17 +283,18 @@ func (h *VolReq) GetMessage(msg string) {
 
 func (h *VolReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 	_, updateMsgID, _ := utils.GetChatIdAndMsgIdAndUserID(l.Update)
+	h.GetModel(l)
 
 	httpClient := utils.GetDeepseekProxyClient()
 
 	client := arkruntime.NewClientWithApiKey(
-		*conf.DeepseekToken,
+		*conf.VolToken,
 		arkruntime.WithTimeout(5*time.Minute),
 		arkruntime.WithHTTPClient(httpClient),
 	)
 
 	req := model.ChatCompletionRequest{
-		Model:    *conf.Type,
+		Model:    l.Model,
 		Messages: h.VolMsgs,
 		StreamOptions: &model.StreamOptions{
 			IncludeUsage: true,
@@ -318,6 +320,8 @@ func (h *VolReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 		logger.Error("response is emtpy", "response", response)
 		return "", errors.New("response is empty")
 	}
+
+	l.Token += response.Usage.TotalTokens
 
 	return *response.Choices[0].Message.Content.StringValue, nil
 }

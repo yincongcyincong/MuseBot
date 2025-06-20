@@ -58,9 +58,12 @@ func (d *DeepseekTaskReq) ExecuteMcp() {
 
 	// execute mcp request
 	taskTool := conf.TaskTools[mcpResult.Agent]
-	llm = NewLLM(WithBot(d.Bot), WithUpdate(d.Update),
+	mcpLLM := NewLLM(WithBot(d.Bot), WithUpdate(d.Update),
 		WithMessageChan(d.MessageChan), WithContent(d.Content), WithTaskTools(taskTool))
-	err = llm.LLMClient.CallLLMAPI(ctx, d.Content, llm)
+	mcpLLM.Token += llm.Token
+	mcpLLM.Content = d.Content
+	mcpLLM.LLMClient.GetMessage(d.Content)
+	err = mcpLLM.LLMClient.Send(ctx, mcpLLM)
 	if err != nil {
 		logger.Error("execute conversation fail", "err", err)
 	}

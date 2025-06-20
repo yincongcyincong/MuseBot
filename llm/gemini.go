@@ -28,8 +28,6 @@ type GeminiReq struct {
 func (h *GeminiReq) CallLLMAPI(ctx context.Context, prompt string, l *LLM) error {
 	_, _, userId := utils.GetChatIdAndMsgIdAndUserID(l.Update)
 
-	h.GetModel(l)
-
 	h.GetMessages(userId, prompt)
 
 	logger.Info("msg receive", "userID", userId, "prompt", l.Content)
@@ -88,8 +86,9 @@ func (h *GeminiReq) GetMessages(userId int64, prompt string) {
 func (h *GeminiReq) Send(ctx context.Context, l *LLM) error {
 	start := time.Now()
 	_, updateMsgID, userId := utils.GetChatIdAndMsgIdAndUserID(l.Update)
-	httpClient := utils.GetDeepseekProxyClient()
+	h.GetModel(l)
 
+	httpClient := utils.GetDeepseekProxyClient()
 	client, err := genai.NewClient(ctx, &genai.ClientConfig{
 		HTTPClient: httpClient,
 		APIKey:     *conf.GeminiToken,
@@ -211,6 +210,8 @@ func (h *GeminiReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 		logger.Error("create chat fail", "err", err)
 		return "", err
 	}
+
+	l.Token += int(response.UsageMetadata.TotalTokenCount)
 
 	return response.Text(), nil
 }
