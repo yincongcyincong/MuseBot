@@ -530,9 +530,9 @@ func sendModeConfigurationOptions(update tgbotapi.Update, bot *tgbotapi.BotAPI) 
 				tgbotapi.NewInlineKeyboardButtonData(k, k),
 			))
 		}
-	default:
+	case param.Vol:
 		// create inline button
-		for k := range param.DeepseekModels {
+		for k := range param.VolModels {
 			inlineButton = append(inlineButton, tgbotapi.NewInlineKeyboardRow(
 				tgbotapi.NewInlineKeyboardButtonData(k, k),
 			))
@@ -609,7 +609,7 @@ func handleCallbackQuery(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	default:
 		if param.GeminiModels[update.CallbackQuery.Data] || param.OpenAIModels[update.CallbackQuery.Data] ||
 			param.DeepseekModels[update.CallbackQuery.Data] || param.DeepseekLocalModels[update.CallbackQuery.Data] ||
-			param.OpenRouterModels[update.CallbackQuery.Data] {
+			param.OpenRouterModels[update.CallbackQuery.Data] || param.VolModels[update.CallbackQuery.Data] {
 			handleModeUpdate(update, bot)
 		}
 		if param.OpenRouterModelTypes[update.CallbackQuery.Data] {

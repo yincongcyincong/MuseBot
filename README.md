@@ -85,7 +85,7 @@ You can configure the bot via environment variables:
 | GEMINI_TOKEN	                  | Gemini Token                                                                                                                   | -                         |
 | OPEN_ROUTER_TOKEN	             | OpenRouter Token  [doc](https://openrouter.ai/docs/quickstart)                                                                 | -                         |
 | CUSTOM_URL	                    | custom deepseek url                                                                                                            | https://api.deepseek.com/ |
-| TYPE	                          | deepseek/openai/gemini/openrouter/others(deepseek-r1-250120，doubao-1.5-pro-32k-250115，...)                                     | deepseek                  |
+| TYPE	                          | deepseek/openai/gemini/openrouter/vol                                                                                          | deepseek                  |
 | VOLC_AK	                       | volcengine photo model ak     [doc](https://www.volcengine.com/docs/6444/1340578)                                              | -                         |
 | VOLC_SK	                       | volcengine photo model sk      [doc](https://www.volcengine.com/docs/6444/1340578)                                             | -                         |
 | Ernie_AK	                      | ernie ak     [doc](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Sly8bm96d)                                                     | -                         |
@@ -103,7 +103,7 @@ You can configure the bot via environment variables:
 | MAX_USER_CHAT	                 | max existing chat per user                                                                                                     | 2                         |
 | VIDEO_TOKEN	                   | volcengine Api key[doc](https://www.volcengine.com/docs/82379/1399008#b00dee71)                                                | -                         |
 | HTTP_PORT	                     | http server port                                                                                                               | 36060                     |
-| USE_TOOLS	                     | if normal conversation  use function call tools or not                                                                         | false                      |
+| USE_TOOLS	                     | if normal conversation  use function call tools or not                                                                         | false                     |
 
 ### CUSTOM_URL
 
@@ -148,7 +148,7 @@ retry last question.
 ### /mode
 
 chose deepseek mode, include chat, coder, reasoner
-chat and coder means DeepSeek-V3, reasoner means DeepSeek-R1.    
+chat and coder means DeepSeek-V3, reasoner means DeepSeek-R1.
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/55ac3101-92d2-490d-8ee0-31a5b297e56e" />
 
 ### /balance
@@ -157,13 +157,13 @@ chat and coder means DeepSeek-V3, reasoner means DeepSeek-R1.
 
 ### /state
 
-calculate one user token usage.    
+calculate one user token usage.
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/0814b3ac-dcf6-4ec7-ae6b-3b8d190a0132" />
 
 ### /photo
 
 using volcengine photo model create photo, deepseek don't support to create photo now. VOLC_AK and VOLC_SK is
-necessary.[doc](https://www.volcengine.com/docs/6444/1340578)    
+necessary.[doc](https://www.volcengine.com/docs/6444/1340578)
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/c8072d7d-74e6-4270-8496-1b4e7532134b" />
 
 ### /video
@@ -189,7 +189,7 @@ multi agent communicate with each other!
 
 ### /addtoken
 
-add token for user.    
+add token for user.
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/12d98272-0718-4c9b-bc5c-e0a92e6c8664" />
 
 ## Deployment

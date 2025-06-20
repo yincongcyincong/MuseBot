@@ -16,6 +16,7 @@ var (
 	OpenAIToken     *string
 	GeminiToken     *string
 	OpenRouterToken *string
+	VolToken        *string
 	ErnieAK         *string
 	ErnieSK         *string
 
@@ -50,6 +51,7 @@ func InitConf() {
 	OpenAIToken = flag.String("openai_token", "", "openai auth token")
 	GeminiToken = flag.String("gemini_token", "", "gemini auth token")
 	OpenRouterToken = flag.String("openrouter_token", "", "openrouter.ai auth token")
+	VolToken = flag.String("vol_token", "", "vol auth token")
 	ErnieAK = flag.String("ernie_ak", "", "ernie ak")
 	ErnieSK = flag.String("ernie_sk", "", "ernie sk")
 	VolcAK = flag.String("volc_ak", "", "volc ak")
@@ -169,6 +171,10 @@ func InitConf() {
 		*GeminiToken = os.Getenv("GEMINI_TOKEN")
 	}
 
+	if os.Getenv("VOL_TOKEN") != "" {
+		*VolToken = os.Getenv("VOL_TOKEN")
+	}
+
 	if os.Getenv("ERNIE_AK") != "" {
 		*ErnieAK = os.Getenv("ERNIE_AK")
 	}
@@ -232,6 +238,7 @@ func InitConf() {
 	logger.Info("CONF", "OpenRouterToken", OpenRouterToken)
 	logger.Info("CONF", "ErnieAK", *ErnieAK)
 	logger.Info("CONF", "ErnieSK", *ErnieSK)
+	logger.Info("CONF", "VolToken", *VolToken)
 
 	EnvAudioConf()
 	EnvRagConf()

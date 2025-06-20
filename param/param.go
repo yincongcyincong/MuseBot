@@ -9,6 +9,8 @@ const (
 	DeepSeek      = "deepseek"
 	DeepSeekLlava = "deepseek-ollama"
 
+	Vol = "vol"
+
 	Gemini                        = "gemini"
 	ModelGemini25Pro       string = "gemini-2.5-pro"
 	ModelGemini25Flash     string = "gemini-2.5-flash"
@@ -34,6 +36,30 @@ const (
 
 	ImageTokenUsage = 10000
 	VideoTokenUsage = 20000
+)
+
+const (
+	// doubao Seed 1.6
+	ModelDoubaoSeed16         = "doubao-seed-1.6-250615"
+	ModelDoubaoSeed16Flash    = "doubao-seed-1.6-flash-250615"
+	ModelDoubaoSeed16Thinking = "doubao-seed-1.6-thinking-250615"
+
+	// doubao 1.5 系列
+	ModelDoubao15ThinkingPro     = "doubao-1.5-thinking-pro-250415"
+	ModelDoubao15ThinkingProM428 = "doubao-1.5-thinking-pro-m-250428"
+	ModelDoubao15ThinkingProM415 = "doubao-1.5-thinking-pro-m-250415"
+	ModelDoubao15VisionPro428    = "doubao-1.5-thinking-vision-pro-250428"
+	ModelDoubao15VisionPro328    = "doubao-1.5-vision-pro-250328"
+
+	// DeepSeek R1
+	ModelDeepSeekR1_528    = "deepseek-r1-250528"
+	ModelDeepSeekR1_120    = "deepseek-r1-250120"
+	ModelDeepSeekR1Qwen32b = "deepseek-r1-distill-qwen-32b-250120"
+	ModelDeepSeekR1Qwen7b  = "deepseek-r1-distill-qwen-7b-250120"
+
+	// doubao-1.5
+	ModelDoubao15VisionPro32k = "doubao-1.5-vision-pro-32k-250115"
+	ModelDoubao15VisionLite   = "doubao-1.5-vision-lite-250315"
 )
 
 var (
@@ -104,6 +130,30 @@ var (
 		openai.GPT3Dot5Turbo16K0613:    true,
 		openai.GPT3Dot5Turbo:           true,
 		openai.GPT3Dot5TurboInstruct:   true,
+	}
+
+	VolModels = map[string]bool{
+		// doubao Seed 1.6
+		ModelDoubaoSeed16:         true,
+		ModelDoubaoSeed16Flash:    true,
+		ModelDoubaoSeed16Thinking: true,
+
+		// doubao 1.5 系列
+		ModelDoubao15ThinkingPro:     true,
+		ModelDoubao15ThinkingProM428: true,
+		ModelDoubao15ThinkingProM415: true,
+		ModelDoubao15VisionPro428:    true,
+		ModelDoubao15VisionPro328:    true,
+
+		// DeepSeek R1
+		ModelDeepSeekR1_528:    true,
+		ModelDeepSeekR1_120:    true,
+		ModelDeepSeekR1Qwen32b: true,
+		ModelDeepSeekR1Qwen7b:  true,
+
+		// doubao-1.5
+		ModelDoubao15VisionPro32k: true,
+		ModelDoubao15VisionLite:   true,
 	}
 )
 
