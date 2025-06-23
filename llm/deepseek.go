@@ -277,18 +277,17 @@ func (d *DeepseekReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 		return "", errors.New("response is empty")
 	}
 	
-	if len(response.Choices[0].Message.ToolCalls) > 0 {
-		d.requestOneToolsCall(ctx, response.Choices[0].Message.ToolCalls, l)
-	}
-	
 	l.Token += response.Usage.TotalTokens
+	if len(response.Choices[0].Message.ToolCalls) > 0 {
+		d.GetAssistantMessage("")
+		d.DeepseekMsgs[len(d.DeepseekMsgs)-1].ToolCalls = response.Choices[0].Message.ToolCalls
+		d.requestOneToolsCall(ctx, response.Choices[0].Message.ToolCalls)
+	}
 	
 	return response.Choices[0].Message.Content, nil
 }
 
-func (d *DeepseekReq) requestOneToolsCall(ctx context.Context, toolsCall []deepseek.ToolCall, llm *LLM) {
-	
-	llm.LLMClient.GetAssistantMessage("")
+func (d *DeepseekReq) requestOneToolsCall(ctx context.Context, toolsCall []deepseek.ToolCall) {
 	for _, tool := range toolsCall {
 		property := make(map[string]interface{})
 		err := json.Unmarshal([]byte(tool.Function.Arguments), &property)
@@ -302,7 +301,6 @@ func (d *DeepseekReq) requestOneToolsCall(ctx context.Context, toolsCall []deeps
 			return
 		}
 		
-		logger.Info("exec tool", "name", tool.Function.Name)
 		toolsData, err := mc.ExecTools(ctx, tool.Function.Name, property)
 		if err != nil {
 			logger.Warn("exec tools fail", "err", err)
@@ -314,6 +312,7 @@ func (d *DeepseekReq) requestOneToolsCall(ctx context.Context, toolsCall []deeps
 			Content:    toolsData,
 			ToolCallID: tool.ID,
 		})
+		logger.Info("exec tool", "name", tool.Function.Name, "toolsData", toolsData)
 	}
 }
 
