@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"time"
-
+	
 	godeepseek "github.com/cohesion-org/deepseek-go"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/revrost/go-openrouter"
@@ -34,36 +34,40 @@ type LLM struct {
 	Content     string // question from user
 	Model       string
 	Token       int
-
+	
 	LLMClient LLMClient
-
+	
 	DeepseekTools   []godeepseek.Tool
 	VolTools        []*model.Tool
 	OpenAITools     []openai.Tool
 	GeminiTools     []*genai.Tool
 	OpenRouterTools []openrouter.Tool
-
+	
 	WholeContent string // whole answer from llm
 }
 
 type LLMClient interface {
 	CallLLMAPI(ctx context.Context, prompt string, l *LLM) error
-
+	
 	GetMessages(userId int64, prompt string)
-
+	
 	Send(ctx context.Context, l *LLM) error
-
-	GetMessage(msg string)
-
+	
+	GetUserMessage(msg string)
+	
+	GetAssistantMessage(msg string)
+	
+	AppendMessages(client LLMClient)
+	
 	SyncSend(ctx context.Context, l *LLM) (string, error)
-
+	
 	GetModel(l *LLM)
 }
 
 func (l *LLM) GetContent() {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
-
+	
 	defer func() {
 		if err := recover(); err != nil {
 			logger.Error("GetContent panic err", "err", err)
@@ -71,7 +75,7 @@ func (l *LLM) GetContent() {
 		utils.DecreaseUserChat(l.Update)
 		close(l.MessageChan)
 	}()
-
+	
 	text, err := utils.GetContent(l.Update, l.Bot, l.Content)
 	if err != nil {
 		logger.Error("get content fail", "err", err)
@@ -85,12 +89,12 @@ func (l *LLM) GetContent() {
 }
 
 func NewLLM(opts ...Option) *LLM {
-
+	
 	l := new(LLM)
 	for _, opt := range opts {
 		opt(l)
 	}
-
+	
 	switch *conf.Type {
 	case param.DeepSeek:
 		l.LLMClient = &DeepseekReq{
@@ -129,7 +133,7 @@ func NewLLM(opts ...Option) *LLM {
 			CurrentToolMessage: []*model.ChatCompletionMessage{},
 		}
 	}
-
+	
 	return l
 }
 
@@ -141,14 +145,14 @@ func (l *LLM) sendMsg(msgInfoContent *param.MsgInfo, content string) *param.MsgI
 			SendLen: NonFirstSendLen,
 		}
 	}
-
+	
 	msgInfoContent.Content += content
 	l.WholeContent += content
 	if len(msgInfoContent.Content) > msgInfoContent.SendLen {
 		l.MessageChan <- msgInfoContent
 		msgInfoContent.SendLen += NonFirstSendLen
 	}
-
+	
 	return msgInfoContent
 }
 
