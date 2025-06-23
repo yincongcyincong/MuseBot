@@ -58,9 +58,9 @@ func (d *DeepseekTaskReq) ExecuteTask() {
 	}
 	
 	llm := NewLLM(WithBot(d.Bot), WithUpdate(d.Update),
-		WithMessageChan(d.MessageChan), WithContent(d.Content))
+		WithMessageChan(d.MessageChan))
 	
-	prompt := i18n.GetMessage(*conf.Lang, "mcp_prompt", taskParam)
+	prompt := i18n.GetMessage(*conf.Lang, "assign_task_prompt", taskParam)
 	llm.LLMClient.GetUserMessage(prompt)
 	llm.Content = prompt
 	c, err := llm.LLMClient.SyncSend(ctx, llm)
@@ -94,19 +94,11 @@ func (d *DeepseekTaskReq) ExecuteTask() {
 	}
 	
 	llm.LLMClient.GetAssistantMessage(c)
-	summaryAQ := make(map[string]string)
-	d.loopTask(ctx, plans, summaryAQ, c, llm)
+	d.loopTask(ctx, plans, c, llm)
 	
 	// summary
 	summaryParam := make(map[string]interface{})
-	summaryParam["aq"] = make([]map[string]string, 0)
 	summaryParam["user_task"] = d.Content
-	for t, a := range summaryAQ {
-		summaryParam["aq"] = append(summaryParam["aq"].([]map[string]string), map[string]string{
-			"task":   t,
-			"answer": a,
-		})
-	}
 	llm.LLMClient.GetUserMessage(i18n.GetMessage(*conf.Lang, "summary_task_prompt", summaryParam))
 	err = llm.LLMClient.Send(ctx, llm)
 	if err != nil {
@@ -114,28 +106,22 @@ func (d *DeepseekTaskReq) ExecuteTask() {
 	}
 }
 
-func (d *DeepseekTaskReq) loopTask(ctx context.Context, plans *TaskInfo,
-	summaryAQ map[string]string, lastPlan string, llm *LLM) {
-	summaryMsg := map[string]*LLM{}
+func (d *DeepseekTaskReq) loopTask(ctx context.Context, plans *TaskInfo, lastPlan string, llm *LLM) {
 	completeTasks := map[string]bool{}
+	taskLLM := NewLLM(WithBot(d.Bot), WithUpdate(d.Update),
+		WithMessageChan(d.MessageChan))
+	defer func() {
+		llm.LLMClient.AppendMessages(taskLLM.LLMClient)
+	}()
 	for _, plan := range plans.Plan {
-		if _, ok := summaryMsg[plan.Name]; !ok {
-			if _, ok := conf.TaskTools[plan.Name]; ok {
-				summaryMsg[plan.Name] = NewLLM(WithBot(d.Bot), WithUpdate(d.Update),
-					WithMessageChan(d.MessageChan), WithContent(plan.Description), WithTaskTools(conf.TaskTools[plan.Name]))
-			}
-			
-		}
-		
-		summaryMsg[plan.Name].LLMClient.GetUserMessage(plan.Description)
+		o := WithTaskTools(conf.TaskTools[plan.Name])
+		o(taskLLM)
+		taskLLM.LLMClient.GetUserMessage(plan.Description)
 		
 		logger.Info("execute task", "task", plan.Name)
-		summaryAQ[plan.Description] = d.requestTask(ctx, summaryMsg, plan)
+		d.requestTask(ctx, taskLLM)
+		d.Token += taskLLM.Token
 		completeTasks[plan.Description] = true
-	}
-	
-	for _, su := range summaryMsg {
-		d.Token += su.Token
 	}
 	
 	taskParam := map[string]interface{}{
@@ -173,21 +159,21 @@ func (d *DeepseekTaskReq) loopTask(ctx context.Context, plans *TaskInfo,
 		return
 	}
 	
-	d.loopTask(ctx, plans, summaryAQ, c, llm)
+	d.loopTask(ctx, plans, c, llm)
 }
 
-func (d *DeepseekTaskReq) requestTask(ctx context.Context, summaryMsg map[string]*LLM, plan *Task) string {
+func (d *DeepseekTaskReq) requestTask(ctx context.Context, llm *LLM) {
 	
-	c, err := summaryMsg[plan.Name].LLMClient.SyncSend(ctx, summaryMsg[plan.Name])
+	c, err := llm.LLMClient.SyncSend(ctx, llm)
 	if err != nil {
 		logger.Error("ChatCompletionStream error", "err", err)
-		return ""
+		return
 	}
 	
 	// deepseek response merge into msg
-	summaryMsg[plan.Name].LLMClient.GetAssistantMessage(c)
+	llm.LLMClient.GetAssistantMessage(c)
 	
-	return c
+	return
 }
 
 func (d *DeepseekTaskReq) sendMsg(msgInfoContent *param.MsgInfo, choice deepseek.StreamChoices) {
