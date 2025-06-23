@@ -6,7 +6,7 @@ import (
 	"errors"
 	"io"
 	"time"
-
+	
 	"github.com/cohesion-org/deepseek-go/constants"
 	openrouter "github.com/revrost/go-openrouter"
 	"github.com/yincongcyincong/mcp-client-go/clients"
@@ -22,18 +22,18 @@ type AIRouterReq struct {
 	ToolCall           []openrouter.ToolCall
 	ToolMessage        []openrouter.ChatCompletionMessage
 	CurrentToolMessage []openrouter.ChatCompletionMessage
-
+	
 	OpenRouterMsgs []openrouter.ChatCompletionMessage
 }
 
 // CallLLMAPI request DeepSeek API and get response
 func (d *AIRouterReq) CallLLMAPI(ctx context.Context, prompt string, l *LLM) error {
 	_, _, userId := utils.GetChatIdAndMsgIdAndUserID(l.Update)
-
+	
 	d.GetMessages(userId, prompt)
-
+	
 	logger.Info("msg receive", "userID", userId, "prompt", prompt)
-
+	
 	return d.Send(ctx, l)
 }
 
@@ -52,14 +52,14 @@ func (d *AIRouterReq) GetModel(l *LLM) {
 
 func (d *AIRouterReq) GetMessages(userId int64, prompt string) {
 	messages := make([]openrouter.ChatCompletionMessage, 0)
-
+	
 	msgRecords := db.GetMsgRecord(userId)
 	if msgRecords != nil {
 		aqs := msgRecords.AQs
 		if len(aqs) > 10 {
 			aqs = aqs[len(aqs)-10:]
 		}
-
+		
 		for i, record := range aqs {
 			if record.Answer != "" && record.Question != "" {
 				logger.Info("context content", "dialog", i, "question:", record.Question,
@@ -109,7 +109,7 @@ func (d *AIRouterReq) GetMessages(userId int64, prompt string) {
 			},
 		},
 	})
-
+	
 	d.OpenRouterMsgs = messages
 }
 
@@ -117,12 +117,12 @@ func (d *AIRouterReq) Send(ctx context.Context, l *LLM) error {
 	start := time.Now()
 	_, updateMsgID, userId := utils.GetChatIdAndMsgIdAndUserID(l.Update)
 	d.GetModel(l)
-
+	
 	// set deepseek proxy
 	config := openrouter.DefaultConfig(*conf.OpenRouterToken)
 	config.HTTPClient = utils.GetDeepseekProxyClient()
 	client := openrouter.NewClientWithConfig(*config)
-
+	
 	request := openrouter.ChatCompletionRequest{
 		Model:  l.Model,
 		Stream: true,
@@ -139,9 +139,9 @@ func (d *AIRouterReq) Send(ctx context.Context, l *LLM) error {
 		Temperature:      float32(*conf.Temperature),
 		Tools:            l.OpenRouterTools,
 	}
-
+	
 	request.Messages = d.OpenRouterMsgs
-
+	
 	stream, err := client.CreateChatCompletionStream(ctx, request)
 	if err != nil {
 		logger.Error("ChatCompletionStream error", "updateMsgID", updateMsgID, "err", err)
@@ -151,7 +151,7 @@ func (d *AIRouterReq) Send(ctx context.Context, l *LLM) error {
 	msgInfoContent := &param.MsgInfo{
 		SendLen: FirstSendLen,
 	}
-
+	
 	hasTools := false
 	for {
 		response, err := stream.Recv()
@@ -175,21 +175,21 @@ func (d *AIRouterReq) Send(ctx context.Context, l *LLM) error {
 					}
 				}
 			}
-
+			
 			if !hasTools {
 				msgInfoContent = l.sendMsg(msgInfoContent, choice.Delta.Content)
 			}
 		}
-
+		
 		if response.Usage != nil {
 			l.Token += response.Usage.TotalTokens
 			metrics.TotalTokens.Add(float64(l.Token))
 		}
 	}
-
+	
 	if !hasTools || len(d.CurrentToolMessage) == 0 {
 		l.MessageChan <- msgInfoContent
-
+		
 		data, _ := json.Marshal(d.ToolMessage)
 		db.InsertMsgRecord(userId, &db.AQ{
 			Question: l.Content,
@@ -207,44 +207,75 @@ func (d *AIRouterReq) Send(ctx context.Context, l *LLM) error {
 				ToolCalls: d.ToolCall,
 			},
 		}, d.CurrentToolMessage...)
-
+		
 		d.ToolMessage = append(d.ToolMessage, d.CurrentToolMessage...)
 		d.OpenRouterMsgs = append(d.OpenRouterMsgs, d.CurrentToolMessage...)
 		d.CurrentToolMessage = make([]openrouter.ChatCompletionMessage, 0)
 		d.ToolCall = make([]openrouter.ToolCall, 0)
 		return d.Send(ctx, l)
 	}
-
+	
 	// record time costing in dialog
 	totalDuration := time.Since(start).Seconds()
 	metrics.ConversationDuration.Observe(totalDuration)
 	return nil
 }
 
-func (d *AIRouterReq) GetMessage(msg string) {
-	d.OpenRouterMsgs = []openrouter.ChatCompletionMessage{
-		{
-			Role: constants.ChatMessageRoleAssistant,
-			Content: openrouter.Content{
-				Multi: []openrouter.ChatMessagePart{
-					{
-						Type: openrouter.ChatMessagePartTypeText,
-						Text: msg,
+func (d *AIRouterReq) GetUserMessage(msg string) {
+	d.GetMessage(openrouter.ChatMessageRoleUser, msg)
+}
+
+func (d *AIRouterReq) GetAssistantMessage(msg string) {
+	d.GetMessage(openrouter.ChatMessageRoleAssistant, msg)
+}
+
+func (d *AIRouterReq) AppendMessages(client LLMClient) {
+	if len(d.OpenRouterMsgs) == 0 {
+		d.OpenRouterMsgs = make([]openrouter.ChatCompletionMessage, 0)
+	}
+	
+	d.OpenRouterMsgs = append(d.OpenRouterMsgs, client.(*AIRouterReq).OpenRouterMsgs...)
+}
+
+func (d *AIRouterReq) GetMessage(role, msg string) {
+	if len(d.OpenRouterMsgs) == 0 {
+		d.OpenRouterMsgs = []openrouter.ChatCompletionMessage{
+			{
+				Role: role,
+				Content: openrouter.Content{
+					Multi: []openrouter.ChatMessagePart{
+						{
+							Type: openrouter.ChatMessagePartTypeText,
+							Text: msg,
+						},
 					},
 				},
 			},
-		},
+		}
+		return
 	}
+	
+	d.OpenRouterMsgs = append(d.OpenRouterMsgs, openrouter.ChatCompletionMessage{
+		Role: role,
+		Content: openrouter.Content{
+			Multi: []openrouter.ChatMessagePart{
+				{
+					Type: openrouter.ChatMessagePartTypeText,
+					Text: msg,
+				},
+			},
+		},
+	})
 }
 
 func (d *AIRouterReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 	_, updateMsgID, _ := utils.GetChatIdAndMsgIdAndUserID(l.Update)
-
+	
 	d.GetModel(l)
 	config := openrouter.DefaultConfig(*conf.OpenRouterToken)
 	config.HTTPClient = utils.GetDeepseekProxyClient()
 	client := openrouter.NewClientWithConfig(*config)
-
+	
 	request := openrouter.ChatCompletionRequest{
 		Model:  l.Model,
 		Stream: true,
@@ -261,57 +292,57 @@ func (d *AIRouterReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 		Temperature:      float32(*conf.Temperature),
 		Tools:            l.OpenRouterTools,
 	}
-
+	
 	// assign task
 	response, err := client.CreateChatCompletion(ctx, request)
 	if err != nil {
 		logger.Error("ChatCompletionStream error", "updateMsgID", updateMsgID, "err", err)
 		return "", err
 	}
-
+	
 	if len(response.Choices) == 0 {
 		logger.Error("response is emtpy", "response", response)
 		return "", errors.New("response is empty")
 	}
-
+	
 	l.Token += response.Usage.TotalTokens
-
+	
 	return response.Choices[0].Message.Content.Text, nil
 }
 
 func (d *AIRouterReq) requestToolsCall(ctx context.Context, choice openrouter.ChatCompletionStreamChoice) error {
-
+	
 	for _, toolCall := range choice.Delta.ToolCalls {
 		property := make(map[string]interface{})
-
+		
 		if toolCall.Function.Name != "" {
 			d.ToolCall = append(d.ToolCall, toolCall)
 			d.ToolCall[len(d.ToolCall)-1].Function.Name = toolCall.Function.Name
 		}
-
+		
 		if toolCall.ID != "" {
 			d.ToolCall[len(d.ToolCall)-1].ID = toolCall.ID
 		}
-
+		
 		if toolCall.Type != "" {
 			d.ToolCall[len(d.ToolCall)-1].Type = toolCall.Type
 		}
-
+		
 		if toolCall.Function.Arguments != "" {
 			d.ToolCall[len(d.ToolCall)-1].Function.Arguments += toolCall.Function.Arguments
 		}
-
+		
 		err := json.Unmarshal([]byte(d.ToolCall[len(d.ToolCall)-1].Function.Arguments), &property)
 		if err != nil {
 			return ToolsJsonErr
 		}
-
+		
 		mc, err := clients.GetMCPClientByToolName(d.ToolCall[len(d.ToolCall)-1].Function.Name)
 		if err != nil {
 			logger.Warn("get mcp fail", "err", err)
 			return err
 		}
-
+		
 		toolsData, err := mc.ExecTools(ctx, d.ToolCall[len(d.ToolCall)-1].Function.Name, property)
 		if err != nil {
 			logger.Warn("exec tools fail", "err", err)
@@ -324,11 +355,11 @@ func (d *AIRouterReq) requestToolsCall(ctx context.Context, choice openrouter.Ch
 			},
 			ToolCallID: d.ToolCall[len(d.ToolCall)-1].ID,
 		})
-
+		
 	}
-
+	
 	logger.Info("send tool request", "function", d.ToolCall[len(d.ToolCall)-1].Function.Name,
 		"toolCall", d.ToolCall[len(d.ToolCall)-1].ID, "argument", d.ToolCall[len(d.ToolCall)-1].Function.Arguments)
-
+	
 	return nil
 }

@@ -6,7 +6,7 @@ import (
 	"errors"
 	"io"
 	"time"
-
+	
 	"github.com/cohesion-org/deepseek-go"
 	"github.com/cohesion-org/deepseek-go/constants"
 	"github.com/sashabaranov/go-openai"
@@ -23,18 +23,18 @@ type OpenAIReq struct {
 	ToolCall           []openai.ToolCall
 	ToolMessage        []openai.ChatCompletionMessage
 	CurrentToolMessage []openai.ChatCompletionMessage
-
+	
 	OpenAIMsgs []openai.ChatCompletionMessage
 }
 
 // CallLLMAPI request DeepSeek API and get response
 func (d *OpenAIReq) CallLLMAPI(ctx context.Context, prompt string, l *LLM) error {
 	_, _, userId := utils.GetChatIdAndMsgIdAndUserID(l.Update)
-
+	
 	d.GetMessages(userId, prompt)
-
+	
 	logger.Info("msg receive", "userID", userId, "prompt", prompt)
-
+	
 	return d.Send(ctx, l)
 }
 
@@ -53,14 +53,14 @@ func (d *OpenAIReq) GetModel(l *LLM) {
 
 func (d *OpenAIReq) GetMessages(userId int64, prompt string) {
 	messages := make([]openai.ChatCompletionMessage, 0)
-
+	
 	msgRecords := db.GetMsgRecord(userId)
 	if msgRecords != nil {
 		aqs := msgRecords.AQs
 		if len(aqs) > 10 {
 			aqs = aqs[len(aqs)-10:]
 		}
-
+		
 		for i, record := range aqs {
 			if record.Answer != "" && record.Question != "" {
 				logger.Info("context content", "dialog", i, "question:", record.Question,
@@ -85,12 +85,12 @@ func (d *OpenAIReq) GetMessages(userId int64, prompt string) {
 			}
 		}
 	}
-
+	
 	messages = append(messages, openai.ChatCompletionMessage{
 		Role:    constants.ChatMessageRoleUser,
 		Content: prompt,
 	})
-
+	
 	d.OpenAIMsgs = messages
 }
 
@@ -98,18 +98,18 @@ func (d *OpenAIReq) Send(ctx context.Context, l *LLM) error {
 	start := time.Now()
 	_, updateMsgID, userId := utils.GetChatIdAndMsgIdAndUserID(l.Update)
 	d.GetModel(l)
-
+	
 	// set deepseek proxy
 	httpClient := utils.GetDeepseekProxyClient()
 	openaiConfig := openai.DefaultConfig(*conf.OpenAIToken)
 	if *conf.CustomUrl != "" {
 		openaiConfig.BaseURL = *conf.CustomUrl
 	}
-
+	
 	//openaiConfig.BaseURL = "https://api.chatanywhere.org"
 	openaiConfig.HTTPClient = httpClient
 	client := openai.NewClientWithConfig(openaiConfig)
-
+	
 	request := openai.ChatCompletionRequest{
 		Model:  l.Model,
 		Stream: true,
@@ -126,9 +126,9 @@ func (d *OpenAIReq) Send(ctx context.Context, l *LLM) error {
 		Temperature:      float32(*conf.Temperature),
 		Tools:            l.OpenAITools,
 	}
-
+	
 	request.Messages = d.OpenAIMsgs
-
+	
 	stream, err := client.CreateChatCompletionStream(ctx, request)
 	if err != nil {
 		logger.Error("ChatCompletionStream error", "updateMsgID", updateMsgID, "err", err)
@@ -138,7 +138,7 @@ func (d *OpenAIReq) Send(ctx context.Context, l *LLM) error {
 	msgInfoContent := &param.MsgInfo{
 		SendLen: FirstSendLen,
 	}
-
+	
 	hasTools := false
 	for {
 		response, err := stream.Recv()
@@ -162,21 +162,21 @@ func (d *OpenAIReq) Send(ctx context.Context, l *LLM) error {
 					}
 				}
 			}
-
+			
 			if !hasTools {
 				msgInfoContent = l.sendMsg(msgInfoContent, choice.Delta.Content)
 			}
 		}
-
+		
 		if response.Usage != nil {
 			l.Token += response.Usage.TotalTokens
 			metrics.TotalTokens.Add(float64(l.Token))
 		}
 	}
-
+	
 	if !hasTools || len(d.CurrentToolMessage) == 0 {
 		l.MessageChan <- msgInfoContent
-
+		
 		data, _ := json.Marshal(d.ToolMessage)
 		db.InsertMsgRecord(userId, &db.AQ{
 			Question: l.Content,
@@ -192,27 +192,51 @@ func (d *OpenAIReq) Send(ctx context.Context, l *LLM) error {
 				ToolCalls: d.ToolCall,
 			},
 		}, d.CurrentToolMessage...)
-
+		
 		d.ToolMessage = append(d.ToolMessage, d.CurrentToolMessage...)
 		d.OpenAIMsgs = append(d.OpenAIMsgs, d.CurrentToolMessage...)
 		d.CurrentToolMessage = make([]openai.ChatCompletionMessage, 0)
 		d.ToolCall = make([]openai.ToolCall, 0)
 		return d.Send(ctx, l)
 	}
-
+	
 	// record time costing in dialog
 	totalDuration := time.Since(start).Seconds()
 	metrics.ConversationDuration.Observe(totalDuration)
 	return nil
 }
 
-func (d *OpenAIReq) GetMessage(msg string) {
-	d.OpenAIMsgs = []openai.ChatCompletionMessage{
-		{
-			Role:    constants.ChatMessageRoleUser,
-			Content: msg,
-		},
+func (d *OpenAIReq) GetUserMessage(msg string) {
+	d.GetMessage(openai.ChatMessageRoleUser, msg)
+}
+
+func (d *OpenAIReq) GetAssistantMessage(msg string) {
+	d.GetMessage(openai.ChatMessageRoleAssistant, msg)
+}
+
+func (d *OpenAIReq) AppendMessages(client LLMClient) {
+	if len(d.OpenAIMsgs) == 0 {
+		d.OpenAIMsgs = make([]openai.ChatCompletionMessage, 0)
 	}
+	
+	d.OpenAIMsgs = append(d.OpenAIMsgs, client.(*OpenAIReq).OpenAIMsgs...)
+}
+
+func (d *OpenAIReq) GetMessage(role, msg string) {
+	if len(d.OpenAIMsgs) == 0 {
+		d.OpenAIMsgs = []openai.ChatCompletionMessage{
+			{
+				Role:    role,
+				Content: msg,
+			},
+		}
+		return
+	}
+	
+	d.OpenAIMsgs = append(d.OpenAIMsgs, openai.ChatCompletionMessage{
+		Role:    role,
+		Content: msg,
+	})
 }
 
 func (d *OpenAIReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
@@ -220,16 +244,16 @@ func (d *OpenAIReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 	// set deepseek proxy
 	d.GetModel(l)
 	httpClient := utils.GetDeepseekProxyClient()
-
+	
 	openaiConfig := openai.DefaultConfig(*conf.OpenAIToken)
 	if *conf.CustomUrl != "" {
 		openaiConfig.BaseURL = *conf.CustomUrl
 	}
-
+	
 	//openaiConfig.BaseURL = "https://api.chatanywhere.org"
 	openaiConfig.HTTPClient = httpClient
 	client := openai.NewClientWithConfig(openaiConfig)
-
+	
 	request := openai.ChatCompletionRequest{
 		Model:  l.Model,
 		Stream: true,
@@ -246,57 +270,57 @@ func (d *OpenAIReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 		Temperature:      float32(*conf.Temperature),
 		Tools:            l.OpenAITools,
 	}
-
+	
 	request.Messages = d.OpenAIMsgs
-
+	
 	response, err := client.CreateChatCompletion(ctx, request)
 	if err != nil {
 		logger.Error("ChatCompletionStream error", "updateMsgID", updateMsgID, "err", err)
 		return "", err
 	}
-
+	
 	if len(response.Choices) == 0 {
 		logger.Error("response is emtpy", "response", response)
 		return "", errors.New("response is empty")
 	}
-
+	
 	l.Token += response.Usage.TotalTokens
-
+	
 	return response.Choices[0].Message.Content, nil
 }
 
 func (d *OpenAIReq) requestToolsCall(ctx context.Context, choice openai.ChatCompletionStreamChoice) error {
 	for _, toolCall := range choice.Delta.ToolCalls {
 		property := make(map[string]interface{})
-
+		
 		if toolCall.Function.Name != "" {
 			d.ToolCall = append(d.ToolCall, toolCall)
 			d.ToolCall[len(d.ToolCall)-1].Function.Name = toolCall.Function.Name
 		}
-
+		
 		if toolCall.ID != "" {
 			d.ToolCall[len(d.ToolCall)-1].ID = toolCall.ID
 		}
-
+		
 		if toolCall.Type != "" {
 			d.ToolCall[len(d.ToolCall)-1].Type = toolCall.Type
 		}
-
+		
 		if toolCall.Function.Arguments != "" {
 			d.ToolCall[len(d.ToolCall)-1].Function.Arguments += toolCall.Function.Arguments
 		}
-
+		
 		err := json.Unmarshal([]byte(d.ToolCall[len(d.ToolCall)-1].Function.Arguments), &property)
 		if err != nil {
 			return ToolsJsonErr
 		}
-
+		
 		mc, err := clients.GetMCPClientByToolName(d.ToolCall[len(d.ToolCall)-1].Function.Name)
 		if err != nil {
 			logger.Warn("get mcp fail", "err", err)
 			return err
 		}
-
+		
 		toolsData, err := mc.ExecTools(ctx, d.ToolCall[len(d.ToolCall)-1].Function.Name, property)
 		if err != nil {
 			logger.Warn("exec tools fail", "err", err)
@@ -307,12 +331,12 @@ func (d *OpenAIReq) requestToolsCall(ctx context.Context, choice openai.ChatComp
 			Content:    toolsData,
 			ToolCallID: d.ToolCall[len(d.ToolCall)-1].ID,
 		})
-
+		
 	}
-
+	
 	logger.Info("send tool request", "function", d.ToolCall[len(d.ToolCall)-1].Function.Name,
 		"toolCall", d.ToolCall[len(d.ToolCall)-1].ID, "argument", d.ToolCall[len(d.ToolCall)-1].Function.Arguments)
-
+	
 	return nil
-
+	
 }
