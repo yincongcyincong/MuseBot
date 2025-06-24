@@ -16,7 +16,7 @@ import (
 )
 
 var (
-	jsonRe = regexp.MustCompile(`(\{\s*"plan":\s*\[\s*(?:\{\s*"name":\s*"[^"]*",\s*"description":\s*"[^"]*"\s*\}\s*,?\s*)+\]\s*\})`)
+	jsonRe = regexp.MustCompile(`(?s)\{[\s\r\n]*"plan"\s*:\s*\[.*?][\s\r\n]*}`)
 )
 
 type DeepseekTaskReq struct {
@@ -117,9 +117,10 @@ func (d *DeepseekTaskReq) loopTask(ctx context.Context, plans *TaskInfo, lastPla
 		o := WithTaskTools(conf.TaskTools[plan.Name])
 		o(taskLLM)
 		taskLLM.LLMClient.GetUserMessage(plan.Description)
+		taskLLM.Content = plan.Description
 		
 		logger.Info("execute task", "task", plan.Name)
-		d.requestTask(ctx, taskLLM)
+		d.requestTask(ctx, taskLLM, plan)
 		d.Token += taskLLM.Token
 		completeTasks[plan.Description] = true
 	}
@@ -162,7 +163,7 @@ func (d *DeepseekTaskReq) loopTask(ctx context.Context, plans *TaskInfo, lastPla
 	d.loopTask(ctx, plans, c, llm)
 }
 
-func (d *DeepseekTaskReq) requestTask(ctx context.Context, llm *LLM) {
+func (d *DeepseekTaskReq) requestTask(ctx context.Context, llm *LLM, plan *Task) {
 	
 	c, err := llm.LLMClient.SyncSend(ctx, llm)
 	if err != nil {
@@ -171,6 +172,9 @@ func (d *DeepseekTaskReq) requestTask(ctx context.Context, llm *LLM) {
 	}
 	
 	// deepseek response merge into msg
+	if c == "" {
+		c = plan.Name + " is completed"
+	}
 	llm.LLMClient.GetAssistantMessage(c)
 	
 	return
