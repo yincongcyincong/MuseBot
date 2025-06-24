@@ -277,11 +277,7 @@ func (d *AIRouterReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 	client := openrouter.NewClientWithConfig(*config)
 	
 	request := openrouter.ChatCompletionRequest{
-		Model:  l.Model,
-		Stream: true,
-		StreamOptions: &openrouter.StreamOptions{
-			IncludeUsage: true,
-		},
+		Model:            l.Model,
 		MaxTokens:        *conf.MaxTokens,
 		TopP:             float32(*conf.TopP),
 		FrequencyPenalty: float32(*conf.FrequencyPenalty),
@@ -291,12 +287,13 @@ func (d *AIRouterReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 		PresencePenalty:  float32(*conf.PresencePenalty),
 		Temperature:      float32(*conf.Temperature),
 		Tools:            l.OpenRouterTools,
+		Messages:         d.OpenRouterMsgs,
 	}
 	
 	// assign task
 	response, err := client.CreateChatCompletion(ctx, request)
 	if err != nil {
-		logger.Error("ChatCompletionStream error", "updateMsgID", updateMsgID, "err", err)
+		logger.Error("CreateChatCompletion error", "updateMsgID", updateMsgID, "err", err)
 		return "", err
 	}
 	
@@ -306,8 +303,44 @@ func (d *AIRouterReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 	}
 	
 	l.Token += response.Usage.TotalTokens
+	if len(response.Choices[0].Message.ToolCalls) > 0 {
+		d.GetAssistantMessage("")
+		d.OpenRouterMsgs[len(d.OpenRouterMsgs)-1].ToolCalls = response.Choices[0].Message.ToolCalls
+		d.requestOneToolsCall(ctx, response.Choices[0].Message.ToolCalls)
+	}
 	
 	return response.Choices[0].Message.Content.Text, nil
+}
+
+func (d *AIRouterReq) requestOneToolsCall(ctx context.Context, toolsCall []openrouter.ToolCall) {
+	for _, tool := range toolsCall {
+		property := make(map[string]interface{})
+		err := json.Unmarshal([]byte(tool.Function.Arguments), &property)
+		if err != nil {
+			return
+		}
+		
+		mc, err := clients.GetMCPClientByToolName(tool.Function.Name)
+		if err != nil {
+			logger.Warn("get mcp fail", "err", err)
+			return
+		}
+		
+		toolsData, err := mc.ExecTools(ctx, tool.Function.Name, property)
+		if err != nil {
+			logger.Warn("exec tools fail", "err", err)
+			return
+		}
+		
+		d.OpenRouterMsgs = append(d.OpenRouterMsgs, openrouter.ChatCompletionMessage{
+			Role: constants.ChatMessageRoleTool,
+			Content: openrouter.Content{
+				Text: toolsData,
+			},
+			ToolCallID: tool.ID,
+		})
+		logger.Info("exec tool", "name", tool.Function.Name, "toolsData", toolsData)
+	}
 }
 
 func (d *AIRouterReq) requestToolsCall(ctx context.Context, choice openrouter.ChatCompletionStreamChoice) error {

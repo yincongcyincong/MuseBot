@@ -5,7 +5,7 @@ import (
 	"flag"
 	"os"
 	"time"
-
+	
 	"github.com/cohesion-org/deepseek-go"
 	"github.com/revrost/go-openrouter"
 	"github.com/sashabaranov/go-openai"
@@ -19,7 +19,7 @@ import (
 type AgentInfo struct {
 	Description string
 	ToolsName   []string
-
+	
 	DeepseekTool    []deepseek.Tool
 	VolTool         []*model.Tool
 	OpenAITools     []openai.Tool
@@ -29,13 +29,13 @@ type AgentInfo struct {
 
 var (
 	McpConfPath *string
-
+	
 	DeepseekTools   = make([]deepseek.Tool, 0)
 	VolTools        = make([]*model.Tool, 0)
 	OpenAITools     = make([]openai.Tool, 0)
 	GeminiTools     = make([]*genai.Tool, 0)
 	OpenRouterTools = make([]openrouter.Tool, 0)
-
+	
 	TaskTools = map[string]*AgentInfo{}
 )
 
@@ -47,7 +47,7 @@ func EnvToolsConf() {
 	if os.Getenv("MCP_CONF_PATH") != "" {
 		*McpConfPath = os.Getenv("MCP_CONF_PATH")
 	}
-
+	
 	logger.Info("TOOLS_CONF", "McpConfPath", *McpConfPath)
 }
 
@@ -61,19 +61,19 @@ func InitTools() {
 			}
 		}
 	}()
-
+	
 	mcpParams, err := clients.InitByConfFile(*McpConfPath)
 	if err != nil {
 		logger.Error("init mcp file fail", "err", err)
 	}
-
+	
 	errs := clients.RegisterMCPClient(ctx, mcpParams)
 	if len(errs) > 0 {
 		for mcpServer, err := range errs {
 			logger.Error("register mcp client error", "server", mcpServer, "error", err)
 		}
 	}
-
+	
 	for _, mcpParam := range mcpParams {
 		InsertTools(mcpParam.Name)
 	}
@@ -89,7 +89,7 @@ func InsertTools(clientName string) {
 		oaTools := utils.TransToolsToChatGPTFunctionCall(c.Tools)
 		gmTools := utils.TransToolsToGeminiFunctionCall(c.Tools)
 		orTools := utils.TransToolsToOpenRouterFunctionCall(c.Tools)
-
+		
 		if *UseTools {
 			DeepseekTools = append(DeepseekTools, dpTools...)
 			VolTools = append(VolTools, volTools...)
@@ -97,15 +97,15 @@ func InsertTools(clientName string) {
 			GeminiTools = append(GeminiTools, gmTools...)
 			OpenRouterTools = append(OpenRouterTools, orTools...)
 		}
-
+		
 		if c.Conf.Description != "" {
 			TaskTools[clientName] = &AgentInfo{
 				Description:     c.Conf.Description,
 				DeepseekTool:    dpTools,
 				VolTool:         volTools,
 				GeminiTools:     gmTools,
-				OpenAITools:     OpenAITools,
-				OpenRouterTools: OpenRouterTools,
+				OpenAITools:     oaTools,
+				OpenRouterTools: orTools,
 				ToolsName:       []string{clientName},
 			}
 		}

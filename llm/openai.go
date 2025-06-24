@@ -45,7 +45,7 @@ func (d *OpenAIReq) GetModel(l *LLM) {
 	if err != nil {
 		logger.Error("Error getting user info", "err", err)
 	}
-	if userInfo != nil && userInfo.Mode != "" {
+	if userInfo != nil && userInfo.Mode != "" && param.OpenAIModels[userInfo.Mode] {
 		logger.Info("User info", "userID", userInfo.UserId, "mode", userInfo.Mode)
 		l.Model = userInfo.Mode
 	}
@@ -255,11 +255,7 @@ func (d *OpenAIReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 	client := openai.NewClientWithConfig(openaiConfig)
 	
 	request := openai.ChatCompletionRequest{
-		Model:  l.Model,
-		Stream: true,
-		StreamOptions: &openai.StreamOptions{
-			IncludeUsage: true,
-		},
+		Model:            l.Model,
 		MaxTokens:        *conf.MaxTokens,
 		TopP:             float32(*conf.TopP),
 		FrequencyPenalty: float32(*conf.FrequencyPenalty),
@@ -285,8 +281,42 @@ func (d *OpenAIReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 	}
 	
 	l.Token += response.Usage.TotalTokens
+	if len(response.Choices[0].Message.ToolCalls) > 0 {
+		d.GetAssistantMessage("")
+		d.OpenAIMsgs[len(d.OpenAIMsgs)-1].ToolCalls = response.Choices[0].Message.ToolCalls
+		d.requestOneToolsCall(ctx, response.Choices[0].Message.ToolCalls)
+	}
 	
 	return response.Choices[0].Message.Content, nil
+}
+
+func (d *OpenAIReq) requestOneToolsCall(ctx context.Context, toolsCall []openai.ToolCall) {
+	for _, tool := range toolsCall {
+		property := make(map[string]interface{})
+		err := json.Unmarshal([]byte(tool.Function.Arguments), &property)
+		if err != nil {
+			return
+		}
+		
+		mc, err := clients.GetMCPClientByToolName(tool.Function.Name)
+		if err != nil {
+			logger.Warn("get mcp fail", "err", err)
+			return
+		}
+		
+		toolsData, err := mc.ExecTools(ctx, tool.Function.Name, property)
+		if err != nil {
+			logger.Warn("exec tools fail", "err", err)
+			return
+		}
+		
+		d.OpenAIMsgs = append(d.OpenAIMsgs, openai.ChatCompletionMessage{
+			Role:       constants.ChatMessageRoleTool,
+			Content:    toolsData,
+			ToolCallID: tool.ID,
+		})
+		logger.Info("exec tool", "name", tool.Function.Name, "toolsData", toolsData)
+	}
 }
 
 func (d *OpenAIReq) requestToolsCall(ctx context.Context, choice openai.ChatCompletionStreamChoice) error {

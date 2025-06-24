@@ -348,8 +348,44 @@ func (h *VolReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 	}
 	
 	l.Token += response.Usage.TotalTokens
+	if len(response.Choices[0].Message.ToolCalls) > 0 {
+		h.GetAssistantMessage("")
+		h.VolMsgs[len(h.VolMsgs)-1].ToolCalls = response.Choices[0].Message.ToolCalls
+		h.requestOneToolsCall(ctx, response.Choices[0].Message.ToolCalls)
+	}
 	
 	return *response.Choices[0].Message.Content.StringValue, nil
+}
+
+func (h *VolReq) requestOneToolsCall(ctx context.Context, toolsCall []*model.ToolCall) {
+	for _, tool := range toolsCall {
+		property := make(map[string]interface{})
+		err := json.Unmarshal([]byte(tool.Function.Arguments), &property)
+		if err != nil {
+			return
+		}
+		
+		mc, err := clients.GetMCPClientByToolName(tool.Function.Name)
+		if err != nil {
+			logger.Warn("get mcp fail", "err", err)
+			return
+		}
+		
+		toolsData, err := mc.ExecTools(ctx, tool.Function.Name, property)
+		if err != nil {
+			logger.Warn("exec tools fail", "err", err)
+			return
+		}
+		
+		h.VolMsgs = append(h.VolMsgs, &model.ChatCompletionMessage{
+			Role: constants.ChatMessageRoleTool,
+			Content: &model.ChatCompletionMessageContent{
+				StringValue: &toolsData,
+			},
+			ToolCallID: tool.ID,
+		})
+		logger.Info("exec tool", "name", tool.Function.Name, "toolsData", toolsData)
+	}
 }
 
 // GenerateImg generate image

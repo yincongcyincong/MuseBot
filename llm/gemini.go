@@ -7,7 +7,6 @@ import (
 	"io"
 	"time"
 	
-	"github.com/cohesion-org/deepseek-go/constants"
 	"github.com/yincongcyincong/mcp-client-go/clients"
 	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
 	"github.com/yincongcyincong/telegram-deepseek-bot/db"
@@ -177,11 +176,11 @@ func (h *GeminiReq) Send(ctx context.Context, l *LLM) error {
 }
 
 func (h *GeminiReq) GetUserMessage(msg string) {
-	h.GetMessage(constants.ChatMessageRoleUser, msg)
+	h.GetMessage(genai.RoleUser, msg)
 }
 
 func (h *GeminiReq) GetAssistantMessage(msg string) {
-	h.GetMessage(constants.ChatMessageRoleAssistant, msg)
+	h.GetMessage(genai.RoleModel, msg)
 }
 
 func (h *GeminiReq) AppendMessages(client LLMClient) {
@@ -192,7 +191,30 @@ func (h *GeminiReq) AppendMessages(client LLMClient) {
 	h.GeminiMsgs = append(h.GeminiMsgs, client.(*GeminiReq).GeminiMsgs...)
 }
 
-func (h *GeminiReq) GetMessage(role, msg string) {}
+func (h *GeminiReq) GetMessage(role, msg string) {
+	if len(h.GeminiMsgs) == 0 {
+		h.GeminiMsgs = []*genai.Content{
+			{
+				Role: role,
+				Parts: []*genai.Part{
+					{
+						Text: msg,
+					},
+				},
+			},
+		}
+		return
+	}
+	
+	h.GeminiMsgs = append(h.GeminiMsgs, &genai.Content{
+		Role: role,
+		Parts: []*genai.Part{
+			{
+				Text: msg,
+			},
+		},
+	})
+}
 
 func (h *GeminiReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 	_, updateMsgID, _ := utils.GetChatIdAndMsgIdAndUserID(l.Update)
@@ -229,8 +251,52 @@ func (h *GeminiReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 	}
 	
 	l.Token += int(response.UsageMetadata.TotalTokenCount)
+	if len(response.FunctionCalls()) > 0 {
+		h.requestOneToolsCall(ctx, response.FunctionCalls())
+	}
 	
 	return response.Text(), nil
+}
+
+func (h *GeminiReq) requestOneToolsCall(ctx context.Context, toolsCall []*genai.FunctionCall) {
+	for _, tool := range toolsCall {
+		
+		mc, err := clients.GetMCPClientByToolName(tool.Name)
+		if err != nil {
+			logger.Warn("get mcp fail", "err", err)
+			return
+		}
+		
+		toolsData, err := mc.ExecTools(ctx, tool.Name, tool.Args)
+		if err != nil {
+			logger.Warn("exec tools fail", "err", err)
+			return
+		}
+		
+		h.GeminiMsgs = append(h.GeminiMsgs, &genai.Content{
+			Role: genai.RoleModel,
+			Parts: []*genai.Part{
+				{
+					FunctionCall: tool,
+				},
+			},
+		})
+		
+		h.GeminiMsgs = append(h.GeminiMsgs, &genai.Content{
+			Role: genai.RoleModel,
+			Parts: []*genai.Part{
+				{
+					FunctionResponse: &genai.FunctionResponse{
+						Response: map[string]any{"output": toolsData},
+						ID:       tool.ID,
+						Name:     tool.Name,
+					},
+				},
+			},
+		})
+		
+		logger.Info("exec tool", "name", tool.Name, "toolsData", toolsData)
+	}
 }
 
 func (h *GeminiReq) requestToolsCall(ctx context.Context, response *genai.GenerateContentResponse) error {
