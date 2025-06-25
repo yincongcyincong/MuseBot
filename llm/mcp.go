@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	mcpRe = regexp.MustCompile(`\{\s*"agent"\s*:\s*"playwright"\s*\}`)
+	mcpRe = regexp.MustCompile(`\{\s*"agent"\s*:\s*"[^\"]*"\s*\}`)
 )
 
 type McpResult struct {
