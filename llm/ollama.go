@@ -150,9 +150,11 @@ func (d *OllamaDeepseekReq) Send(ctx context.Context, l *LLM) error {
 		}
 	}
 	
-	if !hasTools || len(d.CurrentToolMessage) == 0 {
+	if len(msgInfoContent.Content) > 0 {
 		l.MessageChan <- msgInfoContent
-		
+	}
+	
+	if !hasTools || len(d.CurrentToolMessage) == 0 {
 		data, _ := json.Marshal(d.ToolMessage)
 		db.InsertMsgRecord(userId, &db.AQ{
 			Question: l.Content,

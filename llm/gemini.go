@@ -140,9 +140,11 @@ func (h *GeminiReq) Send(ctx context.Context, l *LLM) error {
 		
 	}
 	
-	if !hasTools || len(h.CurrentToolMessage) == 0 {
+	if len(msgInfoContent.Content) > 0 {
 		l.MessageChan <- msgInfoContent
-		
+	}
+	
+	if !hasTools || len(h.CurrentToolMessage) == 0 {
 		db.InsertMsgRecord(userId, &db.AQ{
 			Question: l.Content,
 			Answer:   l.WholeContent,
