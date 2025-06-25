@@ -2,7 +2,6 @@ package llm
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"io"
 	"time"
@@ -56,16 +55,6 @@ func (h *GeminiReq) GetMessages(userId int64, prompt string) {
 						},
 					},
 				})
-				
-				if record.Content != "" {
-					toolsMsgs := make([]*genai.Content, 0)
-					err := json.Unmarshal([]byte(record.Content), &toolsMsgs)
-					if err != nil {
-						logger.Error("Error unmarshalling tools json", "err", err)
-					} else {
-						messages = append(messages, toolsMsgs...)
-					}
-				}
 				
 				messages = append(messages, &genai.Content{
 					Role: genai.RoleModel,
@@ -154,11 +143,9 @@ func (h *GeminiReq) Send(ctx context.Context, l *LLM) error {
 	if !hasTools || len(h.CurrentToolMessage) == 0 {
 		l.MessageChan <- msgInfoContent
 		
-		data, _ := json.Marshal(h.ToolMessage)
 		db.InsertMsgRecord(userId, &db.AQ{
 			Question: l.Content,
 			Answer:   l.WholeContent,
-			Content:  string(data),
 			Token:    l.Token,
 		}, true)
 	} else {

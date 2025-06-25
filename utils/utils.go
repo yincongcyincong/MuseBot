@@ -14,7 +14,7 @@ import (
 	"strings"
 	"time"
 	"unicode/utf16"
-
+	
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/volcengine/volc-sdk-golang/service/visual"
 	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
@@ -36,7 +36,7 @@ func GetChatIdAndMsgIdAndUserID(update tgbotapi.Update) (int64, int, int64) {
 		userId = update.CallbackQuery.From.ID
 		msgId = update.CallbackQuery.Message.MessageID
 	}
-
+	
 	return chatId, msgId, userId
 }
 
@@ -92,11 +92,11 @@ func SendMsg(chatId int64, msgContent string, bot *tgbotapi.BotAPI, replyToMessa
 
 func ReplaceCommand(content string, command string, botName string) string {
 	mention := "@" + botName
-
+	
 	content = strings.ReplaceAll(content, command, mention)
 	content = strings.ReplaceAll(content, mention, "")
 	prompt := strings.TrimSpace(content)
-
+	
 	return prompt
 }
 
@@ -115,19 +115,19 @@ func GetAudioContent(update tgbotapi.Update, bot *tgbotapi.BotAPI) []byte {
 	if update.Message == nil || update.Message.Voice == nil {
 		return nil
 	}
-
+	
 	fileID := update.Message.Voice.FileID
 	file, err := bot.GetFile(tgbotapi.FileConfig{FileID: fileID})
 	if err != nil {
 		logger.Warn("get file fail", "err", err)
 		return nil
 	}
-
+	
 	// 构造下载 URL
 	downloadURL := file.Link(bot.Token)
-
+	
 	transport := &http.Transport{}
-
+	
 	if *conf.TelegramProxy != "" {
 		proxy, err := url.Parse(*conf.TelegramProxy)
 		if err != nil {
@@ -136,12 +136,12 @@ func GetAudioContent(update tgbotapi.Update, bot *tgbotapi.BotAPI) []byte {
 		}
 		transport.Proxy = http.ProxyURL(proxy)
 	}
-
+	
 	client := &http.Client{
 		Transport: transport,
 		Timeout:   30 * time.Second, // 设置超时
 	}
-
+	
 	// 通过代理下载
 	resp, err := client.Get(downloadURL)
 	if err != nil {
@@ -161,7 +161,7 @@ func GetPhotoContent(update tgbotapi.Update, bot *tgbotapi.BotAPI) []byte {
 	if update.Message == nil || update.Message.Photo == nil {
 		return nil
 	}
-
+	
 	var photo tgbotapi.PhotoSize
 	for i := len(update.Message.Photo) - 1; i >= 0; i-- {
 		if update.Message.Photo[i].FileSize < 8*1024*1024 {
@@ -169,16 +169,16 @@ func GetPhotoContent(update tgbotapi.Update, bot *tgbotapi.BotAPI) []byte {
 			break
 		}
 	}
-
+	
 	fileID := photo.FileID
 	file, err := bot.GetFile(tgbotapi.FileConfig{FileID: fileID})
 	if err != nil {
 		logger.Warn("get file fail", "err", err)
 		return nil
 	}
-
+	
 	downloadURL := file.Link(bot.Token)
-
+	
 	client := GetTelegramProxyClient()
 	resp, err := client.Get(downloadURL)
 	if err != nil {
@@ -191,14 +191,14 @@ func GetPhotoContent(update tgbotapi.Update, bot *tgbotapi.BotAPI) []byte {
 		logger.Warn("read response fail", "err", err)
 		return nil
 	}
-
+	
 	return photoContent
 }
 
 func MD5(input string) string {
 	// 计算 MD5
 	hash := md5.Sum([]byte(input))
-
+	
 	// 转换为 16 进制字符串
 	md5Str := hex.EncodeToString(hash[:])
 	return md5Str
@@ -206,7 +206,7 @@ func MD5(input string) string {
 
 func GetTelegramProxyClient() *http.Client {
 	transport := &http.Transport{}
-
+	
 	if *conf.TelegramProxy != "" {
 		proxy, err := url.Parse(*conf.TelegramProxy)
 		if err != nil {
@@ -214,7 +214,7 @@ func GetTelegramProxyClient() *http.Client {
 		}
 		transport.Proxy = http.ProxyURL(proxy)
 	}
-
+	
 	return &http.Client{
 		Transport: transport,
 	}
@@ -222,7 +222,7 @@ func GetTelegramProxyClient() *http.Client {
 
 func GetDeepseekProxyClient() *http.Client {
 	transport := &http.Transport{}
-
+	
 	if *conf.DeepseekProxy != "" {
 		proxy, err := url.Parse(*conf.DeepseekProxy)
 		if err != nil {
@@ -230,7 +230,7 @@ func GetDeepseekProxyClient() *http.Client {
 		}
 		transport.Proxy = http.ProxyURL(proxy)
 	}
-
+	
 	return &http.Client{
 		Transport: transport,
 		Timeout:   5 * time.Minute, // 设置超时
@@ -240,17 +240,17 @@ func GetDeepseekProxyClient() *http.Client {
 func CreateBot() *tgbotapi.BotAPI {
 	// 配置自定义 HTTP Client 并设置代理
 	client := GetTelegramProxyClient()
-
+	
 	var err error
 	conf.Bot, err = tgbotapi.NewBotAPIWithClient(*conf.BotToken, tgbotapi.APIEndpoint, client)
 	if err != nil {
 		panic("Init bot fail" + err.Error())
 	}
-
+	
 	if *logger.LogLevel == "debug" {
 		conf.Bot.Debug = true
 	}
-
+	
 	// set command
 	cmdCfg := tgbotapi.NewSetMyCommands(
 		tgbotapi.BotCommand{
@@ -299,7 +299,7 @@ func CreateBot() *tgbotapi.BotAPI {
 		},
 	)
 	conf.Bot.Send(cmdCfg)
-
+	
 	return conf.Bot
 }
 
@@ -308,7 +308,7 @@ func GetContent(update tgbotapi.Update, bot *tgbotapi.BotAPI, content string) (s
 	if CheckUserChatExceed(update, bot) {
 		return "", errors.New("token exceed")
 	}
-
+	
 	if content == "" && update.Message.Voice != nil && *conf.AudioAppID != "" {
 		audioContent := GetAudioContent(update, bot)
 		if audioContent == nil {
@@ -317,7 +317,7 @@ func GetContent(update tgbotapi.Update, bot *tgbotapi.BotAPI, content string) (s
 		}
 		content = FileRecognize(audioContent)
 	}
-
+	
 	if content == "" && update.Message.Photo != nil {
 		imageContent, err := GetImageContent(GetPhotoContent(update, bot))
 		if err != nil {
@@ -326,56 +326,56 @@ func GetContent(update tgbotapi.Update, bot *tgbotapi.BotAPI, content string) (s
 		}
 		content = imageContent
 	}
-
+	
 	if content == "" {
 		logger.Warn("content empty")
 		return "", errors.New("content empty")
 	}
-
+	
 	text := strings.ReplaceAll(content, "@"+bot.Self.UserName, "")
 	return text, nil
 }
 
 func FileRecognize(audioContent []byte) string {
-
+	
 	client := BuildAsrClient()
 	client.Appid = *conf.AudioAppID
 	client.Token = *conf.AudioToken
 	client.Cluster = *conf.AudioCluster
-
+	
 	asrResponse, err := client.RequestAsr(audioContent)
 	if err != nil {
 		logger.Error("fail to request asr ", "err", err)
 		return ""
 	}
-
+	
 	if len(asrResponse.Results) == 0 {
 		logger.Error("fail to request asr", "results", asrResponse.Results)
 		return ""
 	}
-
+	
 	return asrResponse.Results[0].Text
-
+	
 }
 
 func GetImageContent(imageContent []byte) (string, error) {
 	visual.DefaultInstance.Client.SetAccessKey(*conf.VolcAK)
 	visual.DefaultInstance.Client.SetSecretKey(*conf.VolcSK)
-
+	
 	form := url.Values{}
 	form.Add("image_base64", base64.StdEncoding.EncodeToString(imageContent))
-
+	
 	resp, _, err := visual.DefaultInstance.OCRNormal(form)
 	if err != nil {
 		logger.Error("request img api fail", "err", err)
 		return "", err
 	}
-
+	
 	if resp.Code != 10000 {
 		logger.Error("request img api fail", "code", resp.Code, "msg", resp.Message)
 		return "", errors.New("request img api fail")
 	}
-
+	
 	return strings.Join(resp.Data.LineTexts, ","), nil
 }
 
@@ -385,14 +385,14 @@ func FileToMd5(filePath string) (string, error) {
 		return "", err
 	}
 	defer file.Close()
-
+	
 	hash := md5.New()
-
+	
 	// 将文件内容流式拷贝到 hash 计算器中
 	if _, err := io.Copy(hash, file); err != nil {
 		return "", err
 	}
-
+	
 	// 计算并格式化为16进制字符串
 	md5sum := fmt.Sprintf("%x", hash.Sum(nil))
 	return md5sum, nil
