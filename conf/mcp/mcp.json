@@ -25,10 +25,14 @@
       ],
       "env": {
         "MYSQL_HOST": "10.138.44.197",
-        "MYSQL_PORT": "3306",
+        "MYSQL_PORT": "8306",
         "MYSQL_USER": "mapp",
         "MYSQL_PASS": "mapp",
-        "MYSQL_DB": "test"
+        "MYSQL_DB": "test",
+        "ALLOW_INSERT_OPERATION": "true",
+        "ALLOW_UPDATE_OPERATION": "true",
+        "ALLOW_DELETE_OPERATION": "true",
+        "ALLOW_DDL_OPERATION": "true"
       }
     }
   }

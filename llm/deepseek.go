@@ -297,13 +297,13 @@ func (d *DeepseekReq) requestOneToolsCall(ctx context.Context, toolsCall []deeps
 		
 		mc, err := clients.GetMCPClientByToolName(tool.Function.Name)
 		if err != nil {
-			logger.Warn("get mcp fail", "err", err)
+			logger.Warn("get mcp fail", "err", err, "name", tool.Function.Name, "args", property)
 			return
 		}
 		
 		toolsData, err := mc.ExecTools(ctx, tool.Function.Name, property)
 		if err != nil {
-			logger.Warn("exec tools fail", "err", err)
+			logger.Warn("exec tools fail", "err", err, "name", tool.Function.Name, "args", property)
 			return
 		}
 		
@@ -312,7 +312,7 @@ func (d *DeepseekReq) requestOneToolsCall(ctx context.Context, toolsCall []deeps
 			Content:    toolsData,
 			ToolCallID: tool.ID,
 		})
-		logger.Info("exec tool", "name", tool.Function.Name, "toolsData", toolsData)
+		logger.Info("exec tool", "name", tool.Function.Name, "toolsData", toolsData, "args", property)
 	}
 }
 

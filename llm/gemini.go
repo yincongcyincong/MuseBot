@@ -252,13 +252,13 @@ func (h *GeminiReq) requestOneToolsCall(ctx context.Context, toolsCall []*genai.
 		
 		mc, err := clients.GetMCPClientByToolName(tool.Name)
 		if err != nil {
-			logger.Warn("get mcp fail", "err", err)
+			logger.Warn("get mcp fail", "err", err, "name", tool.Name, "args", tool.Args)
 			return
 		}
 		
 		toolsData, err := mc.ExecTools(ctx, tool.Name, tool.Args)
 		if err != nil {
-			logger.Warn("exec tools fail", "err", err)
+			logger.Warn("exec tools fail", "err", err, "name", tool.Name, "args", tool.Args)
 			return
 		}
 		
@@ -284,7 +284,7 @@ func (h *GeminiReq) requestOneToolsCall(ctx context.Context, toolsCall []*genai.
 			},
 		})
 		
-		logger.Info("exec tool", "name", tool.Name, "toolsData", toolsData)
+		logger.Info("exec tool", "name", tool.Name, "args", tool.Args, "toolsData", toolsData)
 	}
 }
 
