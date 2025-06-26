@@ -68,9 +68,11 @@ func (l *LLM) GetContent() {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 	
+	chatId, msgId, _ := utils.GetChatIdAndMsgIdAndUserID(l.Update)
 	defer func() {
 		if err := recover(); err != nil {
 			logger.Error("GetContent panic err", "err", err)
+			utils.SendMsg(chatId, "GetContent panic", l.Bot, msgId, "")
 		}
 		utils.DecreaseUserChat(l.Update)
 		close(l.MessageChan)
@@ -79,12 +81,14 @@ func (l *LLM) GetContent() {
 	text, err := utils.GetContent(l.Update, l.Bot, l.Content)
 	if err != nil {
 		logger.Error("get content fail", "err", err)
+		utils.SendMsg(chatId, err.Error(), l.Bot, msgId, "")
 		return
 	}
 	l.Content = text
 	err = l.LLMClient.CallLLMAPI(ctx, text, l)
 	if err != nil {
 		logger.Error("Error calling DeepSeek API", "err", err)
+		utils.SendMsg(chatId, err.Error(), l.Bot, msgId, "")
 	}
 }
 

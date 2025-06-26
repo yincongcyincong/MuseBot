@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
-
+	
 	"github.com/cohesion-org/deepseek-go"
 	"github.com/milvus-io/milvus-sdk-go/v2/client"
 	"github.com/milvus-io/milvus-sdk-go/v2/entity"
@@ -31,17 +31,17 @@ import (
 
 type Rag struct {
 	Client *deepseek.Client
-
+	
 	LLM *llm.LLM
 }
 
 func NewRag(options ...llm.Option) *Rag {
 	dp := &Rag{
 		Client: deepseek.NewClient(*conf.DeepseekToken),
-
+		
 		LLM: llm.NewLLM(options...),
 	}
-
+	
 	for _, o := range options {
 		o(dp.LLM)
 	}
@@ -57,7 +57,9 @@ func (l *Rag) GenerateContent(ctx context.Context, messages []llms.MessageConten
 	for _, opt := range options {
 		opt(opts)
 	}
-
+	
+	chatId, msgId, _ := utils.GetChatIdAndMsgIdAndUserID(l.LLM.Update)
+	
 	doc, err := conf.Store.SimilaritySearch(ctx, l.LLM.Content, 3)
 	if err != nil {
 		logger.Error("request vector db fail", "err", err)
@@ -71,13 +73,14 @@ func (l *Rag) GenerateContent(ctx context.Context, messages []llms.MessageConten
 		}
 		l.LLM.Content = tmpContent
 	}
-
+	
 	err = l.LLM.LLMClient.CallLLMAPI(ctx, l.LLM.Content, l.LLM)
 	if err != nil {
 		logger.Error("error calling DeepSeek API", "err", err)
+		utils.SendMsg(chatId, err.Error(), l.LLM.Bot, msgId, "")
 		return nil, errors.New("error calling DeepSeek API")
 	}
-
+	
 	resp := &llms.ContentResponse{
 		Choices: []*llms.ContentChoice{
 			{
@@ -85,7 +88,7 @@ func (l *Rag) GenerateContent(ctx context.Context, messages []llms.MessageConten
 			},
 		},
 	}
-
+	
 	return resp, nil
 }
 
@@ -93,10 +96,10 @@ func InitRag() {
 	if *conf.EmbeddingType == "" || *conf.VectorDBType == "" {
 		return
 	}
-
+	
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
-
+	
 	var err error
 	switch *conf.EmbeddingType {
 	case "openai":
@@ -109,12 +112,12 @@ func InitRag() {
 		logger.Error("embedding type not exist", "embedding type", *conf.EmbeddingType)
 		return
 	}
-
+	
 	if err != nil {
 		logger.Error("init embedding fail", "err", err)
 		return
 	}
-
+	
 	switch *conf.VectorDBType {
 	case "chroma":
 		conf.Store, err = chroma.NewV2(
@@ -128,7 +131,7 @@ func InitRag() {
 			logger.Error("get index fail", "err", err)
 			return
 		}
-
+		
 		conf.Store, err = milvus.New(ctx, client.Config{
 			Address: *conf.MilvusURL,
 		}, milvus.WithCollectionName(*conf.Space),
@@ -144,18 +147,18 @@ func InitRag() {
 		logger.Error("vector db not exist", "VectorDBTypee", *conf.VectorDBType)
 		return
 	}
-
+	
 	if err != nil {
 		logger.Error("get rag store fail", "err", err)
 		return
 	}
-
+	
 	docs, err := handleKnowledgeBase(ctx)
 	if err != nil {
 		logger.Error("get doc fail", "err", err)
 		return
 	}
-
+	
 	if len(docs) > 0 {
 		_, err = conf.Store.AddDocuments(context.Background(), docs)
 		if err != nil {
@@ -163,17 +166,17 @@ func InitRag() {
 			return
 		}
 	}
-
+	
 }
 
 func handleKnowledgeBase(ctx context.Context) ([]schema.Document, error) {
 	res := make([]schema.Document, 0)
-
+	
 	entries, err := os.ReadDir(*conf.KnowledgePath)
 	if err != nil {
 		return nil, err
 	}
-
+	
 	for _, entry := range entries {
 		if !entry.IsDir() {
 			var docs []schema.Document
@@ -204,16 +207,16 @@ func handleKnowledgeBase(ctx context.Context) ([]schema.Document, error) {
 			}
 		}
 	}
-
+	
 	return res, nil
-
+	
 }
 
 func initOpenAIEmbedding() (embeddings.Embedder, error) {
 	llm, err := openai.New(
 		openai.WithToken(*conf.OpenAIToken),
 	)
-
+	
 	if err != nil {
 		return nil, err
 	}
@@ -221,7 +224,7 @@ func initOpenAIEmbedding() (embeddings.Embedder, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	
 	return embedder, err
 }
 
@@ -230,7 +233,7 @@ func initErnieEmbedding() (embeddings.Embedder, error) {
 		ernie.WithModelName(ernie.ModelNameERNIEBot),
 		ernie.WithAKSK(*conf.ErnieAK, *conf.ErnieSK),
 	)
-
+	
 	if err != nil {
 		return nil, err
 	}
@@ -238,7 +241,7 @@ func initErnieEmbedding() (embeddings.Embedder, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	
 	return embedder, err
 }
 
@@ -246,7 +249,7 @@ func initGeminiEmbedding(ctx context.Context) (embeddings.Embedder, error) {
 	llm, err := googleai.New(ctx,
 		googleai.WithAPIKey(*conf.GeminiToken),
 	)
-
+	
 	if err != nil {
 		return nil, err
 	}
@@ -254,35 +257,35 @@ func initGeminiEmbedding(ctx context.Context) (embeddings.Embedder, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	
 	return embedder, err
 }
 
 func getFileResource(entry os.DirEntry) (*os.File, error) {
 	fullPath := filepath.Join(*conf.KnowledgePath, entry.Name())
-
+	
 	fileMd5, err := utils.FileToMd5(fullPath)
 	if err != nil {
 		logger.Error("file to md5 fail", "err", err)
 		return nil, err
 	}
-
+	
 	fileInfos, err := db.GetRagFileByFileMd5(fileMd5)
 	if err != nil {
 		logger.Error("get file from db fail", "err", err)
 		return nil, err
 	}
-
+	
 	if len(fileInfos) > 0 {
 		logger.Info("file exist", "path", fullPath)
 		return nil, nil
 	}
-
+	
 	_, err = db.InsertRagFile(entry.Name(), fileMd5)
 	if err != nil {
 		logger.Error("insert rag file fail", "err", err)
 	}
-
+	
 	return os.Open(fullPath)
 }
 
@@ -296,7 +299,7 @@ func handleTextDoc(ctx context.Context, entry os.DirEntry) ([]schema.Document, e
 		return nil, nil
 	}
 	defer f.Close()
-
+	
 	loader := documentloaders.NewText(f)
 	return saveDocIntoStore(ctx, loader)
 }
@@ -311,7 +314,7 @@ func handlePDFDoc(ctx context.Context, entry os.DirEntry) ([]schema.Document, er
 		return nil, nil
 	}
 	defer f.Close()
-
+	
 	finfo, err := f.Stat()
 	if err != nil {
 		logger.Error("get file stat fail", "err", err)
@@ -331,7 +334,7 @@ func handleCSVDoc(ctx context.Context, entry os.DirEntry) ([]schema.Document, er
 		return nil, nil
 	}
 	defer f.Close()
-
+	
 	loader := documentloaders.NewCSV(f)
 	return saveDocIntoStore(ctx, loader)
 }
@@ -346,7 +349,7 @@ func handleHTMLDoc(ctx context.Context, entry os.DirEntry) ([]schema.Document, e
 		return nil, nil
 	}
 	defer f.Close()
-
+	
 	loader := documentloaders.NewHTML(f)
 	return saveDocIntoStore(ctx, loader)
 }
@@ -357,12 +360,12 @@ func saveDocIntoStore(ctx context.Context, loader documentloaders.Loader) ([]sch
 		textsplitter.WithChunkOverlap(*conf.ChunkOverlap),
 		textsplitter.WithSeparators(conf.DefaultSpliter),
 	)
-
+	
 	docs, err := loader.LoadAndSplit(ctx, splitter)
 	if err != nil {
 		logger.Error("get rag docs fail: %v", err)
 		return nil, err
 	}
-
+	
 	return docs, nil
 }

@@ -421,7 +421,7 @@ func showBalanceInfo(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 			bInfo.ToppedUpBalance, bInfo.GrantedBalance)
 	}
 	
-	utils.SendMsg(chatId, msgContent, bot, msgId)
+	utils.SendMsg(chatId, msgContent, bot, msgId, tgbotapi.ModeMarkdown)
 }
 
 // showStateInfo show user's usage of token
@@ -463,7 +463,7 @@ func showStateInfo(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	
 	template := i18n.GetMessage(*conf.Lang, "state_content", nil)
 	msgContent := fmt.Sprintf(template, userInfo.Token, todayTokey, weekToken, monthToken)
-	utils.SendMsg(chatId, msgContent, bot, msgId)
+	utils.SendMsg(chatId, msgContent, bot, msgId, tgbotapi.ModeMarkdown)
 }
 
 // sendModeConfigurationOptions send config view
@@ -915,7 +915,7 @@ func checkUserTokenExceed(update tgbotapi.Update, bot *tgbotapi.BotAPI) bool {
 	if userInfo.Token >= userInfo.AvailToken {
 		tpl := i18n.GetMessage(*conf.Lang, "token_exceed", nil)
 		content := fmt.Sprintf(tpl, userInfo.Token, userInfo.AvailToken-userInfo.Token, userInfo.AvailToken)
-		utils.SendMsg(chatId, content, bot, msgId)
+		utils.SendMsg(chatId, content, bot, msgId, tgbotapi.ModeMarkdown)
 		return true
 	}
 	
