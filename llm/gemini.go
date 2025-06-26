@@ -337,11 +337,9 @@ func (h *GeminiReq) requestToolsCall(ctx context.Context, response *genai.Genera
 				},
 			},
 		})
-		
+		logger.Info("send tool request", "function", toolCall.Name,
+			"toolCall", toolCall.ID, "argument", toolCall.Args, "toolsData", toolsData)
 	}
-	
-	logger.Info("send tool request", "function", h.ToolCall[len(h.ToolCall)-1].Name,
-		"toolCall", h.ToolCall[len(h.ToolCall)-1].ID, "argument", h.ToolCall[len(h.ToolCall)-1].Args)
 	
 	return nil
 }

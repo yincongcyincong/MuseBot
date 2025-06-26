@@ -262,10 +262,11 @@ func (h *VolReq) requestToolsCall(ctx context.Context, choice *model.ChatComplet
 			},
 			ToolCallID: h.ToolCall[len(h.ToolCall)-1].ID,
 		})
+		
+		logger.Info("send tool request", "function", h.ToolCall[len(h.ToolCall)-1].Function.Name,
+			"toolCall", h.ToolCall[len(h.ToolCall)-1].ID, "argument", h.ToolCall[len(h.ToolCall)-1].Function.Arguments,
+			"res", toolsData)
 	}
-	
-	logger.Info("send tool request", "function", h.ToolCall[len(h.ToolCall)-1].Function.Name,
-		"toolCall", h.ToolCall[len(h.ToolCall)-1].ID, "argument", h.ToolCall[len(h.ToolCall)-1].Function.Arguments)
 	
 	return nil
 }

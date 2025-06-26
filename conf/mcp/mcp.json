@@ -28,10 +28,7 @@
         "MYSQL_PORT": "8306",
         "MYSQL_USER": "mapp",
         "MYSQL_PASS": "mapp",
-        "MYSQL_DB": "test",
-        "ALLOW_INSERT_OPERATION": "true",
-        "ALLOW_UPDATE_OPERATION": "true",
-        "ALLOW_DELETE_OPERATION": "true"
+        "MYSQL_DB": "test"
       }
     }
   }
