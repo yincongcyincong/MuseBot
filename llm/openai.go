@@ -361,10 +361,10 @@ func (d *OpenAIReq) requestToolsCall(ctx context.Context, choice openai.ChatComp
 			ToolCallID: d.ToolCall[len(d.ToolCall)-1].ID,
 		})
 		
+		logger.Info("send tool request", "function", d.ToolCall[len(d.ToolCall)-1].Function.Name,
+			"toolCall", d.ToolCall[len(d.ToolCall)-1].ID, "argument", d.ToolCall[len(d.ToolCall)-1].Function.Arguments,
+			"res", toolsData)
 	}
-	
-	logger.Info("send tool request", "function", d.ToolCall[len(d.ToolCall)-1].Function.Name,
-		"toolCall", d.ToolCall[len(d.ToolCall)-1].ID, "argument", d.ToolCall[len(d.ToolCall)-1].Function.Arguments)
 	
 	return nil
 	
