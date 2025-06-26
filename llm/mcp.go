@@ -9,6 +9,7 @@ import (
 	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
 	"github.com/yincongcyincong/telegram-deepseek-bot/i18n"
 	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
+	"github.com/yincongcyincong/telegram-deepseek-bot/utils"
 )
 
 var (
@@ -19,6 +20,7 @@ type McpResult struct {
 	Agent string `json:"agent"`
 }
 
+// ExecuteMcp execute mcp request
 func (d *DeepseekTaskReq) ExecuteMcp() {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
 	defer cancel()
@@ -35,6 +37,7 @@ func (d *DeepseekTaskReq) ExecuteMcp() {
 	}
 	
 	// get mcp request
+	chatId, msgId, _ := utils.GetChatIdAndMsgIdAndUserID(d.Update)
 	llm := NewLLM(WithBot(d.Bot), WithUpdate(d.Update),
 		WithMessageChan(d.MessageChan), WithContent(d.Content))
 	
@@ -44,6 +47,7 @@ func (d *DeepseekTaskReq) ExecuteMcp() {
 	c, err := llm.LLMClient.SyncSend(ctx, llm)
 	if err != nil {
 		logger.Error("get message fail", "err", err)
+		utils.SendMsg(chatId, err.Error(), d.Bot, msgId, "")
 		return
 	}
 	
@@ -65,6 +69,7 @@ func (d *DeepseekTaskReq) ExecuteMcp() {
 	mcpLLM.LLMClient.GetUserMessage(d.Content)
 	err = mcpLLM.LLMClient.Send(ctx, mcpLLM)
 	if err != nil {
+		utils.SendMsg(chatId, err.Error(), d.Bot, msgId, "")
 		logger.Error("execute conversation fail", "err", err)
 	}
 }
