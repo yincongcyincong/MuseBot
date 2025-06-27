@@ -97,10 +97,9 @@ func (d *OpenAIReq) GetMessages(userId int64, prompt string) {
 }
 
 func (d *OpenAIReq) Send(ctx context.Context, l *LLM) error {
-	if l.LoopNum > MostLoop {
+	if l.OverLoop() {
 		return errors.New("too many loops")
 	}
-	l.LoopNum++
 	
 	start := time.Now()
 	_, updateMsgID, userId := utils.GetChatIdAndMsgIdAndUserID(l.Update)

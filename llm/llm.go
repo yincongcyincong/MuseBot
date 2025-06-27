@@ -162,6 +162,14 @@ func (l *LLM) sendMsg(msgInfoContent *param.MsgInfo, content string) *param.MsgI
 	return msgInfoContent
 }
 
+func (l *LLM) OverLoop() bool {
+	if l.LoopNum >= MostLoop {
+		return true
+	}
+	l.LoopNum++
+	return false
+}
+
 type Option func(p *LLM)
 
 func WithModel(model string) Option {
