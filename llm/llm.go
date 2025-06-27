@@ -21,6 +21,7 @@ const (
 	OneMsgLen       = 3896
 	FirstSendLen    = 30
 	NonFirstSendLen = 500
+	MostLoop        = 5
 )
 
 var (
@@ -44,6 +45,7 @@ type LLM struct {
 	OpenRouterTools []openrouter.Tool
 	
 	WholeContent string // whole answer from llm
+	LoopNum      int
 }
 
 type LLMClient interface {

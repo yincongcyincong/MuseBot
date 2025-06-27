@@ -97,7 +97,7 @@ func (d *DeepseekTaskReq) ExecuteTask() {
 	}
 	
 	llm.LLMClient.GetAssistantMessage(c)
-	err = d.loopTask(ctx, plans, c, llm)
+	err = d.loopTask(ctx, plans, c, llm, 0)
 	if err != nil {
 		logger.Error("loopTask fail", "err", err)
 		utils.SendMsg(chatId, err.Error(), d.Bot, msgId, "")
@@ -118,7 +118,11 @@ func (d *DeepseekTaskReq) ExecuteTask() {
 }
 
 // loopTask loop task
-func (d *DeepseekTaskReq) loopTask(ctx context.Context, plans *TaskInfo, lastPlan string, llm *LLM) error {
+func (d *DeepseekTaskReq) loopTask(ctx context.Context, plans *TaskInfo, lastPlan string, llm *LLM, loop int) error {
+	if loop > MostLoop {
+		return errors.New("too many loops")
+	}
+	
 	completeTasks := map[string]bool{}
 	taskLLM := NewLLM(WithBot(d.Bot), WithUpdate(d.Update),
 		WithMessageChan(d.MessageChan))
@@ -174,7 +178,7 @@ func (d *DeepseekTaskReq) loopTask(ctx context.Context, plans *TaskInfo, lastPla
 		return nil
 	}
 	
-	return d.loopTask(ctx, plans, c, llm)
+	return d.loopTask(ctx, plans, c, llm, loop+1)
 }
 
 // requestTask request task

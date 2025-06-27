@@ -96,6 +96,11 @@ func (d *DeepseekReq) GetMessages(userId int64, prompt string) {
 }
 
 func (d *DeepseekReq) Send(ctx context.Context, l *LLM) error {
+	if l.LoopNum > MostLoop {
+		return errors.New("too many loops")
+	}
+	l.LoopNum++
+	
 	start := time.Now()
 	_, updateMsgID, userId := utils.GetChatIdAndMsgIdAndUserID(l.Update)
 	d.GetModel(l)
