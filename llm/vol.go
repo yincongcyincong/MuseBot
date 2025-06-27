@@ -6,7 +6,9 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strings"
 	"time"
+	"unicode"
 	
 	"github.com/cohesion-org/deepseek-go"
 	"github.com/cohesion-org/deepseek-go/constants"
@@ -172,7 +174,7 @@ func (h *VolReq) Send(ctx context.Context, l *LLM) error {
 				}
 			}
 			
-			if !hasTools {
+			if len(choice.Delta.Content) > 0 {
 				msgInfoContent = l.sendMsg(msgInfoContent, choice.Delta.Content)
 			}
 		}
@@ -184,7 +186,7 @@ func (h *VolReq) Send(ctx context.Context, l *LLM) error {
 		
 	}
 	
-	if len(msgInfoContent.Content) > 0 {
+	if len(strings.TrimRightFunc(msgInfoContent.Content, unicode.IsSpace)) > 0 {
 		l.MessageChan <- msgInfoContent
 	}
 	
@@ -246,13 +248,15 @@ func (h *VolReq) requestToolsCall(ctx context.Context, choice *model.ChatComplet
 		
 		mc, err := clients.GetMCPClientByToolName(h.ToolCall[len(h.ToolCall)-1].Function.Name)
 		if err != nil {
-			logger.Warn("get mcp fail", "err", err)
+			logger.Warn("get mcp fail", "err", err, "function", h.ToolCall[len(h.ToolCall)-1].Function.Name,
+				"toolCall", h.ToolCall[len(h.ToolCall)-1].ID, "argument", h.ToolCall[len(h.ToolCall)-1].Function.Arguments)
 			return err
 		}
 		
 		toolsData, err := mc.ExecTools(ctx, h.ToolCall[len(h.ToolCall)-1].Function.Name, property)
 		if err != nil {
-			logger.Warn("exec tools fail", "err", err)
+			logger.Warn("exec tools fail", "err", err, "function", h.ToolCall[len(h.ToolCall)-1].Function.Name,
+				"toolCall", h.ToolCall[len(h.ToolCall)-1].ID, "argument", h.ToolCall[len(h.ToolCall)-1].Function.Arguments)
 			return err
 		}
 		h.CurrentToolMessage = append(h.CurrentToolMessage, &model.ChatCompletionMessage{

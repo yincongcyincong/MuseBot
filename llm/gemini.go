@@ -4,7 +4,9 @@ import (
 	"context"
 	"errors"
 	"io"
+	"strings"
 	"time"
+	"unicode"
 	
 	"github.com/yincongcyincong/mcp-client-go/clients"
 	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
@@ -129,7 +131,7 @@ func (h *GeminiReq) Send(ctx context.Context, l *LLM) error {
 			}
 		}
 		
-		if !hasTools {
+		if len(response.Text()) > 0 {
 			msgInfoContent = l.sendMsg(msgInfoContent, response.Text())
 		}
 		
@@ -140,7 +142,7 @@ func (h *GeminiReq) Send(ctx context.Context, l *LLM) error {
 		
 	}
 	
-	if len(msgInfoContent.Content) > 0 {
+	if len(strings.TrimRightFunc(msgInfoContent.Content, unicode.IsSpace)) > 0 {
 		l.MessageChan <- msgInfoContent
 	}
 	
