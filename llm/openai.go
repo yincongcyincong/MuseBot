@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"strings"
 	"time"
+	"unicode"
 	
 	"github.com/cohesion-org/deepseek-go"
 	"github.com/cohesion-org/deepseek-go/constants"
@@ -163,7 +165,7 @@ func (d *OpenAIReq) Send(ctx context.Context, l *LLM) error {
 				}
 			}
 			
-			if !hasTools {
+			if len(choice.Delta.Content) > 0 {
 				msgInfoContent = l.sendMsg(msgInfoContent, choice.Delta.Content)
 			}
 		}
@@ -174,7 +176,7 @@ func (d *OpenAIReq) Send(ctx context.Context, l *LLM) error {
 		}
 	}
 	
-	if len(msgInfoContent.Content) > 0 {
+	if len(strings.TrimRightFunc(msgInfoContent.Content, unicode.IsSpace)) > 0 {
 		l.MessageChan <- msgInfoContent
 	}
 	if !hasTools || len(d.CurrentToolMessage) == 0 {
@@ -346,13 +348,15 @@ func (d *OpenAIReq) requestToolsCall(ctx context.Context, choice openai.ChatComp
 		
 		mc, err := clients.GetMCPClientByToolName(d.ToolCall[len(d.ToolCall)-1].Function.Name)
 		if err != nil {
-			logger.Warn("get mcp fail", "err", err)
+			logger.Warn("get mcp fail", "err", err, "function", d.ToolCall[len(d.ToolCall)-1].Function.Name,
+				"toolCall", d.ToolCall[len(d.ToolCall)-1].ID, "argument", d.ToolCall[len(d.ToolCall)-1].Function.Arguments)
 			return err
 		}
 		
 		toolsData, err := mc.ExecTools(ctx, d.ToolCall[len(d.ToolCall)-1].Function.Name, property)
 		if err != nil {
-			logger.Warn("exec tools fail", "err", err)
+			logger.Warn("exec tools fail", "err", err, "function", d.ToolCall[len(d.ToolCall)-1].Function.Name,
+				"toolCall", d.ToolCall[len(d.ToolCall)-1].ID, "argument", d.ToolCall[len(d.ToolCall)-1].Function.Arguments)
 			return err
 		}
 		d.CurrentToolMessage = append(d.CurrentToolMessage, openai.ChatCompletionMessage{
