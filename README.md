@@ -127,7 +127,7 @@ if DB_TYPE is mysql, give a mysql link, such as
 
 ### LANG
 
-choose a language for bot, English or Chinese.
+choose a language for bot, English (`en`), Chinese (`zh`), Russian (`ru`).
 
 ### other config
 

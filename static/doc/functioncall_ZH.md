@@ -1,4 +1,3 @@
----
 ## 配置 `MCP_CONF_PATH` 环境变量以使用 MCP 服务器 (Go 二进制文件)
 
 本文档将指导您如何在 `telegram-deepseek-bot` 项目中使用 Go 二进制文件时配置 `MCP_CONF_PATH` 环境变量，以便使用自定义的 MCP 服务器配置。
