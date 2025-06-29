@@ -255,47 +255,47 @@ func CreateBot() *tgbotapi.BotAPI {
 	cmdCfg := tgbotapi.NewSetMyCommands(
 		tgbotapi.BotCommand{
 			Command:     "help",
-			Description: i18n.GetMessage(*conf.Lang, "commands.help", nil),
+			Description: i18n.GetMessage(*conf.Lang, "commands.help.description", nil),
 		},
 		tgbotapi.BotCommand{
 			Command:     "clear",
-			Description: i18n.GetMessage(*conf.Lang, "commands.clear", nil),
+			Description: i18n.GetMessage(*conf.Lang, "commands.clear.description", nil),
 		},
 		tgbotapi.BotCommand{
 			Command:     "retry",
-			Description: i18n.GetMessage(*conf.Lang, "commands.retry", nil),
+			Description: i18n.GetMessage(*conf.Lang, "commands.retry.description", nil),
 		},
 		tgbotapi.BotCommand{
 			Command:     "mode",
-			Description: i18n.GetMessage(*conf.Lang, "commands.mode", nil),
+			Description: i18n.GetMessage(*conf.Lang, "commands.mode.description", nil),
 		},
 		tgbotapi.BotCommand{
 			Command:     "balance",
-			Description: i18n.GetMessage(*conf.Lang, "commands.balance", nil),
+			Description: i18n.GetMessage(*conf.Lang, "commands.balance.description", nil),
 		},
 		tgbotapi.BotCommand{
 			Command:     "state",
-			Description: i18n.GetMessage(*conf.Lang, "commands.state", nil),
+			Description: i18n.GetMessage(*conf.Lang, "commands.state.description", nil),
 		},
 		tgbotapi.BotCommand{
 			Command:     "photo",
-			Description: i18n.GetMessage(*conf.Lang, "commands.photo", nil),
+			Description: i18n.GetMessage(*conf.Lang, "commands.photo.description", nil),
 		},
 		tgbotapi.BotCommand{
 			Command:     "video",
-			Description: i18n.GetMessage(*conf.Lang, "commands.video", nil),
+			Description: i18n.GetMessage(*conf.Lang, "commands.video.description", nil),
 		},
 		tgbotapi.BotCommand{
 			Command:     "chat",
-			Description: i18n.GetMessage(*conf.Lang, "commands.chat", nil),
+			Description: i18n.GetMessage(*conf.Lang, "commands.chat.description", nil),
 		},
 		tgbotapi.BotCommand{
 			Command:     "task",
-			Description: i18n.GetMessage(*conf.Lang, "commands.task", nil),
+			Description: i18n.GetMessage(*conf.Lang, "commands.task.description", nil),
 		},
 		tgbotapi.BotCommand{
-			Command:     "mcp",
-			Description: i18n.GetMessage(*conf.Lang, "commands.mcp", nil),
+			Command:     i18n.GetMessage(*conf.Lang, "commands.mcp.name", nil),
+			Description: i18n.GetMessage(*conf.Lang, "commands.mcp.description", nil),
 		},
 	)
 	conf.Bot.Send(cmdCfg)

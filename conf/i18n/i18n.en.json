@@ -1,4 +1,39 @@
 {
+	"commands": {
+		"help": {
+			"description": "Помощь"
+		},
+		"clear": {
+			"description": "Очистить всю историю общения с Deepseek."
+		},
+		"retry": {
+			"description": "Повторить последний вопрос."
+		},
+		"mode": {
+			"description": "Выбор режима Deepseek: чат, программист, аналитик"
+		},
+		"balance": {
+			"description": "Показать баланс Deepseek."
+		},
+		"state": {
+			"description": "Рассчитать использование токенов пользователем."
+		},
+		"photo": {
+			"description": "Использование модели Volcengine для создания фото."
+		},
+		"video": {
+			"description": "Использование модели Volcengine для создания видео."
+		},
+		"chat": {
+			"description": "Позволяет боту общаться через команду /chat в группах без необходимости делать бота администратором."
+		},
+		"task": {
+			"description": "Мультиагентное взаимодействие для получения результата."
+		},
+		"mcp": {
+			"description": "Мультиагентное взаимодействие на основе сервера MCP для получения результата."
+		}
+	},
 	"balance_title": "\uD83D\uDFE3 Available: %t\n\n",
 	"balance_content": "\uD83D\uDFE3 Your Currency: %s\n\n\uD83D\uDFE3 Your TotalBalance Left: %s\n\n\uD83D\uDFE3 Your ToppedUpBalance Left: %s\n\n\uD83D\uDFE3 Your GrantedBalance Left: %s",
 	"state_content": "\uD83D\uDFE3 Your Total Token Usage: %d\n\n\uD83D\uDFE3 Your Today Token Usage: %d\n\n\uD83D\uDFE3 Your This Week Token Usage: %d\n\n\uD83D\uDFE3 Your This Month Token Usage: %d",
