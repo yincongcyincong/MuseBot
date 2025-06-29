@@ -255,47 +255,47 @@ func CreateBot() *tgbotapi.BotAPI {
 	cmdCfg := tgbotapi.NewSetMyCommands(
 		tgbotapi.BotCommand{
 			Command:     "help",
-			Description: "help",
+			Description: i18n.GetMessage(*conf.Lang, "commands.help", nil),
 		},
 		tgbotapi.BotCommand{
 			Command:     "clear",
-			Description: "clear all of your communication record with deepseek.",
+			Description: i18n.GetMessage(*conf.Lang, "commands.clear", nil),
 		},
 		tgbotapi.BotCommand{
 			Command:     "retry",
-			Description: "retry last question.",
+			Description: i18n.GetMessage(*conf.Lang, "commands.retry", nil),
 		},
 		tgbotapi.BotCommand{
 			Command:     "mode",
-			Description: "chose deepseek mode, include chat, coder, reasoner",
+			Description: i18n.GetMessage(*conf.Lang, "commands.mode", nil),
 		},
 		tgbotapi.BotCommand{
 			Command:     "balance",
-			Description: "show deepseek balance.",
+			Description: i18n.GetMessage(*conf.Lang, "commands.balance", nil),
 		},
 		tgbotapi.BotCommand{
 			Command:     "state",
-			Description: "calculate one user token usage.",
+			Description: i18n.GetMessage(*conf.Lang, "commands.state", nil),
 		},
 		tgbotapi.BotCommand{
 			Command:     "photo",
-			Description: "using volcengine photo model create photo.",
+			Description: i18n.GetMessage(*conf.Lang, "commands.photo", nil),
 		},
 		tgbotapi.BotCommand{
 			Command:     "video",
-			Description: "using volcengine video model create video.",
+			Description: i18n.GetMessage(*conf.Lang, "commands.video", nil),
 		},
 		tgbotapi.BotCommand{
 			Command:     "chat",
-			Description: "allows the bot to chat through /chat command in groups, without the bot being set as admin of the group.",
+			Description: i18n.GetMessage(*conf.Lang, "commands.chat", nil),
 		},
 		tgbotapi.BotCommand{
 			Command:     "task",
-			Description: "multi agents communicate with each other, get the result.",
+			Description: i18n.GetMessage(*conf.Lang, "commands.task", nil),
 		},
 		tgbotapi.BotCommand{
 			Command:     "mcp",
-			Description: "multi agents communicate with each other base on mcp server, get the result.",
+			Description: i18n.GetMessage(*conf.Lang, "commands.mcp", nil),
 		},
 	)
 	conf.Bot.Send(cmdCfg)
