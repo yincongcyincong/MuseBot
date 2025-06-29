@@ -294,7 +294,7 @@ func CreateBot() *tgbotapi.BotAPI {
 			Description: i18n.GetMessage(*conf.Lang, "commands.task.description", nil),
 		},
 		tgbotapi.BotCommand{
-			Command:     i18n.GetMessage(*conf.Lang, "commands.mcp.name", nil),
+			Command:     "mcp",
 			Description: i18n.GetMessage(*conf.Lang, "commands.mcp.description", nil),
 		},
 	)
