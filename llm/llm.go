@@ -205,6 +205,11 @@ func WithMessageChan(messageChan chan *param.MsgInfo) Option {
 func WithTaskTools(taskTool *conf.AgentInfo) Option {
 	return func(p *LLM) {
 		if taskTool == nil {
+			p.DeepseekTools = nil
+			p.VolTools = nil
+			p.OpenAITools = nil
+			p.GeminiTools = nil
+			p.OpenRouterTools = nil
 			return
 		}
 		p.DeepseekTools = taskTool.DeepseekTool
