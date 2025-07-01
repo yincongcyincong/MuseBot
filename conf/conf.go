@@ -11,14 +11,14 @@ import (
 )
 
 type BaseConf struct {
-	BotToken        *string `json:"telegram_bot_token"`
-	DeepseekToken   *string `json:"deepseek_token"`
-	OpenAIToken     *string `json:"openai_token"`
-	GeminiToken     *string `json:"gemini_token"`
-	OpenRouterToken *string `json:"openrouter_token"`
-	VolToken        *string `json:"vol_token"`
-	ErnieAK         *string `json:"ernie_ak"`
-	ErnieSK         *string `json:"ernie_sk"`
+	TelegramBotToken *string `json:"telegram_bot_token"`
+	DeepseekToken    *string `json:"deepseek_token"`
+	OpenAIToken      *string `json:"openai_token"`
+	GeminiToken      *string `json:"gemini_token"`
+	OpenRouterToken  *string `json:"openrouter_token"`
+	VolToken         *string `json:"vol_token"`
+	ErnieAK          *string `json:"ernie_ak"`
+	ErnieSK          *string `json:"ernie_sk"`
 	
 	Type          *string `json:"type"`
 	CustomUrl     *string `json:"custom_url"`
@@ -51,7 +51,7 @@ var (
 )
 
 func InitConf() {
-	BaseConfInfo.BotToken = flag.String("telegram_bot_token", "", "Comma-separated list of Telegram bot tokens")
+	BaseConfInfo.TelegramBotToken = flag.String("telegram_bot_token", "", "Comma-separated list of Telegram bot tokens")
 	BaseConfInfo.DeepseekToken = flag.String("deepseek_token", "", "deepseek auth token")
 	BaseConfInfo.OpenAIToken = flag.String("openai_token", "", "openai auth token")
 	BaseConfInfo.GeminiToken = flag.String("gemini_token", "", "gemini auth token")
@@ -96,7 +96,7 @@ func InitConf() {
 	flag.Parse()
 	
 	if os.Getenv("TELEGRAM_BOT_TOKEN") != "" {
-		*BaseConfInfo.BotToken = os.Getenv("TELEGRAM_BOT_TOKEN")
+		*BaseConfInfo.TelegramBotToken = os.Getenv("TELEGRAM_BOT_TOKEN")
 	}
 	
 	if os.Getenv("DEEPSEEK_TOKEN") != "" {
@@ -234,7 +234,7 @@ func InitConf() {
 		BaseConfInfo.AdminUserIds[int64(userId)] = true
 	}
 	
-	logger.Info("CONF", "TelegramBotToken", *BaseConfInfo.BotToken)
+	logger.Info("CONF", "TelegramBotToken", *BaseConfInfo.TelegramBotToken)
 	logger.Info("CONF", "DeepseekToken", *BaseConfInfo.DeepseekToken)
 	logger.Info("CONF", "CustomUrl", *BaseConfInfo.CustomUrl)
 	logger.Info("CONF", "Type", *BaseConfInfo.Type)
@@ -269,7 +269,7 @@ func InitConf() {
 	EnvToolsConf()
 	EnvVideoConf()
 	
-	if *BaseConfInfo.BotToken == "" {
+	if *BaseConfInfo.TelegramBotToken == "" {
 		panic("Bot token and llm token are required")
 	}
 	

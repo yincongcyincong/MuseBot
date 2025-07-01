@@ -243,7 +243,7 @@ func CreateBot() *tgbotapi.BotAPI {
 	client := GetTelegramProxyClient()
 	
 	var err error
-	conf.BaseConfInfo.Bot, err = tgbotapi.NewBotAPIWithClient(*conf.BaseConfInfo.BotToken, tgbotapi.APIEndpoint, client)
+	conf.BaseConfInfo.Bot, err = tgbotapi.NewBotAPIWithClient(*conf.BaseConfInfo.TelegramBotToken, tgbotapi.APIEndpoint, client)
 	if err != nil {
 		panic("Init bot fail" + err.Error())
 	}
@@ -443,4 +443,96 @@ func SetStructFieldByJSONTag(s interface{}, key string, value interface{}) error
 	}
 	
 	return fmt.Errorf("can't find with key '%s' matched JSON field", key)
+}
+
+func ValueToString(value interface{}) string {
+	if value == nil {
+		return "nil" // Handle nil values
+	}
+	
+	// Get the reflect.Value and reflect.Type of the input
+	v := reflect.ValueOf(value)
+	t := reflect.TypeOf(value)
+	
+	// Handle pointer types: if it's a pointer, get the element it points to
+	if t.Kind() == reflect.Ptr {
+		if v.IsNil() {
+			return "nil"
+		}
+		v = v.Elem() // Get the value the pointer points to
+		t = v.Type() // Update type to the actual type
+	}
+	
+	switch t.Kind() {
+	case reflect.String:
+		return v.String() // Return string directly
+	
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return strconv.FormatInt(v.Int(), 10) // Convert integer to decimal string
+	
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+		return strconv.FormatUint(v.Uint(), 10) // Convert unsigned integer to decimal string
+	
+	case reflect.Float32, reflect.Float64:
+		return strconv.FormatFloat(v.Float(), 'f', -1, 64) // Format float as string
+		// 'f' means decimal format, -1 uses necessary precision, 64 for float64
+	
+	case reflect.Bool:
+		return strconv.FormatBool(v.Bool()) // Convert boolean to string
+	
+	case reflect.Array, reflect.Slice:
+		// For arrays and slices, convert each element to a string and join with commas
+		elements := make([]string, v.Len())
+		for i := 0; i < v.Len(); i++ {
+			elements[i] = ValueToString(v.Index(i).Interface()) // Recursive call for nested types
+		}
+		return strings.Join(elements, ",")
+	
+	case reflect.Map:
+		// For maps, convert each key-value pair to string
+		keys := v.MapKeys()
+		parts := make([]string, len(keys))
+		for i, key := range keys {
+			val := v.MapIndex(key)
+			parts[i] = fmt.Sprintf("%s: %s", ValueToString(key.Interface()), ValueToString(val.Interface()))
+		}
+		return fmt.Sprintf("{%s}", strings.Join(parts, ", "))
+	
+	case reflect.Struct:
+		// For structs, convert each field to a string
+		parts := make([]string, v.NumField())
+		for i := 0; i < v.NumField(); i++ {
+			field := v.Field(i)
+			fieldName := t.Field(i).Name
+			parts[i] = fmt.Sprintf("%s: %s", fieldName, ValueToString(field.Interface()))
+		}
+		return fmt.Sprintf("{%s}", strings.Join(parts, ", "))
+	
+	case reflect.Invalid:
+		return "<invalid value>" // Handle invalid values such as uninitialized reflect.Value
+	
+	default:
+		// For other types like Channel, Func, Interface, Ptr (already handled), UnsafePointer, etc.
+		// Use fmt.Sprintf to get the default string representation
+		return fmt.Sprintf("%v", value)
+	}
+}
+
+func MapKeysToString(input interface{}) string {
+	val := reflect.ValueOf(input)
+	
+	// Check if it's a map
+	if val.Kind() != reflect.Map {
+		return ""
+	}
+	
+	keys := val.MapKeys()
+	keyStrs := make([]string, len(keys))
+	
+	for i, key := range keys {
+		// Convert key to string using fmt.Sprint (handles int, string, etc.)
+		keyStrs[i] = fmt.Sprint(key.Interface())
+	}
+	
+	return strings.Join(keyStrs, ",")
 }
