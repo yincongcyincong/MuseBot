@@ -136,45 +136,45 @@ docker run -d -v /home/user/data:/app/data -e TELEGRAM_BOT_TOKEN="你的Telegram
 - `coder`: 编程模式（DeepSeek-V3）
 - `reasoner`: 推理模式（DeepSeek-R1）
 
-<img width="400" src="https://github.com/user-attachments/assets/55ac3101-92d2-490d-8ee0-31a5b297e56e" />
+<img width="400" src="https://github.com/user-attachments/assets/55ac3101-92d2-490d-8ee0-31a5b297e56e"  alt=""/>
 
 ### `/balance`
 
 查询当前用户的 DeepSeek API 余额。
 
-<img width="400" src="https://github.com/user-attachments/assets/23048b44-a3af-457f-b6ce-3678b6776410" />
+<img width="400" src="https://github.com/user-attachments/assets/23048b44-a3af-457f-b6ce-3678b6776410"  alt=""/>
 
 ### `/state`
 
 统计用户的 Token 使用量。
 
-<img width="400" src="https://github.com/user-attachments/assets/0814b3ac-dcf6-4ec7-ae6b-3b8d190a0132" />
+<img width="400" src="https://github.com/user-attachments/assets/0814b3ac-dcf6-4ec7-ae6b-3b8d190a0132"  alt=""/>
 
 ### `/photo`
 
 使用火山引擎图片模型生成图片，DeepSeek 暂不支持图片生成。
 需要配置 `VOLC_AK` 和 `VOLC_SK`。[文档](https://www.volcengine.com/docs/6444/1340578)
 
-<img width="400" src="https://github.com/user-attachments/assets/c8072d7d-74e6-4270-8496-1b4e7532134b" />
+<img width="400" src="https://github.com/user-attachments/assets/c8072d7d-74e6-4270-8496-1b4e7532134b"  alt=""/>
 
 ### `/video`
 
 生成视频，需要使用火山引擎 API 密钥（`DEEPSEEK_TOKEN`），DeepSeek 暂不支持视频生成。
 [文档](https://www.volcengine.com/docs/82379/1399008#b00dee71)
 
-<img width="400" src="https://github.com/user-attachments/assets/884eeb48-76c4-4329-9446-5cd3822a5d16" />
+<img width="400" src="https://github.com/user-attachments/assets/884eeb48-76c4-4329-9446-5cd3822a5d16"  alt=""/>
 
 ### `/chat`
 
 在群组中使用 `/chat` 命令与机器人对话，无需将机器人设置为管理员。
 
-<img width="400" src="https://github.com/user-attachments/assets/00a0faf3-6037-4d84-9a33-9aa6c320e44d" />
+<img width="400" src="https://github.com/user-attachments/assets/00a0faf3-6037-4d84-9a33-9aa6c320e44d"  alt=""/>
 
 ### `/help`
 
 显示帮助信息。
 
-<img width="400" src="https://github.com/user-attachments/assets/869e0207-388b-49ca-b26a-378f71d58818" />
+<img width="400" src="https://github.com/user-attachments/assets/869e0207-388b-49ca-b26a-378f71d58818"  alt=""/>
 
 ## 管理员命令
 

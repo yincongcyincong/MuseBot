@@ -1,4 +1,39 @@
 {
+	"commands": {
+		"help": {
+			"description": "帮助"
+		},
+		"clear": {
+			"description": "清除你与 DeepSeek 的所有聊天记录。"
+		},
+		"retry": {
+			"description": "重试上一个问题。"
+		},
+		"mode": {
+			"description": "选择 DeepSeek 模式，包括聊天模式、编程模式、推理模式。"
+		},
+		"balance": {
+			"description": "显示 DeepSeek 余额。"
+		},
+		"state": {
+			"description": "计算单个用户的 Token 使用情况。"
+		},
+		"photo": {
+			"description": "使用火山引擎图片模型生成图片。"
+		},
+		"video": {
+			"description": "使用火山引擎视频模型生成视频。"
+		},
+		"chat": {
+			"description": "允许机器人通过 /chat 命令在群组中聊天，无需将机器人设为群组管理员。"
+		},
+		"task": {
+			"description": "多个智能体互相协作，获取最终结果。"
+		},
+		"mcp": {
+			"description": "基于 MCP 服务器，多个智能体互相协作，获取最终结果。"
+		}
+	},
 	"balance_title": "🟣 是否可用：%t\n\n",
 	"balance_content": "🟣 您的货币：%s\n\n🟣 您的总余额：%s\n\n🟣 您的充值余额：%s\n\n🟣 您的赠送余额：%s",
 	"state_content": "🟣 您的总 Token 使用量：%d\n\n🟣 您今天的 Token 使用量：%d\n\n🟣 您本周的 Token 使用量：%d\n\n🟣 您本月的 Token 使用量：%d",

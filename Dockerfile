@@ -1,27 +1,40 @@
-# 使用 Go 官方镜像作为基础镜像
-FROM golang:1.24
+# Build stage
+FROM golang:1.24 as builder
 
-# 设置工作目录
 WORKDIR /app
 
-# 复制项目文件到容器内
+# First copy only dependency files for better layer caching
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Copy the rest of the application
 COPY . .
 
-# 下载依赖
-RUN go mod tidy
+# Build the application
+RUN go build -ldflags="-s -w" -o telegram-deepseek-bot main.go
 
-# 编译 Go 程序
-RUN go build -o telegram-deepseek-bot main.go
+# Runtime stage
+FROM debian:stable-slim
 
-# 设置运行环境变量（可选）
-ENV TELEGRAM_BOT_TOKEN=""
-ENV DEEPSEEK_TOKEN=""
-ENV CUSTOM_URL=""
-ENV DEEPSEEK_TYPE=""
-ENV VOLC_AK=""
-ENV VOLC_SK=""
-ENV DB_TYPE=""
-ENV DB_CONF=""
+# Install certificates
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
 
-# 运行程序
-CMD ["./telegram-deepseek-bot"]
+WORKDIR /app
+
+# Create necessary directories
+RUN mkdir -p ./conf/i18n ./conf/mcp
+
+# Copy only necessary files from builder
+COPY --from=builder /app/telegram-deepseek-bot .
+COPY --from=builder /app/conf/i18n/ ./conf/i18n/
+COPY --from=builder /app/conf/mcp/ ./conf/mcp/
+
+# (Optional) Create non-root user for security
+RUN useradd -m appuser && \
+    chown -R appuser:appuser /app
+USER appuser
+
+# Runtime command
+ENTRYPOINT ["./telegram-deepseek-bot"]
