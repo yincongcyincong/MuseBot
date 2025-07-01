@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"sync"
 	"time"
-
+	
 	"github.com/cohesion-org/deepseek-go"
 	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
 	"github.com/yincongcyincong/telegram-deepseek-bot/metrics"
@@ -54,7 +54,7 @@ func InsertMsgRecord(userId int64, aq *AQ, insertDB bool) {
 		msgRecord.updateTime = time.Now().Unix()
 	}
 	MsgRecord.Store(userId, msgRecord)
-
+	
 	if insertDB {
 		go InsertRecordInfo(&Record{
 			UserId:   userId,
@@ -94,7 +94,7 @@ func UpdateUserTime() {
 		for range timer.C {
 			UpdateDBData()
 		}
-
+		
 	}()
 }
 
@@ -125,7 +125,7 @@ func InsertRecord() {
 	if err != nil {
 		logger.Error("InsertRecord GetUsers err", "err", err)
 	}
-
+	
 	for _, user := range users {
 		records, err := getRecordsByUserId(user.UserId)
 		if err != nil {
@@ -141,23 +141,23 @@ func InsertRecord() {
 			metrics.TotalRecords.Inc()
 		}
 	}
-
+	
 	metrics.TotalUsers.Add(float64(len(users)))
-
+	
 }
 
 // getRecordsByUserId get latest 10 records by user_id
 func getRecordsByUserId(userId int64) ([]Record, error) {
 	// construct SQL statements
 	query := fmt.Sprintf("SELECT id, user_id, question, answer, content FROM records WHERE user_id =  ? and is_deleted = 0 order by create_time desc limit 10")
-
+	
 	// execute query
 	rows, err := DB.Query(query, userId)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-
+	
 	var records []Record
 	for rows.Next() {
 		var record Record
@@ -167,7 +167,7 @@ func getRecordsByUserId(userId int64) ([]Record, error) {
 		}
 		records = append(records, record)
 	}
-
+	
 	return records, nil
 }
 
@@ -179,19 +179,19 @@ func InsertRecordInfo(record *Record) {
 	if err != nil {
 		logger.Error("insertRecord err", "err", err)
 	}
-
+	
 	user, err := GetUserByID(record.UserId)
 	if err != nil {
 		logger.Error("Error get user by userid", "err", err)
 	}
-
+	
 	if user == nil {
 		_, err = InsertUser(record.UserId, deepseek.DeepSeekChat)
 		if err != nil {
 			logger.Error("Error insert user by userid", "err", err)
 		}
 	}
-
+	
 	err = UpdateUserToken(record.UserId, record.Token)
 	if err != nil {
 		logger.Error("Error update token by user", "err", err)
@@ -208,7 +208,7 @@ func DeleteRecord(userId int64) error {
 func GetTokenByUserIdAndTime(userId int64, start, end int64) (int, error) {
 	querySQL := `SELECT sum(token) FROM records WHERE user_id = ? and create_time >= ? and create_time <= ?`
 	row := DB.QueryRow(querySQL, userId, start, end)
-
+	
 	// scan row get result
 	var user User
 	err := row.Scan(&user.Token)

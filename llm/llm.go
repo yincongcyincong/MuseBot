@@ -101,7 +101,7 @@ func NewLLM(opts ...Option) *LLM {
 		opt(l)
 	}
 	
-	switch *conf.Type {
+	switch *conf.BaseConfInfo.Type {
 	case param.DeepSeek:
 		l.LLMClient = &DeepseekReq{
 			ToolCall:           []godeepseek.ToolCall{},

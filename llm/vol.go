@@ -119,7 +119,7 @@ func (h *VolReq) Send(ctx context.Context, l *LLM) error {
 	httpClient := utils.GetDeepseekProxyClient()
 	
 	client := arkruntime.NewClientWithApiKey(
-		*conf.VolToken,
+		*conf.BaseConfInfo.VolToken,
 		arkruntime.WithTimeout(5*time.Minute),
 		arkruntime.WithHTTPClient(httpClient),
 	)
@@ -130,14 +130,14 @@ func (h *VolReq) Send(ctx context.Context, l *LLM) error {
 		StreamOptions: &model.StreamOptions{
 			IncludeUsage: true,
 		},
-		MaxTokens:        *conf.MaxTokens,
-		TopP:             float32(*conf.TopP),
-		FrequencyPenalty: float32(*conf.FrequencyPenalty),
-		TopLogProbs:      *conf.TopLogProbs,
-		LogProbs:         *conf.LogProbs,
-		Stop:             conf.Stop,
-		PresencePenalty:  float32(*conf.PresencePenalty),
-		Temperature:      float32(*conf.Temperature),
+		MaxTokens:        *conf.LLMConfInfo.MaxTokens,
+		TopP:             float32(*conf.LLMConfInfo.TopP),
+		FrequencyPenalty: float32(*conf.LLMConfInfo.FrequencyPenalty),
+		TopLogProbs:      *conf.LLMConfInfo.TopLogProbs,
+		LogProbs:         *conf.LLMConfInfo.LogProbs,
+		Stop:             conf.LLMConfInfo.Stop,
+		PresencePenalty:  float32(*conf.LLMConfInfo.PresencePenalty),
+		Temperature:      float32(*conf.LLMConfInfo.Temperature),
 		Tools:            l.VolTools,
 	}
 	
@@ -323,7 +323,7 @@ func (h *VolReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 	httpClient := utils.GetDeepseekProxyClient()
 	
 	client := arkruntime.NewClientWithApiKey(
-		*conf.VolToken,
+		*conf.BaseConfInfo.VolToken,
 		arkruntime.WithTimeout(5*time.Minute),
 		arkruntime.WithHTTPClient(httpClient),
 	)
@@ -334,14 +334,14 @@ func (h *VolReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 		StreamOptions: &model.StreamOptions{
 			IncludeUsage: true,
 		},
-		MaxTokens:        *conf.MaxTokens,
-		TopP:             float32(*conf.TopP),
-		FrequencyPenalty: float32(*conf.FrequencyPenalty),
-		TopLogProbs:      *conf.TopLogProbs,
-		LogProbs:         *conf.LogProbs,
-		Stop:             conf.Stop,
-		PresencePenalty:  float32(*conf.PresencePenalty),
-		Temperature:      float32(*conf.Temperature),
+		MaxTokens:        *conf.LLMConfInfo.MaxTokens,
+		TopP:             float32(*conf.LLMConfInfo.TopP),
+		FrequencyPenalty: float32(*conf.LLMConfInfo.FrequencyPenalty),
+		TopLogProbs:      *conf.LLMConfInfo.TopLogProbs,
+		LogProbs:         *conf.LLMConfInfo.LogProbs,
+		Stop:             conf.LLMConfInfo.Stop,
+		PresencePenalty:  float32(*conf.LLMConfInfo.PresencePenalty),
+		Temperature:      float32(*conf.LLMConfInfo.Temperature),
 		Tools:            l.VolTools,
 	}
 	
@@ -400,29 +400,29 @@ func (h *VolReq) requestOneToolsCall(ctx context.Context, toolsCall []*model.Too
 // GenerateImg generate image
 func GenerateImg(prompt string) (*param.ImgResponse, error) {
 	start := time.Now()
-	visual.DefaultInstance.Client.SetAccessKey(*conf.VolcAK)
-	visual.DefaultInstance.Client.SetSecretKey(*conf.VolcSK)
+	visual.DefaultInstance.Client.SetAccessKey(*conf.BaseConfInfo.VolcAK)
+	visual.DefaultInstance.Client.SetSecretKey(*conf.BaseConfInfo.VolcSK)
 	
 	reqBody := map[string]interface{}{
-		"req_key":           *conf.ReqKey,
+		"req_key":           *conf.PhotoConfInfo.ReqKey,
 		"prompt":            prompt,
-		"model_version":     *conf.ModelVersion,
-		"req_schedule_conf": *conf.ReqScheduleConf,
-		"llm_seed":          *conf.Seed,
-		"seed":              *conf.Seed,
-		"scale":             *conf.Scale,
-		"ddim_steps":        *conf.DDIMSteps,
-		"width":             *conf.Width,
-		"height":            *conf.Height,
-		"use_pre_llm":       *conf.UsePreLLM,
-		"use_sr":            *conf.UseSr,
-		"return_url":        *conf.ReturnUrl,
+		"model_version":     *conf.PhotoConfInfo.ModelVersion,
+		"req_schedule_conf": *conf.PhotoConfInfo.ReqScheduleConf,
+		"llm_seed":          *conf.PhotoConfInfo.Seed,
+		"seed":              *conf.PhotoConfInfo.Seed,
+		"scale":             *conf.PhotoConfInfo.Scale,
+		"ddim_steps":        *conf.PhotoConfInfo.DDIMSteps,
+		"width":             *conf.PhotoConfInfo.Width,
+		"height":            *conf.PhotoConfInfo.Height,
+		"use_pre_llm":       *conf.PhotoConfInfo.UsePreLLM,
+		"use_sr":            *conf.PhotoConfInfo.UseSr,
+		"return_url":        *conf.PhotoConfInfo.ReturnUrl,
 		"logo_info": map[string]interface{}{
-			"add_logo":          *conf.AddLogo,
-			"position":          *conf.Position,
-			"language":          *conf.Language,
-			"opacity":           *conf.Opacity,
-			"logo_text_content": *conf.LogoTextContent,
+			"add_logo":          *conf.PhotoConfInfo.AddLogo,
+			"position":          *conf.PhotoConfInfo.Position,
+			"language":          *conf.PhotoConfInfo.Language,
+			"opacity":           *conf.PhotoConfInfo.Opacity,
+			"logo_text_content": *conf.PhotoConfInfo.LogoTextContent,
 		},
 	}
 	
@@ -460,17 +460,17 @@ func GenerateVideo(prompt string) (string, error) {
 	httpClient := utils.GetDeepseekProxyClient()
 	
 	client := arkruntime.NewClientWithApiKey(
-		*conf.VideoToken,
+		*conf.BaseConfInfo.VideoToken,
 		arkruntime.WithTimeout(5*time.Minute),
 		arkruntime.WithHTTPClient(httpClient),
 	)
 	
 	videoParam := fmt.Sprintf(" --ratio %s --fps %d  --dur %d --resolution %s --watermark %t",
-		*conf.Radio, *conf.FPS, *conf.Duration, *conf.Resolution, *conf.Watermark)
+		*conf.VideoConfInfo.Radio, *conf.VideoConfInfo.FPS, *conf.VideoConfInfo.Duration, *conf.VideoConfInfo.Resolution, *conf.VideoConfInfo.Watermark)
 	
 	text := prompt + videoParam
 	resp, err := client.CreateContentGenerationTask(ctx, model.CreateContentGenerationTaskRequest{
-		Model: *conf.VideoModel,
+		Model: *conf.VideoConfInfo.VideoModel,
 		Content: []*model.CreateContentGenerationContentItem{
 			{
 				Type: model.ContentGenerationContentItemTypeText,

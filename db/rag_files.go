@@ -2,7 +2,7 @@ package db
 
 import (
 	"time"
-
+	
 	"github.com/yincongcyincong/telegram-deepseek-bot/metrics"
 )
 
@@ -22,7 +22,7 @@ func InsertRagFile(fileName, fileMd5 string) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-
+	
 	// get last insert id
 	id, err := result.LastInsertId()
 	if err != nil {
@@ -35,12 +35,12 @@ func InsertRagFile(fileName, fileMd5 string) (int64, error) {
 func GetRagFileByFileMd5(fileMd5 string) ([]*RagFiles, error) {
 	querySQL := `SELECT id, file_name, file_md5, update_time, create_time FROM rag_files WHERE file_md5 = ? and is_deleted = 0`
 	rows, err := DB.Query(querySQL, fileMd5)
-
+	
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-
+	
 	var ragFiles []*RagFiles
 	for rows.Next() {
 		var ragFile RagFiles
@@ -49,7 +49,7 @@ func GetRagFileByFileMd5(fileMd5 string) ([]*RagFiles, error) {
 		}
 		ragFiles = append(ragFiles, &ragFile)
 	}
-
+	
 	// check error
 	if err := rows.Err(); err != nil {
 		return nil, err

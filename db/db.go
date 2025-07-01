@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
-
+	
 	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
@@ -42,7 +42,7 @@ const (
 			);
 			CREATE INDEX idx_records_user_id ON records(user_id);
 			CREATE INDEX idx_records_create_time ON records(create_time);`
-
+	
 	mysqlCreateUsersSQL = `
 			CREATE TABLE IF NOT EXISTS users (
 				id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -52,7 +52,7 @@ const (
 				token int(10) NOT NULL DEFAULT 0,
 				avail_token int(10) NOT NULL DEFAULT 0
 			);`
-
+	
 	mysqlCreateRecordsSQL = `
 			CREATE TABLE IF NOT EXISTS records (
 				id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -64,7 +64,7 @@ const (
 				is_deleted int(10) NOT NULL DEFAULT '0',
 				token int(10) NOT NULL DEFAULT 0
 			);`
-
+	
 	mysqlCreateRagFileSQL = `CREATE TABLE IF NOT EXISTS rag_files (
 				id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
 				file_name VARCHAR(255) NOT NULL DEFAULT '',
@@ -73,7 +73,7 @@ const (
 				update_time int(10) NOT NULL DEFAULT '0',
 				is_deleted int(10) NOT NULL DEFAULT '0'
 			);`
-
+	
 	mysqlCreateIndexSQL   = `CREATE INDEX idx_records_user_id ON records(user_id);`
 	mysqlCreateCTIndexSQL = `CREATE INDEX idx_records_create_time ON records(create_time);`
 )
@@ -93,14 +93,14 @@ func InitTable() {
 		}
 		logger.Info("✅ create direction success")
 	}
-
-	DB, err = sql.Open(*conf.DBType, *conf.DBConf)
+	
+	DB, err = sql.Open(*conf.BaseConfInfo.DBType, *conf.BaseConfInfo.DBConf)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
-
+	
 	// init table
-	switch *conf.DBType {
+	switch *conf.BaseConfInfo.DBType {
 	case "sqlite3":
 		err = initializeSqlite3Table(DB, "users")
 		if err != nil {
@@ -111,16 +111,16 @@ func InitTable() {
 		if err := initializeMysqlTable(DB, "users", mysqlCreateUsersSQL); err != nil {
 			logger.Fatal("create mysql table fail", "err", err)
 		}
-
+		
 		if err := initializeMysqlTable(DB, "records", mysqlCreateRecordsSQL); err != nil {
 			logger.Fatal("create mysql table fail", "err", err)
 		}
-
+		
 		if err := initializeMysqlTable(DB, "rag_files", mysqlCreateRagFileSQL); err != nil {
 			logger.Fatal("create mysql table fail", "err", err)
 		}
 	}
-
+	
 	logger.Info("db initialize successfully")
 }
 
@@ -128,7 +128,7 @@ func initializeMysqlTable(db *sql.DB, tableName string, createSQL string) error 
 	var tb string
 	query := fmt.Sprintf("SHOW TABLES LIKE '%s'", tableName)
 	err := db.QueryRow(query).Scan(&tb)
-
+	
 	// 如果表不存在，则创建
 	if errors.Is(err, sql.ErrNoRows) || tb == "" {
 		logger.Info("Table not exist, creating...", "tableName", tableName)
@@ -137,7 +137,7 @@ func initializeMysqlTable(db *sql.DB, tableName string, createSQL string) error 
 			return fmt.Errorf("create table failed: %v", err)
 		}
 		logger.Info("Create table success", "tableName", tableName)
-
+		
 		// 创建索引（防止重复创建）
 		if tableName == "records" {
 			_, err = db.Exec(mysqlCreateIndexSQL)
@@ -154,7 +154,7 @@ func initializeMysqlTable(db *sql.DB, tableName string, createSQL string) error 
 	} else {
 		logger.Info("Table exists", "tableName", tableName)
 	}
-
+	
 	return nil
 }
 
@@ -164,7 +164,7 @@ func initializeSqlite3Table(db *sql.DB, tableName string) error {
 	query := `SELECT name FROM sqlite_master WHERE type='table' AND name=?;`
 	var name string
 	err := db.QueryRow(query, tableName).Scan(&name)
-
+	
 	if err != nil {
 		if err == sql.ErrNoRows {
 			logger.Info("table '%s' not exist，creating...", "tableName", tableName)
@@ -179,6 +179,6 @@ func initializeSqlite3Table(db *sql.DB, tableName string) error {
 	} else {
 		logger.Info("table exist", "tableName", tableName)
 	}
-
+	
 	return nil
 }

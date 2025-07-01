@@ -1,38 +1,44 @@
-package metrics
+package http
 
 import (
 	"fmt"
+	"net/http"
+	_ "net/http/pprof"
+	
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
 	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
-	"net/http"
-	_ "net/http/pprof"
 )
 
-type PProfServer struct {
+type HTTPServer struct {
 	Addr string
 }
 
-func InitPprof() {
-	pprofServer := NewPProfServer(fmt.Sprintf(":%d", *conf.HTTPPort))
+func InitHTTP() {
+	pprofServer := NewHTTPServer(fmt.Sprintf(":%d", *conf.BaseConfInfo.HTTPPort))
 	pprofServer.Start()
 }
 
-// NewPProfServer create http server, listen 36060 port.
-func NewPProfServer(addr string) *PProfServer {
+// NewHTTPServer create http server, listen 36060 port.
+func NewHTTPServer(addr string) *HTTPServer {
 	if addr == "" {
 		addr = ":36060"
 	}
-	return &PProfServer{
+	return &HTTPServer{
 		Addr: addr,
 	}
 }
 
-// Start start pprof server
-func (p *PProfServer) Start() {
+// Start pprof server
+func (p *HTTPServer) Start() {
 	go func() {
 		logger.Info("Starting pprof server on", "addr", p.Addr)
 		http.Handle("/metrics", promhttp.Handler())
+		
+		http.HandleFunc("/user/token/add", AddUserToken)
+		
+		http.HandleFunc("/conf/update", UpdateConf)
+		
 		err := http.ListenAndServe(p.Addr, nil)
 		if err != nil {
 			logger.Fatal("pprof server failed", "err", err)

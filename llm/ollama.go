@@ -99,14 +99,14 @@ func (d *OllamaDeepseekReq) Send(ctx context.Context, l *LLM) error {
 		StreamOptions: deepseek.StreamOptions{
 			IncludeUsage: true,
 		},
-		MaxTokens:        *conf.MaxTokens,
-		TopP:             float32(*conf.TopP),
-		FrequencyPenalty: float32(*conf.FrequencyPenalty),
-		TopLogProbs:      *conf.TopLogProbs,
-		LogProbs:         *conf.LogProbs,
-		Stop:             conf.Stop,
-		PresencePenalty:  float32(*conf.PresencePenalty),
-		Temperature:      float32(*conf.Temperature),
+		MaxTokens:        *conf.LLMConfInfo.MaxTokens,
+		TopP:             float32(*conf.LLMConfInfo.TopP),
+		FrequencyPenalty: float32(*conf.LLMConfInfo.FrequencyPenalty),
+		TopLogProbs:      *conf.LLMConfInfo.TopLogProbs,
+		LogProbs:         *conf.LLMConfInfo.LogProbs,
+		Stop:             conf.LLMConfInfo.Stop,
+		PresencePenalty:  float32(*conf.LLMConfInfo.PresencePenalty),
+		Temperature:      float32(*conf.LLMConfInfo.Temperature),
 	}
 	
 	request.Messages = d.DeepseekMsgs
@@ -227,8 +227,8 @@ func (d *OllamaDeepseekReq) SyncSend(ctx context.Context, l *LLM) (string, error
 	
 	httpClient := utils.GetDeepseekProxyClient()
 	
-	client, err := deepseek.NewClientWithOptions(*conf.DeepseekToken,
-		deepseek.WithBaseURL(*conf.CustomUrl), deepseek.WithHTTPClient(httpClient))
+	client, err := deepseek.NewClientWithOptions(*conf.BaseConfInfo.DeepseekToken,
+		deepseek.WithBaseURL(*conf.BaseConfInfo.CustomUrl), deepseek.WithHTTPClient(httpClient))
 	if err != nil {
 		logger.Error("Error creating deepseek client", "err", err)
 		return "", err
@@ -236,14 +236,14 @@ func (d *OllamaDeepseekReq) SyncSend(ctx context.Context, l *LLM) (string, error
 	
 	request := &deepseek.ChatCompletionRequest{
 		Model:            l.Model,
-		MaxTokens:        *conf.MaxTokens,
-		TopP:             float32(*conf.TopP),
-		FrequencyPenalty: float32(*conf.FrequencyPenalty),
-		TopLogProbs:      *conf.TopLogProbs,
-		LogProbs:         *conf.LogProbs,
-		Stop:             conf.Stop,
-		PresencePenalty:  float32(*conf.PresencePenalty),
-		Temperature:      float32(*conf.Temperature),
+		MaxTokens:        *conf.LLMConfInfo.MaxTokens,
+		TopP:             float32(*conf.LLMConfInfo.TopP),
+		FrequencyPenalty: float32(*conf.LLMConfInfo.FrequencyPenalty),
+		TopLogProbs:      *conf.LLMConfInfo.TopLogProbs,
+		LogProbs:         *conf.LLMConfInfo.LogProbs,
+		Stop:             conf.LLMConfInfo.Stop,
+		PresencePenalty:  float32(*conf.LLMConfInfo.PresencePenalty),
+		Temperature:      float32(*conf.LLMConfInfo.Temperature),
 		Messages:         d.DeepseekMsgs,
 		Tools:            l.DeepseekTools,
 	}

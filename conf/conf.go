@@ -5,12 +5,12 @@ import (
 	"os"
 	"strconv"
 	"strings"
-
+	
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
 )
 
-var (
+type BaseConf struct {
 	BotToken        *string
 	DeepseekToken   *string
 	OpenAIToken     *string
@@ -19,7 +19,7 @@ var (
 	VolToken        *string
 	ErnieAK         *string
 	ErnieSK         *string
-
+	
 	Type          *string // simple complex
 	CustomUrl     *string
 	VolcAK        *string
@@ -35,46 +35,60 @@ var (
 	VideoToken    *string
 	HTTPPort      *int
 	UseTools      *bool
+	
+	CrtFile *string
+	KeyFile *string
+	
+	AllowedTelegramUserIds  map[int64]bool
+	AllowedTelegramGroupIds map[int64]bool
+	AdminUserIds            map[int64]bool
+	
+	Bot *tgbotapi.BotAPI
+}
 
-	AllowedTelegramUserIds  = make(map[int64]bool)
-	AllowedTelegramGroupIds = make(map[int64]bool)
-	AdminUserIds            = make(map[int64]bool)
-)
+var ()
 
 var (
-	Bot *tgbotapi.BotAPI
+	BaseConfInfo = new(BaseConf)
 )
 
 func InitConf() {
-	BotToken = flag.String("telegram_bot_token", "", "Comma-separated list of Telegram bot tokens")
-	DeepseekToken = flag.String("deepseek_token", "", "deepseek auth token")
-	OpenAIToken = flag.String("openai_token", "", "openai auth token")
-	GeminiToken = flag.String("gemini_token", "", "gemini auth token")
-	OpenRouterToken = flag.String("openrouter_token", "", "openrouter.ai auth token")
-	VolToken = flag.String("vol_token", "", "vol auth token")
-	ErnieAK = flag.String("ernie_ak", "", "ernie ak")
-	ErnieSK = flag.String("ernie_sk", "", "ernie sk")
-	VolcAK = flag.String("volc_ak", "", "volc ak")
-	VolcSK = flag.String("volc_sk", "", "volc sk")
-
-	CustomUrl = flag.String("custom_url", "https://api.deepseek.com/", "deepseek custom url")
-	Type = flag.String("type", "deepseek", "llm type: deepseek gemini openai openrouter")
-	DBType = flag.String("db_type", "sqlite3", "db type")
-	DBConf = flag.String("db_conf", "./data/telegram_bot.db", "db conf")
-	DeepseekProxy = flag.String("deepseek_proxy", "", "db conf")
-	TelegramProxy = flag.String("telegram_proxy", "", "db conf")
-	Lang = flag.String("lang", "en", "lang")
-	TokenPerUser = flag.Int("token_per_user", 10000, "token per user")
-	NeedATBOt = flag.Bool("need_at_bot", false, "need at bot")
-	MaxUserChat = flag.Int("max_user_chat", 2, "max chat per user")
-	VideoToken = flag.String("video_token", "", "video token")
-	HTTPPort = flag.Int("http_port", 36060, "http server port")
-	UseTools = flag.Bool("use_tools", true, "use tools")
-
+	BaseConfInfo.BotToken = flag.String("telegram_bot_token", "", "Comma-separated list of Telegram bot tokens")
+	BaseConfInfo.DeepseekToken = flag.String("deepseek_token", "", "deepseek auth token")
+	BaseConfInfo.OpenAIToken = flag.String("openai_token", "", "openai auth token")
+	BaseConfInfo.GeminiToken = flag.String("gemini_token", "", "gemini auth token")
+	BaseConfInfo.OpenRouterToken = flag.String("openrouter_token", "", "openrouter.ai auth token")
+	BaseConfInfo.VolToken = flag.String("vol_token", "", "vol auth token")
+	BaseConfInfo.ErnieAK = flag.String("ernie_ak", "", "ernie ak")
+	BaseConfInfo.ErnieSK = flag.String("ernie_sk", "", "ernie sk")
+	BaseConfInfo.VolcAK = flag.String("volc_ak", "", "volc ak")
+	BaseConfInfo.VolcSK = flag.String("volc_sk", "", "volc sk")
+	
+	BaseConfInfo.CustomUrl = flag.String("custom_url", "https://api.deepseek.com/", "deepseek custom url")
+	BaseConfInfo.Type = flag.String("type", "deepseek", "llm type: deepseek gemini openai openrouter")
+	BaseConfInfo.DBType = flag.String("db_type", "sqlite3", "db type")
+	BaseConfInfo.DBConf = flag.String("db_conf", "./data/telegram_bot.db", "db conf")
+	BaseConfInfo.DeepseekProxy = flag.String("deepseek_proxy", "", "db conf")
+	BaseConfInfo.TelegramProxy = flag.String("telegram_proxy", "", "db conf")
+	BaseConfInfo.Lang = flag.String("lang", "en", "lang")
+	BaseConfInfo.TokenPerUser = flag.Int("token_per_user", 10000, "token per user")
+	BaseConfInfo.NeedATBOt = flag.Bool("need_at_bot", false, "need at bot")
+	BaseConfInfo.MaxUserChat = flag.Int("max_user_chat", 2, "max chat per user")
+	BaseConfInfo.VideoToken = flag.String("video_token", "", "video token")
+	BaseConfInfo.HTTPPort = flag.Int("http_port", 36060, "http server port")
+	BaseConfInfo.UseTools = flag.Bool("use_tools", true, "use tools")
+	
+	BaseConfInfo.CrtFile = flag.String("crt_file", "", "public key file")
+	BaseConfInfo.KeyFile = flag.String("key_file", "", "secret key file")
+	
 	adminUserIds := flag.String("admin_user_ids", "", "admin user ids")
 	allowedUserIds := flag.String("allowed_telegram_user_ids", "", "allowed telegram user ids")
 	allowedGroupIds := flag.String("allowed_telegram_group_ids", "", "allowed telegram group ids")
-
+	
+	BaseConfInfo.AllowedTelegramUserIds = make(map[int64]bool)
+	BaseConfInfo.AllowedTelegramGroupIds = make(map[int64]bool)
+	BaseConfInfo.AdminUserIds = make(map[int64]bool)
+	
 	InitDeepseekConf()
 	InitPhotoConf()
 	InitVideoConf()
@@ -82,173 +96,183 @@ func InitConf() {
 	InitToolsConf()
 	InitRagConf()
 	flag.Parse()
-
+	
 	if os.Getenv("TELEGRAM_BOT_TOKEN") != "" {
-		*BotToken = os.Getenv("TELEGRAM_BOT_TOKEN")
+		*BaseConfInfo.BotToken = os.Getenv("TELEGRAM_BOT_TOKEN")
 	}
-
+	
 	if os.Getenv("DEEPSEEK_TOKEN") != "" {
-		*DeepseekToken = os.Getenv("DEEPSEEK_TOKEN")
+		*BaseConfInfo.DeepseekToken = os.Getenv("DEEPSEEK_TOKEN")
 	}
-
+	
 	if os.Getenv("CUSTOM_URL") != "" {
-		*CustomUrl = os.Getenv("CUSTOM_URL")
+		*BaseConfInfo.CustomUrl = os.Getenv("CUSTOM_URL")
 	}
-
+	
 	if os.Getenv("TYPE") != "" {
-		*Type = os.Getenv("TYPE")
+		*BaseConfInfo.Type = os.Getenv("TYPE")
 	}
-
+	
 	if os.Getenv("VOLC_AK") != "" {
-		*VolcAK = os.Getenv("VOLC_AK")
+		*BaseConfInfo.VolcAK = os.Getenv("VOLC_AK")
 	}
-
+	
 	if os.Getenv("VOLC_SK") != "" {
-		*VolcSK = os.Getenv("VOLC_SK")
+		*BaseConfInfo.VolcSK = os.Getenv("VOLC_SK")
 	}
-
+	
 	if os.Getenv("DB_TYPE") != "" {
-		*DBType = os.Getenv("DB_TYPE")
+		*BaseConfInfo.DBType = os.Getenv("DB_TYPE")
 	}
-
+	
 	if os.Getenv("DB_CONF") != "" {
-		*DBConf = os.Getenv("DB_CONF")
+		*BaseConfInfo.DBConf = os.Getenv("DB_CONF")
 	}
-
+	
 	if os.Getenv("ALLOWED_TELEGRAM_USER_IDS") != "" {
 		*allowedUserIds = os.Getenv("ALLOWED_TELEGRAM_USER_IDS")
 	}
-
+	
 	if os.Getenv("ALLOWED_TELEGRAM_GROUP_IDS") != "" {
 		*allowedGroupIds = os.Getenv("ALLOWED_TELEGRAM_GROUP_IDS")
 	}
-
+	
 	if os.Getenv("DEEPSEEK_PROXY") != "" {
-		*DeepseekProxy = os.Getenv("DEEPSEEK_PROXY")
+		*BaseConfInfo.DeepseekProxy = os.Getenv("DEEPSEEK_PROXY")
 	}
-
+	
 	if os.Getenv("TELEGRAM_PROXY") != "" {
-		*TelegramProxy = os.Getenv("TELEGRAM_PROXY")
+		*BaseConfInfo.TelegramProxy = os.Getenv("TELEGRAM_PROXY")
 	}
-
+	
 	if os.Getenv("LANG") != "" {
-		*Lang = os.Getenv("LANG")
+		*BaseConfInfo.Lang = os.Getenv("LANG")
 	}
-
+	
 	if os.Getenv("TOKEN_PER_USER") != "" {
-		*TokenPerUser, _ = strconv.Atoi(os.Getenv("TOKEN_PER_USER"))
+		*BaseConfInfo.TokenPerUser, _ = strconv.Atoi(os.Getenv("TOKEN_PER_USER"))
 	}
-
+	
 	if os.Getenv("ADMIN_USER_IDS") != "" {
 		*adminUserIds = os.Getenv("ADMIN_USER_IDS")
 	}
-
+	
 	if os.Getenv("NEED_AT_BOT") != "" {
-		*NeedATBOt, _ = strconv.ParseBool(os.Getenv("NEED_AT_BOT"))
+		*BaseConfInfo.NeedATBOt, _ = strconv.ParseBool(os.Getenv("NEED_AT_BOT"))
 	}
-
+	
 	if os.Getenv("MAX_USER_CHAT") != "" {
-		*MaxUserChat, _ = strconv.Atoi(os.Getenv("MAX_USER_CHAT"))
+		*BaseConfInfo.MaxUserChat, _ = strconv.Atoi(os.Getenv("MAX_USER_CHAT"))
 	}
-
+	
 	if os.Getenv("VIDEO_TOKEN") != "" {
-		*VideoToken = os.Getenv("VIDEO_TOKEN")
+		*BaseConfInfo.VideoToken = os.Getenv("VIDEO_TOKEN")
 	}
-
+	
 	if os.Getenv("HTTP_PORT") != "" {
-		*HTTPPort, _ = strconv.Atoi(os.Getenv("HTTP_PORT"))
+		*BaseConfInfo.HTTPPort, _ = strconv.Atoi(os.Getenv("HTTP_PORT"))
 	}
-
+	
 	if os.Getenv("USE_TOOLS") == "false" {
-		*UseTools = false
+		*BaseConfInfo.UseTools = false
 	}
-
+	
 	if os.Getenv("OPENAI_TOKEN") != "" {
-		*OpenAIToken = os.Getenv("OPENAI_TOKEN")
+		*BaseConfInfo.OpenAIToken = os.Getenv("OPENAI_TOKEN")
 	}
-
+	
 	if os.Getenv("GEMINI_TOKEN") != "" {
-		*GeminiToken = os.Getenv("GEMINI_TOKEN")
+		*BaseConfInfo.GeminiToken = os.Getenv("GEMINI_TOKEN")
 	}
-
+	
 	if os.Getenv("VOL_TOKEN") != "" {
-		*VolToken = os.Getenv("VOL_TOKEN")
+		*BaseConfInfo.VolToken = os.Getenv("VOL_TOKEN")
 	}
-
+	
 	if os.Getenv("ERNIE_AK") != "" {
-		*ErnieAK = os.Getenv("ERNIE_AK")
+		*BaseConfInfo.ErnieAK = os.Getenv("ERNIE_AK")
 	}
-
+	
 	if os.Getenv("ERNIE_SK") != "" {
-		*ErnieSK = os.Getenv("ERNIE_SK")
+		*BaseConfInfo.ErnieSK = os.Getenv("ERNIE_SK")
 	}
-
+	
 	if os.Getenv("OPEN_ROUTER_TOKEN") != "" {
-		*OpenRouterToken = os.Getenv("OPEN_ROUTER_TOKEN")
+		*BaseConfInfo.OpenRouterToken = os.Getenv("OPEN_ROUTER_TOKEN")
 	}
-
+	
+	if os.Getenv("CRT_FILE") != "" {
+		*BaseConfInfo.CrtFile = os.Getenv("CRT_FILE")
+	}
+	
+	if os.Getenv("KEY_FILE") != "" {
+		*BaseConfInfo.KeyFile = os.Getenv("KEY_FILE")
+	}
+	
 	for _, userIdStr := range strings.Split(*allowedUserIds, ",") {
 		userId, err := strconv.Atoi(userIdStr)
 		if err != nil {
 			logger.Warn("AllowedTelegramUserIds parse error", "userID", userIdStr)
 			continue
 		}
-		AllowedTelegramUserIds[int64(userId)] = true
+		BaseConfInfo.AllowedTelegramUserIds[int64(userId)] = true
 	}
-
+	
 	for _, groupIdStr := range strings.Split(*allowedGroupIds, ",") {
 		groupId, err := strconv.Atoi(groupIdStr)
 		if err != nil {
 			logger.Warn("AllowedTelegramGroupIds parse error", "groupId", groupIdStr)
 			continue
 		}
-		AllowedTelegramGroupIds[int64(groupId)] = true
+		BaseConfInfo.AllowedTelegramGroupIds[int64(groupId)] = true
 	}
-
+	
 	for _, userIdStr := range strings.Split(*adminUserIds, ",") {
 		userId, err := strconv.Atoi(userIdStr)
 		if err != nil {
 			logger.Warn("AdminUserIds parse error", "userID", userIdStr)
 			continue
 		}
-		AdminUserIds[int64(userId)] = true
+		BaseConfInfo.AdminUserIds[int64(userId)] = true
 	}
-
-	logger.Info("CONF", "TelegramBotToken", *BotToken)
-	logger.Info("CONF", "DeepseekToken", *DeepseekToken)
-	logger.Info("CONF", "CustomUrl", *CustomUrl)
-	logger.Info("CONF", "Type", *Type)
-	logger.Info("CONF", "VolcAK", *VolcAK)
-	logger.Info("CONF", "VolcSK", *VolcSK)
-	logger.Info("CONF", "DBType", *DBType)
-	logger.Info("CONF", "DBConf", *DBConf)
+	
+	logger.Info("CONF", "TelegramBotToken", *BaseConfInfo.BotToken)
+	logger.Info("CONF", "DeepseekToken", *BaseConfInfo.DeepseekToken)
+	logger.Info("CONF", "CustomUrl", *BaseConfInfo.CustomUrl)
+	logger.Info("CONF", "Type", *BaseConfInfo.Type)
+	logger.Info("CONF", "VolcAK", *BaseConfInfo.VolcAK)
+	logger.Info("CONF", "VolcSK", *BaseConfInfo.VolcSK)
+	logger.Info("CONF", "DBType", *BaseConfInfo.DBType)
+	logger.Info("CONF", "DBConf", *BaseConfInfo.DBConf)
 	logger.Info("CONF", "AllowedTelegramUserIds", *allowedUserIds)
 	logger.Info("CONF", "AllowedTelegramGroupIds", *allowedGroupIds)
-	logger.Info("CONF", "DeepseekProxy", *DeepseekProxy)
-	logger.Info("CONF", "TelegramProxy", *TelegramProxy)
-	logger.Info("CONF", "Lang", *Lang)
-	logger.Info("CONF", "TokenPerUser", *TokenPerUser)
+	logger.Info("CONF", "DeepseekProxy", *BaseConfInfo.DeepseekProxy)
+	logger.Info("CONF", "TelegramProxy", *BaseConfInfo.TelegramProxy)
+	logger.Info("CONF", "Lang", *BaseConfInfo.Lang)
+	logger.Info("CONF", "TokenPerUser", *BaseConfInfo.TokenPerUser)
 	logger.Info("CONF", "AdminUserIds", *adminUserIds)
-	logger.Info("CONF", "NeedATBOt", *NeedATBOt)
-	logger.Info("CONF", "MaxUserChat", *MaxUserChat)
-	logger.Info("CONF", "VideoToken", *VideoToken)
-	logger.Info("CONF", "HTTPPort", *HTTPPort)
-	logger.Info("CONF", "OpenAIToken", *OpenAIToken)
-	logger.Info("CONF", "GeminiToken", *GeminiToken)
-	logger.Info("CONF", "OpenRouterToken", OpenRouterToken)
-	logger.Info("CONF", "ErnieAK", *ErnieAK)
-	logger.Info("CONF", "ErnieSK", *ErnieSK)
-	logger.Info("CONF", "VolToken", *VolToken)
-
+	logger.Info("CONF", "NeedATBOt", *BaseConfInfo.NeedATBOt)
+	logger.Info("CONF", "MaxUserChat", *BaseConfInfo.MaxUserChat)
+	logger.Info("CONF", "VideoToken", *BaseConfInfo.VideoToken)
+	logger.Info("CONF", "HTTPPort", *BaseConfInfo.HTTPPort)
+	logger.Info("CONF", "OpenAIToken", *BaseConfInfo.OpenAIToken)
+	logger.Info("CONF", "GeminiToken", *BaseConfInfo.GeminiToken)
+	logger.Info("CONF", "OpenRouterToken", *BaseConfInfo.OpenRouterToken)
+	logger.Info("CONF", "ErnieAK", *BaseConfInfo.ErnieAK)
+	logger.Info("CONF", "ErnieSK", *BaseConfInfo.ErnieSK)
+	logger.Info("CONF", "VolToken", *BaseConfInfo.VolToken)
+	logger.Info("CONF", "CrtFile", *BaseConfInfo.CrtFile)
+	logger.Info("CONF", "KeyFile", *BaseConfInfo.KeyFile)
+	
 	EnvAudioConf()
 	EnvRagConf()
 	EnvDeepseekConf()
 	EnvPhotoConf()
 	EnvToolsConf()
 	EnvVideoConf()
-
-	if *BotToken == "" {
+	
+	if *BaseConfInfo.BotToken == "" {
 		panic("Bot token and llm token are required")
 	}
-
+	
 }

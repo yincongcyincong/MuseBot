@@ -16,19 +16,13 @@
         "mcp-server-commands"
       ]
     },
-    "mysql": {
-      "description": "manage MySQL server",
-      "command": "npx",
-      "args": [
-        "-y",
-        "@benborla29/mcp-server-mysql"
-      ],
+    "grafana": {
+      "command": "mcp-grafana",
+      "description": "supports Grafana dashboard operations.",
+      "args": ["-debug"],
       "env": {
-        "MYSQL_HOST": "10.138.44.197",
-        "MYSQL_PORT": "3306",
-        "MYSQL_USER": "test",
-        "MYSQL_PASS": "test",
-        "MYSQL_DB": "test"
+        "GRAFANA_URL": "http://localhost:3000",
+        "GRAFANA_API_KEY": "glsa_qEzNypXUpMSWRz3ETf613PkkLNwIWoqP_0853d033"
       }
     }
   }

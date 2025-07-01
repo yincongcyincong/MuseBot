@@ -5,6 +5,7 @@ package main
 import (
 	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
 	"github.com/yincongcyincong/telegram-deepseek-bot/db"
+	"github.com/yincongcyincong/telegram-deepseek-bot/http"
 	"github.com/yincongcyincong/telegram-deepseek-bot/i18n"
 	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
 	"github.com/yincongcyincong/telegram-deepseek-bot/metrics"
@@ -20,7 +21,7 @@ func main() {
 	db.UpdateUserTime()
 	conf.InitTools()
 	rag.InitRag()
-	metrics.InitPprof()
+	http.InitHTTP()
 	metrics.RegisterMetrics()
 	robot.StartListenRobot()
 }

@@ -37,7 +37,7 @@ type Rag struct {
 
 func NewRag(options ...llm.Option) *Rag {
 	dp := &Rag{
-		Client: deepseek.NewClient(*conf.DeepseekToken),
+		Client: deepseek.NewClient(*conf.BaseConfInfo.DeepseekToken),
 		
 		LLM: llm.NewLLM(options...),
 	}
@@ -60,7 +60,7 @@ func (l *Rag) GenerateContent(ctx context.Context, messages []llms.MessageConten
 	
 	chatId, msgId, _ := utils.GetChatIdAndMsgIdAndUserID(l.LLM.Update)
 	
-	doc, err := conf.Store.SimilaritySearch(ctx, l.LLM.Content, 3)
+	doc, err := conf.RagConfInfo.Store.SimilaritySearch(ctx, l.LLM.Content, 3)
 	if err != nil {
 		logger.Error("request vector db fail", "err", err)
 	}
@@ -93,7 +93,7 @@ func (l *Rag) GenerateContent(ctx context.Context, messages []llms.MessageConten
 }
 
 func InitRag() {
-	if *conf.EmbeddingType == "" || *conf.VectorDBType == "" {
+	if *conf.RagConfInfo.EmbeddingType == "" || *conf.RagConfInfo.VectorDBType == "" {
 		return
 	}
 	
@@ -101,15 +101,15 @@ func InitRag() {
 	defer cancel()
 	
 	var err error
-	switch *conf.EmbeddingType {
+	switch *conf.RagConfInfo.EmbeddingType {
 	case "openai":
-		conf.Embedder, err = initOpenAIEmbedding()
+		conf.RagConfInfo.Embedder, err = initOpenAIEmbedding()
 	case "gemini":
-		conf.Embedder, err = initGeminiEmbedding(ctx)
+		conf.RagConfInfo.Embedder, err = initGeminiEmbedding(ctx)
 	case "ernie":
-		conf.Embedder, err = initErnieEmbedding()
+		conf.RagConfInfo.Embedder, err = initErnieEmbedding()
 	default:
-		logger.Error("embedding type not exist", "embedding type", *conf.EmbeddingType)
+		logger.Error("embedding type not exist", "embedding type", *conf.RagConfInfo.EmbeddingType)
 		return
 	}
 	
@@ -118,12 +118,12 @@ func InitRag() {
 		return
 	}
 	
-	switch *conf.VectorDBType {
+	switch *conf.RagConfInfo.VectorDBType {
 	case "chroma":
-		conf.Store, err = chroma.NewV2(
-			chroma.WithChromaURLV2(*conf.ChromaURL),
-			chroma.WithEmbedderV2(conf.Embedder),
-			chroma.WithNameSpaceV2(*conf.Space),
+		conf.RagConfInfo.Store, err = chroma.NewV2(
+			chroma.WithChromaURLV2(*conf.RagConfInfo.ChromaURL),
+			chroma.WithEmbedderV2(conf.RagConfInfo.Embedder),
+			chroma.WithNameSpaceV2(*conf.RagConfInfo.Space),
 		)
 	case "milvus":
 		idx, err := entity.NewIndexAUTOINDEX(entity.L2)
@@ -132,19 +132,19 @@ func InitRag() {
 			return
 		}
 		
-		conf.Store, err = milvus.New(ctx, client.Config{
-			Address: *conf.MilvusURL,
-		}, milvus.WithCollectionName(*conf.Space),
-			milvus.WithEmbedder(conf.Embedder),
+		conf.RagConfInfo.Store, err = milvus.New(ctx, client.Config{
+			Address: *conf.RagConfInfo.MilvusURL,
+		}, milvus.WithCollectionName(*conf.RagConfInfo.Space),
+			milvus.WithEmbedder(conf.RagConfInfo.Embedder),
 			milvus.WithIndex(idx))
 	case "weaviate":
-		conf.Store, err = weaviate.New(
-			weaviate.WithEmbedder(conf.Embedder),
-			weaviate.WithScheme(*conf.WeaviateScheme),
-			weaviate.WithHost(*conf.WeaviateURL),
+		conf.RagConfInfo.Store, err = weaviate.New(
+			weaviate.WithEmbedder(conf.RagConfInfo.Embedder),
+			weaviate.WithScheme(*conf.RagConfInfo.WeaviateScheme),
+			weaviate.WithHost(*conf.RagConfInfo.WeaviateURL),
 			weaviate.WithIndexName("Text"))
 	default:
-		logger.Error("vector db not exist", "VectorDBTypee", *conf.VectorDBType)
+		logger.Error("vector db not exist", "VectorDBTypee", *conf.RagConfInfo.VectorDBType)
 		return
 	}
 	
@@ -160,7 +160,7 @@ func InitRag() {
 	}
 	
 	if len(docs) > 0 {
-		_, err = conf.Store.AddDocuments(context.Background(), docs)
+		_, err = conf.RagConfInfo.Store.AddDocuments(context.Background(), docs)
 		if err != nil {
 			logger.Error("get save doc fail", "err", err)
 			return
@@ -172,7 +172,7 @@ func InitRag() {
 func handleKnowledgeBase(ctx context.Context) ([]schema.Document, error) {
 	res := make([]schema.Document, 0)
 	
-	entries, err := os.ReadDir(*conf.KnowledgePath)
+	entries, err := os.ReadDir(*conf.RagConfInfo.KnowledgePath)
 	if err != nil {
 		return nil, err
 	}
@@ -214,7 +214,7 @@ func handleKnowledgeBase(ctx context.Context) ([]schema.Document, error) {
 
 func initOpenAIEmbedding() (embeddings.Embedder, error) {
 	llm, err := openai.New(
-		openai.WithToken(*conf.OpenAIToken),
+		openai.WithToken(*conf.BaseConfInfo.OpenAIToken),
 	)
 	
 	if err != nil {
@@ -231,7 +231,7 @@ func initOpenAIEmbedding() (embeddings.Embedder, error) {
 func initErnieEmbedding() (embeddings.Embedder, error) {
 	llm, err := ernie.New(
 		ernie.WithModelName(ernie.ModelNameERNIEBot),
-		ernie.WithAKSK(*conf.ErnieAK, *conf.ErnieSK),
+		ernie.WithAKSK(*conf.BaseConfInfo.ErnieAK, *conf.BaseConfInfo.ErnieSK),
 	)
 	
 	if err != nil {
@@ -247,7 +247,7 @@ func initErnieEmbedding() (embeddings.Embedder, error) {
 
 func initGeminiEmbedding(ctx context.Context) (embeddings.Embedder, error) {
 	llm, err := googleai.New(ctx,
-		googleai.WithAPIKey(*conf.GeminiToken),
+		googleai.WithAPIKey(*conf.BaseConfInfo.GeminiToken),
 	)
 	
 	if err != nil {
@@ -262,7 +262,7 @@ func initGeminiEmbedding(ctx context.Context) (embeddings.Embedder, error) {
 }
 
 func getFileResource(entry os.DirEntry) (*os.File, error) {
-	fullPath := filepath.Join(*conf.KnowledgePath, entry.Name())
+	fullPath := filepath.Join(*conf.RagConfInfo.KnowledgePath, entry.Name())
 	
 	fileMd5, err := utils.FileToMd5(fullPath)
 	if err != nil {
@@ -356,8 +356,8 @@ func handleHTMLDoc(ctx context.Context, entry os.DirEntry) ([]schema.Document, e
 
 func saveDocIntoStore(ctx context.Context, loader documentloaders.Loader) ([]schema.Document, error) {
 	splitter := textsplitter.NewRecursiveCharacter(
-		textsplitter.WithChunkSize(*conf.ChunkSize),
-		textsplitter.WithChunkOverlap(*conf.ChunkOverlap),
+		textsplitter.WithChunkSize(*conf.RagConfInfo.ChunkSize),
+		textsplitter.WithChunkOverlap(*conf.RagConfInfo.ChunkOverlap),
 		textsplitter.WithSeparators(conf.DefaultSpliter),
 	)
 	

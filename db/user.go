@@ -3,7 +3,7 @@ package db
 import (
 	"database/sql"
 	"time"
-
+	
 	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
 	"github.com/yincongcyincong/telegram-deepseek-bot/metrics"
 )
@@ -21,11 +21,11 @@ type User struct {
 func InsertUser(userId int64, mode string) (int64, error) {
 	// insert data
 	insertSQL := `INSERT INTO users (user_id, mode, updatetime, avail_token) VALUES (?, ?, ?, ?)`
-	result, err := DB.Exec(insertSQL, userId, mode, time.Now().Unix(), *conf.TokenPerUser)
+	result, err := DB.Exec(insertSQL, userId, mode, time.Now().Unix(), *conf.BaseConfInfo.TokenPerUser)
 	if err != nil {
 		return 0, err
 	}
-
+	
 	// get last insert id
 	id, err := result.LastInsertId()
 	if err != nil {
@@ -40,7 +40,7 @@ func GetUserByID(userId int64) (*User, error) {
 	// select one use base on name
 	querySQL := `SELECT id, user_id, mode, token, avail_token, updatetime FROM users WHERE user_id = ?`
 	row := DB.QueryRow(querySQL, userId)
-
+	
 	// scan row get result
 	var user User
 	err := row.Scan(&user.ID, &user.UserId, &user.Mode, &user.Token, &user.AvailToken, &user.Updatetime)
@@ -61,7 +61,7 @@ func GetUsers() ([]User, error) {
 		return nil, err
 	}
 	defer rows.Close()
-
+	
 	var users []User
 	for rows.Next() {
 		var user User
@@ -70,7 +70,7 @@ func GetUsers() ([]User, error) {
 		}
 		users = append(users, user)
 	}
-
+	
 	// check error
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -99,7 +99,7 @@ func UpdateUserToken(userId int64, token int) error {
 	return err
 }
 
-// AddToken add token
+// AddAvailToken add token
 func AddAvailToken(userId int64, token int) error {
 	updateSQL := `UPDATE users SET avail_token = avail_token + ? WHERE user_id = ?`
 	_, err := DB.Exec(updateSQL, token, userId)

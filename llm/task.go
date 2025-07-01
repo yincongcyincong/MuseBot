@@ -59,7 +59,7 @@ func (d *DeepseekTaskReq) ExecuteTask() {
 	}
 	
 	chatId, msgId, _ := utils.GetChatIdAndMsgIdAndUserID(d.Update)
-	prompt := i18n.GetMessage(*conf.Lang, "assign_task_prompt", taskParam)
+	prompt := i18n.GetMessage(*conf.BaseConfInfo.Lang, "assign_task_prompt", taskParam)
 	llm := NewLLM(WithBot(d.Bot), WithUpdate(d.Update),
 		WithMessageChan(d.MessageChan))
 	llm.LLMClient.GetUserMessage(prompt)
@@ -107,7 +107,7 @@ func (d *DeepseekTaskReq) ExecuteTask() {
 	// summary
 	summaryParam := make(map[string]interface{})
 	summaryParam["user_task"] = d.Content
-	summaryPrompt := i18n.GetMessage(*conf.Lang, "summary_task_prompt", summaryParam)
+	summaryPrompt := i18n.GetMessage(*conf.BaseConfInfo.Lang, "summary_task_prompt", summaryParam)
 	llm.LLMClient.GetUserMessage(summaryPrompt)
 	llm.Content = summaryPrompt
 	err = llm.LLMClient.Send(ctx, llm)
@@ -149,7 +149,7 @@ func (d *DeepseekTaskReq) loopTask(ctx context.Context, plans *TaskInfo, lastPla
 		"last_plan":      lastPlan,
 	}
 	
-	llm.LLMClient.GetUserMessage(i18n.GetMessage(*conf.Lang, "loop_task_prompt", taskParam))
+	llm.LLMClient.GetUserMessage(i18n.GetMessage(*conf.BaseConfInfo.Lang, "loop_task_prompt", taskParam))
 	c, err := llm.LLMClient.SyncSend(ctx, llm)
 	if err != nil {
 		logger.Error("ChatCompletionStream error", "err", err)

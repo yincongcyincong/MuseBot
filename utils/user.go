@@ -1,10 +1,11 @@
 package utils
 
 import (
+	"sync"
+	
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
 	"github.com/yincongcyincong/telegram-deepseek-bot/i18n"
-	"sync"
 )
 
 var (
@@ -16,7 +17,7 @@ func CheckUserChatExceed(update tgbotapi.Update, bot *tgbotapi.BotAPI) bool {
 	times := 1
 	if timeInter, ok := userChatMap.Load(userId); ok {
 		times = timeInter.(int)
-		if times >= *conf.MaxUserChat {
+		if times >= *conf.BaseConfInfo.MaxUserChat {
 			i18n.SendMsg(chatId, "chat_exceed", bot, nil, msgId)
 			return true
 		}

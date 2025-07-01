@@ -107,8 +107,8 @@ func (d *DeepseekReq) Send(ctx context.Context, l *LLM) error {
 	// set deepseek proxy
 	httpClient := utils.GetDeepseekProxyClient()
 	
-	client, err := deepseek.NewClientWithOptions(*conf.DeepseekToken,
-		deepseek.WithBaseURL(*conf.CustomUrl), deepseek.WithHTTPClient(httpClient))
+	client, err := deepseek.NewClientWithOptions(*conf.BaseConfInfo.DeepseekToken,
+		deepseek.WithBaseURL(*conf.BaseConfInfo.CustomUrl), deepseek.WithHTTPClient(httpClient))
 	if err != nil {
 		logger.Error("Error creating deepseek client", "err", err)
 		return err
@@ -120,14 +120,14 @@ func (d *DeepseekReq) Send(ctx context.Context, l *LLM) error {
 		StreamOptions: deepseek.StreamOptions{
 			IncludeUsage: true,
 		},
-		MaxTokens:        *conf.MaxTokens,
-		TopP:             float32(*conf.TopP),
-		FrequencyPenalty: float32(*conf.FrequencyPenalty),
-		TopLogProbs:      *conf.TopLogProbs,
-		LogProbs:         *conf.LogProbs,
-		Stop:             conf.Stop,
-		PresencePenalty:  float32(*conf.PresencePenalty),
-		Temperature:      float32(*conf.Temperature),
+		MaxTokens:        *conf.LLMConfInfo.MaxTokens,
+		TopP:             float32(*conf.LLMConfInfo.TopP),
+		FrequencyPenalty: float32(*conf.LLMConfInfo.FrequencyPenalty),
+		TopLogProbs:      *conf.LLMConfInfo.TopLogProbs,
+		LogProbs:         *conf.LLMConfInfo.LogProbs,
+		Stop:             conf.LLMConfInfo.Stop,
+		PresencePenalty:  float32(*conf.LLMConfInfo.PresencePenalty),
+		Temperature:      float32(*conf.LLMConfInfo.Temperature),
 		Tools:            l.DeepseekTools,
 	}
 	
@@ -250,8 +250,8 @@ func (d *DeepseekReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 	
 	httpClient := utils.GetDeepseekProxyClient()
 	
-	client, err := deepseek.NewClientWithOptions(*conf.DeepseekToken,
-		deepseek.WithBaseURL(*conf.CustomUrl), deepseek.WithHTTPClient(httpClient))
+	client, err := deepseek.NewClientWithOptions(*conf.BaseConfInfo.DeepseekToken,
+		deepseek.WithBaseURL(*conf.BaseConfInfo.CustomUrl), deepseek.WithHTTPClient(httpClient))
 	if err != nil {
 		logger.Error("Error creating deepseek client", "err", err)
 		return "", err
@@ -259,14 +259,14 @@ func (d *DeepseekReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 	
 	request := &deepseek.ChatCompletionRequest{
 		Model:            l.Model,
-		MaxTokens:        *conf.MaxTokens,
-		TopP:             float32(*conf.TopP),
-		FrequencyPenalty: float32(*conf.FrequencyPenalty),
-		TopLogProbs:      *conf.TopLogProbs,
-		LogProbs:         *conf.LogProbs,
-		Stop:             conf.Stop,
-		PresencePenalty:  float32(*conf.PresencePenalty),
-		Temperature:      float32(*conf.Temperature),
+		MaxTokens:        *conf.LLMConfInfo.MaxTokens,
+		TopP:             float32(*conf.LLMConfInfo.TopP),
+		FrequencyPenalty: float32(*conf.LLMConfInfo.FrequencyPenalty),
+		TopLogProbs:      *conf.LLMConfInfo.TopLogProbs,
+		LogProbs:         *conf.LLMConfInfo.LogProbs,
+		Stop:             conf.LLMConfInfo.Stop,
+		PresencePenalty:  float32(*conf.LLMConfInfo.PresencePenalty),
+		Temperature:      float32(*conf.LLMConfInfo.Temperature),
 		Messages:         d.DeepseekMsgs,
 		Tools:            l.DeepseekTools,
 	}
@@ -378,7 +378,7 @@ func (d *DeepseekReq) requestToolsCall(ctx context.Context, choice deepseek.Stre
 
 // GetBalanceInfo get balance info
 func GetBalanceInfo() *deepseek.BalanceResponse {
-	client := deepseek.NewClient(*conf.DeepseekToken)
+	client := deepseek.NewClient(*conf.BaseConfInfo.DeepseekToken)
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
 	defer cancel()
 	balance, err := deepseek.GetBalance(client, ctx)

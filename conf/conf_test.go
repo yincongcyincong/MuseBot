@@ -31,11 +31,11 @@ func TestInitConf_AllEnvVars(t *testing.T) {
 	os.Setenv("GEMINI_TOKEN", "gemini_test")
 	os.Setenv("ERNIE_AK", "ernie-ak")
 	os.Setenv("ERNIE_SK", "ernie-sk")
-
+	
 	os.Setenv("AUDIO_APP_ID", "test-audio-app-id")
 	os.Setenv("AUDIO_TOKEN", "test-audio-token")
 	os.Setenv("AUDIO_CLUSTER", "test-cluster")
-
+	
 	os.Setenv("TELEGRAM_BOT_TOKEN", "test_bot_token")
 	os.Setenv("DEEPSEEK_TOKEN", "test_deepseek_token")
 	os.Setenv("FREQUENCY_PENALTY", "0.5")
@@ -46,7 +46,7 @@ func TestInitConf_AllEnvVars(t *testing.T) {
 	os.Setenv("STOP", "stop-sequence")
 	os.Setenv("LOG_PROBS", "true")
 	os.Setenv("TOP_LOG_PROBS", "5")
-
+	
 	os.Setenv("TELEGRAM_BOT_TOKEN", "test_bot_token")
 	os.Setenv("DEEPSEEK_TOKEN", "test_deepseek_token")
 	os.Setenv("REQ_KEY", "test-req-key")
@@ -65,7 +65,7 @@ func TestInitConf_AllEnvVars(t *testing.T) {
 	os.Setenv("Language", "1")
 	os.Setenv("Opacity", "0.75")
 	os.Setenv("LogoTextContent", "Test Logo")
-
+	
 	os.Setenv("TELEGRAM_BOT_TOKEN", "test_bot_token")
 	os.Setenv("DEEPSEEK_TOKEN", "test_deepseek_token")
 	os.Setenv("EMBEDDING_TYPE", "openai")
@@ -75,9 +75,9 @@ func TestInitConf_AllEnvVars(t *testing.T) {
 	os.Setenv("SPACE", "test-space")
 	os.Setenv("CHUNK_SIZE", "500")
 	os.Setenv("CHUNK_OVERLAP", "50")
-
+	
 	os.Setenv("MCP_CONF_PATH", "./conf/mcp/mcp.json")
-
+	
 	os.Setenv("TELEGRAM_BOT_TOKEN", "test_bot_token")
 	os.Setenv("DEEPSEEK_TOKEN", "test_deepseek_token")
 	os.Setenv("VIDEO_MODEL", "model-v1")
@@ -86,79 +86,79 @@ func TestInitConf_AllEnvVars(t *testing.T) {
 	os.Setenv("FPS", "30")
 	os.Setenv("RESOLUTION", "1920x1080")
 	os.Setenv("WATERMARK", "true")
-
+	
 	// 调用初始化函数
 	InitConf()
-
+	
 	// 断言检查
-	assertEqual(t, *BotToken, "test_bot_token", "BotToken")
-	assertEqual(t, *DeepseekToken, "test_deepseek_token", "DeepseekToken")
-	assertEqual(t, *CustomUrl, "https://example.com", "CustomUrl")
-	assertEqual(t, *Type, "pro", "Type")
-	assertEqual(t, *VolcAK, "volc-ak", "VolcAK")
-	assertEqual(t, *VolcSK, "volc-sk", "VolcSK")
-	assertEqual(t, *DBType, "mysql", "DBType")
-	assertEqual(t, *DBConf, "user:pass@tcp(127.0.0.1:3306)/dbname", "DBConf")
-	assertEqual(t, *DeepseekProxy, "http://proxy.deepseek", "DeepseekProxy")
-	assertEqual(t, *TelegramProxy, "http://proxy.telegram", "TelegramProxy")
-	assertEqual(t, *Lang, "zh-CN", "Lang")
-	assertInt(t, *TokenPerUser, 888, "TokenPerUser")
-	assertBool(t, *NeedATBOt, true, "NeedATBOt")
-	assertInt(t, *MaxUserChat, 10, "MaxUserChat")
-	assertEqual(t, *VideoToken, "video_token_abc", "VideoToken")
-	assertInt(t, *HTTPPort, 8888, "HTTPPort")
-	assertBool(t, *UseTools, false, "UseTools")
-	assertEqual(t, *OpenAIToken, "openai_test", "OpenAIToken")
-	assertEqual(t, *GeminiToken, "gemini_test", "GeminiToken")
-	assertEqual(t, *ErnieAK, "ernie-ak", "ErnieAK")
-	assertEqual(t, *ErnieSK, "ernie-sk", "ErnieSK")
-
-	assertEqual(t, *AudioAppID, "test-audio-app-id", "AudioAppID")
-	assertEqual(t, *AudioToken, "test-audio-token", "AudioToken")
-	assertEqual(t, *AudioCluster, "test-cluster", "AudioCluster")
-
-	assertFloatEqual(t, *FrequencyPenalty, 0.5, "FrequencyPenalty")
-	assertInt(t, *MaxTokens, 2048, "MaxTokens")
-	assertFloatEqual(t, *PresencePenalty, 1.0, "PresencePenalty")
-	assertFloatEqual(t, *Temperature, 0.9, "Temperature")
-	assertFloatEqual(t, *TopP, 0.8, "TopP")
-	assertBool(t, *LogProbs, true, "LogProbs")
-	assertInt(t, *TopLogProbs, 5, "TopLogProbs")
-
-	assertEqual(t, *ReqKey, "test-req-key", "ReqKey")
-	assertEqual(t, *ModelVersion, "v2.1", "ModelVersion")
-	assertEqual(t, *ReqScheduleConf, "scheduleA", "ReqScheduleConf")
-	assertInt(t, *Seed, 1234, "Seed")
-	assertFloatEqual(t, *Scale, 2.5, "Scale")
-	assertInt(t, *DDIMSteps, 30, "DDIMSteps")
-	assertInt(t, *Width, 512, "Width")
-	assertInt(t, *Height, 768, "Height")
-	assertBool(t, *UsePreLLM, true, "UsePreLLM")
-	assertBool(t, *UseSr, false, "UseSr")
-	assertBool(t, *ReturnUrl, true, "ReturnUrl")
-	assertBool(t, *AddLogo, false, "AddLogo")
-	assertEqual(t, *Position, "bottom-right", "Position")
-	assertInt(t, *Language, 1, "Language")
-	assertFloatEqual(t, *Opacity, 0.75, "Opacity")
-	assertEqual(t, *LogoTextContent, "Test Logo", "LogoTextContent")
-
-	assertEqual(t, *EmbeddingType, "openai", "EmbeddingType")
-	assertEqual(t, *KnowledgePath, "/data/knowledge", "KnowledgePath")
-	assertEqual(t, *VectorDBType, "chroma", "VectorDBType")
-	assertEqual(t, *ChromaURL, "http://localhost:8000", "ChromaURL")
-	assertEqual(t, *Space, "test-space", "ChromaSpace")
-	assertInt(t, *ChunkSize, 500, "ChunkSize")
-	assertInt(t, *ChunkOverlap, 50, "ChunkOverlap")
-
+	assertEqual(t, *BaseConfInfo.BotToken, "test_bot_token", "BotToken")
+	assertEqual(t, *BaseConfInfo.DeepseekToken, "test_deepseek_token", "DeepseekToken")
+	assertEqual(t, *BaseConfInfo.CustomUrl, "https://example.com", "CustomUrl")
+	assertEqual(t, *BaseConfInfo.Type, "pro", "Type")
+	assertEqual(t, *BaseConfInfo.VolcAK, "volc-ak", "VolcAK")
+	assertEqual(t, *BaseConfInfo.VolcSK, "volc-sk", "VolcSK")
+	assertEqual(t, *BaseConfInfo.DBType, "mysql", "DBType")
+	assertEqual(t, *BaseConfInfo.DBConf, "user:pass@tcp(127.0.0.1:3306)/dbname", "DBConf")
+	assertEqual(t, *BaseConfInfo.DeepseekProxy, "http://proxy.deepseek", "DeepseekProxy")
+	assertEqual(t, *BaseConfInfo.TelegramProxy, "http://proxy.telegram", "TelegramProxy")
+	assertEqual(t, *BaseConfInfo.Lang, "zh-CN", "Lang")
+	assertInt(t, *BaseConfInfo.TokenPerUser, 888, "TokenPerUser")
+	assertBool(t, *BaseConfInfo.NeedATBOt, true, "NeedATBOt")
+	assertInt(t, *BaseConfInfo.MaxUserChat, 10, "MaxUserChat")
+	assertEqual(t, *BaseConfInfo.VideoToken, "video_token_abc", "VideoToken")
+	assertInt(t, *BaseConfInfo.HTTPPort, 8888, "HTTPPort")
+	assertBool(t, *BaseConfInfo.UseTools, false, "UseTools")
+	assertEqual(t, *BaseConfInfo.OpenAIToken, "openai_test", "OpenAIToken")
+	assertEqual(t, *BaseConfInfo.GeminiToken, "gemini_test", "GeminiToken")
+	assertEqual(t, *BaseConfInfo.ErnieAK, "ernie-ak", "ErnieAK")
+	assertEqual(t, *BaseConfInfo.ErnieSK, "ernie-sk", "ErnieSK")
+	
+	assertEqual(t, *AudioConfInfo.AudioAppID, "test-audio-app-id", "AudioAppID")
+	assertEqual(t, *AudioConfInfo.AudioToken, "test-audio-token", "AudioToken")
+	assertEqual(t, *AudioConfInfo.AudioCluster, "test-cluster", "AudioCluster")
+	
+	assertFloatEqual(t, *LLMConfInfo.FrequencyPenalty, 0.5, "FrequencyPenalty")
+	assertInt(t, *LLMConfInfo.MaxTokens, 2048, "MaxTokens")
+	assertFloatEqual(t, *LLMConfInfo.PresencePenalty, 1.0, "PresencePenalty")
+	assertFloatEqual(t, *LLMConfInfo.Temperature, 0.9, "Temperature")
+	assertFloatEqual(t, *LLMConfInfo.TopP, 0.8, "TopP")
+	assertBool(t, *LLMConfInfo.LogProbs, true, "LogProbs")
+	assertInt(t, *LLMConfInfo.TopLogProbs, 5, "TopLogProbs")
+	
+	assertEqual(t, *PhotoConfInfo.ReqKey, "test-req-key", "ReqKey")
+	assertEqual(t, *PhotoConfInfo.ModelVersion, "v2.1", "ModelVersion")
+	assertEqual(t, *PhotoConfInfo.ReqScheduleConf, "scheduleA", "ReqScheduleConf")
+	assertInt(t, *PhotoConfInfo.Seed, 1234, "Seed")
+	assertFloatEqual(t, *PhotoConfInfo.Scale, 2.5, "Scale")
+	assertInt(t, *PhotoConfInfo.DDIMSteps, 30, "DDIMSteps")
+	assertInt(t, *PhotoConfInfo.Width, 512, "Width")
+	assertInt(t, *PhotoConfInfo.Height, 768, "Height")
+	assertBool(t, *PhotoConfInfo.UsePreLLM, true, "UsePreLLM")
+	assertBool(t, *PhotoConfInfo.UseSr, false, "UseSr")
+	assertBool(t, *PhotoConfInfo.ReturnUrl, true, "ReturnUrl")
+	assertBool(t, *PhotoConfInfo.AddLogo, false, "AddLogo")
+	assertEqual(t, *PhotoConfInfo.Position, "bottom-right", "Position")
+	assertInt(t, *PhotoConfInfo.Language, 1, "Language")
+	assertFloatEqual(t, *PhotoConfInfo.Opacity, 0.75, "Opacity")
+	assertEqual(t, *PhotoConfInfo.LogoTextContent, "Test Logo", "LogoTextContent")
+	
+	assertEqual(t, *RagConfInfo.EmbeddingType, "openai", "EmbeddingType")
+	assertEqual(t, *RagConfInfo.KnowledgePath, "/data/knowledge", "KnowledgePath")
+	assertEqual(t, *RagConfInfo.VectorDBType, "chroma", "VectorDBType")
+	assertEqual(t, *RagConfInfo.ChromaURL, "http://localhost:8000", "ChromaURL")
+	assertEqual(t, *RagConfInfo.Space, "test-space", "ChromaSpace")
+	assertInt(t, *RagConfInfo.ChunkSize, 500, "ChunkSize")
+	assertInt(t, *RagConfInfo.ChunkOverlap, 50, "ChunkOverlap")
+	
 	assertEqual(t, *McpConfPath, "./conf/mcp/mcp.json", "MCP_CONF_PATH")
-
-	assertEqual(t, *VideoModel, "model-v1", "VIDEO_MODEL")
-	assertEqual(t, *Radio, "radio-123", "RADIO")
-	assertInt(t, *Duration, 120, "DURATION")
-	assertInt(t, *FPS, 30, "FPS")
-	assertEqual(t, *Resolution, "1920x1080", "RESOLUTION")
-	assertBool(t, *Watermark, true, "WATERMARK")
-
+	
+	assertEqual(t, *VideoConfInfo.VideoModel, "model-v1", "VIDEO_MODEL")
+	assertEqual(t, *VideoConfInfo.Radio, "radio-123", "RADIO")
+	assertInt(t, *VideoConfInfo.Duration, 120, "DURATION")
+	assertInt(t, *VideoConfInfo.FPS, 30, "FPS")
+	assertEqual(t, *VideoConfInfo.Resolution, "1920x1080", "RESOLUTION")
+	assertBool(t, *VideoConfInfo.Watermark, true, "WATERMARK")
+	
 	os.Clearenv()
 }
 
