@@ -1,4 +1,3 @@
----
 ## Configuring the `MCP_CONF_PATH` Environment Variable for MCP Servers (Go Binary)
 
 This document guides you on configuring the **`MCP_CONF_PATH`** environment variable when using the Go binary of the **`telegram-deepseek-bot`** project. This allows you to use a custom MCP server configuration.

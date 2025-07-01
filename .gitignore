@@ -1,4 +1,5 @@
 .idea
+.gigaide
 *.tar.gz
 telegram-deepseek-bot
 telegram_bot.db
