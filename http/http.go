@@ -38,8 +38,14 @@ func (p *HTTPServer) Start() {
 		http.HandleFunc("/user/token/add", AddUserToken)
 		
 		http.HandleFunc("/conf/update", UpdateConf)
+		http.HandleFunc("/conf/get", GetConf)
 		
-		err := http.ListenAndServe(p.Addr, nil)
+		var err error
+		if *conf.BaseConfInfo.CrtFile == "" || *conf.BaseConfInfo.KeyFile == "" {
+			err = http.ListenAndServe(p.Addr, nil)
+		} else {
+			err = http.ListenAndServeTLS(p.Addr, *conf.BaseConfInfo.CrtFile, *conf.BaseConfInfo.KeyFile, nil)
+		}
 		if err != nil {
 			logger.Fatal("pprof server failed", "err", err)
 		}

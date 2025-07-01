@@ -8,9 +8,9 @@ import (
 )
 
 type AudioConf struct {
-	AudioAppID   *string
-	AudioToken   *string
-	AudioCluster *string
+	AudioAppID   *string `json:"audio_app_id"`
+	AudioToken   *string `json:"audio_token"`
+	AudioCluster *string `json:"audio_cluster"`
 }
 
 var (
