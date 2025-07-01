@@ -5,8 +5,8 @@ telegram群: https://t.me/+WtaMcDpaMOlhZTE1, 或者尝试一下GWSbot。
 
 # DeepSeek Telegram Bot
 
-本仓库提供了一个基于 **Golang** 构建的 **Telegram 机器人**，集成了 **DeepSeek API**，实现 AI 驱动的回复。
-该机器人支持 **流式输出**，让对话体验更加自然和流畅。
+本仓库提供了一个基于 **Golang** 构建的 **Telegram 机器人**，集成了 **LLM API**，实现 AI 驱动的回复。
+该机器人支持 **openai** **deepseek** **gemini** **openrouter**等大模型，让对话体验更加自然和流畅。
 [English Doc](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/Readme.md)
 
 ---
