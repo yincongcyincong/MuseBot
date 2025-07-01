@@ -22,7 +22,7 @@
       "args": ["-debug"],
       "env": {
         "GRAFANA_URL": "http://localhost:3000",
-        "GRAFANA_API_KEY": "glsa_qEzNypXUpMSWRz3ETf613PkkLNwIWoqP_0853d033"
+        "GRAFANA_API_KEY": "xxxx"
       }
     }
   }
