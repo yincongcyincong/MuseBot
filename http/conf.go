@@ -130,7 +130,7 @@ func CompareFlagsWithStructTags(cfg interface{}) string {
 		
 		flagValue := flag.Lookup(jsonTag)
 		if flagValue == nil {
-			logger.Warn("Flag '%s' not found", "jsonTag", jsonTag)
+			logger.Warn("Flag not found", "jsonTag", jsonTag)
 			continue
 		}
 		

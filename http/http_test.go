@@ -28,7 +28,7 @@ func TestNewPProfServer(t *testing.T) {
 func TestPProfServer_Start(t *testing.T) {
 	metrics.RegisterMetrics()
 	
-	addr := ":18080"
+	addr := ":18182"
 	server := NewHTTPServer(addr)
 	server.Start()
 	

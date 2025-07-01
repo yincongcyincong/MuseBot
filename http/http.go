@@ -42,7 +42,8 @@ func (p *HTTPServer) Start() {
 		http.HandleFunc("/command/get", GetCommand)
 		
 		var err error
-		if *conf.BaseConfInfo.CrtFile == "" || *conf.BaseConfInfo.KeyFile == "" {
+		if conf.BaseConfInfo.CrtFile == nil || conf.BaseConfInfo.KeyFile == nil ||
+			*conf.BaseConfInfo.CrtFile == "" || *conf.BaseConfInfo.KeyFile == "" {
 			err = http.ListenAndServe(p.Addr, nil)
 		} else {
 			err = http.ListenAndServeTLS(p.Addr, *conf.BaseConfInfo.CrtFile, *conf.BaseConfInfo.KeyFile, nil)
