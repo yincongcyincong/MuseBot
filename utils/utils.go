@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -388,12 +389,58 @@ func FileToMd5(filePath string) (string, error) {
 	
 	hash := md5.New()
 	
-	// 将文件内容流式拷贝到 hash 计算器中
 	if _, err := io.Copy(hash, file); err != nil {
 		return "", err
 	}
 	
-	// 计算并格式化为16进制字符串
 	md5sum := fmt.Sprintf("%x", hash.Sum(nil))
 	return md5sum, nil
+}
+
+func SetStructFieldByJSONTag(s interface{}, key string, value interface{}) error {
+	val := reflect.ValueOf(s)
+	if val.Kind() != reflect.Ptr || val.Elem().Kind() != reflect.Struct {
+		return fmt.Errorf("want a struct，get a %T", s)
+	}
+	
+	elem := val.Elem()
+	typ := elem.Type()
+	
+	for i := 0; i < typ.NumField(); i++ {
+		field := typ.Field(i)
+		fieldValue := elem.Field(i)
+		
+		jsonTag := field.Tag.Get("json")
+		
+		if jsonTag == key {
+			if !fieldValue.CanSet() {
+				return fmt.Errorf("field %s can't be set", field.Name)
+			}
+			
+			setValue := reflect.ValueOf(value)
+			if fieldValue.Kind() == reflect.Ptr {
+				elemType := fieldValue.Type().Elem()
+				
+				// 检查传入的值是否可转换为元素类型
+				if !setValue.Type().ConvertibleTo(elemType) {
+					return fmt.Errorf("can't put %T change to field %s with %s type", value, field.Name, elemType)
+				}
+				
+				newValue := reflect.New(elemType)
+				newValue.Elem().Set(setValue.Convert(elemType))
+				
+				fieldValue.Set(newValue)
+				return nil
+			} else {
+				if setValue.Type().ConvertibleTo(fieldValue.Type()) {
+					fieldValue.Set(setValue.Convert(fieldValue.Type()))
+					return nil
+				} else {
+					return fmt.Errorf("can't put %T change to field %s with %s type", value, field.Name, fieldValue.Type())
+				}
+			}
+		}
+	}
+	
+	return fmt.Errorf("can't find with key '%s' matched JSON field", key)
 }

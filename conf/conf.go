@@ -11,42 +11,40 @@ import (
 )
 
 type BaseConf struct {
-	BotToken        *string
-	DeepseekToken   *string
-	OpenAIToken     *string
-	GeminiToken     *string
-	OpenRouterToken *string
-	VolToken        *string
-	ErnieAK         *string
-	ErnieSK         *string
+	BotToken        *string `json:"telegram_bot_token"`
+	DeepseekToken   *string `json:"deepseek_token"`
+	OpenAIToken     *string `json:"openai_token"`
+	GeminiToken     *string `json:"gemini_token"`
+	OpenRouterToken *string `json:"openrouter_token"`
+	VolToken        *string `json:"vol_token"`
+	ErnieAK         *string `json:"ernie_ak"`
+	ErnieSK         *string `json:"ernie_sk"`
 	
-	Type          *string // simple complex
-	CustomUrl     *string
-	VolcAK        *string
-	VolcSK        *string
-	DBType        *string
-	DBConf        *string
-	DeepseekProxy *string
-	TelegramProxy *string
-	Lang          *string
-	TokenPerUser  *int
-	NeedATBOt     *bool
-	MaxUserChat   *int
-	VideoToken    *string
-	HTTPPort      *int
-	UseTools      *bool
+	Type          *string `json:"type"`
+	CustomUrl     *string `json:"custom_url"`
+	VolcAK        *string `json:"volc_ak"`
+	VolcSK        *string `json:"volc_sk"`
+	DBType        *string `json:"db_type"`
+	DBConf        *string `json:"db_conf"`
+	DeepseekProxy *string `json:"deepseek_proxy"`
+	TelegramProxy *string `json:"telegram_proxy"`
+	Lang          *string `json:"lang"`
+	TokenPerUser  *int    `json:"token_per_user"`
+	NeedATBOt     *bool   `json:"need_at_bot"`
+	MaxUserChat   *int    `json:"max_user_chat"`
+	VideoToken    *string `json:"video_token"`
+	HTTPPort      *int    `json:"http_port"`
+	UseTools      *bool   `json:"use_tools"`
 	
-	CrtFile *string
-	KeyFile *string
+	CrtFile *string `json:"crt_file"`
+	KeyFile *string `json:"key_file"`
 	
-	AllowedTelegramUserIds  map[int64]bool
-	AllowedTelegramGroupIds map[int64]bool
-	AdminUserIds            map[int64]bool
+	AllowedTelegramUserIds  map[int64]bool `json:"allowed_telegram_user_ids"`
+	AllowedTelegramGroupIds map[int64]bool `json:"allowed_telegram_group_ids"`
+	AdminUserIds            map[int64]bool `json:"admin_user_ids"`
 	
-	Bot *tgbotapi.BotAPI
+	Bot *tgbotapi.BotAPI `json:"bot"`
 }
-
-var ()
 
 var (
 	BaseConfInfo = new(BaseConf)

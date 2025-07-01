@@ -9,12 +9,12 @@ import (
 )
 
 type VideoConf struct {
-	VideoModel *string
-	Radio      *string
-	Duration   *int
-	FPS        *int
-	Resolution *string
-	Watermark  *bool
+	VideoModel *string `json:"video_model"`
+	Radio      *string `json:"radio"`
+	Duration   *int    `json:"duration"`
+	FPS        *int    `json:"fps"`
+	Resolution *string `json:"resolution"`
+	Watermark  *bool   `json:"watermark"`
 }
 
 var (

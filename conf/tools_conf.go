@@ -17,14 +17,14 @@ import (
 )
 
 type AgentInfo struct {
-	Description string
-	ToolsName   []string
+	Description string   `json:"description"`
+	ToolsName   []string `json:"tools_name"`
 	
-	DeepseekTool    []deepseek.Tool
-	VolTool         []*model.Tool
-	OpenAITools     []openai.Tool
-	GeminiTools     []*genai.Tool
-	OpenRouterTools []openrouter.Tool
+	DeepseekTool    []deepseek.Tool   `json:"-"`
+	VolTool         []*model.Tool     `json:"-"`
+	OpenAITools     []openai.Tool     `json:"-"`
+	GeminiTools     []*genai.Tool     `json:"-"`
+	OpenRouterTools []openrouter.Tool `json:"-"`
 }
 
 var (

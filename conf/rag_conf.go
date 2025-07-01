@@ -11,19 +11,19 @@ import (
 )
 
 type RagConf struct {
-	EmbeddingType *string
-	KnowledgePath *string
-	VectorDBType  *string
+	EmbeddingType *string `json:"embedding_type"`
+	KnowledgePath *string `json:"knowledge_path"`
+	VectorDBType  *string `json:"vector_db_type"`
 	
-	ChromaURL      *string
-	MilvusURL      *string
-	WeaviateURL    *string
-	WeaviateScheme *string
+	ChromaURL      *string `json:"chroma_url"`
+	MilvusURL      *string `json:"milvus_url"`
+	WeaviateURL    *string `json:"weaviate_url"`
+	WeaviateScheme *string `json:"weaviate_scheme"`
 	
-	Space *string
+	Space *string `json:"space"`
 	
-	ChunkSize    *int
-	ChunkOverlap *int
+	ChunkSize    *int `json:"chunk_size"`
+	ChunkOverlap *int `json:"chunk_overlap"`
 	
 	Store    vectorstores.VectorStore
 	Embedder embeddings.Embedder

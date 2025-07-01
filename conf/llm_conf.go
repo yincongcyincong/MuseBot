@@ -10,14 +10,14 @@ import (
 )
 
 type LLMConf struct {
-	FrequencyPenalty *float64
-	MaxTokens        *int
-	PresencePenalty  *float64
-	Temperature      *float64
-	TopP             *float64
-	Stop             []string
-	LogProbs         *bool
-	TopLogProbs      *int
+	FrequencyPenalty *float64 `json:"frequency_penalty"`
+	MaxTokens        *int     `json:"max_tokens"`
+	PresencePenalty  *float64 `json:"presence_penalty"`
+	Temperature      *float64 `json:"temperature"`
+	TopP             *float64 `json:"top_p"`
+	Stop             []string `json:"stop"`
+	LogProbs         *bool    `json:"log_probs"`
+	TopLogProbs      *int     `json:"top_log_probs"`
 	
 	stop *string
 }

@@ -9,22 +9,22 @@ import (
 )
 
 type PhotoConf struct {
-	ReqKey          *string
-	ModelVersion    *string
-	ReqScheduleConf *string
-	Seed            *int
-	Scale           *float64
-	DDIMSteps       *int
-	Width           *int
-	Height          *int
-	UsePreLLM       *bool
-	UseSr           *bool
-	ReturnUrl       *bool
-	AddLogo         *bool
-	Position        *string
-	Language        *int
-	Opacity         *float64
-	LogoTextContent *string
+	ReqKey          *string  `json:"req_key"`
+	ModelVersion    *string  `json:"model_version"`
+	ReqScheduleConf *string  `json:"req_schedule_conf"`
+	Seed            *int     `json:"seed"`
+	Scale           *float64 `json:"scale"`
+	DDIMSteps       *int     `json:"ddim_steps"`
+	Width           *int     `json:"width"`
+	Height          *int     `json:"height"`
+	UsePreLLM       *bool    `json:"use_pre_llm"`
+	UseSr           *bool    `json:"use_sr"`
+	ReturnUrl       *bool    `json:"return_url"`
+	AddLogo         *bool    `json:"add_logo"`
+	Position        *string  `json:"position"`
+	Language        *int     `json:"language"`
+	Opacity         *float64 `json:"opacity"`
+	LogoTextContent *string  `json:"logo_text_content"`
 }
 
 var PhotoConfInfo = new(PhotoConf)
