@@ -39,6 +39,7 @@ func (p *HTTPServer) Start() {
 		
 		http.HandleFunc("/conf/update", UpdateConf)
 		http.HandleFunc("/conf/get", GetConf)
+		http.HandleFunc("/command/get", GetCommand)
 		
 		var err error
 		if *conf.BaseConfInfo.CrtFile == "" || *conf.BaseConfInfo.KeyFile == "" {

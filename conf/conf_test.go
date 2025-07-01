@@ -91,7 +91,7 @@ func TestInitConf_AllEnvVars(t *testing.T) {
 	InitConf()
 	
 	// 断言检查
-	assertEqual(t, *BaseConfInfo.BotToken, "test_bot_token", "BotToken")
+	assertEqual(t, *BaseConfInfo.TelegramBotToken, "test_bot_token", "BotToken")
 	assertEqual(t, *BaseConfInfo.DeepseekToken, "test_deepseek_token", "DeepseekToken")
 	assertEqual(t, *BaseConfInfo.CustomUrl, "https://example.com", "CustomUrl")
 	assertEqual(t, *BaseConfInfo.Type, "pro", "Type")
