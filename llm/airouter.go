@@ -125,7 +125,7 @@ func (d *AIRouterReq) Send(ctx context.Context, l *LLM) error {
 	d.GetModel(l)
 	
 	// set deepseek proxy
-	config := openrouter.DefaultConfig(*conf.OpenRouterToken)
+	config := openrouter.DefaultConfig(*conf.BaseConfInfo.OpenRouterToken)
 	config.HTTPClient = utils.GetDeepseekProxyClient()
 	client := openrouter.NewClientWithConfig(*config)
 	
@@ -135,14 +135,14 @@ func (d *AIRouterReq) Send(ctx context.Context, l *LLM) error {
 		StreamOptions: &openrouter.StreamOptions{
 			IncludeUsage: true,
 		},
-		MaxTokens:        *conf.MaxTokens,
-		TopP:             float32(*conf.TopP),
-		FrequencyPenalty: float32(*conf.FrequencyPenalty),
-		TopLogProbs:      *conf.TopLogProbs,
-		LogProbs:         *conf.LogProbs,
-		Stop:             conf.Stop,
-		PresencePenalty:  float32(*conf.PresencePenalty),
-		Temperature:      float32(*conf.Temperature),
+		MaxTokens:        *conf.LLMConfInfo.MaxTokens,
+		TopP:             float32(*conf.LLMConfInfo.TopP),
+		FrequencyPenalty: float32(*conf.LLMConfInfo.FrequencyPenalty),
+		TopLogProbs:      *conf.LLMConfInfo.TopLogProbs,
+		LogProbs:         *conf.LLMConfInfo.LogProbs,
+		Stop:             conf.LLMConfInfo.Stop,
+		PresencePenalty:  float32(*conf.LLMConfInfo.PresencePenalty),
+		Temperature:      float32(*conf.LLMConfInfo.Temperature),
 		Tools:            l.OpenRouterTools,
 	}
 	
@@ -278,20 +278,20 @@ func (d *AIRouterReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 	_, updateMsgID, _ := utils.GetChatIdAndMsgIdAndUserID(l.Update)
 	
 	d.GetModel(l)
-	config := openrouter.DefaultConfig(*conf.OpenRouterToken)
+	config := openrouter.DefaultConfig(*conf.BaseConfInfo.OpenRouterToken)
 	config.HTTPClient = utils.GetDeepseekProxyClient()
 	client := openrouter.NewClientWithConfig(*config)
 	
 	request := openrouter.ChatCompletionRequest{
 		Model:            l.Model,
-		MaxTokens:        *conf.MaxTokens,
-		TopP:             float32(*conf.TopP),
-		FrequencyPenalty: float32(*conf.FrequencyPenalty),
-		TopLogProbs:      *conf.TopLogProbs,
-		LogProbs:         *conf.LogProbs,
-		Stop:             conf.Stop,
-		PresencePenalty:  float32(*conf.PresencePenalty),
-		Temperature:      float32(*conf.Temperature),
+		MaxTokens:        *conf.LLMConfInfo.MaxTokens,
+		TopP:             float32(*conf.LLMConfInfo.TopP),
+		FrequencyPenalty: float32(*conf.LLMConfInfo.FrequencyPenalty),
+		TopLogProbs:      *conf.LLMConfInfo.TopLogProbs,
+		LogProbs:         *conf.LLMConfInfo.LogProbs,
+		Stop:             conf.LLMConfInfo.Stop,
+		PresencePenalty:  float32(*conf.LLMConfInfo.PresencePenalty),
+		Temperature:      float32(*conf.LLMConfInfo.Temperature),
 		Tools:            l.OpenRouterTools,
 		Messages:         d.OpenRouterMsgs,
 	}

@@ -86,7 +86,7 @@ func (h *GeminiReq) Send(ctx context.Context, l *LLM) error {
 	httpClient := utils.GetDeepseekProxyClient()
 	client, err := genai.NewClient(ctx, &genai.ClientConfig{
 		HTTPClient: httpClient,
-		APIKey:     *conf.GeminiToken,
+		APIKey:     *conf.BaseConfInfo.GeminiToken,
 	})
 	if err != nil {
 		logger.Error("init gemini client fail", "err", err)
@@ -94,10 +94,10 @@ func (h *GeminiReq) Send(ctx context.Context, l *LLM) error {
 	}
 	
 	config := &genai.GenerateContentConfig{
-		TopP:             genai.Ptr[float32](float32(*conf.TopP)),
-		FrequencyPenalty: genai.Ptr[float32](float32(*conf.FrequencyPenalty)),
-		PresencePenalty:  genai.Ptr[float32](float32(*conf.PresencePenalty)),
-		Temperature:      genai.Ptr[float32](float32(*conf.Temperature)),
+		TopP:             genai.Ptr[float32](float32(*conf.LLMConfInfo.TopP)),
+		FrequencyPenalty: genai.Ptr[float32](float32(*conf.LLMConfInfo.FrequencyPenalty)),
+		PresencePenalty:  genai.Ptr[float32](float32(*conf.LLMConfInfo.PresencePenalty)),
+		Temperature:      genai.Ptr[float32](float32(*conf.LLMConfInfo.Temperature)),
 		Tools:            l.GeminiTools,
 	}
 	
@@ -218,7 +218,7 @@ func (h *GeminiReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 	httpClient := utils.GetDeepseekProxyClient()
 	client, err := genai.NewClient(ctx, &genai.ClientConfig{
 		HTTPClient: httpClient,
-		APIKey:     *conf.GeminiToken,
+		APIKey:     *conf.BaseConfInfo.GeminiToken,
 	})
 	if err != nil {
 		logger.Error("init gemini client fail", "err", err)
@@ -226,10 +226,10 @@ func (h *GeminiReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 	}
 	
 	config := &genai.GenerateContentConfig{
-		TopP:             genai.Ptr[float32](float32(*conf.TopP)),
-		FrequencyPenalty: genai.Ptr[float32](float32(*conf.FrequencyPenalty)),
-		PresencePenalty:  genai.Ptr[float32](float32(*conf.PresencePenalty)),
-		Temperature:      genai.Ptr[float32](float32(*conf.Temperature)),
+		TopP:             genai.Ptr[float32](float32(*conf.LLMConfInfo.TopP)),
+		FrequencyPenalty: genai.Ptr[float32](float32(*conf.LLMConfInfo.FrequencyPenalty)),
+		PresencePenalty:  genai.Ptr[float32](float32(*conf.LLMConfInfo.PresencePenalty)),
+		Temperature:      genai.Ptr[float32](float32(*conf.LLMConfInfo.Temperature)),
 		Tools:            l.GeminiTools,
 	}
 	

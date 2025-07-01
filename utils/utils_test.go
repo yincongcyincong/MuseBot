@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"testing"
-
+	
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
@@ -15,7 +15,7 @@ func TestGetChatIdAndMsgIdAndUserName_MessageUpdate(t *testing.T) {
 	chatID := int64(123)
 	msgID := 456
 	userID := int64(789)
-
+	
 	updateMsg := tgbotapi.Update{
 		Message: &tgbotapi.Message{
 			Chat:      &tgbotapi.Chat{ID: chatID},
@@ -27,7 +27,7 @@ func TestGetChatIdAndMsgIdAndUserName_MessageUpdate(t *testing.T) {
 	if cid != chatID || mid != msgID || uid != userID {
 		t.Errorf("Expected (%d,%d,%d), got (%d,%d,%d)", chatID, msgID, userID, cid, mid, uid)
 	}
-
+	
 	updateCallback := tgbotapi.Update{
 		CallbackQuery: &tgbotapi.CallbackQuery{
 			Message: &tgbotapi.Message{
@@ -88,7 +88,7 @@ func TestGetChatIdAndMsgIdAndUserName_CallbackQueryUpdate(t *testing.T) {
 			From: &tgbotapi.User{ID: 111},
 		},
 	}
-
+	
 	chatId, msgId, userId := GetChatIdAndMsgIdAndUserID(update)
 	assert.Equal(t, int64(654321), chatId)
 	assert.Equal(t, 456, msgId)
@@ -106,7 +106,7 @@ func TestMD5(t *testing.T) {
 
 func TestGetChatIdAndMsgIdAndUserName_EmptyUpdate(t *testing.T) {
 	update := tgbotapi.Update{}
-
+	
 	chatId, msgId, userId := GetChatIdAndMsgIdAndUserID(update)
 	assert.Equal(t, int64(0), chatId)
 	assert.Equal(t, 0, msgId)
@@ -118,18 +118,18 @@ func TestCheckMsgIsCallback(t *testing.T) {
 		CallbackQuery: &tgbotapi.CallbackQuery{},
 	}
 	assert.True(t, CheckMsgIsCallback(updateWithCallback))
-
+	
 	updateWithMessage := tgbotapi.Update{
 		Message: &tgbotapi.Message{},
 	}
 	assert.False(t, CheckMsgIsCallback(updateWithMessage))
-
+	
 	updateEmpty := tgbotapi.Update{}
 	assert.False(t, CheckMsgIsCallback(updateEmpty))
 }
 
 func TestGetPhotoContent(t *testing.T) {
-
+	
 	// 调用被测函数
 	mockClient := &test.MockHTTPClient{
 		DoFunc: func(req *http.Request) (*http.Response, error) {
@@ -153,7 +153,7 @@ func TestGetPhotoContent(t *testing.T) {
 		Client: mockClient,
 	}
 	bot.SetAPIEndpoint(tgbotapi.APIEndpoint)
-
+	
 	photos := []tgbotapi.PhotoSize{
 		{FileID: "small", FileSize: 1024},
 		{FileID: "large", FileSize: 7 * 1024 * 1024},
@@ -163,12 +163,12 @@ func TestGetPhotoContent(t *testing.T) {
 			Photo: photos,
 		},
 	}
-
+	
 	tt := ""
-	conf.TelegramProxy = &tt
-
+	conf.BaseConfInfo.TelegramProxy = &tt
+	
 	byteContent := GetPhotoContent(update, bot)
-
+	
 	fmt.Println(byteContent)
-
+	
 }

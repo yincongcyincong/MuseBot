@@ -7,14 +7,14 @@ import (
 )
 
 func TestInitConf_InitTools(t *testing.T) {
-	if UseTools == nil {
-		UseTools = getPointBool(true)
+	if BaseConfInfo.UseTools == nil {
+		BaseConfInfo.UseTools = getPointBool(true)
 		os.Setenv("MCP_CONF_PATH", "./conf/mcp/mcp.json")
-
+		
 		InitToolsConf()
 		flag.Parse()
 	}
-
+	
 	InitTools()
 	if len(DeepseekTools) != len(OpenAITools) {
 		t.Errorf("%s expected %d, got %d", "tools number", len(DeepseekTools), len(OpenAITools))

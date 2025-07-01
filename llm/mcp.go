@@ -41,7 +41,7 @@ func (d *DeepseekTaskReq) ExecuteMcp() {
 	llm := NewLLM(WithBot(d.Bot), WithUpdate(d.Update),
 		WithMessageChan(d.MessageChan), WithContent(d.Content))
 	
-	prompt := i18n.GetMessage(*conf.Lang, "mcp_prompt", taskParam)
+	prompt := i18n.GetMessage(*conf.BaseConfInfo.Lang, "mcp_prompt", taskParam)
 	llm.LLMClient.GetUserMessage(prompt)
 	llm.Content = prompt
 	c, err := llm.LLMClient.SyncSend(ctx, llm)

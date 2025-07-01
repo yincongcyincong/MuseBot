@@ -101,7 +101,7 @@ func ReplaceCommand(content string, command string, botName string) string {
 }
 
 func ForceReply(chatId int64, msgId int, i18MsgId string, bot *tgbotapi.BotAPI) error {
-	msg := tgbotapi.NewMessage(chatId, i18n.GetMessage(*conf.Lang, i18MsgId, nil))
+	msg := tgbotapi.NewMessage(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, i18MsgId, nil))
 	msg.ReplyMarkup = tgbotapi.ForceReply{
 		ForceReply: true,
 		Selective:  true,
@@ -128,8 +128,8 @@ func GetAudioContent(update tgbotapi.Update, bot *tgbotapi.BotAPI) []byte {
 	
 	transport := &http.Transport{}
 	
-	if *conf.TelegramProxy != "" {
-		proxy, err := url.Parse(*conf.TelegramProxy)
+	if *conf.BaseConfInfo.TelegramProxy != "" {
+		proxy, err := url.Parse(*conf.BaseConfInfo.TelegramProxy)
 		if err != nil {
 			logger.Warn("parse proxy url fail", "err", err)
 			return nil
@@ -207,8 +207,8 @@ func MD5(input string) string {
 func GetTelegramProxyClient() *http.Client {
 	transport := &http.Transport{}
 	
-	if *conf.TelegramProxy != "" {
-		proxy, err := url.Parse(*conf.TelegramProxy)
+	if *conf.BaseConfInfo.TelegramProxy != "" {
+		proxy, err := url.Parse(*conf.BaseConfInfo.TelegramProxy)
 		if err != nil {
 			logger.Warn("parse proxy url fail", "err", err)
 		}
@@ -223,8 +223,8 @@ func GetTelegramProxyClient() *http.Client {
 func GetDeepseekProxyClient() *http.Client {
 	transport := &http.Transport{}
 	
-	if *conf.DeepseekProxy != "" {
-		proxy, err := url.Parse(*conf.DeepseekProxy)
+	if *conf.BaseConfInfo.DeepseekProxy != "" {
+		proxy, err := url.Parse(*conf.BaseConfInfo.DeepseekProxy)
 		if err != nil {
 			logger.Warn("parse proxy url fail", "err", err)
 		}
@@ -242,65 +242,65 @@ func CreateBot() *tgbotapi.BotAPI {
 	client := GetTelegramProxyClient()
 	
 	var err error
-	conf.Bot, err = tgbotapi.NewBotAPIWithClient(*conf.BotToken, tgbotapi.APIEndpoint, client)
+	conf.BaseConfInfo.Bot, err = tgbotapi.NewBotAPIWithClient(*conf.BaseConfInfo.BotToken, tgbotapi.APIEndpoint, client)
 	if err != nil {
 		panic("Init bot fail" + err.Error())
 	}
 	
 	if *logger.LogLevel == "debug" {
-		conf.Bot.Debug = true
+		conf.BaseConfInfo.Bot.Debug = true
 	}
 	
 	// set command
 	cmdCfg := tgbotapi.NewSetMyCommands(
 		tgbotapi.BotCommand{
 			Command:     "help",
-			Description: i18n.GetMessage(*conf.Lang, "commands.help.description", nil),
+			Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.help.description", nil),
 		},
 		tgbotapi.BotCommand{
 			Command:     "clear",
-			Description: i18n.GetMessage(*conf.Lang, "commands.clear.description", nil),
+			Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.clear.description", nil),
 		},
 		tgbotapi.BotCommand{
 			Command:     "retry",
-			Description: i18n.GetMessage(*conf.Lang, "commands.retry.description", nil),
+			Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.retry.description", nil),
 		},
 		tgbotapi.BotCommand{
 			Command:     "mode",
-			Description: i18n.GetMessage(*conf.Lang, "commands.mode.description", nil),
+			Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.mode.description", nil),
 		},
 		tgbotapi.BotCommand{
 			Command:     "balance",
-			Description: i18n.GetMessage(*conf.Lang, "commands.balance.description", nil),
+			Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.balance.description", nil),
 		},
 		tgbotapi.BotCommand{
 			Command:     "state",
-			Description: i18n.GetMessage(*conf.Lang, "commands.state.description", nil),
+			Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.state.description", nil),
 		},
 		tgbotapi.BotCommand{
 			Command:     "photo",
-			Description: i18n.GetMessage(*conf.Lang, "commands.photo.description", nil),
+			Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.photo.description", nil),
 		},
 		tgbotapi.BotCommand{
 			Command:     "video",
-			Description: i18n.GetMessage(*conf.Lang, "commands.video.description", nil),
+			Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.video.description", nil),
 		},
 		tgbotapi.BotCommand{
 			Command:     "chat",
-			Description: i18n.GetMessage(*conf.Lang, "commands.chat.description", nil),
+			Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.chat.description", nil),
 		},
 		tgbotapi.BotCommand{
 			Command:     "task",
-			Description: i18n.GetMessage(*conf.Lang, "commands.task.description", nil),
+			Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.task.description", nil),
 		},
 		tgbotapi.BotCommand{
 			Command:     "mcp",
-			Description: i18n.GetMessage(*conf.Lang, "commands.mcp.description", nil),
+			Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.mcp.description", nil),
 		},
 	)
-	conf.Bot.Send(cmdCfg)
+	conf.BaseConfInfo.Bot.Send(cmdCfg)
 	
-	return conf.Bot
+	return conf.BaseConfInfo.Bot
 }
 
 func GetContent(update tgbotapi.Update, bot *tgbotapi.BotAPI, content string) (string, error) {
@@ -309,7 +309,7 @@ func GetContent(update tgbotapi.Update, bot *tgbotapi.BotAPI, content string) (s
 		return "", errors.New("token exceed")
 	}
 	
-	if content == "" && update.Message.Voice != nil && *conf.AudioAppID != "" {
+	if content == "" && update.Message.Voice != nil && *conf.AudioConfInfo.AudioAppID != "" {
 		audioContent := GetAudioContent(update, bot)
 		if audioContent == nil {
 			logger.Warn("audio url empty")
@@ -339,9 +339,9 @@ func GetContent(update tgbotapi.Update, bot *tgbotapi.BotAPI, content string) (s
 func FileRecognize(audioContent []byte) string {
 	
 	client := BuildAsrClient()
-	client.Appid = *conf.AudioAppID
-	client.Token = *conf.AudioToken
-	client.Cluster = *conf.AudioCluster
+	client.Appid = *conf.AudioConfInfo.AudioAppID
+	client.Token = *conf.AudioConfInfo.AudioToken
+	client.Cluster = *conf.AudioConfInfo.AudioCluster
 	
 	asrResponse, err := client.RequestAsr(audioContent)
 	if err != nil {
@@ -359,8 +359,8 @@ func FileRecognize(audioContent []byte) string {
 }
 
 func GetImageContent(imageContent []byte) (string, error) {
-	visual.DefaultInstance.Client.SetAccessKey(*conf.VolcAK)
-	visual.DefaultInstance.Client.SetSecretKey(*conf.VolcSK)
+	visual.DefaultInstance.Client.SetAccessKey(*conf.BaseConfInfo.VolcAK)
+	visual.DefaultInstance.Client.SetSecretKey(*conf.BaseConfInfo.VolcSK)
 	
 	form := url.Values{}
 	form.Add("image_base64", base64.StdEncoding.EncodeToString(imageContent))

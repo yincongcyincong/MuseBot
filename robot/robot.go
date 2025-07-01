@@ -72,7 +72,7 @@ func requestDeepseekAndResp(update tgbotapi.Update, bot *tgbotapi.BotAPI, conten
 		return
 	}
 	
-	if conf.Store != nil {
+	if conf.RagConfInfo.Store != nil {
 		executeChain(update, bot, content)
 	} else {
 		executeLLM(update, bot, content)
@@ -107,7 +107,7 @@ func executeChain(update tgbotapi.Update, bot *tgbotapi.BotAPI, content string) 
 		
 		qaChain := chains.NewRetrievalQAFromLLM(
 			dpLLM,
-			vectorstores.ToRetriever(conf.Store, 3),
+			vectorstores.ToRetriever(conf.RagConfInfo.Store, 3),
 		)
 		_, err = chains.Run(ctx, qaChain, text)
 		if err != nil {
@@ -154,7 +154,7 @@ func handleUpdate(messageChan chan *param.MsgInfo, update tgbotapi.Update, bot *
 	chatId, msgId, _ := utils.GetChatIdAndMsgIdAndUserID(update)
 	parseMode := tgbotapi.ModeMarkdown
 	
-	tgMsgInfo := tgbotapi.NewMessage(chatId, i18n.GetMessage(*conf.Lang, "thinking", nil))
+	tgMsgInfo := tgbotapi.NewMessage(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "thinking", nil))
 	tgMsgInfo.ReplyToMessageID = msgId
 	firstSendInfo, err := bot.Send(tgMsgInfo)
 	if err != nil {
@@ -284,7 +284,7 @@ func handleCommand(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	logger.Info("command info", "userID", userID, "cmd", cmd)
 	
 	// check if at bot
-	if (utils.GetChatType(update) == "group" || utils.GetChatType(update) == "supergroup") && *conf.NeedATBOt {
+	if (utils.GetChatType(update) == "group" || utils.GetChatType(update) == "supergroup") && *conf.BaseConfInfo.NeedATBOt {
 		if !strings.Contains(update.Message.Text, "@"+bot.Self.UserName) {
 			logger.Warn("not at bot", "userID", userID, "cmd", cmd)
 			return
@@ -331,7 +331,7 @@ func sendChatMessage(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	messageText := ""
 	if update.Message != nil {
 		messageText = update.Message.Text
-		if messageText == "" && update.Message.Voice != nil && *conf.AudioAppID != "" {
+		if messageText == "" && update.Message.Voice != nil && *conf.AudioConfInfo.AudioAppID != "" {
 			audioContent := utils.GetAudioContent(update, bot)
 			if audioContent == nil {
 				logger.Warn("audio url empty")
@@ -404,7 +404,7 @@ func addToken(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 func showBalanceInfo(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	chatId, msgId, _ := utils.GetChatIdAndMsgIdAndUserID(update)
 	
-	if *conf.Type != param.DeepSeek {
+	if *conf.BaseConfInfo.Type != param.DeepSeek {
 		i18n.SendMsg(chatId, "not_deepseek", bot, nil, msgId)
 		return
 	}
@@ -412,9 +412,9 @@ func showBalanceInfo(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	balance := llm.GetBalanceInfo()
 	
 	// handle balance info msg
-	msgContent := fmt.Sprintf(i18n.GetMessage(*conf.Lang, "balance_title", nil), balance.IsAvailable)
+	msgContent := fmt.Sprintf(i18n.GetMessage(*conf.BaseConfInfo.Lang, "balance_title", nil), balance.IsAvailable)
 	
-	template := i18n.GetMessage(*conf.Lang, "balance_content", nil)
+	template := i18n.GetMessage(*conf.BaseConfInfo.Lang, "balance_content", nil)
 	
 	for _, bInfo := range balance.BalanceInfos {
 		msgContent += fmt.Sprintf(template, bInfo.Currency, bInfo.TotalBalance,
@@ -461,7 +461,7 @@ func showStateInfo(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 		logger.Warn("get week token fail", "err", err)
 	}
 	
-	template := i18n.GetMessage(*conf.Lang, "state_content", nil)
+	template := i18n.GetMessage(*conf.BaseConfInfo.Lang, "state_content", nil)
 	msgContent := fmt.Sprintf(template, userInfo.Token, todayTokey, weekToken, monthToken)
 	utils.SendMsg(chatId, msgContent, bot, msgId, tgbotapi.ModeMarkdown)
 }
@@ -472,9 +472,9 @@ func sendModeConfigurationOptions(update tgbotapi.Update, bot *tgbotapi.BotAPI) 
 	
 	var inlineKeyboard tgbotapi.InlineKeyboardMarkup
 	inlineButton := make([][]tgbotapi.InlineKeyboardButton, 0)
-	switch *conf.Type {
+	switch *conf.BaseConfInfo.Type {
 	case param.DeepSeek:
-		if *conf.CustomUrl == "" || *conf.CustomUrl == "https://api.deepseek.com/" {
+		if *conf.BaseConfInfo.CustomUrl == "" || *conf.BaseConfInfo.CustomUrl == "https://api.deepseek.com/" {
 			for k := range param.DeepseekModels {
 				inlineButton = append(inlineButton, tgbotapi.NewInlineKeyboardRow(
 					tgbotapi.NewInlineKeyboardButtonData(k, k),
@@ -662,12 +662,12 @@ func handleModeUpdate(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	}
 	
 	//utils.SendMsg(update.CallbackQuery.Message.Chat.ID,
-	//	i18n.GetMessage(*conf.Lang, "mode_choose", nil)+update.CallbackQuery.Data, bot, update.CallbackQuery.Message.MessageID)
+	//	i18n.GetMessage(*conf.BaseConfInfo.Lang, "mode_choose", nil)+update.CallbackQuery.Data, bot, update.CallbackQuery.Message.MessageID)
 }
 
 // sendFailMessage send set mode fail msg
 func sendFailMessage(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
-	callback := tgbotapi.NewCallback(update.CallbackQuery.ID, i18n.GetMessage(*conf.Lang, "set_mode", nil))
+	callback := tgbotapi.NewCallback(update.CallbackQuery.ID, i18n.GetMessage(*conf.BaseConfInfo.Lang, "set_mode", nil))
 	if _, err := bot.Request(callback); err != nil {
 		logger.Warn("request callback fail", "err", err)
 	}
@@ -860,15 +860,15 @@ func sendImg(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 
 // checkUserAllow check use can use telegram bot or not
 func checkUserAllow(update tgbotapi.Update) bool {
-	if len(conf.AllowedTelegramUserIds) == 0 {
+	if len(conf.BaseConfInfo.AllowedTelegramUserIds) == 0 {
 		return true
 	}
-	if conf.AllowedTelegramUserIds[0] {
+	if conf.BaseConfInfo.AllowedTelegramUserIds[0] {
 		return false
 	}
 	
 	_, _, userId := utils.GetChatIdAndMsgIdAndUserID(update)
-	_, ok := conf.AllowedTelegramUserIds[userId]
+	_, ok := conf.BaseConfInfo.AllowedTelegramUserIds[userId]
 	return ok
 }
 
@@ -879,13 +879,13 @@ func checkGroupAllow(update tgbotapi.Update) bool {
 	}
 	
 	if chat.IsGroup() || chat.IsSuperGroup() { // 判断是否是群组或超级群组
-		if len(conf.AllowedTelegramGroupIds) == 0 {
+		if len(conf.BaseConfInfo.AllowedTelegramGroupIds) == 0 {
 			return true
 		}
-		if conf.AllowedTelegramGroupIds[0] {
+		if conf.BaseConfInfo.AllowedTelegramGroupIds[0] {
 			return false
 		}
-		if _, ok := conf.AllowedTelegramGroupIds[chat.ID]; ok {
+		if _, ok := conf.BaseConfInfo.AllowedTelegramGroupIds[chat.ID]; ok {
 			return true
 		}
 	}
@@ -895,7 +895,7 @@ func checkGroupAllow(update tgbotapi.Update) bool {
 
 // checkUserTokenExceed check use token exceeded
 func checkUserTokenExceed(update tgbotapi.Update, bot *tgbotapi.BotAPI) bool {
-	if *conf.TokenPerUser == 0 {
+	if *conf.BaseConfInfo.TokenPerUser == 0 {
 		return false
 	}
 	
@@ -913,7 +913,7 @@ func checkUserTokenExceed(update tgbotapi.Update, bot *tgbotapi.BotAPI) bool {
 	}
 	
 	if userInfo.Token >= userInfo.AvailToken {
-		tpl := i18n.GetMessage(*conf.Lang, "token_exceed", nil)
+		tpl := i18n.GetMessage(*conf.BaseConfInfo.Lang, "token_exceed", nil)
 		content := fmt.Sprintf(tpl, userInfo.Token, userInfo.AvailToken-userInfo.Token, userInfo.AvailToken)
 		utils.SendMsg(chatId, content, bot, msgId, tgbotapi.ModeMarkdown)
 		return true
@@ -924,12 +924,12 @@ func checkUserTokenExceed(update tgbotapi.Update, bot *tgbotapi.BotAPI) bool {
 
 // checkAdminUser check user is admin
 func checkAdminUser(update tgbotapi.Update) bool {
-	if len(conf.AdminUserIds) == 0 {
+	if len(conf.BaseConfInfo.AdminUserIds) == 0 {
 		return false
 	}
 	
 	_, _, userId := utils.GetChatIdAndMsgIdAndUserID(update)
-	_, ok := conf.AdminUserIds[userId]
+	_, ok := conf.BaseConfInfo.AdminUserIds[userId]
 	return ok
 }
 
@@ -942,15 +942,15 @@ func ExecuteForceReply(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	}()
 	
 	switch update.Message.ReplyToMessage.Text {
-	case i18n.GetMessage(*conf.Lang, "chat_empty_content", nil):
+	case i18n.GetMessage(*conf.BaseConfInfo.Lang, "chat_empty_content", nil):
 		sendChatMessage(update, bot)
-	case i18n.GetMessage(*conf.Lang, "photo_empty_content", nil):
+	case i18n.GetMessage(*conf.BaseConfInfo.Lang, "photo_empty_content", nil):
 		sendImg(update, bot)
-	case i18n.GetMessage(*conf.Lang, "video_empty_content", nil):
+	case i18n.GetMessage(*conf.BaseConfInfo.Lang, "video_empty_content", nil):
 		sendVideo(update, bot)
-	case i18n.GetMessage(*conf.Lang, "task_empty_content", nil):
+	case i18n.GetMessage(*conf.BaseConfInfo.Lang, "task_empty_content", nil):
 		sendMultiAgent(update, bot, "task_empty_content")
-	case i18n.GetMessage(*conf.Lang, "mcp_empty_content", nil):
+	case i18n.GetMessage(*conf.BaseConfInfo.Lang, "mcp_empty_content", nil):
 		sendMultiAgent(update, bot, "mcp_empty_content")
 	}
 }

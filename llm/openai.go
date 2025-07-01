@@ -107,9 +107,9 @@ func (d *OpenAIReq) Send(ctx context.Context, l *LLM) error {
 	
 	// set deepseek proxy
 	httpClient := utils.GetDeepseekProxyClient()
-	openaiConfig := openai.DefaultConfig(*conf.OpenAIToken)
-	if *conf.CustomUrl != "" {
-		openaiConfig.BaseURL = *conf.CustomUrl
+	openaiConfig := openai.DefaultConfig(*conf.BaseConfInfo.OpenAIToken)
+	if *conf.BaseConfInfo.CustomUrl != "" {
+		openaiConfig.BaseURL = *conf.BaseConfInfo.CustomUrl
 	}
 	
 	//openaiConfig.BaseURL = "https://api.chatanywhere.org"
@@ -122,14 +122,14 @@ func (d *OpenAIReq) Send(ctx context.Context, l *LLM) error {
 		StreamOptions: &openai.StreamOptions{
 			IncludeUsage: true,
 		},
-		MaxTokens:        *conf.MaxTokens,
-		TopP:             float32(*conf.TopP),
-		FrequencyPenalty: float32(*conf.FrequencyPenalty),
-		TopLogProbs:      *conf.TopLogProbs,
-		LogProbs:         *conf.LogProbs,
-		Stop:             conf.Stop,
-		PresencePenalty:  float32(*conf.PresencePenalty),
-		Temperature:      float32(*conf.Temperature),
+		MaxTokens:        *conf.LLMConfInfo.MaxTokens,
+		TopP:             float32(*conf.LLMConfInfo.TopP),
+		FrequencyPenalty: float32(*conf.LLMConfInfo.FrequencyPenalty),
+		TopLogProbs:      *conf.LLMConfInfo.TopLogProbs,
+		LogProbs:         *conf.LLMConfInfo.LogProbs,
+		Stop:             conf.LLMConfInfo.Stop,
+		PresencePenalty:  float32(*conf.LLMConfInfo.PresencePenalty),
+		Temperature:      float32(*conf.LLMConfInfo.Temperature),
 		Tools:            l.OpenAITools,
 	}
 	
@@ -250,9 +250,9 @@ func (d *OpenAIReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 	d.GetModel(l)
 	httpClient := utils.GetDeepseekProxyClient()
 	
-	openaiConfig := openai.DefaultConfig(*conf.OpenAIToken)
-	if *conf.CustomUrl != "" {
-		openaiConfig.BaseURL = *conf.CustomUrl
+	openaiConfig := openai.DefaultConfig(*conf.BaseConfInfo.OpenAIToken)
+	if *conf.BaseConfInfo.CustomUrl != "" {
+		openaiConfig.BaseURL = *conf.BaseConfInfo.CustomUrl
 	}
 	
 	//openaiConfig.BaseURL = "https://api.chatanywhere.org"
@@ -261,14 +261,14 @@ func (d *OpenAIReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 	
 	request := openai.ChatCompletionRequest{
 		Model:            l.Model,
-		MaxTokens:        *conf.MaxTokens,
-		TopP:             float32(*conf.TopP),
-		FrequencyPenalty: float32(*conf.FrequencyPenalty),
-		TopLogProbs:      *conf.TopLogProbs,
-		LogProbs:         *conf.LogProbs,
-		Stop:             conf.Stop,
-		PresencePenalty:  float32(*conf.PresencePenalty),
-		Temperature:      float32(*conf.Temperature),
+		MaxTokens:        *conf.LLMConfInfo.MaxTokens,
+		TopP:             float32(*conf.LLMConfInfo.TopP),
+		FrequencyPenalty: float32(*conf.LLMConfInfo.FrequencyPenalty),
+		TopLogProbs:      *conf.LLMConfInfo.TopLogProbs,
+		LogProbs:         *conf.LLMConfInfo.LogProbs,
+		Stop:             conf.LLMConfInfo.Stop,
+		PresencePenalty:  float32(*conf.LLMConfInfo.PresencePenalty),
+		Temperature:      float32(*conf.LLMConfInfo.Temperature),
 		Tools:            l.OpenAITools,
 	}
 	
