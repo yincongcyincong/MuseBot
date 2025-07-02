@@ -1,7 +1,6 @@
 package main
 
 import (
-	"embed"
 	"net/http"
 	
 	"github.com/yincongcyincong/telegram-deepseek-bot/admin/conf"
@@ -10,17 +9,13 @@ import (
 	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
 )
 
-//go:embed adminui/*
-var staticFiles embed.FS
-
 func main() {
 	logger.InitLogger()
 	conf.InitConfig()
 	controller.InitSessionStore()
 	db.InitTable()
 	
-	fs := http.FileServer(http.FS(staticFiles))
-	http.Handle("/", fs)
+	http.Handle("/", View())
 	
 	// User API
 	http.HandleFunc("/user/create", controller.CreateUser)
@@ -37,6 +32,7 @@ func main() {
 	http.HandleFunc("/bot/list", controller.ListBots)
 	
 	http.HandleFunc("/user/login", controller.UserLogin)
+	http.HandleFunc("/user/me", controller.GetCurrentUserHandler)
 	http.HandleFunc("/user/logout", controller.RequireLogin(controller.UserLogout))
 	
 	err := http.ListenAndServe(":18080", nil)
