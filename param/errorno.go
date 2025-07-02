@@ -28,11 +28,13 @@ const (
 	
 	CodeParamError = 210009
 	
-	CodeCallServiceFail  = 110003
+	CodeServerFail       = 110003
 	CodeMethodNotFound   = 210003
 	CodeCallUserFuncFail = 210004
 	CodeDBWriteFail      = 210005
 	CodeDBQueryFail      = 210006
+	CodeLoginFail        = 210007
+	CodeNotLogin         = 210008
 )
 
 const (
@@ -40,11 +42,13 @@ const (
 	MsgUnknown = "err unknown"
 	
 	MsgParamError       = "param error"
-	MsgCallServiceFail  = "call service fail"
+	MsgServerFail       = "server fail"
 	MsgDBWriteFail      = "db write fail"
 	MsgMethodNotFound   = "method not found"
 	MsgCallUserFuncFail = "call user func fail"
 	MsgDBQueryFail      = "db query fail"
+	MsgLoginFail        = "login fail"
+	MsgNotLogin         = "not login"
 )
 
 var (
@@ -54,7 +58,7 @@ var (
 	ErrParamError = New(CodeParamError, MsgParamError)
 	
 	ErrMethodNotFound   = New(CodeMethodNotFound, MsgMethodNotFound)
-	ErrCallServiceFail  = New(CodeCallServiceFail, MsgCallServiceFail)
+	ErrServerFail       = New(CodeServerFail, MsgServerFail)
 	ErrCallUserFuncFail = New(CodeCallUserFuncFail, MsgCallUserFuncFail)
 	ErrDBQueryFail      = New(CodeDBQueryFail, MsgDBQueryFail)
 	ErrDBWriteFail      = New(CodeDBWriteFail, MsgDBWriteFail)
