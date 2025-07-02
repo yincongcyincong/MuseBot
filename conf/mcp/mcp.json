@@ -16,14 +16,13 @@
         "mcp-server-commands"
       ]
     },
-    "grafana": {
-      "command": "mcp-grafana",
-      "description": "supports Grafana dashboard operations.",
-      "args": ["-debug"],
-      "env": {
-        "GRAFANA_URL": "http://localhost:3000",
-        "GRAFANA_API_KEY": "xxxx"
-      }
+    "binance": {
+      "command": "npx",
+      "description": "get encrypt currency information from binance.",
+      "args": [
+        "-y",
+        "@snjyor/binance-mcp@latest"
+      ]
     }
   }
 }

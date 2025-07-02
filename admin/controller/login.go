@@ -83,6 +83,32 @@ func RequireLogin(next http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
+func GetCurrentUserHandler(w http.ResponseWriter, r *http.Request) {
+	session, err := sessionStore.Get(r, sessionName)
+	if err != nil {
+		utils.Failure(w, param.CodeNotLogin, param.MsgNotLogin, nil)
+		return
+	}
+	userIDValue, ok := session.Values["user_id"]
+	if !ok || userIDValue == nil {
+		utils.Failure(w, param.CodeNotLogin, param.MsgNotLogin, nil)
+		return
+	}
+	
+	userName, ok := session.Values["username"]
+	if !ok || userName == nil {
+		utils.Failure(w, param.CodeNotLogin, param.MsgNotLogin, nil)
+		return
+	}
+	
+	res := map[string]interface{}{
+		"user_id":  userIDValue,
+		"username": userName,
+	}
+	
+	utils.Success(w, res)
+}
+
 func UserLogout(w http.ResponseWriter, r *http.Request) {
 	session, err := sessionStore.Get(r, sessionName)
 	if err != nil {
