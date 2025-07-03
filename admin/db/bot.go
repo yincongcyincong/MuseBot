@@ -5,12 +5,13 @@ import (
 )
 
 type Bot struct {
-	ID         int
-	Address    string
-	CrtFile    string
-	CreateTime int64
-	UpdateTime int64
-	IsDeleted  int
+	ID         int    `json:"id"`
+	Address    string `json:"address"`
+	CrtFile    string `json:"crt_file"`
+	CreateTime int64  `json:"create_time"`
+	UpdateTime int64  `json:"update_time"`
+	IsDeleted  int    `json:"is_deleted"`
+	Status     string `json:"status" db:"-"`
 }
 
 func CreateBot(address, crtFile string) error {
@@ -30,9 +31,9 @@ func GetBotByID(id int) (*Bot, error) {
 	return b, nil
 }
 
-func UpdateBotAddress(id int, newAddress string) error {
+func UpdateBotAddress(id int, newAddress, crtFile string) error {
 	now := time.Now().Unix()
-	_, err := DB.Exec(`UPDATE bot SET address = ?, update_time = ? WHERE id = ?`, newAddress, now, id)
+	_, err := DB.Exec(`UPDATE bot SET address = ?, crt_file = ?, update_time = ? WHERE id = ?`, newAddress, crtFile, now, id)
 	return err
 }
 
@@ -41,47 +42,21 @@ func SoftDeleteBot(id int) error {
 	return err
 }
 
-func ListUsers(offset, limit int) ([]User, int, error) {
-	rows, err := DB.Query(`SELECT id, username, password, create_time, update_time FROM users LIMIT ? OFFSET ?`, limit, offset)
-	if err != nil {
-		return nil, 0, err
-	}
-	defer rows.Close()
-	
-	var users []User
-	for rows.Next() {
-		var u User
-		err := rows.Scan(&u.ID, &u.Username, &u.Password, &u.CreateTime, &u.UpdateTime)
-		if err != nil {
-			return nil, 0, err
-		}
-		users = append(users, u)
-	}
-	
-	var total int
-	err = DB.QueryRow(`SELECT COUNT(*) FROM users`).Scan(&total)
-	if err != nil {
-		return nil, 0, err
-	}
-	
-	return users, total, nil
-}
-
-func ListBots(offset, limit int) ([]Bot, int, error) {
+func ListBots(offset, limit int) ([]*Bot, int, error) {
 	rows, err := DB.Query(`SELECT id, address, crt_file, create_time, update_time, is_deleted FROM bot WHERE is_deleted = 0 LIMIT ? OFFSET ?`, limit, offset)
 	if err != nil {
 		return nil, 0, err
 	}
 	defer rows.Close()
 	
-	var bots []Bot
+	bots := make([]*Bot, 0)
 	for rows.Next() {
 		var b Bot
 		err := rows.Scan(&b.ID, &b.Address, &b.CrtFile, &b.CreateTime, &b.UpdateTime, &b.IsDeleted)
 		if err != nil {
 			return nil, 0, err
 		}
-		bots = append(bots, b)
+		bots = append(bots, &b)
 	}
 	
 	var total int

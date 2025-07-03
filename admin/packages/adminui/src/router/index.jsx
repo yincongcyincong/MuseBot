@@ -10,7 +10,9 @@ import { useUser } from "../context/UserContext.jsx";
 export default function Router() {
     const { isAuthenticated } = useUser();
 
-    if (isAuthenticated === null) {
+    console.log("isAuthenticated:", isAuthenticated); // 观察这个值
+
+    if (!isAuthenticated) {
         // 还没确定登录状态，可以返回加载中页面或者null
         return <div>Loading...</div>;
     }
@@ -23,13 +25,14 @@ export default function Router() {
             />
             {isAuthenticated && (
                 <Route path="/" element={<Layout />}>
-                    <Route index element={<Dashboard />} />
                     <Route path="dashboard" element={<Dashboard />} />
                     <Route path="users" element={<Users />} />
                     <Route path="bot" element={<Bot />} />
+                    <Route index element={<Dashboard />} />
                 </Route>
             )}
             {!isAuthenticated && <Route path="*" element={<Navigate to="/login" />} />}
+            {isAuthenticated && <Route path="*" element={<Navigate to="/dashboard" />} />}
         </Routes>
     );
 }

@@ -3,7 +3,9 @@ package controller
 import (
 	"net/http"
 	"strconv"
+	"time"
 	
+	"github.com/yincongcyincong/telegram-deepseek-bot/admin/checkpoint"
 	"github.com/yincongcyincong/telegram-deepseek-bot/admin/db"
 	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
 	"github.com/yincongcyincong/telegram-deepseek-bot/param"
@@ -73,7 +75,7 @@ func UpdateBotAddress(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	err = db.UpdateBotAddress(b.ID, b.Address)
+	err = db.UpdateBotAddress(b.ID, b.Address, b.CrtFile)
 	if err != nil {
 		logger.Error("update bot address error", "reason", "db fail", "err", err)
 		utils.Failure(w, param.CodeDBWriteFail, param.MsgDBWriteFail, err)
@@ -111,6 +113,18 @@ func ListBots(w http.ResponseWriter, r *http.Request) {
 		logger.Error("list bots error", "err", err)
 		utils.Failure(w, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
 		return
+	}
+	
+	for _, bot := range bots {
+		statusInter, ok := checkpoint.BotMap.Load(bot.ID)
+		if ok {
+			status := statusInter.(*checkpoint.BotStatus)
+			if status.LastCheck.Add(3 * time.Minute).After(time.Now()) {
+				bot.Status = status.Status
+			} else {
+				bot.Status = "offline"
+			}
+		}
 	}
 	
 	utils.Success(w, map[string]interface{}{
