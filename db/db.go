@@ -167,7 +167,7 @@ func initializeSqlite3Table(db *sql.DB, tableName string) error {
 	
 	if err != nil {
 		if err == sql.ErrNoRows {
-			logger.Info("table '%s' not exist，creating...", "tableName", tableName)
+			logger.Info("table not exist，creating...", "tableName", tableName)
 			_, err := db.Exec(sqlite3CreateTableSQL)
 			if err != nil {
 				return fmt.Errorf("create table fail: %v", err)

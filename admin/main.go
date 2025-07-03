@@ -3,6 +3,7 @@ package main
 import (
 	"net/http"
 	
+	"github.com/yincongcyincong/telegram-deepseek-bot/admin/checkpoint"
 	"github.com/yincongcyincong/telegram-deepseek-bot/admin/conf"
 	"github.com/yincongcyincong/telegram-deepseek-bot/admin/controller"
 	"github.com/yincongcyincong/telegram-deepseek-bot/admin/db"
@@ -14,6 +15,7 @@ func main() {
 	conf.InitConfig()
 	controller.InitSessionStore()
 	db.InitTable()
+	checkpoint.InitStatusCheck()
 	
 	http.Handle("/", View())
 	
