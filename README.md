@@ -7,7 +7,7 @@ every body have **3000** token to try this bot, please give me a star!
 
 This repository provides a **Telegram bot** built with **Golang** that integrates with **LLM API** to provide
 AI-powered responses. The bot supports **openai** **deepseek** **gemini** **openrouter** LLMs, making interactions feel more natural and dynamic.
-[中文文档](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/Readme_ZH.md)
+[中文文档](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/README_ZH.md)
 
 ## 🚀 Features
 
