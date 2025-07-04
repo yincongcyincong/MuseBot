@@ -1,37 +1,32 @@
-// src/components/Modal.jsx
 import React from "react";
 
 export default function Modal({ visible, title, children, onClose }) {
     if (!visible) return null;
 
+    const handleBackgroundClick = (e) => {
+        // 如果点击的是背景（而不是弹窗内容），则关闭
+        if (e.target === e.currentTarget) {
+            onClose();
+        }
+    };
+
     return (
         <div
-            style={{
-                position: "fixed",
-                top: 0,
-                left: 0,
-                width: "100%",
-                height: "100%",
-                background: "rgba(0,0,0,0.3)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                zIndex: 999,
-            }}
+            className="fixed inset-0 bg-black/30 flex items-center justify-center z-[999]"
+            onClick={handleBackgroundClick}
         >
             <div
-                style={{
-                    background: "#fff",
-                    padding: "20px",
-                    borderRadius: "8px",
-                    minWidth: "300px",
-                    maxWidth: "90%",
-                    boxShadow: "0 4px 8px rgba(0,0,0,0.2)",
-                }}
+                className="bg-white p-6 rounded-lg shadow-lg max-w-xl w-full mx-4"
+                onClick={(e) => e.stopPropagation()} // 阻止事件冒泡
             >
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "10px" }}>
-                    <h3>{title}</h3>
-                    <button onClick={onClose} style={{ fontSize: "16px" }}>✕</button>
+                <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-semibold">{title}</h3>
+                    <button
+                        onClick={onClose}
+                        className="text-gray-500 hover:text-gray-700 text-xl leading-none"
+                    >
+                        ✕
+                    </button>
                 </div>
                 {children}
             </div>

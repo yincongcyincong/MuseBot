@@ -39,9 +39,7 @@ function ConfigForm({ botId }) {
         try {
             const res = await fetch(`/bot/conf/update?id=${botId}`, {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ type: section, key, value }),
             });
 
@@ -58,70 +56,55 @@ function ConfigForm({ botId }) {
                 delete copy[statusKey];
                 return copy;
             });
-        }, 3000); // 清除状态提示
+        }, 3000);
     };
 
-    if (loading) return <div>Loading config...</div>;
-    if (!configData) return <div>No config data</div>;
+    if (loading) return <div className="p-4 text-gray-600">Loading config...</div>;
+    if (!configData) return <div className="p-4 text-gray-600">No config data</div>;
 
     return (
-        <div
-            style={{
-                padding: "20px",
-                maxHeight: "70vh",
-                overflowY: "auto",
-                border: "1px solid #ccc",
-                borderRadius: "8px",
-            }}
-        >
-            <h2>System Configurations</h2>
+        <div className="p-5 max-h-[70vh] overflow-y-auto border border-gray-300 rounded-lg bg-white">
+            <h2 className="text-xl font-semibold mb-6">System Configurations</h2>
+
             {Object.entries(configData).map(([sectionName, sectionValues]) => (
-                <div key={sectionName} style={{ marginBottom: "30px" }}>
-                    <h3>{sectionName.toUpperCase()}</h3>
-                    {Object.entries(sectionValues).map(([key, value]) => {
-                        const statusKey = `${sectionName}.${key}`;
-                        const statusText = saveStatusMap[statusKey] || "";
-                        return (
-                            <div
-                                key={key}
-                                style={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    marginBottom: "10px",
-                                }}
-                            >
-                                <label
-                                    style={{
-                                        width: "200px",
-                                        fontWeight: "bold",
-                                        wordBreak: "break-word",
-                                    }}
+                <div key={sectionName} className="mb-10">
+                    <h3 className="text-lg font-bold mb-4 border-b border-gray-200 pb-1">
+                        {sectionName.toUpperCase()}
+                    </h3>
+
+                    <div className="space-y-4">
+                        {Object.entries(sectionValues).map(([key, value]) => {
+                            const statusKey = `${sectionName}.${key}`;
+                            const statusText = saveStatusMap[statusKey] || "";
+
+                            return (
+                                <div
+                                    key={key}
+                                    className="flex items-center space-x-4"
                                 >
-                                    {key}
-                                </label>
-                                <input
-                                    type="text"
-                                    value={value ?? ""}
-                                    onChange={(e) =>
-                                        handleChange(sectionName, key, e.target.value)
-                                    }
-                                    style={{ flex: 1, padding: "8px", fontSize: "14px" }}
-                                />
-                                <button
-                                    style={{
-                                        marginLeft: "10px",
-                                        padding: "6px 12px",
-                                    }}
-                                    onClick={() => handleSaveSingle(sectionName, key)}
-                                >
-                                    Save
-                                </button>
-                                <span style={{ marginLeft: "10px", color: "#666" }}>
-                                    {statusText}
-                                </span>
-                            </div>
-                        );
-                    })}
+                                    <label className="w-48 font-semibold text-gray-700 break-words">
+                                        {key}
+                                    </label>
+
+                                    <input
+                                        type="text"
+                                        value={value ?? ""}
+                                        onChange={(e) => handleChange(sectionName, key, e.target.value)}
+                                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent text-sm"
+                                    />
+
+                                    <button
+                                        onClick={() => handleSaveSingle(sectionName, key)}
+                                        className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm transition"
+                                    >
+                                        Save
+                                    </button>
+
+                                    <span className="text-gray-500 text-sm select-none">{statusText}</span>
+                                </div>
+                            );
+                        })}
+                    </div>
                 </div>
             ))}
         </div>

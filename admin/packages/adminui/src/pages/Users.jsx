@@ -1,5 +1,7 @@
+// src/pages/Users.jsx
 import React, { useEffect, useState } from "react";
 import Modal from "../components/Modal";
+import Pagination from "../components/Pagination";
 
 function Users() {
     const [users, setUsers] = useState([]);
@@ -8,14 +10,19 @@ function Users() {
     const [editingUser, setEditingUser] = useState(null);
     const [form, setForm] = useState({ id: 0, username: "", password: "" });
 
+    const [page, setPage] = useState(1);
+    const [pageSize] = useState(10);
+    const [total, setTotal] = useState(0);
+
     useEffect(() => {
         fetchUsers();
-    }, []);
+    }, [page]);
 
     const fetchUsers = async () => {
-        const res = await fetch("/user/list");
+        const res = await fetch(`/user/list?page=${page}&page_size=${pageSize}`);
         const data = await res.json();
         setUsers(data.data.list);
+        setTotal(data.data.total);
     };
 
     const handleAddClick = () => {
@@ -40,7 +47,7 @@ function Users() {
 
             if (!res.ok) throw new Error("Delete failed");
 
-            await fetchUsers(); // refresh list
+            await fetchUsers();
         } catch (error) {
             console.error("Failed to delete user:", error);
         }
@@ -57,6 +64,10 @@ function Users() {
 
         await fetchUsers();
         setModalVisible(false);
+    };
+
+    const handlePageChange = (newPage) => {
+        setPage(newPage);
     };
 
     return (
@@ -125,6 +136,8 @@ function Users() {
                     </tbody>
                 </table>
             </div>
+
+            <Pagination page={page} pageSize={pageSize} total={total} onPageChange={handlePageChange} />
 
             <Modal
                 visible={modalVisible}

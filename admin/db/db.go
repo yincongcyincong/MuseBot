@@ -28,7 +28,8 @@ const (
 				create_time int(10) NOT NULL DEFAULT '0',
 				update_time int(10) NOT NULL DEFAULT '0',
 				is_deleted int(10) NOT NULL DEFAULT '0'
-			);`
+			);
+			insert into users values(1, 'admin', '21232f297a57a5a743894a0e4a801fc3', strftime('%s','now'), strftime('%s','now'))`
 	
 	mysqlCreateUsersSQL = `
 			CREATE TABLE IF NOT EXISTS users (
@@ -40,7 +41,7 @@ const (
 			);`
 	
 	mysqlCreateBotSQL = `
-			CREATE TABLE IF NOT EXISTS records (
+			CREATE TABLE IF NOT EXISTS bot (
 				id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
 				address VARCHAR(255) NOT NULL DEFAULT '',
 				crt_file TEXT NOT NULL,
@@ -48,6 +49,7 @@ const (
 				update_time int(10) NOT NULL DEFAULT '0',
 				is_deleted int(10) NOT NULL DEFAULT '0'
 			);`
+	MysqlInsertAdmin = `insert into users values(1, 'admin', '21232f297a57a5a743894a0e4a801fc3', Now(), Now())`
 )
 
 var (
@@ -84,7 +86,7 @@ func InitTable() {
 			logger.Fatal("create mysql table fail", "err", err)
 		}
 		
-		if err := initializeMysqlTable(DB, "records", mysqlCreateBotSQL); err != nil {
+		if err := initializeMysqlTable(DB, "bot", mysqlCreateBotSQL); err != nil {
 			logger.Fatal("create mysql table fail", "err", err)
 		}
 		
@@ -106,6 +108,13 @@ func initializeMysqlTable(db *sql.DB, tableName string, createSQL string) error 
 			return fmt.Errorf("create table failed: %v", err)
 		}
 		logger.Info("Create table success", "tableName", tableName)
+		
+		if tableName == "users" {
+			_, err = db.Exec(MysqlInsertAdmin)
+			if err != nil {
+				logger.Fatal("Create index failed", "err", err)
+			}
+		}
 	} else if err != nil {
 		return fmt.Errorf("search table failed: %v", err)
 	} else {
