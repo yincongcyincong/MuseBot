@@ -19,50 +19,79 @@ export default function LoginForm() {
             setUser(data);
             navigate("/dashboard");
         } catch (err) {
-            setError(err.message || "登录失败");
+            setError(err.message || "Login failed");
         }
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-tr from-indigo-900 via-purple-900 to-pink-900 px-6">
             <form
                 onSubmit={handleSubmit}
-                className="bg-white p-8 rounded-lg shadow-md w-full max-w-sm"
+                className="bg-white bg-opacity-90 backdrop-blur-md rounded-2xl shadow-xl p-10 max-w-md w-full animate-fadeIn"
             >
-                <h2 className="text-2xl font-semibold text-center mb-6">登录后台</h2>
+                <h2 className="text-4xl font-extrabold text-center mb-8 text-indigo-700 drop-shadow-lg">
+                    Welcome Back
+                </h2>
 
                 {error && (
-                    <div className="text-red-600 mb-4 text-sm text-center">{error}</div>
+                    <div className="mb-4 text-center text-red-600 font-medium animate-pulse">
+                        {error}
+                    </div>
                 )}
 
-                <div className="mb-4">
+                <div className="mb-6 relative">
                     <input
                         type="text"
-                        placeholder="用户名"
+                        placeholder="Username"
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
                         required
-                        className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="peer w-full px-5 py-3 rounded-xl border border-gray-300
+              focus:outline-none focus:ring-4 focus:ring-indigo-400
+              transition transform duration-200
+              focus:shadow-lg focus:scale-105"
                     />
+                    <label
+                        className="absolute left-5 top-3 text-gray-400 text-sm pointer-events-none
+              peer-placeholder-shown:top-3 peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-400
+              peer-focus:top-1 peer-focus:text-xs peer-focus:text-indigo-600 transition-all"
+                    >
+                        Username
+                    </label>
                 </div>
 
-                <div className="mb-6">
+                <div className="mb-8 relative">
                     <input
                         type="password"
-                        placeholder="密码"
+                        placeholder="Password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         required
-                        className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="peer w-full px-5 py-3 rounded-xl border border-gray-300
+              focus:outline-none focus:ring-4 focus:ring-indigo-400
+              transition transform duration-200
+              focus:shadow-lg focus:scale-105"
                     />
+                    <label
+                        className="absolute left-5 top-3 text-gray-400 text-sm pointer-events-none
+              peer-placeholder-shown:top-3 peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-400
+              peer-focus:top-1 peer-focus:text-xs peer-focus:text-indigo-600 transition-all"
+                    >
+                        Password
+                    </label>
                 </div>
 
                 <button
                     type="submit"
-                    className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition duration-200"
+                    className="w-full py-3 bg-indigo-600 text-white font-semibold rounded-xl shadow-lg
+            hover:bg-indigo-700 active:scale-95 transition-transform duration-150"
                 >
-                    登录
+                    Log In
                 </button>
+
+                <p className="mt-6 text-center text-gray-600 text-sm select-none">
+                    Powered by <span className="font-bold text-indigo-600">Jack Yin</span>
+                </p>
             </form>
         </div>
     );

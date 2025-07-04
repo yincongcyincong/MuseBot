@@ -2,10 +2,12 @@ package controller
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
+	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -13,6 +15,7 @@ import (
 	"github.com/yincongcyincong/telegram-deepseek-bot/admin/checkpoint"
 	"github.com/yincongcyincong/telegram-deepseek-bot/admin/db"
 	adminUtils "github.com/yincongcyincong/telegram-deepseek-bot/admin/utils"
+	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
 	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
 	"github.com/yincongcyincong/telegram-deepseek-bot/param"
 	"github.com/yincongcyincong/telegram-deepseek-bot/utils"
@@ -23,6 +26,20 @@ type Bot struct {
 	Address string `json:"address"`
 	CrtFile string `json:"crt_file"`
 }
+
+type GetBotConfRes struct {
+	Data struct {
+		Base  *conf.BaseConf  `json:"base"`
+		Audio *conf.AudioConf `json:"audio"`
+		LLM   *conf.LLMConf   `json:"llm"`
+		Photo *conf.PhotoConf `json:"photo"`
+		Video *conf.VideoConf `json:"video"`
+	} `json:"data"`
+}
+
+var (
+	SkipKey = map[string]bool{"bot": true}
+)
 
 func CreateBot(w http.ResponseWriter, r *http.Request) {
 	var b Bot
@@ -155,12 +172,40 @@ func GetBotConf(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	defer resp.Body.Close()
-	_, err = io.Copy(w, resp.Body)
+	
+	bodyByte, err := io.ReadAll(resp.Body)
+	httpRes := new(GetBotConfRes)
+	err = json.Unmarshal(bodyByte, httpRes)
 	if err != nil {
-		logger.Error("copy response body error", "err", err)
+		logger.Error("json umarshal error", "err", err)
 		utils.Failure(w, param.CodeServerFail, param.MsgServerFail, err)
 		return
 	}
+	
+	res := map[string]map[string]any{
+		"base":  make(map[string]any),
+		"audio": make(map[string]any),
+		"llm":   make(map[string]any),
+		"photo": make(map[string]any),
+		"video": make(map[string]any),
+	}
+	for k, v := range CompareFlagsWithStructTags(httpRes.Data.Base) {
+		res["base"][k] = v
+	}
+	for k, v := range CompareFlagsWithStructTags(httpRes.Data.Audio) {
+		res["audio"][k] = v
+	}
+	for k, v := range CompareFlagsWithStructTags(httpRes.Data.LLM) {
+		res["llm"][k] = v
+	}
+	for k, v := range CompareFlagsWithStructTags(httpRes.Data.Photo) {
+		res["photo"][k] = v
+	}
+	for k, v := range CompareFlagsWithStructTags(httpRes.Data.Video) {
+		res["video"][k] = v
+	}
+	
+	utils.Success(w, res)
 }
 
 func UpdateBotConf(w http.ResponseWriter, r *http.Request) {
@@ -240,4 +285,45 @@ func getBot(r *http.Request) (*db.Bot, error) {
 	}
 	
 	return bot, nil
+}
+
+func CompareFlagsWithStructTags(cfg interface{}) map[string]any {
+	v := reflect.ValueOf(cfg)
+	t := reflect.TypeOf(cfg)
+	
+	// If it's a pointer, get the element it points to
+	if t.Kind() == reflect.Ptr {
+		if v.IsNil() {
+			logger.Warn("Input is a nil pointer")
+			return nil
+		}
+		v = v.Elem()
+		t = t.Elem()
+	}
+	
+	if t.Kind() != reflect.Struct {
+		logger.Warn("Input must be a struct or pointer to struct")
+		return nil
+	}
+	
+	res := make(map[string]any)
+	for i := 0; i < t.NumField(); i++ {
+		field := t.Field(i)
+		jsonTag := field.Tag.Get("json")
+		if jsonTag == "" || SkipKey[jsonTag] {
+			continue
+		}
+		
+		structValue := ""
+		switch jsonTag {
+		case "allowed_telegram_user_ids", "allowed_telegram_group_ids", "admin_user_ids":
+			structValue = utils.MapKeysToString(v.Field(i).Interface())
+		default:
+			structValue = utils.ValueToString(v.Field(i).Interface())
+		}
+		
+		res[jsonTag] = structValue
+	}
+	
+	return res
 }

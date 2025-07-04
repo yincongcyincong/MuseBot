@@ -32,7 +32,11 @@ export default function Header({ username = "用户", avatarUrl = "" }) {
     return (
         <header className="flex justify-between items-center px-6 py-4 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 shadow-lg">
             {/* 左侧标题 */}
-            <div className="text-xl font-bold text-white drop-shadow-md">仪表盘</div>
+            <div className="text-xl font-bold text-white drop-shadow-md">
+                <a href="https://github.com/yincongcyincong/telegram-deepseek-bot"
+                    target="_blank"
+                    rel="noopener noreferrer">telegram-deepseek-bot</a>
+            </div>
 
             {/* 右侧用户信息 */}
             <div className="relative" ref={menuRef}>
@@ -46,7 +50,7 @@ export default function Header({ username = "用户", avatarUrl = "" }) {
                     aria-expanded={menuOpen}
                 >
                     <img
-                        src={avatarUrl || "/default-avatar.png"}
+                        src={avatarUrl || "/avatar.jpeg"}
                         alt="avatar"
                         className="w-8 h-8 rounded-full border-2 border-indigo-500"
                     />
