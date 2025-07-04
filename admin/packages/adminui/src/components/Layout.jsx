@@ -29,7 +29,7 @@ export default function Layout() {
                 </div>
 
                 {/* 内容区域：加 overflow-auto 防止溢出 */}
-                <div className="flex-1 p-5 overflow-auto">
+                <div className="flex-1 overflow-auto">
                     {/* 横向滚动包装 */}
                     <div className="overflow-x-auto">
                         <Outlet />
