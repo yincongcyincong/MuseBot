@@ -1,14 +1,13 @@
 package checkpoint
 
 import (
-	"crypto/tls"
-	"crypto/x509"
 	"net/http"
 	"strings"
 	"sync"
 	"time"
 	
 	"github.com/yincongcyincong/telegram-deepseek-bot/admin/db"
+	"github.com/yincongcyincong/telegram-deepseek-bot/admin/utils"
 	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
 )
 
@@ -37,32 +36,8 @@ func InitStatusCheck() {
 
 // 健康检查
 func checkBotStatus(address string, crtFile string) string {
-	// 创建自定义 Transport，根据是否提供 crtFile 决定是否使用 TLS
-	transport := &http.Transport{
-		TLSClientConfig: &tls.Config{
-			InsecureSkipVerify: crtFile == "", // 如果没有证书，跳过验证（仅测试用，生产环境应避免）
-		},
-	}
-	
-	// 如果提供了证书文件，则加载证书
-	if crtFile != "" {
-		caCertPool := x509.NewCertPool()
-		caCertPool.AppendCertsFromPEM([]byte(crtFile))
-		
-		transport.TLSClientConfig = &tls.Config{
-			RootCAs:            caCertPool, // 使用自定义 CA 证书
-			InsecureSkipVerify: false,      // 必须验证证书
-		}
-	}
-	
-	// 创建带自定义 Transport 的 HTTP 客户端
-	client := &http.Client{
-		Transport: transport,
-		Timeout:   3 * time.Second,
-	}
-	
 	// 发送请求
-	resp, err := client.Get(strings.TrimSuffix(address, "/") + "/pong")
+	resp, err := utils.GetCrtClient(crtFile).Get(strings.TrimSuffix(address, "/") + "/pong")
 	if err != nil {
 		logger.Warn("checkpoint request fail", "err", err, "address", address)
 		return "offline" // 请求失败
@@ -70,6 +45,7 @@ func checkBotStatus(address string, crtFile string) string {
 	defer resp.Body.Close()
 	
 	if resp.StatusCode != http.StatusOK {
+		logger.Warn("checkpoint request fail", "resp", resp, "address", address)
 		return "offline" // 状态码非 200
 	}
 	

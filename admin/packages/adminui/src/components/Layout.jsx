@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from "react";
 import Sidebar from "./Sidebar";
 import Header from "./Header";
-import { Outlet, useNavigate } from "react-router-dom";
-import {useUser} from "../context/UserContext.jsx";
+import { Outlet } from "react-router-dom";
+import { useUser } from "../context/UserContext.jsx";
 
 export default function Layout() {
     const [userInfo, setUserInfo] = useState({ username: "" });
     const { user } = useUser();
+
     useEffect(() => {
         if (user) {
             setUserInfo(user);
@@ -14,14 +15,20 @@ export default function Layout() {
     }, [user]);
 
     return (
-        <div style={{ display: "flex", flexDirection: "column", height: "100vh" }}>
-            {/* 顶部 Header */}
-            <Header username={userInfo.username} />
+        <div className="flex flex-col h-screen">
+            {/* Header，固定高度，底部有分割线 */}
+            <div className="h-24 border-b border-gray-300">
+                <Header username={userInfo.username} />
+            </div>
 
-            {/* 底部 Sidebar + Content */}
-            <div style={{ display: "flex", flex: 1 }}>
-                <Sidebar />
-                <div style={{ flex: 1, padding: "20px", overflowY: "auto" }}>
+            {/* 主体区域：侧边栏 + 内容 */}
+            <div className="flex flex-1">
+                {/* 侧边栏，固定宽度，右边有分割线 */}
+                <div className="w-64 border-r border-gray-300">
+                    <Sidebar />
+                </div>
+
+                 <div className="flex-1 p-5 overflow-visible">
                     <Outlet />
                 </div>
             </div>

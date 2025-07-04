@@ -2,6 +2,7 @@ package main
 
 import (
 	"net/http"
+	_ "net/http/pprof"
 	
 	"github.com/yincongcyincong/telegram-deepseek-bot/admin/checkpoint"
 	"github.com/yincongcyincong/telegram-deepseek-bot/admin/conf"
@@ -32,6 +33,9 @@ func main() {
 	http.HandleFunc("/bot/update", controller.UpdateBotAddress)
 	http.HandleFunc("/bot/delete", controller.SoftDeleteBot)
 	http.HandleFunc("/bot/list", controller.ListBots)
+	http.HandleFunc("/bot/conf/get", controller.GetBotConf)
+	http.HandleFunc("/bot/conf/update", controller.UpdateBotConf)
+	http.HandleFunc("/bot/command/get", controller.GetBotCommand)
 	
 	http.HandleFunc("/user/login", controller.UserLogin)
 	http.HandleFunc("/user/me", controller.GetCurrentUserHandler)

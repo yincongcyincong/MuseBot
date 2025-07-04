@@ -298,6 +298,7 @@ func (d *DeepseekReq) requestOneToolsCall(ctx context.Context, toolsCall []deeps
 		property := make(map[string]interface{})
 		err := json.Unmarshal([]byte(tool.Function.Arguments), &property)
 		if err != nil {
+			logger.Warn("json unmarshal fail", "err", err, "args", tool.Function.Arguments)
 			return
 		}
 		
