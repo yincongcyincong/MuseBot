@@ -17,12 +17,14 @@
       ]
     },
     "binance": {
-      "command": "npx",
+      "command": "node",
       "description": "get encrypt currency information from binance.",
       "args": [
-        "-y",
-        "@snjyor/binance-mcp@latest"
-      ]
+        "/Users/yincong/go/src/github.com/yincongcyincong/binance-mcp/dist/index.js"
+      ],
+      "env": {
+        "HTTP_PROXY": "http://127.0.0.1:7890"
+      }
     }
   }
 }

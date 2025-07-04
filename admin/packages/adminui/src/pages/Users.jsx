@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from "react";
+import React, { useEffect, useState } from "react";
 import Modal from "../components/Modal";
 
 function Users() {
@@ -6,7 +6,7 @@ function Users() {
     const [search, setSearch] = useState("");
     const [modalVisible, setModalVisible] = useState(false);
     const [editingUser, setEditingUser] = useState(null);
-    const [form, setForm] = useState({id: 0, username: "", password: ""});
+    const [form, setForm] = useState({ id: 0, username: "", password: "" });
 
     useEffect(() => {
         fetchUsers();
@@ -19,13 +19,13 @@ function Users() {
     };
 
     const handleAddClick = () => {
-        setForm({id: 0, username: "", password: ""});
+        setForm({ id: 0, username: "", password: "" });
         setEditingUser(null);
         setModalVisible(true);
     };
 
     const handleEditClick = (user) => {
-        setForm({id: user.id, username: user.username, password: ""});
+        setForm({ id: user.id, username: user.username, password: "" });
         setEditingUser(user);
         setModalVisible(true);
     };
@@ -40,103 +40,133 @@ function Users() {
 
             if (!res.ok) throw new Error("Delete failed");
 
-            await fetchUsers(); // 刷新列表
+            await fetchUsers(); // refresh list
         } catch (error) {
             console.error("Failed to delete user:", error);
         }
     };
 
-
     const handleSave = async () => {
-        const url = editingUser
-            ? "/user/update"
-            : "/user/create";
+        const url = editingUser ? "/user/update" : "/user/create";
 
         await fetch(url, {
             method: "POST",
-            headers: {"Content-Type": "application/json"},
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify(form),
         });
+
         await fetchUsers();
         setModalVisible(false);
     };
 
     return (
-        <div>
-            <h2>User Management</h2>
+        <div className="p-6 bg-gray-100 min-h-screen">
+            <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-gray-800">User Management</h2>
+                <button
+                    onClick={handleAddClick}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow"
+                >
+                    + Add User
+                </button>
+            </div>
 
-            <div style={{marginBottom: "20px"}}>
+            <div className="mb-4">
                 <input
                     type="text"
                     placeholder="Search by username"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    style={{padding: "8px", marginRight: "10px"}}
+                    className="w-full sm:w-64 px-4 py-2 border border-gray-300 rounded shadow-sm focus:outline-none focus:ring focus:border-blue-400"
                 />
-                <button style={{padding: "8px 16px"}} onClick={handleAddClick}>
-                    Add User
-                </button>
             </div>
 
-            <table border="1" cellPadding="8" cellSpacing="0" width="100%">
-                <thead style={{background: "#f0f0f0"}}>
-                <tr>
-                    <th>ID</th>
-                    <th>Username</th>
-                    <th>CreateTime</th>
-                    <th>UpdateTime</th>
-                    <th>Actions</th>
-                </tr>
-                </thead>
-                <tbody>
-                {users.map((user) => (
-                    <tr key={user.id}>
-                        <td>{user.id}</td>
-                        <td>{user.username}</td>
-                        <td>{new Date(user.create_time).toLocaleString()}</td>
-                        <td>{new Date(user.update_time).toLocaleString()}</td>
-                        <td>
-                            <button onClick={() => handleEditClick(user)}>Edit</button>
-                            <button onClick={() => handleDeleteClick(user.id)}
-                                    style={{marginLeft: "10px", color: "red"}}>
-                                Delete
-                            </button>
-                        </td>
+            <div className="overflow-x-auto rounded-lg shadow">
+                <table className="min-w-full bg-white divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                    <tr>
+                        {["ID", "Username", "Create Time", "Update Time", "Actions"].map((title) => (
+                            <th
+                                key={title}
+                                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                            >
+                                {title}
+                            </th>
+                        ))}
                     </tr>
-                ))}
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                    {users.map((user) => (
+                        <tr key={user.id} className="hover:bg-gray-50">
+                            <td className="px-6 py-4 text-sm text-gray-800">{user.id}</td>
+                            <td className="px-6 py-4 text-sm text-gray-800">{user.username}</td>
+                            <td className="px-6 py-4 text-sm text-gray-600">
+                                {new Date(user.create_time * 1000).toLocaleString()}
+                            </td>
+                            <td className="px-6 py-4 text-sm text-gray-600">
+                                {new Date(user.update_time * 1000).toLocaleString()}
+                            </td>
+                            <td className="px-6 py-4 space-x-2">
+                                <button
+                                    onClick={() => handleEditClick(user)}
+                                    className="text-blue-600 hover:underline text-sm"
+                                >
+                                    Edit
+                                </button>
+                                <button
+                                    onClick={() => handleDeleteClick(user.id)}
+                                    className="text-red-600 hover:underline text-sm"
+                                >
+                                    Delete
+                                </button>
+                            </td>
+                        </tr>
+                    ))}
+                    </tbody>
+                </table>
+            </div>
 
             <Modal
                 visible={modalVisible}
                 title={editingUser ? "Edit User" : "Add User"}
                 onClose={() => setModalVisible(false)}
             >
-                <input type="hidden" value={form.id}/>
-                <div style={{marginBottom: "10px"}}>
+                <input type="hidden" value={form.id} />
+
+                <div className="mb-4">
                     <input
                         type="text"
                         placeholder="Username"
                         value={form.username}
-                        onChange={(e) => setForm({...form, username: e.target.value})}
-                        style={{width: "100%", padding: "8px"}}
+                        onChange={(e) => setForm({ ...form, username: e.target.value })}
                         disabled={!!editingUser}
+                        className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring focus:border-blue-400"
                     />
                 </div>
-                <div style={{marginBottom: "10px"}}>
+
+                <div className="mb-4">
                     <input
                         type="password"
                         placeholder="Password"
                         value={form.password}
-                        onChange={(e) => setForm({...form, password: e.target.value})}
-                        style={{width: "100%", padding: "8px"}}
+                        onChange={(e) => setForm({ ...form, password: e.target.value })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring focus:border-blue-400"
                     />
                 </div>
-                <div style={{textAlign: "right"}}>
-                    <button onClick={() => setModalVisible(false)} style={{marginRight: "10px"}}>
+
+                <div className="flex justify-end space-x-2">
+                    <button
+                        onClick={() => setModalVisible(false)}
+                        className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded"
+                    >
                         Cancel
                     </button>
-                    <button onClick={handleSave}>Save</button>
+                    <button
+                        onClick={handleSave}
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
+                    >
+                        Save
+                    </button>
                 </div>
             </Modal>
         </div>

@@ -1,12 +1,18 @@
 package controller
 
 import (
+	"bytes"
+	"fmt"
+	"io"
+	"io/ioutil"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 	
 	"github.com/yincongcyincong/telegram-deepseek-bot/admin/checkpoint"
 	"github.com/yincongcyincong/telegram-deepseek-bot/admin/db"
+	adminUtils "github.com/yincongcyincong/telegram-deepseek-bot/admin/utils"
 	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
 	"github.com/yincongcyincong/telegram-deepseek-bot/param"
 	"github.com/yincongcyincong/telegram-deepseek-bot/utils"
@@ -131,4 +137,107 @@ func ListBots(w http.ResponseWriter, r *http.Request) {
 		"list":  bots,
 		"total": total,
 	})
+}
+
+func GetBotConf(w http.ResponseWriter, r *http.Request) {
+	botInfo, err := getBot(r)
+	if err != nil {
+		logger.Error("get bot conf error", "err", err)
+		utils.Failure(w, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
+		return
+	}
+	
+	resp, err := adminUtils.GetCrtClient(botInfo.CrtFile).Get(strings.TrimSuffix(botInfo.Address, "/") + "/conf/get")
+	if err != nil {
+		logger.Error("get bot conf error", "err", err)
+		utils.Failure(w, param.CodeServerFail, param.MsgServerFail, err)
+		return
+	}
+	
+	defer resp.Body.Close()
+	_, err = io.Copy(w, resp.Body)
+	if err != nil {
+		logger.Error("copy response body error", "err", err)
+		utils.Failure(w, param.CodeServerFail, param.MsgServerFail, err)
+		return
+	}
+}
+
+func UpdateBotConf(w http.ResponseWriter, r *http.Request) {
+	botInfo, err := getBot(r)
+	if err != nil {
+		logger.Error("get bot conf error", "err", err)
+		utils.Failure(w, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
+		return
+	}
+	
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		logger.Error("get bot conf error", "err", err)
+		utils.Failure(w, param.CodeParamError, param.MsgParamError, err)
+		return
+	}
+	
+	req, err := http.NewRequest("POST", strings.TrimSuffix(botInfo.Address, "/")+"/conf/update", bytes.NewBuffer(body))
+	if err != nil {
+		fmt.Println("Error creating request:", err)
+		return
+	}
+	req.Header.Set("Content-Type", "application/json")
+	
+	resp, err := adminUtils.GetCrtClient(botInfo.CrtFile).Do(req)
+	if err != nil {
+		logger.Error("get bot conf error", "err", err)
+		utils.Failure(w, param.CodeServerFail, param.MsgServerFail, err)
+		return
+	}
+	
+	defer resp.Body.Close()
+	_, err = io.Copy(w, resp.Body)
+	if err != nil {
+		logger.Error("copy response body error", "err", err)
+		utils.Failure(w, param.CodeServerFail, param.MsgServerFail, err)
+		return
+	}
+}
+
+func GetBotCommand(w http.ResponseWriter, r *http.Request) {
+	botInfo, err := getBot(r)
+	if err != nil {
+		logger.Error("get bot conf error", "err", err)
+		utils.Failure(w, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
+		return
+	}
+	
+	resp, err := adminUtils.GetCrtClient(botInfo.CrtFile).Get(strings.TrimSuffix(botInfo.Address, "/") + "/command/get")
+	if err != nil {
+		logger.Error("get bot conf error", "err", err)
+		utils.Failure(w, param.CodeServerFail, param.MsgServerFail, err)
+		return
+	}
+	
+	defer resp.Body.Close()
+	_, err = io.Copy(w, resp.Body)
+	if err != nil {
+		logger.Error("copy response body error", "err", err)
+		utils.Failure(w, param.CodeServerFail, param.MsgServerFail, err)
+		return
+	}
+}
+
+func getBot(r *http.Request) (*db.Bot, error) {
+	idStr := r.URL.Query().Get("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil || id <= 0 {
+		logger.Error("get bot error", "id", idStr)
+		return nil, param.ErrParamError
+	}
+	
+	bot, err := db.GetBotByID(id)
+	if err != nil {
+		logger.Error("get bot error", "id", id, "err", err)
+		return nil, param.ErrDBQueryFail
+	}
+	
+	return bot, nil
 }

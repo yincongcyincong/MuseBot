@@ -1,5 +1,6 @@
 import React, {useEffect, useState} from "react";
 import Modal from "../components/Modal";
+import ConfigForm from "./ConfigForm"; // 假设你已经拆出来
 
 function Bots() {
     const [bots, setBots] = useState([]);
@@ -7,6 +8,11 @@ function Bots() {
     const [modalVisible, setModalVisible] = useState(false);
     const [editingBot, setEditingBot] = useState(null);
     const [form, setForm] = useState({id: 0, address: "", crt_file: ""});
+
+    const [rawConfigVisible, setRawConfigVisible] = useState(false);
+    const [structuredConfigVisible, setStructuredConfigVisible] = useState(false);
+    const [rawConfigText, setRawConfigText] = useState("");
+    const [selectId, setSelectId] = useState(0);
 
     useEffect(() => {
         fetchBots();
@@ -58,9 +64,24 @@ function Bots() {
         setModalVisible(false);
     };
 
+    const handleShowRawConfig = async (botId) => {
+        try {
+            const res = await fetch(`/bot/command/get?id=${botId}`); // 后端返回 JSON 的 data 是 string
+            const data = await res.json();
+            setRawConfigText(data.data);
+            setRawConfigVisible(true);
+        } catch (err) {
+            console.error("Failed to fetch raw config:", err);
+        }
+    };
+
+    const handleShowStructuredConfig = (botId) => {
+        setStructuredConfigVisible(true);
+        setSelectId(botId)
+    };
 
     return (
-        <div>
+        <div style={{padding: "20px"}}>
             <h2>Bot Management</h2>
 
             <div style={{marginBottom: "20px"}}>
@@ -71,7 +92,7 @@ function Bots() {
                     onChange={(e) => setSearch(e.target.value)}
                     style={{padding: "8px", marginRight: "10px"}}
                 />
-                <button style={{padding: "8px 16px"}} onClick={handleAddClick}>
+                <button style={{padding: "8px 16px", marginRight: "10px"}} onClick={handleAddClick}>
                     Add Bot
                 </button>
             </div>
@@ -89,28 +110,39 @@ function Bots() {
                 </tr>
                 </thead>
                 <tbody>
-                {bots.map((bot) => (
-                    <tr key={bot.id}>
-                        <td>{bot.id}</td>
-                        <td>{bot.address}</td>
-                        <td>{bot.crt_file}</td>
-                        <td>{bot.status}</td>
-                        <td>{new Date(bot.create_time).toLocaleString()}</td>
-                        <td>{new Date(bot.update_time).toLocaleString()}</td>
-                        <td>
-                            <button onClick={() => handleEditClick(bot)}>Edit</button>
-                            <button
-                                onClick={() => handleDeleteClick(bot.id)}
-                                style={{marginLeft: "10px", color: "red"}}
-                            >
-                                Delete
-                            </button>
-                        </td>
-                    </tr>
-                ))}
+                {bots
+                    .filter((bot) => bot.address.includes(search))
+                    .map((bot) => (
+                        <tr key={bot.id}>
+                            <td>{bot.id}</td>
+                            <td>{bot.address}</td>
+                            <td>{bot.crt_file}</td>
+                            <td>{bot.status}</td>
+                            <td>{new Date(bot.create_time * 1000).toLocaleString()}</td>
+                            <td>{new Date(bot.update_time * 1000).toLocaleString()}</td>
+                            <td>
+                                <button onClick={() => handleEditClick(bot)}>
+                                    Edit
+                                </button>
+                                <button onClick={() => handleShowRawConfig(bot.id)}>
+                                    Command
+                                </button>
+                                <button onClick={() => handleShowStructuredConfig(bot.id)}>
+                                    Config
+                                </button>
+                                <button
+                                    onClick={() => handleDeleteClick(bot.id)}
+                                    style={{marginLeft: "10px", color: "red"}}
+                                >
+                                    Delete
+                                </button>
+                            </td>
+                        </tr>
+                    ))}
                 </tbody>
             </table>
 
+            {/* Bot Add/Edit Modal */}
             <Modal
                 visible={modalVisible}
                 title={editingBot ? "Edit Bot" : "Add Bot"}
@@ -127,23 +159,35 @@ function Bots() {
                     />
                 </div>
                 <div style={{marginBottom: "10px"}}>
-                    <input
-                        type="text"
+                    <textarea
+                        name="crt_file"
                         placeholder="CRT File"
-                        value={form.crt_file}
                         onChange={(e) => setForm({...form, crt_file: e.target.value})}
                         style={{width: "100%", padding: "8px"}}
-                    />
+                    >{form.crt_file}</textarea>
                 </div>
                 <div style={{textAlign: "right"}}>
-                    <button
-                        onClick={() => setModalVisible(false)}
-                        style={{marginRight: "10px"}}
-                    >
+                    <button onClick={() => setModalVisible(false)} style={{marginRight: "10px"}}>
                         Cancel
                     </button>
                     <button onClick={handleSave}>Save</button>
                 </div>
+            </Modal>
+
+            {/* Raw Config Modal */}
+            <Modal visible={rawConfigVisible} title="Command" onClose={() => setRawConfigVisible(false)}>
+                <pre style={{whiteSpace: "pre-wrap", wordBreak: "break-word", maxHeight: "500px", overflowY: "auto"}}>
+                    {rawConfigText}
+                </pre>
+            </Modal>
+
+            {/* Structured Config Modal with embedded form */}
+            <Modal
+                visible={structuredConfigVisible}
+                title="Edit Config"
+                onClose={() => setStructuredConfigVisible(false)}
+            >
+                <ConfigForm botId={selectId}/>
             </Modal>
         </div>
     );

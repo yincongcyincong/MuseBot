@@ -6,16 +6,15 @@ import Dashboard from "../pages/Dashboard";
 import Users from "../pages/Users";
 import Bot from "../pages/Bot";
 import { useUser } from "../context/UserContext.jsx";
+import TestPage from "../pages/TestPage.jsx";
 
 export default function Router() {
     const { isAuthenticated } = useUser();
 
-    console.log("isAuthenticated:", isAuthenticated); // 观察这个值
-
-    if (!isAuthenticated) {
-        // 还没确定登录状态，可以返回加载中页面或者null
-        return <div>Loading...</div>;
-    }
+    // if (!isAuthenticated) {
+    //     // 还没确定登录状态，可以返回加载中页面或者null
+    //     return <div>Loading...</div>;
+    // }
 
     return (
         <Routes>
@@ -28,6 +27,7 @@ export default function Router() {
                     <Route path="dashboard" element={<Dashboard />} />
                     <Route path="users" element={<Users />} />
                     <Route path="bot" element={<Bot />} />
+                    <Route path="test" element={<TestPage />} />
                     <Route index element={<Dashboard />} />
                 </Route>
             )}
