@@ -9,30 +9,42 @@ import { useUser } from "../context/UserContext.jsx";
 import TestPage from "../pages/TestPage.jsx";
 
 export default function Router() {
-    const { isAuthenticated } = useUser();
+    const { isAuthenticated, isLoading } = useUser(); // ✨ 1. 获取 isLoading 状态
 
-    // if (!isAuthenticated) {
-    //     // 还没确定登录状态，可以返回加载中页面或者null
-    //     return <div>Loading...</div>;
-    // }
-
+    if (isLoading) {
+        return (
+            <div className="fixed inset-0 flex items-center justify-center bg-white">
+                <div className="flex space-x-2">
+                    <div className="w-4 h-4 bg-gray-400 rounded-full animate-pulse [animation-delay:-0.3s]"></div>
+                    <div className="w-4 h-4 bg-gray-400 rounded-full animate-pulse [animation-delay:-0.15s]"></div>
+                    <div className="w-4 h-4 bg-gray-400 rounded-full animate-pulse"></div>
+                </div>
+            </div>
+        );
+    }
     return (
         <Routes>
+            {/* 登录页面的逻辑保持不变 */}
             <Route
                 path="/login"
                 element={!isAuthenticated ? <LoginPage /> : <Navigate to="/dashboard" />}
             />
+            {/* 只有在 isAuthenticated 为 true 时才渲染受保护的路由 */}
             {isAuthenticated && (
                 <Route path="/" element={<Layout />}>
                     <Route path="dashboard" element={<Dashboard />} />
                     <Route path="users" element={<Users />} />
                     <Route path="bot" element={<Bot />} />
                     <Route path="test" element={<TestPage />} />
-                    <Route index element={<Dashboard />} />
+                    {/* 从根路径 / 跳转到看板页 */}
+                    <Route index element={<Navigate to="/dashboard" />} />
                 </Route>
             )}
-            {!isAuthenticated && <Route path="*" element={<Navigate to="/login" />} />}
-            {isAuthenticated && <Route path="*" element={<Navigate to="/dashboard" />} />}
+            {/* 兜底路由：根据登录状态重定向到正确页面 */}
+            <Route
+                path="*"
+                element={<Navigate to={isAuthenticated ? "/dashboard" : "/login"} />}
+            />
         </Routes>
     );
 }
