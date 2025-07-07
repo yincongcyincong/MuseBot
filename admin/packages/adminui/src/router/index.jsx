@@ -7,6 +7,8 @@ import Users from "../pages/Users";
 import Bot from "../pages/Bot";
 import { useUser } from "../context/UserContext.jsx";
 import TestPage from "../pages/TestPage.jsx";
+import BotUser from "../pages/BotUser.jsx";
+import BotChat from "../pages/BotChat.jsx";
 
 export default function Router() {
     const { isAuthenticated, isLoading } = useUser(); // ✨ 1. 获取 isLoading 状态
@@ -33,8 +35,10 @@ export default function Router() {
             {isAuthenticated && (
                 <Route path="/" element={<Layout />}>
                     <Route path="dashboard" element={<Dashboard />} />
-                    <Route path="users" element={<Users />} />
+                    <Route path="admins" element={<Users />} />
                     <Route path="bot" element={<Bot />} />
+                    <Route path="users" element={<BotUser />} />
+                    <Route path="chats" element={<BotChat />} />
                     <Route path="test" element={<TestPage />} />
                     {/* 从根路径 / 跳转到看板页 */}
                     <Route index element={<Navigate to="/dashboard" />} />

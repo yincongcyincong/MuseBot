@@ -26,13 +26,13 @@ type AQ struct {
 }
 
 type Record struct {
-	ID        int
-	UserId    int64
-	Question  string
-	Answer    string
-	Content   string
-	Token     int
-	IsDeleted int
+	ID        int    `json:"id"`
+	UserId    int64  `json:"user_id"`
+	Question  string `json:"question"`
+	Answer    string `json:"answer"`
+	Content   string `json:"content"`
+	Token     int    `json:"token"`
+	IsDeleted int    `json:"is_deleted"`
 }
 
 var MsgRecord = sync.Map{}
@@ -220,4 +220,57 @@ func GetTokenByUserIdAndTime(userId int64, start, end int64) (int, error) {
 		return 0, err
 	}
 	return user.Token, nil
+}
+
+func GetRecordCount(userId int64) (int, error) {
+	var count int
+	query := "SELECT COUNT(*) FROM records"
+	var args []interface{}
+	
+	if userId > 0 {
+		query += " WHERE user_id = ?"
+		args = append(args, userId)
+	}
+	
+	err := DB.QueryRow(query, args...).Scan(&count)
+	return count, err
+}
+
+func GetRecordList(userId int64, page int, pageSize int) ([]Record, error) {
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 {
+		pageSize = 10
+	}
+	offset := (page - 1) * pageSize
+	
+	query := `
+		SELECT id, user_id, question, answer, content, token, is_deleted
+		FROM records`
+	var args []interface{}
+	
+	if userId > 0 {
+		query += " WHERE user_id = ?"
+		args = append(args, userId)
+	}
+	
+	query += " ORDER BY id DESC LIMIT ? OFFSET ?"
+	args = append(args, pageSize, offset)
+	
+	rows, err := DB.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	
+	var records []Record
+	for rows.Next() {
+		var r Record
+		if err := rows.Scan(&r.ID, &r.UserId, &r.Question, &r.Answer, &r.Content, &r.Token, &r.IsDeleted); err != nil {
+			return nil, err
+		}
+		records = append(records, r)
+	}
+	return records, nil
 }

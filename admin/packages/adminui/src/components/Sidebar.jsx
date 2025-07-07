@@ -6,8 +6,10 @@ export default function Sidebar() {
 
     const links = [
         { path: "/dashboard", label: "Dashboard" },
-        { path: "/users", label: "Users" },
-        { path: "/bot", label: "Bot" },
+        { path: "/admins", label: "Users" },
+        { path: "/bot", label: "Bots" },
+        { path: "/users", label: "BotUsers" },
+        { path: "/chats", label: "BotChats" },
     ];
 
     return (

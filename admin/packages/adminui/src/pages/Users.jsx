@@ -19,7 +19,9 @@ function Users() {
     }, [page]);
 
     const fetchUsers = async () => {
-        const res = await fetch(`/user/list?page=${page}&page_size=${pageSize}`);
+        const res = await fetch(
+            `/user/list?page=${page}&page_size=${pageSize}&username=${encodeURIComponent(search)}`
+        );
         const data = await res.json();
         setUsers(data.data.list);
         setTotal(data.data.total);
@@ -70,6 +72,11 @@ function Users() {
         setPage(newPage);
     };
 
+    const handleSearch = () => {
+        setPage(1); // 重置到第一页
+        fetchUsers();
+    };
+
     return (
         <div className="p-6 bg-gray-100 min-h-screen">
             <div className="flex justify-between items-center mb-6">
@@ -82,7 +89,7 @@ function Users() {
                 </button>
             </div>
 
-            <div className="mb-4">
+            <div className="flex mb-4 space-x-2">
                 <input
                     type="text"
                     placeholder="Search by username"
@@ -90,6 +97,12 @@ function Users() {
                     onChange={(e) => setSearch(e.target.value)}
                     className="w-full sm:w-64 px-4 py-2 border border-gray-300 rounded shadow-sm focus:outline-none focus:ring focus:border-blue-400"
                 />
+                <button
+                    onClick={handleSearch}
+                    className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                >
+                    Search
+                </button>
             </div>
 
             <div className="overflow-x-auto rounded-lg shadow">

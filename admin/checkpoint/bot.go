@@ -11,12 +11,18 @@ import (
 	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
 )
 
+const (
+	OnlineStatus  = "online"
+	OfflineStatus = "offline"
+)
+
 var BotMap sync.Map
 
 type BotStatus struct {
-	Address   string
-	Status    string
-	LastCheck time.Time
+	Id        int       `json:"id"`
+	Address   string    `json:"address"`
+	Status    string    `json:"status"`
+	LastCheck time.Time `json:"-"`
 }
 
 func InitStatusCheck() {
@@ -46,15 +52,15 @@ func checkBotStatus(address string, crtFile string) string {
 	
 	if resp.StatusCode != http.StatusOK {
 		logger.Warn("checkpoint request fail", "resp", resp, "address", address)
-		return "offline" // 状态码非 200
+		return OfflineStatus
 	}
 	
-	return "online"
+	return OnlineStatus
 }
 
 // scheduleBotChecks 分批调度，每批 10 秒执行一次
 func scheduleBotChecks() {
-	bots, _, err := db.ListBots(0, 10000)
+	bots, _, err := db.ListBots(0, 10000, "")
 	if err != nil {
 		panic(err)
 	}
@@ -87,6 +93,7 @@ func scheduleBotChecks() {
 			for _, b := range batch {
 				status := checkBotStatus(b.Address, b.CrtFile)
 				BotMap.Store(b.ID, &BotStatus{
+					Id:        b.ID,
 					Address:   b.Address,
 					Status:    status,
 					LastCheck: time.Now(),

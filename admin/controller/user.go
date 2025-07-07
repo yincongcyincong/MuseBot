@@ -87,8 +87,10 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 func ListUsers(w http.ResponseWriter, r *http.Request) {
 	page, pageSize := parsePaginationParams(r)
 	
+	username := r.URL.Query().Get("username")
+	
 	offset := (page - 1) * pageSize
-	users, total, err := db.ListUsers(offset, pageSize)
+	users, total, err := db.ListUsers(offset, pageSize, username)
 	if err != nil {
 		logger.Error("list users error", "err", err)
 		utils.Failure(w, param.CodeDBQueryFail, param.MsgDBQueryFail, err)

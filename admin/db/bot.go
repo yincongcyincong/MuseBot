@@ -1,6 +1,7 @@
 package db
 
 import (
+	"database/sql"
 	"time"
 )
 
@@ -42,25 +43,50 @@ func SoftDeleteBot(id int) error {
 	return err
 }
 
-func ListBots(offset, limit int) ([]*Bot, int, error) {
-	rows, err := DB.Query(`SELECT id, address, crt_file, create_time, update_time, is_deleted FROM bot WHERE is_deleted = 0 LIMIT ? OFFSET ?`, limit, offset)
+func ListBots(offset, limit int, address string) ([]*Bot, int, error) {
+	var (
+		rows  *sql.Rows
+		err   error
+		args  []interface{}
+		query string
+	)
+	
+	bots := make([]*Bot, 0)
+	
+	if address != "" {
+		query = `SELECT id, address, crt_file, create_time, update_time, is_deleted
+		         FROM bot
+		         WHERE is_deleted = 0 AND address LIKE ?
+		         LIMIT ? OFFSET ?`
+		args = append(args, "%"+address+"%", limit, offset)
+	} else {
+		query = `SELECT id, address, crt_file, create_time, update_time, is_deleted
+		         FROM bot
+		         WHERE is_deleted = 0
+		         LIMIT ? OFFSET ?`
+		args = append(args, limit, offset)
+	}
+	
+	rows, err = DB.Query(query, args...)
 	if err != nil {
 		return nil, 0, err
 	}
 	defer rows.Close()
 	
-	bots := make([]*Bot, 0)
 	for rows.Next() {
 		var b Bot
-		err := rows.Scan(&b.ID, &b.Address, &b.CrtFile, &b.CreateTime, &b.UpdateTime, &b.IsDeleted)
-		if err != nil {
+		if err := rows.Scan(&b.ID, &b.Address, &b.CrtFile, &b.CreateTime, &b.UpdateTime, &b.IsDeleted); err != nil {
 			return nil, 0, err
 		}
 		bots = append(bots, &b)
 	}
 	
 	var total int
-	err = DB.QueryRow(`SELECT COUNT(*) FROM bot WHERE is_deleted = 0`).Scan(&total)
+	if address != "" {
+		err = DB.QueryRow(`SELECT COUNT(*) FROM bot WHERE is_deleted = 0 AND address LIKE ?`, "%"+address+"%").Scan(&total)
+	} else {
+		err = DB.QueryRow(`SELECT COUNT(*) FROM bot WHERE is_deleted = 0`).Scan(&total)
+	}
 	if err != nil {
 		return nil, 0, err
 	}
