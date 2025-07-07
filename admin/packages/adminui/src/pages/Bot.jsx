@@ -24,10 +24,15 @@ function Bots() {
     }, [page]);
 
     const fetchBots = async () => {
-        const res = await fetch(`/bot/list?page=${page}&page_size=${pageSize}`);
+        const res = await fetch(`/bot/list?page=${page}&page_size=${pageSize}&address=${encodeURIComponent(search)}`);
         const data = await res.json();
         setBots(data.data.list);
         setTotal(data.data.total);
+    };
+
+    const handleSearch = () => {
+        setPage(1); // 搜索时回到第一页
+        fetchBots();
     };
 
     const handleAddClick = () => {
@@ -96,7 +101,7 @@ function Bots() {
                 </button>
             </div>
 
-            <div className="mb-4">
+            <div className="flex mb-4 space-x-2">
                 <input
                     type="text"
                     placeholder="Search by address"
@@ -104,6 +109,12 @@ function Bots() {
                     onChange={(e) => setSearch(e.target.value)}
                     className="w-full sm:w-64 px-4 py-2 border border-gray-300 rounded shadow-sm focus:outline-none focus:ring focus:border-blue-400"
                 />
+                <button
+                    onClick={handleSearch}
+                    className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                >
+                    Search
+                </button>
             </div>
 
             <div className="overflow-x-auto rounded-lg shadow">
@@ -121,55 +132,51 @@ function Bots() {
                     </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
-                    {bots
-                        .filter((bot) => bot.address.includes(search))
-                        .map((bot) => (
-                            <tr key={bot.id} className="hover:bg-gray-50">
-                                <td className="px-6 py-4 text-sm text-gray-800">{bot.id}</td>
-                                <td className="px-6 py-4 text-sm text-gray-800">{bot.address}</td>
-                                <td className="px-6 py-4 text-sm text-gray-800">{bot.status}</td>
-                                <td className="px-6 py-4 text-sm text-gray-600">
-                                    {new Date(bot.create_time * 1000).toLocaleString()}
-                                </td>
-                                <td className="px-6 py-4 text-sm text-gray-600">
-                                    {new Date(bot.update_time * 1000).toLocaleString()}
-                                </td>
-                                <td className="px-6 py-4 space-x-2 text-sm">
-                                    <button
-                                        onClick={() => handleEditClick(bot)}
-                                        className="text-blue-600 hover:underline"
-                                    >
-                                        Edit
-                                    </button>
-                                    <button
-                                        onClick={() => handleShowRawConfig(bot.id)}
-                                        className="text-purple-600 hover:underline"
-                                    >
-                                        Command
-                                    </button>
-                                    <button
-                                        onClick={() => handleShowStructuredConfig(bot.id)}
-                                        className="text-green-600 hover:underline"
-                                    >
-                                        Config
-                                    </button>
-                                    <button
-                                        onClick={() => handleDeleteClick(bot.id)}
-                                        className="text-red-600 hover:underline"
-                                    >
-                                        Delete
-                                    </button>
-                                </td>
-                            </tr>
-                        ))}
+                    {bots.map((bot) => (
+                        <tr key={bot.id} className="hover:bg-gray-50">
+                            <td className="px-6 py-4 text-sm text-gray-800">{bot.id}</td>
+                            <td className="px-6 py-4 text-sm text-gray-800">{bot.address}</td>
+                            <td className="px-6 py-4 text-sm text-gray-800">{bot.status}</td>
+                            <td className="px-6 py-4 text-sm text-gray-600">
+                                {new Date(bot.create_time * 1000).toLocaleString()}
+                            </td>
+                            <td className="px-6 py-4 text-sm text-gray-600">
+                                {new Date(bot.update_time * 1000).toLocaleString()}
+                            </td>
+                            <td className="px-6 py-4 space-x-2 text-sm">
+                                <button
+                                    onClick={() => handleEditClick(bot)}
+                                    className="text-blue-600 hover:underline"
+                                >
+                                    Edit
+                                </button>
+                                <button
+                                    onClick={() => handleShowRawConfig(bot.id)}
+                                    className="text-purple-600 hover:underline"
+                                >
+                                    Command
+                                </button>
+                                <button
+                                    onClick={() => handleShowStructuredConfig(bot.id)}
+                                    className="text-green-600 hover:underline"
+                                >
+                                    Config
+                                </button>
+                                <button
+                                    onClick={() => handleDeleteClick(bot.id)}
+                                    className="text-red-600 hover:underline"
+                                >
+                                    Delete
+                                </button>
+                            </td>
+                        </tr>
+                    ))}
                     </tbody>
                 </table>
             </div>
 
-            {/* 分页组件 */}
             <Pagination page={page} pageSize={pageSize} total={total} onPageChange={handlePageChange} />
 
-            {/* 编辑 Modal */}
             <Modal
                 visible={modalVisible}
                 title={editingBot ? "Edit Bot" : "Add Bot"}
@@ -210,14 +217,12 @@ function Bots() {
                 </div>
             </Modal>
 
-            {/* 原始配置 Modal */}
             <Modal visible={rawConfigVisible} title="Command" onClose={() => setRawConfigVisible(false)}>
                 <pre className="max-h-[500px] overflow-y-auto text-sm text-gray-700 whitespace-pre-wrap break-words">
                     {rawConfigText.split(/\s+/).filter(Boolean).join("\n")}
                 </pre>
             </Modal>
 
-            {/* 结构化配置 Modal */}
             <Modal
                 visible={structuredConfigVisible}
                 title="Edit Config"

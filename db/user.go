@@ -2,6 +2,7 @@ package db
 
 import (
 	"database/sql"
+	"fmt"
 	"time"
 	
 	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
@@ -110,4 +111,69 @@ func AddToken(userId int64, token int) error {
 	updateSQL := `UPDATE users SET token = token + ? WHERE user_id = ?`
 	_, err := DB.Exec(updateSQL, token, userId)
 	return err
+}
+
+func GetUserByPage(page, pageSize int, userId int64) ([]User, error) {
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 {
+		pageSize = 10
+	}
+	offset := (page - 1) * pageSize
+	
+	// 构建 SQL
+	var (
+		whereSQL string
+		args     []interface{}
+	)
+	
+	if userId > 0 {
+		whereSQL = "WHERE user_id = ?"
+		args = append(args, userId)
+	}
+	
+	// 查询数据
+	listSQL := fmt.Sprintf(`
+		SELECT id, user_id, mode, token, updatetime, avail_token
+		FROM users %s
+		ORDER BY id DESC
+		LIMIT ? OFFSET ?`, whereSQL)
+	args = append(args, pageSize, offset)
+	
+	rows, err := DB.Query(listSQL, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	
+	var users []User
+	for rows.Next() {
+		var u User
+		if err := rows.Scan(&u.ID, &u.UserId, &u.Mode, &u.Token, &u.Updatetime, &u.AvailToken); err != nil {
+			return nil, err
+		}
+		users = append(users, u)
+	}
+	
+	return users, nil
+}
+
+func GetUserCount(userId int64) (int, error) {
+	var whereSQL string
+	args := make([]interface{}, 0)
+	
+	if userId > 0 {
+		whereSQL = "WHERE user_id = ?"
+		args = append(args, userId)
+	}
+	
+	// 查询总数
+	countSQL := fmt.Sprintf("SELECT COUNT(*) FROM users %s", whereSQL)
+	var total int
+	if err := DB.QueryRow(countSQL, args...).Scan(&total); err != nil {
+		return 0, err
+	}
+	
+	return total, nil
 }

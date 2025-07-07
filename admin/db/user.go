@@ -1,6 +1,7 @@
 package db
 
 import (
+	"database/sql"
 	"time"
 	
 	"github.com/yincongcyincong/telegram-deepseek-bot/utils"
@@ -52,14 +53,31 @@ func DeleteUser(id int) error {
 	return err
 }
 
-func ListUsers(offset, limit int) ([]User, int, error) {
-	rows, err := DB.Query(`SELECT id, username, password, create_time, update_time FROM users LIMIT ? OFFSET ?`, limit, offset)
+func ListUsers(offset, limit int, username string) ([]User, int, error) {
+	var (
+		rows  *sql.Rows
+		err   error
+		args  []interface{}
+		query string
+	)
+	
+	users := make([]User, 0)
+	
+	// 构建查询 SQL
+	if username != "" {
+		query = `SELECT id, username, password, create_time, update_time FROM users WHERE username LIKE ? LIMIT ? OFFSET ?`
+		args = append(args, "%"+username+"%", limit, offset)
+	} else {
+		query = `SELECT id, username, password, create_time, update_time FROM users LIMIT ? OFFSET ?`
+		args = append(args, limit, offset)
+	}
+	
+	rows, err = DB.Query(query, args...)
 	if err != nil {
 		return nil, 0, err
 	}
 	defer rows.Close()
 	
-	users := make([]User, 0)
 	for rows.Next() {
 		var u User
 		err := rows.Scan(&u.ID, &u.Username, &u.Password, &u.CreateTime, &u.UpdateTime)
@@ -69,8 +87,19 @@ func ListUsers(offset, limit int) ([]User, int, error) {
 		users = append(users, u)
 	}
 	
+	// 统计总数
+	var countQuery string
+	var countArgs []interface{}
+	
+	if username != "" {
+		countQuery = `SELECT COUNT(*) FROM users WHERE username LIKE ?`
+		countArgs = append(countArgs, "%"+username+"%")
+	} else {
+		countQuery = `SELECT COUNT(*) FROM users`
+	}
+	
 	var total int
-	err = DB.QueryRow(`SELECT COUNT(*) FROM users`).Scan(&total)
+	err = DB.QueryRow(countQuery, countArgs...).Scan(&total)
 	if err != nil {
 		return nil, 0, err
 	}

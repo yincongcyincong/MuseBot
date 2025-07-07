@@ -41,6 +41,9 @@ func (p *HTTPServer) Start() {
 		http.HandleFunc("/conf/get", GetConf)
 		http.HandleFunc("/command/get", GetCommand)
 		
+		http.HandleFunc("/user/list", GetUsers)
+		http.HandleFunc("/record/list", GetRecords)
+		
 		http.HandleFunc("/pong", PongHandler)
 		
 		var err error

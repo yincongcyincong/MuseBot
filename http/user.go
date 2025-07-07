@@ -2,6 +2,7 @@ package http
 
 import (
 	"net/http"
+	"strconv"
 	
 	"github.com/yincongcyincong/telegram-deepseek-bot/db"
 	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
@@ -23,7 +24,7 @@ func AddUserToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	err = db.AddToken(userToken.UserID, userToken.Token)
+	err = db.AddAvailToken(userToken.UserID, userToken.Token)
 	if err != nil {
 		logger.Error("add user token error", "err", err)
 		utils.Failure(w, param.CodeDBWriteFail, param.MsgDBWriteFail, err)
@@ -31,4 +32,69 @@ func AddUserToken(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	utils.Success(w, "success")
+}
+
+func GetUsers(w http.ResponseWriter, r *http.Request) {
+	// 解析参数
+	err := r.ParseForm()
+	if err != nil {
+		logger.Error("parse form error", "err", err)
+		utils.Failure(w, param.CodeParamError, param.MsgParamError, err)
+		return
+	}
+	page, _ := strconv.Atoi(r.FormValue("page"))
+	pageSize, _ := strconv.Atoi(r.FormValue("pageSize"))
+	userId, _ := strconv.ParseInt(r.FormValue("userId"), 10, 64)
+	
+	users, err := db.GetUserByPage(page, pageSize, userId)
+	if err != nil {
+		logger.Error("get user error", "err", err)
+		utils.Failure(w, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
+		return
+	}
+	
+	total, err := db.GetUserCount(userId)
+	if err != nil {
+		logger.Error("get user count error", "err", err)
+		utils.Failure(w, param.CodeDBQueryFail, param.MsgDBWriteFail, err)
+		return
+	}
+	
+	// 返回结果
+	result := map[string]interface{}{
+		"list":  users,
+		"total": total,
+	}
+	
+	utils.Success(w, result)
+}
+
+func GetRecords(w http.ResponseWriter, r *http.Request) {
+	// 获取参数
+	query := r.URL.Query()
+	page, _ := strconv.Atoi(query.Get("page"))
+	pageSize, _ := strconv.Atoi(query.Get("pageSize"))
+	userId, _ := strconv.ParseInt(query.Get("userId"), 10, 64)
+	
+	// 查询总数和数据
+	total, err := db.GetRecordCount(userId)
+	if err != nil {
+		logger.Error("get record count error", "err", err)
+		utils.Failure(w, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
+		return
+	}
+	
+	list, err := db.GetRecordList(userId, page, pageSize)
+	if err != nil {
+		logger.Error("get record list error", "err", err)
+		utils.Failure(w, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
+		return
+	}
+	
+	result := map[string]interface{}{
+		"list":  list,
+		"total": total,
+	}
+	
+	utils.Success(w, result)
 }
