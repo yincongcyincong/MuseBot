@@ -16,7 +16,7 @@ To start the management platform, execute the following command:
 
 | Variable Name   | Description                                                                                                                              | Default Value                |
 | :-------------- | :--------------------------------------------------------------------------------------------------------------------------------------- | :--------------------------- |
-| **DB\_TYPE** | Database type: `sqlite3` / `mysql`                                                                                                       | `sqlite3`                    |
+| **DB\_TYPE** | Database type: `sqlite3` / `mysql`                                                                                                       | `sqlite3` / `mysql`                   |
 | **DB\_CONF** | Database configuration: `./data/telegram_bot.db` or `root:admin@tcp(127.0.0.1:3306)/dbname?charset=utf8mb4&parseTime=True&loc=Local` | `./data/telegram_bot.db`     |
 | **SESSION\_KEY** | Specifies the key used for session management.                                                                                           | `telegram_bot_session_key` (A string used to encrypt session data) |
 
@@ -81,14 +81,3 @@ Allocate and manage API tokens for specific users to control their access and us
 
 This page displays the complete chat history between the bot and users, making it easy to track and analyze conversations.
 
------
-
-## Deployment and Configuration
-
-The platform supports various configurations, including:
-
-* **LLM Configuration**: You can configure different LLM services as needed, such as DeepSeek types and custom URLs.
-* **Database Type**: Supports `sqlite3` or `mysql`; users can choose the configuration based on their needs.
-* **Language Settings**: Supports English (en), Chinese (zh), and Russian (ru).
-
-For more detailed configurations, please refer to the documentation in the GitHub repository.
