@@ -7,3 +7,4 @@ telegram_bot.db
 *.log
 github.com
 release
+build

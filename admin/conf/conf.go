@@ -18,7 +18,7 @@ var BaseConfInfo = new(BaseConfig)
 
 func InitConfig() {
 	BaseConfInfo.DBType = flag.String("db_type", "sqlite3", "db type")
-	BaseConfInfo.DBConf = flag.String("db_conf", "./admin/data/telegram_bot.db", "db conf")
+	BaseConfInfo.DBConf = flag.String("db_conf", "./data/telegram_admin_bot.db", "db conf")
 	BaseConfInfo.SessionKey = flag.String("session_key", "telegram_bot_session_key", "session key")
 	
 	flag.Parse()
