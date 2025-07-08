@@ -8,7 +8,7 @@ function Bots() {
     const [search, setSearch] = useState("");
     const [modalVisible, setModalVisible] = useState(false);
     const [editingBot, setEditingBot] = useState(null);
-    const [form, setForm] = useState({ id: 0, address: "", crt_file: "" });
+    const [form, setForm] = useState({ id: 0, address: "", crt_file: "", key_file: "", ca_file: "" });
 
     const [rawConfigVisible, setRawConfigVisible] = useState(false);
     const [structuredConfigVisible, setStructuredConfigVisible] = useState(false);
@@ -36,13 +36,13 @@ function Bots() {
     };
 
     const handleAddClick = () => {
-        setForm({ id: 0, address: "", crt_file: "" });
+        setForm({ id: 0, address: "", crt_file: "", key_file: "", ca_file: "" });
         setEditingBot(null);
         setModalVisible(true);
     };
 
     const handleEditClick = (bot) => {
-        setForm({ id: bot.id, address: bot.address, crt_file: bot.crt_file });
+        setForm({ id: bot.id, address: bot.address, crt_file: bot.crt_file, key_file: bot.key_file, ca_file: bot.ca_file });
         setEditingBot(bot);
         setModalVisible(true);
     };
@@ -190,6 +190,24 @@ function Bots() {
                         value={form.address}
                         onChange={(e) => setForm({ ...form, address: e.target.value })}
                         className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring focus:border-blue-400"
+                    />
+                </div>
+                <div className="mb-4">
+                    <textarea
+                        placeholder="CA File"
+                        value={form.ca_file}
+                        onChange={(e) => setForm({ ...form, ca_file: e.target.value })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring focus:border-blue-400"
+                        rows={5}
+                    />
+                </div>
+                <div className="mb-4">
+                    <textarea
+                        placeholder="KEY File"
+                        value={form.key_file}
+                        onChange={(e) => setForm({ ...form, key_file: e.target.value })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring focus:border-blue-400"
+                        rows={5}
                     />
                 </div>
                 <div className="mb-4">

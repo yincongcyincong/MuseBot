@@ -24,6 +24,8 @@ type Bot struct {
 	ID      int    `json:"id"`
 	Address string `json:"address"`
 	CrtFile string `json:"crt_file"`
+	KeyFile string `json:"key_file"`
+	CaFile  string `json:"ca_file"`
 }
 
 type GetBotConfRes struct {
@@ -54,12 +56,14 @@ func CreateBot(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	err = db.CreateBot(b.Address, b.CrtFile)
+	err = db.CreateBot(b.Address, b.CrtFile, b.KeyFile, b.CaFile)
 	if err != nil {
 		logger.Error("create bot error", "reason", "db fail", "err", err)
 		utils.Failure(w, param.CodeDBWriteFail, param.MsgDBWriteFail, err)
 		return
 	}
+	
+	go checkpoint.ScheduleBotChecks()
 	
 	utils.Success(w, "bot created")
 }
@@ -97,12 +101,14 @@ func UpdateBotAddress(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	err = db.UpdateBotAddress(b.ID, b.Address, b.CrtFile)
+	err = db.UpdateBotAddress(b.ID, b.Address, b.CrtFile, b.KeyFile, b.CaFile)
 	if err != nil {
 		logger.Error("update bot address error", "reason", "db fail", "err", err)
 		utils.Failure(w, param.CodeDBWriteFail, param.MsgDBWriteFail, err)
 		return
 	}
+	
+	go checkpoint.ScheduleBotChecks()
 	
 	utils.Success(w, "bot address updated")
 }
@@ -122,6 +128,8 @@ func SoftDeleteBot(w http.ResponseWriter, r *http.Request) {
 		utils.Failure(w, param.CodeDBWriteFail, param.MsgDBWriteFail, err)
 		return
 	}
+	
+	go checkpoint.ScheduleBotChecks()
 	
 	utils.Success(w, "bot deleted")
 }
@@ -165,7 +173,7 @@ func GetBotConf(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	resp, err := adminUtils.GetCrtClient(botInfo.CrtFile).Get(strings.TrimSuffix(botInfo.Address, "/") + "/conf/get")
+	resp, err := adminUtils.GetCrtClient(botInfo).Get(strings.TrimSuffix(botInfo.Address, "/") + "/conf/get")
 	if err != nil {
 		logger.Error("get bot conf error", "err", err)
 		utils.Failure(w, param.CodeServerFail, param.MsgServerFail, err)
@@ -231,7 +239,7 @@ func AddUserToken(w http.ResponseWriter, r *http.Request) {
 	}
 	req.Header.Set("Content-Type", "application/json")
 	
-	resp, err := adminUtils.GetCrtClient(botInfo.CrtFile).Do(req)
+	resp, err := adminUtils.GetCrtClient(botInfo).Do(req)
 	if err != nil {
 		logger.Error("get bot conf error", "err", err)
 		utils.Failure(w, param.CodeServerFail, param.MsgServerFail, err)
@@ -260,7 +268,7 @@ func GetBotUser(w http.ResponseWriter, r *http.Request) {
 		utils.Failure(w, param.CodeParamError, param.MsgParamError, err)
 		return
 	}
-	resp, err := adminUtils.GetCrtClient(botInfo.CrtFile).Get(strings.TrimSuffix(botInfo.Address, "/") +
+	resp, err := adminUtils.GetCrtClient(botInfo).Get(strings.TrimSuffix(botInfo.Address, "/") +
 		fmt.Sprintf("/user/list?page=%s&pageSize=%s&userId=%s", r.FormValue("page"), r.FormValue("pageSize"), r.FormValue("userId")))
 	if err != nil {
 		logger.Error("get bot user error", "err", err)
@@ -290,7 +298,7 @@ func GetBotUserRecord(w http.ResponseWriter, r *http.Request) {
 		utils.Failure(w, param.CodeParamError, param.MsgParamError, err)
 		return
 	}
-	resp, err := adminUtils.GetCrtClient(botInfo.CrtFile).Get(strings.TrimSuffix(botInfo.Address, "/") +
+	resp, err := adminUtils.GetCrtClient(botInfo).Get(strings.TrimSuffix(botInfo.Address, "/") +
 		fmt.Sprintf("/record/list?page=%s&pageSize=%s&userId=%s", r.FormValue("page"), r.FormValue("pageSize"), r.FormValue("userId")))
 	if err != nil {
 		logger.Error("get bot user record error", "err", err)
@@ -342,7 +350,7 @@ func UpdateBotConf(w http.ResponseWriter, r *http.Request) {
 	}
 	req.Header.Set("Content-Type", "application/json")
 	
-	resp, err := adminUtils.GetCrtClient(botInfo.CrtFile).Do(req)
+	resp, err := adminUtils.GetCrtClient(botInfo).Do(req)
 	if err != nil {
 		logger.Error("get bot conf error", "err", err)
 		utils.Failure(w, param.CodeServerFail, param.MsgServerFail, err)
@@ -366,7 +374,7 @@ func GetBotCommand(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	resp, err := adminUtils.GetCrtClient(botInfo.CrtFile).Get(strings.TrimSuffix(botInfo.Address, "/") + "/command/get")
+	resp, err := adminUtils.GetCrtClient(botInfo).Get(strings.TrimSuffix(botInfo.Address, "/") + "/command/get")
 	if err != nil {
 		logger.Error("get bot conf error", "err", err)
 		utils.Failure(w, param.CodeServerFail, param.MsgServerFail, err)

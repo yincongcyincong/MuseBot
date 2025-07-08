@@ -27,42 +27,49 @@ type BotStatus struct {
 
 func InitStatusCheck() {
 	go func() {
-		scheduleBotChecks()
+		ScheduleBotChecks()
 		ticker := time.NewTicker(60 * time.Second)
 		defer ticker.Stop()
 		
 		for {
 			select {
 			case <-ticker.C: // 每 60 秒触发一次
-				scheduleBotChecks()
+				go ScheduleBotChecks()
 			}
 		}
 	}()
 }
 
 // 健康检查
-func checkBotStatus(address string, crtFile string) string {
+func checkBotStatus(bot *db.Bot) string {
 	// 发送请求
-	resp, err := utils.GetCrtClient(crtFile).Get(strings.TrimSuffix(address, "/") + "/pong")
+	resp, err := utils.GetCrtClient(bot).Get(strings.TrimSuffix(bot.Address, "/") + "/pong")
 	if err != nil {
-		logger.Warn("checkpoint request fail", "err", err, "address", address)
+		logger.Warn("checkpoint request fail", "err", err, "address", bot.Address)
 		return "offline" // 请求失败
 	}
 	defer resp.Body.Close()
 	
 	if resp.StatusCode != http.StatusOK {
-		logger.Warn("checkpoint request fail", "resp", resp, "address", address)
+		logger.Warn("checkpoint request fail", "resp", resp, "address", bot.Address)
 		return OfflineStatus
 	}
 	
 	return OnlineStatus
 }
 
-// scheduleBotChecks 分批调度，每批 10 秒执行一次
-func scheduleBotChecks() {
+// ScheduleBotChecks 分批调度，每批 10 秒执行一次
+func ScheduleBotChecks() {
+	defer func() {
+		if err := recover(); err != nil {
+			logger.Error("ScheduleBotChecks panic", "err", err)
+		}
+	}()
+	
 	bots, _, err := db.ListBots(0, 10000, "")
 	if err != nil {
-		panic(err)
+		logger.Error("ScheduleBotChecks list bots fail", "err", err)
+		return
 	}
 	
 	batchCount := 60                                       // 60 秒内分 60 批执行
@@ -85,13 +92,18 @@ func scheduleBotChecks() {
 		
 		wg.Add(1)
 		go func(batch []*db.Bot, batchIndex int) {
-			defer wg.Done()
+			defer func() {
+				if err := recover(); err != nil {
+					logger.Error("ScheduleBotChecks panic", "err", err)
+				}
+				wg.Done()
+			}()
 			// 延迟 10 * batchIndex 秒启动
 			timer := time.NewTimer(time.Duration(batchIndex) * time.Second)
 			<-timer.C
 			
 			for _, b := range batch {
-				status := checkBotStatus(b.Address, b.CrtFile)
+				status := checkBotStatus(b)
 				BotMap.Store(b.ID, &BotStatus{
 					Id:        b.ID,
 					Address:   b.Address,
