@@ -80,13 +80,17 @@ Start telegram-deepseek-bot in this way:
 ```
 
 add configurations in admin page:
+![image](https://github.com/user-attachments/assets/2a518841-abf6-4a31-b1b3-b26b258a5fab)    
 
+can use this [file](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/admin/shell/generate_cert.sh) to generate ca, key and crt.    
 
 #### Bot Start Parameter
+![image](https://github.com/user-attachments/assets/94c65d03-e097-479e-bf2a-f3d5aad431cc)
 
 Show all Parameters when starting the Telegram DeepSeek Bot.
 
 #### Bot Config
+![image](https://github.com/user-attachments/assets/0e6d3c32-5311-4769-ac42-e9591d4651ad)
 
 Modify the configuration of your bot.
 
