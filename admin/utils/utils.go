@@ -5,31 +5,41 @@ import (
 	"crypto/x509"
 	"net/http"
 	"time"
+	
+	"github.com/yincongcyincong/telegram-deepseek-bot/admin/db"
+	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
 )
 
-func GetCrtClient(crtFile string) *http.Client {
-	// 创建自定义 Transport，根据是否提供 crtFile 决定是否使用 TLS
+func GetCrtClient(bot *db.Bot) *http.Client {
 	transport := &http.Transport{
-		TLSClientConfig: &tls.Config{
-			InsecureSkipVerify: crtFile == "", // 如果没有证书，跳过验证（仅测试用，生产环境应避免）
-		},
+		TLSClientConfig: &tls.Config{},
 	}
 	
-	// 如果提供了证书文件，则加载证书
-	if crtFile != "" {
-		caCertPool := x509.NewCertPool()
-		caCertPool.AppendCertsFromPEM([]byte(crtFile))
-		
-		transport.TLSClientConfig = &tls.Config{
-			RootCAs:            caCertPool, // 使用自定义 CA 证书
-			InsecureSkipVerify: false,      // 必须验证证书
-		}
-	}
-	
-	// 创建带自定义 Transport 的 HTTP 客户端
 	client := &http.Client{
 		Transport: transport,
 		Timeout:   3 * time.Second,
+	}
+	
+	if bot.KeyFile != "" && bot.CrtFile != "" && bot.CaFile != "" {
+		clientCert, err := tls.X509KeyPair([]byte(bot.CrtFile), []byte(bot.KeyFile))
+		if err != nil {
+			logger.Error("Failed to load client cert/key", "err", err)
+			return client
+		}
+		
+		// Load CA cert from memory into cert pool
+		caCertPool := x509.NewCertPool()
+		if ok := caCertPool.AppendCertsFromPEM([]byte(bot.CaFile)); !ok {
+			logger.Error("Failed to append CA certificate to pool")
+			return client
+		}
+		
+		// TLS config with mTLS
+		tlsConfig := &tls.Config{
+			Certificates: []tls.Certificate{clientCert},
+			RootCAs:      caCertPool,
+		}
+		transport.TLSClientConfig = tlsConfig
 	}
 	
 	return client

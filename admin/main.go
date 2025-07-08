@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 	_ "net/http/pprof"
 	
@@ -45,7 +46,7 @@ func main() {
 	http.HandleFunc("/user/me", controller.RequireLogin(controller.GetCurrentUserHandler))
 	http.HandleFunc("/user/logout", controller.RequireLogin(controller.UserLogout))
 	
-	err := http.ListenAndServe(":18080", nil)
+	err := http.ListenAndServe(fmt.Sprintf(":%s", *conf.BaseConfInfo.AdminPort), nil)
 	if err != nil {
 		panic(err)
 	}

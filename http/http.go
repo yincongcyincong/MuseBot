@@ -1,7 +1,10 @@
 package http
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	_ "net/http/pprof"
 	
@@ -51,10 +54,44 @@ func (p *HTTPServer) Start() {
 			*conf.BaseConfInfo.CrtFile == "" || *conf.BaseConfInfo.KeyFile == "" {
 			err = http.ListenAndServe(p.Addr, nil)
 		} else {
-			err = http.ListenAndServeTLS(p.Addr, *conf.BaseConfInfo.CrtFile, *conf.BaseConfInfo.KeyFile, nil)
+			err = runTLSServer()
 		}
 		if err != nil {
 			logger.Fatal("pprof server failed", "err", err)
 		}
 	}()
+}
+
+func runTLSServer() error {
+	caCert, err := ioutil.ReadFile(*conf.BaseConfInfo.CaFile)
+	if err != nil {
+		return err
+	}
+	
+	caCertPool := x509.NewCertPool()
+	caCertPool.AppendCertsFromPEM(caCert)
+	
+	cert, err := tls.LoadX509KeyPair(*conf.BaseConfInfo.CrtFile, *conf.BaseConfInfo.KeyFile)
+	if err != nil {
+		return err
+	}
+	
+	tlsConfig := &tls.Config{
+		Certificates: []tls.Certificate{cert},
+		ClientAuth:   tls.RequireAndVerifyClientCert,
+		ClientCAs:    caCertPool,
+		MinVersion:   tls.VersionTLS12,
+	}
+	
+	server := &http.Server{
+		Addr:      fmt.Sprintf(":%d", *conf.BaseConfInfo.HTTPPort),
+		TLSConfig: tlsConfig,
+	}
+	
+	err = server.ListenAndServeTLS("", "") // cert/key 已通过 TLSConfig 提供
+	if err != nil {
+		return err
+	}
+	
+	return nil
 }

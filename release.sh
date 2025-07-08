@@ -2,17 +2,17 @@
 
 set -e
 
-# 清理旧文件
+# Clean up old files
 rm -rf ./output ./release
 mkdir -p ./output ./release
 
-# 检查是否安装 xgo
+# Check if xgo is installed
 if ! command -v xgo &> /dev/null; then
-    echo "正在安装 xgo..."
+    echo "Installing xgo..."
     go install src.techknowlogick.com/xgo@latest
 fi
 
-# 编译 admin（本地平台）
+# Build the admin binary (locally for the specified platform)
 build_admin_local() {
     local os=$1
     local arch=$2
@@ -22,12 +22,12 @@ build_admin_local() {
     local admin_output="admin-${os}-${arch}${ext}"
 
     echo "=============================="
-    echo "使用 go build 编译 admin [$os/$arch] ..."
+    echo "Building admin [$os/$arch] using go build..."
     echo "=============================="
-    xgo -out "$admin_output" -targets="$os/$arch" --hooksdir=./admin/shell  ./
+    xgo -out "$admin_output" -targets="$os/$arch" --hooksdir=./admin/shell ./
 }
 
-# 编译主程序 + 打包
+# Build main binary + package everything
 compile_and_package() {
     local os=$1
     local arch=$2
@@ -35,48 +35,46 @@ compile_and_package() {
     [[ "$os" == "windows" ]] && ext=".exe"
 
     echo "=============================="
-    echo "使用 xgo 编译 telegram-deepseek-bot [$os/$arch] ..."
+    echo "Building telegram-deepseek-bot [$os/$arch] using xgo..."
     echo "=============================="
 
-    # 编译主程序
+    # Build the main bot binary
     xgo -out telegram-deepseek-bot -targets="$os/$arch" .
 
-    # 编译 admin (本地编译)
+    # Build admin binary
     build_admin_local $os $arch
 
     local bot_binary="telegram-deepseek-bot-${os}-${arch}${ext}"
     local admin_binary="admin-${os}-${arch}${ext}"
     local release_name="telegram-deepseek-bot-${os}-${arch}.tar.gz"
 
-    # 移动 bot 二进制
+    # Move compiled binaries to output
     mv ./telegram-deepseek-bot-${os}* ./output/${bot_binary}
     mv ./admin-${os}* ./output/${admin_binary}
 
-
-
-    # 拷贝配置
+    # Copy config files
     mkdir -p ./output/conf/
     cp -r ./conf/i18n ./output/conf/
     cp -r ./conf/mcp ./output/conf/
     mkdir -p ./output/data/
 
-    # 拷贝 adminui
+    # Copy admin UI files
     mkdir -p ./output/adminui/
     cp -r ./admin/adminui/* ./output/adminui/
 
-    # 打包
+    # Package everything into a tarball
     tar zcf "release/${release_name}" -C ./output .
 
-    # 清理中间产物
+    # Clean up intermediate files
     rm -rf ./output/* ./github.com/*
 }
 
-# 编译平台（如需 Windows 可解开）
+# Platforms to compile (uncomment Windows if needed)
 compile_and_package linux amd64
 compile_and_package darwin amd64
 compile_and_package darwin arm64
 # compile_and_package windows amd64
 
-# 清理
+# Final cleanup
 rm -rf ./output
-echo "✅ 所有平台编译完成，打包输出在 ./release"
+echo "✅ Compilation and packaging complete. Output is in ./release"

@@ -38,6 +38,7 @@ type BaseConf struct {
 	
 	CrtFile *string `json:"crt_file"`
 	KeyFile *string `json:"key_file"`
+	CaFile  *string `json:"ca_file"`
 	
 	AllowedTelegramUserIds  map[int64]bool `json:"allowed_telegram_user_ids"`
 	AllowedTelegramGroupIds map[int64]bool `json:"allowed_telegram_group_ids"`
@@ -78,6 +79,7 @@ func InitConf() {
 	
 	BaseConfInfo.CrtFile = flag.String("crt_file", "", "public key file")
 	BaseConfInfo.KeyFile = flag.String("key_file", "", "secret key file")
+	BaseConfInfo.CaFile = flag.String("ca_file", "", "ca file")
 	
 	adminUserIds := flag.String("admin_user_ids", "", "admin user ids")
 	allowedUserIds := flag.String("allowed_telegram_user_ids", "", "allowed telegram user ids")
@@ -207,6 +209,10 @@ func InitConf() {
 		*BaseConfInfo.KeyFile = os.Getenv("KEY_FILE")
 	}
 	
+	if os.Getenv("CA_FILE") != "" {
+		*BaseConfInfo.CaFile = os.Getenv("CA_FILE")
+	}
+	
 	for _, userIdStr := range strings.Split(*allowedUserIds, ",") {
 		userId, err := strconv.Atoi(userIdStr)
 		if err != nil {
@@ -261,6 +267,7 @@ func InitConf() {
 	logger.Info("CONF", "VolToken", *BaseConfInfo.VolToken)
 	logger.Info("CONF", "CrtFile", *BaseConfInfo.CrtFile)
 	logger.Info("CONF", "KeyFile", *BaseConfInfo.KeyFile)
+	logger.Info("CONF", "CaFile", *BaseConfInfo.CaFile)
 	
 	EnvAudioConf()
 	EnvRagConf()
