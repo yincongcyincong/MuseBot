@@ -1,8 +1,11 @@
-# Telegram DeepSeek Bot 管理平台 README
 
-这是一个用于管理 Telegram DeepSeek Bot 的平台，它集成了多种大型语言模型（LLMs），提供上下文感知的响应，并支持多模型以实现多样化的交互。
+# Telegram DeepSeek Bot 管理平台
 
-## 执行命令与参数
+此平台旨在管理您的 **Telegram DeepSeek Bot**。它集成了多种**大型语言模型 (LLMs)**，提供**上下文感知**的回复，并支持**多模型**以实现多样化交互。
+
+-----
+
+## 运行平台及参数
 
 要启动管理平台，请执行以下命令：
 
@@ -10,76 +13,86 @@
 ./admin -db_type=sqlite3 -db_conf=./admin/data/telegram_bot.db -session_key=telegram_bot_session_key
 ```
 
-### 命令参数列表
+### 命令参数
 
-| 变量名             | 描述                                                                                                            | 默认值                                         |
-|:----------------|:--------------------------------------------------------------------------------------------------------------|:--------------------------------------------|
-| **DB_TYPE**     | 数据库类型：sqlite3 / mysql                                                                                         | sqlite3 / mysql                             |
-| **DB_CONF**     | 数据库配置：./data/telegram_bot.db 或 root:admin@tcp(127.0.0.1:3306)/dbname?charset=utf8mb4&parseTime=True&loc=Local | ./data/telegram_bot.db                      |
-| **SESSION_KEY** | 指定用于会话管理的密钥。                                                                                                  | `telegram_bot_session_key` (一个用于加密会话数据的字符串) |
-| **ADMIN_PORT**  | 平台的端口                                                                                                         | `18080`                                     |
+| 变量名称 | 描述 | 默认值 |
+|:---|:---|:---|
+| **DB\_TYPE** | 数据库类型：`sqlite3` / `mysql` | `sqlite3` / `mysql` |
+| **DB\_CONF** | 数据库配置：`./data/telegram_bot.db` 或 `root:admin@tcp(127.0.0.1:3306)/dbname?charset=utf8mb4&parseTime=True&loc=Local` | `./data/telegram_bot.db` |
+| **SESSION\_KEY** | 指定用于会话管理的密钥。 | `telegram_bot_session_key` (用于加密会话数据的字符串) |
+| **ADMIN\_PORT** | 管理平台端口 | `18080` |
 
-## 开始使用
+-----
+
+## 快速入门
 
 ### 登录
+![image](https://github.com/user-attachments/assets/f6bf8ae6-4c0e-44d9-9115-7e744fc20dc3)
+访问管理平台的登录页面。
 
-![image](https://github.com/user-attachments/assets/6055d100-5b89-420b-bf0c-6fedb8d88b9a)
+### 默认账户
 
-访问管理平台登录页面。
+首次启动时，您可以使用以下默认凭据登录：
 
-### 默认账号
+  * **用户名：** `admin`
+  * **密码：** `admin`
 
-首次启动时，可以使用以下默认凭据登录：
+-----
 
-* **用户名：** `admin`
-* **密码：** `admin`
-
-## 平台模块介绍
+## 平台模块概览
 
 ### 首页
-
-![image](https://github.com/user-attachments/assets/7d7f014f-afd4-4b66-98d6-84e753b1857d)
-
+![image](https://github.com/user-attachments/assets/b12925ca-8d02-4537-84bd-6b0e1ca1686f)
 平台首页概览。
 
 ### 管理员页面
-
-![image](https://github.com/user-attachments/assets/8d20003b-cdf2-4599-b21d-0113bfd29827)
-管理平台的管理员列表。
+![image](https://github.com/user-attachments/assets/0f5ccb12-1733-44d4-8922-c0dbd9966372)
+管理平台管理员列表。
 
 #### 添加管理员
-
-![image](https://github.com/user-attachments/assets/e5441705-a7e8-4ea2-bbac-e5f3ebb59811)
-
-在此页面可以添加新的管理员账号，赋予其管理平台的权限。
+![image](https://github.com/user-attachments/assets/89c46bc4-4ff5-455d-8dcd-6bfdc275659a)
+在此页面，您可以添加新的管理员账户并授予其平台管理权限。
 
 ### 机器人管理
-
-![image](https://github.com/user-attachments/assets/921b766d-5286-427d-ad73-6392c86c50a9)
-
-对已配置的 Telegram 机器人进行管理。
+![image](https://github.com/user-attachments/assets/518f9341-9e30-41b5-a71f-fff3e398ace0)
+管理您已配置的 Telegram 机器人。
 
 #### 添加机器人
 
-![image](https://github.com/user-attachments/assets/af9a752a-cad5-4858-9357-0742ca3b68f0)
+在此页面配置和添加新的 Telegram 机器人。为增强安全性，**强烈建议使用 HTTP 双向认证**。
 
-在此页面配置并添加新的 Telegram 机器人。
+通过以下方式启动 telegram-deepseek-bot：
+
+```
+./telegram-deepseek-bot \
+-telegram_bot_token=xxx \
+-deepseek_token=sk-xxx \
+-crt_file=/Users/yincong/go/src/github.com/yincongcyincong/telegram-deepseek-bot/admin/shell/certs/server.crt
+-ca_file=/Users/yincong/go/src/github.com/yincongcyincong/telegram-deepseek-bot/admin/shell/certs/ca.crt
+-key_file=/Users/yincong/go/src/github.com/yincongcyincong/telegram-deepseek-bot/admin/shell/certs/server.key
+```
+
+在管理页面添加配置：
+![image](https://github.com/user-attachments/assets/2a518841-abf6-4a31-b1b3-b26b258a5fab)    
+
+可以使用此[文件](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/admin/shell/generate_cert.sh)生成 ca、key 和 crt 文件。
+
+#### 机器人启动参数
+![image](https://github.com/user-attachments/assets/94c65d03-e097-479e-bf2a-f3d5aad431cc)
+显示启动 Telegram DeepSeek Bot 时所有参数。
+
+#### 机器人配置
+![image](https://github.com/user-attachments/assets/0e6d3c32-5311-4769-ac42-e9591d4651ad)
+修改您的机器人配置。
 
 ### 机器人用户
+![image](https://github.com/user-attachments/assets/5534971a-e1e2-42d1-9552-0ce37b18444f)
+查看和管理所有与您的机器人交互的用户。
 
-![image](https://github.com/user-attachments/assets/aa6929b8-7963-43aa-9f6a-69d01de8803e)
-
-查看和管理所有与机器人交互的用户。
-
-### 给用户添加 Token
-
-![image](https://github.com/user-attachments/assets/c0042b1b-f896-4a94-9dc6-54baa0f22687)
-
-为特定用户分配和管理 API Token，用于控制其使用机器人的权限和额度。
+### 为用户添加 Token
+![image](https://github.com/user-attachments/assets/b9ffc006-764c-46b7-a5ce-703b052c5368)
+为特定用户分配和管理 API token，以控制他们对机器人的访问和使用限制。
 
 ### 聊天记录页面
-
-![image](https://github.com/user-attachments/assets/caf8517b-993d-4a08-a520-fccd58078bb4)
-
-此页面展示机器人与用户的完整聊天记录，便于追溯和分析对话内容。
-
+![image](https://github.com/user-attachments/assets/7b0a834f-0e62-4bec-9d57-1be22da0828d)
+此页面显示机器人与用户之间的完整聊天记录，便于跟踪和分析对话。
