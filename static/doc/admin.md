@@ -10,17 +10,17 @@ provides context-aware responses, and supports multiple models for diverse inter
 To start the management platform, execute the following command:
 
 ```bash
-./admin -db_type=sqlite3 -db_conf=./admin/data/telegram_bot.db -session_key=telegram_bot_session_key
+./admin -db_type=sqlite3 -db_conf=./data/telegram_admin_bot.db -session_key=telegram_bot_session_key
 ```
 
 ### Command Parameters
 
-| Variable Name    | Description                                                                                                                          | Default Value                                                      |
-|:-----------------|:-------------------------------------------------------------------------------------------------------------------------------------|:-------------------------------------------------------------------|
-| **DB\_TYPE**     | Database type: `sqlite3` / `mysql`                                                                                                   | `sqlite3` / `mysql`                                                |
-| **DB\_CONF**     | Database configuration: `./data/telegram_bot.db` or `root:admin@tcp(127.0.0.1:3306)/dbname?charset=utf8mb4&parseTime=True&loc=Local` | `./data/telegram_bot.db`                                           |
-| **SESSION\_KEY** | Specifies the key used for session management.                                                                                       | `telegram_bot_session_key` (A string used to encrypt session data) |
-| **ADMIN\_PORT**  | port for admin platform                                                                                                              | `18080`                                                            |
+| Variable Name    | Description                                                                                                                                | Default Value                                                      |
+|:-----------------|:-------------------------------------------------------------------------------------------------------------------------------------------|:-------------------------------------------------------------------|
+| **DB\_TYPE**     | Database type: `sqlite3` / `mysql`                                                                                                         | `sqlite3` / `mysql`                                                |
+| **DB\_CONF**     | Database configuration: `./data/telegram_admin_bot.db` or `root:admin@tcp(127.0.0.1:3306)/dbname?charset=utf8mb4&parseTime=True&loc=Local` | `./data/telegram_admin_bot.db`                                     |
+| **SESSION\_KEY** | Specifies the key used for session management.                                                                                             | `telegram_bot_session_key` (A string used to encrypt session data) |
+| **ADMIN\_PORT**  | port for admin platform                                                                                                                    | `18080`                                                            |
 
 -----
 
@@ -68,8 +68,10 @@ Manage your configured Telegram bots.
 
 #### Add Bot
 
-Configure and add new Telegram bots on this page. For enhanced security, it's highly recommended to use **HTTP mutual authentication**.
-Start telegram-deepseek-bot in this way:        
+Configure and add new Telegram bots on this page. For enhanced security, it's highly recommended to use **HTTP mutual
+authentication**.
+Start telegram-deepseek-bot in this way:
+
 ```
 ./telegram-deepseek-bot \
 -telegram_bot_token=xxx \
@@ -80,16 +82,19 @@ Start telegram-deepseek-bot in this way:
 ```
 
 add configurations in admin page:
-![image](https://github.com/user-attachments/assets/2a518841-abf6-4a31-b1b3-b26b258a5fab)    
+![image](https://github.com/user-attachments/assets/2a518841-abf6-4a31-b1b3-b26b258a5fab)
 
-can use this [file](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/admin/shell/generate_cert.sh) to generate ca, key and crt.    
+can use this [file](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/admin/shell/generate_cert.sh) to
+generate ca, key and crt.
 
 #### Bot Start Parameter
+
 ![image](https://github.com/user-attachments/assets/94c65d03-e097-479e-bf2a-f3d5aad431cc)
 
 Show all Parameters when starting the Telegram DeepSeek Bot.
 
 #### Bot Config
+
 ![image](https://github.com/user-attachments/assets/0e6d3c32-5311-4769-ac42-e9591d4651ad)
 
 Modify the configuration of your bot.
