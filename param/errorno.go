@@ -35,6 +35,7 @@ const (
 	CodeDBQueryFail      = 210006
 	CodeLoginFail        = 210007
 	CodeNotLogin         = 210008
+	CodeConfigError      = 210010
 )
 
 const (
@@ -42,13 +43,14 @@ const (
 	MsgUnknown = "err unknown"
 	
 	MsgParamError       = "param error"
-	MsgServerFail       = "server fail"
+	MsgServerFail       = "request server fail"
 	MsgDBWriteFail      = "db write fail"
 	MsgMethodNotFound   = "method not found"
 	MsgCallUserFuncFail = "call user func fail"
 	MsgDBQueryFail      = "db query fail"
 	MsgLoginFail        = "login fail"
 	MsgNotLogin         = "not login"
+	MsgConfigError      = "config error"
 )
 
 var (

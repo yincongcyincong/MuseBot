@@ -1,7 +1,7 @@
-// src/pages/Users.jsx
 import React, { useEffect, useState } from "react";
 import Modal from "../components/Modal";
 import Pagination from "../components/Pagination";
+import Toast from "../components/Toast";
 
 function Users() {
     const [users, setUsers] = useState([]);
@@ -14,17 +14,30 @@ function Users() {
     const [pageSize] = useState(10);
     const [total, setTotal] = useState(0);
 
+    const [toast, setToast] = useState({ show: false, message: "", type: "error" });
+    const showToast = (message, type = "error") => {
+        setToast({ show: true, message, type });
+    };
+
     useEffect(() => {
         fetchUsers();
     }, [page]);
 
     const fetchUsers = async () => {
-        const res = await fetch(
-            `/user/list?page=${page}&page_size=${pageSize}&username=${encodeURIComponent(search)}`
-        );
-        const data = await res.json();
-        setUsers(data.data.list);
-        setTotal(data.data.total);
+        try {
+            const res = await fetch(
+                `/user/list?page=${page}&page_size=${pageSize}&username=${encodeURIComponent(search)}`
+            );
+            const data = await res.json();
+            if (data.code !== 0) {
+                showToast(data.message || "Failed to fetch users");
+                return;
+            }
+            setUsers(data.data.list);
+            setTotal(data.data.total);
+        } catch (error) {
+            showToast("Request failed: " + error.message);
+        }
     };
 
     const handleAddClick = () => {
@@ -47,25 +60,40 @@ function Users() {
                 method: "GET",
             });
 
-            if (!res.ok) throw new Error("Delete failed");
+            const data = await res.json();
+            if (data.code !== 0) {
+                showToast(data.message || "Failed to delete user");
+                return;
+            }
 
             await fetchUsers();
+            showToast("User deleted", "success");
         } catch (error) {
-            console.error("Failed to delete user:", error);
+            showToast("Delete failed: " + error.message);
         }
     };
 
     const handleSave = async () => {
         const url = editingUser ? "/user/update" : "/user/create";
+        try {
+            const res = await fetch(url, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(form),
+            });
 
-        await fetch(url, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(form),
-        });
+            const data = await res.json();
+            if (data.code !== 0) {
+                showToast(data.message || "Failed to save user");
+                return;
+            }
 
-        await fetchUsers();
-        setModalVisible(false);
+            await fetchUsers();
+            showToast("User saved", "success");
+            setModalVisible(false);
+        } catch (error) {
+            showToast("Save failed: " + error.message);
+        }
     };
 
     const handlePageChange = (newPage) => {
@@ -73,12 +101,20 @@ function Users() {
     };
 
     const handleSearch = () => {
-        setPage(1); // 重置到第一页
+        setPage(1);
         fetchUsers();
     };
 
     return (
-        <div className="p-6 bg-gray-100 min-h-screen">
+        <div className="p-6 bg-gray-100 min-h-screen relative">
+            {toast.show && (
+                <Toast
+                    message={toast.message}
+                    type={toast.type}
+                    onClose={() => setToast({ ...toast, show: false })}
+                />
+            )}
+
             <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold text-gray-800">User Management</h2>
                 <button

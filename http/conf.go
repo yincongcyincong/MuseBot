@@ -1,13 +1,16 @@
 package http
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"net/http"
+	"os"
 	"reflect"
 	"strconv"
 	"strings"
 	
+	mcpParam "github.com/yincongcyincong/mcp-client-go/clients/param"
 	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
 	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
 	"github.com/yincongcyincong/telegram-deepseek-bot/param"
@@ -81,6 +84,55 @@ func GetConf(w http.ResponseWriter, r *http.Request) {
 	res["tools"] = conf.TaskTools
 	
 	utils.Success(w, res)
+}
+
+func GetMCPConf(w http.ResponseWriter, r *http.Request) {
+	data, err := os.ReadFile(*conf.McpConfPath)
+	if err != nil {
+		logger.Error("read mcp conf error", "err", err)
+		utils.Failure(w, param.CodeConfigError, param.MsgConfigError, err)
+		return
+	}
+	
+	config := new(mcpParam.McpClientGoConfig)
+	err = json.Unmarshal(data, config)
+	if err != nil {
+		logger.Error("unmarshal mcp conf error", "err", err)
+		utils.Failure(w, param.CodeConfigError, param.MsgConfigError, err)
+		return
+	}
+	
+	utils.Success(w, config)
+}
+
+func UpdateMCPConf(w http.ResponseWriter, r *http.Request) {
+	config := new(mcpParam.McpClientGoConfig)
+	err := utils.HandleJsonBody(r, config)
+	if err != nil {
+		logger.Error("parse json body error", "err", err)
+		utils.Failure(w, param.CodeParamError, param.MsgParamError, err)
+		return
+	}
+	
+	file, err := os.OpenFile(*conf.McpConfPath, os.O_RDWR|os.O_TRUNC, 0644)
+	if err != nil {
+		logger.Error("open mcp conf error", "err", err)
+		utils.Failure(w, param.CodeConfigError, param.MsgConfigError, err)
+		return
+	}
+	defer file.Close()
+	
+	encoder := json.NewEncoder(file)
+	encoder.SetIndent("", "  ") // 美化格式（可选）
+	
+	if err := encoder.Encode(config); err != nil {
+		logger.Error("encode mcp conf error", "err", err)
+		utils.Failure(w, param.CodeConfigError, param.MsgConfigError, err)
+		return
+	}
+	
+	conf.InitTools()
+	utils.Success(w, "")
 }
 
 func handleSpecialData(updateConfParam *UpdateConfParam) {
