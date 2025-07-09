@@ -2,29 +2,12 @@
   "mcpServers": {
     "filesystem": {
       "command": "npx",
-      "description": "supports file operations such as reading, writing, deleting, renaming, moving, and listing files and directories.\n",
       "args": [
         "-y",
         "@modelcontextprotocol/server-filesystem",
         "/Users/yincong/go/src/github.com/yincongcyincong/test-mcp/"
-      ]
-    },
-    "mcp-server-commands": {
-      "description": " execute local system commands through a backend service.",
-      "command": "npx",
-      "args": [
-        "mcp-server-commands"
-      ]
-    },
-    "binance": {
-      "command": "node",
-      "description": "get encrypt currency information from binance.",
-      "args": [
-        "/Users/yincong/go/src/github.com/yincongcyincong/binance-mcp/dist/index.js"
       ],
-      "env": {
-        "HTTP_PROXY": "http://127.0.0.1:7890"
-      }
+      "description": "supports file operations such as reading, writing, deleting, renaming, moving, and listing files and directories.\n"
     }
   }
 }

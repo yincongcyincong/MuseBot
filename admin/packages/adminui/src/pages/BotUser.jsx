@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import Pagination from "../components/Pagination";
-import Modal from "../components/Modal"; // 确保路径正确
+import Modal from "../components/Modal";
+import Toast from "../components/Toast";
 
 function BotUserListPage() {
     const [bots, setBots] = useState([]);
@@ -18,6 +19,12 @@ function BotUserListPage() {
     const [newUserId, setNewUserId] = useState("");
     const [newToken, setNewToken] = useState("");
 
+    // Toast
+    const [toast, setToast] = useState({ show: false, message: "", type: "error" });
+    const showToast = (message, type = "error") => {
+        setToast({ show: true, message, type });
+    };
+
     useEffect(() => {
         fetchOnlineBots();
     }, []);
@@ -32,6 +39,10 @@ function BotUserListPage() {
         try {
             const res = await fetch("/bot/online");
             const data = await res.json();
+            if (data.code !== 0) {
+                showToast(data.message || "Failed to fetch bots");
+                return;
+            }
             if (data.data && data.data.length > 0) {
                 setBots(data.data);
                 const firstBot = data.data[0];
@@ -39,7 +50,7 @@ function BotUserListPage() {
                 setSearchText(firstBot.address);
             }
         } catch (err) {
-            console.error("Failed to fetch online bots:", err);
+            showToast("Request error: " + err.message);
         }
     };
 
@@ -55,10 +66,14 @@ function BotUserListPage() {
             }
             const res = await fetch(`/bot/user/list?${params.toString()}`);
             const data = await res.json();
+            if (data.code !== 0) {
+                showToast(data.message || "Failed to fetch users");
+                return;
+            }
             setUsers(data.data.list);
             setTotal(data.data.total);
         } catch (err) {
-            console.error("Failed to fetch bot users:", err);
+            showToast("Request error: " + err.message);
         }
     };
 
@@ -70,11 +85,16 @@ function BotUserListPage() {
                 body: JSON.stringify({ botId, userId }),
             });
 
-            if (!res.ok) throw new Error("Failed to add token");
+            const data = await res.json();
+            if (data.code !== 0) {
+                showToast(data.message || "Failed to add token");
+                return;
+            }
 
-            await fetchBotUsers(); // 刷新列表
+            await fetchBotUsers();
+            showToast("Token added", "success");
         } catch (err) {
-            console.error("Add token failed:", err);
+            showToast("Add token failed: " + err.message);
         }
     };
 
@@ -86,14 +106,19 @@ function BotUserListPage() {
                 body: JSON.stringify({ botId, user_id: Number(newUserId), token: Number(newToken) }),
             });
 
-            if (!res.ok) throw new Error("Failed to add token");
+            const data = await res.json();
+            if (data.code !== 0) {
+                showToast(data.message || "Failed to submit token");
+                return;
+            }
 
             setShowModal(false);
             setNewUserId("");
             setNewToken("");
-            await fetchBotUsers(); // 刷新
+            await fetchBotUsers();
+            showToast("New token submitted", "success");
         } catch (err) {
-            console.error("Submit new token failed:", err);
+            showToast("Submit new token failed: " + err.message);
         }
     };
 
@@ -115,7 +140,15 @@ function BotUserListPage() {
     };
 
     return (
-        <div className="p-6 bg-gray-100 min-h-screen">
+        <div className="p-6 bg-gray-100 min-h-screen relative">
+            {toast.show && (
+                <Toast
+                    message={toast.message}
+                    type={toast.type}
+                    onClose={() => setToast({ ...toast, show: false })}
+                />
+            )}
+
             <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold text-gray-800">Bot User List</h2>
                 <button
@@ -201,7 +234,6 @@ function BotUserListPage() {
 
             <Pagination page={page} pageSize={pageSize} total={total} onPageChange={setPage} />
 
-            {/* Add Token Modal */}
             <Modal visible={showModal} title="Add New Token" onClose={() => setShowModal(false)}>
                 <div className="space-y-4">
                     <div>

@@ -1,9 +1,15 @@
 import React, { useEffect, useState } from "react";
+import Toast from "../components/Toast";
 
 function ConfigForm({ botId }) {
     const [configData, setConfigData] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [saveStatusMap, setSaveStatusMap] = useState({}); // key: `${section}.${key}` -> status
+    const [saveStatusMap, setSaveStatusMap] = useState({});
+    const [toast, setToast] = useState({ show: false, message: "", type: "error" });
+
+    const showToast = (message, type = "error") => {
+        setToast({ show: true, message, type });
+    };
 
     useEffect(() => {
         fetchConfig();
@@ -13,9 +19,13 @@ function ConfigForm({ botId }) {
         try {
             const res = await fetch(`/bot/conf/get?id=${botId}`);
             const data = await res.json();
+            if (data.code !== 0) {
+                showToast(data.message || "Failed to fetch config");
+                return;
+            }
             setConfigData(data.data);
         } catch (err) {
-            console.error("Failed to fetch config:", err);
+            showToast("Request error: " + err.message);
         } finally {
             setLoading(false);
         }
@@ -43,11 +53,18 @@ function ConfigForm({ botId }) {
                 body: JSON.stringify({ type: section, key, value }),
             });
 
-            if (!res.ok) throw new Error("Failed");
+            const data = await res.json();
+            if (data.code !== 0) {
+                setSaveStatusMap((prev) => ({ ...prev, [statusKey]: "❌ Failed" }));
+                showToast(data.message || "Update failed");
+                return;
+            }
 
             setSaveStatusMap((prev) => ({ ...prev, [statusKey]: "✔ Saved" }));
+            showToast("Saved successfully", "success");
         } catch (err) {
             setSaveStatusMap((prev) => ({ ...prev, [statusKey]: "❌ Failed" }));
+            showToast("Request error: " + err.message);
         }
 
         setTimeout(() => {
@@ -63,7 +80,15 @@ function ConfigForm({ botId }) {
     if (!configData) return <div className="p-4 text-gray-600">No config data</div>;
 
     return (
-        <div className="p-5 max-h-[70vh] overflow-y-auto border border-gray-300 rounded-lg bg-white">
+        <div className="p-5 max-h-[70vh] overflow-y-auto border border-gray-300 rounded-lg bg-white relative">
+            {toast.show && (
+                <Toast
+                    message={toast.message}
+                    type={toast.type}
+                    onClose={() => setToast({ ...toast, show: false })}
+                />
+            )}
+
             <h2 className="text-xl font-semibold mb-6">System Configurations</h2>
 
             {Object.entries(configData).map(([sectionName, sectionValues]) => (
@@ -78,13 +103,8 @@ function ConfigForm({ botId }) {
                             const statusText = saveStatusMap[statusKey] || "";
 
                             return (
-                                <div
-                                    key={key}
-                                    className="flex items-center space-x-4"
-                                >
-                                    <label className="w-48 font-semibold text-gray-700 break-words">
-                                        {key}
-                                    </label>
+                                <div key={key} className="flex items-center space-x-4">
+                                    <label className="w-48 font-semibold text-gray-700 break-words">{key}</label>
 
                                     <input
                                         type="text"

@@ -26,13 +26,14 @@ type AQ struct {
 }
 
 type Record struct {
-	ID        int    `json:"id"`
-	UserId    int64  `json:"user_id"`
-	Question  string `json:"question"`
-	Answer    string `json:"answer"`
-	Content   string `json:"content"`
-	Token     int    `json:"token"`
-	IsDeleted int    `json:"is_deleted"`
+	ID         int    `json:"id"`
+	UserId     int64  `json:"user_id"`
+	Question   string `json:"question"`
+	Answer     string `json:"answer"`
+	Content    string `json:"content"`
+	Token      int    `json:"token"`
+	IsDeleted  int    `json:"is_deleted"`
+	CreateTime int64  `json:"create_time"`
 }
 
 var MsgRecord = sync.Map{}
@@ -246,7 +247,7 @@ func GetRecordList(userId int64, page int, pageSize int) ([]Record, error) {
 	offset := (page - 1) * pageSize
 	
 	query := `
-		SELECT id, user_id, question, answer, content, token, is_deleted
+		SELECT id, user_id, question, answer, content, token, is_deleted, create_time
 		FROM records`
 	var args []interface{}
 	
@@ -267,7 +268,7 @@ func GetRecordList(userId int64, page int, pageSize int) ([]Record, error) {
 	var records []Record
 	for rows.Next() {
 		var r Record
-		if err := rows.Scan(&r.ID, &r.UserId, &r.Question, &r.Answer, &r.Content, &r.Token, &r.IsDeleted); err != nil {
+		if err := rows.Scan(&r.ID, &r.UserId, &r.Question, &r.Answer, &r.Content, &r.Token, &r.IsDeleted, &r.CreateTime); err != nil {
 			return nil, err
 		}
 		records = append(records, r)

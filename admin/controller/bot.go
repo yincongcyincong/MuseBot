@@ -346,6 +346,7 @@ func UpdateBotConf(w http.ResponseWriter, r *http.Request) {
 	req, err := http.NewRequest("POST", strings.TrimSuffix(botInfo.Address, "/")+"/conf/update", bytes.NewBuffer(body))
 	if err != nil {
 		logger.Error("Error creating request", "err", err)
+		utils.Failure(w, param.CodeServerFail, param.MsgServerFail, err)
 		return
 	}
 	req.Header.Set("Content-Type", "application/json")
@@ -375,6 +376,69 @@ func GetBotCommand(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	resp, err := adminUtils.GetCrtClient(botInfo).Get(strings.TrimSuffix(botInfo.Address, "/") + "/command/get")
+	if err != nil {
+		logger.Error("get bot conf error", "err", err)
+		utils.Failure(w, param.CodeServerFail, param.MsgServerFail, err)
+		return
+	}
+	
+	defer resp.Body.Close()
+	_, err = io.Copy(w, resp.Body)
+	if err != nil {
+		logger.Error("copy response body error", "err", err)
+		utils.Failure(w, param.CodeServerFail, param.MsgServerFail, err)
+		return
+	}
+}
+
+func GetBotMCPConf(w http.ResponseWriter, r *http.Request) {
+	botInfo, err := getBot(r)
+	if err != nil {
+		logger.Error("get bot conf error", "err", err)
+		utils.Failure(w, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
+		return
+	}
+	
+	resp, err := adminUtils.GetCrtClient(botInfo).Get(strings.TrimSuffix(botInfo.Address, "/") + "/mcp/get")
+	if err != nil {
+		logger.Error("get bot conf error", "err", err)
+		utils.Failure(w, param.CodeServerFail, param.MsgServerFail, err)
+		return
+	}
+	
+	defer resp.Body.Close()
+	_, err = io.Copy(w, resp.Body)
+	if err != nil {
+		logger.Error("copy response body error", "err", err)
+		utils.Failure(w, param.CodeServerFail, param.MsgServerFail, err)
+		return
+	}
+}
+
+func UpdateBotMCPConf(w http.ResponseWriter, r *http.Request) {
+	botInfo, err := getBot(r)
+	if err != nil {
+		logger.Error("get bot conf error", "err", err)
+		utils.Failure(w, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
+		return
+	}
+	
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		logger.Error("get bot conf error", "err", err)
+		utils.Failure(w, param.CodeParamError, param.MsgParamError, err)
+		return
+	}
+	
+	req, err := http.NewRequest("POST", strings.TrimSuffix(botInfo.Address, "/")+"/mcp/update", bytes.NewBuffer(body))
+	if err != nil {
+		logger.Error("Error creating request", "err", err)
+		utils.Failure(w, param.CodeServerFail, param.MsgServerFail, err)
+		return
+	}
+	req.Header.Set("Content-Type", "application/json")
+	
+	resp, err := adminUtils.GetCrtClient(botInfo).Do(req)
 	if err != nil {
 		logger.Error("get bot conf error", "err", err)
 		utils.Failure(w, param.CodeServerFail, param.MsgServerFail, err)
