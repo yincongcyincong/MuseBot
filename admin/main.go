@@ -45,6 +45,7 @@ func main() {
 	http.HandleFunc("/bot/mcp/update", controller.RequireLogin(controller.UpdateBotMCPConf))
 	http.HandleFunc("/bot/mcp/delete", controller.RequireLogin(controller.DeleteBotMCPConf))
 	http.HandleFunc("/bot/mcp/disable", controller.RequireLogin(controller.DisableBotMCPConf))
+	http.HandleFunc("/bot/mcp/prepare", controller.RequireLogin(controller.GetPrepareMCPServer))
 	
 	http.HandleFunc("/user/login", controller.UserLogin)
 	http.HandleFunc("/user/me", controller.RequireLogin(controller.GetCurrentUserHandler))

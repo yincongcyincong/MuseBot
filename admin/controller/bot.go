@@ -11,7 +11,9 @@ import (
 	"strings"
 	"time"
 	
+	mcpParam "github.com/yincongcyincong/mcp-client-go/clients/param"
 	"github.com/yincongcyincong/telegram-deepseek-bot/admin/checkpoint"
+	adminConf "github.com/yincongcyincong/telegram-deepseek-bot/admin/conf"
 	"github.com/yincongcyincong/telegram-deepseek-bot/admin/db"
 	adminUtils "github.com/yincongcyincong/telegram-deepseek-bot/admin/utils"
 	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
@@ -430,7 +432,8 @@ func UpdateBotMCPConf(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	req, err := http.NewRequest("POST", strings.TrimSuffix(botInfo.Address, "/")+"/mcp/update", bytes.NewBuffer(body))
+	name := r.URL.Query().Get("name")
+	req, err := http.NewRequest("POST", strings.TrimSuffix(botInfo.Address, "/")+"/mcp/update?name="+name, bytes.NewBuffer(body))
 	if err != nil {
 		logger.Error("Error creating request", "err", err)
 		utils.Failure(w, param.CodeServerFail, param.MsgServerFail, err)
@@ -496,7 +499,49 @@ func DisableBotMCPConf(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetPrepareMCPServer(w http.ResponseWriter, r *http.Request) {
-
+	botInfo, err := getBot(r)
+	if err != nil {
+		logger.Error("get bot conf error", "err", err)
+		utils.Failure(w, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
+		return
+	}
+	
+	resp, err := adminUtils.GetCrtClient(botInfo).Get(strings.TrimSuffix(botInfo.Address, "/") + "/mcp/get")
+	if err != nil {
+		logger.Error("get bot conf error", "err", err)
+		utils.Failure(w, param.CodeServerFail, param.MsgServerFail, err)
+		return
+	}
+	defer resp.Body.Close()
+	
+	byteBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		logger.Error("read response body error", "err", err)
+		utils.Failure(w, param.CodeServerFail, param.MsgServerFail, err)
+		return
+	}
+	
+	getRes := struct {
+		Data *mcpParam.McpClientGoConfig `json:"data"`
+	}{}
+	
+	err = json.Unmarshal(byteBody, &getRes)
+	if err != nil {
+		logger.Error("unmarshal response body error", "err", err)
+		utils.Failure(w, param.CodeServerFail, param.MsgServerFail, err)
+		return
+	}
+	
+	res := &mcpParam.McpClientGoConfig{
+		McpServers: make(map[string]*mcpParam.MCPConfig),
+	}
+	for name, config := range adminConf.MCPConf.McpServers {
+		if _, ok := getRes.Data.McpServers[name]; !ok {
+			res.McpServers[name] = config
+		}
+	}
+	
+	utils.Success(w, res)
 }
 
 func getBot(r *http.Request) (*db.Bot, error) {

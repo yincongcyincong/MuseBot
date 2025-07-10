@@ -45,7 +45,6 @@ func (p *HTTPServer) Start() {
 		http.HandleFunc("/command/get", GetCommand)
 		http.HandleFunc("/mcp/get", GetMCPConf)
 		http.HandleFunc("/mcp/update", UpdateMCPConf)
-		http.HandleFunc("/mcp/delete", DeleteMCPConf)
 		http.HandleFunc("/mcp/disable", DisableMCPConf)
 		
 		http.HandleFunc("/user/list", GetUsers)

@@ -5,9 +5,13 @@
       "args": [
         "-y",
         "@modelcontextprotocol/server-filesystem",
-        "/Users/yincong/go/src/github.com/yincongcyincong/test-mcp/"
+        "/Users/yincong/go/src/github.com/yincongcyincong/"
       ],
       "description": "supports file operations such as reading, writing, deleting, renaming, moving, and listing files and directories.\n"
+    },
+    "playwright": {
+      "url": "http://localhost:8931/sse",
+      "description": "Simulates browser behavior for tasks like web navigation, data scraping, and automated interactions with web pages."
     }
   }
 }
