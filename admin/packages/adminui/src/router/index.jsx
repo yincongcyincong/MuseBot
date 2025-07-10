@@ -9,6 +9,7 @@ import { useUser } from "../context/UserContext.jsx";
 import TestPage from "../pages/TestPage.jsx";
 import BotUser from "../pages/BotUser.jsx";
 import BotChat from "../pages/BotChat.jsx";
+import MCP from "../pages/MCP.jsx";
 
 export default function Router() {
     const { isAuthenticated, isLoading } = useUser(); // ✨ 1. 获取 isLoading 状态
@@ -39,6 +40,7 @@ export default function Router() {
                     <Route path="bot" element={<Bot />} />
                     <Route path="users" element={<BotUser />} />
                     <Route path="chats" element={<BotChat />} />
+                    <Route path="mcp" element={<MCP />} />
                     <Route path="test" element={<TestPage />} />
                     {/* 从根路径 / 跳转到看板页 */}
                     <Route index element={<Navigate to="/dashboard" />} />

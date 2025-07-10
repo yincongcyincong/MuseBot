@@ -454,6 +454,51 @@ func UpdateBotMCPConf(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func DeleteBotMCPConf(w http.ResponseWriter, r *http.Request) {
+	botInfo, err := getBot(r)
+	if err != nil {
+		logger.Error("get bot conf error", "err", err)
+		utils.Failure(w, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
+		return
+	}
+	
+	name := r.URL.Query().Get("name")
+	resp, err := adminUtils.GetCrtClient(botInfo).Get(strings.TrimSuffix(botInfo.Address, "/") + "/mcp/delete?name=" + name)
+	if err != nil {
+		logger.Error("delete bot conf error", "err", err)
+		utils.Failure(w, param.CodeServerFail, param.MsgServerFail, err)
+		return
+	}
+	
+	defer resp.Body.Close()
+	_, err = io.Copy(w, resp.Body)
+}
+
+func DisableBotMCPConf(w http.ResponseWriter, r *http.Request) {
+	botInfo, err := getBot(r)
+	if err != nil {
+		logger.Error("get bot conf error", "err", err)
+		utils.Failure(w, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
+		return
+	}
+	
+	name := r.URL.Query().Get("name")
+	disable := r.URL.Query().Get("disable")
+	resp, err := adminUtils.GetCrtClient(botInfo).Get(strings.TrimSuffix(botInfo.Address, "/") + "/mcp/disable?disable=" + disable + "&name=" + name)
+	if err != nil {
+		logger.Error("delete bot conf error", "err", err)
+		utils.Failure(w, param.CodeServerFail, param.MsgServerFail, err)
+		return
+	}
+	
+	defer resp.Body.Close()
+	_, err = io.Copy(w, resp.Body)
+}
+
+func GetPrepareMCPServer(w http.ResponseWriter, r *http.Request) {
+
+}
+
 func getBot(r *http.Request) (*db.Bot, error) {
 	idStr := r.URL.Query().Get("id")
 	id, err := strconv.Atoi(idStr)

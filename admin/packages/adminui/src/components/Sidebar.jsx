@@ -10,6 +10,7 @@ export default function Sidebar() {
         { path: "/bot", label: "Bots" },
         { path: "/users", label: "BotUsers" },
         { path: "/chats", label: "BotChats" },
+        { path: "/mcp", label: "MCP" },
     ];
 
     return (
