@@ -1,6 +1,7 @@
 package http
 
 import (
+	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -9,6 +10,7 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"time"
 	
 	"github.com/yincongcyincong/mcp-client-go/clients"
 	mcpParam "github.com/yincongcyincong/mcp-client-go/clients/param"
@@ -107,7 +109,8 @@ func GetMCPConf(w http.ResponseWriter, r *http.Request) {
 }
 
 func UpdateMCPConf(w http.ResponseWriter, r *http.Request) {
-	config := new(mcpParam.McpClientGoConfig)
+	name := r.URL.Query().Get("name")
+	config := new(mcpParam.MCPConfig)
 	err := utils.HandleJsonBody(r, config)
 	if err != nil {
 		logger.Error("parse json body error", "err", err)
@@ -115,85 +118,91 @@ func UpdateMCPConf(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	file, err := os.OpenFile(*conf.McpConfPath, os.O_RDWR|os.O_TRUNC, 0644)
+	mcpConfigs, err := getMCPConf()
 	if err != nil {
-		logger.Error("open mcp conf error", "err", err)
-		utils.Failure(w, param.CodeConfigError, param.MsgConfigError, err)
-		return
-	}
-	defer file.Close()
-	
-	encoder := json.NewEncoder(file)
-	encoder.SetIndent("", "  ")
-	
-	if err := encoder.Encode(config); err != nil {
-		logger.Error("encode mcp conf error", "err", err)
+		logger.Error("get mcp conf error", "err", err)
 		utils.Failure(w, param.CodeConfigError, param.MsgConfigError, err)
 		return
 	}
 	
-	go conf.InitTools()
-	utils.Success(w, "")
-}
-
-func DeleteMCPConf(w http.ResponseWriter, r *http.Request) {
-	name := r.URL.Query().Get("name")
-	err := clients.RemoveMCPClient(name)
+	mcpConfigs.McpServers[name] = config
+	
+	err = updateMCPConfFile(mcpConfigs)
 	if err != nil {
-		logger.Error("remove mcp client error", "err", err)
+		logger.Error("update mcp conf error", "err", err)
 		utils.Failure(w, param.CodeConfigError, param.MsgConfigError, err)
 		return
 	}
 	
-	delete(conf.TaskTools, name)
+	go updateMCPConf(name, config)
 	utils.Success(w, "")
 }
 
 func DisableMCPConf(w http.ResponseWriter, r *http.Request) {
 	name := r.URL.Query().Get("name")
-	err := clients.RemoveMCPClient(name)
-	if err != nil {
-		logger.Error("remove mcp client error", "err", err)
-		utils.Failure(w, param.CodeConfigError, param.MsgConfigError, err)
-		return
-	}
 	disable := r.URL.Query().Get("disable")
 	
-	data, err := os.ReadFile(*conf.McpConfPath)
+	config, err := getMCPConf()
 	if err != nil {
-		logger.Error("read mcp conf error", "err", err)
-		utils.Failure(w, param.CodeConfigError, param.MsgConfigError, err)
-		return
-	}
-	
-	config := new(mcpParam.McpClientGoConfig)
-	err = json.Unmarshal(data, config)
-	if err != nil {
-		logger.Error("unmarshal mcp conf error", "err", err)
+		logger.Error("get mcp conf error", "err", err)
 		utils.Failure(w, param.CodeConfigError, param.MsgConfigError, err)
 		return
 	}
 	
 	if disable == "1" {
-		delete(conf.TaskTools, name)
 		for mcpName, client := range config.McpServers {
 			if mcpName == name {
 				client.Disabled = true
+				delete(conf.TaskTools, name)
+				err = clients.RemoveMCPClient(name)
+				if err != nil {
+					logger.Error("remove mcp client error", "err", err)
+					utils.Failure(w, param.CodeConfigError, param.MsgConfigError, err)
+					return
+				}
 			}
 		}
 	} else {
 		for mcpName, client := range config.McpServers {
 			if mcpName == name {
 				client.Disabled = false
+				go updateMCPConf(name, client)
 			}
 		}
 	}
 	
+	err = updateMCPConfFile(config)
+	if err != nil {
+		logger.Error("update mcp conf error", "err", err)
+		utils.Failure(w, param.CodeConfigError, param.MsgConfigError, err)
+		return
+	}
+	
+	utils.Success(w, "")
+}
+
+func getMCPConf() (*mcpParam.McpClientGoConfig, error) {
+	data, err := os.ReadFile(*conf.McpConfPath)
+	if err != nil {
+		logger.Error("read mcp conf error", "err", err)
+		return nil, err
+	}
+	
+	config := new(mcpParam.McpClientGoConfig)
+	err = json.Unmarshal(data, config)
+	if err != nil {
+		logger.Error("unmarshal mcp conf error", "err", err)
+		return nil, err
+	}
+	
+	return config, nil
+}
+
+func updateMCPConfFile(config *mcpParam.McpClientGoConfig) error {
 	file, err := os.OpenFile(*conf.McpConfPath, os.O_RDWR|os.O_TRUNC, 0644)
 	if err != nil {
 		logger.Error("open mcp conf error", "err", err)
-		utils.Failure(w, param.CodeConfigError, param.MsgConfigError, err)
-		return
+		return err
 	}
 	defer file.Close()
 	
@@ -202,13 +211,29 @@ func DisableMCPConf(w http.ResponseWriter, r *http.Request) {
 	
 	if err := encoder.Encode(config); err != nil {
 		logger.Error("encode mcp conf error", "err", err)
-		utils.Failure(w, param.CodeConfigError, param.MsgConfigError, err)
-		return
+		return err
 	}
 	
-	go conf.InitTools()
-	
-	utils.Success(w, "")
+	return nil
+}
+
+func updateMCPConf(name string, config *mcpParam.MCPConfig) {
+	defer func() {
+		if err := recover(); err != nil {
+			logger.Error("update mcp conf error", "err", err)
+		}
+	}()
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*60)
+	defer cancel()
+	mcpCleintConf := clients.GetOneMCPClient(name, config)
+	errs := clients.RegisterMCPClient(ctx, []*mcpParam.MCPClientConf{mcpCleintConf})
+	if len(errs) > 0 {
+		for mcpServer, err := range errs {
+			logger.Error("register mcp client error", "server", mcpServer, "error", err)
+		}
+	}
+	conf.InsertTools(name)
+	return
 }
 
 func handleSpecialData(updateConfParam *UpdateConfParam) {
