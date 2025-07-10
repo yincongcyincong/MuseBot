@@ -2,57 +2,30 @@ import React, { useEffect, useState } from "react";
 import Pagination from "../components/Pagination";
 import Modal from "../components/Modal";
 import Toast from "../components/Toast";
+import BotSelector from "../components/BotSelector";
 
 function BotUserListPage() {
-    const [bots, setBots] = useState([]);
     const [botId, setBotId] = useState(null);
-    const [searchText, setSearchText] = useState("");
-    const [dropdownOpen, setDropdownOpen] = useState(false);
     const [userIdSearch, setUserIdSearch] = useState("");
     const [users, setUsers] = useState([]);
     const [page, setPage] = useState(1);
     const [pageSize] = useState(10);
     const [total, setTotal] = useState(0);
 
-    // Modal 状态
     const [showModal, setShowModal] = useState(false);
     const [newUserId, setNewUserId] = useState("");
     const [newToken, setNewToken] = useState("");
 
-    // Toast
     const [toast, setToast] = useState({ show: false, message: "", type: "error" });
     const showToast = (message, type = "error") => {
         setToast({ show: true, message, type });
     };
 
     useEffect(() => {
-        fetchOnlineBots();
-    }, []);
-
-    useEffect(() => {
         if (botId !== null) {
             fetchBotUsers();
         }
     }, [botId, page, userIdSearch]);
-
-    const fetchOnlineBots = async () => {
-        try {
-            const res = await fetch("/bot/online");
-            const data = await res.json();
-            if (data.code !== 0) {
-                showToast(data.message || "Failed to fetch bots");
-                return;
-            }
-            if (data.data && data.data.length > 0) {
-                setBots(data.data);
-                const firstBot = data.data[0];
-                setBotId(firstBot.id);
-                setSearchText(firstBot.address);
-            }
-        } catch (err) {
-            showToast("Request error: " + err.message);
-        }
-    };
 
     const fetchBotUsers = async () => {
         try {
@@ -66,35 +39,11 @@ function BotUserListPage() {
             }
             const res = await fetch(`/bot/user/list?${params.toString()}`);
             const data = await res.json();
-            if (data.code !== 0) {
-                showToast(data.message || "Failed to fetch users");
-                return;
-            }
-            setUsers(data.data.list);
-            setTotal(data.data.total);
+            if (data.code !== 0) return showToast(data.message || "Failed to fetch users");
+            setUsers(data.data.list || []);
+            setTotal(data.data.total || 0);
         } catch (err) {
             showToast("Request error: " + err.message);
-        }
-    };
-
-    const handleAddToken = async (userId) => {
-        try {
-            const res = await fetch("/bot/user/add_token", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ botId, userId }),
-            });
-
-            const data = await res.json();
-            if (data.code !== 0) {
-                showToast(data.message || "Failed to add token");
-                return;
-            }
-
-            await fetchBotUsers();
-            showToast("Token added", "success");
-        } catch (err) {
-            showToast("Add token failed: " + err.message);
         }
     };
 
@@ -103,14 +52,15 @@ function BotUserListPage() {
             const res = await fetch(`/bot/add/token?id=${botId}`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ botId, user_id: Number(newUserId), token: Number(newToken) }),
+                body: JSON.stringify({
+                    botId,
+                    user_id: Number(newUserId),
+                    token: Number(newToken),
+                }),
             });
 
             const data = await res.json();
-            if (data.code !== 0) {
-                showToast(data.message || "Failed to submit token");
-                return;
-            }
+            if (data.code !== 0) return showToast(data.message || "Failed to submit token");
 
             setShowModal(false);
             setNewUserId("");
@@ -120,18 +70,6 @@ function BotUserListPage() {
         } catch (err) {
             showToast("Submit new token failed: " + err.message);
         }
-    };
-
-    const filteredBots = bots.filter((bot) =>
-        bot.address.toLowerCase().includes(searchText.toLowerCase())
-    );
-
-    const handleSelectBot = (bot) => {
-        setBotId(bot.id);
-        setSearchText(bot.address);
-        setDropdownOpen(false);
-        setPage(1);
-        setUserIdSearch("");
     };
 
     const handleUserIdSearchChange = (e) => {
@@ -160,36 +98,15 @@ function BotUserListPage() {
             </div>
 
             <div className="flex space-x-4 mb-6 max-w-4xl flex-wrap">
-                <div className="relative flex-1 min-w-[200px]">
-                    <label className="block font-medium text-gray-700 mb-1">Search & Select Bot:</label>
-                    <input
-                        type="text"
-                        value={searchText}
-                        onChange={(e) => {
-                            setSearchText(e.target.value);
-                            setDropdownOpen(true);
+                <div className="flex-1 min-w-[200px]">
+                    <BotSelector
+                        value={botId}
+                        onChange={(bot) => {
+                            setBotId(bot.id);
+                            setUserIdSearch("");
+                            setPage(1);
                         }}
-                        onFocus={() => setDropdownOpen(true)}
-                        className="w-full px-4 py-2 border border-gray-300 rounded shadow-sm focus:outline-none focus:ring focus:border-blue-400"
-                        placeholder="Search by address..."
                     />
-                    {dropdownOpen && (
-                        <ul className="absolute z-10 mt-1 w-full max-h-48 overflow-auto bg-white border border-gray-300 rounded shadow-lg">
-                            {filteredBots.length > 0 ? (
-                                filteredBots.map((bot) => (
-                                    <li
-                                        key={bot.id}
-                                        onClick={() => handleSelectBot(bot)}
-                                        className="px-4 py-2 cursor-pointer hover:bg-blue-100"
-                                    >
-                                        {bot.address}
-                                    </li>
-                                ))
-                            ) : (
-                                <li className="px-4 py-2 text-gray-500">No match</li>
-                            )}
-                        </ul>
-                    )}
                 </div>
 
                 <div className="flex-1 min-w-[200px]">
@@ -219,15 +136,23 @@ function BotUserListPage() {
                     </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
-                    {users.map((user) => (
-                        <tr key={user.id} className="hover:bg-gray-50">
-                            <td className="px-6 py-4 text-sm text-gray-800">{user.id}</td>
-                            <td className="px-6 py-4 text-sm text-gray-800">{user.user_id}</td>
-                            <td className="px-6 py-4 text-sm text-gray-800">{user.mode}</td>
-                            <td className="px-6 py-4 text-sm text-gray-800">{user.token}</td>
-                            <td className="px-6 py-4 text-sm text-gray-800">{user.avail_token}</td>
+                    {users.length > 0 ? (
+                        users.map((user) => (
+                            <tr key={user.id} className="hover:bg-gray-50">
+                                <td className="px-6 py-4 text-sm text-gray-800">{user.id}</td>
+                                <td className="px-6 py-4 text-sm text-gray-800">{user.user_id}</td>
+                                <td className="px-6 py-4 text-sm text-gray-800">{user.mode}</td>
+                                <td className="px-6 py-4 text-sm text-gray-800">{user.token}</td>
+                                <td className="px-6 py-4 text-sm text-gray-800">{user.avail_token}</td>
+                            </tr>
+                        ))
+                    ) : (
+                        <tr>
+                            <td colSpan={5} className="text-center py-6 text-gray-500">
+                                No users found.
+                            </td>
                         </tr>
-                    ))}
+                    )}
                     </tbody>
                 </table>
             </div>
