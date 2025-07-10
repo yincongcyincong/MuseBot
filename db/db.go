@@ -129,7 +129,6 @@ func initializeMysqlTable(db *sql.DB, tableName string, createSQL string) error 
 	query := fmt.Sprintf("SHOW TABLES LIKE '%s'", tableName)
 	err := db.QueryRow(query).Scan(&tb)
 	
-	// 如果表不存在，则创建
 	if errors.Is(err, sql.ErrNoRows) || tb == "" {
 		logger.Info("Table not exist, creating...", "tableName", tableName)
 		_, err := db.Exec(createSQL)

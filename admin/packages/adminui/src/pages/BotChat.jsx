@@ -48,7 +48,6 @@ function BotRecordsPage() {
         <div className="p-6 bg-gray-100 min-h-screen">
             <h2 className="text-2xl font-bold text-gray-800 mb-6">Bot Record History</h2>
 
-            {/* BotSelector + UserID 搜索 */}
             <div className="flex space-x-4 mb-6 max-w-4xl flex-wrap items-end">
                 {/* Bot Selector */}
                 <div className="flex-1 min-w-[200px]">
@@ -62,7 +61,6 @@ function BotRecordsPage() {
                     />
                 </div>
 
-                {/* UserId 搜索框 */}
                 <div className="flex-1 min-w-[200px]">
                     <label className="block font-medium text-gray-700 mb-1">Search User ID:</label>
                     <input

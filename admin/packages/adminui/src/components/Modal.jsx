@@ -4,7 +4,6 @@ export default function Modal({ visible, title, children, onClose }) {
     if (!visible) return null;
 
     const handleBackgroundClick = (e) => {
-        // 如果点击的是背景（而不是弹窗内容），则关闭
         if (e.target === e.currentTarget) {
             onClose();
         }
@@ -17,7 +16,7 @@ export default function Modal({ visible, title, children, onClose }) {
         >
             <div
                 className="bg-white p-6 rounded-lg shadow-lg max-w-xl w-full mx-4"
-                onClick={(e) => e.stopPropagation()} // 阻止事件冒泡
+                onClick={(e) => e.stopPropagation()}
             >
                 <div className="flex justify-between items-center mb-4">
                     <h3 className="text-lg font-semibold">{title}</h3>

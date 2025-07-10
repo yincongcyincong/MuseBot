@@ -333,7 +333,6 @@ function Bots() {
                 <ConfigForm botId={selectId} />
             </Modal>
 
-            {/* 自定义删除确认弹窗 */}
             <ConfirmModal
                 visible={confirmVisible}
                 message="Are you sure you want to delete this bot?"

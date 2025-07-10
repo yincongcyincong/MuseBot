@@ -103,7 +103,6 @@ func initializeMysqlTable(db *sql.DB, tableName string, createSQL string) error 
 	query := fmt.Sprintf("SHOW TABLES LIKE '%s'", tableName)
 	err := db.QueryRow(query).Scan(&tb)
 	
-	// 如果表不存在，则创建
 	if errors.Is(err, sql.ErrNoRows) || tb == "" {
 		logger.Info("Table not exist, creating...", "tableName", tableName)
 		_, err := db.Exec(createSQL)
@@ -135,7 +134,7 @@ func initializeSqlite3Table(db *sql.DB, tableName string) error {
 	err := db.QueryRow(query, tableName).Scan(&name)
 	
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			logger.Info("table not exist，creating...", "tableName", tableName)
 			_, err := db.Exec(sqlite3CreateTableSQL)
 			if err != nil {

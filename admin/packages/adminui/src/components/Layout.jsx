@@ -24,7 +24,7 @@ export default function Layout() {
             {/* 主体区域：侧边栏 + 内容 */}
             <div className="flex flex-1">
                 {/* 侧边栏，固定宽度，右边有分割线 */}
-                <div className="w-56">
+                <div className="w-56 h-full">
                     <Sidebar />
                 </div>
 

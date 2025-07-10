@@ -12,7 +12,6 @@ import (
 )
 
 var (
-	// 注意：生产环境应该使用更复杂的随机密钥
 	sessionStore *sessions.CookieStore
 	sessionName  = "telegram-deepseek-bot-session"
 )
@@ -78,7 +77,6 @@ func RequireLogin(next http.HandlerFunc) http.HandlerFunc {
 			utils.Failure(w, param.CodeNotLogin, param.MsgNotLogin, nil)
 			return
 		}
-		// 可选：设置到上下文，供下游 handler 使用
 		next.ServeHTTP(w, r)
 	}
 }

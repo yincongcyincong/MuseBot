@@ -12,7 +12,7 @@ import BotChat from "../pages/BotChat.jsx";
 import MCP from "../pages/MCP.jsx";
 
 export default function Router() {
-    const { isAuthenticated, isLoading } = useUser(); // ✨ 1. 获取 isLoading 状态
+    const { isAuthenticated, isLoading } = useUser();
 
     if (isLoading) {
         return (
@@ -27,12 +27,10 @@ export default function Router() {
     }
     return (
         <Routes>
-            {/* 登录页面的逻辑保持不变 */}
             <Route
                 path="/login"
                 element={!isAuthenticated ? <LoginPage /> : <Navigate to="/dashboard" />}
             />
-            {/* 只有在 isAuthenticated 为 true 时才渲染受保护的路由 */}
             {isAuthenticated && (
                 <Route path="/" element={<Layout />}>
                     <Route path="dashboard" element={<Dashboard />} />
@@ -46,7 +44,6 @@ export default function Router() {
                     <Route index element={<Navigate to="/dashboard" />} />
                 </Route>
             )}
-            {/* 兜底路由：根据登录状态重定向到正确页面 */}
             <Route
                 path="*"
                 element={<Navigate to={isAuthenticated ? "/dashboard" : "/login"} />}
