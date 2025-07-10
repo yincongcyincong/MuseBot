@@ -164,13 +164,13 @@ chat and coder means DeepSeek-V3, reasoner means DeepSeek-R1.
 
 ### /state
 
-calculate one user token usage.
+calculate one user token usage.    
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/0814b3ac-dcf6-4ec7-ae6b-3b8d190a0132" />
 
 ### /photo
 
 using volcengine photo model create photo, deepseek don't support to create photo now. VOLC_AK and VOLC_SK is
-necessary.[doc](https://www.volcengine.com/docs/6444/1340578)
+necessary.[doc](https://www.volcengine.com/docs/6444/1340578)    
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/c8072d7d-74e6-4270-8496-1b4e7532134b" />
 
 ### /video
@@ -197,7 +197,7 @@ multi agent communicate with each other!
 
 ### /addtoken
 
-add token for user.     
+add token for user.    
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/12d98272-0718-4c9b-bc5c-e0a92e6c8664" />
 
 ## Deployment
