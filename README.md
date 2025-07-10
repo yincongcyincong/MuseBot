@@ -6,7 +6,8 @@ every body have **3000** token to try this bot, please give me a star!
 # DeepSeek Telegram Bot
 
 This repository provides a **Telegram bot** built with **Golang** that integrates with **LLM API** to provide
-AI-powered responses. The bot supports **openai** **deepseek** **gemini** **openrouter** LLMs, making interactions feel more natural and dynamic.
+AI-powered responses. The bot supports **openai** **deepseek** **gemini** **openrouter** LLMs, making interactions feel
+more natural and dynamic.
 [中文文档](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/README_ZH.md)
 
 ## 🚀 Features
@@ -107,6 +108,9 @@ You can configure the bot via environment variables:
 | VIDEO_TOKEN	                   | volcengine Api key[doc](https://www.volcengine.com/docs/82379/1399008#b00dee71)                                                | -                         |
 | HTTP_PORT	                     | http server port                                                                                                               | 36060                     |
 | USE_TOOLS	                     | if normal conversation  use function call tools or not                                                                         | false                     |
+| CA_FILE	                       | http server ca file                                                                                                            | -                         |
+| CRT_FILE	                      | http server crt file                                                                                                           | -                         |
+| KEY_FILE	                      | http server key file                                                                                                           | -                         |
 
 ### CUSTOM_URL
 
@@ -177,7 +181,8 @@ now. [doc](https://www.volcengine.com/docs/82379/1399008#b00dee71)
 
 ### /chat
 
-allows the bot to chat through /chat command in groups, without the bot being set as admin of the group.
+allows the bot to chat through /chat command in groups,
+without the bot being set as admin of the group.        
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/00a0faf3-6037-4d84-9a33-9aa6c320e44d" />
 
 ### /help
@@ -192,7 +197,7 @@ multi agent communicate with each other!
 
 ### /addtoken
 
-add token for user.
+add token for user.     
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/12d98272-0718-4c9b-bc5c-e0a92e6c8664" />
 
 ## Deployment
