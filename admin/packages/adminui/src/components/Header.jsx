@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 
-export default function Header({ username = "用户", avatarUrl = "" }) {
+export default function Header({ username = "USER", avatarUrl = "" }) {
     const [menuOpen, setMenuOpen] = useState(false);
     const menuRef = useRef(null);
 
@@ -38,7 +38,6 @@ export default function Header({ username = "用户", avatarUrl = "" }) {
                     rel="noopener noreferrer">telegram-deepseek-bot</a>
             </div>
 
-            {/* 右侧用户信息 */}
             <div className="relative" ref={menuRef}>
                 <button
                     onClick={() => setMenuOpen(!menuOpen)}
@@ -68,7 +67,6 @@ export default function Header({ username = "用户", avatarUrl = "" }) {
                     </svg>
                 </button>
 
-                {/* 下拉菜单 */}
                 <div
                     className={`absolute right-0 mt-2 w-36 bg-white border border-gray-200 rounded shadow-lg
                                 overflow-visible transform origin-top-right
@@ -79,7 +77,7 @@ export default function Header({ username = "用户", avatarUrl = "" }) {
                         onClick={handleLogout}
                         className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-indigo-100 transition-colors"
                     >
-                        退出登录
+                        LOGOUT
                     </button>
                 </div>
             </div>

@@ -4,7 +4,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* 你自己其他的 CSS 规则可以在这里添加 */
 body {
     margin: 0;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',

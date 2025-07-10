@@ -12,21 +12,16 @@ import (
 var staticFiles embed.FS
 
 func View() http.HandlerFunc {
-	
-	// 提取子目录文件系统
 	distFS, _ := fs.Sub(staticFiles, "adminui")
 	
-	// 提供静态文件服务
 	staticHandler := http.FileServer(http.FS(distFS))
 	
 	return func(w http.ResponseWriter, r *http.Request) {
-		// 如果是静态资源，直接提供
 		if fileExists(distFS, r.URL.Path[1:]) {
 			staticHandler.ServeHTTP(w, r)
 			return
 		}
 		
-		// 否则，返回 index.html 给前端路由
 		fileBytes, err := fs.ReadFile(distFS, "index.html")
 		if err != nil {
 			http.Error(w, "index.html not found", http.StatusInternalServerError)

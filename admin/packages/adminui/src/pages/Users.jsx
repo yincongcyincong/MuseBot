@@ -28,7 +28,7 @@ function Users() {
     useEffect(() => {
         fetchUsers();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [page]); // page 改变才请求，不要依赖其他会频繁变的变量
+    }, [page]);
 
     const fetchUsers = async () => {
         try {
