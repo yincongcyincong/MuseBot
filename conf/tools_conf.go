@@ -17,8 +17,7 @@ import (
 )
 
 type AgentInfo struct {
-	Description string   `json:"description"`
-	ToolsName   []string `json:"tools_name"`
+	Description string `json:"description"`
 	
 	DeepseekTool    []deepseek.Tool   `json:"-"`
 	VolTool         []*model.Tool     `json:"-"`
@@ -106,7 +105,6 @@ func InsertTools(clientName string) {
 				GeminiTools:     gmTools,
 				OpenAITools:     oaTools,
 				OpenRouterTools: orTools,
-				ToolsName:       []string{clientName},
 			}
 		}
 	}

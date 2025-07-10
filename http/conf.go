@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 	
+	"github.com/yincongcyincong/mcp-client-go/clients"
 	mcpParam "github.com/yincongcyincong/mcp-client-go/clients/param"
 	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
 	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
@@ -123,7 +124,7 @@ func UpdateMCPConf(w http.ResponseWriter, r *http.Request) {
 	defer file.Close()
 	
 	encoder := json.NewEncoder(file)
-	encoder.SetIndent("", "  ") // 美化格式（可选）
+	encoder.SetIndent("", "  ")
 	
 	if err := encoder.Encode(config); err != nil {
 		logger.Error("encode mcp conf error", "err", err)
@@ -131,7 +132,82 @@ func UpdateMCPConf(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	conf.InitTools()
+	go conf.InitTools()
+	utils.Success(w, "")
+}
+
+func DeleteMCPConf(w http.ResponseWriter, r *http.Request) {
+	name := r.URL.Query().Get("name")
+	err := clients.RemoveMCPClient(name)
+	if err != nil {
+		logger.Error("remove mcp client error", "err", err)
+		utils.Failure(w, param.CodeConfigError, param.MsgConfigError, err)
+		return
+	}
+	
+	delete(conf.TaskTools, name)
+	utils.Success(w, "")
+}
+
+func DisableMCPConf(w http.ResponseWriter, r *http.Request) {
+	name := r.URL.Query().Get("name")
+	err := clients.RemoveMCPClient(name)
+	if err != nil {
+		logger.Error("remove mcp client error", "err", err)
+		utils.Failure(w, param.CodeConfigError, param.MsgConfigError, err)
+		return
+	}
+	disable := r.URL.Query().Get("disable")
+	
+	data, err := os.ReadFile(*conf.McpConfPath)
+	if err != nil {
+		logger.Error("read mcp conf error", "err", err)
+		utils.Failure(w, param.CodeConfigError, param.MsgConfigError, err)
+		return
+	}
+	
+	config := new(mcpParam.McpClientGoConfig)
+	err = json.Unmarshal(data, config)
+	if err != nil {
+		logger.Error("unmarshal mcp conf error", "err", err)
+		utils.Failure(w, param.CodeConfigError, param.MsgConfigError, err)
+		return
+	}
+	
+	if disable == "1" {
+		delete(conf.TaskTools, name)
+		for mcpName, client := range config.McpServers {
+			if mcpName == name {
+				client.Disabled = true
+			}
+		}
+	} else {
+		for mcpName, client := range config.McpServers {
+			if mcpName == name {
+				client.Disabled = false
+			}
+		}
+	}
+	
+	file, err := os.OpenFile(*conf.McpConfPath, os.O_RDWR|os.O_TRUNC, 0644)
+	if err != nil {
+		logger.Error("open mcp conf error", "err", err)
+		utils.Failure(w, param.CodeConfigError, param.MsgConfigError, err)
+		return
+	}
+	defer file.Close()
+	
+	encoder := json.NewEncoder(file)
+	encoder.SetIndent("", "  ")
+	
+	if err := encoder.Encode(config); err != nil {
+		logger.Error("encode mcp conf error", "err", err)
+		utils.Failure(w, param.CodeConfigError, param.MsgConfigError, err)
+		return
+	}
+	
+	go conf.InitTools()
+	
 	utils.Success(w, "")
 }
 

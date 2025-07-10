@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import Modal from "../components/Modal";
 import Pagination from "../components/Pagination";
 import Toast from "../components/Toast";
+import ConfirmModal from "../components/ConfirmModal";
 
 function Users() {
     const [users, setUsers] = useState([]);
@@ -11,17 +12,23 @@ function Users() {
     const [form, setForm] = useState({ id: 0, username: "", password: "" });
 
     const [page, setPage] = useState(1);
-    const [pageSize] = useState(10);
+    const pageSize = 10;
     const [total, setTotal] = useState(0);
 
     const [toast, setToast] = useState({ show: false, message: "", type: "error" });
+
+    // 确认删除相关状态
+    const [confirmVisible, setConfirmVisible] = useState(false);
+    const [userToDelete, setUserToDelete] = useState(null);
+
     const showToast = (message, type = "error") => {
         setToast({ show: true, message, type });
     };
 
     useEffect(() => {
         fetchUsers();
-    }, [page]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [page]); // page 改变才请求，不要依赖其他会频繁变的变量
 
     const fetchUsers = async () => {
         try {
@@ -52,22 +59,35 @@ function Users() {
         setModalVisible(true);
     };
 
-    const handleDeleteClick = async (userId) => {
-        if (!window.confirm("Are you sure you want to delete this user?")) return;
+    // 触发删除弹窗
+    const handleDeleteClick = (userId) => {
+        setUserToDelete(userId);
+        setConfirmVisible(true);
+    };
 
+    // 取消删除弹窗
+    const cancelDelete = () => {
+        setUserToDelete(null);
+        setConfirmVisible(false);
+    };
+
+    // 确认删除
+    const confirmDelete = async () => {
+        if (!userToDelete) return;
         try {
-            const res = await fetch(`/user/delete?id=${userId}`, {
+            const res = await fetch(`/user/delete?id=${userToDelete}`, {
                 method: "GET",
             });
-
             const data = await res.json();
             if (data.code !== 0) {
                 showToast(data.message || "Failed to delete user");
                 return;
             }
-
-            await fetchUsers();
             showToast("User deleted", "success");
+            setConfirmVisible(false);
+            setUserToDelete(null);
+            // 删除成功刷新数据，注意不要直接调用 fetchUsers() 导致死循环
+            fetchUsers();
         } catch (error) {
             showToast("Delete failed: " + error.message);
         }
@@ -231,6 +251,13 @@ function Users() {
                     </button>
                 </div>
             </Modal>
+
+            <ConfirmModal
+                visible={confirmVisible}
+                message="Are you sure you want to delete this user?"
+                onConfirm={confirmDelete}
+                onCancel={cancelDelete}
+            />
         </div>
     );
 }

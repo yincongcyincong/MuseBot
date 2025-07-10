@@ -3,27 +3,33 @@ import Modal from "../components/Modal";
 import Pagination from "../components/Pagination";
 import ConfigForm from "./ConfigForm";
 import Toast from "../components/Toast";
+import ConfirmModal from "../components/ConfirmModal";
 
 function Bots() {
     const [bots, setBots] = useState([]);
     const [search, setSearch] = useState("");
     const [modalVisible, setModalVisible] = useState(false);
     const [editingBot, setEditingBot] = useState(null);
-    const [form, setForm] = useState({ id: 0, address: "", crt_file: "", key_file: "", ca_file: "" });
+    const [form, setForm] = useState({
+        id: 0,
+        address: "",
+        crt_file: "",
+        key_file: "",
+        ca_file: "",
+    });
 
     const [rawConfigVisible, setRawConfigVisible] = useState(false);
     const [structuredConfigVisible, setStructuredConfigVisible] = useState(false);
-    const [mcpConfigVisible, setMcpConfigVisible] = useState(false);
-
     const [rawConfigText, setRawConfigText] = useState("");
-    const [mcpConfigText, setMcpConfigText] = useState("");
-
     const [selectId, setSelectId] = useState(0);
+
     const [page, setPage] = useState(1);
     const [pageSize] = useState(10);
     const [total, setTotal] = useState(0);
 
     const [toast, setToast] = useState({ show: false, message: "", type: "error" });
+    const [confirmVisible, setConfirmVisible] = useState(false);
+    const [botToDelete, setBotToDelete] = useState(null);
 
     const showToast = (message, type = "error") => {
         setToast({ show: true, message, type });
@@ -35,7 +41,9 @@ function Bots() {
 
     const fetchBots = async () => {
         try {
-            const res = await fetch(`/bot/list?page=${page}&page_size=${pageSize}&address=${encodeURIComponent(search)}`);
+            const res = await fetch(
+                `/bot/list?page=${page}&page_size=${pageSize}&address=${encodeURIComponent(search)}`
+            );
             const data = await res.json();
             if (data.code !== 0) {
                 showToast(data.message || "Failed to fetch bots");
@@ -60,20 +68,42 @@ function Bots() {
     };
 
     const handleEditClick = (bot) => {
-        setForm({ id: bot.id, address: bot.address, crt_file: bot.crt_file, key_file: bot.key_file, ca_file: bot.ca_file });
+        setForm({
+            id: bot.id,
+            address: bot.address,
+            crt_file: bot.crt_file,
+            key_file: bot.key_file,
+            ca_file: bot.ca_file,
+        });
         setEditingBot(bot);
         setModalVisible(true);
     };
 
-    const handleDeleteClick = async (botId) => {
-        if (!window.confirm("Are you sure you want to delete this bot?")) return;
+    // 删除按钮点击，弹出确认弹窗
+    const handleDeleteClick = (botId) => {
+        setBotToDelete(botId);
+        setConfirmVisible(true);
+    };
+
+    // 取消删除
+    const cancelDelete = () => {
+        setBotToDelete(null);
+        setConfirmVisible(false);
+    };
+
+    // 确认删除
+    const confirmDelete = async () => {
+        if (!botToDelete) return;
         try {
-            const res = await fetch(`/bot/delete?id=${botId}`, { method: "DELETE" });
+            const res = await fetch(`/bot/delete?id=${botToDelete}`, { method: "DELETE" });
             const data = await res.json();
             if (data.code !== 0) {
                 showToast(data.message || "Failed to delete bot");
                 return;
             }
+            showToast("Bot deleted", "success");
+            setConfirmVisible(false);
+            setBotToDelete(null);
             await fetchBots();
         } catch (error) {
             showToast("Request error: " + error.message);
@@ -120,42 +150,6 @@ function Bots() {
         setSelectId(botId);
     };
 
-    const handleShowMcpConfig = async (botId) => {
-        try {
-            const res = await fetch(`/bot/mcp/get?id=${botId}`);
-            const data = await res.json();
-            if (data.code !== 0) {
-                showToast(data.message || "Failed to fetch MCP config");
-                return;
-            }
-            setMcpConfigText(JSON.stringify(data.data, null, 2));
-            setSelectId(botId);
-            setMcpConfigVisible(true);
-        } catch (err) {
-            showToast("Request error: " + err.message);
-        }
-    };
-
-    const handleSaveMcpConfig = async () => {
-        try {
-            const parsed = JSON.parse(mcpConfigText);
-            const res = await fetch(`/bot/mcp/update?id=${selectId}`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(parsed),
-            });
-            const data = await res.json();
-            if (data.code !== 0) {
-                showToast(data.message || "Failed to update MCP config");
-                return;
-            }
-            showToast("MCP config updated successfully", "success");
-            setMcpConfigVisible(false);
-        } catch (err) {
-            showToast("Invalid JSON or request error: " + err.message);
-        }
-    };
-
     const handlePageChange = (newPage) => {
         setPage(newPage);
     };
@@ -200,7 +194,14 @@ function Bots() {
                 <table className="min-w-full bg-white divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                     <tr>
-                        {["ID", "Address", "Status", "Create Time", "Update Time", "Actions"].map((title) => (
+                        {[
+                            "ID",
+                            "Address",
+                            "Status",
+                            "Create Time",
+                            "Update Time",
+                            "Actions",
+                        ].map((title) => (
                             <th
                                 key={title}
                                 className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
@@ -223,11 +224,30 @@ function Bots() {
                                 {new Date(bot.update_time * 1000).toLocaleString()}
                             </td>
                             <td className="px-6 py-4 space-x-2 text-sm">
-                                <button onClick={() => handleEditClick(bot)} className="text-blue-600 hover:underline">Edit</button>
-                                <button onClick={() => handleShowRawConfig(bot.id)} className="text-purple-600 hover:underline">Command</button>
-                                <button onClick={() => handleShowStructuredConfig(bot.id)} className="text-green-600 hover:underline">Config</button>
-                                <button onClick={() => handleShowMcpConfig(bot.id)} className="text-indigo-600 hover:underline">MCP Config</button>
-                                <button onClick={() => handleDeleteClick(bot.id)} className="text-red-600 hover:underline">Delete</button>
+                                <button
+                                    onClick={() => handleEditClick(bot)}
+                                    className="text-blue-600 hover:underline"
+                                >
+                                    Edit
+                                </button>
+                                <button
+                                    onClick={() => handleShowRawConfig(bot.id)}
+                                    className="text-purple-600 hover:underline"
+                                >
+                                    Command
+                                </button>
+                                <button
+                                    onClick={() => handleShowStructuredConfig(bot.id)}
+                                    className="text-green-600 hover:underline"
+                                >
+                                    Config
+                                </button>
+                                <button
+                                    onClick={() => handleDeleteClick(bot.id)}
+                                    className="text-red-600 hover:underline"
+                                >
+                                    Delete
+                                </button>
                             </td>
                         </tr>
                     ))}
@@ -237,7 +257,11 @@ function Bots() {
 
             <Pagination page={page} pageSize={pageSize} total={total} onPageChange={handlePageChange} />
 
-            <Modal visible={modalVisible} title={editingBot ? "Edit Bot" : "Add Bot"} onClose={() => setModalVisible(false)}>
+            <Modal
+                visible={modalVisible}
+                title={editingBot ? "Edit Bot" : "Add Bot"}
+                onClose={() => setModalVisible(false)}
+            >
                 <input type="hidden" value={form.id} />
                 <div className="mb-4">
                     <input
@@ -249,59 +273,73 @@ function Bots() {
                     />
                 </div>
                 <div className="mb-4">
-                    <textarea
-                        placeholder="CA File"
-                        value={form.ca_file}
-                        onChange={(e) => setForm({ ...form, ca_file: e.target.value })}
-                        className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring focus:border-blue-400"
-                        rows={5}
-                    />
+          <textarea
+              placeholder="CA File"
+              value={form.ca_file}
+              onChange={(e) => setForm({ ...form, ca_file: e.target.value })}
+              className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring focus:border-blue-400"
+              rows={5}
+          />
                 </div>
                 <div className="mb-4">
-                    <textarea
-                        placeholder="KEY File"
-                        value={form.key_file}
-                        onChange={(e) => setForm({ ...form, key_file: e.target.value })}
-                        className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring focus:border-blue-400"
-                        rows={5}
-                    />
+          <textarea
+              placeholder="KEY File"
+              value={form.key_file}
+              onChange={(e) => setForm({ ...form, key_file: e.target.value })}
+              className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring focus:border-blue-400"
+              rows={5}
+          />
                 </div>
                 <div className="mb-4">
-                    <textarea
-                        placeholder="CRT File"
-                        value={form.crt_file}
-                        onChange={(e) => setForm({ ...form, crt_file: e.target.value })}
-                        className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring focus:border-blue-400"
-                        rows={5}
-                    />
+          <textarea
+              placeholder="CRT File"
+              value={form.crt_file}
+              onChange={(e) => setForm({ ...form, crt_file: e.target.value })}
+              className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring focus:border-blue-400"
+              rows={5}
+          />
                 </div>
                 <div className="flex justify-end space-x-2">
-                    <button onClick={() => setModalVisible(false)} className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded">Cancel</button>
-                    <button onClick={handleSave} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">Save</button>
+                    <button
+                        onClick={() => setModalVisible(false)}
+                        className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        onClick={handleSave}
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
+                    >
+                        Save
+                    </button>
                 </div>
             </Modal>
 
-            <Modal visible={rawConfigVisible} title="Command" onClose={() => setRawConfigVisible(false)}>
-                <pre className="max-h-[500px] overflow-y-auto text-sm text-gray-700 whitespace-pre-wrap break-words">
-                    {rawConfigText.split(/\s+/).filter(Boolean).join("\n")}
-                </pre>
+            <Modal
+                visible={rawConfigVisible}
+                title="Command"
+                onClose={() => setRawConfigVisible(false)}
+            >
+        <pre className="max-h-[500px] overflow-y-auto text-sm text-gray-700 whitespace-pre-wrap break-words">
+          {rawConfigText.split(/\s+/).filter(Boolean).join("\n")}
+        </pre>
             </Modal>
 
-            <Modal visible={structuredConfigVisible} title="Edit Config" onClose={() => setStructuredConfigVisible(false)}>
+            <Modal
+                visible={structuredConfigVisible}
+                title="Edit Config"
+                onClose={() => setStructuredConfigVisible(false)}
+            >
                 <ConfigForm botId={selectId} />
             </Modal>
 
-            <Modal visible={mcpConfigVisible} title="MCP Config" onClose={() => setMcpConfigVisible(false)}>
-                <textarea
-                    value={mcpConfigText}
-                    onChange={(e) => setMcpConfigText(e.target.value)}
-                    className="w-full h-96 px-4 py-2 border border-gray-300 rounded font-mono text-sm focus:outline-none focus:ring focus:border-blue-400"
-                />
-                <div className="flex justify-end space-x-2 mt-4">
-                    <button onClick={() => setMcpConfigVisible(false)} className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded">Cancel</button>
-                    <button onClick={handleSaveMcpConfig} className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">Save</button>
-                </div>
-            </Modal>
+            {/* 自定义删除确认弹窗 */}
+            <ConfirmModal
+                visible={confirmVisible}
+                message="Are you sure you want to delete this bot?"
+                onConfirm={confirmDelete}
+                onCancel={cancelDelete}
+            />
         </div>
     );
 }

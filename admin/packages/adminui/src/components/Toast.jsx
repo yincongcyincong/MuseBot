@@ -4,7 +4,7 @@ function Toast({ message, type = "error", onClose }) {
     useEffect(() => {
         const timer = setTimeout(() => {
             onClose();
-        }, 3000); // 自动消失时间
+        }, 3000);
 
         return () => clearTimeout(timer);
     }, [onClose]);
@@ -12,7 +12,10 @@ function Toast({ message, type = "error", onClose }) {
     const bgColor = type === "error" ? "bg-red-500" : "bg-green-500";
 
     return (
-        <div className={`fixed top-5 right-5 z-50 px-4 py-2 rounded shadow-lg text-white ${bgColor}`}>
+        <div
+            className={`fixed top-1/5 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 
+                        px-6 py-3 rounded shadow-lg text-white text-center ${bgColor}`}
+        >
             {message}
         </div>
     );
