@@ -397,8 +397,8 @@ func (h *VolReq) requestOneToolsCall(ctx context.Context, toolsCall []*model.Too
 	}
 }
 
-// GenerateImg generate image
-func GenerateImg(prompt string) (*param.ImgResponse, error) {
+// GenerateVolImg generate image
+func GenerateVolImg(prompt string) (string, error) {
 	start := time.Now()
 	visual.DefaultInstance.Client.SetAccessKey(*conf.BaseConfInfo.VolcAK)
 	visual.DefaultInstance.Client.SetSecretKey(*conf.BaseConfInfo.VolcSK)
@@ -429,7 +429,7 @@ func GenerateImg(prompt string) (*param.ImgResponse, error) {
 	resp, _, err := visual.DefaultInstance.CVProcess(reqBody)
 	if err != nil {
 		logger.Error("request img api fail", "err", err)
-		return nil, err
+		return "", err
 	}
 	
 	respByte, _ := json.Marshal(resp)
@@ -437,7 +437,7 @@ func GenerateImg(prompt string) (*param.ImgResponse, error) {
 	err = json.Unmarshal(respByte, data)
 	if err != nil {
 		logger.Error("unmarshal response fail", "err", err)
-		return nil, err
+		return "", err
 	}
 	
 	logger.Info("image response", "respByte", respByte)
@@ -445,10 +445,17 @@ func GenerateImg(prompt string) (*param.ImgResponse, error) {
 	// generate image time costing
 	totalDuration := time.Since(start).Seconds()
 	metrics.ImageDuration.Observe(totalDuration)
-	return data, nil
+	
+	if data.Data == nil || len(data.Data.ImageUrls) == 0 {
+		logger.Warn("no image generated")
+		return "", errors.New("no image generated")
+	}
+	
+	return data.Data.ImageUrls[0], nil
 }
 
-func GenerateVideo(prompt string) (string, error) {
+// GenerateVolVideo generate video
+func GenerateVolVideo(prompt string) (string, error) {
 	if prompt == "" {
 		logger.Warn("prompt is empty", "prompt", prompt)
 		return "", errors.New("prompt is empty")

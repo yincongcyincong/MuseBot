@@ -21,6 +21,7 @@ type BaseConf struct {
 	ErnieSK          *string `json:"ernie_sk"`
 	
 	Type          *string `json:"type"`
+	MediaType     *string `json:"media_type"`
 	CustomUrl     *string `json:"custom_url"`
 	VolcAK        *string `json:"volc_ak"`
 	VolcSK        *string `json:"volc_sk"`
@@ -64,7 +65,8 @@ func InitConf() {
 	BaseConfInfo.VolcSK = flag.String("volc_sk", "", "volc sk")
 	
 	BaseConfInfo.CustomUrl = flag.String("custom_url", "https://api.deepseek.com/", "deepseek custom url")
-	BaseConfInfo.Type = flag.String("type", "deepseek", "llm type: deepseek gemini openai openrouter")
+	BaseConfInfo.Type = flag.String("type", "deepseek", "llm type: deepseek gemini openai openrouter vol")
+	BaseConfInfo.MediaType = flag.String("media_type", "vol", "media type: vol gemini openai openrouter")
 	BaseConfInfo.DBType = flag.String("db_type", "sqlite3", "db type")
 	BaseConfInfo.DBConf = flag.String("db_conf", "./data/telegram_bot.db", "db conf")
 	BaseConfInfo.DeepseekProxy = flag.String("deepseek_proxy", "", "db conf")
@@ -213,6 +215,10 @@ func InitConf() {
 		*BaseConfInfo.CaFile = os.Getenv("CA_FILE")
 	}
 	
+	if os.Getenv("MEDIA_TYPE") != "" {
+		*BaseConfInfo.MediaType = os.Getenv("MEDIA_TYPE")
+	}
+	
 	for _, userIdStr := range strings.Split(*allowedUserIds, ",") {
 		userId, err := strconv.Atoi(userIdStr)
 		if err != nil {
@@ -268,6 +274,7 @@ func InitConf() {
 	logger.Info("CONF", "CrtFile", *BaseConfInfo.CrtFile)
 	logger.Info("CONF", "KeyFile", *BaseConfInfo.KeyFile)
 	logger.Info("CONF", "CaFile", *BaseConfInfo.CaFile)
+	logger.Info("CONF", "MediaType", *BaseConfInfo.MediaType)
 	
 	EnvAudioConf()
 	EnvRagConf()

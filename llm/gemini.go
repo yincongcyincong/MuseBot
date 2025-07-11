@@ -363,3 +363,71 @@ func (h *GeminiReq) GetModel(l *LLM) {
 		l.Model = userInfo.Mode
 	}
 }
+
+func GenerateGeminiImg(prompt string) ([]byte, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+	
+	httpClient := utils.GetDeepseekProxyClient()
+	client, err := genai.NewClient(ctx, &genai.ClientConfig{
+		HTTPClient: httpClient,
+		APIKey:     *conf.BaseConfInfo.GeminiToken,
+	})
+	if err != nil {
+		logger.Error("create client fail", "err", err)
+		return nil, err
+	}
+	
+	response, err := client.Models.GenerateImages(
+		ctx, "imagen-3.0-generate-002",
+		prompt,
+		&genai.GenerateImagesConfig{
+			OutputMIMEType: "image/jpeg",
+		},
+	)
+	if err != nil {
+		logger.Error("generate image fail", "err", err)
+		return nil, err
+	}
+	
+	return response.GeneratedImages[0].Image.ImageBytes, nil
+}
+
+func GenerateGeminiVideo(prompt string) ([]byte, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+	
+	httpClient := utils.GetDeepseekProxyClient()
+	client, err := genai.NewClient(ctx, &genai.ClientConfig{
+		HTTPClient: httpClient,
+		APIKey:     *conf.BaseConfInfo.GeminiToken,
+	})
+	if err != nil {
+		logger.Error("create client fail", "err", err)
+		return nil, err
+	}
+	
+	operation, err := client.Models.GenerateVideos(ctx, "veo-2.0-generate-001", prompt,
+		nil, &genai.GenerateVideosConfig{})
+	if err != nil {
+		logger.Error("generate video fail", "err", err)
+		return nil, err
+	}
+	
+	for !operation.Done {
+		logger.Info("video is createing...")
+		time.Sleep(5 * time.Second)
+		operation, err = client.Operations.GetVideosOperation(ctx, operation, nil)
+		if err != nil {
+			logger.Error("get video operation fail", "err", err)
+			return nil, err
+		}
+	}
+	
+	if len(operation.Response.GeneratedVideos) == 0 {
+		logger.Error("generate video fail", "err", "video is empty", "resp", operation.Response)
+		return nil, errors.New("video is empty")
+	}
+	
+	return operation.Response.GeneratedVideos[0].Video.VideoBytes, nil
+}

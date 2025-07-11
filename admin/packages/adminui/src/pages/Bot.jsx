@@ -79,19 +79,16 @@ function Bots() {
         setModalVisible(true);
     };
 
-    // 删除按钮点击，弹出确认弹窗
     const handleDeleteClick = (botId) => {
         setBotToDelete(botId);
         setConfirmVisible(true);
     };
 
-    // 取消删除
     const cancelDelete = () => {
         setBotToDelete(null);
         setConfirmVisible(false);
     };
 
-    // 确认删除
     const confirmDelete = async () => {
         if (!botToDelete) return;
         try {
