@@ -377,3 +377,37 @@ func (d *OpenAIReq) requestToolsCall(ctx context.Context, choice openai.ChatComp
 	return nil
 	
 }
+
+// GenerateOpenAIImg generate image
+func GenerateOpenAIImg(prompt string) (string, error) {
+	httpClient := utils.GetDeepseekProxyClient()
+	openaiConfig := openai.DefaultConfig(*conf.BaseConfInfo.OpenAIToken)
+	if *conf.BaseConfInfo.CustomUrl != "" {
+		openaiConfig.BaseURL = *conf.BaseConfInfo.CustomUrl
+	}
+	
+	//openaiConfig.BaseURL = "https://api.chatanywhere.org"
+	openaiConfig.HTTPClient = httpClient
+	client := openai.NewClientWithConfig(openaiConfig)
+	
+	respUrl, err := client.CreateImage(
+		context.Background(),
+		openai.ImageRequest{
+			Prompt:         prompt,
+			Size:           openai.CreateImageSize256x256,
+			ResponseFormat: openai.CreateImageResponseFormatURL,
+			N:              1,
+		},
+	)
+	if err != nil {
+		logger.Error("CreateImage error", "err", err)
+		return "", err
+	}
+	
+	if len(respUrl.Data) == 0 {
+		logger.Error("response is emtpy", "response", respUrl)
+		return "", errors.New("response is empty")
+	}
+	
+	return respUrl.Data[0].URL, nil
+}

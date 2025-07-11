@@ -138,6 +138,37 @@ func UpdateMCPConf(w http.ResponseWriter, r *http.Request) {
 	utils.Success(w, "")
 }
 
+func DeleteMCPConf(w http.ResponseWriter, r *http.Request) {
+	name := r.URL.Query().Get("name")
+	
+	mcpConfigs, err := getMCPConf()
+	if err != nil {
+		logger.Error("get mcp conf error", "err", err)
+		utils.Failure(w, param.CodeConfigError, param.MsgConfigError, err)
+		return
+	}
+	
+	if mcpConfigs.McpServers[name] != nil && !mcpConfigs.McpServers[name].Disabled {
+		err = clients.RemoveMCPClient(name)
+		if err != nil {
+			logger.Error("remove mcp client error", "err", err)
+			utils.Failure(w, param.CodeConfigError, param.MsgConfigError, err)
+			return
+		}
+	}
+	
+	delete(mcpConfigs.McpServers, name)
+	delete(conf.TaskTools, name)
+	
+	err = updateMCPConfFile(mcpConfigs)
+	if err != nil {
+		logger.Error("update mcp conf error", "err", err)
+		utils.Failure(w, param.CodeConfigError, param.MsgConfigError, err)
+		return
+	}
+	utils.Success(w, "")
+}
+
 func DisableMCPConf(w http.ResponseWriter, r *http.Request) {
 	name := r.URL.Query().Get("name")
 	disable := r.URL.Query().Get("disable")

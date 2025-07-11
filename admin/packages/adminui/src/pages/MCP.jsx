@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import Toast from "../components/Toast";
 import Modal from "../components/Modal";
 import BotSelector from "../components/BotSelector";
+import ConfirmModal from "../components/ConfirmModal.jsx";
 
 function BotMcpListPage() {
     const [botId, setBotId] = useState(null);
@@ -15,6 +16,8 @@ function BotMcpListPage() {
     const [editingService, setEditingService] = useState(null);
     const [editJson, setEditJson] = useState("");
     const [prepareSearch, setPrepareSearch] = useState("");
+    const [MCPToDelete, setMCPToDelete] = useState(null);
+    const [confirmVisible, setConfirmVisible] = useState(false);
     const [toast, setToast] = useState({ show: false, message: "", type: "error" });
 
     const showToast = (message, type = "error") => {
@@ -127,6 +130,35 @@ function BotMcpListPage() {
         svc.name.toLowerCase().includes(prepareSearch.toLowerCase())
     );
 
+    const handleDeleteClick = (name) => {
+        setMCPToDelete(name);
+        setConfirmVisible(true);
+    };
+
+    const cancelDelete = () => {
+        setMCPToDelete(null);
+        setConfirmVisible(false);
+    };
+
+    // 确认删除
+    const confirmDelete = async () => {
+        if (!MCPToDelete) return;
+        try {
+            const res = await fetch(`/bot/mcp/delete?id=${botId}&name=${MCPToDelete}`, { method: "DELETE" });
+            const data = await res.json();
+            if (data.code !== 0) {
+                showToast(data.message || "Failed to delete bot");
+                return;
+            }
+            showToast("Bot deleted", "success");
+            setConfirmVisible(false);
+            setMCPToDelete(null);
+            await fetchMcpServices();
+        } catch (error) {
+            showToast("Request error: " + error.message);
+        }
+    };
+
     return (
         <div className="p-6 bg-gray-100 min-h-screen relative">
             {toast.show && (
@@ -177,6 +209,7 @@ function BotMcpListPage() {
                                 ) : (
                                     <button onClick={() => toggleDisableService(svc.name, true)} className="text-yellow-600 hover:underline">Disable</button>
                                 )}
+                                <button onClick={() => handleDeleteClick(svc.name)} className="text-red-600 hover:underline">Delete</button>
                             </td>
                         </tr>
                     ))}
@@ -245,7 +278,7 @@ function BotMcpListPage() {
                         <div className="space-y-4">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700">Service Name</label>
-                                <input type="text" value={selectedPreparedService || ""} readOnly className="w-full px-3 py-2 border border-gray-300 rounded bg-gray-100 text-gray-700" />
+                                <input type="text" value={selectedPreparedService || ""} onChange={(e) => setSelectedPreparedService(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded bg-white text-gray-700" />
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-700">Config JSON</label>
@@ -258,6 +291,12 @@ function BotMcpListPage() {
                     )}
                 </div>
             </Modal>
+            <ConfirmModal
+                visible={confirmVisible}
+                message="Are you sure you want to delete this bot?"
+                onConfirm={confirmDelete}
+                onCancel={cancelDelete}
+            />
         </div>
     );
 }

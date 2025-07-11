@@ -754,18 +754,33 @@ func sendVideo(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	}
 	
 	thinkingMsgId := i18n.SendMsg(chatId, "thinking", bot, nil, replyToMessageID)
-	videoUrl, err := llm.GenerateVideo(prompt)
+	
+	var videoUrl string
+	var videoContent []byte
+	var err error
+	switch *conf.BaseConfInfo.MediaType {
+	case param.Vol:
+		videoUrl, err = llm.GenerateVolVideo(prompt)
+	case param.Gemini:
+		videoContent, err = llm.GenerateGeminiVideo(prompt)
+	default:
+		err = fmt.Errorf("unsupported type: %s", *conf.BaseConfInfo.MediaType)
+	}
 	if err != nil {
 		logger.Warn("generate video fail", "err", err)
 		return
 	}
 	
-	if len(videoUrl) == 0 {
-		logger.Warn("no video generated")
-		return
+	var video tgbotapi.InputMediaVideo
+	if len(videoUrl) != 0 {
+		video = tgbotapi.NewInputMediaVideo(tgbotapi.FileURL(videoUrl))
+	} else if len(videoContent) != 0 {
+		video = tgbotapi.NewInputMediaVideo(tgbotapi.FileBytes{
+			Name:  "video.mp4",
+			Bytes: videoContent,
+		})
 	}
 	
-	video := tgbotapi.NewInputMediaVideo(tgbotapi.FileURL(videoUrl))
 	edit := tgbotapi.EditMessageMediaConfig{
 		BaseEdit: tgbotapi.BaseEdit{
 			ChatID:    chatId,
@@ -821,18 +836,38 @@ func sendImg(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	}
 	
 	thinkingMsgId := i18n.SendMsg(chatId, "thinking", bot, nil, replyToMessageID)
-	data, err := llm.GenerateImg(prompt)
+	
+	var imageUrl string
+	var imageContent []byte
+	var err error
+	
+	switch *conf.BaseConfInfo.MediaType {
+	case param.Vol:
+		imageUrl, err = llm.GenerateVolImg(prompt)
+	case param.OpenAi:
+		imageUrl, err = llm.GenerateOpenAIImg(prompt)
+	case param.Gemini:
+		imageContent, err = llm.GenerateGeminiImg(prompt)
+	default:
+		err = fmt.Errorf("unsupported type: %s", *conf.BaseConfInfo.MediaType)
+	}
+	
 	if err != nil {
 		logger.Warn("generate image fail", "err", err)
+		utils.SendMsg(chatId, err.Error(), bot, replyToMessageID, "")
 		return
 	}
 	
-	if data.Data == nil || len(data.Data.ImageUrls) == 0 {
-		logger.Warn("no image generated")
-		return
+	var photo tgbotapi.InputMediaPhoto
+	if len(imageUrl) != 0 {
+		photo = tgbotapi.NewInputMediaPhoto(tgbotapi.FileURL(imageUrl))
+	} else if len(imageContent) != 0 {
+		photo = tgbotapi.NewInputMediaPhoto(tgbotapi.FileBytes{
+			Name:  "image.jpg",
+			Bytes: imageContent,
+		})
 	}
 	
-	photo := tgbotapi.NewInputMediaPhoto(tgbotapi.FileURL(data.Data.ImageUrls[0]))
 	edit := tgbotapi.EditMessageMediaConfig{
 		BaseEdit: tgbotapi.BaseEdit{
 			ChatID:    chatId,
@@ -850,7 +885,7 @@ func sendImg(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	db.InsertRecordInfo(&db.Record{
 		UserId:    userId,
 		Question:  prompt,
-		Answer:    data.Data.ImageUrls[0],
+		Answer:    imageUrl,
 		Token:     param.ImageTokenUsage,
 		IsDeleted: 1,
 	})
