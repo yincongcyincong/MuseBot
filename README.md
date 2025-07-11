@@ -111,6 +111,7 @@ You can configure the bot via environment variables:
 | CA_FILE	                       | http server ca file                                                                                                            | -                         |
 | CRT_FILE	                      | http server crt file                                                                                                           | -                         |
 | KEY_FILE	                      | http server key file                                                                                                           | -                         |
+| MEDIA_TYPE	                    | openai/gemini/vol  create photo or video                                                                                       | vol                       |
 
 ### CUSTOM_URL
 
