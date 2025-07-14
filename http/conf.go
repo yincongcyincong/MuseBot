@@ -84,7 +84,6 @@ func GetConf(w http.ResponseWriter, r *http.Request) {
 	res["photo"] = conf.PhotoConfInfo
 	res["rag"] = conf.RagConfInfo
 	res["video"] = conf.VideoConfInfo
-	res["tools"] = conf.TaskTools
 	
 	utils.Success(w, res)
 }
@@ -158,7 +157,7 @@ func DeleteMCPConf(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	delete(mcpConfigs.McpServers, name)
-	delete(conf.TaskTools, name)
+	conf.TaskTools.Delete(name)
 	
 	err = updateMCPConfFile(mcpConfigs)
 	if err != nil {
@@ -184,7 +183,7 @@ func DisableMCPConf(w http.ResponseWriter, r *http.Request) {
 		for mcpName, client := range config.McpServers {
 			if mcpName == name {
 				client.Disabled = true
-				delete(conf.TaskTools, name)
+				conf.TaskTools.Delete(name)
 				err = clients.RemoveMCPClient(name)
 				if err != nil {
 					logger.Error("remove mcp client error", "err", err)
@@ -209,6 +208,13 @@ func DisableMCPConf(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
+	utils.Success(w, "")
+}
+
+func SyncMCPConf(w http.ResponseWriter, r *http.Request) {
+	clients.ClearAllMCPClient()
+	conf.TaskTools.Clear()
+	conf.InitTools()
 	utils.Success(w, "")
 }
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"flag"
 	"os"
+	"sync"
 	"time"
 	
 	"github.com/cohesion-org/deepseek-go"
@@ -35,7 +36,7 @@ var (
 	GeminiTools     = make([]*genai.Tool, 0)
 	OpenRouterTools = make([]openrouter.Tool, 0)
 	
-	TaskTools = map[string]*AgentInfo{}
+	TaskTools = sync.Map{}
 )
 
 func InitToolsConf() {
@@ -54,10 +55,18 @@ func InitTools() {
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer func() {
 		cancel()
-		for name, tool := range TaskTools {
-			if len(tool.DeepseekTool) == 0 || len(tool.VolTool) == 0 {
-				delete(TaskTools, name)
+		var keysToDelete []any
+		
+		TaskTools.Range(func(key, value any) bool {
+			aInfo := value.(*AgentInfo)
+			if len(aInfo.DeepseekTool) == 0 || len(aInfo.VolTool) == 0 {
+				keysToDelete = append(keysToDelete, key)
 			}
+			return true
+		})
+		
+		for _, key := range keysToDelete {
+			TaskTools.Delete(key)
 		}
 	}()
 	
@@ -98,14 +107,14 @@ func InsertTools(clientName string) {
 		}
 		
 		if c.Conf.Description != "" {
-			TaskTools[clientName] = &AgentInfo{
+			TaskTools.Store(clientName, &AgentInfo{
 				Description:     c.Conf.Description,
 				DeepseekTool:    dpTools,
 				VolTool:         volTools,
 				GeminiTools:     gmTools,
 				OpenAITools:     oaTools,
 				OpenRouterTools: orTools,
-			}
+			})
 		}
 	}
 }

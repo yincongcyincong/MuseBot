@@ -20,6 +20,31 @@ function BotMcpListPage() {
     const [confirmVisible, setConfirmVisible] = useState(false);
     const [toast, setToast] = useState({ show: false, message: "", type: "error" });
 
+    const [confirmSyncVisible, setConfirmSyncVisible] = useState(false);
+
+    const handleSyncClick = () => {
+        setConfirmSyncVisible(true); // 显示弹窗
+    };
+
+    const cancelSync = () => {
+        setConfirmSyncVisible(false); // 取消
+    };
+
+    const confirmSync = async () => {
+        try {
+            const res = await fetch(`/bot/mcp/sync?id=${botId}`, {
+                method: "POST",
+            });
+            const data = await res.json();
+            if (data.code !== 0) return showToast(data.message || "Failed to fetch services");
+            showToast("Service synced", "success");
+            setConfirmSyncVisible(false);
+            await fetchMcpServices();
+        } catch (error) {
+            showToast("Request error: " + err.message);
+        }
+    };
+
     const showToast = (message, type = "error") => {
         setToast({ show: true, message, type });
     };
@@ -167,12 +192,20 @@ function BotMcpListPage() {
 
             <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold text-gray-800">MCP Services</h2>
-                <button
-                    onClick={handlePrepareClick}
-                    className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-                >
-                    + ADD MCP
-                </button>
+                <div className="flex gap-2">
+                    <button
+                        onClick={handlePrepareClick}
+                        className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                    >
+                        + ADD MCP
+                    </button>
+                    <button
+                        onClick={handleSyncClick}
+                        className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+                    >
+                        SYNC MCP
+                    </button>
+                </div>
             </div>
 
             <div className="flex space-x-4 mb-6 max-w-4xl flex-wrap">
@@ -296,6 +329,12 @@ function BotMcpListPage() {
                 message="Are you sure you want to delete this bot?"
                 onConfirm={confirmDelete}
                 onCancel={cancelDelete}
+            />
+            <ConfirmModal
+                visible={confirmSyncVisible}
+                message="Are you sure you want to sync bots?"
+                onConfirm={confirmSync}
+                onCancel={cancelSync}
             />
         </div>
     );
