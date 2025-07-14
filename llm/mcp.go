@@ -29,12 +29,14 @@ func (d *DeepseekTaskReq) ExecuteMcp() {
 	taskParam := make(map[string]interface{})
 	taskParam["assign_param"] = make([]map[string]string, 0)
 	taskParam["user_task"] = d.Content
-	for name, tool := range conf.TaskTools {
+	conf.TaskTools.Range(func(name, value any) bool {
+		tool := value.(*conf.AgentInfo)
 		taskParam["assign_param"] = append(taskParam["assign_param"].([]map[string]string), map[string]string{
-			"tool_name": name,
+			"tool_name": name.(string),
 			"tool_desc": tool.Description,
 		})
-	}
+		return true
+	})
 	
 	// get mcp request
 	chatId, msgId, _ := utils.GetChatIdAndMsgIdAndUserID(d.Update)
@@ -61,7 +63,11 @@ func (d *DeepseekTaskReq) ExecuteMcp() {
 	}
 	
 	// execute mcp request
-	taskTool := conf.TaskTools[mcpResult.Agent]
+	var taskTool *conf.AgentInfo
+	taskToolInter, ok := conf.TaskTools.Load(mcpResult.Agent)
+	if ok {
+		taskTool = taskToolInter.(*conf.AgentInfo)
+	}
 	mcpLLM := NewLLM(WithBot(d.Bot), WithUpdate(d.Update),
 		WithMessageChan(d.MessageChan), WithContent(d.Content), WithTaskTools(taskTool))
 	mcpLLM.Token += llm.Token

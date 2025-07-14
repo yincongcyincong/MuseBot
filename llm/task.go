@@ -51,12 +51,14 @@ func (d *DeepseekTaskReq) ExecuteTask() {
 	taskParam := make(map[string]interface{})
 	taskParam["assign_param"] = make([]map[string]string, 0)
 	taskParam["user_task"] = d.Content
-	for name, tool := range conf.TaskTools {
+	conf.TaskTools.Range(func(name, value any) bool {
+		tool := value.(*conf.AgentInfo)
 		taskParam["assign_param"] = append(taskParam["assign_param"].([]map[string]string), map[string]string{
-			"tool_name": name,
+			"tool_name": name.(string),
 			"tool_desc": tool.Description,
 		})
-	}
+		return true
+	})
 	
 	chatId, msgId, _ := utils.GetChatIdAndMsgIdAndUserID(d.Update)
 	prompt := i18n.GetMessage(*conf.BaseConfInfo.Lang, "assign_task_prompt", taskParam)
@@ -127,7 +129,12 @@ func (d *DeepseekTaskReq) loopTask(ctx context.Context, plans *TaskInfo, lastPla
 	taskLLM := NewLLM(WithBot(d.Bot), WithUpdate(d.Update),
 		WithMessageChan(d.MessageChan))
 	for _, plan := range plans.Plan {
-		o := WithTaskTools(conf.TaskTools[plan.Name])
+		toolInter, ok := conf.TaskTools.Load(plan.Name)
+		var tool *conf.AgentInfo
+		if ok {
+			tool = toolInter.(*conf.AgentInfo)
+		}
+		o := WithTaskTools(tool)
 		o(taskLLM)
 		taskLLM.LLMClient.GetUserMessage(plan.Description)
 		taskLLM.Content = plan.Description

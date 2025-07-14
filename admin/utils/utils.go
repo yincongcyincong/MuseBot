@@ -17,7 +17,7 @@ func GetCrtClient(bot *db.Bot) *http.Client {
 	
 	client := &http.Client{
 		Transport: transport,
-		Timeout:   3 * time.Second,
+		Timeout:   60 * time.Second,
 	}
 	
 	if bot.KeyFile != "" && bot.CrtFile != "" && bot.CaFile != "" {

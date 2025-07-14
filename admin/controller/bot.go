@@ -544,6 +544,29 @@ func GetPrepareMCPServer(w http.ResponseWriter, r *http.Request) {
 	utils.Success(w, res)
 }
 
+func SyncMCPServer(w http.ResponseWriter, r *http.Request) {
+	botInfo, err := getBot(r)
+	if err != nil {
+		logger.Error("get bot conf error", "err", err)
+		utils.Failure(w, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
+		return
+	}
+	
+	resp, err := adminUtils.GetCrtClient(botInfo).Get(strings.TrimSuffix(botInfo.Address, "/") + "/mcp/sync")
+	if err != nil {
+		logger.Error("get bot conf error", "err", err)
+		utils.Failure(w, param.CodeServerFail, param.MsgServerFail, err)
+		return
+	}
+	defer resp.Body.Close()
+	_, err = io.Copy(w, resp.Body)
+	if err != nil {
+		logger.Error("copy response body error", "err", err)
+		utils.Failure(w, param.CodeServerFail, param.MsgServerFail, err)
+		return
+	}
+}
+
 func getBot(r *http.Request) (*db.Bot, error) {
 	idStr := r.URL.Query().Get("id")
 	id, err := strconv.Atoi(idStr)
