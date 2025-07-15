@@ -3,6 +3,7 @@ package db
 import (
 	"database/sql"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 	
@@ -223,21 +224,31 @@ func GetTokenByUserIdAndTime(userId int64, start, end int64) (int, error) {
 	return user.Token, nil
 }
 
-func GetRecordCount(userId int64) (int, error) {
+func GetRecordCount(userId int64, isDeleted int) (int, error) {
 	var count int
 	query := "SELECT COUNT(*) FROM records"
 	var args []interface{}
+	var conditions []string
 	
-	if userId > 0 {
-		query += " WHERE user_id = ?"
+	if userId != 0 {
+		conditions = append(conditions, "user_id = ?")
 		args = append(args, userId)
+	}
+	
+	if isDeleted >= 0 {
+		conditions = append(conditions, "is_deleted = ?")
+		args = append(args, isDeleted)
+	}
+	
+	if len(conditions) > 0 {
+		query += " WHERE " + strings.Join(conditions, " AND ")
 	}
 	
 	err := DB.QueryRow(query, args...).Scan(&count)
 	return count, err
 }
 
-func GetRecordList(userId int64, page int, pageSize int) ([]Record, error) {
+func GetRecordList(userId int64, page int, pageSize int, isDeleted int) ([]Record, error) {
 	if page < 1 {
 		page = 1
 	}
@@ -250,10 +261,18 @@ func GetRecordList(userId int64, page int, pageSize int) ([]Record, error) {
 		SELECT id, user_id, question, answer, content, token, is_deleted, create_time
 		FROM records`
 	var args []interface{}
+	var conditions []string
 	
-	if userId > 0 {
-		query += " WHERE user_id = ?"
+	if userId != 0 {
+		conditions = append(conditions, "user_id = ?")
 		args = append(args, userId)
+	}
+	if isDeleted >= 0 {
+		conditions = append(conditions, "is_deleted = ?")
+		args = append(args, isDeleted)
+	}
+	if len(conditions) > 0 {
+		query += " WHERE " + strings.Join(conditions, " AND ")
 	}
 	
 	query += " ORDER BY id DESC LIMIT ? OFFSET ?"
