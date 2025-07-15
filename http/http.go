@@ -54,6 +54,8 @@ func (p *HTTPServer) Start() {
 		
 		http.HandleFunc("/pong", PongHandler)
 		
+		http.HandleFunc("/communicate", Communicate)
+		
 		var err error
 		if conf.BaseConfInfo.CrtFile == nil || conf.BaseConfInfo.KeyFile == nil ||
 			*conf.BaseConfInfo.CrtFile == "" || *conf.BaseConfInfo.KeyFile == "" {

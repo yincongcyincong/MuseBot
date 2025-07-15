@@ -30,6 +30,7 @@ var (
 
 type LLM struct {
 	MessageChan chan *param.MsgInfo
+	HTTPMsgChan chan string
 	Update      tgbotapi.Update
 	Bot         *tgbotapi.BotAPI
 	Content     string // question from user
@@ -144,22 +145,28 @@ func NewLLM(opts ...Option) *LLM {
 }
 
 func (l *LLM) sendMsg(msgInfoContent *param.MsgInfo, content string) *param.MsgInfo {
-	// exceed max telegram one message length
-	if utils.Utf16len(msgInfoContent.Content) > OneMsgLen {
-		l.MessageChan <- msgInfoContent
-		msgInfoContent = &param.MsgInfo{
-			SendLen: NonFirstSendLen,
+	if l.MessageChan != nil {
+		// exceed max telegram one message length
+		if utils.Utf16len(msgInfoContent.Content) > OneMsgLen {
+			l.MessageChan <- msgInfoContent
+			msgInfoContent = &param.MsgInfo{
+				SendLen: NonFirstSendLen,
+			}
 		}
+		
+		msgInfoContent.Content += content
+		l.WholeContent += content
+		if len(msgInfoContent.Content) > msgInfoContent.SendLen {
+			l.MessageChan <- msgInfoContent
+			msgInfoContent.SendLen += NonFirstSendLen
+		}
+		
+		return msgInfoContent
+	} else {
+		l.WholeContent += content
+		l.HTTPMsgChan <- content
+		return nil
 	}
-	
-	msgInfoContent.Content += content
-	l.WholeContent += content
-	if len(msgInfoContent.Content) > msgInfoContent.SendLen {
-		l.MessageChan <- msgInfoContent
-		msgInfoContent.SendLen += NonFirstSendLen
-	}
-	
-	return msgInfoContent
 }
 
 func (l *LLM) OverLoop() bool {
@@ -193,6 +200,12 @@ func WithUpdate(update tgbotapi.Update) Option {
 func WithBot(bot *tgbotapi.BotAPI) Option {
 	return func(p *LLM) {
 		p.Bot = bot
+	}
+}
+
+func WithHTTPChain(msgChan chan string) Option {
+	return func(p *LLM) {
+		p.HTTPMsgChan = msgChan
 	}
 }
 
