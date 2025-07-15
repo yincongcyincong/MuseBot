@@ -99,6 +99,15 @@ Show all Parameters when starting the Telegram DeepSeek Bot.
 
 Modify the configuration of your bot.
 
+### MCP Shop
+![image](https://github.com/user-attachments/assets/9ade4136-b261-462c-b59b-8755d71fb7a5)
+multi mcp clients for telegram deepseek bot
+
+### Add MCP 
+![image](https://github.com/user-attachments/assets/9c6679d4-1417-49fa-ad55-3279e2b55995)
+add mcp client for telegram deepseek bot
+
+
 ### Bot Users
 
 ![image](https://github.com/user-attachments/assets/5534971a-e1e2-42d1-9552-0ce37b18444f)
@@ -118,3 +127,6 @@ Allocate and manage API tokens for specific users to control their access and us
 This page displays the complete chat history between the bot and users, making it easy to track and analyze
 conversations.
 
+### Chat Page
+![image](https://github.com/user-attachments/assets/b8c9c3e0-467b-44b2-9186-f0c9344b5633)
+chat with your telegram deepseek bot 
