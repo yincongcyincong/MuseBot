@@ -146,7 +146,7 @@ func (h *GeminiReq) Send(ctx context.Context, l *LLM) error {
 		
 	}
 	
-	if len(strings.TrimRightFunc(msgInfoContent.Content, unicode.IsSpace)) > 0 {
+	if l.MessageChan != nil && len(strings.TrimRightFunc(msgInfoContent.Content, unicode.IsSpace)) > 0 {
 		l.MessageChan <- msgInfoContent
 	}
 	
