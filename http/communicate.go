@@ -19,7 +19,7 @@ func Communicate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	userIdStr := r.URL.Query().Get("user_id")
+	userIdStr := r.URL.Query().Get("userId")
 	userId, _ := strconv.Atoi(userIdStr)
 	realUserId := userId * -1
 	
@@ -48,7 +48,7 @@ func Communicate(w http.ResponseWriter, r *http.Request) {
 	}()
 	
 	for msg := range messageChan {
-		_, err = fmt.Fprintf(w, "data: %s\n\n", msg)
+		_, err = fmt.Fprint(w, msg)
 		if err != nil {
 			logger.Warn("Error writing to SSE", "err", err)
 		}

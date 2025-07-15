@@ -1,11 +1,14 @@
 package controller
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
+	"net/url"
 	"reflect"
 	"strconv"
 	"strings"
@@ -274,6 +277,43 @@ func GetBotUser(w http.ResponseWriter, r *http.Request) {
 		fmt.Sprintf("/user/list?page=%s&pageSize=%s&userId=%s", r.FormValue("page"), r.FormValue("pageSize"), r.FormValue("userId")))
 	if err != nil {
 		logger.Error("get bot user error", "err", err)
+		utils.Failure(w, param.CodeServerFail, param.MsgServerFail, err)
+		return
+	}
+	
+	defer resp.Body.Close()
+	_, err = io.Copy(w, resp.Body)
+	if err != nil {
+		logger.Error("copy response body error", "err", err)
+		utils.Failure(w, param.CodeServerFail, param.MsgServerFail, err)
+		return
+	}
+}
+
+func GetBotAdminRecord(w http.ResponseWriter, r *http.Request) {
+	session, err := sessionStore.Get(r, sessionName)
+	if err != nil {
+		utils.Failure(w, param.CodeNotLogin, param.MsgNotLogin, nil)
+		return
+	}
+	userIDValue, ok := session.Values["user_id"]
+	if !ok || userIDValue == nil {
+		utils.Failure(w, param.CodeNotLogin, param.MsgNotLogin, nil)
+		return
+	}
+	
+	botInfo, err := getBot(r)
+	if err != nil {
+		logger.Error("get bot user record error", "err", err)
+		utils.Failure(w, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
+		return
+	}
+	
+	resp, err := adminUtils.GetCrtClient(botInfo).Get(strings.TrimSuffix(botInfo.Address, "/") +
+		fmt.Sprintf("/record/list?page=%s&pageSize=%s&userId=%d&isDeleted=0",
+			r.FormValue("page"), r.FormValue("pageSize"), userIDValue.(int)*-1))
+	if err != nil {
+		logger.Error("get bot user record error", "err", err)
 		utils.Failure(w, param.CodeServerFail, param.MsgServerFail, err)
 		return
 	}
@@ -564,6 +604,63 @@ func SyncMCPServer(w http.ResponseWriter, r *http.Request) {
 		logger.Error("copy response body error", "err", err)
 		utils.Failure(w, param.CodeServerFail, param.MsgServerFail, err)
 		return
+	}
+}
+
+func Communicate(w http.ResponseWriter, r *http.Request) {
+	botInfo, err := getBot(r)
+	if err != nil {
+		logger.Error("get bot conf error", "err", err)
+		utils.Failure(w, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
+		return
+	}
+	// 设置 SSE 响应头
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+	flusher, ok := w.(http.Flusher)
+	if !ok {
+		http.Error(w, "Streaming unsupported!", http.StatusInternalServerError)
+		return
+	}
+	
+	session, err := sessionStore.Get(r, sessionName)
+	if err != nil {
+		utils.Failure(w, param.CodeNotLogin, param.MsgNotLogin, nil)
+		return
+	}
+	
+	userIDValue, ok := session.Values["user_id"]
+	if !ok || userIDValue == nil {
+		utils.Failure(w, param.CodeNotLogin, param.MsgNotLogin, nil)
+		return
+	}
+	
+	resp, err := adminUtils.GetCrtClient(botInfo).Get(strings.TrimSuffix(botInfo.Address, "/") +
+		fmt.Sprintf("/communicate?prompt=%s&userId=%d",
+			url.QueryEscape(r.URL.Query().Get("prompt")), userIDValue))
+	if err != nil {
+		logger.Error("get bot conf error", "err", err)
+		utils.Failure(w, param.CodeServerFail, param.MsgServerFail, err)
+		return
+	}
+	defer resp.Body.Close()
+	
+	reader := bufio.NewReader(resp.Body)
+	
+	for {
+		line, err := reader.ReadString('\n')
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			log.Println("Error reading SSE:", err)
+			break
+		}
+		
+		// 写入前端
+		fmt.Fprint(w, line)
+		flusher.Flush()
 	}
 }
 

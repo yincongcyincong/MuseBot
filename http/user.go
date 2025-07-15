@@ -74,17 +74,29 @@ func GetRecords(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query()
 	page, _ := strconv.Atoi(query.Get("page"))
 	pageSize, _ := strconv.Atoi(query.Get("pageSize"))
+	isDeleted := -1
+	if query.Get("isDeleted") != "" {
+		isDeleted, _ = strconv.Atoi(query.Get("isDeleted"))
+	}
 	userId, _ := strconv.ParseInt(query.Get("userId"), 10, 64)
 	
+	if page <= 0 {
+		page = 1
+	}
+	
+	if pageSize <= 0 {
+		pageSize = 10
+	}
+	
 	// 查询总数和数据
-	total, err := db.GetRecordCount(userId)
+	total, err := db.GetRecordCount(userId, isDeleted)
 	if err != nil {
 		logger.Error("get record count error", "err", err)
 		utils.Failure(w, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
 		return
 	}
 	
-	list, err := db.GetRecordList(userId, page, pageSize)
+	list, err := db.GetRecordList(userId, page, pageSize, isDeleted)
 	if err != nil {
 		logger.Error("get record list error", "err", err)
 		utils.Failure(w, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
