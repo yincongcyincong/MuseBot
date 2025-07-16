@@ -115,6 +115,7 @@ func (t *TelegramRobot) executeChain(content string) {
 		text, err := t.Robot.GetContent(content)
 		if err != nil {
 			logger.Error("get content fail", "err", err)
+			t.Robot.SendMsg(chatId, err.Error(), msgId, "", nil)
 			return
 		}
 		
@@ -129,6 +130,7 @@ func (t *TelegramRobot) executeChain(content string) {
 		_, err = chains.Run(ctx, qaChain, text)
 		if err != nil {
 			logger.Warn("execute chain fail", "err", err)
+			t.Robot.SendMsg(chatId, err.Error(), msgId, "", nil)
 		}
 	}()
 	
