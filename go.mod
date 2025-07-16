@@ -3,6 +3,7 @@ module github.com/yincongcyincong/telegram-deepseek-bot
 go 1.24.0
 
 require (
+	github.com/bwmarrin/discordgo v0.29.0
 	github.com/cohesion-org/deepseek-go v1.3.2
 	github.com/go-sql-driver/mysql v1.9.0
 	github.com/go-telegram-bot-api/telegram-bot-api/v5 v5.5.1

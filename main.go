@@ -3,6 +3,10 @@
 package main
 
 import (
+	"os"
+	"os/signal"
+	"syscall"
+	
 	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
 	"github.com/yincongcyincong/telegram-deepseek-bot/db"
 	"github.com/yincongcyincong/telegram-deepseek-bot/http"
@@ -23,5 +27,9 @@ func main() {
 	rag.InitRag()
 	http.InitHTTP()
 	metrics.RegisterMetrics()
-	robot.StartListenRobot()
+	robot.StartRobot()
+	
+	sc := make(chan os.Signal, 1)
+	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
+	<-sc
 }
