@@ -32,7 +32,6 @@ export default function Sidebar() {
                 collapsed ? "w-20" : "w-60"
             }`}
         >
-            {/* 展开/收起按钮 */}
             <div className="flex justify-center mb-6">
                 <button
                     onClick={() => setCollapsed(!collapsed)}
