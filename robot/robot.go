@@ -63,13 +63,11 @@ func (r *Robot) GetChatIdAndMsgIdAndUserID() (int64, int, int64) {
 }
 
 func (r *Robot) GetContent(content string) (string, error) {
-	chatId, msgId, userId := r.GetChatIdAndMsgIdAndUserID()
+	_, _, userId := r.GetChatIdAndMsgIdAndUserID()
 	
 	// check user chat exceed max count
 	if CheckUserChatExceed(userId) {
-		r.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "chat_exceed", nil),
-			msgId, tgbotapi.ModeMarkdown, nil)
-		return "", errors.New("token exceed")
+		return "", errors.New(i18n.GetMessage(*conf.BaseConfInfo.Lang, "chat_exceed", nil))
 	}
 	
 	if content == "" && r.TelegramRobot.Update.Message.Voice != nil && *conf.AudioConfInfo.AudioAppID != "" {
