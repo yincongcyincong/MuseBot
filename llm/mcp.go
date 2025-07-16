@@ -9,7 +9,6 @@ import (
 	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
 	"github.com/yincongcyincong/telegram-deepseek-bot/i18n"
 	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
-	"github.com/yincongcyincong/telegram-deepseek-bot/utils"
 )
 
 var (
@@ -21,7 +20,7 @@ type McpResult struct {
 }
 
 // ExecuteMcp execute mcp request
-func (d *DeepseekTaskReq) ExecuteMcp() {
+func (d *DeepseekTaskReq) ExecuteMcp() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
 	defer cancel()
 	
@@ -39,8 +38,7 @@ func (d *DeepseekTaskReq) ExecuteMcp() {
 	})
 	
 	// get mcp request
-	chatId, msgId, _ := utils.GetChatIdAndMsgIdAndUserID(d.Update)
-	llm := NewLLM(WithBot(d.Bot), WithUpdate(d.Update),
+	llm := NewLLM(WithChatId(d.ChatId), WithMsgId(d.MsgId), WithUserId(d.UserId),
 		WithMessageChan(d.MessageChan), WithContent(d.Content))
 	
 	prompt := i18n.GetMessage(*conf.BaseConfInfo.Lang, "mcp_prompt", taskParam)
@@ -49,8 +47,7 @@ func (d *DeepseekTaskReq) ExecuteMcp() {
 	c, err := llm.LLMClient.SyncSend(ctx, llm)
 	if err != nil {
 		logger.Error("get message fail", "err", err)
-		utils.SendMsg(chatId, err.Error(), d.Bot, msgId, "")
-		return
+		return err
 	}
 	
 	matches := mcpRe.FindAllString(c, -1)
@@ -68,14 +65,15 @@ func (d *DeepseekTaskReq) ExecuteMcp() {
 	if ok {
 		taskTool = taskToolInter.(*conf.AgentInfo)
 	}
-	mcpLLM := NewLLM(WithBot(d.Bot), WithUpdate(d.Update),
+	mcpLLM := NewLLM(WithChatId(d.ChatId), WithMsgId(d.MsgId), WithUserId(d.UserId),
 		WithMessageChan(d.MessageChan), WithContent(d.Content), WithTaskTools(taskTool))
 	mcpLLM.Token += llm.Token
 	mcpLLM.Content = d.Content
 	mcpLLM.LLMClient.GetUserMessage(d.Content)
 	err = mcpLLM.LLMClient.Send(ctx, mcpLLM)
 	if err != nil {
-		utils.SendMsg(chatId, err.Error(), d.Bot, msgId, "")
 		logger.Error("execute conversation fail", "err", err)
 	}
+	
+	return err
 }

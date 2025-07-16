@@ -32,20 +32,16 @@ type VolReq struct {
 	VolMsgs []*model.ChatCompletionMessage
 }
 
-func (h *VolReq) CallLLMAPI(ctx context.Context, prompt string, l *LLM) error {
-	_, _, userId := utils.GetChatIdAndMsgIdAndUserID(l.Update)
+func (h *VolReq) CallLLMAPI(ctx context.Context, l *LLM) error {
+	h.GetMessages(l.UserId, l.Content)
 	
-	h.GetMessages(userId, prompt)
-	
-	logger.Info("msg receive", "userID", userId, "prompt", l.Content)
+	logger.Info("msg receive", "userID", l.UserId, "prompt", l.Content)
 	return h.Send(ctx, l)
 }
 
 func (h *VolReq) GetModel(l *LLM) {
-	_, _, userId := utils.GetChatIdAndMsgIdAndUserID(l.Update)
-	
 	l.Model = param.ModelDeepSeekR1_528
-	userInfo, err := db.GetUserByID(userId)
+	userInfo, err := db.GetUserByID(l.UserId)
 	if err != nil {
 		logger.Error("Error getting user info", "err", err)
 	}
@@ -112,7 +108,6 @@ func (h *VolReq) Send(ctx context.Context, l *LLM) error {
 	}
 	
 	start := time.Now()
-	_, updateMsgID, userId := utils.GetChatIdAndMsgIdAndUserID(l.Update)
 	h.GetModel(l)
 	
 	// set deepseek proxy
@@ -157,11 +152,11 @@ func (h *VolReq) Send(ctx context.Context, l *LLM) error {
 	for {
 		response, err := stream.Recv()
 		if errors.Is(err, io.EOF) {
-			logger.Info("stream finished", "updateMsgID", updateMsgID)
+			logger.Info("stream finished", "updateMsgID", l.MsgId)
 			break
 		}
 		if err != nil {
-			logger.Error("stream error:", "updateMsgID", updateMsgID, "err", err)
+			logger.Error("stream error:", "updateMsgID", l.MsgId, "err", err)
 			break
 		}
 		for _, choice := range response.Choices {
@@ -173,7 +168,7 @@ func (h *VolReq) Send(ctx context.Context, l *LLM) error {
 					if errors.Is(err, ToolsJsonErr) {
 						continue
 					} else {
-						logger.Error("requestToolsCall error", "updateMsgID", updateMsgID, "err", err)
+						logger.Error("requestToolsCall error", "updateMsgID", l.MsgId, "err", err)
 					}
 				}
 			}
@@ -195,7 +190,7 @@ func (h *VolReq) Send(ctx context.Context, l *LLM) error {
 	}
 	
 	if !hasTools || len(h.CurrentToolMessage) == 0 {
-		db.InsertMsgRecord(userId, &db.AQ{
+		db.InsertMsgRecord(l.UserId, &db.AQ{
 			Question: l.Content,
 			Answer:   l.WholeContent,
 			Token:    l.Token,
@@ -317,7 +312,6 @@ func (h *VolReq) GetMessage(role, msg string) {
 }
 
 func (h *VolReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
-	_, updateMsgID, _ := utils.GetChatIdAndMsgIdAndUserID(l.Update)
 	h.GetModel(l)
 	
 	httpClient := utils.GetDeepseekProxyClient()
@@ -347,7 +341,7 @@ func (h *VolReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 	
 	response, err := client.CreateChatCompletion(ctx, req)
 	if err != nil {
-		logger.Error("CreateChatCompletion error", "updateMsgID", updateMsgID, "err", err)
+		logger.Error("CreateChatCompletion error", "updateMsgID", l.MsgId, "err", err)
 		return "", err
 	}
 	

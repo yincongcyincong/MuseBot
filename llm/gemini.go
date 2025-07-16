@@ -26,12 +26,11 @@ type GeminiReq struct {
 	GeminiMsgs []*genai.Content
 }
 
-func (h *GeminiReq) CallLLMAPI(ctx context.Context, prompt string, l *LLM) error {
-	_, _, userId := utils.GetChatIdAndMsgIdAndUserID(l.Update)
+func (h *GeminiReq) CallLLMAPI(ctx context.Context, l *LLM) error {
 	
-	h.GetMessages(userId, prompt)
+	h.GetMessages(l.UserId, l.Content)
 	
-	logger.Info("msg receive", "userID", userId, "prompt", l.Content)
+	logger.Info("msg receive", "userID", l.UserId, "prompt", l.Content)
 	return h.Send(ctx, l)
 }
 
@@ -80,7 +79,6 @@ func (h *GeminiReq) Send(ctx context.Context, l *LLM) error {
 	}
 	
 	start := time.Now()
-	_, updateMsgID, userId := utils.GetChatIdAndMsgIdAndUserID(l.Update)
 	h.GetModel(l)
 	
 	httpClient := utils.GetDeepseekProxyClient()
@@ -114,11 +112,11 @@ func (h *GeminiReq) Send(ctx context.Context, l *LLM) error {
 	hasTools := false
 	for response, err := range chat.SendMessageStream(ctx, *genai.NewPartFromText(l.Content)) {
 		if errors.Is(err, io.EOF) {
-			logger.Info("stream finished", "updateMsgID", updateMsgID)
+			logger.Info("stream finished", "updateMsgID", l.MsgId)
 			break
 		}
 		if err != nil {
-			logger.Error("stream error:", "updateMsgID", updateMsgID, "err", err)
+			logger.Error("stream error:", "updateMsgID", l.MsgId, "err", err)
 			break
 		}
 		
@@ -130,7 +128,7 @@ func (h *GeminiReq) Send(ctx context.Context, l *LLM) error {
 				if errors.Is(err, ToolsJsonErr) {
 					continue
 				} else {
-					logger.Error("requestToolsCall error", "updateMsgID", updateMsgID, "err", err)
+					logger.Error("requestToolsCall error", "updateMsgID", l.MsgId, "err", err)
 				}
 			}
 		}
@@ -151,7 +149,7 @@ func (h *GeminiReq) Send(ctx context.Context, l *LLM) error {
 	}
 	
 	if !hasTools || len(h.CurrentToolMessage) == 0 {
-		db.InsertMsgRecord(userId, &db.AQ{
+		db.InsertMsgRecord(l.UserId, &db.AQ{
 			Question: l.Content,
 			Answer:   l.WholeContent,
 			Token:    l.Token,
@@ -212,7 +210,6 @@ func (h *GeminiReq) GetMessage(role, msg string) {
 }
 
 func (h *GeminiReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
-	_, updateMsgID, _ := utils.GetChatIdAndMsgIdAndUserID(l.Update)
 	h.GetModel(l)
 	
 	httpClient := utils.GetDeepseekProxyClient()
@@ -235,7 +232,7 @@ func (h *GeminiReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 	
 	chat, err := client.Chats.Create(ctx, l.Model, config, h.GeminiMsgs)
 	if err != nil {
-		logger.Error("create chat fail", "updateMsgID", updateMsgID, "err", err)
+		logger.Error("create chat fail", "updateMsgID", l.MsgId, "err", err)
 		return "", err
 	}
 	
@@ -351,10 +348,8 @@ func (h *GeminiReq) requestToolsCall(ctx context.Context, response *genai.Genera
 }
 
 func (h *GeminiReq) GetModel(l *LLM) {
-	_, _, userId := utils.GetChatIdAndMsgIdAndUserID(l.Update)
-	
 	l.Model = param.ModelGemini20Flash
-	userInfo, err := db.GetUserByID(userId)
+	userInfo, err := db.GetUserByID(l.UserId)
 	if err != nil {
 		logger.Error("Error getting user info", "err", err)
 	}

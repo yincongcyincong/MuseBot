@@ -23,24 +23,6 @@ import (
 	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
 )
 
-func GetChatIdAndMsgIdAndUserID(update tgbotapi.Update) (int64, int, int64) {
-	chatId := int64(0)
-	msgId := 0
-	userId := int64(0)
-	if update.Message != nil {
-		chatId = update.Message.Chat.ID
-		userId = update.Message.From.ID
-		msgId = update.Message.MessageID
-	}
-	if update.CallbackQuery != nil {
-		chatId = update.CallbackQuery.Message.Chat.ID
-		userId = update.CallbackQuery.From.ID
-		msgId = update.CallbackQuery.Message.MessageID
-	}
-	
-	return chatId, msgId, userId
-}
-
 func GetChat(update tgbotapi.Update) *tgbotapi.Chat {
 	if update.Message != nil {
 		return update.Message.Chat
@@ -81,16 +63,6 @@ func ParseInt(str string) int {
 	return num
 }
 
-func SendMsg(chatId int64, msgContent string, bot *tgbotapi.BotAPI, replyToMessageID int, parseMode string) {
-	msg := tgbotapi.NewMessage(chatId, msgContent)
-	msg.ParseMode = parseMode
-	msg.ReplyToMessageID = replyToMessageID
-	_, err := bot.Send(msg)
-	if err != nil {
-		logger.Warn("send clear message fail", "err", err)
-	}
-}
-
 func ReplaceCommand(content string, command string, botName string) string {
 	mention := "@" + botName
 	
@@ -110,90 +82,6 @@ func ForceReply(chatId int64, msgId int, i18MsgId string, bot *tgbotapi.BotAPI) 
 	msg.ReplyToMessageID = msgId
 	_, err := bot.Send(msg)
 	return err
-}
-
-func GetAudioContent(update tgbotapi.Update, bot *tgbotapi.BotAPI) []byte {
-	if update.Message == nil || update.Message.Voice == nil {
-		return nil
-	}
-	
-	fileID := update.Message.Voice.FileID
-	file, err := bot.GetFile(tgbotapi.FileConfig{FileID: fileID})
-	if err != nil {
-		logger.Warn("get file fail", "err", err)
-		return nil
-	}
-	
-	// 构造下载 URL
-	downloadURL := file.Link(bot.Token)
-	
-	transport := &http.Transport{}
-	
-	if *conf.BaseConfInfo.TelegramProxy != "" {
-		proxy, err := url.Parse(*conf.BaseConfInfo.TelegramProxy)
-		if err != nil {
-			logger.Warn("parse proxy url fail", "err", err)
-			return nil
-		}
-		transport.Proxy = http.ProxyURL(proxy)
-	}
-	
-	client := &http.Client{
-		Transport: transport,
-		Timeout:   30 * time.Second, // 设置超时
-	}
-	
-	// 通过代理下载
-	resp, err := client.Get(downloadURL)
-	if err != nil {
-		logger.Warn("download fail", "err", err)
-		return nil
-	}
-	defer resp.Body.Close()
-	voice, err := io.ReadAll(resp.Body)
-	if err != nil {
-		logger.Warn("read response fail", "err", err)
-		return nil
-	}
-	return voice
-}
-
-func GetPhotoContent(update tgbotapi.Update, bot *tgbotapi.BotAPI) []byte {
-	if update.Message == nil || update.Message.Photo == nil {
-		return nil
-	}
-	
-	var photo tgbotapi.PhotoSize
-	for i := len(update.Message.Photo) - 1; i >= 0; i-- {
-		if update.Message.Photo[i].FileSize < 8*1024*1024 {
-			photo = update.Message.Photo[i]
-			break
-		}
-	}
-	
-	fileID := photo.FileID
-	file, err := bot.GetFile(tgbotapi.FileConfig{FileID: fileID})
-	if err != nil {
-		logger.Warn("get file fail", "err", err)
-		return nil
-	}
-	
-	downloadURL := file.Link(bot.Token)
-	
-	client := GetTelegramProxyClient()
-	resp, err := client.Get(downloadURL)
-	if err != nil {
-		logger.Warn("download fail", "err", err)
-		return nil
-	}
-	defer resp.Body.Close()
-	photoContent, err := io.ReadAll(resp.Body)
-	if err != nil {
-		logger.Warn("read response fail", "err", err)
-		return nil
-	}
-	
-	return photoContent
 }
 
 func MD5(input string) string {
@@ -302,39 +190,6 @@ func CreateBot() *tgbotapi.BotAPI {
 	conf.BaseConfInfo.Bot.Send(cmdCfg)
 	
 	return conf.BaseConfInfo.Bot
-}
-
-func GetContent(update tgbotapi.Update, bot *tgbotapi.BotAPI, content string) (string, error) {
-	// check user chat exceed max count
-	if CheckUserChatExceed(update, bot) {
-		return "", errors.New("token exceed")
-	}
-	
-	if content == "" && update.Message.Voice != nil && *conf.AudioConfInfo.AudioAppID != "" {
-		audioContent := GetAudioContent(update, bot)
-		if audioContent == nil {
-			logger.Warn("audio url empty")
-			return "", errors.New("audio url empty")
-		}
-		content = FileRecognize(audioContent)
-	}
-	
-	if content == "" && update.Message.Photo != nil {
-		imageContent, err := GetImageContent(GetPhotoContent(update, bot))
-		if err != nil {
-			logger.Warn("get image content err", "err", err)
-			return "", err
-		}
-		content = imageContent
-	}
-	
-	if content == "" {
-		logger.Warn("content empty")
-		return "", errors.New("content empty")
-	}
-	
-	text := strings.ReplaceAll(content, "@"+bot.Self.UserName, "")
-	return text, nil
 }
 
 func FileRecognize(audioContent []byte) string {
