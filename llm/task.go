@@ -7,12 +7,10 @@ import (
 	"regexp"
 	"time"
 	
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
 	"github.com/yincongcyincong/telegram-deepseek-bot/i18n"
 	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
 	"github.com/yincongcyincong/telegram-deepseek-bot/param"
-	"github.com/yincongcyincong/telegram-deepseek-bot/utils"
 )
 
 var (
@@ -21,11 +19,13 @@ var (
 
 type DeepseekTaskReq struct {
 	MessageChan chan *param.MsgInfo
-	Update      tgbotapi.Update
-	Bot         *tgbotapi.BotAPI
 	Content     string
 	Model       string
 	Token       int
+	
+	UserId int64
+	ChatId int64
+	MsgId  int
 }
 
 type Task struct {
@@ -43,7 +43,7 @@ type TaskResult struct {
 }
 
 // ExecuteTask execute task command
-func (d *DeepseekTaskReq) ExecuteTask() {
+func (d *DeepseekTaskReq) ExecuteTask() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
 	defer cancel()
 	
@@ -60,17 +60,15 @@ func (d *DeepseekTaskReq) ExecuteTask() {
 		return true
 	})
 	
-	chatId, msgId, _ := utils.GetChatIdAndMsgIdAndUserID(d.Update)
 	prompt := i18n.GetMessage(*conf.BaseConfInfo.Lang, "assign_task_prompt", taskParam)
-	llm := NewLLM(WithBot(d.Bot), WithUpdate(d.Update),
+	llm := NewLLM(WithUserId(d.UserId), WithChatId(d.ChatId), WithMsgId(d.MsgId),
 		WithMessageChan(d.MessageChan))
 	llm.LLMClient.GetUserMessage(prompt)
 	llm.Content = prompt
 	c, err := llm.LLMClient.SyncSend(ctx, llm)
 	if err != nil {
 		logger.Error("get message fail", "err", err)
-		utils.SendMsg(chatId, err.Error(), d.Bot, msgId, "")
-		return
+		return err
 	}
 	
 	d.Token += llm.Token
@@ -87,23 +85,21 @@ func (d *DeepseekTaskReq) ExecuteTask() {
 	if len(plans.Plan) == 0 {
 		logger.Info("no plan created!")
 		
-		finalLLM := NewLLM(WithBot(d.Bot), WithUpdate(d.Update),
+		finalLLM := NewLLM(WithUserId(d.UserId), WithChatId(d.ChatId), WithMsgId(d.MsgId),
 			WithMessageChan(d.MessageChan), WithContent(d.Content))
 		finalLLM.LLMClient.GetUserMessage(c)
 		err = finalLLM.LLMClient.Send(ctx, finalLLM)
 		if err != nil {
 			logger.Error("request summary fail", "err", err)
-			utils.SendMsg(chatId, err.Error(), d.Bot, msgId, "")
 		}
-		return
+		return err
 	}
 	
 	llm.LLMClient.GetAssistantMessage(c)
 	err = d.loopTask(ctx, plans, c, llm, 0)
 	if err != nil {
 		logger.Error("loopTask fail", "err", err)
-		utils.SendMsg(chatId, err.Error(), d.Bot, msgId, "")
-		return
+		return err
 	}
 	
 	// summary
@@ -115,8 +111,9 @@ func (d *DeepseekTaskReq) ExecuteTask() {
 	err = llm.LLMClient.Send(ctx, llm)
 	if err != nil {
 		logger.Error("request summary fail", "err", err)
-		utils.SendMsg(chatId, err.Error(), d.Bot, msgId, "")
 	}
+	
+	return err
 }
 
 // loopTask loop task
@@ -126,7 +123,7 @@ func (d *DeepseekTaskReq) loopTask(ctx context.Context, plans *TaskInfo, lastPla
 	}
 	
 	completeTasks := map[string]bool{}
-	taskLLM := NewLLM(WithBot(d.Bot), WithUpdate(d.Update),
+	taskLLM := NewLLM(WithUserId(d.UserId), WithChatId(d.ChatId), WithMsgId(d.MsgId),
 		WithMessageChan(d.MessageChan))
 	for _, plan := range plans.Plan {
 		toolInter, ok := conf.TaskTools.Load(plan.Name)

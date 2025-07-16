@@ -58,8 +58,6 @@ func (l *Rag) GenerateContent(ctx context.Context, messages []llms.MessageConten
 		opt(opts)
 	}
 	
-	chatId, msgId, _ := utils.GetChatIdAndMsgIdAndUserID(l.LLM.Update)
-	
 	doc, err := conf.RagConfInfo.Store.SimilaritySearch(ctx, l.LLM.Content, 3)
 	if err != nil {
 		logger.Error("request vector db fail", "err", err)
@@ -74,10 +72,9 @@ func (l *Rag) GenerateContent(ctx context.Context, messages []llms.MessageConten
 		l.LLM.Content = tmpContent
 	}
 	
-	err = l.LLM.LLMClient.CallLLMAPI(ctx, l.LLM.Content, l.LLM)
+	err = l.LLM.LLMClient.CallLLMAPI(ctx, l.LLM)
 	if err != nil {
 		logger.Error("error calling DeepSeek API", "err", err)
-		utils.SendMsg(chatId, err.Error(), l.LLM.Bot, msgId, "")
 		return nil, errors.New("error calling DeepSeek API")
 	}
 	

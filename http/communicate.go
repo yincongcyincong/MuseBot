@@ -36,7 +36,7 @@ func Communicate(w http.ResponseWriter, r *http.Request) {
 	
 	var err error
 	messageChan := make(chan string)
-	l := llm.NewLLM(llm.WithUpdate(getMockTelegramBot(realUserId)),
+	l := llm.NewLLM(llm.WithChatId(int64(realUserId)), llm.WithUserId(int64(realUserId)), llm.WithMsgId(realUserId),
 		llm.WithHTTPChain(messageChan), llm.WithContent(prompt))
 	l.LLMClient.GetMessages(int64(realUserId), prompt)
 	go func() {

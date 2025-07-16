@@ -29,12 +29,10 @@ type OllamaDeepseekReq struct {
 }
 
 // CallLLMAPI request DeepSeek API and get response
-func (d *OllamaDeepseekReq) CallLLMAPI(ctx context.Context, prompt string, l *LLM) error {
-	_, _, userId := utils.GetChatIdAndMsgIdAndUserID(l.Update)
+func (d *OllamaDeepseekReq) CallLLMAPI(ctx context.Context, l *LLM) error {
+	d.GetMessages(l.UserId, l.Content)
 	
-	d.GetMessages(userId, prompt)
-	
-	logger.Info("msg receive", "userID", userId, "prompt", prompt)
+	logger.Info("msg receive", "userID", l.UserId, "prompt", l.Content)
 	
 	return d.Send(ctx, l)
 }
@@ -91,7 +89,6 @@ func (d *OllamaDeepseekReq) Send(ctx context.Context, l *LLM) error {
 	}
 	
 	start := time.Now()
-	_, updateMsgID, userId := utils.GetChatIdAndMsgIdAndUserID(l.Update)
 	
 	request := &deepseek.StreamChatCompletionRequest{
 		Model:  "llava:latest",
@@ -113,7 +110,7 @@ func (d *OllamaDeepseekReq) Send(ctx context.Context, l *LLM) error {
 	
 	stream, err := deepseek.CreateOllamaChatCompletionStream(ctx, request)
 	if err != nil {
-		logger.Error("ChatCompletionStream error", "updateMsgID", updateMsgID, "err", err)
+		logger.Error("ChatCompletionStream error", "updateMsgID", l.MsgId, "err", err)
 		return err
 	}
 	defer stream.Close()
@@ -125,11 +122,11 @@ func (d *OllamaDeepseekReq) Send(ctx context.Context, l *LLM) error {
 	for {
 		response, err := stream.Recv()
 		if errors.Is(err, io.EOF) {
-			logger.Info("Stream finished", "updateMsgID", updateMsgID)
+			logger.Info("Stream finished", "updateMsgID", l.MsgId)
 			break
 		}
 		if err != nil {
-			logger.Warn("Stream error", "updateMsgID", updateMsgID, "err", err)
+			logger.Warn("Stream error", "updateMsgID", l.MsgId, "err", err)
 			break
 		}
 		for _, choice := range response.Choices {
@@ -140,7 +137,7 @@ func (d *OllamaDeepseekReq) Send(ctx context.Context, l *LLM) error {
 					if errors.Is(err, ToolsJsonErr) {
 						continue
 					} else {
-						logger.Error("requestToolsCall error", "updateMsgID", updateMsgID, "err", err)
+						logger.Error("requestToolsCall error", "updateMsgID", l.MsgId, "err", err)
 					}
 				}
 			}
@@ -162,7 +159,7 @@ func (d *OllamaDeepseekReq) Send(ctx context.Context, l *LLM) error {
 	
 	if !hasTools || len(d.CurrentToolMessage) == 0 {
 		data, _ := json.Marshal(d.ToolMessage)
-		db.InsertMsgRecord(userId, &db.AQ{
+		db.InsertMsgRecord(l.UserId, &db.AQ{
 			Question: l.Content,
 			Answer:   l.WholeContent,
 			Content:  string(data),
@@ -223,7 +220,6 @@ func (d *OllamaDeepseekReq) GetMessage(role, msg string) {
 	})
 }
 func (d *OllamaDeepseekReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
-	_, updateMsgID, _ := utils.GetChatIdAndMsgIdAndUserID(l.Update)
 	
 	httpClient := utils.GetDeepseekProxyClient()
 	
@@ -251,7 +247,7 @@ func (d *OllamaDeepseekReq) SyncSend(ctx context.Context, l *LLM) (string, error
 	// assign task
 	response, err := client.CreateChatCompletion(ctx, request)
 	if err != nil {
-		logger.Error("ChatCompletionStream error", "updateMsgID", updateMsgID, "err", err)
+		logger.Error("ChatCompletionStream error", "updateMsgID", l.MsgId, "err", err)
 		return "", err
 	}
 	

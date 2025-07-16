@@ -29,21 +29,18 @@ type DeepseekReq struct {
 }
 
 // CallLLMAPI request DeepSeek API and get response
-func (d *DeepseekReq) CallLLMAPI(ctx context.Context, prompt string, l *LLM) error {
-	_, _, userId := utils.GetChatIdAndMsgIdAndUserID(l.Update)
+func (d *DeepseekReq) CallLLMAPI(ctx context.Context, l *LLM) error {
 	
-	d.GetMessages(userId, prompt)
+	d.GetMessages(l.UserId, l.Content)
 	
-	logger.Info("msg receive", "userID", userId, "prompt", prompt)
+	logger.Info("msg receive", "userID", l.UserId, "prompt", l.Content)
 	
 	return d.Send(ctx, l)
 }
 
 func (d *DeepseekReq) GetModel(l *LLM) {
-	_, _, userId := utils.GetChatIdAndMsgIdAndUserID(l.Update)
-	
 	l.Model = deepseek.DeepSeekChat
-	userInfo, err := db.GetUserByID(userId)
+	userInfo, err := db.GetUserByID(l.UserId)
 	if err != nil {
 		logger.Error("Error getting user info", "err", err)
 	}
@@ -101,7 +98,6 @@ func (d *DeepseekReq) Send(ctx context.Context, l *LLM) error {
 	}
 	
 	start := time.Now()
-	_, updateMsgID, userId := utils.GetChatIdAndMsgIdAndUserID(l.Update)
 	d.GetModel(l)
 	
 	// set deepseek proxy
@@ -135,7 +131,7 @@ func (d *DeepseekReq) Send(ctx context.Context, l *LLM) error {
 	
 	stream, err := client.CreateChatCompletionStream(ctx, request)
 	if err != nil {
-		logger.Error("ChatCompletionStream error", "updateMsgID", updateMsgID, "err", err)
+		logger.Error("ChatCompletionStream error", "updateMsgID", l.MsgId, "err", err)
 		return err
 	}
 	defer stream.Close()
@@ -147,11 +143,11 @@ func (d *DeepseekReq) Send(ctx context.Context, l *LLM) error {
 	for {
 		response, err := stream.Recv()
 		if errors.Is(err, io.EOF) {
-			logger.Info("Stream finished", "updateMsgID", updateMsgID)
+			logger.Info("Stream finished", "updateMsgID", l.MsgId)
 			break
 		}
 		if err != nil {
-			logger.Warn("Stream error", "updateMsgID", updateMsgID, "err", err)
+			logger.Warn("Stream error", "updateMsgID", l.MsgId, "err", err)
 			break
 		}
 		for _, choice := range response.Choices {
@@ -162,7 +158,7 @@ func (d *DeepseekReq) Send(ctx context.Context, l *LLM) error {
 					if errors.Is(err, ToolsJsonErr) {
 						continue
 					} else {
-						logger.Error("requestToolsCall error", "updateMsgID", updateMsgID, "err", err)
+						logger.Error("requestToolsCall error", "updateMsgID", l.MsgId, "err", err)
 					}
 				}
 			}
@@ -183,7 +179,7 @@ func (d *DeepseekReq) Send(ctx context.Context, l *LLM) error {
 	}
 	
 	if !hasTools || len(d.CurrentToolMessage) == 0 {
-		db.InsertMsgRecord(userId, &db.AQ{
+		db.InsertMsgRecord(l.UserId, &db.AQ{
 			Question: l.Content,
 			Answer:   l.WholeContent,
 			Token:    l.Token,
@@ -244,7 +240,6 @@ func (d *DeepseekReq) GetMessage(role, msg string) {
 }
 
 func (d *DeepseekReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
-	_, updateMsgID, _ := utils.GetChatIdAndMsgIdAndUserID(l.Update)
 	
 	d.GetModel(l)
 	
@@ -274,7 +269,7 @@ func (d *DeepseekReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 	// assign task
 	response, err := client.CreateChatCompletion(ctx, request)
 	if err != nil {
-		logger.Error("ChatCompletionStream error", "updateMsgID", updateMsgID, "err", err)
+		logger.Error("ChatCompletionStream error", "updateMsgID", l.MsgId, "err", err)
 		return "", err
 	}
 	

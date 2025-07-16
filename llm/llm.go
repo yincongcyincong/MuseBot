@@ -6,7 +6,6 @@ import (
 	"time"
 	
 	godeepseek "github.com/cohesion-org/deepseek-go"
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/revrost/go-openrouter"
 	"github.com/sashabaranov/go-openai"
 	"github.com/volcengine/volcengine-go-sdk/service/arkruntime/model"
@@ -31,11 +30,13 @@ var (
 type LLM struct {
 	MessageChan chan *param.MsgInfo
 	HTTPMsgChan chan string
-	Update      tgbotapi.Update
-	Bot         *tgbotapi.BotAPI
 	Content     string // question from user
 	Model       string
 	Token       int
+	
+	ChatId int64
+	UserId int64
+	MsgId  int
 	
 	LLMClient LLMClient
 	
@@ -50,7 +51,7 @@ type LLM struct {
 }
 
 type LLMClient interface {
-	CallLLMAPI(ctx context.Context, prompt string, l *LLM) error
+	CallLLMAPI(ctx context.Context, l *LLM) error
 	
 	GetMessages(userId int64, prompt string)
 	
@@ -67,32 +68,16 @@ type LLMClient interface {
 	GetModel(l *LLM)
 }
 
-func (l *LLM) GetContent() {
+func (l *LLM) CallLLM() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
-	
-	chatId, msgId, _ := utils.GetChatIdAndMsgIdAndUserID(l.Update)
-	defer func() {
-		if err := recover(); err != nil {
-			logger.Error("GetContent panic err", "err", err)
-			utils.SendMsg(chatId, "GetContent panic", l.Bot, msgId, "")
-		}
-		utils.DecreaseUserChat(l.Update)
-		close(l.MessageChan)
-	}()
-	
-	text, err := utils.GetContent(l.Update, l.Bot, l.Content)
-	if err != nil {
-		logger.Error("get content fail", "err", err)
-		utils.SendMsg(chatId, err.Error(), l.Bot, msgId, "")
-		return
-	}
-	l.Content = text
-	err = l.LLMClient.CallLLMAPI(ctx, text, l)
+	err := l.LLMClient.CallLLMAPI(ctx, l)
 	if err != nil {
 		logger.Error("Error calling DeepSeek API", "err", err)
-		utils.SendMsg(chatId, err.Error(), l.Bot, msgId, "")
+		return err
 	}
+	
+	return nil
 }
 
 func NewLLM(opts ...Option) *LLM {
@@ -191,18 +176,6 @@ func WithContent(content string) Option {
 	}
 }
 
-func WithUpdate(update tgbotapi.Update) Option {
-	return func(p *LLM) {
-		p.Update = update
-	}
-}
-
-func WithBot(bot *tgbotapi.BotAPI) Option {
-	return func(p *LLM) {
-		p.Bot = bot
-	}
-}
-
 func WithHTTPChain(msgChan chan string) Option {
 	return func(p *LLM) {
 		p.HTTPMsgChan = msgChan
@@ -212,6 +185,24 @@ func WithHTTPChain(msgChan chan string) Option {
 func WithMessageChan(messageChan chan *param.MsgInfo) Option {
 	return func(p *LLM) {
 		p.MessageChan = messageChan
+	}
+}
+
+func WithChatId(chatId int64) Option {
+	return func(p *LLM) {
+		p.ChatId = chatId
+	}
+}
+
+func WithUserId(userId int64) Option {
+	return func(p *LLM) {
+		p.UserId = userId
+	}
+}
+
+func WithMsgId(msgId int) Option {
+	return func(p *LLM) {
+		p.MsgId = msgId
 	}
 }
 
