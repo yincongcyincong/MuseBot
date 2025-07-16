@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import Pagination from "../components/Pagination";
 import BotSelector from "../components/BotSelector";
+import ReactMarkdown from 'react-markdown'; // Import ReactMarkdown
 
 function BotRecordsPage() {
     const [botId, setBotId] = useState(null);
@@ -94,7 +95,10 @@ function BotRecordsPage() {
                             <tr key={record.id} className="hover:bg-gray-50">
                                 <td className="px-6 py-4 text-sm text-gray-800">{record.user_id}</td>
                                 <td className="px-6 py-4 text-sm text-gray-800">{record.question}</td>
-                                <td className="px-6 py-4 text-sm text-gray-800">{record.answer}</td>
+                                <td className="px-6 py-4 text-sm text-gray-800">
+                                    {/* Use ReactMarkdown for the answer field */}
+                                    <ReactMarkdown>{record.answer}</ReactMarkdown>
+                                </td>
                                 <td className="px-6 py-4 text-sm text-gray-800">{record.token}</td>
                                 <td className="px-6 py-4 text-sm text-gray-600">{record.is_deleted ? "Deleted" : "Active"}</td>
                                 <td className="px-6 py-4 text-sm text-gray-800">
