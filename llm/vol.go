@@ -44,7 +44,7 @@ func (h *VolReq) GetModel(l *LLM) {
 	}
 }
 
-func (h *VolReq) GetMessages(userId int64, prompt string) {
+func (h *VolReq) GetMessages(userId string, prompt string) {
 	messages := make([]*model.ChatCompletionMessage, 0)
 	
 	msgRecords := db.GetMsgRecord(userId)

@@ -503,7 +503,7 @@ func (t *TelegramRobot) addToken() {
 	content := utils.ReplaceCommand(msg.Text, "/addtoken", t.Bot.Self.UserName)
 	splitContent := strings.Split(content, " ")
 	
-	db.AddAvailToken(int64(utils.ParseInt(splitContent[0])), utils.ParseInt(splitContent[1]))
+	db.AddAvailToken(splitContent[0], utils.ParseInt(splitContent[1]))
 	t.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "add_token_succ", nil),
 		msgId, tgbotapi.ModeMarkdown, nil)
 }
@@ -744,7 +744,9 @@ func (t *TelegramRobot) handleCallbackQuery() {
 
 // handleModeUpdate handle mode update
 func (t *TelegramRobot) handleModeUpdate() {
-	userInfo, err := db.GetUserByID(t.Update.CallbackQuery.From.ID)
+	_, _, userId := t.Robot.GetChatIdAndMsgIdAndUserID()
+	
+	userInfo, err := db.GetUserByID(userId)
 	if err != nil {
 		logger.Warn("get user fail", "userID", t.Update.CallbackQuery.From.ID, "err", err)
 		t.sendFailMessage()
@@ -759,7 +761,7 @@ func (t *TelegramRobot) handleModeUpdate() {
 			return
 		}
 	} else {
-		_, err = db.InsertUser(t.Update.CallbackQuery.From.ID, t.Update.CallbackQuery.Data)
+		_, err = db.InsertUser(userId, t.Update.CallbackQuery.Data)
 		if err != nil {
 			logger.Warn("insert user fail", "userID", t.Update.CallbackQuery.From.String(), "err", err)
 			t.sendFailMessage()

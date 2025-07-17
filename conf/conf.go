@@ -42,9 +42,9 @@ type BaseConf struct {
 	KeyFile *string `json:"key_file"`
 	CaFile  *string `json:"ca_file"`
 	
-	AllowedTelegramUserIds  map[int64]bool `json:"allowed_telegram_user_ids"`
-	AllowedTelegramGroupIds map[int64]bool `json:"allowed_telegram_group_ids"`
-	AdminUserIds            map[int64]bool `json:"admin_user_ids"`
+	AllowedTelegramUserIds  map[string]bool `json:"allowed_telegram_user_ids"`
+	AllowedTelegramGroupIds map[int64]bool  `json:"allowed_telegram_group_ids"`
+	AdminUserIds            map[string]bool `json:"admin_user_ids"`
 	
 	Bot *tgbotapi.BotAPI `json:"bot"`
 }
@@ -89,9 +89,9 @@ func InitConf() {
 	allowedUserIds := flag.String("allowed_telegram_user_ids", "", "allowed telegram user ids")
 	allowedGroupIds := flag.String("allowed_telegram_group_ids", "", "allowed telegram group ids")
 	
-	BaseConfInfo.AllowedTelegramUserIds = make(map[int64]bool)
+	BaseConfInfo.AllowedTelegramUserIds = make(map[string]bool)
 	BaseConfInfo.AllowedTelegramGroupIds = make(map[int64]bool)
-	BaseConfInfo.AdminUserIds = make(map[int64]bool)
+	BaseConfInfo.AdminUserIds = make(map[string]bool)
 	
 	InitDeepseekConf()
 	InitPhotoConf()
@@ -226,12 +226,10 @@ func InitConf() {
 	}
 	
 	for _, userIdStr := range strings.Split(*allowedUserIds, ",") {
-		userId, err := strconv.Atoi(userIdStr)
-		if err != nil {
-			logger.Warn("AllowedTelegramUserIds parse error", "userID", userIdStr)
+		if userIdStr == "" {
 			continue
 		}
-		BaseConfInfo.AllowedTelegramUserIds[int64(userId)] = true
+		BaseConfInfo.AllowedTelegramUserIds[userIdStr] = true
 	}
 	
 	for _, groupIdStr := range strings.Split(*allowedGroupIds, ",") {
@@ -244,12 +242,10 @@ func InitConf() {
 	}
 	
 	for _, userIdStr := range strings.Split(*adminUserIds, ",") {
-		userId, err := strconv.Atoi(userIdStr)
-		if err != nil {
-			logger.Warn("AdminUserIds parse error", "userID", userIdStr)
+		if userIdStr == "" {
 			continue
 		}
-		BaseConfInfo.AdminUserIds[int64(userId)] = true
+		BaseConfInfo.AdminUserIds[userIdStr] = true
 	}
 	
 	logger.Info("CONF", "TelegramBotToken", *BaseConfInfo.TelegramBotToken)

@@ -23,7 +23,7 @@ type DeepseekTaskReq struct {
 	Model       string
 	Token       int
 	
-	UserId int64
+	UserId string
 	ChatId int64
 	MsgId  int
 }

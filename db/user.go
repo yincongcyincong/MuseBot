@@ -11,7 +11,7 @@ import (
 
 type User struct {
 	ID         int64  `json:"id"`
-	UserId     int64  `json:"user_id"`
+	UserId     string `json:"user_id"`
 	Mode       string `json:"mode"`
 	Token      int    `json:"token"`
 	Updatetime int64  `json:"updatetime"`
@@ -19,7 +19,7 @@ type User struct {
 }
 
 // InsertUser insert user data
-func InsertUser(userId int64, mode string) (int64, error) {
+func InsertUser(userId string, mode string) (int64, error) {
 	// insert data
 	insertSQL := `INSERT INTO users (user_id, mode, updatetime, avail_token) VALUES (?, ?, ?, ?)`
 	result, err := DB.Exec(insertSQL, userId, mode, time.Now().Unix(), *conf.BaseConfInfo.TokenPerUser)
@@ -37,7 +37,7 @@ func InsertUser(userId int64, mode string) (int64, error) {
 }
 
 // GetUserByID get user by userId
-func GetUserByID(userId int64) (*User, error) {
+func GetUserByID(userId string) (*User, error) {
 	// select one use base on name
 	querySQL := `SELECT id, user_id, mode, token, avail_token, updatetime FROM users WHERE user_id = ?`
 	row := DB.QueryRow(querySQL, userId)
@@ -87,33 +87,33 @@ func UpdateUserMode(userId int64, mode string) error {
 }
 
 // UpdateUserUpdateTime update user updateTime
-func UpdateUserUpdateTime(userId int64, updateTime int64) error {
+func UpdateUserUpdateTime(userId string, updateTime int64) error {
 	updateSQL := `UPDATE users SET updatetime = ? WHERE user_id = ?`
 	_, err := DB.Exec(updateSQL, updateTime, userId)
 	return err
 }
 
 // UpdateUserToken update user token
-func UpdateUserToken(userId int64, token int) error {
+func UpdateUserToken(userId string, token int) error {
 	updateSQL := `UPDATE users SET token = token + ? WHERE user_id = ?`
 	_, err := DB.Exec(updateSQL, token, userId)
 	return err
 }
 
 // AddAvailToken add token
-func AddAvailToken(userId int64, token int) error {
+func AddAvailToken(userId string, token int) error {
 	updateSQL := `UPDATE users SET avail_token = avail_token + ? WHERE user_id = ?`
 	_, err := DB.Exec(updateSQL, token, userId)
 	return err
 }
 
-func AddToken(userId int64, token int) error {
+func AddToken(userId string, token int) error {
 	updateSQL := `UPDATE users SET token = token + ? WHERE user_id = ?`
 	_, err := DB.Exec(updateSQL, token, userId)
 	return err
 }
 
-func GetUserByPage(page, pageSize int, userId int64) ([]User, error) {
+func GetUserByPage(page, pageSize int, userId string) ([]User, error) {
 	if page < 1 {
 		page = 1
 	}
@@ -128,7 +128,7 @@ func GetUserByPage(page, pageSize int, userId int64) ([]User, error) {
 		args     []interface{}
 	)
 	
-	if userId > 0 {
+	if userId != "" {
 		whereSQL = "WHERE user_id = ?"
 		args = append(args, userId)
 	}
@@ -159,11 +159,11 @@ func GetUserByPage(page, pageSize int, userId int64) ([]User, error) {
 	return users, nil
 }
 
-func GetUserCount(userId int64) (int, error) {
+func GetUserCount(userId string) (int, error) {
 	var whereSQL string
 	args := make([]interface{}, 0)
 	
-	if userId > 0 {
+	if userId != "" {
 		whereSQL = "WHERE user_id = ?"
 		args = append(args, userId)
 	}

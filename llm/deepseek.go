@@ -40,7 +40,7 @@ func (d *DeepseekReq) GetModel(l *LLM) {
 	}
 }
 
-func (d *DeepseekReq) GetMessages(userId int64, prompt string) {
+func (d *DeepseekReq) GetMessages(userId string, prompt string) {
 	messages := make([]deepseek.ChatCompletionMessage, 0)
 	
 	msgRecords := db.GetMsgRecord(userId)

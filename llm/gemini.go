@@ -26,7 +26,7 @@ type GeminiReq struct {
 	GeminiMsgs []*genai.Content
 }
 
-func (h *GeminiReq) GetMessages(userId int64, prompt string) {
+func (h *GeminiReq) GetMessages(userId string, prompt string) {
 	messages := make([]*genai.Content, 0)
 	
 	msgRecords := db.GetMsgRecord(userId)

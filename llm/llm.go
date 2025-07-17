@@ -35,7 +35,7 @@ type LLM struct {
 	Token       int
 	
 	ChatId int64
-	UserId int64
+	UserId string
 	MsgId  int
 	
 	LLMClient LLMClient
@@ -51,7 +51,7 @@ type LLM struct {
 }
 
 type LLMClient interface {
-	GetMessages(userId int64, prompt string)
+	GetMessages(userId string, prompt string)
 	
 	Send(ctx context.Context, l *LLM) error
 	
@@ -199,7 +199,7 @@ func WithChatId(chatId int64) Option {
 	}
 }
 
-func WithUserId(userId int64) Option {
+func WithUserId(userId string) Option {
 	return func(p *LLM) {
 		p.UserId = userId
 	}

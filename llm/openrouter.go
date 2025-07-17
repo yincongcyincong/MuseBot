@@ -40,7 +40,7 @@ func (d *AIRouterReq) GetModel(l *LLM) {
 	}
 }
 
-func (d *AIRouterReq) GetMessages(userId int64, prompt string) {
+func (d *AIRouterReq) GetMessages(userId string, prompt string) {
 	messages := make([]openrouter.ChatCompletionMessage, 0)
 	
 	msgRecords := db.GetMsgRecord(userId)

@@ -29,7 +29,7 @@ type AQ struct {
 
 type Record struct {
 	ID         int    `json:"id"`
-	UserId     int64  `json:"user_id"`
+	UserId     string `json:"user_id"`
 	Question   string `json:"question"`
 	Answer     string `json:"answer"`
 	Content    string `json:"content"`
@@ -40,7 +40,7 @@ type Record struct {
 
 var MsgRecord = sync.Map{}
 
-func InsertMsgRecord(userId int64, aq *AQ, insertDB bool) {
+func InsertMsgRecord(userId string, aq *AQ, insertDB bool) {
 	var msgRecord *MsgRecordInfo
 	msgRecordInter, ok := MsgRecord.Load(userId)
 	if !ok {
@@ -69,7 +69,7 @@ func InsertMsgRecord(userId int64, aq *AQ, insertDB bool) {
 	}
 }
 
-func GetMsgRecord(userId int64) *MsgRecordInfo {
+func GetMsgRecord(userId string) *MsgRecordInfo {
 	msgRecord, ok := MsgRecord.Load(userId)
 	if !ok {
 		return nil
@@ -77,7 +77,7 @@ func GetMsgRecord(userId int64) *MsgRecordInfo {
 	return msgRecord.(*MsgRecordInfo)
 }
 
-func DeleteMsgRecord(userId int64) {
+func DeleteMsgRecord(userId string) {
 	MsgRecord.Delete(userId)
 	err := DeleteRecord(userId)
 	if err != nil {
@@ -110,13 +110,13 @@ func UpdateDBData() {
 			timeUserPair[msgRecord.updateTime] = make([]int64, 0)
 		}
 		timeUserPair[msgRecord.updateTime] = append(timeUserPair[msgRecord.updateTime], k.(int64))
-		UpdateUserInfo(k.(int64), msgRecord.updateTime)
+		UpdateUserInfo(k.(string), msgRecord.updateTime)
 		totalNum++
 		return true
 	})
 }
 
-func UpdateUserInfo(userId int64, updateTime int64) {
+func UpdateUserInfo(userId string, updateTime int64) {
 	err := UpdateUserUpdateTime(userId, updateTime)
 	if err != nil {
 		logger.Error("StarCheckUserLen UpdateUserUpdateTime err", "err", err)
@@ -150,7 +150,7 @@ func InsertRecord() {
 }
 
 // getRecordsByUserId get latest 10 records by user_id
-func getRecordsByUserId(userId int64) ([]Record, error) {
+func getRecordsByUserId(userId string) ([]Record, error) {
 	// construct SQL statements
 	query := fmt.Sprintf("SELECT id, user_id, question, answer, content FROM records WHERE user_id =  ? and is_deleted = 0 order by create_time desc limit 10")
 	
@@ -202,13 +202,13 @@ func InsertRecordInfo(record *Record) {
 }
 
 // DeleteRecord delete record
-func DeleteRecord(userId int64) error {
+func DeleteRecord(userId string) error {
 	query := `UPDATE records set is_deleted = 1 WHERE user_id = ?`
 	_, err := DB.Exec(query, userId)
 	return err
 }
 
-func GetTokenByUserIdAndTime(userId int64, start, end int64) (int, error) {
+func GetTokenByUserIdAndTime(userId string, start, end int64) (int, error) {
 	querySQL := `SELECT sum(token) FROM records WHERE user_id = ? and create_time >= ? and create_time <= ?`
 	row := DB.QueryRow(querySQL, userId, start, end)
 	

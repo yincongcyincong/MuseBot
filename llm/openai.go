@@ -41,7 +41,7 @@ func (d *OpenAIReq) GetModel(l *LLM) {
 	}
 }
 
-func (d *OpenAIReq) GetMessages(userId int64, prompt string) {
+func (d *OpenAIReq) GetMessages(userId string, prompt string) {
 	messages := make([]openai.ChatCompletionMessage, 0)
 	
 	msgRecords := db.GetMsgRecord(userId)

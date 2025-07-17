@@ -16,7 +16,7 @@ const (
 	sqlite3CreateTableSQL = `
 			CREATE TABLE users (
 				id INTEGER PRIMARY KEY AUTOINCREMENT,
-				user_id int(11) NOT NULL DEFAULT '0',
+				user_id varchar(100) NOT NULL DEFAULT '0',
 				mode VARCHAR(100) NOT NULL DEFAULT '',
 				updatetime int(10) NOT NULL DEFAULT '0',
 				token int(10) NOT NULL DEFAULT '0',
@@ -24,7 +24,7 @@ const (
 			);
 			CREATE TABLE records (
 				id INTEGER PRIMARY KEY AUTOINCREMENT,
-				user_id int(11) NOT NULL DEFAULT '0',
+				user_id varchar(100) NOT NULL DEFAULT '0',
 				question TEXT NOT NULL,
 				answer TEXT NOT NULL,
 				content TEXT NOT NULL,
@@ -46,7 +46,7 @@ const (
 	mysqlCreateUsersSQL = `
 			CREATE TABLE IF NOT EXISTS users (
 				id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-				user_id BIGINT(20) NOT NULL DEFAULT 0,
+				user_id varchar(100) NOT NULL DEFAULT 0,
 				mode VARCHAR(100) NOT NULL DEFAULT '',
 				updatetime INT(10) NOT NULL DEFAULT 0,
 				token int(10) NOT NULL DEFAULT 0,
@@ -56,7 +56,7 @@ const (
 	mysqlCreateRecordsSQL = `
 			CREATE TABLE IF NOT EXISTS records (
 				id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-				user_id BIGINT(20) NOT NULL DEFAULT 0,
+				user_id varchar(100) NOT NULL DEFAULT 0,
 				question TEXT NOT NULL,
 				answer TEXT NOT NULL,
 				content TEXT NOT NULL,

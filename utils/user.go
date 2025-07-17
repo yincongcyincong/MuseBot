@@ -10,7 +10,7 @@ var (
 	userChatMap = sync.Map{}
 )
 
-func CheckUserChatExceed(userId int64) bool {
+func CheckUserChatExceed(userId string) bool {
 	times := 1
 	if timeInter, ok := userChatMap.Load(userId); ok {
 		times = timeInter.(int)
@@ -23,7 +23,7 @@ func CheckUserChatExceed(userId int64) bool {
 	return false
 }
 
-func DecreaseUserChat(userId int64) {
+func DecreaseUserChat(userId string) {
 	if timeInter, ok := userChatMap.Load(userId); ok {
 		times := timeInter.(int)
 		times--
