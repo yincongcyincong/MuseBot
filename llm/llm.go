@@ -51,8 +51,6 @@ type LLM struct {
 }
 
 type LLMClient interface {
-	CallLLMAPI(ctx context.Context, l *LLM) error
-	
 	GetMessages(userId int64, prompt string)
 	
 	Send(ctx context.Context, l *LLM) error
@@ -71,7 +69,14 @@ type LLMClient interface {
 func (l *LLM) CallLLM() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
-	err := l.LLMClient.CallLLMAPI(ctx, l)
+	
+	l.LLMClient.GetMessages(l.UserId, l.Content)
+	
+	logger.Info("msg receive", "userID", l.UserId, "prompt", l.Content)
+	
+	l.LLMClient.GetModel(l)
+	
+	err := l.LLMClient.Send(ctx, l)
 	if err != nil {
 		logger.Error("Error calling DeepSeek API", "err", err)
 		return err

@@ -2,9 +2,6 @@ package utils
 
 import (
 	"testing"
-	
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestUtf16len(t *testing.T) {
@@ -49,19 +46,4 @@ func TestMD5(t *testing.T) {
 	if got != want {
 		t.Errorf("MD5(%q) = %s; want %s", input, got, want)
 	}
-}
-
-func TestCheckMsgIsCallback(t *testing.T) {
-	updateWithCallback := tgbotapi.Update{
-		CallbackQuery: &tgbotapi.CallbackQuery{},
-	}
-	assert.True(t, CheckMsgIsCallback(updateWithCallback))
-	
-	updateWithMessage := tgbotapi.Update{
-		Message: &tgbotapi.Message{},
-	}
-	assert.False(t, CheckMsgIsCallback(updateWithMessage))
-	
-	updateEmpty := tgbotapi.Update{}
-	assert.False(t, CheckMsgIsCallback(updateEmpty))
 }

@@ -28,16 +28,6 @@ type DeepseekReq struct {
 	DeepseekMsgs []deepseek.ChatCompletionMessage
 }
 
-// CallLLMAPI request DeepSeek API and get response
-func (d *DeepseekReq) CallLLMAPI(ctx context.Context, l *LLM) error {
-	
-	d.GetMessages(l.UserId, l.Content)
-	
-	logger.Info("msg receive", "userID", l.UserId, "prompt", l.Content)
-	
-	return d.Send(ctx, l)
-}
-
 func (d *DeepseekReq) GetModel(l *LLM) {
 	l.Model = deepseek.DeepSeekChat
 	userInfo, err := db.GetUserByID(l.UserId)
@@ -98,16 +88,18 @@ func (d *DeepseekReq) Send(ctx context.Context, l *LLM) error {
 	}
 	
 	start := time.Now()
-	d.GetModel(l)
 	
 	// set deepseek proxy
 	httpClient := utils.GetDeepseekProxyClient()
 	
-	client, err := deepseek.NewClientWithOptions(*conf.BaseConfInfo.DeepseekToken,
-		deepseek.WithBaseURL(*conf.BaseConfInfo.CustomUrl), deepseek.WithHTTPClient(httpClient))
+	client, err := deepseek.NewClientWithOptions(*conf.BaseConfInfo.DeepseekToken, deepseek.WithHTTPClient(httpClient))
 	if err != nil {
 		logger.Error("Error creating deepseek client", "err", err)
 		return err
+	}
+	
+	if *conf.BaseConfInfo.CustomUrl != "" {
+		client.BaseURL = *conf.BaseConfInfo.CustomUrl
 	}
 	
 	request := &deepseek.StreamChatCompletionRequest{

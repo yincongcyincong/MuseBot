@@ -66,7 +66,7 @@ func InitConf() {
 	BaseConfInfo.VolcAK = flag.String("volc_ak", "", "volc ak")
 	BaseConfInfo.VolcSK = flag.String("volc_sk", "", "volc sk")
 	
-	BaseConfInfo.CustomUrl = flag.String("custom_url", "https://api.deepseek.com/", "deepseek custom url")
+	BaseConfInfo.CustomUrl = flag.String("custom_url", "", "deepseek custom url")
 	BaseConfInfo.Type = flag.String("type", "deepseek", "llm type: deepseek gemini openai openrouter vol")
 	BaseConfInfo.MediaType = flag.String("media_type", "vol", "media type: vol gemini openai openrouter")
 	BaseConfInfo.DBType = flag.String("db_type", "sqlite3", "db type")

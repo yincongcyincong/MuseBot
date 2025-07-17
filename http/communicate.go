@@ -1,14 +1,13 @@
 package http
 
 import (
-	"context"
 	"fmt"
 	"net/http"
-	"strconv"
 	
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/yincongcyincong/telegram-deepseek-bot/llm"
 	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
+	"github.com/yincongcyincong/telegram-deepseek-bot/utils"
 )
 
 // Communicate handles the Server-Sent Events
@@ -20,7 +19,7 @@ func Communicate(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	userIdStr := r.URL.Query().Get("userId")
-	userId, _ := strconv.Atoi(userIdStr)
+	userId := utils.ParseInt(userIdStr)
 	realUserId := userId * -1
 	
 	w.Header().Set("Content-Type", "text/event-stream")
@@ -38,10 +37,9 @@ func Communicate(w http.ResponseWriter, r *http.Request) {
 	messageChan := make(chan string)
 	l := llm.NewLLM(llm.WithChatId(int64(realUserId)), llm.WithUserId(int64(realUserId)), llm.WithMsgId(realUserId),
 		llm.WithHTTPChain(messageChan), llm.WithContent(prompt))
-	l.LLMClient.GetMessages(int64(realUserId), prompt)
 	go func() {
 		defer close(messageChan)
-		err = l.LLMClient.Send(context.Background(), l)
+		err = l.CallLLM()
 		if err != nil {
 			logger.Warn("Error sending message", "err", err)
 		}

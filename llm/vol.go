@@ -32,13 +32,6 @@ type VolReq struct {
 	VolMsgs []*model.ChatCompletionMessage
 }
 
-func (h *VolReq) CallLLMAPI(ctx context.Context, l *LLM) error {
-	h.GetMessages(l.UserId, l.Content)
-	
-	logger.Info("msg receive", "userID", l.UserId, "prompt", l.Content)
-	return h.Send(ctx, l)
-}
-
 func (h *VolReq) GetModel(l *LLM) {
 	l.Model = param.ModelDeepSeekR1_528
 	userInfo, err := db.GetUserByID(l.UserId)

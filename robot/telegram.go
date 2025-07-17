@@ -4,6 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
+	"net/http"
+	"net/url"
 	"runtime/debug"
 	"strings"
 	"time"
@@ -49,23 +52,13 @@ func StartTelegramRobot() {
 		for update := range updates {
 			t := NewTelegramRobot(update, bot)
 			t.Robot = NewRobot(WithTelegramRobot(t))
-			t.execUpdate()
+			t.Robot.Exec()
 		}
 	}
 }
 
-// execUpdate exec telegram message
-func (t *TelegramRobot) execUpdate() {
-	chatId, msgId, userId := t.Robot.GetChatIdAndMsgIdAndUserID()
-	
-	if !t.checkUserAllow() && !t.checkGroupAllow() {
-		chat := utils.GetChat(t.Update)
-		logger.Warn("user/group not allow to use this bot", "userID", userId, "chat", chat)
-		t.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "valid_user_group", nil),
-			msgId, tgbotapi.ModeMarkdown, nil)
-		return
-	}
-	
+func (t *TelegramRobot) Execute() {
+	chatId, msgId, _ := t.Robot.GetChatIdAndMsgIdAndUserID()
 	if t.handleCommandAndCallback() {
 		return
 	}
@@ -77,13 +70,12 @@ func (t *TelegramRobot) execUpdate() {
 		}
 		t.requestDeepseekAndResp(t.Update.Message.Text)
 	}
-	
 }
 
 // requestDeepseekAndResp request deepseek api
 func (t *TelegramRobot) requestDeepseekAndResp(content string) {
-	_, _, userId := t.Robot.GetChatIdAndMsgIdAndUserID()
-	if t.checkUserTokenExceed() {
+	chatId, replyToMessageID, userId := t.Robot.GetChatIdAndMsgIdAndUserID()
+	if t.Robot.checkUserTokenExceed(chatId, replyToMessageID, userId) {
 		logger.Warn("user token exceed", "userID", userId)
 		return
 	}
@@ -105,14 +97,20 @@ func (t *TelegramRobot) executeChain(content string) {
 			if err := recover(); err != nil {
 				logger.Error("GetContent panic err", "err", err)
 			}
-			DecreaseUserChat(userId)
+			utils.DecreaseUserChat(userId)
 			close(messageChan)
 		}()
+		// check user chat exceed max count
+		if utils.CheckUserChatExceed(userId) {
+			t.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "chat_exceed", nil),
+				msgId, tgbotapi.ModeMarkdown, nil)
+			return
+		}
 		
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 		defer cancel()
 		
-		text, err := t.Robot.GetContent(content)
+		text, err := t.GetContent(content)
 		if err != nil {
 			logger.Error("get content fail", "err", err)
 			t.Robot.SendMsg(chatId, err.Error(), msgId, "", nil)
@@ -144,44 +142,53 @@ func (t *TelegramRobot) executeLLM(content string) {
 	messageChan := make(chan *param.MsgInfo)
 	
 	// request DeepSeek API
-	go func() {
-		chatId, msgId, userId := t.Robot.GetChatIdAndMsgIdAndUserID()
-		defer func() {
-			if err := recover(); err != nil {
-				logger.Error("GetContent panic err", "err", err)
-			}
-			DecreaseUserChat(userId)
-			close(messageChan)
-		}()
-		
-		text, err := t.Robot.GetContent(content)
-		if err != nil {
-			logger.Error("get content fail", "err", err)
-			t.Robot.SendMsg(chatId, err.Error(), msgId, "", nil)
-			return
-		}
-		
-		l := llm.NewLLM(llm.WithMessageChan(messageChan), llm.WithContent(text),
-			llm.WithChatId(chatId), llm.WithMsgId(msgId),
-			llm.WithUserId(userId),
-			llm.WithTaskTools(&conf.AgentInfo{
-				DeepseekTool:    conf.DeepseekTools,
-				VolTool:         conf.VolTools,
-				OpenAITools:     conf.OpenAITools,
-				GeminiTools:     conf.GeminiTools,
-				OpenRouterTools: conf.OpenRouterTools,
-			}))
-		
-		err = l.CallLLM()
-		if err != nil {
-			logger.Error("get content fail", "err", err)
-			t.Robot.SendMsg(chatId, err.Error(), msgId, "", nil)
-		}
-	}()
+	go t.callLLM(content, messageChan)
 	
 	// send response message
 	go t.handleUpdate(messageChan)
 	
+}
+
+func (t *TelegramRobot) callLLM(content string, messageChan chan *param.MsgInfo) {
+	chatId, msgId, userId := t.Robot.GetChatIdAndMsgIdAndUserID()
+	
+	defer func() {
+		if err := recover(); err != nil {
+			logger.Error("GetContent panic err", "err", err)
+		}
+		utils.DecreaseUserChat(userId)
+		close(messageChan)
+	}()
+	// check user chat exceed max count
+	if utils.CheckUserChatExceed(userId) {
+		t.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "chat_exceed", nil),
+			msgId, tgbotapi.ModeMarkdown, nil)
+		return
+	}
+	
+	text, err := t.GetContent(content)
+	if err != nil {
+		logger.Error("get content fail", "err", err)
+		t.Robot.SendMsg(chatId, err.Error(), msgId, "", nil)
+		return
+	}
+	
+	l := llm.NewLLM(llm.WithMessageChan(messageChan), llm.WithContent(text),
+		llm.WithChatId(chatId), llm.WithMsgId(msgId),
+		llm.WithUserId(userId),
+		llm.WithTaskTools(&conf.AgentInfo{
+			DeepseekTool:    conf.DeepseekTools,
+			VolTool:         conf.VolTools,
+			OpenAITools:     conf.OpenAITools,
+			GeminiTools:     conf.GeminiTools,
+			OpenRouterTools: conf.OpenRouterTools,
+		}))
+	
+	err = l.CallLLM()
+	if err != nil {
+		logger.Error("get content fail", "err", err)
+		t.Robot.SendMsg(chatId, err.Error(), msgId, "", nil)
+	}
 }
 
 // handleUpdate handle robot msg sending
@@ -327,7 +334,8 @@ func (t *TelegramRobot) handleCommand() {
 	logger.Info("command info", "userID", userID, "cmd", cmd)
 	
 	// check if at bot
-	if (utils.GetChatType(t.Update) == "group" || utils.GetChatType(t.Update) == "supergroup") && *conf.BaseConfInfo.NeedATBOt {
+	chatType := t.GetChatType()
+	if (chatType == "group" || chatType == "supergroup") && *conf.BaseConfInfo.NeedATBOt {
 		if !strings.Contains(t.Update.Message.Text, "@"+t.Bot.Self.UserName) {
 			logger.Warn("not at bot", "userID", userID, "cmd", cmd)
 			return
@@ -359,7 +367,7 @@ func (t *TelegramRobot) handleCommand() {
 		t.sendMultiAgent("mcp_empty_content")
 	}
 	
-	if t.checkAdminUser() {
+	if t.Robot.checkAdminUser(userID) {
 		switch cmd {
 		case "addtoken":
 			t.addToken()
@@ -375,7 +383,7 @@ func (t *TelegramRobot) sendChatMessage() {
 	if t.Update.Message != nil {
 		messageText = t.Update.Message.Text
 		if messageText == "" && t.Update.Message.Voice != nil && *conf.AudioConfInfo.AudioAppID != "" {
-			audioContent := t.Robot.GetAudioContent()
+			audioContent := t.GetAudioContent()
 			if audioContent == nil {
 				logger.Warn("audio url empty")
 				return
@@ -384,7 +392,7 @@ func (t *TelegramRobot) sendChatMessage() {
 		}
 		
 		if messageText == "" && t.Update.Message.Photo != nil {
-			photoContent, err := utils.GetImageContent(t.Robot.GetPhotoContent())
+			photoContent, err := utils.GetImageContent(t.GetPhotoContent())
 			if err != nil {
 				logger.Warn("get photo content err", "err", err)
 				return
@@ -436,7 +444,7 @@ func (t *TelegramRobot) clearAllRecord() {
 // addToken clear all record
 func (t *TelegramRobot) addToken() {
 	chatId, msgId, _ := t.Robot.GetChatIdAndMsgIdAndUserID()
-	msg := utils.GetMessage(t.Update)
+	msg := t.GetMessage()
 	
 	content := utils.ReplaceCommand(msg.Text, "/addtoken", t.Bot.Self.UserName)
 	splitContent := strings.Split(content, " ")
@@ -728,17 +736,17 @@ func (t *TelegramRobot) sendFailMessage() {
 
 func (t *TelegramRobot) sendMultiAgent(agentType string) {
 	chatId, replyToMessageID, userId := t.Robot.GetChatIdAndMsgIdAndUserID()
-	if CheckUserChatExceed(userId) {
+	if utils.CheckUserChatExceed(userId) {
 		t.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "chat_exceed", nil),
 			replyToMessageID, tgbotapi.ModeMarkdown, nil)
 		return
 	}
 	
 	defer func() {
-		DecreaseUserChat(userId)
+		utils.DecreaseUserChat(userId)
 	}()
 	
-	if t.checkUserTokenExceed() {
+	if t.Robot.checkUserTokenExceed(chatId, replyToMessageID, userId) {
 		logger.Warn("user token exceed", "userID", userId)
 		return
 	}
@@ -790,17 +798,17 @@ func (t *TelegramRobot) sendMultiAgent(agentType string) {
 // sendVideo send video to telegram
 func (t *TelegramRobot) sendVideo() {
 	chatId, replyToMessageID, userId := t.Robot.GetChatIdAndMsgIdAndUserID()
-	if CheckUserChatExceed(userId) {
+	if utils.CheckUserChatExceed(userId) {
 		t.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "chat_exceed", nil),
 			replyToMessageID, tgbotapi.ModeMarkdown, nil)
 		return
 	}
 	
 	defer func() {
-		DecreaseUserChat(userId)
+		utils.DecreaseUserChat(userId)
 	}()
 	
-	if t.checkUserTokenExceed() {
+	if t.Robot.checkUserTokenExceed(chatId, replyToMessageID, userId) {
 		logger.Warn("user token exceed", "userID", userId)
 		return
 	}
@@ -875,17 +883,17 @@ func (t *TelegramRobot) sendVideo() {
 // sendImg send img to telegram
 func (t *TelegramRobot) sendImg() {
 	chatId, replyToMessageID, userId := t.Robot.GetChatIdAndMsgIdAndUserID()
-	if CheckUserChatExceed(userId) {
+	if utils.CheckUserChatExceed(userId) {
 		t.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "chat_exceed", nil),
 			replyToMessageID, tgbotapi.ModeMarkdown, nil)
 		return
 	}
 	
 	defer func() {
-		DecreaseUserChat(userId)
+		utils.DecreaseUserChat(userId)
 	}()
 	
-	if t.checkUserTokenExceed() {
+	if t.Robot.checkUserTokenExceed(chatId, replyToMessageID, userId) {
 		logger.Warn("user token exceed", "userID", userId)
 		return
 	}
@@ -963,81 +971,6 @@ func (t *TelegramRobot) sendImg() {
 	return
 }
 
-// checkUserAllow check use can use telegram bot or not
-func (t *TelegramRobot) checkUserAllow() bool {
-	if len(conf.BaseConfInfo.AllowedTelegramUserIds) == 0 {
-		return true
-	}
-	if conf.BaseConfInfo.AllowedTelegramUserIds[0] {
-		return false
-	}
-	
-	_, _, userId := t.Robot.GetChatIdAndMsgIdAndUserID()
-	_, ok := conf.BaseConfInfo.AllowedTelegramUserIds[userId]
-	return ok
-}
-
-func (t *TelegramRobot) checkGroupAllow() bool {
-	chat := utils.GetChat(t.Update)
-	if chat == nil {
-		return false
-	}
-	
-	if chat.IsGroup() || chat.IsSuperGroup() { // 判断是否是群组或超级群组
-		if len(conf.BaseConfInfo.AllowedTelegramGroupIds) == 0 {
-			return true
-		}
-		if conf.BaseConfInfo.AllowedTelegramGroupIds[0] {
-			return false
-		}
-		if _, ok := conf.BaseConfInfo.AllowedTelegramGroupIds[chat.ID]; ok {
-			return true
-		}
-	}
-	
-	return false
-}
-
-// checkUserTokenExceed check use token exceeded
-func (t *TelegramRobot) checkUserTokenExceed() bool {
-	if *conf.BaseConfInfo.TokenPerUser == 0 {
-		return false
-	}
-	
-	chatId, msgId, userId := t.Robot.GetChatIdAndMsgIdAndUserID()
-	userInfo, err := db.GetUserByID(userId)
-	if err != nil {
-		logger.Warn("get user info fail", "err", err)
-		return false
-	}
-	
-	if userInfo == nil {
-		db.InsertUser(userId, godeepseek.DeepSeekChat)
-		logger.Warn("get user info is nil")
-		return false
-	}
-	
-	if userInfo.Token >= userInfo.AvailToken {
-		tpl := i18n.GetMessage(*conf.BaseConfInfo.Lang, "token_exceed", nil)
-		content := fmt.Sprintf(tpl, userInfo.Token, userInfo.AvailToken-userInfo.Token, userInfo.AvailToken)
-		t.Robot.SendMsg(chatId, content, msgId, tgbotapi.ModeMarkdown, nil)
-		return true
-	}
-	
-	return false
-}
-
-// checkAdminUser check user is admin
-func (t *TelegramRobot) checkAdminUser() bool {
-	if len(conf.BaseConfInfo.AdminUserIds) == 0 {
-		return false
-	}
-	
-	_, _, userId := t.Robot.GetChatIdAndMsgIdAndUserID()
-	_, ok := conf.BaseConfInfo.AdminUserIds[userId]
-	return ok
-}
-
 // ExecuteForceReply use force reply interact with user
 func (t *TelegramRobot) ExecuteForceReply() {
 	defer func() {
@@ -1058,4 +991,145 @@ func (t *TelegramRobot) ExecuteForceReply() {
 	case i18n.GetMessage(*conf.BaseConfInfo.Lang, "mcp_empty_content", nil):
 		t.sendMultiAgent("mcp_empty_content")
 	}
+}
+
+func (t *TelegramRobot) GetContent(content string) (string, error) {
+	if content == "" && t.Update.Message.Voice != nil && *conf.AudioConfInfo.AudioAppID != "" {
+		audioContent := t.GetAudioContent()
+		if audioContent == nil {
+			logger.Warn("audio url empty")
+			return "", errors.New("audio url empty")
+		}
+		content = utils.FileRecognize(audioContent)
+	}
+	
+	if content == "" && t.Update.Message.Photo != nil {
+		imageContent, err := utils.GetImageContent(t.GetPhotoContent())
+		if err != nil {
+			logger.Warn("get image content err", "err", err)
+			return "", err
+		}
+		content = imageContent
+	}
+	
+	if content == "" {
+		logger.Warn("content empty")
+		return "", errors.New("content empty")
+	}
+	
+	text := strings.ReplaceAll(content, "@"+t.Bot.Self.UserName, "")
+	return text, nil
+}
+
+func (t *TelegramRobot) GetAudioContent() []byte {
+	if t.Update.Message == nil || t.Update.Message.Voice == nil {
+		return nil
+	}
+	
+	fileID := t.Update.Message.Voice.FileID
+	file, err := t.Bot.GetFile(tgbotapi.FileConfig{FileID: fileID})
+	if err != nil {
+		logger.Warn("get file fail", "err", err)
+		return nil
+	}
+	
+	// 构造下载 URL
+	downloadURL := file.Link(t.Bot.Token)
+	
+	transport := &http.Transport{}
+	
+	if *conf.BaseConfInfo.TelegramProxy != "" {
+		proxy, err := url.Parse(*conf.BaseConfInfo.TelegramProxy)
+		if err != nil {
+			logger.Warn("parse proxy url fail", "err", err)
+			return nil
+		}
+		transport.Proxy = http.ProxyURL(proxy)
+	}
+	
+	client := &http.Client{
+		Transport: transport,
+		Timeout:   30 * time.Second, // 设置超时
+	}
+	
+	// 通过代理下载
+	resp, err := client.Get(downloadURL)
+	if err != nil {
+		logger.Warn("download fail", "err", err)
+		return nil
+	}
+	defer resp.Body.Close()
+	voice, err := io.ReadAll(resp.Body)
+	if err != nil {
+		logger.Warn("read response fail", "err", err)
+		return nil
+	}
+	return voice
+}
+
+func (t *TelegramRobot) GetPhotoContent() []byte {
+	if t.Update.Message == nil || t.Update.Message.Photo == nil {
+		return nil
+	}
+	
+	var photo tgbotapi.PhotoSize
+	for i := len(t.Update.Message.Photo) - 1; i >= 0; i-- {
+		if t.Update.Message.Photo[i].FileSize < 8*1024*1024 {
+			photo = t.Update.Message.Photo[i]
+			break
+		}
+	}
+	
+	fileID := photo.FileID
+	file, err := t.Bot.GetFile(tgbotapi.FileConfig{FileID: fileID})
+	if err != nil {
+		logger.Warn("get file fail", "err", err)
+		return nil
+	}
+	
+	downloadURL := file.Link(t.Bot.Token)
+	
+	client := utils.GetTelegramProxyClient()
+	resp, err := client.Get(downloadURL)
+	if err != nil {
+		logger.Warn("download fail", "err", err)
+		return nil
+	}
+	defer resp.Body.Close()
+	photoContent, err := io.ReadAll(resp.Body)
+	if err != nil {
+		logger.Warn("read response fail", "err", err)
+		return nil
+	}
+	
+	return photoContent
+}
+
+func (t *TelegramRobot) GetChat() *tgbotapi.Chat {
+	if t.Update.Message != nil {
+		return t.Update.Message.Chat
+	}
+	if t.Update.CallbackQuery != nil {
+		return t.Update.CallbackQuery.Message.Chat
+	}
+	return nil
+}
+
+func (t *TelegramRobot) GetMessage() *tgbotapi.Message {
+	if t.Update.Message != nil {
+		return t.Update.Message
+	}
+	if t.Update.CallbackQuery != nil {
+		return t.Update.CallbackQuery.Message
+	}
+	return nil
+}
+
+func (t *TelegramRobot) GetChatType() string {
+	chat := t.GetChat()
+	return chat.Type
+}
+
+func (t *TelegramRobot) CheckMsgIsCallback() bool {
+	return t.Update.CallbackQuery != nil
 }

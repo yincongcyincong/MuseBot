@@ -28,15 +28,6 @@ type AIRouterReq struct {
 	OpenRouterMsgs []openrouter.ChatCompletionMessage
 }
 
-// CallLLMAPI request DeepSeek API and get response
-func (d *AIRouterReq) CallLLMAPI(ctx context.Context, l *LLM) error {
-	d.GetMessages(l.UserId, l.Content)
-	
-	logger.Info("msg receive", "userID", l.UserId, "prompt", l.Content)
-	
-	return d.Send(ctx, l)
-}
-
 func (d *AIRouterReq) GetModel(l *LLM) {
 	l.Model = param.DeepseekDeepseekR1_0528Free
 	userInfo, err := db.GetUserByID(l.UserId)
