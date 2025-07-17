@@ -7,7 +7,7 @@
   "commands.state.description": "calculate one user token usage.",
   "commands.photo.description": "using volcengine photo model create photo.",
   "commands.video.description": "using volcengine video model create video.",
-  "commands.chat.description": "allows the bot to chat through /chat command in groups, without the bot being set as admin of the group.",
+  "commands.chat.description": "allows the bot to chat through /chat command in groups.",
   "commands.task.description": "multi agents communicate with each other, get the result.",
   "commands.mcp.description": "multi agents communicate with each other base on mcp server, get the result.",
   "balance_title": "\uD83D\uDFE3 Available: %t\n\n",

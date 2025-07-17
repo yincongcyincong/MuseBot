@@ -62,9 +62,9 @@ func (d *DeepseekTaskReq) ExecuteTask() error {
 	
 	prompt := i18n.GetMessage(*conf.BaseConfInfo.Lang, "assign_task_prompt", taskParam)
 	llm := NewLLM(WithUserId(d.UserId), WithChatId(d.ChatId), WithMsgId(d.MsgId),
-		WithMessageChan(d.MessageChan))
+		WithMessageChan(d.MessageChan), WithContent(prompt))
 	llm.LLMClient.GetUserMessage(prompt)
-	llm.Content = prompt
+	llm.LLMClient.GetModel(llm)
 	c, err := llm.LLMClient.SyncSend(ctx, llm)
 	if err != nil {
 		logger.Error("get message fail", "err", err)
@@ -88,6 +88,7 @@ func (d *DeepseekTaskReq) ExecuteTask() error {
 		finalLLM := NewLLM(WithUserId(d.UserId), WithChatId(d.ChatId), WithMsgId(d.MsgId),
 			WithMessageChan(d.MessageChan), WithContent(d.Content))
 		finalLLM.LLMClient.GetUserMessage(c)
+		finalLLM.LLMClient.GetModel(finalLLM)
 		err = finalLLM.LLMClient.Send(ctx, finalLLM)
 		if err != nil {
 			logger.Error("request summary fail", "err", err)

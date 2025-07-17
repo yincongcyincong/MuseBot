@@ -42,8 +42,8 @@ func GetUsers(w http.ResponseWriter, r *http.Request) {
 		utils.Failure(w, param.CodeParamError, param.MsgParamError, err)
 		return
 	}
-	page, _ := strconv.Atoi(r.FormValue("page"))
-	pageSize, _ := strconv.Atoi(r.FormValue("pageSize"))
+	page := utils.ParseInt(r.FormValue("page"))
+	pageSize := utils.ParseInt(r.FormValue("pageSize"))
 	userId, _ := strconv.ParseInt(r.FormValue("userId"), 10, 64)
 	
 	users, err := db.GetUserByPage(page, pageSize, userId)
@@ -72,11 +72,11 @@ func GetUsers(w http.ResponseWriter, r *http.Request) {
 func GetRecords(w http.ResponseWriter, r *http.Request) {
 	// 获取参数
 	query := r.URL.Query()
-	page, _ := strconv.Atoi(query.Get("page"))
-	pageSize, _ := strconv.Atoi(query.Get("pageSize"))
+	page := utils.ParseInt(query.Get("page"))
+	pageSize := utils.ParseInt(query.Get("pageSize"))
 	isDeleted := -1
 	if query.Get("isDeleted") != "" {
-		isDeleted, _ = strconv.Atoi(query.Get("isDeleted"))
+		isDeleted = utils.ParseInt(query.Get("isDeleted"))
 	}
 	userId, _ := strconv.ParseInt(query.Get("userId"), 10, 64)
 	

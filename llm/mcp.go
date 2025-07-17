@@ -70,6 +70,7 @@ func (d *DeepseekTaskReq) ExecuteMcp() error {
 	mcpLLM.Token += llm.Token
 	mcpLLM.Content = d.Content
 	mcpLLM.LLMClient.GetUserMessage(d.Content)
+	mcpLLM.LLMClient.GetModel(mcpLLM)
 	err = mcpLLM.LLMClient.Send(ctx, mcpLLM)
 	if err != nil {
 		logger.Error("execute conversation fail", "err", err)

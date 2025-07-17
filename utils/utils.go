@@ -23,35 +23,6 @@ import (
 	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
 )
 
-func GetChat(update tgbotapi.Update) *tgbotapi.Chat {
-	if update.Message != nil {
-		return update.Message.Chat
-	}
-	if update.CallbackQuery != nil {
-		return update.CallbackQuery.Message.Chat
-	}
-	return nil
-}
-
-func GetMessage(update tgbotapi.Update) *tgbotapi.Message {
-	if update.Message != nil {
-		return update.Message
-	}
-	if update.CallbackQuery != nil {
-		return update.CallbackQuery.Message
-	}
-	return nil
-}
-
-func GetChatType(update tgbotapi.Update) string {
-	chat := GetChat(update)
-	return chat.Type
-}
-
-func CheckMsgIsCallback(update tgbotapi.Update) bool {
-	return update.CallbackQuery != nil
-}
-
 // Utf16len calculates the length of a string in UTF-16 code units.
 func Utf16len(s string) int {
 	utf16Str := utf16.Encode([]rune(s))
@@ -390,4 +361,33 @@ func MapKeysToString(input interface{}) string {
 	}
 	
 	return strings.Join(keyStrs, ",")
+}
+
+func DownloadFile(url string) ([]byte, error) {
+	if url == "" {
+		return nil, errors.New("url is empty")
+	}
+	
+	client := &http.Client{
+		Timeout: 15 * time.Second,
+	}
+	
+	resp, err := client.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	
+	// 检查 HTTP 状态码
+	if resp.StatusCode != http.StatusOK {
+		return nil, errors.New("failed to download file: " + resp.Status)
+	}
+	
+	// 读取响应体内容
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	
+	return data, nil
 }

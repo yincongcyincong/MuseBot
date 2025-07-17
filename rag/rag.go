@@ -72,7 +72,7 @@ func (l *Rag) GenerateContent(ctx context.Context, messages []llms.MessageConten
 		l.LLM.Content = tmpContent
 	}
 	
-	err = l.LLM.LLMClient.CallLLMAPI(ctx, l.LLM)
+	err = l.LLM.CallLLM()
 	if err != nil {
 		logger.Error("error calling DeepSeek API", "err", err)
 		return nil, errors.New("error calling DeepSeek API")

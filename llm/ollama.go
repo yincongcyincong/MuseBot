@@ -28,15 +28,6 @@ type OllamaDeepseekReq struct {
 	DeepseekMsgs []deepseek.ChatCompletionMessage
 }
 
-// CallLLMAPI request DeepSeek API and get response
-func (d *OllamaDeepseekReq) CallLLMAPI(ctx context.Context, l *LLM) error {
-	d.GetMessages(l.UserId, l.Content)
-	
-	logger.Info("msg receive", "userID", l.UserId, "prompt", l.Content)
-	
-	return d.Send(ctx, l)
-}
-
 func (d *OllamaDeepseekReq) GetModel(l *LLM) {
 	l.Model = "llava:latest"
 }

@@ -29,16 +29,6 @@ type OpenAIReq struct {
 	OpenAIMsgs []openai.ChatCompletionMessage
 }
 
-// CallLLMAPI request DeepSeek API and get response
-func (d *OpenAIReq) CallLLMAPI(ctx context.Context, l *LLM) error {
-	
-	d.GetMessages(l.UserId, l.Content)
-	
-	logger.Info("msg receive", "userID", l.UserId, "prompt", l.Content)
-	
-	return d.Send(ctx, l)
-}
-
 func (d *OpenAIReq) GetModel(l *LLM) {
 	l.Model = openai.GPT3Dot5Turbo0125
 	userInfo, err := db.GetUserByID(l.UserId)

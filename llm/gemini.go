@@ -26,14 +26,6 @@ type GeminiReq struct {
 	GeminiMsgs []*genai.Content
 }
 
-func (h *GeminiReq) CallLLMAPI(ctx context.Context, l *LLM) error {
-	
-	h.GetMessages(l.UserId, l.Content)
-	
-	logger.Info("msg receive", "userID", l.UserId, "prompt", l.Content)
-	return h.Send(ctx, l)
-}
-
 func (h *GeminiReq) GetMessages(userId int64, prompt string) {
 	messages := make([]*genai.Content, 0)
 	
