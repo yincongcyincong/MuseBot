@@ -653,10 +653,9 @@ func Communicate(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, line)
 		flusher.Flush()
 		if err != nil {
-			if err == io.EOF {
-				break
+			if err != io.EOF {
+				log.Println("Error reading SSE:", err)
 			}
-			log.Println("Error reading SSE:", err)
 			break
 		}
 	}

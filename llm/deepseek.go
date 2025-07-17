@@ -237,11 +237,14 @@ func (d *DeepseekReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 	
 	httpClient := utils.GetDeepseekProxyClient()
 	
-	client, err := deepseek.NewClientWithOptions(*conf.BaseConfInfo.DeepseekToken,
-		deepseek.WithBaseURL(*conf.BaseConfInfo.CustomUrl), deepseek.WithHTTPClient(httpClient))
+	client, err := deepseek.NewClientWithOptions(*conf.BaseConfInfo.DeepseekToken, deepseek.WithHTTPClient(httpClient))
 	if err != nil {
 		logger.Error("Error creating deepseek client", "err", err)
 		return "", err
+	}
+	
+	if *conf.BaseConfInfo.CustomUrl != "" {
+		client.BaseURL = *conf.BaseConfInfo.CustomUrl
 	}
 	
 	request := &deepseek.ChatCompletionRequest{

@@ -103,13 +103,13 @@ func UpdateUserTime() {
 
 func UpdateDBData() {
 	totalNum := 0
-	timeUserPair := make(map[int64][]int64)
+	timeUserPair := make(map[int64][]string)
 	MsgRecord.Range(func(k, v interface{}) bool {
 		msgRecord := v.(*MsgRecordInfo)
 		if _, ok := timeUserPair[msgRecord.updateTime]; !ok {
-			timeUserPair[msgRecord.updateTime] = make([]int64, 0)
+			timeUserPair[msgRecord.updateTime] = make([]string, 0)
 		}
-		timeUserPair[msgRecord.updateTime] = append(timeUserPair[msgRecord.updateTime], k.(int64))
+		timeUserPair[msgRecord.updateTime] = append(timeUserPair[msgRecord.updateTime], k.(string))
 		UpdateUserInfo(k.(string), msgRecord.updateTime)
 		totalNum++
 		return true
