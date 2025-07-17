@@ -3,6 +3,7 @@ package db
 import (
 	"database/sql"
 	"fmt"
+	"runtime/debug"
 	"strings"
 	"sync"
 	"time"
@@ -89,7 +90,7 @@ func UpdateUserTime() {
 	go func() {
 		defer func() {
 			if err := recover(); err != nil {
-				logger.Error("StarCheckUserLen panic err", "err", err)
+				logger.Error("StarCheckUserLen panic err", "err", err, "stack", string(debug.Stack()))
 			}
 		}()
 		timer := time.NewTicker(time.Minute)
