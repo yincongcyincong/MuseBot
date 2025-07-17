@@ -2,6 +2,7 @@ package checkpoint
 
 import (
 	"net/http"
+	"runtime/debug"
 	"strings"
 	"sync"
 	"time"
@@ -62,7 +63,7 @@ func checkBotStatus(bot *db.Bot) string {
 func ScheduleBotChecks() {
 	defer func() {
 		if err := recover(); err != nil {
-			logger.Error("ScheduleBotChecks panic", "err", err)
+			logger.Error("ScheduleBotChecks panic", "err", err, "stack", string(debug.Stack()))
 		}
 	}()
 	
@@ -94,7 +95,7 @@ func ScheduleBotChecks() {
 		go func(batch []*db.Bot, batchIndex int) {
 			defer func() {
 				if err := recover(); err != nil {
-					logger.Error("ScheduleBotChecks panic", "err", err)
+					logger.Error("ScheduleBotChecks panic", "err", err, "stack", string(debug.Stack()))
 				}
 				wg.Done()
 			}()

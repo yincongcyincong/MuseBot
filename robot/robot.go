@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 	
+	"github.com/bwmarrin/discordgo"
 	godeepseek "github.com/cohesion-org/deepseek-go"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
@@ -69,6 +70,10 @@ func (r *Robot) GetChatIdAndMsgIdAndUserID() (int64, int, int64) {
 			userId, _ = strconv.ParseInt(r.DiscordRobot.Msg.Author.ID, 10, 64)
 			msgId = utils.ParseInt(r.DiscordRobot.Msg.Message.ID)
 		}
+		if r.DiscordRobot.Inter != nil {
+			chatId, _ = strconv.ParseInt(r.DiscordRobot.Inter.ChannelID, 10, 64)
+			userId, _ = strconv.ParseInt(r.DiscordRobot.Inter.User.ID, 10, 64)
+		}
 	}
 	
 	return chatId, msgId, userId
@@ -89,7 +94,42 @@ func (r *Robot) SendMsg(chatId int64, msgContent string, replyToMessageID int,
 		}
 		return msgInfo.MessageID
 	case r.DiscordRobot != nil:
-		//SendMsgToDiscord(chatId, msgContent, r.DiscordRobot, replyToMessageID, parseMode)
+		if r.DiscordRobot.Msg != nil {
+			messageSend := &discordgo.MessageSend{
+				Content: msgContent,
+			}
+			
+			// 设置引用消息
+			chatIdStr := fmt.Sprintf("%d", chatId)
+			if replyToMessageID != 0 {
+				messageSend.Reference = &discordgo.MessageReference{
+					MessageID: strconv.Itoa(replyToMessageID),
+					ChannelID: chatIdStr,
+				}
+			}
+			
+			sentMsg, err := r.DiscordRobot.Session.ChannelMessageSendComplex(chatIdStr, messageSend)
+			if err != nil {
+				logger.Warn("send discord message fail", "err", err)
+				return 0
+			}
+			return utils.ParseInt(sentMsg.ID)
+		}
+		
+		if r.DiscordRobot.Inter != nil {
+			// Slash command interaction response
+			err := r.DiscordRobot.Session.InteractionRespond(r.DiscordRobot.Inter.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content: msgContent,
+				},
+			})
+			if err != nil {
+				logger.Warn("send discord interaction response fail", "err", err)
+			}
+			return 0
+		}
+		
 	}
 	
 	return 0

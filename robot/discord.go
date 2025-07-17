@@ -9,6 +9,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
+	"github.com/yincongcyincong/telegram-deepseek-bot/db"
 	"github.com/yincongcyincong/telegram-deepseek-bot/i18n"
 	"github.com/yincongcyincong/telegram-deepseek-bot/llm"
 	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
@@ -99,16 +100,36 @@ func (d *DiscordRobot) handleUpdate(messageChan chan *param.MsgInfo) {
 		}
 	}()
 	
-	var originalMsg *discordgo.Message
+	var originalMsgID string
+	var channelID string
 	var err error
 	
-	// 1. 发送一个“thinking...”占位消息
-	thinkingMsg, err := d.Session.ChannelMessageSend(d.Msg.ChannelID, i18n.GetMessage(*conf.BaseConfInfo.Lang, "thinking", nil))
-	if err != nil {
-		logger.Warn("Sending thinking message failed", "err", err)
+	// 获取当前通道ID
+	if d.Msg != nil {
+		channelID = d.Msg.ChannelID
+		
+		// 1. 发送一个“thinking...”占位消息
+		thinkingMsg, err := d.Session.ChannelMessageSend(channelID, i18n.GetMessage(*conf.BaseConfInfo.Lang, "thinking", nil))
+		if err != nil {
+			logger.Warn("Sending thinking message failed", "err", err)
+		} else {
+			originalMsgID = thinkingMsg.ID
+		}
+		
+	} else if d.Inter != nil {
+		channelID = d.Inter.ChannelID
+		
+		// 1. 响应占位符（deferred response）
+		err = d.Session.InteractionRespond(d.Inter.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseDeferredChannelMessageWithSource,
+		})
+		if err != nil {
+			logger.Warn("Failed to defer interaction response", "err", err)
+		}
+	} else {
+		logger.Error("Unknown Discord message type")
+		return
 	}
-	
-	originalMsg = thinkingMsg
 	
 	var msg *param.MsgInfo
 	for msg = range messageChan {
@@ -116,23 +137,43 @@ func (d *DiscordRobot) handleUpdate(messageChan chan *param.MsgInfo) {
 			msg.Content = "get nothing from deepseek!"
 		}
 		
-		if originalMsg != nil && originalMsg.ID != "" {
-			msg.MsgId = utils.ParseInt(originalMsg.ID)
+		if msg.MsgId == 0 && originalMsgID != "" {
+			msg.MsgId = utils.ParseInt(originalMsgID)
 		}
 		
-		if msg.MsgId == 0 && originalMsg == nil {
-			// 如果第一次没发成功，占位消息为空，发送新消息
-			_, err = d.Session.ChannelMessageSend(d.Msg.ChannelID, msg.Content)
-			if err != nil {
-				logger.Warn("Sending message failed", "err", err)
+		if d.Msg != nil {
+			// 普通消息：编辑占位，或发送新消息
+			if msg.MsgId == 0 {
+				_, err = d.Session.ChannelMessageSend(channelID, msg.Content)
+				if err != nil {
+					logger.Warn("Sending message failed", "err", err)
+				}
+			} else {
+				_, err = d.Session.ChannelMessageEdit(channelID, strconv.Itoa(msg.MsgId), msg.Content)
+				if err != nil {
+					logger.Warn("Editing message failed", "msgID", msg.MsgId, "err", err)
+				}
+				originalMsgID = "" // 避免后续再编辑
 			}
-		} else {
-			// 编辑原来的占位消息
-			_, err := d.Session.ChannelMessageEdit(d.Msg.ChannelID, strconv.Itoa(msg.MsgId), msg.Content)
-			if err != nil {
-				logger.Warn("Editing message failed", "msgID", msg.MsgId, "err", err)
+		} else if d.Inter != nil {
+			// 如果是 Interaction，使用 follow-up message 或 edit original
+			if msg.MsgId == 0 {
+				// 编辑原始响应
+				_, err = d.Session.InteractionResponseEdit(d.Inter.Interaction, &discordgo.WebhookEdit{
+					Content: &msg.Content,
+				})
+				if err != nil {
+					logger.Warn("Editing interaction response failed", "err", err)
+				}
+			} else {
+				// 发送新的 follow-up 消息（如果支持的话）
+				_, err = d.Session.FollowupMessageCreate(d.Inter.Interaction, true, &discordgo.WebhookParams{
+					Content: msg.Content,
+				})
+				if err != nil {
+					logger.Warn("Sending followup interaction message failed", "err", err)
+				}
 			}
-			originalMsg = nil // 避免后面再次编辑
 		}
 	}
 }
@@ -142,7 +183,7 @@ func (d *DiscordRobot) callLLM(content string, messageChan chan *param.MsgInfo) 
 	
 	defer func() {
 		if err := recover(); err != nil {
-			logger.Error("GetContent panic err", "err", err)
+			logger.Error("GetContent panic err", "err", err, "stack", string(debug.Stack()))
 		}
 		utils.DecreaseUserChat(userId)
 		close(messageChan)
@@ -179,13 +220,29 @@ func (d *DiscordRobot) callLLM(content string, messageChan chan *param.MsgInfo) 
 	}
 }
 
-func (d *DiscordRobot) getContent(content string) (string, error) {
-	// 优先取文本内容
-	content = strings.TrimSpace(d.Msg.Content)
+func (d *DiscordRobot) getContent(defaultText string) (string, error) {
+	var content string
+	var attachments []*discordgo.MessageAttachment
 	
-	// 如果没有文本，尝试获取语音内容（Discord 中语音一般是附件）
-	if content == "" && len(d.Msg.Attachments) > 0 && *conf.AudioConfInfo.AudioAppID != "" {
-		for _, att := range d.Msg.Attachments {
+	if d.Msg != nil {
+		content = strings.TrimSpace(d.Msg.Content)
+		attachments = d.Msg.Attachments
+	} else if d.Inter != nil {
+		if d.Inter.Type == discordgo.InteractionApplicationCommand {
+			if len(d.Inter.ApplicationCommandData().Options) > 0 {
+				content = strings.TrimSpace(d.Inter.ApplicationCommandData().Options[0].StringValue())
+			}
+		}
+	}
+	
+	// 优先使用传入默认文本（外部可指定）
+	if content == "" {
+		content = strings.TrimSpace(defaultText)
+	}
+	
+	// 如果没有文本，尝试从语音附件中获取
+	if content == "" && len(attachments) > 0 && *conf.AudioConfInfo.AudioAppID != "" {
+		for _, att := range attachments {
 			if strings.HasPrefix(att.ContentType, "audio/") || strings.HasSuffix(att.Filename, ".ogg") || strings.HasSuffix(att.Filename, ".mp3") {
 				audioContent, err := utils.DownloadFile(att.URL)
 				if audioContent == nil || err != nil {
@@ -198,9 +255,9 @@ func (d *DiscordRobot) getContent(content string) (string, error) {
 		}
 	}
 	
-	// 如果仍然没有内容，尝试获取图片内容
-	if content == "" && len(d.Msg.Attachments) > 0 {
-		for _, att := range d.Msg.Attachments {
+	// 如果仍然没有内容，尝试从图片附件中获取内容
+	if content == "" && len(attachments) > 0 {
+		for _, att := range attachments {
 			if strings.HasPrefix(att.ContentType, "image/") {
 				image, err := utils.DownloadFile(att.URL)
 				if image == nil || err != nil {
@@ -223,8 +280,8 @@ func (d *DiscordRobot) getContent(content string) (string, error) {
 		return "", errors.New("content empty")
 	}
 	
-	// 去除 bot 的 @提及
-	if d.Session.State != nil && d.Session.State.User != nil {
+	// 去除 @bot 提及
+	if d.Session != nil && d.Session.State != nil && d.Session.State.User != nil {
 		content = strings.ReplaceAll(content, "<@"+d.Session.State.User.ID+">", "")
 	}
 	
@@ -285,11 +342,20 @@ func registerSlashCommands(s *discordgo.Session) {
 		{Name: "state", Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.state.description", nil)},
 		{Name: "clear", Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.clear.description", nil)},
 		{Name: "retry", Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.retry.description", nil)},
-		{Name: "photo", Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.photo.description", nil)},
-		{Name: "video", Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.video.description", nil)},
+		{Name: "photo", Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.photo.description", nil), Options: []*discordgo.ApplicationCommandOption{
+			{Type: discordgo.ApplicationCommandOptionString, Name: "prompt", Description: "Prompt", Required: true},
+		}},
+		{Name: "video", Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.video.description", nil), Options: []*discordgo.ApplicationCommandOption{
+			{Type: discordgo.ApplicationCommandOptionString, Name: "prompt", Description: "Prompt", Required: true},
+		}},
 		{Name: "help", Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.help.description", nil)},
-		{Name: "task", Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.task.description", nil)},
-		{Name: "mcp", Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.mcp.description", nil)},
+		{Name: "task", Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.task.description", nil), Options: []*discordgo.ApplicationCommandOption{
+			{Type: discordgo.ApplicationCommandOptionString, Name: "prompt", Description: "Prompt", Required: true},
+		}},
+		{Name: "mcp", Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.mcp.description", nil), Options: []*discordgo.ApplicationCommandOption{
+			{Type: discordgo.ApplicationCommandOptionString, Name: "prompt", Description: "Prompt", Required: true},
+		}},
+		
 		//{Name: "addtoken", Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.addtoken.description", nil)},
 	}
 	
@@ -302,17 +368,16 @@ func registerSlashCommands(s *discordgo.Session) {
 }
 
 func onInteractionCreate(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	defer func() {
-		if err := recover(); err != nil {
-			logger.Error("Panic in interaction handler", "error", err)
-		}
-	}()
+	
+	d := NewDiscordRobot(s, nil, i)
+	d.Robot = NewRobot(WithDiscordRobot(d))
+	d.Robot.Exec()
 	
 	cmd := i.ApplicationCommandData().Name
 	switch cmd {
 	case "chat":
 		prompt := i.ApplicationCommandData().Options[0].StringValue()
-		sendChatMessage(s, i, prompt)
+		d.sendChatMessage(prompt)
 	case "mode":
 		sendModeOptions(s, i)
 	case "balance":
@@ -320,7 +385,7 @@ func onInteractionCreate(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	case "state":
 		showStateInfo(s, i)
 	case "clear":
-		clearAllRecord(s, i)
+		d.clearAllRecord()
 	case "retry":
 		retryLastQuestion(s, i)
 	case "photo":
@@ -340,17 +405,18 @@ func onInteractionCreate(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	}
 }
 
-// 以下是 stub 函数，你可以用你自己的逻辑替换它们
-func sendChatMessage(s *discordgo.Session, i *discordgo.InteractionCreate, prompt string) {
-	s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-		Type: discordgo.InteractionResponseChannelMessageWithSource,
-		Data: &discordgo.InteractionResponseData{Content: "🧠 " + prompt},
-	})
+func (d *DiscordRobot) sendChatMessage(prompt string) {
+	d.requestDeepseekAndResp(prompt)
 }
-func sendModeOptions(s *discordgo.Session, i *discordgo.InteractionCreate)            {}
-func showBalanceInfo(s *discordgo.Session, i *discordgo.InteractionCreate)            {}
-func showStateInfo(s *discordgo.Session, i *discordgo.InteractionCreate)              {}
-func clearAllRecord(s *discordgo.Session, i *discordgo.InteractionCreate)             {}
+func sendModeOptions(s *discordgo.Session, i *discordgo.InteractionCreate) {}
+func showBalanceInfo(s *discordgo.Session, i *discordgo.InteractionCreate) {}
+func showStateInfo(s *discordgo.Session, i *discordgo.InteractionCreate)   {}
+func (d *DiscordRobot) clearAllRecord() {
+	chatId, msgId, userId := d.Robot.GetChatIdAndMsgIdAndUserID()
+	db.DeleteMsgRecord(userId)
+	d.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "delete_succ", nil),
+		msgId, tgbotapi.ModeMarkdown, nil)
+}
 func retryLastQuestion(s *discordgo.Session, i *discordgo.InteractionCreate)          {}
 func sendImage(s *discordgo.Session, i *discordgo.InteractionCreate)                  {}
 func sendVideo(s *discordgo.Session, i *discordgo.InteractionCreate)                  {}

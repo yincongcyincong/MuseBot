@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"reflect"
+	"runtime/debug"
 	"strconv"
 	"strings"
 	"time"
@@ -257,7 +258,7 @@ func updateMCPConfFile(config *mcpParam.McpClientGoConfig) error {
 func updateMCPConf(name string, config *mcpParam.MCPConfig) {
 	defer func() {
 		if err := recover(); err != nil {
-			logger.Error("update mcp conf error", "err", err)
+			logger.Error("update mcp conf error", "err", err, "stack", string(debug.Stack()))
 		}
 	}()
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*60)

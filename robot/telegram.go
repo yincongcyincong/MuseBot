@@ -42,7 +42,7 @@ func NewTelegramRobot(update tgbotapi.Update, bot *tgbotapi.BotAPI) *TelegramRob
 // StartTelegramRobot start listen robot callback
 func StartTelegramRobot() {
 	for {
-		bot := utils.CreateBot()
+		bot := CreateBot()
 		logger.Info("telegramBot Info", "username", bot.Self.UserName)
 		
 		u := tgbotapi.NewUpdate(0)
@@ -55,6 +55,72 @@ func StartTelegramRobot() {
 			t.Robot.Exec()
 		}
 	}
+}
+
+func CreateBot() *tgbotapi.BotAPI {
+	// 配置自定义 HTTP Client 并设置代理
+	client := utils.GetTelegramProxyClient()
+	
+	var err error
+	conf.BaseConfInfo.Bot, err = tgbotapi.NewBotAPIWithClient(*conf.BaseConfInfo.TelegramBotToken, tgbotapi.APIEndpoint, client)
+	if err != nil {
+		panic("Init bot fail" + err.Error())
+	}
+	
+	if *logger.LogLevel == "debug" {
+		conf.BaseConfInfo.Bot.Debug = true
+	}
+	
+	// set command
+	cmdCfg := tgbotapi.NewSetMyCommands(
+		tgbotapi.BotCommand{
+			Command:     "help",
+			Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.help.description", nil),
+		},
+		tgbotapi.BotCommand{
+			Command:     "clear",
+			Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.clear.description", nil),
+		},
+		tgbotapi.BotCommand{
+			Command:     "retry",
+			Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.retry.description", nil),
+		},
+		tgbotapi.BotCommand{
+			Command:     "mode",
+			Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.mode.description", nil),
+		},
+		tgbotapi.BotCommand{
+			Command:     "balance",
+			Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.balance.description", nil),
+		},
+		tgbotapi.BotCommand{
+			Command:     "state",
+			Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.state.description", nil),
+		},
+		tgbotapi.BotCommand{
+			Command:     "photo",
+			Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.photo.description", nil),
+		},
+		tgbotapi.BotCommand{
+			Command:     "video",
+			Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.video.description", nil),
+		},
+		tgbotapi.BotCommand{
+			Command:     "chat",
+			Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.chat.description", nil),
+		},
+		tgbotapi.BotCommand{
+			Command:     "task",
+			Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.task.description", nil),
+		},
+		tgbotapi.BotCommand{
+			Command:     "mcp",
+			Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.mcp.description", nil),
+		},
+	)
+	conf.BaseConfInfo.Bot.Send(cmdCfg)
+	
+	return conf.BaseConfInfo.Bot
 }
 
 func (t *TelegramRobot) Execute() {
@@ -95,7 +161,7 @@ func (t *TelegramRobot) executeChain(content string) {
 	go func() {
 		defer func() {
 			if err := recover(); err != nil {
-				logger.Error("GetContent panic err", "err", err)
+				logger.Error("GetContent panic err", "err", err, "stack", string(debug.Stack()))
 			}
 			utils.DecreaseUserChat(userId)
 			close(messageChan)
@@ -154,7 +220,7 @@ func (t *TelegramRobot) callLLM(content string, messageChan chan *param.MsgInfo)
 	
 	defer func() {
 		if err := recover(); err != nil {
-			logger.Error("GetContent panic err", "err", err)
+			logger.Error("GetContent panic err", "err", err, "stack", string(debug.Stack()))
 		}
 		utils.DecreaseUserChat(userId)
 		close(messageChan)
@@ -380,26 +446,14 @@ func (t *TelegramRobot) sendChatMessage() {
 	chatId, msgID, _ := t.Robot.GetChatIdAndMsgIdAndUserID()
 	
 	messageText := ""
+	var err error
 	if t.Update.Message != nil {
 		messageText = t.Update.Message.Text
-		if messageText == "" && t.Update.Message.Voice != nil && *conf.AudioConfInfo.AudioAppID != "" {
-			audioContent := t.GetAudioContent()
-			if audioContent == nil {
-				logger.Warn("audio url empty")
-				return
-			}
-			messageText = utils.FileRecognize(audioContent)
+		messageText, err = t.GetContent(messageText)
+		if err != nil {
+			logger.Warn("GetContent error", "err", err)
+			return
 		}
-		
-		if messageText == "" && t.Update.Message.Photo != nil {
-			photoContent, err := utils.GetImageContent(t.GetPhotoContent())
-			if err != nil {
-				logger.Warn("get photo content err", "err", err)
-				return
-			}
-			messageText = photoContent
-		}
-		
 	} else {
 		t.Update.Message = new(tgbotapi.Message)
 	}
