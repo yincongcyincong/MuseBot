@@ -650,6 +650,8 @@ func Communicate(w http.ResponseWriter, r *http.Request) {
 	
 	for {
 		line, err := reader.ReadString('\n')
+		fmt.Fprint(w, line)
+		flusher.Flush()
 		if err != nil {
 			if err == io.EOF {
 				break
@@ -657,10 +659,6 @@ func Communicate(w http.ResponseWriter, r *http.Request) {
 			log.Println("Error reading SSE:", err)
 			break
 		}
-		
-		// 写入前端
-		fmt.Fprint(w, line)
-		flusher.Flush()
 	}
 }
 

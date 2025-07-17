@@ -32,7 +32,7 @@ func (d *OllamaDeepseekReq) GetModel(l *LLM) {
 	l.Model = "llava:latest"
 }
 
-func (d *OllamaDeepseekReq) GetMessages(userId int64, prompt string) {
+func (d *OllamaDeepseekReq) GetMessages(userId string, prompt string) {
 	messages := make([]deepseek.ChatCompletionMessage, 0)
 	
 	msgRecords := db.GetMsgRecord(userId)

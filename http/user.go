@@ -11,8 +11,8 @@ import (
 )
 
 type UserToken struct {
-	UserID int64 `json:"user_id"`
-	Token  int   `json:"token"`
+	UserID string `json:"user_id"`
+	Token  int    `json:"token"`
 }
 
 func AddUserToken(w http.ResponseWriter, r *http.Request) {
@@ -44,7 +44,7 @@ func GetUsers(w http.ResponseWriter, r *http.Request) {
 	}
 	page := utils.ParseInt(r.FormValue("page"))
 	pageSize := utils.ParseInt(r.FormValue("pageSize"))
-	userId, _ := strconv.ParseInt(r.FormValue("userId"), 10, 64)
+	userId := r.FormValue("userId")
 	
 	users, err := db.GetUserByPage(page, pageSize, userId)
 	if err != nil {

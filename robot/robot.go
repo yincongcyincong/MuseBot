@@ -47,32 +47,37 @@ func (r *Robot) Exec() {
 	}
 }
 
-func (r *Robot) GetChatIdAndMsgIdAndUserID() (int64, int, int64) {
+func (r *Robot) GetChatIdAndMsgIdAndUserID() (int64, int, string) {
 	chatId := int64(0)
 	msgId := 0
-	userId := int64(0)
+	userId := ""
 	
 	switch {
 	case r.TelegramRobot != nil:
 		if r.TelegramRobot.Update.Message != nil {
 			chatId = r.TelegramRobot.Update.Message.Chat.ID
-			userId = r.TelegramRobot.Update.Message.From.ID
+			userId = strconv.FormatInt(r.TelegramRobot.Update.Message.From.ID, 10)
 			msgId = r.TelegramRobot.Update.Message.MessageID
 		}
 		if r.TelegramRobot.Update.CallbackQuery != nil {
 			chatId = r.TelegramRobot.Update.CallbackQuery.Message.Chat.ID
-			userId = r.TelegramRobot.Update.CallbackQuery.From.ID
+			userId = strconv.FormatInt(r.TelegramRobot.Update.CallbackQuery.From.ID, 10)
 			msgId = r.TelegramRobot.Update.CallbackQuery.Message.MessageID
 		}
 	case r.DiscordRobot != nil:
 		if r.DiscordRobot.Msg != nil {
 			chatId, _ = strconv.ParseInt(r.DiscordRobot.Msg.ChannelID, 10, 64)
-			userId, _ = strconv.ParseInt(r.DiscordRobot.Msg.Author.ID, 10, 64)
+			userId = r.DiscordRobot.Msg.Author.ID
 			msgId = utils.ParseInt(r.DiscordRobot.Msg.Message.ID)
 		}
 		if r.DiscordRobot.Inter != nil {
 			chatId, _ = strconv.ParseInt(r.DiscordRobot.Inter.ChannelID, 10, 64)
-			userId, _ = strconv.ParseInt(r.DiscordRobot.Inter.User.ID, 10, 64)
+			if r.DiscordRobot.Inter.User != nil {
+				userId = r.DiscordRobot.Inter.User.ID
+			}
+			if r.DiscordRobot.Inter.Member != nil {
+				userId = r.DiscordRobot.Inter.Member.User.ID
+			}
 		}
 	}
 	
@@ -162,11 +167,11 @@ func StartRobot() {
 }
 
 // checkUserAllow check use can use telegram bot or not
-func (r *Robot) checkUserAllow(userId int64) bool {
+func (r *Robot) checkUserAllow(userId string) bool {
 	if len(conf.BaseConfInfo.AllowedTelegramUserIds) == 0 {
 		return true
 	}
-	if conf.BaseConfInfo.AllowedTelegramUserIds[0] {
+	if conf.BaseConfInfo.AllowedTelegramUserIds["0"] {
 		return false
 	}
 	
@@ -190,7 +195,7 @@ func (r *Robot) checkGroupAllow(chatId int64) bool {
 }
 
 // checkUserTokenExceed check use token exceeded
-func (r *Robot) checkUserTokenExceed(chatId int64, msgId int, userId int64) bool {
+func (r *Robot) checkUserTokenExceed(chatId int64, msgId int, userId string) bool {
 	if *conf.BaseConfInfo.TokenPerUser == 0 {
 		return false
 	}
@@ -218,7 +223,7 @@ func (r *Robot) checkUserTokenExceed(chatId int64, msgId int, userId int64) bool
 }
 
 // checkAdminUser check user is admin
-func (r *Robot) checkAdminUser(userId int64) bool {
+func (r *Robot) checkAdminUser(userId string) bool {
 	if len(conf.BaseConfInfo.AdminUserIds) == 0 {
 		return false
 	}

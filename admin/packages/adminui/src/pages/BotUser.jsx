@@ -54,7 +54,7 @@ function BotUserListPage() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     botId,
-                    user_id: Number(newUserId),
+                    user_id: newUserId,
                     token: Number(newToken),
                 }),
             });
