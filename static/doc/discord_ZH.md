@@ -28,22 +28,32 @@
 
 ### 私聊机器人
 
-直接私聊你的机器人，即可对话。
+直接私聊你的机器人，即可对话。    
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/6d8ded05-8454-4946-9025-bdd4bb7f8dbb" />
 
 支持以下命令：
 
 * `/photo`：生成图片。⚠️ 需要配置 `volc_ak` 和 `volc_sk`
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/ba0eb926-7924-4c58-bc61-7cff522bd71c" />
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/bef94980-4498-4eba-b4b5-bd5531816009" />
+
 * `/video`：生成视频。⚠️ 需要配置 `volc_ak` 和 `volc_sk`
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/24bdde29-685c-4af7-8834-873dbc14b84f" />
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/b9e85a58-58fe-4e45-ab44-52b73bcaea59" />
+  
 * `/balance`：查看当前 DeepSeek Token 剩余额度
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/bb20e8fd-470f-4c70-b584-abc1fb5855d2" />
+  
 * `/state`：查看当前会话状态（包括模型、角色设定等）
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/bf57f0fa-add1-4cb2-8e82-7bd484a880b8" />
+  
 * `/clear`：清除当前聊天上下文（重置对话）
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/ebba556f-267a-4052-a3a3-3eab019eb4f4" />
 
 ### 群聊模式
 
 在群聊中，通过 `@你的机器人` 的方式与机器人对话，或者直接使用命令，例如：
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/c93196d9-8506-474b-8b09-1930b8bb42f1" />
 
-```
-@MyDeepSeekBot 帮我写一篇英文邮件
-```
 
 群聊中也可以使用上述所有命令，无需切换至私聊。
