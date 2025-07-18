@@ -20,6 +20,8 @@ telegram群: https://t.me/+WtaMcDpaMOlhZTE1, 或者尝试一下GWSbot。
 - 🐂 **函数调用**：将 MCP 协议转换为函数调用，详见[文档](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/static/doc/functioncall.md)。
 - 🌊 **RAG（检索增强生成）**：支持 RAG 以填充上下文，详见[文档](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/static/doc/rag.md)。
 - ⛰️ **OpenRouter**：支持 OpenRouter 上的 400 多个大型语言模型（LLMs），详见[文档](https://openrouter.ai/docs/quickstart)。
+- 🌞 **管理平台（AdminPlatform）**：使用管理平台来管理 telegram-deepseek-bot，详见[文档](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/static/doc/admin_ZH.md)。
+- 🌈 **Discord 支持**：使用 Discord 机器人，详见[文档](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/static/doc/discord_ZH.md)。
 
 ---
 

@@ -26,6 +26,7 @@ more natural and dynamic.
 - ⛰️ **OpenRouter**: Support OpenRouter more than 400 llms, see [doc](https://openrouter.ai/docs/quickstart).
 - 🌞 **AdminPlatform**: Use platform to manage telegram-deepseek-bot,
   see [doc](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/static/doc/admin.md).
+- 🌈 **Discord**: Use Discord Robot, see [doc](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/static/doc/discord.md).
 
 ## 🤖 Text Example
 
