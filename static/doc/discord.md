@@ -28,26 +28,37 @@ other usage see this [doc](https://github.com/yincongcyincong/telegram-deepseek-
 
 ### Private Chat with the Bot
 
-You can directly chat with the bot via private message.
+You can directly chat with the bot via private message.    
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/6d8ded05-8454-4946-9025-bdd4bb7f8dbb" />
+
 
 Supported commands:
 
 * `/photo`: Generate an image. ⚠️ Requires `volc_ak` and `volc_sk`
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/ba0eb926-7924-4c58-bc61-7cff522bd71c" />
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/bef94980-4498-4eba-b4b5-bd5531816009" />
+
 * `/video`: Generate a video. ⚠️ Requires `volc_ak` and `volc_sk`
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/24bdde29-685c-4af7-8834-873dbc14b84f" />
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/b9e85a58-58fe-4e45-ab44-52b73bcaea59" />
+  
 * `/balance`: Check the remaining quota of your DeepSeek Token
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/bb20e8fd-470f-4c70-b584-abc1fb5855d2" />
+
+  
 * `/state`: View the current chat state (including model info and system prompts)
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/bf57f0fa-add1-4cb2-8e82-7bd484a880b8" />
+   
 * `/clear`: Clear the current conversation context
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/ebba556f-267a-4052-a3a3-3eab019eb4f4" />
+
+  
 
 ### Group Chat Mode
 
-In a group chat, you can talk to the bot by mentioning it using `@YourBotName`, or directly using the command. For example:
+In a group chat, you can talk to the bot by mentioning it using `@YourBotName`, or directly using the command. For example:    
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/c93196d9-8506-474b-8b09-1930b8bb42f1" />
 
-```
-@MyDeepSeekBot Help me write an English email.
-```
 
 All the above commands are also available in group chats without needing to switch to private chat.
 
----
-
-Let me know if you'd like this formatted as a full `README.md` file or want a bilingual version!
