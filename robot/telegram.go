@@ -748,15 +748,15 @@ func (t *TelegramRobot) handleModeUpdate() {
 	
 	userInfo, err := db.GetUserByID(userId)
 	if err != nil {
-		logger.Warn("get user fail", "userID", t.Update.CallbackQuery.From.ID, "err", err)
+		logger.Warn("get user fail", "userID", userId, "err", err)
 		t.sendFailMessage()
 		return
 	}
 	
 	if userInfo != nil && userInfo.ID != 0 {
-		err = db.UpdateUserMode(t.Update.CallbackQuery.From.ID, t.Update.CallbackQuery.Data)
+		err = db.UpdateUserMode(userId, t.Update.CallbackQuery.Data)
 		if err != nil {
-			logger.Warn("update user fail", "userID", t.Update.CallbackQuery.From.ID, "err", err)
+			logger.Warn("update user fail", "userID", userId, "err", err)
 			t.sendFailMessage()
 			return
 		}

@@ -80,7 +80,7 @@ func GetUsers() ([]User, error) {
 }
 
 // UpdateUserMode update user mode
-func UpdateUserMode(userId int64, mode string) error {
+func UpdateUserMode(userId string, mode string) error {
 	updateSQL := `UPDATE users SET mode = ? WHERE user_id = ?`
 	_, err := DB.Exec(updateSQL, mode, userId)
 	return err
