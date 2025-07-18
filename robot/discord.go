@@ -39,6 +39,7 @@ func StartDiscordRobot() {
 	if err != nil {
 		logger.Fatal("create discord bot", "err", err)
 	}
+	dg.Client = utils.GetTelegramProxyClient()
 	
 	// 添加消息处理函数
 	dg.AddHandler(messageCreate)

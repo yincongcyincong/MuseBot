@@ -5,7 +5,7 @@ import (
 )
 
 func TestDecreaseUserChat(t *testing.T) {
-	userId := int64(999999999)
+	userId := "999999999"
 	// 初始化次数为 3
 	userChatMap.Store(userId, 3)
 	

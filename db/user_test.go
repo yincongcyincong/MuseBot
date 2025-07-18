@@ -35,7 +35,7 @@ func TestInsertAndGetUser(t *testing.T) {
 	conf.BaseConfInfo.TokenPerUser = new(int)
 	*conf.BaseConfInfo.TokenPerUser = 100
 	
-	userId := int64(123456)
+	userId := "123456"
 	mode := "default"
 	
 	// 插入用户
