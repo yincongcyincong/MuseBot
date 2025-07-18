@@ -1,7 +1,9 @@
 package llm
 
 import (
+	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"io"
@@ -380,7 +382,7 @@ func GenerateOpenAIImg(prompt string) (string, error) {
 		context.Background(),
 		openai.ImageRequest{
 			Prompt:         prompt,
-			Size:           openai.CreateImageSize256x256,
+			Size:           openai.CreateImageSize1024x1024,
 			ResponseFormat: openai.CreateImageResponseFormatURL,
 			N:              1,
 		},
@@ -396,4 +398,81 @@ func GenerateOpenAIImg(prompt string) (string, error) {
 	}
 	
 	return respUrl.Data[0].URL, nil
+}
+
+func GenerateOpenAIText(audioContent []byte) (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+	
+	httpClient := utils.GetDeepseekProxyClient()
+	openaiConfig := openai.DefaultConfig(*conf.BaseConfInfo.OpenAIToken)
+	if *conf.BaseConfInfo.CustomUrl != "" {
+		openaiConfig.BaseURL = *conf.BaseConfInfo.CustomUrl
+	}
+	
+	openaiConfig.BaseURL = "https://api.chatanywhere.org"
+	openaiConfig.HTTPClient = httpClient
+	client := openai.NewClientWithConfig(openaiConfig)
+	
+	req := openai.AudioRequest{
+		Model:    openai.Whisper1,
+		FilePath: "voice.ogg",
+		Reader:   bytes.NewReader(audioContent),
+		Format:   "json",
+	}
+	
+	resp, err := client.CreateTranscription(ctx, req)
+	if err != nil {
+		logger.Error("CreateTranscription error", "err", err)
+		return "", err
+	}
+	
+	return resp.Text, nil
+}
+
+func GetOpanAIImageContent(imageContent []byte) (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+	
+	httpClient := utils.GetDeepseekProxyClient()
+	openaiConfig := openai.DefaultConfig(*conf.BaseConfInfo.OpenAIToken)
+	if *conf.BaseConfInfo.CustomUrl != "" {
+		openaiConfig.BaseURL = *conf.BaseConfInfo.CustomUrl
+	}
+	
+	//openaiConfig.BaseURL = "https://api.chatanywhere.org"
+	openaiConfig.HTTPClient = httpClient
+	client := openai.NewClientWithConfig(openaiConfig)
+	
+	imageDataURL := "data:image/png;base64," + base64.StdEncoding.EncodeToString(imageContent)
+	req := openai.ChatCompletionRequest{
+		Model: "chatgpt-4o-latest",
+		Messages: []openai.ChatCompletionMessage{
+			{
+				Role: "user",
+				MultiContent: []openai.ChatMessagePart{
+					{
+						Type: openai.ChatMessagePartTypeImageURL,
+						ImageURL: &openai.ChatMessageImageURL{
+							URL:    imageDataURL,
+							Detail: openai.ImageURLDetailHigh, // 高精度模式
+						},
+					},
+					{
+						Type: openai.ChatMessagePartTypeText,
+						Text: "get content from this image",
+					},
+				},
+			},
+		},
+		MaxTokens: 1000,
+	}
+	
+	resp, err := client.CreateChatCompletion(ctx, req)
+	if err != nil {
+		logger.Error("CreateChatCompletion error", "err", err)
+		return "", err
+	}
+	
+	return resp.Choices[0].Message.Content, nil
 }

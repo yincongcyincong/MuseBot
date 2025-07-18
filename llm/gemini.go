@@ -365,11 +365,12 @@ func GenerateGeminiImg(prompt string) ([]byte, error) {
 		return nil, err
 	}
 	
-	response, err := client.Models.GenerateImages(
-		ctx, "imagen-3.0-generate-002",
-		prompt,
-		&genai.GenerateImagesConfig{
-			OutputMIMEType: "image/jpeg",
+	response, err := client.Models.GenerateContent(
+		ctx,
+		"gemini-2.0-flash-preview-image-generation",
+		genai.Text(prompt),
+		&genai.GenerateContentConfig{
+			ResponseModalities: []string{"TEXT", "IMAGE"},
 		},
 	)
 	if err != nil {
@@ -377,7 +378,13 @@ func GenerateGeminiImg(prompt string) ([]byte, error) {
 		return nil, err
 	}
 	
-	return response.GeneratedImages[0].Image.ImageBytes, nil
+	for _, part := range response.Candidates[0].Content.Parts {
+		if part.InlineData != nil {
+			return part.InlineData.Data, nil
+		}
+	}
+	
+	return nil, errors.New("image is empty")
 }
 
 func GenerateGeminiVideo(prompt string) ([]byte, error) {
@@ -394,8 +401,13 @@ func GenerateGeminiVideo(prompt string) ([]byte, error) {
 		return nil, err
 	}
 	
-	operation, err := client.Models.GenerateVideos(ctx, "veo-2.0-generate-001", prompt,
-		nil, &genai.GenerateVideosConfig{})
+	operation, err := client.Models.GenerateVideos(ctx,
+		"veo-2.0-generate-001", prompt,
+		nil,
+		&genai.GenerateVideosConfig{
+			AspectRatio:      "16:9",
+			PersonGeneration: "allow_all",
+		})
 	if err != nil {
 		logger.Error("generate video fail", "err", err)
 		return nil, err
@@ -417,4 +429,85 @@ func GenerateGeminiVideo(prompt string) ([]byte, error) {
 	}
 	
 	return operation.Response.GeneratedVideos[0].Video.VideoBytes, nil
+}
+
+func GenerateGeminiText(audioContent []byte) (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+	
+	httpClient := utils.GetDeepseekProxyClient()
+	client, err := genai.NewClient(ctx, &genai.ClientConfig{
+		HTTPClient: httpClient,
+		APIKey:     *conf.BaseConfInfo.GeminiToken,
+	})
+	if err != nil {
+		logger.Error("create client fail", "err", err)
+		return "", err
+	}
+	
+	parts := []*genai.Part{
+		genai.NewPartFromText("Get Content from this audio clip"),
+		{
+			InlineData: &genai.Blob{
+				MIMEType: "audio/ogg",
+				Data:     audioContent,
+			},
+		},
+	}
+	contents := []*genai.Content{
+		genai.NewContentFromParts(parts, genai.RoleUser),
+	}
+	
+	result, err := client.Models.GenerateContent(
+		ctx,
+		"gemini-2.0-flash",
+		contents,
+		nil,
+	)
+	
+	if err != nil || result == nil {
+		logger.Error("generate text fail", "err", err)
+		return "", err
+	}
+	
+	return result.Text(), nil
+}
+
+func GetGeminiImageContent(imageContent []byte) (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+	
+	httpClient := utils.GetDeepseekProxyClient()
+	client, err := genai.NewClient(ctx, &genai.ClientConfig{
+		HTTPClient: httpClient,
+		APIKey:     *conf.BaseConfInfo.GeminiToken,
+	})
+	if err != nil {
+		logger.Error("create client fail", "err", err)
+		return "", err
+	}
+	
+	parts := []*genai.Part{
+		genai.NewPartFromBytes(imageContent, "image/jpeg"),
+		genai.NewPartFromText("get content from this image."),
+	}
+	
+	contents := []*genai.Content{
+		genai.NewContentFromParts(parts, genai.RoleUser),
+	}
+	
+	result, err := client.Models.GenerateContent(
+		ctx,
+		"gemini-2.0-flash",
+		contents,
+		nil,
+	)
+	
+	if err != nil || result == nil {
+		logger.Error("generate text fail", "err", err)
+		return "", err
+	}
+	
+	return result.Text(), nil
+	
 }

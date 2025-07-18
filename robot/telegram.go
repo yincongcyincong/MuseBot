@@ -1050,22 +1050,28 @@ func (t *TelegramRobot) ExecuteForceReply() {
 }
 
 func (t *TelegramRobot) GetContent(content string) (string, error) {
+	var err error
 	if content == "" && t.Update.Message.Voice != nil && *conf.AudioConfInfo.AudioAppID != "" {
 		audioContent := t.GetAudioContent()
 		if audioContent == nil {
 			logger.Warn("audio url empty")
 			return "", errors.New("audio url empty")
 		}
-		content = utils.FileRecognize(audioContent)
+		
+		content, err = t.Robot.GetAudioContent(audioContent)
+		if err != nil {
+			logger.Warn("generate text fail", "err", err)
+			return "", err
+		}
+		
 	}
 	
 	if content == "" && t.Update.Message.Photo != nil {
-		imageContent, err := utils.GetImageContent(t.GetPhotoContent())
+		content, err = t.Robot.GetImageContent(t.GetPhotoContent())
 		if err != nil {
 			logger.Warn("get image content err", "err", err)
 			return "", err
 		}
-		content = imageContent
 	}
 	
 	if content == "" {

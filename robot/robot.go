@@ -10,7 +10,9 @@ import (
 	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
 	"github.com/yincongcyincong/telegram-deepseek-bot/db"
 	"github.com/yincongcyincong/telegram-deepseek-bot/i18n"
+	"github.com/yincongcyincong/telegram-deepseek-bot/llm"
 	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
+	"github.com/yincongcyincong/telegram-deepseek-bot/param"
 	"github.com/yincongcyincong/telegram-deepseek-bot/utils"
 )
 
@@ -226,4 +228,31 @@ func (r *RobotInfo) checkAdminUser(userId string) bool {
 	
 	_, ok := conf.BaseConfInfo.AdminUserIds[userId]
 	return ok
+}
+
+func (r *RobotInfo) GetAudioContent(audioContent []byte) (string, error) {
+	switch *conf.BaseConfInfo.MediaType {
+	case param.Vol:
+		return utils.FileRecognize(audioContent)
+	case param.OpenAi:
+		return llm.GenerateOpenAIText(audioContent)
+	case param.Gemini:
+		return llm.GenerateGeminiText(audioContent)
+	}
+	
+	return "", nil
+}
+
+func (r *RobotInfo) GetImageContent(imageContent []byte) (string, error) {
+	switch *conf.BaseConfInfo.MediaType {
+	case param.Vol:
+		return utils.GetImageContent(imageContent)
+	case param.Gemini:
+		return llm.GetGeminiImageContent(imageContent)
+	case param.OpenAi:
+		return llm.GetOpanAIImageContent(imageContent)
+		
+	}
+	
+	return "", nil
 }
