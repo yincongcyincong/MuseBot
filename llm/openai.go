@@ -410,7 +410,7 @@ func GenerateOpenAIText(audioContent []byte) (string, error) {
 		openaiConfig.BaseURL = *conf.BaseConfInfo.CustomUrl
 	}
 	
-	openaiConfig.BaseURL = "https://api.chatanywhere.org"
+	//openaiConfig.BaseURL = "https://api.chatanywhere.org"
 	openaiConfig.HTTPClient = httpClient
 	client := openai.NewClientWithConfig(openaiConfig)
 	
