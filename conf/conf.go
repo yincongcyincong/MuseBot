@@ -286,8 +286,8 @@ func InitConf() {
 	EnvToolsConf()
 	EnvVideoConf()
 	
-	if *BaseConfInfo.TelegramBotToken == "" {
-		panic("Bot token and llm token are required")
+	if *BaseConfInfo.TelegramBotToken == "" && *BaseConfInfo.DiscordBotToken == "" {
+		panic("Bot token are required")
 	}
 	
 }

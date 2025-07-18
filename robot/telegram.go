@@ -29,7 +29,7 @@ type TelegramRobot struct {
 	Update tgbotapi.Update
 	Bot    *tgbotapi.BotAPI
 	
-	Robot *Robot
+	Robot *RobotInfo
 }
 
 func NewTelegramRobot(update tgbotapi.Update, bot *tgbotapi.BotAPI) *TelegramRobot {
@@ -51,7 +51,7 @@ func StartTelegramRobot() {
 		updates := bot.GetUpdatesChan(u)
 		for update := range updates {
 			t := NewTelegramRobot(update, bot)
-			t.Robot = NewRobot(WithTelegramRobot(t))
+			t.Robot = NewRobot(WithRobot(t))
 			t.Robot.Exec()
 		}
 	}
@@ -123,7 +123,7 @@ func CreateBot() *tgbotapi.BotAPI {
 	return conf.BaseConfInfo.Bot
 }
 
-func (t *TelegramRobot) Execute() {
+func (t *TelegramRobot) Exec() {
 	chatId, msgId, _ := t.Robot.GetChatIdAndMsgIdAndUserID()
 	if t.handleCommandAndCallback() {
 		return
