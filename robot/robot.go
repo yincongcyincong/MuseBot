@@ -14,22 +14,25 @@ import (
 	"github.com/yincongcyincong/telegram-deepseek-bot/utils"
 )
 
-type Robot struct {
-	TelegramRobot *TelegramRobot
-	DiscordRobot  *DiscordRobot
+type RobotInfo struct {
+	Robot Robot
 }
 
-type botOption func(r *Robot)
+type Robot interface {
+	Exec()
+}
 
-func NewRobot(options ...botOption) *Robot {
-	r := new(Robot)
+type botOption func(r *RobotInfo)
+
+func NewRobot(options ...botOption) *RobotInfo {
+	r := new(RobotInfo)
 	for _, o := range options {
 		o(r)
 	}
 	return r
 }
 
-func (r *Robot) Exec() {
+func (r *RobotInfo) Exec() {
 	chatId, msgId, userId := r.GetChatIdAndMsgIdAndUserID()
 	
 	if !r.checkUserAllow(userId) && !r.checkGroupAllow(chatId) {
@@ -39,44 +42,41 @@ func (r *Robot) Exec() {
 		return
 	}
 	
-	switch {
-	case r.TelegramRobot != nil:
-		r.TelegramRobot.Execute()
-	case r.DiscordRobot != nil:
-		r.DiscordRobot.Execute()
-	}
+	r.Robot.Exec()
 }
 
-func (r *Robot) GetChatIdAndMsgIdAndUserID() (int64, int, string) {
+func (r *RobotInfo) GetChatIdAndMsgIdAndUserID() (int64, int, string) {
 	chatId := int64(0)
 	msgId := 0
 	userId := ""
 	
-	switch {
-	case r.TelegramRobot != nil:
-		if r.TelegramRobot.Update.Message != nil {
-			chatId = r.TelegramRobot.Update.Message.Chat.ID
-			userId = strconv.FormatInt(r.TelegramRobot.Update.Message.From.ID, 10)
-			msgId = r.TelegramRobot.Update.Message.MessageID
+	switch r.Robot.(type) {
+	case *TelegramRobot:
+		telegramRobot := r.Robot.(*TelegramRobot)
+		if telegramRobot.Update.Message != nil {
+			chatId = telegramRobot.Update.Message.Chat.ID
+			userId = strconv.FormatInt(telegramRobot.Update.Message.From.ID, 10)
+			msgId = telegramRobot.Update.Message.MessageID
 		}
-		if r.TelegramRobot.Update.CallbackQuery != nil {
-			chatId = r.TelegramRobot.Update.CallbackQuery.Message.Chat.ID
-			userId = strconv.FormatInt(r.TelegramRobot.Update.CallbackQuery.From.ID, 10)
-			msgId = r.TelegramRobot.Update.CallbackQuery.Message.MessageID
+		if telegramRobot.Update.CallbackQuery != nil {
+			chatId = telegramRobot.Update.CallbackQuery.Message.Chat.ID
+			userId = strconv.FormatInt(telegramRobot.Update.CallbackQuery.From.ID, 10)
+			msgId = telegramRobot.Update.CallbackQuery.Message.MessageID
 		}
-	case r.DiscordRobot != nil:
-		if r.DiscordRobot.Msg != nil {
-			chatId, _ = strconv.ParseInt(r.DiscordRobot.Msg.ChannelID, 10, 64)
-			userId = r.DiscordRobot.Msg.Author.ID
-			msgId = utils.ParseInt(r.DiscordRobot.Msg.Message.ID)
+	case *DiscordRobot:
+		discordRobot := r.Robot.(*DiscordRobot)
+		if discordRobot.Msg != nil {
+			chatId, _ = strconv.ParseInt(discordRobot.Msg.ChannelID, 10, 64)
+			userId = discordRobot.Msg.Author.ID
+			msgId = utils.ParseInt(discordRobot.Msg.Message.ID)
 		}
-		if r.DiscordRobot.Inter != nil {
-			chatId, _ = strconv.ParseInt(r.DiscordRobot.Inter.ChannelID, 10, 64)
-			if r.DiscordRobot.Inter.User != nil {
-				userId = r.DiscordRobot.Inter.User.ID
+		if discordRobot.Inter != nil {
+			chatId, _ = strconv.ParseInt(discordRobot.Inter.ChannelID, 10, 64)
+			if discordRobot.Inter.User != nil {
+				userId = discordRobot.Inter.User.ID
 			}
-			if r.DiscordRobot.Inter.Member != nil {
-				userId = r.DiscordRobot.Inter.Member.User.ID
+			if discordRobot.Inter.Member != nil {
+				userId = discordRobot.Inter.Member.User.ID
 			}
 		}
 	}
@@ -84,22 +84,24 @@ func (r *Robot) GetChatIdAndMsgIdAndUserID() (int64, int, string) {
 	return chatId, msgId, userId
 }
 
-func (r *Robot) SendMsg(chatId int64, msgContent string, replyToMessageID int,
+func (r *RobotInfo) SendMsg(chatId int64, msgContent string, replyToMessageID int,
 	parseMode string, inlineKeyboard *tgbotapi.InlineKeyboardMarkup) int {
-	switch {
-	case r.TelegramRobot != nil:
+	switch r.Robot.(type) {
+	case *TelegramRobot:
+		telegramRobot := r.Robot.(*TelegramRobot)
 		msg := tgbotapi.NewMessage(chatId, msgContent)
 		msg.ParseMode = parseMode
 		msg.ReplyMarkup = inlineKeyboard
 		msg.ReplyToMessageID = replyToMessageID
-		msgInfo, err := r.TelegramRobot.Bot.Send(msg)
+		msgInfo, err := telegramRobot.Bot.Send(msg)
 		if err != nil {
 			logger.Warn("send clear message fail", "err", err)
 			return 0
 		}
 		return msgInfo.MessageID
-	case r.DiscordRobot != nil:
-		if r.DiscordRobot.Msg != nil {
+	case *DiscordRobot:
+		discordRobot := r.Robot.(*DiscordRobot)
+		if discordRobot.Msg != nil {
 			messageSend := &discordgo.MessageSend{
 				Content: msgContent,
 			}
@@ -113,7 +115,7 @@ func (r *Robot) SendMsg(chatId int64, msgContent string, replyToMessageID int,
 				}
 			}
 			
-			sentMsg, err := r.DiscordRobot.Session.ChannelMessageSendComplex(chatIdStr, messageSend)
+			sentMsg, err := discordRobot.Session.ChannelMessageSendComplex(chatIdStr, messageSend)
 			if err != nil {
 				logger.Warn("send discord message fail", "err", err)
 				return 0
@@ -121,9 +123,9 @@ func (r *Robot) SendMsg(chatId int64, msgContent string, replyToMessageID int,
 			return utils.ParseInt(sentMsg.ID)
 		}
 		
-		if r.DiscordRobot.Inter != nil {
+		if discordRobot.Inter != nil {
 			// Slash command interaction response
-			err := r.DiscordRobot.Session.InteractionRespond(r.DiscordRobot.Inter.Interaction, &discordgo.InteractionResponse{
+			err := discordRobot.Session.InteractionRespond(discordRobot.Inter.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{
 					Content: msgContent,
@@ -140,15 +142,9 @@ func (r *Robot) SendMsg(chatId int64, msgContent string, replyToMessageID int,
 	return 0
 }
 
-func WithTelegramRobot(TelegramBot *TelegramRobot) func(*Robot) {
-	return func(r *Robot) {
-		r.TelegramRobot = TelegramBot
-	}
-}
-
-func WithDiscordRobot(discordBot *DiscordRobot) func(*Robot) {
-	return func(r *Robot) {
-		r.DiscordRobot = discordBot
+func WithRobot(robot Robot) func(*RobotInfo) {
+	return func(r *RobotInfo) {
+		r.Robot = robot
 	}
 }
 
@@ -167,7 +163,7 @@ func StartRobot() {
 }
 
 // checkUserAllow check use can use telegram bot or not
-func (r *Robot) checkUserAllow(userId string) bool {
+func (r *RobotInfo) checkUserAllow(userId string) bool {
 	if len(conf.BaseConfInfo.AllowedTelegramUserIds) == 0 {
 		return true
 	}
@@ -179,7 +175,7 @@ func (r *Robot) checkUserAllow(userId string) bool {
 	return ok
 }
 
-func (r *Robot) checkGroupAllow(chatId int64) bool {
+func (r *RobotInfo) checkGroupAllow(chatId int64) bool {
 	
 	if len(conf.BaseConfInfo.AllowedTelegramGroupIds) == 0 {
 		return true
@@ -195,7 +191,7 @@ func (r *Robot) checkGroupAllow(chatId int64) bool {
 }
 
 // checkUserTokenExceed check use token exceeded
-func (r *Robot) checkUserTokenExceed(chatId int64, msgId int, userId string) bool {
+func (r *RobotInfo) checkUserTokenExceed(chatId int64, msgId int, userId string) bool {
 	if *conf.BaseConfInfo.TokenPerUser == 0 {
 		return false
 	}
@@ -223,7 +219,7 @@ func (r *Robot) checkUserTokenExceed(chatId int64, msgId int, userId string) boo
 }
 
 // checkAdminUser check user is admin
-func (r *Robot) checkAdminUser(userId string) bool {
+func (r *RobotInfo) checkAdminUser(userId string) bool {
 	if len(conf.BaseConfInfo.AdminUserIds) == 0 {
 		return false
 	}

@@ -2,6 +2,7 @@ package robot
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"log"
@@ -13,12 +14,15 @@ import (
 	"github.com/bwmarrin/discordgo"
 	godeepseek "github.com/cohesion-org/deepseek-go"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/yincongcyincong/langchaingo/chains"
+	"github.com/yincongcyincong/langchaingo/vectorstores"
 	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
 	"github.com/yincongcyincong/telegram-deepseek-bot/db"
 	"github.com/yincongcyincong/telegram-deepseek-bot/i18n"
 	"github.com/yincongcyincong/telegram-deepseek-bot/llm"
 	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
 	"github.com/yincongcyincong/telegram-deepseek-bot/param"
+	"github.com/yincongcyincong/telegram-deepseek-bot/rag"
 	"github.com/yincongcyincong/telegram-deepseek-bot/utils"
 )
 
@@ -27,7 +31,7 @@ type DiscordRobot struct {
 	Msg     *discordgo.MessageCreate
 	Inter   *discordgo.InteractionCreate
 	
-	Robot *Robot
+	Robot *RobotInfo
 }
 
 func StartDiscordRobot() {
@@ -59,11 +63,9 @@ func NewDiscordRobot(s *discordgo.Session, msg *discordgo.MessageCreate, i *disc
 	}
 }
 
-func (d *DiscordRobot) Execute() {
+func (d *DiscordRobot) Exec() {
 	chatId, msgId, _ := d.Robot.GetChatIdAndMsgIdAndUserID()
-	//if d.handleCommandAndCallback() {
-	//	return
-	//}
+	
 	// check whether you have new message
 	if d.Msg != nil {
 		if d.skipThisMsg() {
@@ -82,10 +84,59 @@ func (d *DiscordRobot) requestDeepseekAndResp(content string) {
 	}
 	
 	if conf.RagConfInfo.Store != nil {
-		//d.executeChain(content)
+		d.executeChain(content)
 	} else {
 		d.executeLLM(content)
 	}
+}
+
+func (d *DiscordRobot) executeChain(content string) {
+	messageChan := make(chan *param.MsgInfo)
+	chatId, msgId, userId := d.Robot.GetChatIdAndMsgIdAndUserID()
+	
+	go func() {
+		defer func() {
+			if err := recover(); err != nil {
+				logger.Error("GetContent panic err", "err", err, "stack", string(debug.Stack()))
+			}
+			utils.DecreaseUserChat(userId)
+			close(messageChan)
+		}()
+		
+		// check user chat exceed max count
+		if utils.CheckUserChatExceed(userId) {
+			d.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "chat_exceed", nil),
+				msgId, tgbotapi.ModeMarkdown, nil)
+			return
+		}
+		
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+		defer cancel()
+		
+		text, err := d.getContent(content)
+		if err != nil {
+			logger.Error("get content fail", "err", err)
+			d.Robot.SendMsg(chatId, err.Error(), msgId, "", nil)
+			return
+		}
+		
+		dpLLM := rag.NewRag(llm.WithMessageChan(messageChan), llm.WithContent(content),
+			llm.WithChatId(chatId), llm.WithMsgId(msgId),
+			llm.WithUserId(userId))
+		
+		qaChain := chains.NewRetrievalQAFromLLM(
+			dpLLM,
+			vectorstores.ToRetriever(conf.RagConfInfo.Store, 3),
+		)
+		_, err = chains.Run(ctx, qaChain, text)
+		if err != nil {
+			logger.Warn("execute chain fail", "err", err)
+			d.Robot.SendMsg(chatId, err.Error(), msgId, "", nil)
+		}
+	}()
+	
+	// send response message
+	go d.handleUpdate(messageChan)
 }
 
 func (d *DiscordRobot) executeLLM(content string) {
@@ -109,11 +160,9 @@ func (d *DiscordRobot) handleUpdate(messageChan chan *param.MsgInfo) {
 	var channelID string
 	var err error
 	
-	// 获取当前通道ID
 	if d.Msg != nil {
 		channelID = d.Msg.ChannelID
 		
-		// 1. 发送一个“thinking...”占位消息
 		thinkingMsg, err := d.Session.ChannelMessageSend(channelID, i18n.GetMessage(*conf.BaseConfInfo.Lang, "thinking", nil))
 		if err != nil {
 			logger.Warn("Sending thinking message failed", "err", err)
@@ -124,7 +173,6 @@ func (d *DiscordRobot) handleUpdate(messageChan chan *param.MsgInfo) {
 	} else if d.Inter != nil {
 		channelID = d.Inter.ChannelID
 		
-		// 1. 响应占位符（deferred response）
 		err = d.Session.InteractionRespond(d.Inter.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseDeferredChannelMessageWithSource,
 		})
@@ -158,12 +206,10 @@ func (d *DiscordRobot) handleUpdate(messageChan chan *param.MsgInfo) {
 				if err != nil {
 					logger.Warn("Editing message failed", "msgID", msg.MsgId, "err", err)
 				}
-				originalMsgID = "" // 避免后续再编辑
+				originalMsgID = ""
 			}
 		} else if d.Inter != nil {
-			// 如果是 Interaction，使用 follow-up message 或 edit original
 			if msg.MsgId == 0 {
-				// 编辑原始响应
 				_, err = d.Session.InteractionResponseEdit(d.Inter.Interaction, &discordgo.WebhookEdit{
 					Content: &msg.Content,
 				})
@@ -171,7 +217,6 @@ func (d *DiscordRobot) handleUpdate(messageChan chan *param.MsgInfo) {
 					logger.Warn("Editing interaction response failed", "err", err)
 				}
 			} else {
-				// 发送新的 follow-up 消息（如果支持的话）
 				_, err = d.Session.FollowupMessageCreate(d.Inter.Interaction, true, &discordgo.WebhookParams{
 					Content: msg.Content,
 				})
@@ -240,12 +285,10 @@ func (d *DiscordRobot) getContent(defaultText string) (string, error) {
 		}
 	}
 	
-	// 优先使用传入默认文本（外部可指定）
 	if content == "" {
 		content = strings.TrimSpace(defaultText)
 	}
 	
-	// 如果没有文本，尝试从语音附件中获取
 	if content == "" && len(attachments) > 0 && *conf.AudioConfInfo.AudioAppID != "" {
 		for _, att := range attachments {
 			if strings.HasPrefix(att.ContentType, "audio/") || strings.HasSuffix(att.Filename, ".ogg") || strings.HasSuffix(att.Filename, ".mp3") {
@@ -260,7 +303,6 @@ func (d *DiscordRobot) getContent(defaultText string) (string, error) {
 		}
 	}
 	
-	// 如果仍然没有内容，尝试从图片附件中获取内容
 	if content == "" && len(attachments) > 0 {
 		for _, att := range attachments {
 			if strings.HasPrefix(att.ContentType, "image/") {
@@ -294,21 +336,17 @@ func (d *DiscordRobot) getContent(defaultText string) (string, error) {
 }
 
 func (d *DiscordRobot) skipThisMsg() bool {
-	// 忽略自己发的消息
 	if d.Msg.Author.ID == d.Session.State.User.ID {
 		return true
 	}
 	
-	// 私聊频道
 	if d.Msg.GuildID == "" {
-		// 如果内容为空，且没有附件（比如语音、图片）
 		if strings.TrimSpace(d.Msg.Content) == "" && len(d.Msg.Attachments) == 0 {
 			return true
 		}
 		return false
 	}
 	
-	// 公共频道（Guild Channel）
 	mentionedBot := false
 	for _, user := range d.Msg.Mentions {
 		if user.ID == d.Session.State.User.ID {
@@ -317,12 +355,10 @@ func (d *DiscordRobot) skipThisMsg() bool {
 		}
 	}
 	
-	// 没有@机器人
 	if !mentionedBot {
 		return true
 	}
 	
-	// 如果内容是@机器人以外的空内容
 	contentWithoutMention := strings.TrimSpace(strings.ReplaceAll(d.Msg.Content, "<@"+d.Session.State.User.ID+">", ""))
 	if contentWithoutMention == "" && len(d.Msg.Attachments) == 0 {
 		return true
@@ -333,7 +369,7 @@ func (d *DiscordRobot) skipThisMsg() bool {
 
 func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	d := NewDiscordRobot(s, m, nil)
-	d.Robot = NewRobot(WithDiscordRobot(d))
+	d.Robot = NewRobot(WithRobot(d))
 	d.Robot.Exec()
 }
 
@@ -377,7 +413,7 @@ func registerSlashCommands(s *discordgo.Session) {
 
 func onInteractionCreate(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	d := NewDiscordRobot(s, nil, i)
-	d.Robot = NewRobot(WithDiscordRobot(d))
+	d.Robot = NewRobot(WithRobot(d))
 	d.Robot.Exec()
 	_, _, userId := d.Robot.GetChatIdAndMsgIdAndUserID()
 	
