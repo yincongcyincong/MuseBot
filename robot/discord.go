@@ -298,7 +298,11 @@ func (d *DiscordRobot) getContent(defaultText string) (string, error) {
 					logger.Warn("audio url empty", "url", att.URL, "err", err)
 					return "", errors.New("audio url empty")
 				}
-				content = utils.FileRecognize(audioContent)
+				content, err = d.Robot.GetAudioContent(audioContent)
+				if err != nil {
+					logger.Warn("get audio content err", "err", err)
+					return "", err
+				}
 				break
 			}
 		}
@@ -312,12 +316,11 @@ func (d *DiscordRobot) getContent(defaultText string) (string, error) {
 					logger.Warn("image url empty", "url", att.URL, "err", err)
 					return "", errors.New("image url empty")
 				}
-				imageContent, err := utils.GetImageContent(image)
+				content, err = d.Robot.GetImageContent(image)
 				if err != nil {
 					logger.Warn("get image content err", "err", err)
 					return "", err
 				}
-				content = imageContent
 				break
 			}
 		}

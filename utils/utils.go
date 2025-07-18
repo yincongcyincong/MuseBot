@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"bytes"
 	"crypto/md5"
 	"encoding/base64"
 	"encoding/hex"
@@ -97,7 +98,7 @@ func GetDeepseekProxyClient() *http.Client {
 	}
 }
 
-func FileRecognize(audioContent []byte) string {
+func FileRecognize(audioContent []byte) (string, error) {
 	
 	client := BuildAsrClient()
 	client.Appid = *conf.AudioConfInfo.AudioAppID
@@ -107,15 +108,15 @@ func FileRecognize(audioContent []byte) string {
 	asrResponse, err := client.RequestAsr(audioContent)
 	if err != nil {
 		logger.Error("fail to request asr ", "err", err)
-		return ""
+		return "", err
 	}
 	
 	if len(asrResponse.Results) == 0 {
 		logger.Error("fail to request asr", "results", asrResponse.Results)
-		return ""
+		return "", errors.New("fail to request asr")
 	}
 	
-	return asrResponse.Results[0].Text
+	return asrResponse.Results[0].Text, nil
 	
 }
 
@@ -324,4 +325,46 @@ func DownloadFile(url string) ([]byte, error) {
 	}
 	
 	return data, nil
+}
+
+func DetectAudioFormat(data []byte) string {
+	if len(data) < 12 {
+		return "unknown"
+	}
+	
+	switch {
+	case bytes.HasPrefix(data, []byte("OggS")):
+		return "ogg"
+	case bytes.HasPrefix(data, []byte("ID3")) || (data[0] == 0xFF && (data[1]&0xE0) == 0xE0):
+		return "mp3"
+	case bytes.HasPrefix(data, []byte("RIFF")) && string(data[8:12]) == "WAVE":
+		return "wav"
+	case bytes.HasPrefix(data, []byte("fLaC")):
+		return "flac"
+	case bytes.HasPrefix(data[4:], []byte("ftyp")):
+		return "m4a/mp4"
+	default:
+		return "unknown"
+	}
+}
+
+func DetectImageFormat(data []byte) string {
+	if len(data) < 12 {
+		return "unknown"
+	}
+	
+	switch {
+	case bytes.HasPrefix(data, []byte{0xFF, 0xD8, 0xFF}):
+		return "jpeg"
+	case bytes.HasPrefix(data, []byte{0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A}):
+		return "png"
+	case bytes.HasPrefix(data, []byte("GIF87a")) || bytes.HasPrefix(data, []byte("GIF89a")):
+		return "gif"
+	case bytes.HasPrefix(data, []byte{0x42, 0x4D}):
+		return "bmp"
+	case bytes.HasPrefix(data, []byte("RIFF")) && bytes.HasPrefix(data[8:], []byte("WEBP")):
+		return "webp"
+	default:
+		return "unknown"
+	}
 }
