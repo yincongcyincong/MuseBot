@@ -156,7 +156,7 @@ func InsertRecord() {
 func getRecordsByUserId(userId string) ([]Record, error) {
 	// construct SQL statements
 	query := fmt.Sprintf("SELECT id, user_id, question, answer, content FROM records WHERE user_id =  ? " +
-		"and is_deleted = 0 and record_type = 1 order by create_time desc limit 10")
+		"and is_deleted = 0 and record_type = 0 order by create_time desc limit 10")
 	
 	// execute query
 	rows, err := DB.Query(query, userId)

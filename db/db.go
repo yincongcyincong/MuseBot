@@ -31,7 +31,7 @@ const (
 				create_time int(10) NOT NULL DEFAULT '0',
 				is_deleted int(10) NOT NULL DEFAULT '0',
 				token int(10) NOT NULL DEFAULT 0,
-				record_type tinyint(1) NOT NULL DEFAULT 0 COMMENT '0:text, 1:image 2:video'
+				record_type tinyint(1) NOT NULL DEFAULT 0
 			);
 			CREATE TABLE rag_files (
 				id INTEGER PRIMARY KEY AUTOINCREMENT,
