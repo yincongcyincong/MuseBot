@@ -265,6 +265,10 @@ func (r *RobotInfo) GetLastImageContent() ([]byte, error) {
 		return nil, err
 	}
 	
+	if imageInfo == nil {
+		return nil, nil
+	}
+	
 	imageContent, err := utils.DownloadFile(imageInfo.Answer)
 	return imageContent, err
 }

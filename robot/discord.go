@@ -389,6 +389,7 @@ func registerSlashCommands(s *discordgo.Session) {
 		{Name: "retry", Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.retry.description", nil)},
 		{Name: "photo", Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.photo.description", nil), Options: []*discordgo.ApplicationCommandOption{
 			{Type: discordgo.ApplicationCommandOptionString, Name: "prompt", Description: "Prompt", Required: true},
+			{Type: discordgo.ApplicationCommandOptionAttachment, Name: "image", Description: "upload a image", Required: false},
 		}},
 		{Name: "video", Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.video.description", nil), Options: []*discordgo.ApplicationCommandOption{
 			{Type: discordgo.ApplicationCommandOptionString, Name: "prompt", Description: "Prompt", Required: true},
@@ -614,12 +615,26 @@ func (d *DiscordRobot) sendImage() {
 		return
 	}
 	
-	lastImageContent, err := d.Robot.GetLastImageContent()
-	if err != nil {
-		logger.Warn("get last image record fail", "err", err)
+	var lastImageContent []byte
+	var err error
+	
+	if d.Inter.ApplicationCommandData().GetOption("image") != nil {
+		if attachment, ok := d.Inter.ApplicationCommandData().GetOption("image").Value.(string); ok {
+			lastImageContent, err = utils.DownloadFile(d.Inter.ApplicationCommandData().Resolved.Attachments[attachment].URL)
+			if err != nil {
+				logger.Warn("download image fail", "err", err)
+			}
+		}
 	}
 	
-	msgThinking := d.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "thinking", nil),
+	if len(lastImageContent) == 0 {
+		lastImageContent, err = d.Robot.GetLastImageContent()
+		if err != nil {
+			logger.Warn("get last image record fail", "err", err)
+		}
+	}
+	
+	d.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "thinking", nil),
 		msgId, tgbotapi.ModeMarkdown, nil)
 	
 	var imageUrl string
@@ -641,6 +656,7 @@ func (d *DiscordRobot) sendImage() {
 		return
 	}
 	
+	var editResp *discordgo.Message
 	if imageUrl != "" {
 		_, err = d.Session.FollowupMessageCreate(d.Inter.Interaction, true, &discordgo.WebhookParams{
 			Content: imageUrl,
@@ -653,10 +669,8 @@ func (d *DiscordRobot) sendImage() {
 			Name:   "image." + utils.DetectImageFormat(imageContent),
 			Reader: bytes.NewReader(imageContent),
 		}
-		_, err = d.Session.ChannelMessageEditComplex(&discordgo.MessageEdit{
-			ID:      strconv.Itoa(msgThinking),
-			Channel: strconv.FormatInt(chatId, 10),
-			Files:   []*discordgo.File{file},
+		editResp, err = d.Session.InteractionResponseEdit(d.Inter.Interaction, &discordgo.WebhookEdit{
+			Files: []*discordgo.File{file},
 		})
 	}
 	
@@ -664,12 +678,16 @@ func (d *DiscordRobot) sendImage() {
 		logger.Warn("send image fail", "err", err)
 	}
 	
+	if editResp != nil && len(editResp.Attachments) > 0 {
+		imageUrl = editResp.Attachments[0].URL
+	}
+	
 	db.InsertRecordInfo(&db.Record{
 		UserId:     userId,
 		Question:   prompt,
 		Answer:     imageUrl,
 		Token:      param.ImageTokenUsage,
-		IsDeleted:  1,
+		IsDeleted:  0,
 		RecordType: param.ImageRecordType,
 	})
 }
@@ -743,7 +761,7 @@ func (d *DiscordRobot) sendVideo() {
 		Question:   prompt,
 		Answer:     videoUrl,
 		Token:      param.VideoTokenUsage,
-		IsDeleted:  1,
+		IsDeleted:  0,
 		RecordType: param.VideoRecordType,
 	})
 }
