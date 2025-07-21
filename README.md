@@ -173,7 +173,8 @@ calculate one user token usage.
 
 using volcengine photo model create photo, deepseek don't support to create photo now. VOLC_AK and VOLC_SK is
 necessary.[doc](https://www.volcengine.com/docs/6444/1340578)    
-<img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/c8072d7d-74e6-4270-8496-1b4e7532134b" />
+<img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/b05fcadc-800e-40fb-b9a1-8aea44851550" />
+<img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/b26c123a-8a61-4329-ba31-9b371bd9251c" />
 
 ### /video
 
