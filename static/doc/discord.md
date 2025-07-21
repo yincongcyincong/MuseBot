@@ -35,6 +35,9 @@ You can directly chat with the bot via private message.
 Supported commands:
 
 * `/photo`: Generate an image. ⚠️ Requires `volc_ak` and `volc_sk`
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/325a7fab-6cc5-4088-870c-bab3b3c184d8" />
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/a117963c-1c21-4f8b-a8f3-ab7ec217040d" />
+
 <img width="400" alt="image" src="https://github.com/user-attachments/assets/ba0eb926-7924-4c58-bc61-7cff522bd71c" />
 <img width="400" alt="image" src="https://github.com/user-attachments/assets/bef94980-4498-4eba-b4b5-bd5531816009" />
 
