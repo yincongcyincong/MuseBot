@@ -292,7 +292,7 @@ func (d *DiscordRobot) getContent(defaultText string) (string, error) {
 	
 	if content == "" && len(attachments) > 0 && *conf.AudioConfInfo.AudioAppID != "" {
 		for _, att := range attachments {
-			if strings.HasPrefix(att.ContentType, "audio/") || strings.HasSuffix(att.Filename, ".ogg") || strings.HasSuffix(att.Filename, ".mp3") {
+			if strings.HasPrefix(att.ContentType, "audio/") {
 				audioContent, err := utils.DownloadFile(att.URL)
 				if audioContent == nil || err != nil {
 					logger.Warn("audio url empty", "url", att.URL, "err", err)
@@ -614,20 +614,24 @@ func (d *DiscordRobot) sendImage() {
 		return
 	}
 	
+	lastImageContent, err := d.Robot.GetLastImageContent()
+	if err != nil {
+		logger.Warn("get last image record fail", "err", err)
+	}
+	
 	msgThinking := d.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "thinking", nil),
 		msgId, tgbotapi.ModeMarkdown, nil)
 	
 	var imageUrl string
 	var imageContent []byte
-	var err error
 	
 	switch *conf.BaseConfInfo.MediaType {
 	case param.Vol:
-		imageUrl, err = llm.GenerateVolImg(prompt)
+		imageUrl, err = llm.GenerateVolImg(prompt, lastImageContent)
 	case param.OpenAi:
-		imageUrl, err = llm.GenerateOpenAIImg(prompt)
+		imageUrl, err = llm.GenerateOpenAIImg(prompt, lastImageContent)
 	case param.Gemini:
-		imageContent, err = llm.GenerateGeminiImg(prompt)
+		imageContent, err = llm.GenerateGeminiImg(prompt, lastImageContent)
 	default:
 		err = fmt.Errorf("unsupported type: %s", *conf.BaseConfInfo.MediaType)
 	}
@@ -646,7 +650,7 @@ func (d *DiscordRobot) sendImage() {
 		}
 	} else if len(imageContent) > 0 {
 		file := &discordgo.File{
-			Name:   "image.jpg",
+			Name:   "image." + utils.DetectImageFormat(imageContent),
 			Reader: bytes.NewReader(imageContent),
 		}
 		_, err = d.Session.ChannelMessageEditComplex(&discordgo.MessageEdit{
@@ -661,11 +665,12 @@ func (d *DiscordRobot) sendImage() {
 	}
 	
 	db.InsertRecordInfo(&db.Record{
-		UserId:    userId,
-		Question:  prompt,
-		Answer:    imageUrl,
-		Token:     param.ImageTokenUsage,
-		IsDeleted: 1,
+		UserId:     userId,
+		Question:   prompt,
+		Answer:     imageUrl,
+		Token:      param.ImageTokenUsage,
+		IsDeleted:  1,
+		RecordType: param.ImageRecordType,
 	})
 }
 
@@ -734,11 +739,12 @@ func (d *DiscordRobot) sendVideo() {
 	}
 	
 	db.InsertRecordInfo(&db.Record{
-		UserId:    userId,
-		Question:  prompt,
-		Answer:    videoUrl,
-		Token:     param.VideoTokenUsage,
-		IsDeleted: 1,
+		UserId:     userId,
+		Question:   prompt,
+		Answer:     videoUrl,
+		Token:      param.VideoTokenUsage,
+		IsDeleted:  1,
+		RecordType: param.VideoRecordType,
 	})
 }
 
@@ -754,8 +760,8 @@ func (d *DiscordRobot) sendHelp() {
 		},
 		discordgo.ActionsRow{
 			Components: []discordgo.MessageComponent{
-				discordgo.Button{Label: "balance", Style: discordgo.SecondaryButton, CustomID: "balance"},
-				discordgo.Button{Label: "state", Style: discordgo.SecondaryButton, CustomID: "state"},
+				discordgo.Button{Label: "balance", Style: discordgo.PrimaryButton, CustomID: "balance"},
+				discordgo.Button{Label: "state", Style: discordgo.PrimaryButton, CustomID: "state"},
 			},
 		},
 	}

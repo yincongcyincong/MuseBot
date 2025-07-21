@@ -256,3 +256,15 @@ func (r *RobotInfo) GetImageContent(imageContent []byte) (string, error) {
 	
 	return "", nil
 }
+
+func (r *RobotInfo) GetLastImageContent() ([]byte, error) {
+	_, _, userId := r.GetChatIdAndMsgIdAndUserID()
+	imageInfo, err := db.GetLastImageRecord(userId, param.ImageRecordType)
+	if err != nil {
+		logger.Warn("get last image content fail", "err", err)
+		return nil, err
+	}
+	
+	imageContent, err := utils.DownloadFile(imageInfo.Answer)
+	return imageContent, err
+}

@@ -351,7 +351,7 @@ func (h *GeminiReq) GetModel(l *LLM) {
 	}
 }
 
-func GenerateGeminiImg(prompt string) ([]byte, error) {
+func GenerateGeminiImg(prompt string, imageContent []byte) ([]byte, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 	
@@ -365,10 +365,25 @@ func GenerateGeminiImg(prompt string) ([]byte, error) {
 		return nil, err
 	}
 	
+	geminiContent := genai.Text(prompt)
+	if len(imageContent) > 0 {
+		geminiContent = append(geminiContent, &genai.Content{
+			Role: genai.RoleUser,
+			Parts: []*genai.Part{
+				{
+					InlineData: &genai.Blob{
+						Data:     imageContent,
+						MIMEType: "image/" + utils.DetectImageFormat(imageContent),
+					},
+				},
+			},
+		})
+	}
+	
 	response, err := client.Models.GenerateContent(
 		ctx,
 		"gemini-2.0-flash-preview-image-generation",
-		genai.Text(prompt),
+		geminiContent,
 		&genai.GenerateContentConfig{
 			ResponseModalities: []string{"TEXT", "IMAGE"},
 		},
@@ -449,7 +464,7 @@ func GenerateGeminiText(audioContent []byte) (string, error) {
 		genai.NewPartFromText("Get Content from this audio clip"),
 		{
 			InlineData: &genai.Blob{
-				MIMEType: "audio/ogg",
+				MIMEType: "audio/" + utils.DetectAudioFormat(audioContent),
 				Data:     audioContent,
 			},
 		},

@@ -11,6 +11,7 @@ import (
 	"github.com/cohesion-org/deepseek-go"
 	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
 	"github.com/yincongcyincong/telegram-deepseek-bot/metrics"
+	"github.com/yincongcyincong/telegram-deepseek-bot/param"
 )
 
 const MaxQAPair = 10
@@ -36,6 +37,7 @@ type Record struct {
 	Token      int    `json:"token"`
 	IsDeleted  int    `json:"is_deleted"`
 	CreateTime int64  `json:"create_time"`
+	RecordType int    `json:"record_type"`
 }
 
 var MsgRecord = sync.Map{}
@@ -60,11 +62,12 @@ func InsertMsgRecord(userId string, aq *AQ, insertDB bool) {
 	
 	if insertDB {
 		go InsertRecordInfo(&Record{
-			UserId:   userId,
-			Question: aq.Question,
-			Answer:   aq.Answer,
-			Content:  aq.Content,
-			Token:    aq.Token,
+			UserId:     userId,
+			Question:   aq.Question,
+			Answer:     aq.Answer,
+			Content:    aq.Content,
+			Token:      aq.Token,
+			RecordType: param.TextRecordType,
 		})
 	}
 }
@@ -152,7 +155,8 @@ func InsertRecord() {
 // getRecordsByUserId get latest 10 records by user_id
 func getRecordsByUserId(userId string) ([]Record, error) {
 	// construct SQL statements
-	query := fmt.Sprintf("SELECT id, user_id, question, answer, content FROM records WHERE user_id =  ? and is_deleted = 0 order by create_time desc limit 10")
+	query := fmt.Sprintf("SELECT id, user_id, question, answer, content FROM records WHERE user_id =  ? " +
+		"and is_deleted = 0 and record_type = 1 order by create_time desc limit 10")
 	
 	// execute query
 	rows, err := DB.Query(query, userId)
@@ -176,8 +180,8 @@ func getRecordsByUserId(userId string) ([]Record, error) {
 
 // InsertRecordInfo insert record
 func InsertRecordInfo(record *Record) {
-	query := `INSERT INTO records (user_id, question, answer, content, token, create_time, is_deleted) VALUES (?, ?, ?, ?, ?, ?, ?)`
-	_, err := DB.Exec(query, record.UserId, record.Question, record.Answer, record.Content, record.Token, time.Now().Unix(), record.IsDeleted)
+	query := `INSERT INTO records (user_id, question, answer, content, token, create_time, is_deleted, record_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+	_, err := DB.Exec(query, record.UserId, record.Question, record.Answer, record.Content, record.Token, time.Now().Unix(), record.IsDeleted, record.RecordType)
 	metrics.TotalRecords.Inc()
 	if err != nil {
 		logger.Error("insertRecord err", "err", err)
@@ -223,6 +227,33 @@ func GetTokenByUserIdAndTime(userId string, start, end int64) (int, error) {
 		return 0, err
 	}
 	return user.Token, nil
+}
+
+func GetLastImageRecord(userId string, recordType int) (*Record, error) {
+	query := fmt.Sprintf("SELECT id, user_id, question, answer, content FROM records WHERE user_id =  ? and record_type = ? and is_deleted = 0 order by id desc")
+	
+	// execute query
+	rows, err := DB.Query(query, userId, recordType)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	
+	var records []Record
+	for rows.Next() {
+		var record Record
+		err := rows.Scan(&record.ID, &record.UserId, &record.Question, &record.Answer, &record.Content)
+		if err != nil {
+			return nil, err
+		}
+		records = append(records, record)
+	}
+	
+	if len(records) == 0 {
+		return nil, nil
+	}
+	
+	return &records[0], nil
 }
 
 func GetRecordCount(userId int64, isDeleted int) (int, error) {

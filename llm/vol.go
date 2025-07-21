@@ -2,6 +2,7 @@ package llm
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -385,7 +386,7 @@ func (h *VolReq) requestOneToolsCall(ctx context.Context, toolsCall []*model.Too
 }
 
 // GenerateVolImg generate image
-func GenerateVolImg(prompt string) (string, error) {
+func GenerateVolImg(prompt string, imageContent []byte) (string, error) {
 	start := time.Now()
 	visual.DefaultInstance.Client.SetAccessKey(*conf.BaseConfInfo.VolcAK)
 	visual.DefaultInstance.Client.SetSecretKey(*conf.BaseConfInfo.VolcSK)
@@ -411,6 +412,10 @@ func GenerateVolImg(prompt string) (string, error) {
 			"opacity":           *conf.PhotoConfInfo.Opacity,
 			"logo_text_content": *conf.PhotoConfInfo.LogoTextContent,
 		},
+	}
+	
+	if len(imageContent) != 0 {
+		reqBody["binary_data_base64"] = base64.StdEncoding.EncodeToString(imageContent)
 	}
 	
 	resp, _, err := visual.DefaultInstance.CVProcess(reqBody)

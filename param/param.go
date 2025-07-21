@@ -34,8 +34,8 @@ const (
 	
 	LLAVA = "llava:latest"
 	
-	ImageTokenUsage = 10000
-	VideoTokenUsage = 20000
+	ImageTokenUsage = 3000
+	VideoTokenUsage = 5000
 )
 
 const (
@@ -60,6 +60,10 @@ const (
 	// doubao-1.5
 	ModelDoubao15VisionPro32k = "doubao-1.5-vision-pro-32k-250115"
 	ModelDoubao15VisionLite   = "doubao-1.5-vision-lite-250315"
+	
+	TextRecordType  = 0
+	ImageRecordType = 1
+	VideoRecordType = 2
 )
 
 var (

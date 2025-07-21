@@ -368,3 +368,18 @@ func DetectImageFormat(data []byte) string {
 		return "unknown"
 	}
 }
+
+func ByteToTempFile(data []byte, filename string) (*os.File, error) {
+	tmpFile, err := os.CreateTemp("", filename)
+	if err != nil {
+		return nil, err
+	}
+	
+	if _, err := tmpFile.Write(data); err != nil {
+		tmpFile.Close()
+		return nil, err
+	}
+	
+	tmpFile.Close()
+	return os.Open(tmpFile.Name())
+}

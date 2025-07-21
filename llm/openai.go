@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"os"
 	"strings"
 	"time"
 	"unicode"
@@ -367,7 +368,10 @@ func (d *OpenAIReq) requestToolsCall(ctx context.Context, choice openai.ChatComp
 }
 
 // GenerateOpenAIImg generate image
-func GenerateOpenAIImg(prompt string) (string, error) {
+func GenerateOpenAIImg(prompt string, imageContent []byte) (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+	
 	httpClient := utils.GetDeepseekProxyClient()
 	openaiConfig := openai.DefaultConfig(*conf.BaseConfInfo.OpenAIToken)
 	if *conf.BaseConfInfo.CustomUrl != "" {
@@ -378,15 +382,36 @@ func GenerateOpenAIImg(prompt string) (string, error) {
 	openaiConfig.HTTPClient = httpClient
 	client := openai.NewClientWithConfig(openaiConfig)
 	
-	respUrl, err := client.CreateImage(
-		context.Background(),
-		openai.ImageRequest{
+	var respUrl openai.ImageResponse
+	var err error
+	if len(imageContent) != 0 {
+		imageFile, err := utils.ByteToTempFile(imageContent, "./data/temp-*.png")
+		if err != nil {
+			logger.Error("failed to create temp file:", err)
+			return "", err
+		}
+		defer os.Remove(imageFile.Name())
+		defer imageFile.Close()
+		
+		respUrl, err = client.CreateEditImage(ctx, openai.ImageEditRequest{
+			Image:          imageFile,
 			Prompt:         prompt,
+			N:              1,
 			Size:           openai.CreateImageSize1024x1024,
 			ResponseFormat: openai.CreateImageResponseFormatURL,
-			N:              1,
-		},
-	)
+		})
+	} else {
+		respUrl, err = client.CreateImage(
+			ctx,
+			openai.ImageRequest{
+				Prompt:         prompt,
+				Size:           openai.CreateImageSize1024x1024,
+				ResponseFormat: openai.CreateImageResponseFormatURL,
+				N:              1,
+			},
+		)
+	}
+	
 	if err != nil {
 		logger.Error("CreateImage error", "err", err)
 		return "", err
@@ -416,7 +441,7 @@ func GenerateOpenAIText(audioContent []byte) (string, error) {
 	
 	req := openai.AudioRequest{
 		Model:    openai.Whisper1,
-		FilePath: "voice.ogg",
+		FilePath: "voice." + utils.DetectAudioFormat(audioContent),
 		Reader:   bytes.NewReader(audioContent),
 		Format:   "json",
 	}
