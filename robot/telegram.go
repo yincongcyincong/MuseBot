@@ -2,6 +2,7 @@ package robot
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -958,8 +959,11 @@ func (t *TelegramRobot) sendImg() {
 	if t.Update.Message != nil {
 		prompt = t.Update.Message.Text
 	}
-	
 	prompt = utils.ReplaceCommand(prompt, "/photo", t.Bot.Self.UserName)
+	if prompt == "" && len(t.Update.Message.Photo) > 0 {
+		prompt = t.Update.Message.Caption
+	}
+	
 	if len(prompt) == 0 {
 		err := utils.ForceReply(chatId, replyToMessageID, "photo_empty_content", t.Bot)
 		if err != nil {
@@ -968,20 +972,28 @@ func (t *TelegramRobot) sendImg() {
 		return
 	}
 	
+	var err error
+	lastImageContent := t.GetPhotoContent()
+	if len(lastImageContent) == 0 {
+		lastImageContent, err = t.Robot.GetLastImageContent()
+		if err != nil {
+			logger.Warn("get last image record fail", "err", err)
+		}
+	}
+	
 	thinkingMsgId := t.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "thinking", nil),
 		replyToMessageID, tgbotapi.ModeMarkdown, nil)
 	
 	var imageUrl string
 	var imageContent []byte
-	var err error
 	
 	switch *conf.BaseConfInfo.MediaType {
 	case param.Vol:
-		imageUrl, err = llm.GenerateVolImg(prompt)
+		imageUrl, err = llm.GenerateVolImg(prompt, lastImageContent)
 	case param.OpenAi:
-		imageUrl, err = llm.GenerateOpenAIImg(prompt)
+		imageUrl, err = llm.GenerateOpenAIImg(prompt, lastImageContent)
 	case param.Gemini:
-		imageContent, err = llm.GenerateGeminiImg(prompt)
+		imageContent, err = llm.GenerateGeminiImg(prompt, lastImageContent)
 	default:
 		err = fmt.Errorf("unsupported type: %s", *conf.BaseConfInfo.MediaType)
 	}
@@ -997,7 +1009,7 @@ func (t *TelegramRobot) sendImg() {
 		photo = tgbotapi.NewInputMediaPhoto(tgbotapi.FileURL(imageUrl))
 	} else if len(imageContent) != 0 {
 		photo = tgbotapi.NewInputMediaPhoto(tgbotapi.FileBytes{
-			Name:  "image.jpg",
+			Name:  "image." + utils.DetectImageFormat(imageContent),
 			Bytes: imageContent,
 		})
 	}
@@ -1010,18 +1022,41 @@ func (t *TelegramRobot) sendImg() {
 		Media: photo,
 	}
 	
-	_, err = t.Bot.Request(edit)
+	editResp, err := t.Bot.Request(edit)
 	if err != nil {
 		logger.Warn("send image fail", "result", edit)
 		return
 	}
 	
+	if imageUrl == "" {
+		var result struct {
+			Photo []tgbotapi.PhotoSize `json:"photo"`
+		}
+		if err = json.Unmarshal(editResp.Result, &result); err != nil {
+			logger.Error("unmarshal editResp.Result fail", "err", err)
+			return
+		}
+		if len(result.Photo) == 0 {
+			logger.Warn("editResp.Result.Photo is empty")
+			return
+		}
+		
+		fileID := result.Photo[len(result.Photo)-1].FileID
+		file, err := t.Bot.GetFile(tgbotapi.FileConfig{FileID: fileID})
+		if err != nil {
+			logger.Warn("get file fail", "err", err)
+			return
+		}
+		imageUrl = fmt.Sprintf("https://api.telegram.org/file/bot%s/%s", t.Bot.Token, file.FilePath)
+	}
+	
 	db.InsertRecordInfo(&db.Record{
-		UserId:    userId,
-		Question:  prompt,
-		Answer:    imageUrl,
-		Token:     param.ImageTokenUsage,
-		IsDeleted: 1,
+		UserId:     userId,
+		Question:   prompt,
+		Answer:     imageUrl,
+		Token:      param.ImageTokenUsage,
+		IsDeleted:  0,
+		RecordType: param.ImageRecordType,
 	})
 	
 	return
