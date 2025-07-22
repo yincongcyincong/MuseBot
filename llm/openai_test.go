@@ -2,11 +2,37 @@ package llm
 
 import (
 	"context"
+	"fmt"
+	"os"
 	"testing"
 	
 	"github.com/sashabaranov/go-openai"
 	"github.com/stretchr/testify/assert"
+	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
+	"github.com/yincongcyincong/telegram-deepseek-bot/param"
 )
+
+func TestOpenAISend(t *testing.T) {
+	messageChan := make(chan *param.MsgInfo)
+	
+	go func() {
+		for m := range messageChan {
+			fmt.Println(m)
+		}
+	}()
+	
+	*conf.BaseConfInfo.CustomUrl = os.Getenv("TEST_CUSTOM_URL")
+	*conf.BaseConfInfo.Type = param.OpenAi
+	
+	callLLM := NewLLM(WithChatId(1), WithMsgId(2), WithUserId("5"),
+		WithMessageChan(messageChan), WithContent("hi"))
+	callLLM.LLMClient.GetModel(callLLM)
+	callLLM.LLMClient.GetMessages("5", "hi")
+	err := callLLM.LLMClient.Send(context.Background(), callLLM)
+	assert.Equal(t, nil, err)
+	
+	*conf.BaseConfInfo.CustomUrl = ""
+}
 
 func TestOpenAIReq_GetMessage(t *testing.T) {
 	req := &OpenAIReq{}

@@ -28,7 +28,7 @@ func setup() {
 	db.InitTable()
 }
 
-func TestSend(t *testing.T) {
+func TestDeepseekSend(t *testing.T) {
 	messageChan := make(chan *param.MsgInfo)
 	
 	go func() {
@@ -36,6 +36,8 @@ func TestSend(t *testing.T) {
 			fmt.Println(m)
 		}
 	}()
+	
+	*conf.BaseConfInfo.Type = param.DeepSeek
 	
 	callLLM := NewLLM(WithChatId(1), WithMsgId(2), WithUserId("3"),
 		WithMessageChan(messageChan), WithContent("hi"))

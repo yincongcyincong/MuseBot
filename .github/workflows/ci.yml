@@ -15,6 +15,12 @@ jobs:
     runs-on: ubuntu-latest  # 指定运行环境
     env:
       DEEPSEEK_TOKEN: ${{ secrets.DEEPSEEK_TOKEN }}
+      GEMINI_TOKEN: ${{ secrets.GEMINI_TOKEN }}
+      OPENAI_TOKEN: ${{ secrets.OPENAI_TOKEN }}
+      OPEN_ROUTER_TOKEN: ${{ secrets.OPEN_ROUTER_TOKEN }}
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      VOL_TOKEN: ${{ secrets.VOL_TOKEN }}
+      TEST_CUSTOM_URL: ${{ secrets.TEST_CUSTOM_URL }}
     steps:
       # 检出代码
       - name: Checkout Code
@@ -47,5 +53,5 @@ jobs:
         run: |
           mkdir -p ./bin
           go build -o ./bin/telegram-deepseek-bot main.go
-          go build -o ./bin/telegram-deepseek-bot-admin ./admin/main.go
+          go build -o ./bin/telegram-deepseek-bot-admin ./admin
 
