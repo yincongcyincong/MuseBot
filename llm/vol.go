@@ -168,7 +168,7 @@ func (h *VolReq) Send(ctx context.Context, l *LLM) error {
 			}
 			
 			if len(choice.Delta.Content) > 0 {
-				msgInfoContent = l.sendMsg(msgInfoContent, choice.Delta.Content)
+				msgInfoContent = l.SendMsg(msgInfoContent, choice.Delta.Content)
 			}
 		}
 		
@@ -230,7 +230,7 @@ func (h *VolReq) requestToolsCall(ctx context.Context, choice *model.ChatComplet
 			h.ToolCall[len(h.ToolCall)-1].Type = toolCall.Type
 		}
 		
-		if toolCall.Function.Arguments != "" {
+		if toolCall.Function.Arguments != "" && toolCall.Function.Name == "" {
 			h.ToolCall[len(h.ToolCall)-1].Function.Arguments += toolCall.Function.Arguments
 		}
 		

@@ -145,7 +145,7 @@ func (d *DeepseekReq) Send(ctx context.Context, l *LLM) error {
 		for _, choice := range response.Choices {
 			if len(choice.Delta.ToolCalls) > 0 {
 				hasTools = true
-				err = d.requestToolsCall(ctx, choice)
+				err = d.RequestToolsCall(ctx, choice)
 				if err != nil {
 					if errors.Is(err, ToolsJsonErr) {
 						continue
@@ -156,7 +156,7 @@ func (d *DeepseekReq) Send(ctx context.Context, l *LLM) error {
 			}
 			
 			if len(choice.Delta.Content) > 0 {
-				msgInfoContent = l.sendMsg(msgInfoContent, choice.Delta.Content)
+				msgInfoContent = l.SendMsg(msgInfoContent, choice.Delta.Content)
 			}
 		}
 		
@@ -313,7 +313,7 @@ func (d *DeepseekReq) requestOneToolsCall(ctx context.Context, toolsCall []deeps
 	}
 }
 
-func (d *DeepseekReq) requestToolsCall(ctx context.Context, choice deepseek.StreamChoices) error {
+func (d *DeepseekReq) RequestToolsCall(ctx context.Context, choice deepseek.StreamChoices) error {
 	
 	for _, toolCall := range choice.Delta.ToolCalls {
 		property := make(map[string]interface{})
@@ -331,7 +331,7 @@ func (d *DeepseekReq) requestToolsCall(ctx context.Context, choice deepseek.Stre
 			d.ToolCall[len(d.ToolCall)-1].Type = toolCall.Type
 		}
 		
-		if toolCall.Function.Arguments != "" {
+		if toolCall.Function.Arguments != "" && toolCall.Function.Name == "" {
 			d.ToolCall[len(d.ToolCall)-1].Function.Arguments += toolCall.Function.Arguments
 		}
 		

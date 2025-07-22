@@ -370,7 +370,7 @@ func DetectImageFormat(data []byte) string {
 }
 
 func ByteToTempFile(data []byte, filename string) (*os.File, error) {
-	tmpFile, err := os.Create("./data/" + filename)
+	tmpFile, err := os.Create(filename)
 	if err != nil {
 		return nil, err
 	}

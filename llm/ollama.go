@@ -134,7 +134,7 @@ func (d *OllamaDeepseekReq) Send(ctx context.Context, l *LLM) error {
 			}
 			
 			if len(choice.Delta.Content) > 0 {
-				msgInfoContent = l.sendMsg(msgInfoContent, choice.Delta.Content)
+				msgInfoContent = l.SendMsg(msgInfoContent, choice.Delta.Content)
 			}
 		}
 		
