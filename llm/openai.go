@@ -149,7 +149,7 @@ func (d *OpenAIReq) Send(ctx context.Context, l *LLM) error {
 		for _, choice := range response.Choices {
 			if len(choice.Delta.ToolCalls) > 0 {
 				hasTools = true
-				err = d.requestToolsCall(ctx, choice)
+				err = d.RequestToolsCall(ctx, choice)
 				if err != nil {
 					if errors.Is(err, ToolsJsonErr) {
 						continue
@@ -160,7 +160,7 @@ func (d *OpenAIReq) Send(ctx context.Context, l *LLM) error {
 			}
 			
 			if len(choice.Delta.Content) > 0 {
-				msgInfoContent = l.sendMsg(msgInfoContent, choice.Delta.Content)
+				msgInfoContent = l.SendMsg(msgInfoContent, choice.Delta.Content)
 			}
 		}
 		
@@ -313,7 +313,7 @@ func (d *OpenAIReq) requestOneToolsCall(ctx context.Context, toolsCall []openai.
 	}
 }
 
-func (d *OpenAIReq) requestToolsCall(ctx context.Context, choice openai.ChatCompletionStreamChoice) error {
+func (d *OpenAIReq) RequestToolsCall(ctx context.Context, choice openai.ChatCompletionStreamChoice) error {
 	for _, toolCall := range choice.Delta.ToolCalls {
 		property := make(map[string]interface{})
 		
@@ -330,7 +330,7 @@ func (d *OpenAIReq) requestToolsCall(ctx context.Context, choice openai.ChatComp
 			d.ToolCall[len(d.ToolCall)-1].Type = toolCall.Type
 		}
 		
-		if toolCall.Function.Arguments != "" {
+		if toolCall.Function.Arguments != "" && toolCall.Function.Name == "" {
 			d.ToolCall[len(d.ToolCall)-1].Function.Arguments += toolCall.Function.Arguments
 		}
 		
@@ -385,7 +385,7 @@ func GenerateOpenAIImg(prompt string, imageContent []byte) ([]byte, error) {
 	var respUrl openai.ImageResponse
 	var err error
 	if len(imageContent) != 0 {
-		imageFile, err := utils.ByteToTempFile(imageContent, "temp."+utils.DetectImageFormat(imageContent))
+		imageFile, err := utils.ByteToTempFile(imageContent, "./data/temp."+utils.DetectImageFormat(imageContent))
 		if err != nil {
 			logger.Error("failed to create temp file:", err)
 			return nil, err

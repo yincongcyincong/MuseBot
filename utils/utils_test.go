@@ -1,7 +1,12 @@
 package utils
 
 import (
+	"io/ioutil"
+	"os"
+	"strings"
 	"testing"
+	
+	"github.com/stretchr/testify/assert"
 )
 
 func TestUtf16len(t *testing.T) {
@@ -46,4 +51,48 @@ func TestMD5(t *testing.T) {
 	if got != want {
 		t.Errorf("MD5(%q) = %s; want %s", input, got, want)
 	}
+}
+
+func TestDetectAudioFormat(t *testing.T) {
+	assert := assert.New(t)
+	assert.Equal("ogg", DetectAudioFormat([]byte("OggS...........")))
+	assert.Equal("mp3", DetectAudioFormat([]byte{0xFF, 0xFB, '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.'}))
+	assert.Equal("wav", DetectAudioFormat(append([]byte("RIFF....WAVE....."), make([]byte, 4)...)))
+	assert.Equal("unknown", DetectAudioFormat([]byte("??")))
+}
+
+func TestDetectImageFormat(t *testing.T) {
+	assert := assert.New(t)
+	assert.Equal("jpeg", DetectImageFormat([]byte{0xFF, 0xD8, 0xFF, '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.'}))
+	assert.Equal("png", DetectImageFormat([]byte{0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.'}))
+	assert.Equal("gif", DetectImageFormat([]byte("GIF87a..................")))
+	assert.Equal("bmp", DetectImageFormat([]byte{0x42, 0x4D, '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.'}))
+	assert.Equal("unknown", DetectImageFormat([]byte("??")))
+}
+
+func TestValueToString(t *testing.T) {
+	assert := assert.New(t)
+	assert.Equal("123", ValueToString(123))
+	assert.Equal("true", ValueToString(true))
+	assert.Equal("hello", ValueToString("hello"))
+	assert.Equal("1,2,3", ValueToString([]int{1, 2, 3}))
+}
+
+func TestMapKeysToString(t *testing.T) {
+	assert := assert.New(t)
+	m := map[string]int{"a": 1, "b": 2}
+	result := MapKeysToString(m)
+	assert.True(strings.Contains(result, "a"))
+	assert.True(strings.Contains(result, "b"))
+}
+
+func TestByteToTempFile(t *testing.T) {
+	assert := assert.New(t)
+	data := []byte("testdata")
+	file, err := ByteToTempFile(data, "testfile.txt")
+	defer os.Remove(file.Name())
+	assert.NoError(err)
+	content, err := ioutil.ReadAll(file)
+	assert.NoError(err)
+	assert.Equal(data, content)
 }

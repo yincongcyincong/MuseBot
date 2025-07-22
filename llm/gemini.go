@@ -115,7 +115,7 @@ func (h *GeminiReq) Send(ctx context.Context, l *LLM) error {
 		toolCalls := response.FunctionCalls()
 		if len(toolCalls) > 0 {
 			hasTools = true
-			err = h.requestToolsCall(ctx, response)
+			err = h.RequestToolsCall(ctx, response)
 			if err != nil {
 				if errors.Is(err, ToolsJsonErr) {
 					continue
@@ -126,7 +126,7 @@ func (h *GeminiReq) Send(ctx context.Context, l *LLM) error {
 		}
 		
 		if len(response.Text()) > 0 {
-			msgInfoContent = l.sendMsg(msgInfoContent, response.Text())
+			msgInfoContent = l.SendMsg(msgInfoContent, response.Text())
 		}
 		
 		if response.UsageMetadata != nil {
@@ -283,7 +283,7 @@ func (h *GeminiReq) requestOneToolsCall(ctx context.Context, toolsCall []*genai.
 	}
 }
 
-func (h *GeminiReq) requestToolsCall(ctx context.Context, response *genai.GenerateContentResponse) error {
+func (h *GeminiReq) RequestToolsCall(ctx context.Context, response *genai.GenerateContentResponse) error {
 	
 	for _, toolCall := range response.FunctionCalls() {
 		
