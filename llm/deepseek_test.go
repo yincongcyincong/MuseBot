@@ -1,7 +1,8 @@
-package llm_test
+package llm
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"testing"
 	
@@ -10,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
 	"github.com/yincongcyincong/telegram-deepseek-bot/db"
-	"github.com/yincongcyincong/telegram-deepseek-bot/llm"
+	"github.com/yincongcyincong/telegram-deepseek-bot/param"
 )
 
 func TestMain(m *testing.M) {
@@ -23,13 +24,30 @@ func TestMain(m *testing.M) {
 
 func setup() {
 	os.Setenv("TELEGRAM_BOT_TOKEN", "test_bot_token")
-	os.Setenv("DEEPSEEK_TOKEN", "test_deepseek_token")
 	conf.InitConf()
 	db.InitTable()
 }
 
+func TestSend(t *testing.T) {
+	messageChan := make(chan *param.MsgInfo)
+	
+	go func() {
+		for m := range messageChan {
+			fmt.Println(m)
+		}
+	}()
+	
+	callLLM := NewLLM(WithChatId(1), WithMsgId(2), WithUserId("3"),
+		WithMessageChan(messageChan), WithContent("hi"))
+	callLLM.LLMClient.GetModel(callLLM)
+	callLLM.LLMClient.GetMessages("3", "hi")
+	err := callLLM.LLMClient.Send(context.Background(), callLLM)
+	assert.Equal(t, nil, err)
+	
+}
+
 func TestGetMessage_AddsMessageCorrectly(t *testing.T) {
-	d := &llm.DeepseekReq{}
+	d := &DeepseekReq{}
 	d.GetMessage(constants.ChatMessageRoleUser, "test message")
 	
 	assert.Len(t, d.DeepseekMsgs, 1)
@@ -38,13 +56,13 @@ func TestGetMessage_AddsMessageCorrectly(t *testing.T) {
 }
 
 func TestAppendMessages_AppendsCorrectly(t *testing.T) {
-	base := &llm.DeepseekReq{
+	base := &DeepseekReq{
 		DeepseekMsgs: []deepseek.ChatCompletionMessage{
 			{Role: constants.ChatMessageRoleUser, Content: "first"},
 		},
 	}
 	
-	toAppend := &llm.DeepseekReq{
+	toAppend := &DeepseekReq{
 		DeepseekMsgs: []deepseek.ChatCompletionMessage{
 			{Role: constants.ChatMessageRoleAssistant, Content: "second"},
 		},
@@ -56,7 +74,7 @@ func TestAppendMessages_AppendsCorrectly(t *testing.T) {
 }
 
 func TestGetAssistantMessage(t *testing.T) {
-	d := &llm.DeepseekReq{}
+	d := &DeepseekReq{}
 	d.GetAssistantMessage("assistant reply")
 	assert.Len(t, d.DeepseekMsgs, 1)
 	assert.Equal(t, constants.ChatMessageRoleAssistant, d.DeepseekMsgs[0].Role)
@@ -64,7 +82,7 @@ func TestGetAssistantMessage(t *testing.T) {
 }
 
 func TestGetUserMessage(t *testing.T) {
-	d := &llm.DeepseekReq{}
+	d := &DeepseekReq{}
 	d.GetUserMessage("user message")
 	assert.Len(t, d.DeepseekMsgs, 1)
 	assert.Equal(t, constants.ChatMessageRoleUser, d.DeepseekMsgs[0].Role)
@@ -72,7 +90,7 @@ func TestGetUserMessage(t *testing.T) {
 }
 
 func TestRequestToolsCall_JSONError(t *testing.T) {
-	d := &llm.DeepseekReq{
+	d := &DeepseekReq{
 		ToolCall: []deepseek.ToolCall{
 			{
 				Function: deepseek.ToolCallFunction{
@@ -90,11 +108,11 @@ func TestRequestToolsCall_JSONError(t *testing.T) {
 	}
 	
 	err := d.RequestToolsCall(context.TODO(), choice)
-	assert.Equal(t, llm.ToolsJsonErr, err)
+	assert.Equal(t, ToolsJsonErr, err)
 }
 
 func TestGetMessage_AppendsCorrectlyWhenNotEmpty(t *testing.T) {
-	d := &llm.DeepseekReq{
+	d := &DeepseekReq{
 		DeepseekMsgs: []deepseek.ChatCompletionMessage{
 			{Role: constants.ChatMessageRoleUser, Content: "prev"},
 		},
