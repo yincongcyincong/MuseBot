@@ -1,4 +1,4 @@
-package llm_test
+package llm
 
 import (
 	"context"
@@ -6,11 +6,10 @@ import (
 	
 	"github.com/sashabaranov/go-openai"
 	"github.com/stretchr/testify/assert"
-	"github.com/yincongcyincong/telegram-deepseek-bot/llm"
 )
 
 func TestOpenAIReq_GetMessage(t *testing.T) {
-	req := &llm.OpenAIReq{}
+	req := &OpenAIReq{}
 	req.GetMessage("user", "hello")
 	assert.Len(t, req.OpenAIMsgs, 1)
 	assert.Equal(t, "hello", req.OpenAIMsgs[0].Content)
@@ -21,10 +20,10 @@ func TestOpenAIReq_GetMessage(t *testing.T) {
 }
 
 func TestOpenAIReq_AppendMessages(t *testing.T) {
-	req1 := &llm.OpenAIReq{}
+	req1 := &OpenAIReq{}
 	req1.GetMessage("user", "message from req1")
 	
-	req2 := &llm.OpenAIReq{}
+	req2 := &OpenAIReq{}
 	req2.AppendMessages(req1)
 	
 	assert.Len(t, req2.OpenAIMsgs, 1)
@@ -32,8 +31,8 @@ func TestOpenAIReq_AppendMessages(t *testing.T) {
 }
 
 func TestOpenAIReq_GetModel_Default(t *testing.T) {
-	req := &llm.OpenAIReq{}
-	llmObj := &llm.LLM{
+	req := &OpenAIReq{}
+	llmObj := &LLM{
 		UserId: "1",
 	}
 	
@@ -42,7 +41,7 @@ func TestOpenAIReq_GetModel_Default(t *testing.T) {
 }
 
 func TestRequestToolsCall_InvalidJSON(t *testing.T) {
-	req := &llm.OpenAIReq{
+	req := &OpenAIReq{
 		ToolCall: []openai.ToolCall{},
 	}
 	
@@ -62,5 +61,5 @@ func TestRequestToolsCall_InvalidJSON(t *testing.T) {
 	}
 	
 	err := req.RequestToolsCall(context.Background(), streamChoice)
-	assert.Equal(t, llm.ToolsJsonErr, err)
+	assert.Equal(t, ToolsJsonErr, err)
 }

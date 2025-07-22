@@ -1,17 +1,15 @@
-// llm/gemini_test.go
-package llm_test
+package llm
 
 import (
 	"context"
 	"testing"
 	
 	"github.com/stretchr/testify/assert"
-	"github.com/yincongcyincong/telegram-deepseek-bot/llm"
 	"google.golang.org/genai"
 )
 
 func TestGetMessage(t *testing.T) {
-	req := &llm.GeminiReq{}
+	req := &GeminiReq{}
 	req.GetUserMessage("hello")
 	assert.Equal(t, 1, len(req.GeminiMsgs))
 	assert.Equal(t, genai.RoleUser, req.GeminiMsgs[0].Role)
@@ -24,7 +22,7 @@ func TestGetMessage(t *testing.T) {
 }
 
 func TestAppendMessages(t *testing.T) {
-	req1 := &llm.GeminiReq{
+	req1 := &GeminiReq{
 		GeminiMsgs: []*genai.Content{
 			{
 				Role:  genai.RoleUser,
@@ -32,7 +30,7 @@ func TestAppendMessages(t *testing.T) {
 			},
 		},
 	}
-	req2 := &llm.GeminiReq{
+	req2 := &GeminiReq{
 		GeminiMsgs: []*genai.Content{
 			{
 				Role:  genai.RoleModel,
@@ -46,38 +44,38 @@ func TestAppendMessages(t *testing.T) {
 }
 
 func TestGenerateGeminiText_EmptyAudio(t *testing.T) {
-	text, err := llm.GenerateGeminiText([]byte{})
+	text, err := GenerateGeminiText([]byte{})
 	assert.Error(t, err)
 	assert.Empty(t, text)
 }
 
 func TestGenerateGeminiImage_EmptyPrompt(t *testing.T) {
-	image, err := llm.GenerateGeminiImg("", nil)
+	image, err := GenerateGeminiImg("", nil)
 	assert.Error(t, err)
 	assert.Nil(t, image)
 }
 
 func TestGetGeminiImageContent_EmptyData(t *testing.T) {
-	text, err := llm.GetGeminiImageContent([]byte{})
+	text, err := GetGeminiImageContent([]byte{})
 	assert.Error(t, err)
 	assert.Empty(t, text)
 }
 
 func TestGenerateGeminiVideo_InvalidPrompt(t *testing.T) {
-	video, err := llm.GenerateGeminiVideo("")
+	video, err := GenerateGeminiVideo("")
 	assert.Error(t, err)
 	assert.Nil(t, video)
 }
 
 func TestRequestToolsCall_NilFunctionCall(t *testing.T) {
-	req := &llm.GeminiReq{}
+	req := &GeminiReq{}
 	err := req.RequestToolsCall(context.Background(), &genai.GenerateContentResponse{})
 	assert.NoError(t, err) // should be a no-op
 }
 
 func TestGetModel_DefaultModel(t *testing.T) {
-	l := &llm.LLM{}
-	req := &llm.GeminiReq{}
+	l := &LLM{}
+	req := &GeminiReq{}
 	req.GetModel(l)
 	assert.NotEmpty(t, l.Model)
 }

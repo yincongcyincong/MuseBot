@@ -1,4 +1,4 @@
-name: Go CI/CD Pipeline
+name: Telegram-deepseek-bot CI/CD Pipeline
 
 # 触发条件：在 push 和 pull request 时运行
 on:
@@ -13,6 +13,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest  # 指定运行环境
+    env:
+      DEEPSEEK_TOKEN: ${{ secrets.DEEPSEEK_TOKEN }}
     steps:
       # 检出代码
       - name: Checkout Code
@@ -22,7 +24,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.21  # 指定 Go 版本
+          go-version: 1.24  # 指定 Go 版本
 
       # 下载依赖
       - name: Install Dependencies
@@ -45,10 +47,5 @@ jobs:
         run: |
           mkdir -p ./bin
           go build -o ./bin/telegram-deepseek-bot main.go
+          go build -o ./bin/telegram-deepseek-bot-admin ./admin/main.go
 
-      # 上传构建产物
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: telegram-deepseek-bot
-          path: ./bin/telegram-deepseek-bot
