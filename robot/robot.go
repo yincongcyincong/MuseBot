@@ -7,6 +7,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 	godeepseek "github.com/cohesion-org/deepseek-go"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/slack-go/slack"
 	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
 	"github.com/yincongcyincong/telegram-deepseek-bot/db"
 	"github.com/yincongcyincong/telegram-deepseek-bot/i18n"
@@ -81,18 +82,25 @@ func (r *RobotInfo) GetChatIdAndMsgIdAndUserID() (int64, int, string) {
 				userId = discordRobot.Inter.Member.User.ID
 			}
 		}
+	case *SlackRobot:
+		slackRobot := r.Robot.(*SlackRobot)
+		if slackRobot != nil {
+			chatId, _ = strconv.ParseInt(slackRobot.Event.Channel, 10, 64)
+			userId = slackRobot.Event.User
+			msgId, _ = strconv.Atoi(slackRobot.Event.ClientMsgID)
+		}
 	}
 	
 	return chatId, msgId, userId
 }
 
 func (r *RobotInfo) SendMsg(chatId int64, msgContent string, replyToMessageID int,
-	parseMode string, inlineKeyboard *tgbotapi.InlineKeyboardMarkup) int {
+	mode string, inlineKeyboard *tgbotapi.InlineKeyboardMarkup) int {
 	switch r.Robot.(type) {
 	case *TelegramRobot:
 		telegramRobot := r.Robot.(*TelegramRobot)
 		msg := tgbotapi.NewMessage(chatId, msgContent)
-		msg.ParseMode = parseMode
+		msg.ParseMode = mode
 		msg.ReplyMarkup = inlineKeyboard
 		msg.ReplyToMessageID = replyToMessageID
 		msgInfo, err := telegramRobot.Bot.Send(msg)
@@ -126,18 +134,34 @@ func (r *RobotInfo) SendMsg(chatId int64, msgContent string, replyToMessageID in
 		}
 		
 		if discordRobot.Inter != nil {
-			// Slash command interaction response
-			err := discordRobot.Session.InteractionRespond(discordRobot.Inter.Interaction, &discordgo.InteractionResponse{
-				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionResponseData{
-					Content: msgContent,
-				},
-			})
+			var err error
+			if mode == param.DiscordEditMode {
+				_, err = discordRobot.Session.InteractionResponseEdit(discordRobot.Inter.Interaction, &discordgo.WebhookEdit{
+					Content: &msgContent,
+				})
+			} else {
+				err = discordRobot.Session.InteractionRespond(discordRobot.Inter.Interaction, &discordgo.InteractionResponse{
+					Type: discordgo.InteractionResponseChannelMessageWithSource,
+					Data: &discordgo.InteractionResponseData{
+						Content: msgContent,
+					},
+				})
+			}
+			
 			if err != nil {
 				logger.Warn("send discord interaction response fail", "err", err)
 			}
 			return 0
 		}
+	
+	case *SlackRobot:
+		slackRobot := r.Robot.(*SlackRobot)
+		_, timestamp, err := slackRobot.Client.PostMessage(strconv.FormatInt(chatId, 10), slack.MsgOptionText(msgContent, false))
+		if err != nil {
+			logger.Warn("send message fail", "err", err)
+		}
+		
+		return utils.ParseInt(timestamp)
 		
 	}
 	
@@ -206,7 +230,6 @@ func (r *RobotInfo) checkUserTokenExceed(chatId int64, msgId int, userId string)
 	
 	if userInfo == nil {
 		db.InsertUser(userId, godeepseek.DeepSeekChat)
-		logger.Warn("get user info is nil")
 		return false
 	}
 	
@@ -251,7 +274,6 @@ func (r *RobotInfo) GetImageContent(imageContent []byte) (string, error) {
 		return llm.GetGeminiImageContent(imageContent)
 	case param.OpenAi:
 		return llm.GetOpanAIImageContent(imageContent)
-		
 	}
 	
 	return "", nil
@@ -271,4 +293,24 @@ func (r *RobotInfo) GetLastImageContent() ([]byte, error) {
 	
 	imageContent, err := utils.DownloadFile(imageInfo.Answer)
 	return imageContent, err
+}
+
+func (r *RobotInfo) TalkingPreCheck(f func()) {
+	chatId, msgId, userId := r.GetChatIdAndMsgIdAndUserID()
+	
+	if r.checkUserTokenExceed(chatId, msgId, userId) {
+		logger.Warn("user token exceed", "userID", userId)
+		return
+	}
+	
+	defer utils.DecreaseUserChat(userId)
+	
+	// check user chat exceed max count
+	if utils.CheckUserChatExceed(userId) {
+		r.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "chat_exceed", nil),
+			msgId, tgbotapi.ModeMarkdown, nil)
+		return
+	}
+	
+	f()
 }

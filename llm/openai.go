@@ -368,7 +368,7 @@ func (d *OpenAIReq) requestToolsCall(ctx context.Context, choice openai.ChatComp
 }
 
 // GenerateOpenAIImg generate image
-func GenerateOpenAIImg(prompt string, imageContent []byte) (string, error) {
+func GenerateOpenAIImg(prompt string, imageContent []byte) ([]byte, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 	
@@ -385,10 +385,10 @@ func GenerateOpenAIImg(prompt string, imageContent []byte) (string, error) {
 	var respUrl openai.ImageResponse
 	var err error
 	if len(imageContent) != 0 {
-		imageFile, err := utils.ByteToTempFile(imageContent, "./data/temp-*.png")
+		imageFile, err := utils.ByteToTempFile(imageContent, "temp."+utils.DetectImageFormat(imageContent))
 		if err != nil {
 			logger.Error("failed to create temp file:", err)
-			return "", err
+			return nil, err
 		}
 		defer os.Remove(imageFile.Name())
 		defer imageFile.Close()
@@ -396,9 +396,10 @@ func GenerateOpenAIImg(prompt string, imageContent []byte) (string, error) {
 		respUrl, err = client.CreateEditImage(ctx, openai.ImageEditRequest{
 			Image:          imageFile,
 			Prompt:         prompt,
+			Model:          "gpt-image-1",
 			N:              1,
 			Size:           openai.CreateImageSize1024x1024,
-			ResponseFormat: openai.CreateImageResponseFormatURL,
+			ResponseFormat: openai.CreateImageResponseFormatB64JSON,
 		})
 	} else {
 		respUrl, err = client.CreateImage(
@@ -406,7 +407,7 @@ func GenerateOpenAIImg(prompt string, imageContent []byte) (string, error) {
 			openai.ImageRequest{
 				Prompt:         prompt,
 				Size:           openai.CreateImageSize1024x1024,
-				ResponseFormat: openai.CreateImageResponseFormatURL,
+				ResponseFormat: openai.CreateImageResponseFormatB64JSON,
 				N:              1,
 			},
 		)
@@ -414,15 +415,21 @@ func GenerateOpenAIImg(prompt string, imageContent []byte) (string, error) {
 	
 	if err != nil {
 		logger.Error("CreateImage error", "err", err)
-		return "", err
+		return nil, err
 	}
 	
 	if len(respUrl.Data) == 0 {
 		logger.Error("response is emtpy", "response", respUrl)
-		return "", errors.New("response is empty")
+		return nil, errors.New("response is empty")
 	}
 	
-	return respUrl.Data[0].URL, nil
+	imageContentByte, err := base64.StdEncoding.DecodeString(respUrl.Data[0].B64JSON)
+	if err != nil {
+		logger.Error("decode image error", "err", err)
+		return nil, err
+	}
+	
+	return imageContentByte, nil
 }
 
 func GenerateOpenAIText(audioContent []byte) (string, error) {

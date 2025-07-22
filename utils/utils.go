@@ -304,7 +304,7 @@ func DownloadFile(url string) ([]byte, error) {
 	}
 	
 	client := &http.Client{
-		Timeout: 15 * time.Second,
+		Timeout: 1 * time.Minute,
 	}
 	
 	resp, err := client.Get(url)
@@ -370,7 +370,7 @@ func DetectImageFormat(data []byte) string {
 }
 
 func ByteToTempFile(data []byte, filename string) (*os.File, error) {
-	tmpFile, err := os.CreateTemp("", filename)
+	tmpFile, err := os.Create("./data/" + filename)
 	if err != nil {
 		return nil, err
 	}
@@ -380,6 +380,10 @@ func ByteToTempFile(data []byte, filename string) (*os.File, error) {
 		return nil, err
 	}
 	
-	tmpFile.Close()
-	return os.Open(tmpFile.Name())
+	_, err = tmpFile.Seek(0, 0)
+	if err != nil {
+		tmpFile.Close()
+		return nil, err
+	}
+	return tmpFile, nil
 }

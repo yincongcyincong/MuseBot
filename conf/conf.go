@@ -13,13 +13,15 @@ import (
 type BaseConf struct {
 	TelegramBotToken *string `json:"telegram_bot_token"`
 	DiscordBotToken  *string `json:"discord_bot_token"`
-	DeepseekToken    *string `json:"deepseek_token"`
-	OpenAIToken      *string `json:"openai_token"`
-	GeminiToken      *string `json:"gemini_token"`
-	OpenRouterToken  *string `json:"openrouter_token"`
-	VolToken         *string `json:"vol_token"`
-	ErnieAK          *string `json:"ernie_ak"`
-	ErnieSK          *string `json:"ernie_sk"`
+	SlackBotToken    *string `json:"slack_bot_token"`
+	
+	DeepseekToken   *string `json:"deepseek_token"`
+	OpenAIToken     *string `json:"openai_token"`
+	GeminiToken     *string `json:"gemini_token"`
+	OpenRouterToken *string `json:"openrouter_token"`
+	VolToken        *string `json:"vol_token"`
+	ErnieAK         *string `json:"ernie_ak"`
+	ErnieSK         *string `json:"ernie_sk"`
 	
 	Type          *string `json:"type"`
 	MediaType     *string `json:"media_type"`
@@ -56,6 +58,8 @@ var (
 func InitConf() {
 	BaseConfInfo.TelegramBotToken = flag.String("telegram_bot_token", "", "Telegram bot tokens")
 	BaseConfInfo.DiscordBotToken = flag.String("discord_bot_token", "", "Discord bot tokens")
+	BaseConfInfo.SlackBotToken = flag.String("slack_bot_token", "", "Slack bot tokens")
+	
 	BaseConfInfo.DeepseekToken = flag.String("deepseek_token", "", "deepseek auth token")
 	BaseConfInfo.OpenAIToken = flag.String("openai_token", "", "openai auth token")
 	BaseConfInfo.GeminiToken = flag.String("gemini_token", "", "gemini auth token")
@@ -107,6 +111,10 @@ func InitConf() {
 	
 	if os.Getenv("DISCORD_BOT_TOKEN") != "" {
 		*BaseConfInfo.DiscordBotToken = os.Getenv("DISCORD_BOT_TOKEN")
+	}
+	
+	if os.Getenv("SLACK_BOT_TOKEN") != "" {
+		*BaseConfInfo.SlackBotToken = os.Getenv("SLACK_BOT_TOKEN")
 	}
 	
 	if os.Getenv("DEEPSEEK_TOKEN") != "" {
@@ -250,6 +258,7 @@ func InitConf() {
 	
 	logger.Info("CONF", "TelegramBotToken", *BaseConfInfo.TelegramBotToken)
 	logger.Info("CONF", "DiscordBotToken", *BaseConfInfo.DiscordBotToken)
+	logger.Info("CONF", "SlackBotToken", *BaseConfInfo.SlackBotToken)
 	logger.Info("CONF", "DeepseekToken", *BaseConfInfo.DeepseekToken)
 	logger.Info("CONF", "CustomUrl", *BaseConfInfo.CustomUrl)
 	logger.Info("CONF", "Type", *BaseConfInfo.Type)
