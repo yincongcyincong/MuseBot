@@ -415,7 +415,7 @@ func GenerateVolImg(prompt string, imageContent []byte) (string, error) {
 	}
 	
 	if len(imageContent) != 0 {
-		reqBody["binary_data_base64"] = base64.StdEncoding.EncodeToString(imageContent)
+		reqBody["binary_data_base64"] = []string{base64.StdEncoding.EncodeToString(imageContent)}
 	}
 	
 	resp, _, err := visual.DefaultInstance.CVProcess(reqBody)

@@ -141,12 +141,6 @@ func (t *TelegramRobot) Exec() {
 
 // requestDeepseekAndResp request deepseek api
 func (t *TelegramRobot) requestDeepseekAndResp(content string) {
-	chatId, replyToMessageID, userId := t.Robot.GetChatIdAndMsgIdAndUserID()
-	if t.Robot.checkUserTokenExceed(chatId, replyToMessageID, userId) {
-		logger.Warn("user token exceed", "userID", userId)
-		return
-	}
-	
 	if conf.RagConfInfo.Store != nil {
 		t.executeChain(content)
 	} else {
@@ -160,43 +154,38 @@ func (t *TelegramRobot) executeChain(content string) {
 	messageChan := make(chan *param.MsgInfo)
 	chatId, msgId, userId := t.Robot.GetChatIdAndMsgIdAndUserID()
 	go func() {
-		defer func() {
-			if err := recover(); err != nil {
-				logger.Error("GetContent panic err", "err", err, "stack", string(debug.Stack()))
+		t.Robot.TalkingPreCheck(func() {
+			defer func() {
+				if err := recover(); err != nil {
+					logger.Error("GetContent panic err", "err", err, "stack", string(debug.Stack()))
+				}
+				close(messageChan)
+			}()
+			
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+			defer cancel()
+			
+			text, err := t.GetContent(content)
+			if err != nil {
+				logger.Error("get content fail", "err", err)
+				t.Robot.SendMsg(chatId, err.Error(), msgId, "", nil)
+				return
 			}
-			utils.DecreaseUserChat(userId)
-			close(messageChan)
-		}()
-		// check user chat exceed max count
-		if utils.CheckUserChatExceed(userId) {
-			t.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "chat_exceed", nil),
-				msgId, tgbotapi.ModeMarkdown, nil)
-			return
-		}
-		
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
-		defer cancel()
-		
-		text, err := t.GetContent(content)
-		if err != nil {
-			logger.Error("get content fail", "err", err)
-			t.Robot.SendMsg(chatId, err.Error(), msgId, "", nil)
-			return
-		}
-		
-		dpLLM := rag.NewRag(llm.WithMessageChan(messageChan), llm.WithContent(content),
-			llm.WithChatId(chatId), llm.WithMsgId(msgId),
-			llm.WithUserId(userId))
-		
-		qaChain := chains.NewRetrievalQAFromLLM(
-			dpLLM,
-			vectorstores.ToRetriever(conf.RagConfInfo.Store, 3),
-		)
-		_, err = chains.Run(ctx, qaChain, text)
-		if err != nil {
-			logger.Warn("execute chain fail", "err", err)
-			t.Robot.SendMsg(chatId, err.Error(), msgId, "", nil)
-		}
+			
+			dpLLM := rag.NewRag(llm.WithMessageChan(messageChan), llm.WithContent(content),
+				llm.WithChatId(chatId), llm.WithMsgId(msgId),
+				llm.WithUserId(userId))
+			
+			qaChain := chains.NewRetrievalQAFromLLM(
+				dpLLM,
+				vectorstores.ToRetriever(conf.RagConfInfo.Store, 3),
+			)
+			_, err = chains.Run(ctx, qaChain, text)
+			if err != nil {
+				logger.Warn("execute chain fail", "err", err)
+				t.Robot.SendMsg(chatId, err.Error(), msgId, "", nil)
+			}
+		})
 	}()
 	
 	// send response message
@@ -217,45 +206,41 @@ func (t *TelegramRobot) executeLLM(content string) {
 }
 
 func (t *TelegramRobot) callLLM(content string, messageChan chan *param.MsgInfo) {
-	chatId, msgId, userId := t.Robot.GetChatIdAndMsgIdAndUserID()
-	
-	defer func() {
-		if err := recover(); err != nil {
-			logger.Error("GetContent panic err", "err", err, "stack", string(debug.Stack()))
+	t.Robot.TalkingPreCheck(func() {
+		chatId, msgId, userId := t.Robot.GetChatIdAndMsgIdAndUserID()
+		
+		defer func() {
+			if err := recover(); err != nil {
+				logger.Error("GetContent panic err", "err", err, "stack", string(debug.Stack()))
+			}
+			close(messageChan)
+		}()
+		
+		text, err := t.GetContent(content)
+		if err != nil {
+			logger.Error("get content fail", "err", err)
+			t.Robot.SendMsg(chatId, err.Error(), msgId, "", nil)
+			return
 		}
-		utils.DecreaseUserChat(userId)
-		close(messageChan)
-	}()
-	// check user chat exceed max count
-	if utils.CheckUserChatExceed(userId) {
-		t.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "chat_exceed", nil),
-			msgId, tgbotapi.ModeMarkdown, nil)
-		return
-	}
+		
+		l := llm.NewLLM(llm.WithMessageChan(messageChan), llm.WithContent(text),
+			llm.WithChatId(chatId), llm.WithMsgId(msgId),
+			llm.WithUserId(userId),
+			llm.WithTaskTools(&conf.AgentInfo{
+				DeepseekTool:    conf.DeepseekTools,
+				VolTool:         conf.VolTools,
+				OpenAITools:     conf.OpenAITools,
+				GeminiTools:     conf.GeminiTools,
+				OpenRouterTools: conf.OpenRouterTools,
+			}))
+		
+		err = l.CallLLM()
+		if err != nil {
+			logger.Error("get content fail", "err", err)
+			t.Robot.SendMsg(chatId, err.Error(), msgId, "", nil)
+		}
+	})
 	
-	text, err := t.GetContent(content)
-	if err != nil {
-		logger.Error("get content fail", "err", err)
-		t.Robot.SendMsg(chatId, err.Error(), msgId, "", nil)
-		return
-	}
-	
-	l := llm.NewLLM(llm.WithMessageChan(messageChan), llm.WithContent(text),
-		llm.WithChatId(chatId), llm.WithMsgId(msgId),
-		llm.WithUserId(userId),
-		llm.WithTaskTools(&conf.AgentInfo{
-			DeepseekTool:    conf.DeepseekTools,
-			VolTool:         conf.VolTools,
-			OpenAITools:     conf.OpenAITools,
-			GeminiTools:     conf.GeminiTools,
-			OpenRouterTools: conf.OpenRouterTools,
-		}))
-	
-	err = l.CallLLM()
-	if err != nil {
-		logger.Error("get content fail", "err", err)
-		t.Robot.SendMsg(chatId, err.Error(), msgId, "", nil)
-	}
 }
 
 // handleUpdate handle robot msg sending
@@ -401,7 +386,7 @@ func (t *TelegramRobot) handleCommand() {
 	logger.Info("command info", "userID", userID, "cmd", cmd)
 	
 	// check if at bot
-	chatType := t.GetChatType()
+	chatType := t.GetMessage().Chat.Type
 	if (chatType == "group" || chatType == "supergroup") && *conf.BaseConfInfo.NeedATBOt {
 		if !strings.Contains(t.Update.Message.Text, "@"+t.Bot.Self.UserName) {
 			logger.Warn("not at bot", "userID", userID, "cmd", cmd)
@@ -745,12 +730,13 @@ func (t *TelegramRobot) handleCallbackQuery() {
 
 // handleModeUpdate handle mode update
 func (t *TelegramRobot) handleModeUpdate() {
-	_, _, userId := t.Robot.GetChatIdAndMsgIdAndUserID()
+	chatId, msgId, userId := t.Robot.GetChatIdAndMsgIdAndUserID()
 	
 	userInfo, err := db.GetUserByID(userId)
 	if err != nil {
 		logger.Warn("get user fail", "userID", userId, "err", err)
-		t.sendFailMessage()
+		t.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "set_mode", nil),
+			msgId, tgbotapi.ModeMarkdown, nil)
 		return
 	}
 	
@@ -758,14 +744,16 @@ func (t *TelegramRobot) handleModeUpdate() {
 		err = db.UpdateUserMode(userId, t.Update.CallbackQuery.Data)
 		if err != nil {
 			logger.Warn("update user fail", "userID", userId, "err", err)
-			t.sendFailMessage()
+			t.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "set_mode", nil),
+				msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
 	} else {
 		_, err = db.InsertUser(userId, t.Update.CallbackQuery.Data)
 		if err != nil {
 			logger.Warn("insert user fail", "userID", t.Update.CallbackQuery.From.String(), "err", err)
-			t.sendFailMessage()
+			t.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "set_mode", nil),
+				msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
 	}
@@ -780,286 +768,255 @@ func (t *TelegramRobot) handleModeUpdate() {
 	//	i18n.GetMessage(*conf.BaseConfInfo.Lang, "mode_choose", nil)+update.CallbackQuery.Data, bot, update.CallbackQuery.Message.MessageID)
 }
 
-// sendFailMessage send set mode fail msg
-func (t *TelegramRobot) sendFailMessage() {
-	chatID, msgId, _ := t.Robot.GetChatIdAndMsgIdAndUserID()
-	callback := tgbotapi.NewCallback(t.Update.CallbackQuery.ID, i18n.GetMessage(*conf.BaseConfInfo.Lang, "set_mode", nil))
-	if _, err := t.Bot.Request(callback); err != nil {
-		logger.Warn("request callback fail", "err", err)
-	}
-	t.Robot.SendMsg(chatID, i18n.GetMessage(*conf.BaseConfInfo.Lang, "set_mode", nil),
-		msgId, tgbotapi.ModeMarkdown, nil)
-}
-
 func (t *TelegramRobot) sendMultiAgent(agentType string) {
-	chatId, replyToMessageID, userId := t.Robot.GetChatIdAndMsgIdAndUserID()
-	if utils.CheckUserChatExceed(userId) {
-		t.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "chat_exceed", nil),
-			replyToMessageID, tgbotapi.ModeMarkdown, nil)
-		return
-	}
-	
-	defer func() {
-		utils.DecreaseUserChat(userId)
-	}()
-	
-	if t.Robot.checkUserTokenExceed(chatId, replyToMessageID, userId) {
-		logger.Warn("user token exceed", "userID", userId)
-		return
-	}
-	
-	prompt := ""
-	if t.Update.Message != nil {
-		prompt = t.Update.Message.Text
-	}
-	prompt = utils.ReplaceCommand(prompt, "/mcp", t.Bot.Self.UserName)
-	prompt = utils.ReplaceCommand(prompt, "/task", t.Bot.Self.UserName)
-	if len(prompt) == 0 {
-		err := utils.ForceReply(chatId, replyToMessageID, agentType, t.Bot)
-		if err != nil {
-			logger.Warn("force reply fail", "err", err)
+	t.Robot.TalkingPreCheck(func() {
+		chatId, replyToMessageID, userId := t.Robot.GetChatIdAndMsgIdAndUserID()
+		
+		prompt := ""
+		if t.Update.Message != nil {
+			prompt = t.Update.Message.Text
 		}
-		return
-	}
-	
-	// send response message
-	messageChan := make(chan *param.MsgInfo)
-	
-	dpReq := &llm.DeepseekTaskReq{
-		Content:     prompt,
-		UserId:      userId,
-		ChatId:      chatId,
-		MsgId:       replyToMessageID,
-		MessageChan: messageChan,
-	}
-	
-	if agentType == "mcp_empty_content" {
-		go func() {
-			err := dpReq.ExecuteMcp()
+		prompt = utils.ReplaceCommand(prompt, "/mcp", t.Bot.Self.UserName)
+		prompt = utils.ReplaceCommand(prompt, "/task", t.Bot.Self.UserName)
+		if len(prompt) == 0 {
+			err := utils.ForceReply(chatId, replyToMessageID, agentType, t.Bot)
 			if err != nil {
-				t.Robot.SendMsg(chatId, err.Error(), replyToMessageID, "", nil)
+				logger.Warn("force reply fail", "err", err)
 			}
-		}()
-	} else {
-		go func() {
-			err := dpReq.ExecuteTask()
-			if err != nil {
-				t.Robot.SendMsg(chatId, err.Error(), replyToMessageID, "", nil)
-			}
-		}()
-	}
+			return
+		}
+		
+		// send response message
+		messageChan := make(chan *param.MsgInfo)
+		
+		dpReq := &llm.DeepseekTaskReq{
+			Content:     prompt,
+			UserId:      userId,
+			ChatId:      chatId,
+			MsgId:       replyToMessageID,
+			MessageChan: messageChan,
+		}
+		
+		if agentType == "mcp_empty_content" {
+			go func() {
+				defer func() {
+					if err := recover(); err != nil {
+						logger.Error("handleCommand panic err", "err", err, "stack", string(debug.Stack()))
+					}
+					close(messageChan)
+				}()
+				
+				err := dpReq.ExecuteMcp()
+				if err != nil {
+					t.Robot.SendMsg(chatId, err.Error(), replyToMessageID, "", nil)
+				}
+			}()
+		} else {
+			go func() {
+				defer func() {
+					if err := recover(); err != nil {
+						logger.Error("handleCommand panic err", "err", err, "stack", string(debug.Stack()))
+					}
+					close(messageChan)
+				}()
+				
+				err := dpReq.ExecuteTask()
+				if err != nil {
+					t.Robot.SendMsg(chatId, err.Error(), replyToMessageID, "", nil)
+				}
+			}()
+		}
+		
+		go t.handleUpdate(messageChan)
+	})
 	
-	go t.handleUpdate(messageChan)
 }
 
 // sendVideo send video to telegram
 func (t *TelegramRobot) sendVideo() {
-	chatId, replyToMessageID, userId := t.Robot.GetChatIdAndMsgIdAndUserID()
-	if utils.CheckUserChatExceed(userId) {
-		t.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "chat_exceed", nil),
-			replyToMessageID, tgbotapi.ModeMarkdown, nil)
-		return
-	}
 	
-	defer func() {
-		utils.DecreaseUserChat(userId)
-	}()
-	
-	if t.Robot.checkUserTokenExceed(chatId, replyToMessageID, userId) {
-		logger.Warn("user token exceed", "userID", userId)
-		return
-	}
-	
-	prompt := ""
-	if t.Update.Message != nil {
-		prompt = t.Update.Message.Text
-	}
-	
-	prompt = utils.ReplaceCommand(prompt, "/video", t.Bot.Self.UserName)
-	if len(prompt) == 0 {
-		err := utils.ForceReply(chatId, replyToMessageID, "video_empty_content", t.Bot)
-		if err != nil {
-			logger.Warn("force reply fail", "err", err)
+	t.Robot.TalkingPreCheck(func() {
+		chatId, replyToMessageID, userId := t.Robot.GetChatIdAndMsgIdAndUserID()
+		
+		prompt := ""
+		if t.Update.Message != nil {
+			prompt = t.Update.Message.Text
 		}
-		return
-	}
-	
-	thinkingMsgId := t.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "thinking", nil),
-		replyToMessageID, tgbotapi.ModeMarkdown, nil)
-	
-	var videoUrl string
-	var videoContent []byte
-	var err error
-	switch *conf.BaseConfInfo.MediaType {
-	case param.Vol:
-		videoUrl, err = llm.GenerateVolVideo(prompt)
-	case param.Gemini:
-		videoContent, err = llm.GenerateGeminiVideo(prompt)
-	default:
-		err = fmt.Errorf("unsupported type: %s", *conf.BaseConfInfo.MediaType)
-	}
-	if err != nil {
-		logger.Warn("generate video fail", "err", err)
-		return
-	}
-	
-	var video tgbotapi.InputMediaVideo
-	if len(videoUrl) != 0 {
-		video = tgbotapi.NewInputMediaVideo(tgbotapi.FileURL(videoUrl))
-	} else if len(videoContent) != 0 {
-		video = tgbotapi.NewInputMediaVideo(tgbotapi.FileBytes{
-			Name:  "video.mp4",
-			Bytes: videoContent,
+		
+		prompt = utils.ReplaceCommand(prompt, "/video", t.Bot.Self.UserName)
+		if len(prompt) == 0 {
+			err := utils.ForceReply(chatId, replyToMessageID, "video_empty_content", t.Bot)
+			if err != nil {
+				logger.Warn("force reply fail", "err", err)
+			}
+			return
+		}
+		
+		thinkingMsgId := t.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "thinking", nil),
+			replyToMessageID, tgbotapi.ModeMarkdown, nil)
+		
+		var videoUrl string
+		var videoContent []byte
+		var err error
+		switch *conf.BaseConfInfo.MediaType {
+		case param.Vol:
+			videoUrl, err = llm.GenerateVolVideo(prompt)
+		case param.Gemini:
+			videoContent, err = llm.GenerateGeminiVideo(prompt)
+		default:
+			err = fmt.Errorf("unsupported type: %s", *conf.BaseConfInfo.MediaType)
+		}
+		if err != nil {
+			logger.Warn("generate video fail", "err", err)
+			t.Robot.SendMsg(chatId, err.Error(), replyToMessageID, "", nil)
+			return
+		}
+		
+		var video tgbotapi.InputMediaVideo
+		if len(videoUrl) != 0 {
+			video = tgbotapi.NewInputMediaVideo(tgbotapi.FileURL(videoUrl))
+		} else if len(videoContent) != 0 {
+			video = tgbotapi.NewInputMediaVideo(tgbotapi.FileBytes{
+				Name:  "video.mp4",
+				Bytes: videoContent,
+			})
+		}
+		
+		edit := tgbotapi.EditMessageMediaConfig{
+			BaseEdit: tgbotapi.BaseEdit{
+				ChatID:    chatId,
+				MessageID: thinkingMsgId,
+			},
+			Media: video,
+		}
+		
+		_, err = t.Bot.Request(edit)
+		if err != nil {
+			logger.Warn("send video fail", "result", edit)
+			t.Robot.SendMsg(chatId, err.Error(), replyToMessageID, "", nil)
+			return
+		}
+		
+		db.InsertRecordInfo(&db.Record{
+			UserId:    userId,
+			Question:  prompt,
+			Answer:    videoUrl,
+			Token:     param.VideoTokenUsage,
+			IsDeleted: 1,
 		})
-	}
-	
-	edit := tgbotapi.EditMessageMediaConfig{
-		BaseEdit: tgbotapi.BaseEdit{
-			ChatID:    chatId,
-			MessageID: thinkingMsgId,
-		},
-		Media: video,
-	}
-	
-	_, err = t.Bot.Request(edit)
-	if err != nil {
-		logger.Warn("send video fail", "result", edit)
-		return
-	}
-	
-	db.InsertRecordInfo(&db.Record{
-		UserId:    userId,
-		Question:  prompt,
-		Answer:    videoUrl,
-		Token:     param.VideoTokenUsage,
-		IsDeleted: 1,
 	})
-	return
 }
 
 // sendImg send img to telegram
 func (t *TelegramRobot) sendImg() {
-	chatId, replyToMessageID, userId := t.Robot.GetChatIdAndMsgIdAndUserID()
-	if utils.CheckUserChatExceed(userId) {
-		t.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "chat_exceed", nil),
-			replyToMessageID, tgbotapi.ModeMarkdown, nil)
-		return
-	}
-	
-	defer func() {
-		utils.DecreaseUserChat(userId)
-	}()
-	
-	if t.Robot.checkUserTokenExceed(chatId, replyToMessageID, userId) {
-		logger.Warn("user token exceed", "userID", userId)
-		return
-	}
-	
-	prompt := ""
-	if t.Update.Message != nil {
-		prompt = t.Update.Message.Text
-	}
-	prompt = utils.ReplaceCommand(prompt, "/photo", t.Bot.Self.UserName)
-	if prompt == "" && len(t.Update.Message.Photo) > 0 {
-		prompt = t.Update.Message.Caption
-	}
-	
-	if len(prompt) == 0 {
-		err := utils.ForceReply(chatId, replyToMessageID, "photo_empty_content", t.Bot)
-		if err != nil {
-			logger.Warn("force reply fail", "err", err)
+	t.Robot.TalkingPreCheck(func() {
+		chatId, replyToMessageID, userId := t.Robot.GetChatIdAndMsgIdAndUserID()
+		
+		prompt := ""
+		if t.Update.Message != nil {
+			prompt = t.Update.Message.Text
 		}
-		return
-	}
-	
-	var err error
-	lastImageContent := t.GetPhotoContent()
-	if len(lastImageContent) == 0 {
-		lastImageContent, err = t.Robot.GetLastImageContent()
-		if err != nil {
-			logger.Warn("get last image record fail", "err", err)
+		prompt = utils.ReplaceCommand(prompt, "/photo", t.Bot.Self.UserName)
+		if prompt == "" && len(t.Update.Message.Photo) > 0 {
+			prompt = t.Update.Message.Caption
 		}
-	}
-	
-	thinkingMsgId := t.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "thinking", nil),
-		replyToMessageID, tgbotapi.ModeMarkdown, nil)
-	
-	var imageUrl string
-	var imageContent []byte
-	
-	switch *conf.BaseConfInfo.MediaType {
-	case param.Vol:
-		imageUrl, err = llm.GenerateVolImg(prompt, lastImageContent)
-	case param.OpenAi:
-		imageUrl, err = llm.GenerateOpenAIImg(prompt, lastImageContent)
-	case param.Gemini:
-		imageContent, err = llm.GenerateGeminiImg(prompt, lastImageContent)
-	default:
-		err = fmt.Errorf("unsupported type: %s", *conf.BaseConfInfo.MediaType)
-	}
-	
-	if err != nil {
-		logger.Warn("generate image fail", "err", err)
-		t.Robot.SendMsg(chatId, err.Error(), replyToMessageID, "", nil)
-		return
-	}
-	
-	var photo tgbotapi.InputMediaPhoto
-	if len(imageUrl) != 0 {
-		photo = tgbotapi.NewInputMediaPhoto(tgbotapi.FileURL(imageUrl))
-	} else if len(imageContent) != 0 {
-		photo = tgbotapi.NewInputMediaPhoto(tgbotapi.FileBytes{
-			Name:  "image." + utils.DetectImageFormat(imageContent),
-			Bytes: imageContent,
-		})
-	}
-	
-	edit := tgbotapi.EditMessageMediaConfig{
-		BaseEdit: tgbotapi.BaseEdit{
-			ChatID:    chatId,
-			MessageID: thinkingMsgId,
-		},
-		Media: photo,
-	}
-	
-	editResp, err := t.Bot.Request(edit)
-	if err != nil {
-		logger.Warn("send image fail", "result", edit)
-		return
-	}
-	
-	if imageUrl == "" {
-		var result struct {
-			Photo []tgbotapi.PhotoSize `json:"photo"`
-		}
-		if err = json.Unmarshal(editResp.Result, &result); err != nil {
-			logger.Error("unmarshal editResp.Result fail", "err", err)
-			return
-		}
-		if len(result.Photo) == 0 {
-			logger.Warn("editResp.Result.Photo is empty")
+		
+		if len(prompt) == 0 {
+			err := utils.ForceReply(chatId, replyToMessageID, "photo_empty_content", t.Bot)
+			if err != nil {
+				logger.Warn("force reply fail", "err", err)
+			}
 			return
 		}
 		
-		fileID := result.Photo[len(result.Photo)-1].FileID
-		file, err := t.Bot.GetFile(tgbotapi.FileConfig{FileID: fileID})
+		var err error
+		lastImageContent := t.GetPhotoContent()
+		if len(lastImageContent) == 0 {
+			lastImageContent, err = t.Robot.GetLastImageContent()
+			if err != nil {
+				logger.Warn("get last image record fail", "err", err)
+			}
+		}
+		
+		thinkingMsgId := t.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "thinking", nil),
+			replyToMessageID, tgbotapi.ModeMarkdown, nil)
+		
+		var imageUrl string
+		var imageContent []byte
+		
+		switch *conf.BaseConfInfo.MediaType {
+		case param.Vol:
+			imageUrl, err = llm.GenerateVolImg(prompt, lastImageContent)
+		case param.OpenAi:
+			imageContent, err = llm.GenerateOpenAIImg(prompt, lastImageContent)
+		case param.Gemini:
+			imageContent, err = llm.GenerateGeminiImg(prompt, lastImageContent)
+		default:
+			err = fmt.Errorf("unsupported type: %s", *conf.BaseConfInfo.MediaType)
+		}
+		
 		if err != nil {
-			logger.Warn("get file fail", "err", err)
+			logger.Warn("generate image fail", "err", err)
+			t.Robot.SendMsg(chatId, err.Error(), replyToMessageID, "", nil)
 			return
 		}
-		imageUrl = fmt.Sprintf("https://api.telegram.org/file/bot%s/%s", t.Bot.Token, file.FilePath)
-	}
-	
-	db.InsertRecordInfo(&db.Record{
-		UserId:     userId,
-		Question:   prompt,
-		Answer:     imageUrl,
-		Token:      param.ImageTokenUsage,
-		IsDeleted:  0,
-		RecordType: param.ImageRecordType,
+		
+		var photo tgbotapi.InputMediaPhoto
+		if len(imageUrl) != 0 {
+			photo = tgbotapi.NewInputMediaPhoto(tgbotapi.FileURL(imageUrl))
+		} else if len(imageContent) != 0 {
+			photo = tgbotapi.NewInputMediaPhoto(tgbotapi.FileBytes{
+				Name:  "image." + utils.DetectImageFormat(imageContent),
+				Bytes: imageContent,
+			})
+		}
+		
+		edit := tgbotapi.EditMessageMediaConfig{
+			BaseEdit: tgbotapi.BaseEdit{
+				ChatID:    chatId,
+				MessageID: thinkingMsgId,
+			},
+			Media: photo,
+		}
+		
+		editResp, err := t.Bot.Request(edit)
+		if err != nil {
+			logger.Warn("send image fail", "result", edit)
+			t.Robot.SendMsg(chatId, err.Error(), replyToMessageID, "", nil)
+			return
+		}
+		
+		if imageUrl == "" {
+			var result struct {
+				Photo []tgbotapi.PhotoSize `json:"photo"`
+			}
+			if err = json.Unmarshal(editResp.Result, &result); err != nil {
+				logger.Error("unmarshal editResp.Result fail", "err", err)
+				return
+			}
+			if len(result.Photo) == 0 {
+				logger.Warn("editResp.Result.Photo is empty")
+				return
+			}
+			
+			fileID := result.Photo[len(result.Photo)-1].FileID
+			file, err := t.Bot.GetFile(tgbotapi.FileConfig{FileID: fileID})
+			if err != nil {
+				logger.Warn("get file fail", "err", err)
+				return
+			}
+			imageUrl = fmt.Sprintf("https://api.telegram.org/file/bot%s/%s", t.Bot.Token, file.FilePath)
+		}
+		
+		db.InsertRecordInfo(&db.Record{
+			UserId:     userId,
+			Question:   prompt,
+			Answer:     imageUrl,
+			Token:      param.ImageTokenUsage,
+			IsDeleted:  0,
+			RecordType: param.ImageRecordType,
+		})
 	})
-	
-	return
 }
 
 // ExecuteForceReply use force reply interact with user
@@ -1202,16 +1159,6 @@ func (t *TelegramRobot) GetPhotoContent() []byte {
 	return photoContent
 }
 
-func (t *TelegramRobot) GetChat() *tgbotapi.Chat {
-	if t.Update.Message != nil {
-		return t.Update.Message.Chat
-	}
-	if t.Update.CallbackQuery != nil {
-		return t.Update.CallbackQuery.Message.Chat
-	}
-	return nil
-}
-
 func (t *TelegramRobot) GetMessage() *tgbotapi.Message {
 	if t.Update.Message != nil {
 		return t.Update.Message
@@ -1220,13 +1167,4 @@ func (t *TelegramRobot) GetMessage() *tgbotapi.Message {
 		return t.Update.CallbackQuery.Message
 	}
 	return nil
-}
-
-func (t *TelegramRobot) GetChatType() string {
-	chat := t.GetChat()
-	return chat.Type
-}
-
-func (t *TelegramRobot) CheckMsgIsCallback() bool {
-	return t.Update.CallbackQuery != nil
 }

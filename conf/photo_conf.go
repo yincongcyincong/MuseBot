@@ -31,7 +31,7 @@ var PhotoConfInfo = new(PhotoConf)
 
 func InitPhotoConf() {
 	PhotoConfInfo.ReqKey = flag.String("req_key", "high_aes_general_v21_L", "request key")
-	PhotoConfInfo.ModelVersion = flag.String("model_version", "general_controlnet_v2.0", "model version")
+	PhotoConfInfo.ModelVersion = flag.String("model_version", "general_v2.1_L", "model version")
 	PhotoConfInfo.ReqScheduleConf = flag.String("req_schedule_conf", "general_v20_9B_pe", "request schedule conf")
 	PhotoConfInfo.Seed = flag.Int("seed", -1, "seed for random seed")
 	PhotoConfInfo.Scale = flag.Float64("scale", 3.5, "scale factor")

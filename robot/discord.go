@@ -78,12 +78,6 @@ func (d *DiscordRobot) Exec() {
 }
 
 func (d *DiscordRobot) requestDeepseekAndResp(content string) {
-	chatId, replyToMessageID, userId := d.Robot.GetChatIdAndMsgIdAndUserID()
-	if d.Robot.checkUserTokenExceed(chatId, replyToMessageID, userId) {
-		logger.Warn("user token exceed", "userID", userId)
-		return
-	}
-	
 	if conf.RagConfInfo.Store != nil {
 		d.executeChain(content)
 	} else {
@@ -95,21 +89,13 @@ func (d *DiscordRobot) executeChain(content string) {
 	messageChan := make(chan *param.MsgInfo)
 	chatId, msgId, userId := d.Robot.GetChatIdAndMsgIdAndUserID()
 	
-	go func() {
+	go d.Robot.TalkingPreCheck(func() {
 		defer func() {
 			if err := recover(); err != nil {
 				logger.Error("GetContent panic err", "err", err, "stack", string(debug.Stack()))
 			}
-			utils.DecreaseUserChat(userId)
 			close(messageChan)
 		}()
-		
-		// check user chat exceed max count
-		if utils.CheckUserChatExceed(userId) {
-			d.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "chat_exceed", nil),
-				msgId, tgbotapi.ModeMarkdown, nil)
-			return
-		}
 		
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 		defer cancel()
@@ -134,7 +120,7 @@ func (d *DiscordRobot) executeChain(content string) {
 			logger.Warn("execute chain fail", "err", err)
 			d.Robot.SendMsg(chatId, err.Error(), msgId, "", nil)
 		}
-	}()
+	})
 	
 	// send response message
 	go d.handleUpdate(messageChan)
@@ -230,45 +216,39 @@ func (d *DiscordRobot) handleUpdate(messageChan chan *param.MsgInfo) {
 }
 
 func (d *DiscordRobot) callLLM(content string, messageChan chan *param.MsgInfo) {
-	chatId, msgId, userId := d.Robot.GetChatIdAndMsgIdAndUserID()
-	
-	defer func() {
-		if err := recover(); err != nil {
-			logger.Error("GetContent panic err", "err", err, "stack", string(debug.Stack()))
+	d.Robot.TalkingPreCheck(func() {
+		chatId, msgId, userId := d.Robot.GetChatIdAndMsgIdAndUserID()
+		defer func() {
+			if err := recover(); err != nil {
+				logger.Error("GetContent panic err", "err", err, "stack", string(debug.Stack()))
+			}
+			close(messageChan)
+		}()
+		
+		text, err := d.getContent(content)
+		if err != nil {
+			logger.Error("get content fail", "err", err)
+			d.Robot.SendMsg(chatId, err.Error(), msgId, "", nil)
+			return
 		}
-		utils.DecreaseUserChat(userId)
-		close(messageChan)
-	}()
-	// check user chat exceed max count
-	if utils.CheckUserChatExceed(userId) {
-		d.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "chat_exceed", nil),
-			msgId, tgbotapi.ModeMarkdown, nil)
-		return
-	}
-	
-	text, err := d.getContent(content)
-	if err != nil {
-		logger.Error("get content fail", "err", err)
-		d.Robot.SendMsg(chatId, err.Error(), msgId, "", nil)
-		return
-	}
-	
-	l := llm.NewLLM(llm.WithMessageChan(messageChan), llm.WithContent(text),
-		llm.WithChatId(chatId), llm.WithMsgId(msgId),
-		llm.WithUserId(userId),
-		llm.WithTaskTools(&conf.AgentInfo{
-			DeepseekTool:    conf.DeepseekTools,
-			VolTool:         conf.VolTools,
-			OpenAITools:     conf.OpenAITools,
-			GeminiTools:     conf.GeminiTools,
-			OpenRouterTools: conf.OpenRouterTools,
-		}))
-	
-	err = l.CallLLM()
-	if err != nil {
-		logger.Error("get content fail", "err", err)
-		d.Robot.SendMsg(chatId, err.Error(), msgId, "", nil)
-	}
+		
+		l := llm.NewLLM(llm.WithMessageChan(messageChan), llm.WithContent(text),
+			llm.WithChatId(chatId), llm.WithMsgId(msgId),
+			llm.WithUserId(userId),
+			llm.WithTaskTools(&conf.AgentInfo{
+				DeepseekTool:    conf.DeepseekTools,
+				VolTool:         conf.VolTools,
+				OpenAITools:     conf.OpenAITools,
+				GeminiTools:     conf.GeminiTools,
+				OpenRouterTools: conf.OpenRouterTools,
+			}))
+		
+		err = l.CallLLM()
+		if err != nil {
+			logger.Error("get content fail", "err", err)
+			d.Robot.SendMsg(chatId, err.Error(), msgId, "", nil)
+		}
+	})
 }
 
 func (d *DiscordRobot) getContent(defaultText string) (string, error) {
@@ -402,10 +382,10 @@ func registerSlashCommands(s *discordgo.Session) {
 			{Type: discordgo.ApplicationCommandOptionString, Name: "prompt", Description: "Prompt", Required: true},
 		}},
 		
-		//	{Name: "addtoken", Description: "admin add token", Options: []*discordgo.ApplicationCommandOption{
-		//		{Type: discordgo.ApplicationCommandOptionString, Name: "userId", Description: "user id", Required: true},
-		//		{Type: discordgo.ApplicationCommandOptionString, Name: "token", Description: "token", Required: true},
-		//	}},
+		{Name: "add", Description: "add", Options: []*discordgo.ApplicationCommandOption{
+			//{Type: discordgo.ApplicationCommandOptionString, Name: "user", Description: "userid", Required: true},
+			{Type: discordgo.ApplicationCommandOptionString, Name: "token", Description: "token", Required: true},
+		}},
 	}
 	
 	for _, cmd := range commands {
@@ -594,175 +574,162 @@ func (d *DiscordRobot) retryLastQuestion() {
 }
 
 func (d *DiscordRobot) sendImage() {
-	chatId, msgId, userId := d.Robot.GetChatIdAndMsgIdAndUserID()
-	
-	if utils.CheckUserChatExceed(userId) {
-		d.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "chat_exceed", nil),
+	d.Robot.TalkingPreCheck(func() {
+		chatId, msgId, userId := d.Robot.GetChatIdAndMsgIdAndUserID()
+		
+		prompt := d.Inter.ApplicationCommandData().Options[0].StringValue()
+		prompt = strings.TrimSpace(prompt)
+		if prompt == "" {
+			d.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "video_empty_content", nil),
+				msgId, tgbotapi.ModeMarkdown, nil)
+			return
+		}
+		
+		d.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "thinking", nil),
 			msgId, tgbotapi.ModeMarkdown, nil)
-		return
-	}
-	defer utils.DecreaseUserChat(userId)
-	
-	if d.Robot.checkUserTokenExceed(chatId, msgId, userId) {
-		logger.Warn("user token exceed", "userID", userId)
-		return
-	}
-	prompt := d.Inter.ApplicationCommandData().Options[0].StringValue()
-	prompt = strings.TrimSpace(prompt)
-	if prompt == "" {
-		d.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "video_empty_content", nil),
-			msgId, tgbotapi.ModeMarkdown, nil)
-		return
-	}
-	
-	var lastImageContent []byte
-	var err error
-	
-	if d.Inter.ApplicationCommandData().GetOption("image") != nil {
-		if attachment, ok := d.Inter.ApplicationCommandData().GetOption("image").Value.(string); ok {
-			lastImageContent, err = utils.DownloadFile(d.Inter.ApplicationCommandData().Resolved.Attachments[attachment].URL)
-			if err != nil {
-				logger.Warn("download image fail", "err", err)
+		
+		var lastImageContent []byte
+		var err error
+		
+		if d.Inter.ApplicationCommandData().GetOption("image") != nil {
+			if attachment, ok := d.Inter.ApplicationCommandData().GetOption("image").Value.(string); ok {
+				lastImageContent, err = utils.DownloadFile(d.Inter.ApplicationCommandData().Resolved.Attachments[attachment].URL)
+				if err != nil {
+					logger.Warn("download image fail", "err", err)
+				}
 			}
 		}
-	}
-	
-	if len(lastImageContent) == 0 {
-		lastImageContent, err = d.Robot.GetLastImageContent()
+		
+		if len(lastImageContent) == 0 {
+			lastImageContent, err = d.Robot.GetLastImageContent()
+			if err != nil {
+				logger.Warn("get last image record fail", "err", err)
+			}
+		}
+		
+		var imageUrl string
+		var imageContent []byte
+		
+		switch *conf.BaseConfInfo.MediaType {
+		case param.Vol:
+			imageUrl, err = llm.GenerateVolImg(prompt, lastImageContent)
+		case param.OpenAi:
+			imageContent, err = llm.GenerateOpenAIImg(prompt, lastImageContent)
+		case param.Gemini:
+			imageContent, err = llm.GenerateGeminiImg(prompt, lastImageContent)
+		default:
+			err = fmt.Errorf("unsupported type: %s", *conf.BaseConfInfo.MediaType)
+		}
+		
 		if err != nil {
-			logger.Warn("get last image record fail", "err", err)
+			logger.Warn("generate image fail", "err", err)
+			d.Robot.SendMsg(chatId, err.Error(), msgId, param.DiscordEditMode, nil)
+			return
 		}
-	}
-	
-	d.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "thinking", nil),
-		msgId, tgbotapi.ModeMarkdown, nil)
-	
-	var imageUrl string
-	var imageContent []byte
-	
-	switch *conf.BaseConfInfo.MediaType {
-	case param.Vol:
-		imageUrl, err = llm.GenerateVolImg(prompt, lastImageContent)
-	case param.OpenAi:
-		imageUrl, err = llm.GenerateOpenAIImg(prompt, lastImageContent)
-	case param.Gemini:
-		imageContent, err = llm.GenerateGeminiImg(prompt, lastImageContent)
-	default:
-		err = fmt.Errorf("unsupported type: %s", *conf.BaseConfInfo.MediaType)
-	}
-	
-	if err != nil {
-		logger.Warn("generate image fail", "err", err)
-		return
-	}
-	
-	var editResp *discordgo.Message
-	if imageUrl != "" {
-		_, err = d.Session.FollowupMessageCreate(d.Inter.Interaction, true, &discordgo.WebhookParams{
-			Content: imageUrl,
-		})
+		
+		var editResp *discordgo.Message
+		if imageUrl != "" {
+			_, err = d.Session.FollowupMessageCreate(d.Inter.Interaction, true, &discordgo.WebhookParams{
+				Content: imageUrl,
+			})
+			if err != nil {
+				logger.Warn("Sending followup interaction message failed", "err", err)
+			}
+		} else if len(imageContent) > 0 {
+			file := &discordgo.File{
+				Name:   "image." + utils.DetectImageFormat(imageContent),
+				Reader: bytes.NewReader(imageContent),
+			}
+			editResp, err = d.Session.InteractionResponseEdit(d.Inter.Interaction, &discordgo.WebhookEdit{
+				Files: []*discordgo.File{file},
+			})
+		}
+		
 		if err != nil {
-			logger.Warn("Sending followup interaction message failed", "err", err)
+			logger.Warn("send image fail", "err", err)
+			d.Robot.SendMsg(chatId, err.Error(), msgId, param.DiscordEditMode, nil)
+			return
 		}
-	} else if len(imageContent) > 0 {
-		file := &discordgo.File{
-			Name:   "image." + utils.DetectImageFormat(imageContent),
-			Reader: bytes.NewReader(imageContent),
+		
+		if editResp != nil && len(editResp.Attachments) > 0 {
+			imageUrl = editResp.Attachments[0].URL
 		}
-		editResp, err = d.Session.InteractionResponseEdit(d.Inter.Interaction, &discordgo.WebhookEdit{
-			Files: []*discordgo.File{file},
+		
+		db.InsertRecordInfo(&db.Record{
+			UserId:     userId,
+			Question:   prompt,
+			Answer:     imageUrl,
+			Token:      param.ImageTokenUsage,
+			IsDeleted:  0,
+			RecordType: param.ImageRecordType,
 		})
-	}
-	
-	if err != nil {
-		logger.Warn("send image fail", "err", err)
-	}
-	
-	if editResp != nil && len(editResp.Attachments) > 0 {
-		imageUrl = editResp.Attachments[0].URL
-	}
-	
-	db.InsertRecordInfo(&db.Record{
-		UserId:     userId,
-		Question:   prompt,
-		Answer:     imageUrl,
-		Token:      param.ImageTokenUsage,
-		IsDeleted:  0,
-		RecordType: param.ImageRecordType,
 	})
 }
 
 func (d *DiscordRobot) sendVideo() {
-	chatId, msgId, userId := d.Robot.GetChatIdAndMsgIdAndUserID()
-	
-	if utils.CheckUserChatExceed(userId) {
-		d.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "chat_exceed", nil),
-			msgId, tgbotapi.ModeMarkdown, nil)
-		return
-	}
-	defer utils.DecreaseUserChat(userId)
-	
-	if d.Robot.checkUserTokenExceed(chatId, msgId, userId) {
-		logger.Warn("user token exceed", "userID", userId)
-		return
-	}
-	
-	prompt := d.Inter.ApplicationCommandData().Options[0].StringValue()
-	prompt = strings.TrimSpace(prompt)
-	if prompt == "" {
-		d.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "video_empty_content", nil),
-			msgId, tgbotapi.ModeMarkdown, nil)
-		return
-	}
-	
-	msgThinking := d.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "thinking", nil),
-		msgId, tgbotapi.ModeMarkdown, nil)
-	
-	var videoUrl string
-	var videoContent []byte
-	var err error
-	
-	switch *conf.BaseConfInfo.MediaType {
-	case param.Vol:
-		videoUrl, err = llm.GenerateVolVideo(prompt)
-	case param.Gemini:
-		videoContent, err = llm.GenerateGeminiVideo(prompt)
-	default:
-		err = fmt.Errorf("unsupported type: %s", *conf.BaseConfInfo.MediaType)
-	}
-	
-	if err != nil {
-		logger.Warn("generate video fail", "err", err)
-		return
-	}
-	
-	if videoUrl != "" {
-		_, err = d.Session.FollowupMessageCreate(d.Inter.Interaction, true, &discordgo.WebhookParams{
-			Content: videoUrl,
-		})
-	} else if len(videoContent) > 0 {
-		file := &discordgo.File{
-			Name:   "video.mp4",
-			Reader: bytes.NewReader(videoContent),
+	d.Robot.TalkingPreCheck(func() {
+		chatId, msgId, userId := d.Robot.GetChatIdAndMsgIdAndUserID()
+		
+		prompt := d.Inter.ApplicationCommandData().Options[0].StringValue()
+		prompt = strings.TrimSpace(prompt)
+		if prompt == "" {
+			d.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "video_empty_content", nil),
+				msgId, tgbotapi.ModeMarkdown, nil)
+			return
 		}
-		_, err = d.Session.ChannelMessageEditComplex(&discordgo.MessageEdit{
-			ID:      strconv.Itoa(msgThinking),
-			Channel: strconv.FormatInt(chatId, 10),
-			Files:   []*discordgo.File{file},
+		
+		msgThinking := d.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "thinking", nil),
+			msgId, tgbotapi.ModeMarkdown, nil)
+		
+		var videoUrl string
+		var videoContent []byte
+		var err error
+		
+		switch *conf.BaseConfInfo.MediaType {
+		case param.Vol:
+			videoUrl, err = llm.GenerateVolVideo(prompt)
+		case param.Gemini:
+			videoContent, err = llm.GenerateGeminiVideo(prompt)
+		default:
+			err = fmt.Errorf("unsupported type: %s", *conf.BaseConfInfo.MediaType)
+		}
+		
+		if err != nil {
+			logger.Warn("generate video fail", "err", err)
+			d.Robot.SendMsg(chatId, err.Error(), msgId, param.DiscordEditMode, nil)
+			return
+		}
+		
+		if videoUrl != "" {
+			_, err = d.Session.FollowupMessageCreate(d.Inter.Interaction, true, &discordgo.WebhookParams{
+				Content: videoUrl,
+			})
+		} else if len(videoContent) > 0 {
+			file := &discordgo.File{
+				Name:   "video.mp4",
+				Reader: bytes.NewReader(videoContent),
+			}
+			_, err = d.Session.ChannelMessageEditComplex(&discordgo.MessageEdit{
+				ID:      strconv.Itoa(msgThinking),
+				Channel: strconv.FormatInt(chatId, 10),
+				Files:   []*discordgo.File{file},
+			})
+		}
+		
+		if err != nil {
+			logger.Warn("send video fail", "err", err)
+			d.Robot.SendMsg(chatId, err.Error(), msgId, param.DiscordEditMode, nil)
+			return
+		}
+		
+		db.InsertRecordInfo(&db.Record{
+			UserId:     userId,
+			Question:   prompt,
+			Answer:     videoUrl,
+			Token:      param.VideoTokenUsage,
+			IsDeleted:  0,
+			RecordType: param.VideoRecordType,
 		})
-	}
-	
-	if err != nil {
-		logger.Warn("send video fail", "err", err)
-	}
-	
-	db.InsertRecordInfo(&db.Record{
-		UserId:     userId,
-		Question:   prompt,
-		Answer:     videoUrl,
-		Token:      param.VideoTokenUsage,
-		IsDeleted:  0,
-		RecordType: param.VideoRecordType,
 	})
 }
 
@@ -793,53 +760,50 @@ func (d *DiscordRobot) sendHelp() {
 	}
 }
 func (d *DiscordRobot) sendMultiAgent(agentType string) {
-	chatId, replyToMessageID, userId := d.Robot.GetChatIdAndMsgIdAndUserID()
-	
-	if utils.CheckUserChatExceed(userId) {
-		d.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "chat_exceed", nil),
-			replyToMessageID, tgbotapi.ModeMarkdown, nil)
-		return
-	}
-	defer utils.DecreaseUserChat(userId)
-	
-	if d.Robot.checkUserTokenExceed(chatId, replyToMessageID, userId) {
-		logger.Warn("user token exceed", "userID", userId)
-		return
-	}
-	
-	// 获取 prompt 内容
-	prompt := d.Inter.ApplicationCommandData().Options[0].StringValue()
-	prompt = strings.TrimSpace(prompt)
-	if prompt == "" {
-		d.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "video_empty_content", nil),
-			replyToMessageID, tgbotapi.ModeMarkdown, nil)
-		return
-	}
-	
-	// 处理异步任务
-	messageChan := make(chan *param.MsgInfo)
-	
-	dpReq := &llm.DeepseekTaskReq{
-		Content:     prompt,
-		UserId:      userId,
-		ChatId:      chatId,
-		MsgId:       replyToMessageID,
-		MessageChan: messageChan,
-	}
-	
-	go func() {
-		var err error
-		if agentType == "mcp_empty_content" {
-			err = dpReq.ExecuteMcp()
-		} else {
-			err = dpReq.ExecuteTask()
+	d.Robot.TalkingPreCheck(func() {
+		chatId, replyToMessageID, userId := d.Robot.GetChatIdAndMsgIdAndUserID()
+		
+		// 获取 prompt 内容
+		prompt := d.Inter.ApplicationCommandData().Options[0].StringValue()
+		prompt = strings.TrimSpace(prompt)
+		if prompt == "" {
+			d.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "video_empty_content", nil),
+				replyToMessageID, tgbotapi.ModeMarkdown, nil)
+			return
 		}
-		if err != nil {
-			d.Robot.SendMsg(chatId, err.Error(), replyToMessageID, tgbotapi.ModeMarkdown, nil)
+		
+		// 处理异步任务
+		messageChan := make(chan *param.MsgInfo)
+		
+		dpReq := &llm.DeepseekTaskReq{
+			Content:     prompt,
+			UserId:      userId,
+			ChatId:      chatId,
+			MsgId:       replyToMessageID,
+			MessageChan: messageChan,
 		}
-	}()
-	
-	go d.handleUpdate(messageChan)
+		
+		go func() {
+			defer func() {
+				if r := recover(); r != nil {
+					logger.Error("panic recover", "err", r)
+				}
+				close(messageChan)
+			}()
+			
+			var err error
+			if agentType == "mcp_empty_content" {
+				err = dpReq.ExecuteMcp()
+			} else {
+				err = dpReq.ExecuteTask()
+			}
+			if err != nil {
+				d.Robot.SendMsg(chatId, err.Error(), replyToMessageID, tgbotapi.ModeMarkdown, nil)
+			}
+		}()
+		
+		go d.handleUpdate(messageChan)
+	})
 }
 
 func (d *DiscordRobot) addToken() {

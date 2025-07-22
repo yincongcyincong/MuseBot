@@ -34,6 +34,8 @@ const (
 	
 	LLAVA = "llava:latest"
 	
+	DiscordEditMode = "edit"
+	
 	ImageTokenUsage = 3000
 	VideoTokenUsage = 5000
 )

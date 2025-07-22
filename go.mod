@@ -16,8 +16,9 @@ require (
 	github.com/prometheus/client_golang v1.17.0
 	github.com/revrost/go-openrouter v0.1.6
 	github.com/rs/zerolog v1.34.0
-	github.com/sashabaranov/go-openai v1.38.1
+	github.com/sashabaranov/go-openai v1.40.5
 	github.com/satori/go.uuid v1.2.0
+	github.com/slack-go/slack v0.17.3
 	github.com/stretchr/testify v1.10.0
 	github.com/volcengine/volc-sdk-golang v1.0.196
 	github.com/volcengine/volcengine-go-sdk v1.1.1
