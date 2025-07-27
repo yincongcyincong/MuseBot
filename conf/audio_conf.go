@@ -3,6 +3,7 @@ package conf
 import (
 	"flag"
 	"os"
+	"strconv"
 	
 	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
 )
@@ -11,6 +12,12 @@ type AudioConf struct {
 	AudioAppID   *string `json:"audio_app_id"`
 	AudioToken   *string `json:"audio_token"`
 	AudioCluster *string `json:"audio_cluster"`
+	
+	GeminiVideoModel            *string `json:"gemini_video_model"`
+	GeminiVideoFPS              int32   `json:"gemini_video_fps"`
+	GeminiVideoAspectRatio      *string `json:"gemini_video_aspect_ratio"`
+	GeminiVideoDurationSeconds  int32   `json:"gemini_video_duration_seconds"`
+	GeminiVideoPersonGeneration *string `json:"gemini_video_person_generation"`
 }
 
 var (
@@ -22,6 +29,11 @@ func InitAudioConf() {
 	AudioConfInfo.AudioToken = flag.String("audio_token", "", "audio token")
 	AudioConfInfo.AudioCluster = flag.String("audio_cluster", "", "audio cluster")
 	
+	AudioConfInfo.GeminiVideoModel = flag.String("gemini_video_model", "veo-2.0-generate-001", "create video model")
+	AudioConfInfo.GeminiVideoAspectRatio = flag.String("gemini_video_aspect_ratio", "16:9", "gemini video ratio")
+	AudioConfInfo.GeminiVideoFPS = int32(*flag.Int("gemini_video_fps", 0, "gemini video fps"))
+	AudioConfInfo.GeminiVideoDurationSeconds = int32(*flag.Int("gemini_video_duration_seconds", 0, "gemini video duration"))
+	AudioConfInfo.GeminiVideoPersonGeneration = flag.String("gemini_video_person_generation", "allow_all", "gemini video can generate person or not: allow_all or ")
 }
 
 func EnvAudioConf() {
@@ -35,7 +47,30 @@ func EnvAudioConf() {
 		*AudioConfInfo.AudioCluster = os.Getenv("AUDIO_CLUSTER")
 	}
 	
-	logger.Info("AUDIO_CONF", "AUDIO_APP_ID", *AudioConfInfo.AudioAppID)
-	logger.Info("AUDIO_CONF", "AUDIO_TOKEN", *AudioConfInfo.AudioToken)
-	logger.Info("AUDIO_CONF", "AUDIO_CLUSTER", *AudioConfInfo.AudioCluster)
+	if os.Getenv("GEMINI_VIDEO_MODEL") != "" {
+		*AudioConfInfo.GeminiVideoModel = os.Getenv("GEMINI_VIDEO_MODEL")
+	}
+	if os.Getenv("GEMINI_VIDEO_PERSON_GENERATION") != "" {
+		*AudioConfInfo.GeminiVideoPersonGeneration = os.Getenv("GEMINI_VIDEO_PERSON_GENERATION")
+	}
+	if os.Getenv("GEMINI_VIDEO_ASPECT_RATIO") != "" {
+		*AudioConfInfo.GeminiVideoAspectRatio = os.Getenv("GEMINI_VIDEO_ASPECT_RATIO")
+	}
+	if os.Getenv("GEMINI_VIDEO_FPS") != "" {
+		tmp, _ := strconv.Atoi(os.Getenv("GEMINI_VIDEO_FPS"))
+		AudioConfInfo.GeminiVideoFPS = int32(tmp)
+	}
+	if os.Getenv("GEMINI_VIDEO_DURATION_SECONDS") != "" {
+		tmp, _ := strconv.Atoi(os.Getenv("GEMINI_VIDEO_DURATION_SECONDS"))
+		AudioConfInfo.GeminiVideoDurationSeconds = int32(tmp)
+	}
+	
+	logger.Info("AUDIO_CONF", "AudioAppID", *AudioConfInfo.AudioAppID)
+	logger.Info("AUDIO_CONF", "AudioToken", *AudioConfInfo.AudioToken)
+	logger.Info("AUDIO_CONF", "AudioCluster", *AudioConfInfo.AudioCluster)
+	logger.Info("AUDIO_CONF", "GeminiVideoModel", *AudioConfInfo.GeminiVideoModel)
+	logger.Info("AUDIO_CONF", "GeminiVideoPersonGeneration", *AudioConfInfo.GeminiVideoPersonGeneration)
+	logger.Info("AUDIO_CONF", "GeminiVideoAspectRatio", *AudioConfInfo.GeminiVideoAspectRatio)
+	logger.Info("AUDIO_CONF", "GeminiVideoFPS", AudioConfInfo.GeminiVideoFPS)
+	logger.Info("AUDIO_CONF", "GeminiVideoDurationSeconds", AudioConfInfo.GeminiVideoDurationSeconds)
 }

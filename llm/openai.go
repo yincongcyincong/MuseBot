@@ -396,9 +396,9 @@ func GenerateOpenAIImg(prompt string, imageContent []byte) ([]byte, error) {
 		respUrl, err = client.CreateEditImage(ctx, openai.ImageEditRequest{
 			Image:          imageFile,
 			Prompt:         prompt,
-			Model:          "gpt-image-1",
+			Model:          *conf.PhotoConfInfo.OpenAIImageModel,
 			N:              1,
-			Size:           openai.CreateImageSize1024x1024,
+			Size:           *conf.PhotoConfInfo.OpenAIImageSize,
 			ResponseFormat: openai.CreateImageResponseFormatB64JSON,
 		})
 	} else {
@@ -406,9 +406,10 @@ func GenerateOpenAIImg(prompt string, imageContent []byte) ([]byte, error) {
 			ctx,
 			openai.ImageRequest{
 				Prompt:         prompt,
-				Size:           openai.CreateImageSize1024x1024,
+				Size:           *conf.PhotoConfInfo.OpenAIImageSize,
 				ResponseFormat: openai.CreateImageResponseFormatB64JSON,
 				N:              1,
+				Style:          *conf.PhotoConfInfo.OpenAIImageStyle,
 			},
 		)
 	}
@@ -462,7 +463,7 @@ func GenerateOpenAIText(audioContent []byte) (string, error) {
 	return resp.Text, nil
 }
 
-func GetOpanAIImageContent(imageContent []byte) (string, error) {
+func GetOpenAIImageContent(imageContent []byte) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 	
@@ -478,7 +479,7 @@ func GetOpanAIImageContent(imageContent []byte) (string, error) {
 	
 	imageDataURL := "data:image/png;base64," + base64.StdEncoding.EncodeToString(imageContent)
 	req := openai.ChatCompletionRequest{
-		Model: "chatgpt-4o-latest",
+		Model: *conf.PhotoConfInfo.OpenAIRecModel,
 		Messages: []openai.ChatCompletionMessage{
 			{
 				Role: "user",

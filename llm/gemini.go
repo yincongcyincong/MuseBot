@@ -382,7 +382,7 @@ func GenerateGeminiImg(prompt string, imageContent []byte) ([]byte, error) {
 	
 	response, err := client.Models.GenerateContent(
 		ctx,
-		"gemini-2.0-flash-preview-image-generation",
+		*conf.PhotoConfInfo.GeminiImageModel,
 		geminiContent,
 		&genai.GenerateContentConfig{
 			ResponseModalities: []string{"TEXT", "IMAGE"},
@@ -417,11 +417,13 @@ func GenerateGeminiVideo(prompt string) ([]byte, error) {
 	}
 	
 	operation, err := client.Models.GenerateVideos(ctx,
-		"veo-2.0-generate-001", prompt,
+		*conf.AudioConfInfo.GeminiVideoModel, prompt,
 		nil,
 		&genai.GenerateVideosConfig{
-			AspectRatio:      "16:9",
-			PersonGeneration: "allow_all",
+			AspectRatio:      *conf.AudioConfInfo.GeminiVideoAspectRatio,
+			PersonGeneration: *conf.AudioConfInfo.GeminiVideoPersonGeneration,
+			FPS:              &conf.AudioConfInfo.GeminiVideoFPS,
+			DurationSeconds:  &conf.AudioConfInfo.GeminiVideoDurationSeconds,
 		})
 	if err != nil {
 		logger.Error("generate video fail", "err", err)
@@ -513,7 +515,7 @@ func GetGeminiImageContent(imageContent []byte) (string, error) {
 	
 	result, err := client.Models.GenerateContent(
 		ctx,
-		"gemini-2.0-flash",
+		*conf.PhotoConfInfo.GeminiRecModel,
 		contents,
 		nil,
 	)

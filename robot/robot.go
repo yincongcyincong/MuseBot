@@ -273,7 +273,7 @@ func (r *RobotInfo) GetImageContent(imageContent []byte) (string, error) {
 	case param.Gemini:
 		return llm.GetGeminiImageContent(imageContent)
 	case param.OpenAi:
-		return llm.GetOpanAIImageContent(imageContent)
+		return llm.GetOpenAIImageContent(imageContent)
 	}
 	
 	return "", nil
