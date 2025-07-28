@@ -3,6 +3,7 @@ package robot
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"log"
@@ -627,7 +628,6 @@ func (d *DiscordRobot) sendImage() {
 			return
 		}
 		
-		var editResp *discordgo.Message
 		if imageUrl != "" {
 			_, err = d.Session.FollowupMessageCreate(d.Inter.Interaction, true, &discordgo.WebhookParams{
 				Content: imageUrl,
@@ -640,7 +640,7 @@ func (d *DiscordRobot) sendImage() {
 				Name:   "image." + utils.DetectImageFormat(imageContent),
 				Reader: bytes.NewReader(imageContent),
 			}
-			editResp, err = d.Session.InteractionResponseEdit(d.Inter.Interaction, &discordgo.WebhookEdit{
+			_, err = d.Session.InteractionResponseEdit(d.Inter.Interaction, &discordgo.WebhookEdit{
 				Files: []*discordgo.File{file},
 			})
 		}
@@ -651,14 +651,21 @@ func (d *DiscordRobot) sendImage() {
 			return
 		}
 		
-		if editResp != nil && len(editResp.Attachments) > 0 {
-			imageUrl = editResp.Attachments[0].URL
+		if len(imageContent) == 0 {
+			imageContent, err = utils.DownloadFile(imageUrl)
+			if err != nil {
+				logger.Warn("download image fail", "err", err)
+				return
+			}
 		}
+		
+		base64Content := base64.StdEncoding.EncodeToString(imageContent)
+		dataURI := fmt.Sprintf("data:image/%s;base64,%s", utils.DetectImageFormat(imageContent), base64Content)
 		
 		db.InsertRecordInfo(&db.Record{
 			UserId:     userId,
 			Question:   prompt,
-			Answer:     imageUrl,
+			Answer:     dataURI,
 			Token:      param.ImageTokenUsage,
 			IsDeleted:  0,
 			RecordType: param.ImageRecordType,
@@ -706,7 +713,7 @@ func (d *DiscordRobot) sendVideo() {
 			})
 		} else if len(videoContent) > 0 {
 			file := &discordgo.File{
-				Name:   "video.mp4",
+				Name:   "video." + utils.DetectVideoMimeType(videoContent),
 				Reader: bytes.NewReader(videoContent),
 			}
 			_, err = d.Session.ChannelMessageEditComplex(&discordgo.MessageEdit{
@@ -722,10 +729,21 @@ func (d *DiscordRobot) sendVideo() {
 			return
 		}
 		
+		if len(videoContent) == 0 {
+			videoContent, err = utils.DownloadFile(videoUrl)
+			if err != nil {
+				logger.Warn("download video fail", "err", err)
+				return
+			}
+		}
+		
+		base64Content := base64.StdEncoding.EncodeToString(videoContent)
+		dataURI := fmt.Sprintf("data:video/%s;base64,%s", utils.DetectVideoMimeType(videoContent), base64Content)
+		
 		db.InsertRecordInfo(&db.Record{
 			UserId:     userId,
 			Question:   prompt,
-			Answer:     videoUrl,
+			Answer:     dataURI,
 			Token:      param.VideoTokenUsage,
 			IsDeleted:  0,
 			RecordType: param.VideoRecordType,

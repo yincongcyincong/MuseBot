@@ -304,7 +304,7 @@ func DownloadFile(url string) ([]byte, error) {
 	}
 	
 	client := &http.Client{
-		Timeout: 1 * time.Minute,
+		Timeout: 5 * time.Minute,
 	}
 	
 	resp, err := client.Get(url)
@@ -386,4 +386,25 @@ func ByteToTempFile(data []byte, filename string) (*os.File, error) {
 		return nil, err
 	}
 	return tmpFile, nil
+}
+
+func DetectVideoMimeType(data []byte) string {
+	if len(data) < 12 {
+		return "unknown"
+	}
+	
+	if string(data[4:8]) == "ftyp" {
+		return "mp4"
+	}
+	
+	if data[0] == 0x1A && data[1] == 0x45 && data[2] == 0xDF && data[3] == 0xA3 {
+		return "webm"
+	}
+	
+	if string(data[:4]) == "OggS" {
+		return "ogg"
+	}
+	
+	// fallback
+	return "unknown"
 }

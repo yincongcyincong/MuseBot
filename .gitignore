@@ -8,3 +8,4 @@ telegram_bot.db
 github.com
 release
 build
+*.db
