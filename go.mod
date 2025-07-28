@@ -26,6 +26,7 @@ require (
 	github.com/yincongcyincong/mcp-client-go v0.0.24
 	golang.org/x/text v0.24.0
 	google.golang.org/genai v1.7.0
+	gopkg.in/fsnotify.v1 v1.4.7
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 )
 

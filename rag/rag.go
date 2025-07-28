@@ -3,12 +3,12 @@ package rag
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
 	
-	"github.com/cohesion-org/deepseek-go"
 	"github.com/milvus-io/milvus-sdk-go/v2/client"
 	"github.com/milvus-io/milvus-sdk-go/v2/entity"
 	"github.com/yincongcyincong/langchaingo/documentloaders"
@@ -27,18 +27,15 @@ import (
 	"github.com/yincongcyincong/telegram-deepseek-bot/llm"
 	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
 	"github.com/yincongcyincong/telegram-deepseek-bot/utils"
+	"gopkg.in/fsnotify.v1"
 )
 
 type Rag struct {
-	Client *deepseek.Client
-	
 	LLM *llm.LLM
 }
 
 func NewRag(options ...llm.Option) *Rag {
 	dp := &Rag{
-		Client: deepseek.NewClient(*conf.BaseConfInfo.DeepseekToken),
-		
 		LLM: llm.NewLLM(options...),
 	}
 	
@@ -157,23 +154,30 @@ func InitRag() {
 	}
 	
 	if len(docs) > 0 {
-		_, err = conf.RagConfInfo.Store.AddDocuments(context.Background(), docs)
+		_, err = conf.RagConfInfo.Store.AddDocuments(ctx, docs)
 		if err != nil {
 			logger.Error("get save doc fail", "err", err)
 			return
 		}
 	}
 	
+	go CheckDirChange()
+	
 }
 
 func handleKnowledgeBase(ctx context.Context) ([]schema.Document, error) {
-	res := make([]schema.Document, 0)
-	
 	entries, err := os.ReadDir(*conf.RagConfInfo.KnowledgePath)
 	if err != nil {
 		return nil, err
 	}
 	
+	return handleEntry(ctx, entries)
+	
+}
+
+func handleEntry(ctx context.Context, entries []os.DirEntry) ([]schema.Document, error) {
+	var err error
+	res := make([]schema.Document, 0)
 	for _, entry := range entries {
 		if !entry.IsDir() {
 			var docs []schema.Document
@@ -206,18 +210,17 @@ func handleKnowledgeBase(ctx context.Context) ([]schema.Document, error) {
 	}
 	
 	return res, nil
-	
 }
 
 func initOpenAIEmbedding() (embeddings.Embedder, error) {
-	llm, err := openai.New(
+	llmEmbedder, err := openai.New(
 		openai.WithToken(*conf.BaseConfInfo.OpenAIToken),
 	)
 	
 	if err != nil {
 		return nil, err
 	}
-	embedder, err := embeddings.NewEmbedder(llm)
+	embedder, err := embeddings.NewEmbedder(llmEmbedder)
 	if err != nil {
 		return nil, err
 	}
@@ -226,7 +229,7 @@ func initOpenAIEmbedding() (embeddings.Embedder, error) {
 }
 
 func initErnieEmbedding() (embeddings.Embedder, error) {
-	llm, err := ernie.New(
+	llmEmbedder, err := ernie.New(
 		ernie.WithModelName(ernie.ModelNameERNIEBot),
 		ernie.WithAKSK(*conf.BaseConfInfo.ErnieAK, *conf.BaseConfInfo.ErnieSK),
 	)
@@ -234,7 +237,7 @@ func initErnieEmbedding() (embeddings.Embedder, error) {
 	if err != nil {
 		return nil, err
 	}
-	embedder, err := embeddings.NewEmbedder(llm)
+	embedder, err := embeddings.NewEmbedder(llmEmbedder)
 	if err != nil {
 		return nil, err
 	}
@@ -243,14 +246,14 @@ func initErnieEmbedding() (embeddings.Embedder, error) {
 }
 
 func initGeminiEmbedding(ctx context.Context) (embeddings.Embedder, error) {
-	llm, err := googleai.New(ctx,
+	llmEmbedder, err := googleai.New(ctx,
 		googleai.WithAPIKey(*conf.BaseConfInfo.GeminiToken),
 	)
 	
 	if err != nil {
 		return nil, err
 	}
-	embedder, err := embeddings.NewEmbedder(llm)
+	embedder, err := embeddings.NewEmbedder(llmEmbedder)
 	if err != nil {
 		return nil, err
 	}
@@ -258,24 +261,29 @@ func initGeminiEmbedding(ctx context.Context) (embeddings.Embedder, error) {
 	return embedder, err
 }
 
-func getFileResource(entry os.DirEntry) (*os.File, error) {
+func getFileResource(entry os.DirEntry) (*os.File, string, error) {
 	fullPath := filepath.Join(*conf.RagConfInfo.KnowledgePath, entry.Name())
 	
 	fileMd5, err := utils.FileToMd5(fullPath)
 	if err != nil {
 		logger.Error("file to md5 fail", "err", err)
-		return nil, err
+		return nil, "", err
 	}
 	
 	fileInfos, err := db.GetRagFileByFileMd5(fileMd5)
 	if err != nil {
 		logger.Error("get file from db fail", "err", err)
-		return nil, err
+		return nil, "", err
 	}
 	
 	if len(fileInfos) > 0 {
 		logger.Info("file exist", "path", fullPath)
-		return nil, nil
+		return nil, "", nil
+	}
+	
+	err = db.DeleteRagFileByFileName(entry.Name())
+	if err != nil {
+		logger.Error("delete file from db fail", "err", err)
 	}
 	
 	_, err = db.InsertRagFile(entry.Name(), fileMd5)
@@ -283,11 +291,12 @@ func getFileResource(entry os.DirEntry) (*os.File, error) {
 		logger.Error("insert rag file fail", "err", err)
 	}
 	
-	return os.Open(fullPath)
+	f, err := os.Open(fullPath)
+	return f, fileMd5, err
 }
 
 func handleTextDoc(ctx context.Context, entry os.DirEntry) ([]schema.Document, error) {
-	f, err := getFileResource(entry)
+	f, fMd5, err := getFileResource(entry)
 	if err != nil {
 		logger.Error("read file fail", "err", err)
 		return nil, err
@@ -298,11 +307,11 @@ func handleTextDoc(ctx context.Context, entry os.DirEntry) ([]schema.Document, e
 	defer f.Close()
 	
 	loader := documentloaders.NewText(f)
-	return saveDocIntoStore(ctx, loader)
+	return saveDocIntoStore(ctx, loader, fMd5, entry)
 }
 
 func handlePDFDoc(ctx context.Context, entry os.DirEntry) ([]schema.Document, error) {
-	f, err := getFileResource(entry)
+	f, fMd5, err := getFileResource(entry)
 	if err != nil {
 		logger.Error("read file fail", "err", err)
 		return nil, err
@@ -318,11 +327,11 @@ func handlePDFDoc(ctx context.Context, entry os.DirEntry) ([]schema.Document, er
 		return nil, err
 	}
 	loader := documentloaders.NewPDF(f, finfo.Size())
-	return saveDocIntoStore(ctx, loader)
+	return saveDocIntoStore(ctx, loader, fMd5, entry)
 }
 
 func handleCSVDoc(ctx context.Context, entry os.DirEntry) ([]schema.Document, error) {
-	f, err := getFileResource(entry)
+	f, fMd5, err := getFileResource(entry)
 	if err != nil {
 		logger.Error("read file fail", "err", err)
 		return nil, err
@@ -333,11 +342,11 @@ func handleCSVDoc(ctx context.Context, entry os.DirEntry) ([]schema.Document, er
 	defer f.Close()
 	
 	loader := documentloaders.NewCSV(f)
-	return saveDocIntoStore(ctx, loader)
+	return saveDocIntoStore(ctx, loader, fMd5, entry)
 }
 
 func handleHTMLDoc(ctx context.Context, entry os.DirEntry) ([]schema.Document, error) {
-	f, err := getFileResource(entry)
+	f, fMd5, err := getFileResource(entry)
 	if err != nil {
 		logger.Error("read file fail", "err", err)
 		return nil, err
@@ -348,10 +357,10 @@ func handleHTMLDoc(ctx context.Context, entry os.DirEntry) ([]schema.Document, e
 	defer f.Close()
 	
 	loader := documentloaders.NewHTML(f)
-	return saveDocIntoStore(ctx, loader)
+	return saveDocIntoStore(ctx, loader, fMd5, entry)
 }
 
-func saveDocIntoStore(ctx context.Context, loader documentloaders.Loader) ([]schema.Document, error) {
+func saveDocIntoStore(ctx context.Context, loader documentloaders.Loader, fMd5 string, entry os.DirEntry) ([]schema.Document, error) {
 	splitter := textsplitter.NewRecursiveCharacter(
 		textsplitter.WithChunkSize(*conf.RagConfInfo.ChunkSize),
 		textsplitter.WithChunkOverlap(*conf.RagConfInfo.ChunkOverlap),
@@ -364,5 +373,92 @@ func saveDocIntoStore(ctx context.Context, loader documentloaders.Loader) ([]sch
 		return nil, err
 	}
 	
+	for _, doc := range docs {
+		doc.Metadata["file_name"] = entry.Name()
+		doc.Metadata["file_md5"] = fMd5
+	}
+	
 	return docs, nil
+}
+
+func CheckDirChange() {
+	defer func() {
+		if err := recover(); err != nil {
+			logger.Error("CheckDirChange panic", "err", err)
+		}
+	}()
+	
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		logger.Error("create watcher fail", "err", err)
+		return
+	}
+	defer watcher.Close()
+	
+	// 监控当前目录
+	err = watcher.Add(*conf.RagConfInfo.KnowledgePath)
+	if err != nil {
+		logger.Error("add watcher fail", "err", err)
+		return
+	}
+	
+	for {
+		select {
+		case event, ok := <-watcher.Events:
+			if !ok {
+				return
+			}
+			insertNewDoc(event)
+		case err, ok := <-watcher.Errors:
+			if !ok {
+				logger.Error("watcher channel closed")
+				return
+			}
+			logger.Error("watcher error", "err", err)
+		}
+	}
+	
+}
+
+func insertNewDoc(event fsnotify.Event) {
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
+	defer cancel()
+	logger.Info("rag dir changed", "event", event.Name, "op", event.Op)
+	if event.Op&fsnotify.Create == fsnotify.Create || event.Op&fsnotify.Write == fsnotify.Write {
+		fileInfo, err := os.Stat(event.Name)
+		if err != nil {
+			logger.Error("stat file fail", "err", err)
+			return
+		}
+		entry, err := findDirEntry(*conf.RagConfInfo.KnowledgePath, fileInfo.Name())
+		if err != nil {
+			logger.Error("find dir entry fail", "err", err)
+			return
+		}
+		docs, err := handleEntry(ctx, []os.DirEntry{entry})
+		if err != nil {
+			logger.Error("handle entry fail", "err", err)
+			return
+		}
+		if len(docs) > 0 {
+			_, err = conf.RagConfInfo.Store.AddDocuments(ctx, docs)
+			if err != nil {
+				logger.Error("get save doc fail", "err", err)
+			}
+		}
+	}
+}
+
+func findDirEntry(path string, filename string) (os.DirEntry, error) {
+	entries, err := os.ReadDir(path)
+	if err != nil {
+		return nil, err
+	}
+	
+	for _, entry := range entries {
+		if entry.Name() == filename {
+			return entry, nil
+		}
+	}
+	return nil, fmt.Errorf("file not exist: %s", filename)
 }

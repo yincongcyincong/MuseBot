@@ -57,6 +57,31 @@ func GetRagFileByFileMd5(fileMd5 string) ([]*RagFiles, error) {
 	return ragFiles, nil
 }
 
+func GetRagFileByFileName(fileName string) ([]*RagFiles, error) {
+	querySQL := `SELECT id, file_name, file_md5, update_time, create_time FROM rag_files WHERE file_name = ? and is_deleted = 0`
+	rows, err := DB.Query(querySQL, fileName)
+	
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	
+	var ragFiles []*RagFiles
+	for rows.Next() {
+		var ragFile RagFiles
+		if err := rows.Scan(&ragFile.ID, &ragFile.FileName, &ragFile.FileMd5, &ragFile.UpdateTime, &ragFile.CreateTime); err != nil {
+			return nil, err
+		}
+		ragFiles = append(ragFiles, &ragFile)
+	}
+	
+	// check error
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return ragFiles, nil
+}
+
 func DeleteRagFileByFileName(FileName string) error {
 	query := `UPDATE rag_files set is_deleted = 1 WHERE file_name = ?`
 	_, err := DB.Exec(query, FileName)
