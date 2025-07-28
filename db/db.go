@@ -59,7 +59,7 @@ const (
 				id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
 				user_id varchar(100) NOT NULL DEFAULT 0,
 				question TEXT NOT NULL,
-				answer TEXT NOT NULL,
+				answer MEDIUMTEXT NOT NULL,
 				content TEXT NOT NULL,
 				create_time int(10) NOT NULL DEFAULT '0',
 				is_deleted int(10) NOT NULL DEFAULT '0',

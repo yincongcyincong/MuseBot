@@ -1,8 +1,11 @@
 package robot
 
 import (
+	"encoding/base64"
+	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 	
 	"github.com/bwmarrin/discordgo"
 	godeepseek "github.com/cohesion-org/deepseek-go"
@@ -280,18 +283,38 @@ func (r *RobotInfo) GetImageContent(imageContent []byte) (string, error) {
 }
 
 func (r *RobotInfo) GetLastImageContent() ([]byte, error) {
-	_, _, userId := r.GetChatIdAndMsgIdAndUserID()
-	imageInfo, err := db.GetLastImageRecord(userId, param.ImageRecordType)
+	_, _, userID := r.GetChatIdAndMsgIdAndUserID()
+	imageInfo, err := db.GetLastImageRecord(userID, param.ImageRecordType)
 	if err != nil {
 		logger.Warn("get last image content fail", "err", err)
 		return nil, err
 	}
-	
 	if imageInfo == nil {
 		return nil, nil
 	}
 	
-	imageContent, err := utils.DownloadFile(imageInfo.Answer)
+	answer := imageInfo.Answer
+	const base64Prefix = "data:image/"
+	if strings.HasPrefix(answer, base64Prefix) {
+		// 去掉前缀，找到 base64 数据起始位置
+		idx := strings.Index(answer, "base64,")
+		if idx == -1 {
+			return nil, errors.New("invalid base64 image data URI")
+		}
+		base64Data := answer[idx+7:] // "base64," 长度是7
+		imageContent, err := base64.StdEncoding.DecodeString(base64Data)
+		if err != nil {
+			logger.Warn("decode base64 image fail", "err", err)
+			return nil, err
+		}
+		return imageContent, nil
+	}
+	
+	// 不是 base64 data URI，尝试下载文件
+	imageContent, err := utils.DownloadFile(answer)
+	if err != nil {
+		logger.Warn("download image fail", "err", err)
+	}
 	return imageContent, err
 }
 

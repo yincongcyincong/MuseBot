@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import Pagination from "../components/Pagination";
 import BotSelector from "../components/BotSelector";
-import ReactMarkdown from 'react-markdown'; // Import ReactMarkdown
+import ReactMarkdown from 'react-markdown';
 
 function BotRecordsPage() {
     const [botId, setBotId] = useState(null);
@@ -45,12 +45,55 @@ function BotRecordsPage() {
         setPage(newPage);
     };
 
+    function renderAnswerContent(answer) {
+        if (typeof answer !== 'string' || answer.trim() === '') {
+            return null;
+        }
+
+        if (answer.startsWith('data:video/')) {
+            // 视频 base64
+            return (
+                <video
+                    controls
+                    className="max-w-[300px] w-full rounded shadow"
+                    src={answer}
+                >
+                    Your browser does not support the video tag.
+                </video>
+            );
+        }
+
+        if (answer.startsWith('data:image/')) {
+            // 图片 base64
+            return (
+                <img
+                    src={answer}
+                    alt="base64 image"
+                    className="max-w-[300px] w-full rounded shadow"
+                />
+            );
+        }
+
+        // 其他内容用 markdown 渲染
+        return (
+            <ReactMarkdown
+                components={{
+                    img: ({ node, ...props }) => (
+                        <img {...props} className="max-w-[300px] w-full rounded shadow" />
+                    ),
+                }}
+            >
+                {answer}
+            </ReactMarkdown>
+        );
+    }
+
+
     return (
         <div className="p-6 bg-gray-100 min-h-screen">
             <h2 className="text-2xl font-bold text-gray-800 mb-6">Bot Record History</h2>
 
             <div className="flex space-x-4 mb-6 max-w-4xl flex-wrap items-end">
-                {/* Bot Selector */}
                 <div className="flex-1 min-w-[200px]">
                     <BotSelector
                         value={botId}
@@ -74,7 +117,6 @@ function BotRecordsPage() {
                 </div>
             </div>
 
-            {/* 记录表格 */}
             <div className="overflow-x-auto rounded-lg shadow">
                 <table className="min-w-full bg-white divide-y divide-gray-200">
                     <thead className="bg-gray-50">
@@ -96,8 +138,7 @@ function BotRecordsPage() {
                                 <td className="px-6 py-4 text-sm text-gray-800">{record.user_id}</td>
                                 <td className="px-6 py-4 text-sm text-gray-800">{record.question}</td>
                                 <td className="px-6 py-4 text-sm text-gray-800">
-                                    {/* Use ReactMarkdown for the answer field */}
-                                    <ReactMarkdown>{record.answer}</ReactMarkdown>
+                                    {renderAnswerContent(record.answer)}
                                 </td>
                                 <td className="px-6 py-4 text-sm text-gray-800">{record.token}</td>
                                 <td className="px-6 py-4 text-sm text-gray-600">{record.is_deleted ? "Deleted" : "Active"}</td>

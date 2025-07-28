@@ -2,7 +2,7 @@ package robot
 
 import (
 	"context"
-	"encoding/json"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"io"
@@ -897,12 +897,24 @@ func (t *TelegramRobot) sendVideo() {
 			return
 		}
 		
+		if len(videoContent) == 0 {
+			videoContent, err = utils.DownloadFile(videoUrl)
+			if err != nil {
+				logger.Warn("download video fail", "err", err)
+				return
+			}
+		}
+		
+		base64Content := base64.StdEncoding.EncodeToString(videoContent)
+		dataURI := fmt.Sprintf("data:video/%s;base64,%s", utils.DetectVideoMimeType(videoContent), base64Content)
+		
 		db.InsertRecordInfo(&db.Record{
-			UserId:    userId,
-			Question:  prompt,
-			Answer:    videoUrl,
-			Token:     param.VideoTokenUsage,
-			IsDeleted: 1,
+			UserId:     userId,
+			Question:   prompt,
+			Answer:     dataURI,
+			Token:      param.VideoTokenUsage,
+			IsDeleted:  1,
+			RecordType: param.VideoRecordType,
 		})
 	})
 }
@@ -979,39 +991,28 @@ func (t *TelegramRobot) sendImg() {
 			Media: photo,
 		}
 		
-		editResp, err := t.Bot.Request(edit)
+		_, err = t.Bot.Request(edit)
 		if err != nil {
 			logger.Warn("send image fail", "result", edit)
 			t.Robot.SendMsg(chatId, err.Error(), replyToMessageID, "", nil)
 			return
 		}
 		
-		if imageUrl == "" {
-			var result struct {
-				Photo []tgbotapi.PhotoSize `json:"photo"`
-			}
-			if err = json.Unmarshal(editResp.Result, &result); err != nil {
-				logger.Error("unmarshal editResp.Result fail", "err", err)
-				return
-			}
-			if len(result.Photo) == 0 {
-				logger.Warn("editResp.Result.Photo is empty")
-				return
-			}
-			
-			fileID := result.Photo[len(result.Photo)-1].FileID
-			file, err := t.Bot.GetFile(tgbotapi.FileConfig{FileID: fileID})
+		if len(imageContent) == 0 {
+			imageContent, err = utils.DownloadFile(imageUrl)
 			if err != nil {
-				logger.Warn("get file fail", "err", err)
+				logger.Warn("download image fail", "err", err)
 				return
 			}
-			imageUrl = fmt.Sprintf("https://api.telegram.org/file/bot%s/%s", t.Bot.Token, file.FilePath)
 		}
+		
+		base64Content := base64.StdEncoding.EncodeToString(imageContent)
+		dataURI := fmt.Sprintf("data:image/%s;base64,%s", utils.DetectImageFormat(imageContent), base64Content)
 		
 		db.InsertRecordInfo(&db.Record{
 			UserId:     userId,
 			Question:   prompt,
-			Answer:     imageUrl,
+			Answer:     dataURI,
 			Token:      param.ImageTokenUsage,
 			IsDeleted:  0,
 			RecordType: param.ImageRecordType,
