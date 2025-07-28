@@ -10,6 +10,8 @@ You can launch the bot in Discord mode using the following command:
 ./telegram-deepseek-bot-darwin-amd64 \
   -discord_bot_token=xxx \
   -deepseek_token=sk-xxx \
+  -gemini_token=xxx \
+  -openai_token=xxx \
   -volc_ak=xxx \
   -volc_sk=xxx \
   -vol_token=xxx
