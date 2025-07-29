@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import BotSelector from "../components/BotSelector";
-import { Copy, Image as ImageIcon } from 'lucide-react';
+import {Copy, Image as ImageIcon, ArrowUp, Circle} from "lucide-react";
 import Toast from "../components/Toast";
 
 function Communicate() {
@@ -12,8 +12,8 @@ function Communicate() {
     const [chatPage, setChatPage] = useState(1);
     const [hasMoreHistory, setHasMoreHistory] = useState(true);
     const [toast, setToast] = useState(null);
-    const [mediaFile, setMediaFile] = useState(null); // base64 image or video
-    const [mediaPreview, setMediaPreview] = useState(null);
+    const [mediaFile, setMediaFile] = useState(null); // actual file
+    const [mediaPreview, setMediaPreview] = useState(null); // base64 preview
 
     const messageEndRef = useRef(null);
     const chatContainerRef = useRef(null);
@@ -49,8 +49,8 @@ function Communicate() {
             const historyList = data?.data?.list || [];
             setHasMoreHistory(historyList.length > 0);
             const formattedHistory = historyList.reverse().flatMap(msg => [
-                { role: "user", content: msg.question },
-                { role: "assistant", content: msg.answer }
+                { role: "user", content: msg.question, media: msg.content },
+                { role: "assistant", content: msg.answer, media: "" }
             ]);
             setMessages(prev => [...formattedHistory, ...prev]);
 
@@ -87,12 +87,12 @@ function Communicate() {
         if (!input.trim() && !mediaFile) return;
         const userPrompt = input.trim();
         const formData = new FormData();
-        console.log(mediaFile);
         if (mediaFile) formData.append("file", mediaFile);
 
-        setMessages(prev => [...prev, { role: "user", content: userPrompt}]);
+        setMessages(prev => [...prev, { role: "user", content: userPrompt, media: mediaPreview }]);
         setInput("");
         setMediaFile(null);
+        setMediaPreview(null);
         setLoading(true);
 
         try {
@@ -107,7 +107,7 @@ function Communicate() {
             const decoder = new TextDecoder("utf-8");
 
             let assistantReply = "";
-            setMessages(prev => [...prev, { role: "assistant", content: "" }]);
+            setMessages(prev => [...prev, { role: "assistant", content: "", media: "" }]);
 
             while (true) {
                 const { done, value } = await reader.read();
@@ -116,7 +116,7 @@ function Communicate() {
                 assistantReply += chunk;
                 setMessages(prev => {
                     const updated = [...prev];
-                    updated[updated.length - 1] = { role: "assistant", content: assistantReply };
+                    updated[updated.length - 1] = { role: "assistant", content: assistantReply, media: "" };
                     return updated;
                 });
             }
@@ -132,7 +132,6 @@ function Communicate() {
     const handleFileUpload = (e) => {
         const file = e.target.files?.[0];
         if (!file) return;
-
         setMediaFile(file);
 
         const reader = new FileReader();
@@ -149,12 +148,23 @@ function Communicate() {
         }
     };
 
-    const handleCopyClick = (text) => {
-        navigator.clipboard.writeText(text).then(() => {
-            setToast({ message: "Copied to clipboard!", type: "success" });
-        }).catch(err => {
+    const handleCopyClick = async (text) => {
+        try {
+            // 如果是 base64 图片
+            if (text.startsWith("data:image/")) {
+                const res = await fetch(text); // 转换为 blob
+                const blob = await res.blob();
+                await navigator.clipboard.write([
+                    new ClipboardItem({ [blob.type]: blob })
+                ]);
+                setToast({ message: "Image copied to clipboard!", type: "success" });
+            } else {
+                await navigator.clipboard.writeText(text);
+                setToast({ message: "Text copied to clipboard!", type: "success" });
+            }
+        } catch (err) {
             setToast({ message: "Failed to copy!", type: "error" });
-        });
+        }
     };
 
     const handleCloseToast = () => setToast(null);
@@ -169,42 +179,77 @@ function Communicate() {
                 <div className="w-full flex flex-col">
                     <div ref={chatContainerRef} onScroll={handleChatScroll} className="flex-1 p-4 overflow-y-auto space-y-4 flex flex-col">
                         {messages.map((msg, idx) => (
-                            <div key={idx} className={`relative max-w-xl px-4 py-2 rounded-lg shadow flex flex-col ${msg.role === "user" ? "bg-blue-100 self-end ml-auto" : "bg-gray-100 self-start mr-auto"}`}>
-                                {msg.content && msg.content.startsWith("data:image/") ? (
-                                    <img src={msg.content} alt="media" className="rounded max-w-xs" />
-                                ) : msg.content.startsWith("data:video/") ? (
-                                    <video controls src={msg.content} className="rounded max-w-xs" />
-                                ) : (
-                                    <ReactMarkdown className="text-sm prose prose-sm max-w-none whitespace-pre-wrap mt-1">
-                                        {msg.content}
-                                    </ReactMarkdown>
+                            <div key={idx} className="relative flex flex-col items-start">
+                                <div
+                                    className={`max-w-xl px-4 py-2 rounded-lg shadow flex flex-col ${
+                                        msg.role === "user" ? "bg-blue-100 self-end ml-auto" : "bg-gray-100 self-start mr-auto"
+                                    }`}
+                                >
+                                    {msg.content && msg.content.startsWith("data:image/") ? (
+                                        <img src={msg.content} alt="media" className="rounded max-w-xs" />
+                                    ) : msg.content.startsWith("data:video/") ? (
+                                        <video controls src={msg.content} className="rounded max-w-xs" />
+                                    ) : (
+                                        <ReactMarkdown className="text-sm prose prose-sm max-w-none whitespace-pre-wrap mt-1">
+                                            {msg.content}
+                                        </ReactMarkdown>
+                                    )}
+                                    {msg.media && msg.media.startsWith("data:image/") ? (
+                                        <img src={msg.media} alt="media" className="rounded max-w-xs mt-2" />
+                                    ) : msg.media && msg.media.startsWith("data:video/") ? (
+                                        <video controls src={msg.media} className="rounded max-w-xs mt-2" />
+                                    ) : null}
+                                </div>
+
+                                {(msg.content || msg.media) && (
+                                    <button
+                                        onClick={() => handleCopyClick(msg.content || msg.media)}
+                                        className={`ml-2 mt-1 text-gray-400 hover:text-gray-600 ${msg.role === "user" ? "self-end" : "self-start"}`}
+                                        title="Copy"
+                                    >
+                                        <Copy size={16} />
+                                    </button>
                                 )}
                             </div>
                         ))}
                         {loading && chatPage > 1 && <div className="text-center text-gray-500 py-2">Loading more history...</div>}
                         <div ref={messageEndRef} />
                     </div>
-                    <div className="border-t p-4 relative">
-                        <label className="absolute left-4 top-6 cursor-pointer">
-                            <ImageIcon size={20} />
+                    <div className="relative">
+                        <div className="border-t p-8">
+                            {mediaPreview && (
+                                <div className="mb-2">
+                                    {mediaPreview.startsWith("data:image/") ? (
+                                        <img src={mediaPreview} alt="preview" className="max-w-[50px] max-h-[50px] rounded" />
+                                    ) : mediaPreview.startsWith("data:video/") ? (
+                                        <video controls src={mediaPreview} className="max-w-[50px] max-h-[50px] rounded" />
+                                    ) : null}
+                                </div>
+                            )}
+
+                            <textarea
+                                rows={2}
+                                className="w-full border rounded p-2 focus:outline-none focus:ring resize-none"
+                                placeholder="Type your message..."
+                                value={input}
+                                onChange={(e) => setInput(e.target.value)}
+                                onKeyDown={handleKeyDown}
+                            />
+                        </div>
+
+                        <label className="absolute bottom-0 left-4 p-2 z-10">
+                            <ImageIcon size={22} />
                             <input type="file" accept="image/*,video/*" hidden onChange={handleFileUpload} />
                         </label>
-                        <textarea
-                            rows={2}
-                            className="w-full pl-10 border rounded p-2 focus:outline-none focus:ring resize-none"
-                            placeholder="Type your message..."
-                            value={input}
-                            onChange={(e) => setInput(e.target.value)}
-                            onKeyDown={handleKeyDown}
-                        />
+
                         <button
                             onClick={handleSendPrompt}
-                            disabled={loading || (!input.trim() && !mediaFile)}
-                            className="mt-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+                            className="absolute bottom-0 right-4 p-2 rounded-full z-10"
                         >
-                            {loading ? "Sending..." : "Send"}
+                            {loading ? <Circle size={22} /> : <ArrowUp size={22} />}
                         </button>
                     </div>
+
                 </div>
             </div>
         </div>
