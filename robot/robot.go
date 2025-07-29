@@ -92,6 +92,13 @@ func (r *RobotInfo) GetChatIdAndMsgIdAndUserID() (int64, int, string) {
 			userId = slackRobot.Event.User
 			msgId, _ = strconv.Atoi(slackRobot.Event.ClientMsgID)
 		}
+	case *Web:
+		web := r.Robot.(*Web)
+		if web != nil {
+			chatId = web.UserId
+			msgId = int(web.UserId)
+			userId = web.RealUserId
+		}
 	}
 	
 	return chatId, msgId, userId
@@ -165,7 +172,13 @@ func (r *RobotInfo) SendMsg(chatId int64, msgContent string, replyToMessageID in
 		}
 		
 		return utils.ParseInt(timestamp)
-		
+	case *Web:
+		web := r.Robot.(*Web)
+		_, err := web.W.Write([]byte(msgContent))
+		if err != nil {
+			logger.Warn("send message fail", "err", err)
+		}
+		web.Flusher.Flush()
 	}
 	
 	return 0

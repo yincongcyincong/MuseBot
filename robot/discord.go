@@ -628,35 +628,26 @@ func (d *DiscordRobot) sendImage() {
 			return
 		}
 		
-		if imageUrl != "" {
-			_, err = d.Session.FollowupMessageCreate(d.Inter.Interaction, true, &discordgo.WebhookParams{
-				Content: imageUrl,
-			})
-			if err != nil {
-				logger.Warn("Sending followup interaction message failed", "err", err)
-			}
-		} else if len(imageContent) > 0 {
-			file := &discordgo.File{
-				Name:   "image." + utils.DetectImageFormat(imageContent),
-				Reader: bytes.NewReader(imageContent),
-			}
-			_, err = d.Session.InteractionResponseEdit(d.Inter.Interaction, &discordgo.WebhookEdit{
-				Files: []*discordgo.File{file},
-			})
-		}
-		
-		if err != nil {
-			logger.Warn("send image fail", "err", err)
-			d.Robot.SendMsg(chatId, err.Error(), msgId, param.DiscordEditMode, nil)
-			return
-		}
-		
 		if len(imageContent) == 0 {
 			imageContent, err = utils.DownloadFile(imageUrl)
 			if err != nil {
 				logger.Warn("download image fail", "err", err)
 				return
 			}
+		}
+		
+		file := &discordgo.File{
+			Name:   "image." + utils.DetectImageFormat(imageContent),
+			Reader: bytes.NewReader(imageContent),
+		}
+		_, err = d.Session.InteractionResponseEdit(d.Inter.Interaction, &discordgo.WebhookEdit{
+			Files: []*discordgo.File{file},
+		})
+		
+		if err != nil {
+			logger.Warn("send image fail", "err", err)
+			d.Robot.SendMsg(chatId, err.Error(), msgId, param.DiscordEditMode, nil)
+			return
 		}
 		
 		base64Content := base64.StdEncoding.EncodeToString(imageContent)
@@ -707,34 +698,28 @@ func (d *DiscordRobot) sendVideo() {
 			return
 		}
 		
-		if videoUrl != "" {
-			_, err = d.Session.FollowupMessageCreate(d.Inter.Interaction, true, &discordgo.WebhookParams{
-				Content: videoUrl,
-			})
-		} else if len(videoContent) > 0 {
-			file := &discordgo.File{
-				Name:   "video." + utils.DetectVideoMimeType(videoContent),
-				Reader: bytes.NewReader(videoContent),
-			}
-			_, err = d.Session.ChannelMessageEditComplex(&discordgo.MessageEdit{
-				ID:      strconv.Itoa(msgThinking),
-				Channel: strconv.FormatInt(chatId, 10),
-				Files:   []*discordgo.File{file},
-			})
-		}
-		
-		if err != nil {
-			logger.Warn("send video fail", "err", err)
-			d.Robot.SendMsg(chatId, err.Error(), msgId, param.DiscordEditMode, nil)
-			return
-		}
-		
 		if len(videoContent) == 0 {
 			videoContent, err = utils.DownloadFile(videoUrl)
 			if err != nil {
 				logger.Warn("download video fail", "err", err)
 				return
 			}
+		}
+		
+		file := &discordgo.File{
+			Name:   "video." + utils.DetectVideoMimeType(videoContent),
+			Reader: bytes.NewReader(videoContent),
+		}
+		_, err = d.Session.ChannelMessageEditComplex(&discordgo.MessageEdit{
+			ID:      strconv.Itoa(msgThinking),
+			Channel: strconv.FormatInt(chatId, 10),
+			Files:   []*discordgo.File{file},
+		})
+		
+		if err != nil {
+			logger.Warn("send video fail", "err", err)
+			d.Robot.SendMsg(chatId, err.Error(), msgId, param.DiscordEditMode, nil)
+			return
 		}
 		
 		base64Content := base64.StdEncoding.EncodeToString(videoContent)
