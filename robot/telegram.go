@@ -65,7 +65,8 @@ func CreateBot() *tgbotapi.BotAPI {
 	var err error
 	conf.BaseConfInfo.Bot, err = tgbotapi.NewBotAPIWithClient(*conf.BaseConfInfo.TelegramBotToken, tgbotapi.APIEndpoint, client)
 	if err != nil {
-		panic("Init bot fail" + err.Error())
+		logger.Error("telegramBot Error", "error", err)
+		return nil
 	}
 	
 	if *logger.LogLevel == "debug" {
@@ -913,7 +914,7 @@ func (t *TelegramRobot) sendVideo() {
 			Question:   prompt,
 			Answer:     dataURI,
 			Token:      param.VideoTokenUsage,
-			IsDeleted:  1,
+			IsDeleted:  0,
 			RecordType: param.VideoRecordType,
 		})
 	})
@@ -929,7 +930,7 @@ func (t *TelegramRobot) sendImg() {
 			prompt = t.Update.Message.Text
 		}
 		prompt = utils.ReplaceCommand(prompt, "/photo", t.Bot.Self.UserName)
-		if prompt == "" && len(t.Update.Message.Photo) > 0 {
+		if prompt == "" && t.Update.Message != nil && len(t.Update.Message.Photo) > 0 {
 			prompt = t.Update.Message.Caption
 		}
 		

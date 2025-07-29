@@ -1,13 +1,13 @@
 package http
 
 import (
-	"fmt"
+	"io"
 	"net/http"
 	"strconv"
 	"strings"
 	
-	"github.com/yincongcyincong/telegram-deepseek-bot/llm"
 	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
+	"github.com/yincongcyincong/telegram-deepseek-bot/robot"
 )
 
 // Communicate handles the Server-Sent Events
@@ -18,7 +18,12 @@ func Communicate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	//imageData := r.URL.Query().Get("image")
+	imageData, err := io.ReadAll(r.Body)
+	if err != nil {
+		logger.Warn("Error reading request body", "err", err)
+		http.Error(w, "Error reading request body", http.StatusInternalServerError)
+		return
+	}
 	
 	realUserId := "-" + r.URL.Query().Get("userId")
 	intUserId, _ := strconv.ParseInt(realUserId, 10, 64)
@@ -33,53 +38,10 @@ func Communicate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	// 命令模式处理
-	var err error
-	command, args := parseCommand(prompt)
-	switch command {
-	case "/photo":
-		err = handlePhoto(w, flusher, intUserId, realUserId, args)
-		return
-	case "/video":
-		//handleVideo(w, flusher, intUserId, realUserId, args)
-		return
-	case "/mcp":
-		//handleMCP(w, flusher, intUserId, realUserId, args)
-		return
-	default:
-		err = handleChat(w, flusher, intUserId, realUserId, prompt)
-	}
+	command, p := parseCommand(prompt)
 	
-	if err != nil {
-		logger.Warn("Error writing to SSE", "err", err)
-	}
-}
-
-func handleChat(w http.ResponseWriter, flusher http.Flusher, intUserId int64, realUserId string, prompt string) error {
-	// 默认：处理普通 LLM 流式回复
-	var err error
-	messageChan := make(chan string)
-	l := llm.NewLLM(
-		llm.WithChatId(intUserId),
-		llm.WithUserId(realUserId),
-		llm.WithMsgId(int(intUserId)),
-		llm.WithHTTPChain(messageChan),
-		llm.WithContent(prompt),
-	)
-	go func() {
-		defer close(messageChan)
-		err = l.CallLLM()
-		if err != nil {
-			logger.Warn("Error sending message", "err", err)
-		}
-	}()
-	
-	for msg := range messageChan {
-		fmt.Fprintf(w, "data: %s\n\n", msg)
-		flusher.Flush()
-	}
-	
-	return err
+	web := robot.NewWeb(command, intUserId, realUserId, p, prompt, imageData, w, flusher)
+	web.Exec()
 }
 
 // parseCommand extracts command and arguments like /photo xxx
@@ -93,11 +55,4 @@ func parseCommand(prompt string) (command string, args string) {
 		args = parts[1]
 	}
 	return command, args
-}
-
-// handlePhoto generates and streams image in base64
-func handlePhoto(w http.ResponseWriter, flusher http.Flusher, userId int64, realUserId, prompt string) error {
-	// 生成图片并流式传输
-	return nil
-	
 }

@@ -393,9 +393,11 @@ func GenerateGeminiImg(prompt string, imageContent []byte) ([]byte, error) {
 		return nil, err
 	}
 	
-	for _, part := range response.Candidates[0].Content.Parts {
-		if part.InlineData != nil {
-			return part.InlineData.Data, nil
+	if len(response.Candidates) > 0 {
+		for _, part := range response.Candidates[0].Content.Parts {
+			if part.InlineData != nil {
+				return part.InlineData.Data, nil
+			}
 		}
 	}
 	

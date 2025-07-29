@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -636,9 +637,43 @@ func Communicate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	resp, err := adminUtils.GetCrtClient(botInfo).Get(strings.TrimSuffix(botInfo.Address, "/") +
+	err = r.ParseMultipartForm(10 << 20)
+	if err != nil {
+		logger.Error("parse form error", "err", err)
+		utils.Failure(w, param.CodeServerFail, param.MsgServerFail, err)
+		return
+	}
+	
+	file, _, err := r.FormFile("file")
+	var data []byte
+	if err != nil {
+		if !errors.Is(err, http.ErrMissingFile) {
+			http.Error(w, "Error retrieving the file", http.StatusBadRequest)
+			utils.Failure(w, param.CodeServerFail, param.MsgServerFail, err)
+			return
+		}
+	} else {
+		defer file.Close()
+		
+		data, err = io.ReadAll(file)
+		if err != nil {
+			http.Error(w, "Failed to read uploaded file", http.StatusInternalServerError)
+			utils.Failure(w, param.CodeServerFail, param.MsgServerFail, err)
+			return
+		}
+	}
+	
+	req, err := http.NewRequest("POST", strings.TrimSuffix(botInfo.Address, "/")+
 		fmt.Sprintf("/communicate?prompt=%s&userId=%d",
-			url.QueryEscape(r.URL.Query().Get("prompt")), userIDValue))
+			url.QueryEscape(r.URL.Query().Get("prompt")), userIDValue), bytes.NewBuffer(data))
+	if err != nil {
+		logger.Error("Error creating request", "err", err)
+		utils.Failure(w, param.CodeServerFail, param.MsgServerFail, err)
+		return
+	}
+	req.Header.Set("Content-Type", "application/json")
+	
+	resp, err := adminUtils.GetCrtClient(botInfo).Do(req)
 	if err != nil {
 		logger.Error("get bot conf error", "err", err)
 		utils.Failure(w, param.CodeServerFail, param.MsgServerFail, err)
