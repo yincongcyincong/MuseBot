@@ -120,6 +120,10 @@ function Communicate() {
                     return updated;
                 });
             }
+
+            if (userPrompt === "/clear") {
+                setMessages([]);
+            }
         } catch (err) {
             setMessages(prev => [...prev, { role: "system", content: "Error: Could not get a response." }]);
             setToast({ message: "Failed to get bot response.", type: "error" });
@@ -186,18 +190,18 @@ function Communicate() {
                                     }`}
                                 >
                                     {msg.content && msg.content.startsWith("data:image/") ? (
-                                        <img src={msg.content} alt="media" className="rounded max-w-xs" />
+                                        <img src={msg.content} alt="media" className="max-w-[100px] max-h-[100px]" />
                                     ) : msg.content.startsWith("data:video/") ? (
-                                        <video controls src={msg.content} className="rounded max-w-xs" />
+                                        <video controls src={msg.content} className="max-w-[100px] max-h-[100px]" />
                                     ) : (
                                         <ReactMarkdown className="text-sm prose prose-sm max-w-none whitespace-pre-wrap mt-1">
                                             {msg.content}
                                         </ReactMarkdown>
                                     )}
                                     {msg.media && msg.media.startsWith("data:image/") ? (
-                                        <img src={msg.media} alt="media" className="rounded max-w-xs mt-2" />
+                                        <img src={msg.media} alt="media" className="max-w-[100px] max-h-[100px]" />
                                     ) : msg.media && msg.media.startsWith("data:video/") ? (
-                                        <video controls src={msg.media} className="rounded max-w-xs mt-2" />
+                                        <video controls src={msg.media} className="max-w-[100px] max-h-[100px]" />
                                     ) : null}
                                 </div>
 
