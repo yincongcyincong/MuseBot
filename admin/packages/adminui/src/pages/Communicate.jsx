@@ -1,7 +1,8 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, {useEffect, useRef, useState} from "react";
 import ReactMarkdown from "react-markdown";
+import DOMPurify from "dompurify";
 import BotSelector from "../components/BotSelector";
-import {Copy, Image as ImageIcon, ArrowUp, Circle} from "lucide-react";
+import {ArrowUp, Circle, Copy, Image as ImageIcon} from "lucide-react";
 import Toast from "../components/Toast";
 
 function Communicate() {
@@ -43,14 +44,14 @@ function Communicate() {
             const res = await fetch(`/bot/admin/chat?id=${currentBotId}&page=${page}`);
             const data = await res.json();
             if (data.code !== 0) {
-                setToast({ message: data.message || "Failed to fetch chat record", type: "error" });
+                setToast({message: data.message || "Failed to fetch chat record", type: "error"});
                 return;
             }
             const historyList = data?.data?.list || [];
             setHasMoreHistory(historyList.length > 0);
             const formattedHistory = historyList.reverse().flatMap(msg => [
-                { role: "user", content: msg.question, media: msg.content },
-                { role: "assistant", content: msg.answer, media: "" }
+                {role: "user", content: msg.question, media: msg.content},
+                {role: "assistant", content: msg.answer, media: ""}
             ]);
             setMessages(prev => [...formattedHistory, ...prev]);
 
@@ -63,14 +64,14 @@ function Communicate() {
             }
         } catch (err) {
             setHasMoreHistory(false);
-            setToast({ message: "Error fetching chat history!", type: "error" });
+            setToast({message: "Error fetching chat history!", type: "error"});
         } finally {
             setLoading(false);
         }
     };
 
     const scrollToBottom = () => {
-        messageEndRef.current?.scrollIntoView({ behavior: "smooth" });
+        messageEndRef.current?.scrollIntoView({behavior: "smooth"});
     };
 
     const handleChatScroll = () => {
@@ -89,7 +90,7 @@ function Communicate() {
         const formData = new FormData();
         if (mediaFile) formData.append("file", mediaFile);
 
-        setMessages(prev => [...prev, { role: "user", content: userPrompt, media: mediaPreview }]);
+        setMessages(prev => [...prev, {role: "user", content: userPrompt, media: mediaPreview}]);
         setInput("");
         setMediaFile(null);
         setMediaPreview(null);
@@ -107,16 +108,16 @@ function Communicate() {
             const decoder = new TextDecoder("utf-8");
 
             let assistantReply = "";
-            setMessages(prev => [...prev, { role: "assistant", content: "", media: "" }]);
+            setMessages(prev => [...prev, {role: "assistant", content: "", media: ""}]);
 
             while (true) {
-                const { done, value } = await reader.read();
+                const {done, value} = await reader.read();
                 if (done) break;
-                const chunk = decoder.decode(value, { stream: true });
+                const chunk = decoder.decode(value, {stream: true});
                 assistantReply += chunk;
                 setMessages(prev => {
                     const updated = [...prev];
-                    updated[updated.length - 1] = { role: "assistant", content: assistantReply, media: "" };
+                    updated[updated.length - 1] = {role: "assistant", content: assistantReply, media: ""};
                     return updated;
                 });
             }
@@ -125,8 +126,8 @@ function Communicate() {
                 setMessages([]);
             }
         } catch (err) {
-            setMessages(prev => [...prev, { role: "system", content: "Error: Could not get a response." }]);
-            setToast({ message: "Failed to get bot response.", type: "error" });
+            setMessages(prev => [...prev, {role: "system", content: "Error: Could not get a response."}]);
+            setToast({message: "Failed to get bot response.", type: "error"});
         } finally {
             setLoading(false);
             scrollToBottom();
@@ -159,29 +160,72 @@ function Communicate() {
                 const res = await fetch(text); // 转换为 blob
                 const blob = await res.blob();
                 await navigator.clipboard.write([
-                    new ClipboardItem({ [blob.type]: blob })
+                    new ClipboardItem({[blob.type]: blob})
                 ]);
-                setToast({ message: "Image copied to clipboard!", type: "success" });
+                setToast({message: "Image copied to clipboard!", type: "success"});
             } else {
                 await navigator.clipboard.writeText(text);
-                setToast({ message: "Text copied to clipboard!", type: "success" });
+                setToast({message: "Text copied to clipboard!", type: "success"});
             }
         } catch (err) {
-            setToast({ message: "Failed to copy!", type: "error" });
+            setToast({message: "Failed to copy!", type: "error"});
         }
     };
 
     const handleCloseToast = () => setToast(null);
 
+    const renderContent = (msg) => {
+        if (!msg.content) return null;
+
+        if (msg.content.startsWith("data:image/")) {
+            return <img src={msg.content} alt="image" className="max-w-[100px] max-h-[100px]"/>;
+        }
+
+        if (msg.content.startsWith("data:video/")) {
+            return <video controls src={msg.content} className="max-w-[100px] max-h-[100px]"/>;
+        }
+
+        const isHtml = /<\/?[a-z][\s\S]*>/i.test(msg.content); // 检查是否包含 HTML 标签
+        if (isHtml) {
+            return (
+                <div
+                    className="text-sm prose prose-sm max-w-none whitespace-pre-wrap mt-1"
+                    dangerouslySetInnerHTML={{__html: DOMPurify.sanitize(msg.content)}}
+                />
+            );
+        }
+
+        return (
+            <ReactMarkdown className="text-sm prose prose-sm max-w-none whitespace-pre-wrap mt-1">
+                {msg.content}
+            </ReactMarkdown>
+        );
+    };
+
+    const renderMedia = (msg) => {
+        if (!msg.media) return null;
+
+        if (msg.media.startsWith("data:image/")) {
+            return <img src={msg.media} alt="media" className="max-w-[100px] max-h-[100px]"/>;
+        }
+
+        if (msg.media.startsWith("data:video/")) {
+            return <video controls src={msg.media} className="max-w-[100px] max-h-[100px]"/>;
+        }
+
+        return null;
+    };
+
     return (
         <div className="p-6 bg-gray-100 min-h-screen">
-            {toast && <Toast message={toast.message} type={toast.type} onClose={handleCloseToast} />}
+            {toast && <Toast message={toast.message} type={toast.type} onClose={handleCloseToast}/>}
             <div className="flex space-x-4 mb-4 max-w-4xl min-w-[90px]">
-                <BotSelector value={botId} onChange={(bot) => setBotId(bot.id)} />
+                <BotSelector value={botId} onChange={(bot) => setBotId(bot.id)}/>
             </div>
             <div className="flex h-[70vh] bg-white shadow rounded-lg overflow-hidden">
                 <div className="w-full flex flex-col">
-                    <div ref={chatContainerRef} onScroll={handleChatScroll} className="flex-1 p-4 overflow-y-auto space-y-4 flex flex-col">
+                    <div ref={chatContainerRef} onScroll={handleChatScroll}
+                         className="flex-1 p-4 overflow-y-auto space-y-4 flex flex-col">
                         {messages.map((msg, idx) => (
                             <div key={idx} className="relative flex flex-col items-start">
                                 <div
@@ -189,20 +233,8 @@ function Communicate() {
                                         msg.role === "user" ? "bg-blue-100 self-end ml-auto" : "bg-gray-100 self-start mr-auto"
                                     }`}
                                 >
-                                    {msg.content && msg.content.startsWith("data:image/") ? (
-                                        <img src={msg.content} alt="media" className="max-w-[100px] max-h-[100px]" />
-                                    ) : msg.content.startsWith("data:video/") ? (
-                                        <video controls src={msg.content} className="max-w-[100px] max-h-[100px]" />
-                                    ) : (
-                                        <ReactMarkdown className="text-sm prose prose-sm max-w-none whitespace-pre-wrap mt-1">
-                                            {msg.content}
-                                        </ReactMarkdown>
-                                    )}
-                                    {msg.media && msg.media.startsWith("data:image/") ? (
-                                        <img src={msg.media} alt="media" className="max-w-[100px] max-h-[100px]" />
-                                    ) : msg.media && msg.media.startsWith("data:video/") ? (
-                                        <video controls src={msg.media} className="max-w-[100px] max-h-[100px]" />
-                                    ) : null}
+                                    {renderContent(msg)}
+                                    {renderMedia(msg)}
                                 </div>
 
                                 {(msg.content || msg.media) && (
@@ -211,22 +243,25 @@ function Communicate() {
                                         className={`ml-2 mt-1 text-gray-400 hover:text-gray-600 ${msg.role === "user" ? "self-end" : "self-start"}`}
                                         title="Copy"
                                     >
-                                        <Copy size={16} />
+                                        <Copy size={16}/>
                                     </button>
                                 )}
                             </div>
                         ))}
-                        {loading && chatPage > 1 && <div className="text-center text-gray-500 py-2">Loading more history...</div>}
-                        <div ref={messageEndRef} />
+                        {loading && chatPage > 1 &&
+                            <div className="text-center text-gray-500 py-2">Loading more history...</div>}
+                        <div ref={messageEndRef}/>
                     </div>
                     <div className="relative">
                         <div className="border-t p-8">
                             {mediaPreview && (
                                 <div className="mb-2">
                                     {mediaPreview.startsWith("data:image/") ? (
-                                        <img src={mediaPreview} alt="preview" className="max-w-[50px] max-h-[50px] rounded" />
+                                        <img src={mediaPreview} alt="preview"
+                                             className="max-w-[50px] max-h-[50px] rounded"/>
                                     ) : mediaPreview.startsWith("data:video/") ? (
-                                        <video controls src={mediaPreview} className="max-w-[50px] max-h-[50px] rounded" />
+                                        <video controls src={mediaPreview}
+                                               className="max-w-[50px] max-h-[50px] rounded"/>
                                     ) : null}
                                 </div>
                             )}
@@ -242,15 +277,15 @@ function Communicate() {
                         </div>
 
                         <label className="absolute bottom-0 left-4 p-2 z-10">
-                            <ImageIcon size={22} />
-                            <input type="file" accept="image/*,video/*" hidden onChange={handleFileUpload} />
+                            <ImageIcon size={22}/>
+                            <input type="file" accept="image/*,video/*" hidden onChange={handleFileUpload}/>
                         </label>
 
                         <button
                             onClick={handleSendPrompt}
                             className="absolute bottom-0 right-4 p-2 rounded-full z-10"
                         >
-                            {loading ? <Circle size={22} /> : <ArrowUp size={22} />}
+                            {loading ? <Circle size={22}/> : <ArrowUp size={22}/>}
                         </button>
                     </div>
 

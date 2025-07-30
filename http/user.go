@@ -2,7 +2,6 @@ package http
 
 import (
 	"net/http"
-	"strconv"
 	
 	"github.com/yincongcyincong/telegram-deepseek-bot/db"
 	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
@@ -78,7 +77,7 @@ func GetRecords(w http.ResponseWriter, r *http.Request) {
 	if query.Get("isDeleted") != "" {
 		isDeleted = utils.ParseInt(query.Get("isDeleted"))
 	}
-	userId, _ := strconv.ParseInt(query.Get("userId"), 10, 64)
+	userId := query.Get("userId")
 	
 	if page <= 0 {
 		page = 1
@@ -89,14 +88,14 @@ func GetRecords(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	// 查询总数和数据
-	total, err := db.GetRecordCount(userId, isDeleted)
+	total, err := db.GetRecordCount(userId, isDeleted, param.WEBRecordType)
 	if err != nil {
 		logger.Error("get record count error", "err", err)
 		utils.Failure(w, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
 		return
 	}
 	
-	list, err := db.GetRecordList(userId, page, pageSize, isDeleted)
+	list, err := db.GetRecordList(userId, page, pageSize, isDeleted, param.WEBRecordType)
 	if err != nil {
 		logger.Error("get record list error", "err", err)
 		utils.Failure(w, param.CodeDBQueryFail, param.MsgDBQueryFail, err)

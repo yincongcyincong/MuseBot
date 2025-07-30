@@ -525,6 +525,7 @@ func (t *TelegramRobot) showStateInfo() {
 	chatId, msgId, userId := t.Robot.GetChatIdAndMsgIdAndUserID()
 	userInfo, err := db.GetUserByID(userId)
 	if err != nil {
+		t.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
 		logger.Warn("get user info fail", "err", err)
 		return
 	}
@@ -975,14 +976,18 @@ func (t *TelegramRobot) sendImg() {
 		}
 		
 		var photo tgbotapi.InputMediaPhoto
-		if len(imageUrl) != 0 {
-			photo = tgbotapi.NewInputMediaPhoto(tgbotapi.FileURL(imageUrl))
-		} else if len(imageContent) != 0 {
-			photo = tgbotapi.NewInputMediaPhoto(tgbotapi.FileBytes{
-				Name:  "image." + utils.DetectImageFormat(imageContent),
-				Bytes: imageContent,
-			})
+		if len(imageContent) == 0 {
+			imageContent, err = utils.DownloadFile(imageUrl)
+			if err != nil {
+				logger.Warn("download image fail", "err", err)
+				return
+			}
 		}
+		
+		photo = tgbotapi.NewInputMediaPhoto(tgbotapi.FileBytes{
+			Name:  "image." + utils.DetectImageFormat(imageContent),
+			Bytes: imageContent,
+		})
 		
 		edit := tgbotapi.EditMessageMediaConfig{
 			BaseEdit: tgbotapi.BaseEdit{
@@ -997,14 +1002,6 @@ func (t *TelegramRobot) sendImg() {
 			logger.Warn("send image fail", "result", edit)
 			t.Robot.SendMsg(chatId, err.Error(), replyToMessageID, "", nil)
 			return
-		}
-		
-		if len(imageContent) == 0 {
-			imageContent, err = utils.DownloadFile(imageUrl)
-			if err != nil {
-				logger.Warn("download image fail", "err", err)
-				return
-			}
 		}
 		
 		base64Content := base64.StdEncoding.EncodeToString(imageContent)
