@@ -39,7 +39,7 @@ func (d *DeepseekTaskReq) ExecuteMcp() error {
 	
 	// get mcp request
 	llm := NewLLM(WithChatId(d.ChatId), WithMsgId(d.MsgId), WithUserId(d.UserId),
-		WithMessageChan(d.MessageChan), WithContent(d.Content))
+		WithMessageChan(d.MessageChan), WithContent(d.Content), WithHTTPMsgChan(d.HTTPMsgChan))
 	
 	prompt := i18n.GetMessage(*conf.BaseConfInfo.Lang, "mcp_prompt", taskParam)
 	llm.LLMClient.GetUserMessage(prompt)
