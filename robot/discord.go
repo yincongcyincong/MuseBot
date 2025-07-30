@@ -6,7 +6,6 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"log"
 	"runtime/debug"
 	"strconv"
 	"strings"
@@ -737,31 +736,36 @@ func (d *DiscordRobot) sendVideo() {
 }
 
 func (d *DiscordRobot) sendHelp() {
-	chatId, _, _ := d.Robot.GetChatIdAndMsgIdAndUserID()
+	chatId, replyToMessageID, _ := d.Robot.GetChatIdAndMsgIdAndUserID()
 	
-	components := []discordgo.MessageComponent{
-		discordgo.ActionsRow{
-			Components: []discordgo.MessageComponent{
-				discordgo.Button{Label: "mode", Style: discordgo.PrimaryButton, CustomID: "mode"},
-				discordgo.Button{Label: "clear", Style: discordgo.PrimaryButton, CustomID: "clear"},
-			},
-		},
-		discordgo.ActionsRow{
-			Components: []discordgo.MessageComponent{
-				discordgo.Button{Label: "balance", Style: discordgo.PrimaryButton, CustomID: "balance"},
-				discordgo.Button{Label: "state", Style: discordgo.PrimaryButton, CustomID: "state"},
-			},
-		},
-	}
-	
-	_, err := d.Session.ChannelMessageSendComplex(strconv.FormatInt(chatId, 10), &discordgo.MessageSend{
-		Content:    "👇 chose a command：",
-		Components: components,
-	})
-	if err != nil {
-		log.Println("Failed to send help config options:", err)
-	}
+	helpText := `
+Available Commands:
+
+/chat   - Start a normal chat session
+
+/mode   - Set the LLM mode
+
+/balance - Check your current balance (tokens or credits)
+
+/state  - View your current session state and settings
+
+/clear  - Clear all conversation history
+
+/retry  - Retry your last question
+
+/photo  - Create a Image base on your prompt or your Image
+
+/video  - Generate a video based on your prompt
+
+/task   - Let multiple agents collaborate to complete a task
+
+/mcp    - Use Multi-Agent Control Panel for complex task planning
+
+/help   - Show this help message
+`
+	d.Robot.SendMsg(chatId, helpText, replyToMessageID, tgbotapi.ModeMarkdown, nil)
 }
+
 func (d *DiscordRobot) sendMultiAgent(agentType string) {
 	d.Robot.TalkingPreCheck(func() {
 		chatId, replyToMessageID, userId := d.Robot.GetChatIdAndMsgIdAndUserID()

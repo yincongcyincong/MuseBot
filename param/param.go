@@ -66,6 +66,7 @@ const (
 	TextRecordType  = 0
 	ImageRecordType = 1
 	VideoRecordType = 2
+	WEBRecordType   = 3
 )
 
 var (

@@ -424,7 +424,6 @@ func GenerateGeminiVideo(prompt string) ([]byte, error) {
 		&genai.GenerateVideosConfig{
 			AspectRatio:      *conf.AudioConfInfo.GeminiVideoAspectRatio,
 			PersonGeneration: *conf.AudioConfInfo.GeminiVideoPersonGeneration,
-			FPS:              &conf.AudioConfInfo.GeminiVideoFPS,
 			DurationSeconds:  &conf.AudioConfInfo.GeminiVideoDurationSeconds,
 		})
 	if err != nil {

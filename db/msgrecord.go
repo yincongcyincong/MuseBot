@@ -256,13 +256,13 @@ func GetLastImageRecord(userId string, recordType int) (*Record, error) {
 	return &records[0], nil
 }
 
-func GetRecordCount(userId int64, isDeleted int) (int, error) {
+func GetRecordCount(userId string, isDeleted, recordType int) (int, error) {
 	var count int
 	query := "SELECT COUNT(*) FROM records"
 	var args []interface{}
 	var conditions []string
 	
-	if userId != 0 {
+	if userId != "" {
 		conditions = append(conditions, "user_id = ?")
 		args = append(args, userId)
 	}
@@ -270,6 +270,11 @@ func GetRecordCount(userId int64, isDeleted int) (int, error) {
 	if isDeleted >= 0 {
 		conditions = append(conditions, "is_deleted = ?")
 		args = append(args, isDeleted)
+	}
+	
+	if recordType >= 0 {
+		conditions = append(conditions, "record_type = ?")
+		args = append(args, recordType)
 	}
 	
 	if len(conditions) > 0 {
@@ -280,7 +285,7 @@ func GetRecordCount(userId int64, isDeleted int) (int, error) {
 	return count, err
 }
 
-func GetRecordList(userId int64, page int, pageSize int, isDeleted int) ([]Record, error) {
+func GetRecordList(userId string, page, pageSize, isDeleted, recordType int) ([]Record, error) {
 	if page < 1 {
 		page = 1
 	}
@@ -295,7 +300,7 @@ func GetRecordList(userId int64, page int, pageSize int, isDeleted int) ([]Recor
 	var args []interface{}
 	var conditions []string
 	
-	if userId != 0 {
+	if userId != "" {
 		conditions = append(conditions, "user_id = ?")
 		args = append(args, userId)
 	}
@@ -303,6 +308,12 @@ func GetRecordList(userId int64, page int, pageSize int, isDeleted int) ([]Recor
 		conditions = append(conditions, "is_deleted = ?")
 		args = append(args, isDeleted)
 	}
+	
+	if recordType >= 0 {
+		conditions = append(conditions, "record_type = ?")
+		args = append(args, recordType)
+	}
+	
 	if len(conditions) > 0 {
 		query += " WHERE " + strings.Join(conditions, " AND ")
 	}
