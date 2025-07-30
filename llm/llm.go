@@ -193,6 +193,12 @@ func WithMessageChan(messageChan chan *param.MsgInfo) Option {
 	}
 }
 
+func WithHTTPMsgChan(messageChan chan string) Option {
+	return func(p *LLM) {
+		p.HTTPMsgChan = messageChan
+	}
+}
+
 func WithChatId(chatId int64) Option {
 	return func(p *LLM) {
 		p.ChatId = chatId

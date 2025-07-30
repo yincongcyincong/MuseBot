@@ -664,7 +664,7 @@ func Communicate(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	req, err := http.NewRequest("POST", strings.TrimSuffix(botInfo.Address, "/")+
-		fmt.Sprintf("/communicate?prompt=%s&userId=%d",
+		fmt.Sprintf("/communicate?prompt=%s&user_id=%d",
 			url.QueryEscape(r.URL.Query().Get("prompt")), userIDValue), bytes.NewBuffer(data))
 	if err != nil {
 		logger.Error("Error creating request", "err", err)

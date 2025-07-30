@@ -95,7 +95,6 @@ function Communicate() {
 
         if (userPrompt === "/clear") {
             setMessages([]);
-            return;
         }
 
         setMessages(prev => [...prev, {role: "user", content: userPrompt, media: mediaPreview}]);

@@ -19,6 +19,7 @@ var (
 
 type DeepseekTaskReq struct {
 	MessageChan chan *param.MsgInfo
+	HTTPMsgChan chan string
 	Content     string
 	Model       string
 	Token       int
@@ -62,7 +63,7 @@ func (d *DeepseekTaskReq) ExecuteTask() error {
 	
 	prompt := i18n.GetMessage(*conf.BaseConfInfo.Lang, "assign_task_prompt", taskParam)
 	llm := NewLLM(WithUserId(d.UserId), WithChatId(d.ChatId), WithMsgId(d.MsgId),
-		WithMessageChan(d.MessageChan), WithContent(prompt))
+		WithMessageChan(d.MessageChan), WithContent(prompt), WithHTTPMsgChan(d.HTTPMsgChan))
 	llm.LLMClient.GetUserMessage(prompt)
 	llm.LLMClient.GetModel(llm)
 	c, err := llm.LLMClient.SyncSend(ctx, llm)

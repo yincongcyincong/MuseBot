@@ -332,7 +332,7 @@ func (web *Web) clearAllRecord() {
 		Question:   web.OriginalPrompt,
 		Answer:     deleteSuccMsg,
 		Token:      0, // llm already calculate it
-		IsDeleted:  0,
+		IsDeleted:  1,
 		RecordType: param.WEBRecordType,
 	})
 	return
@@ -365,14 +365,14 @@ func (web *Web) sendMultiAgent(agentType string) {
 		return
 	}
 	
-	messageChan := make(chan *param.MsgInfo)
+	messageChan := make(chan string)
 	
 	dpReq := &llm.DeepseekTaskReq{
 		Content:     prompt,
 		UserId:      userId,
 		ChatId:      chatId,
 		MsgId:       msgId,
-		MessageChan: messageChan,
+		HTTPMsgChan: messageChan,
 	}
 	
 	go func() {
@@ -397,8 +397,8 @@ func (web *Web) sendMultiAgent(agentType string) {
 	
 	totalContent := ""
 	for msg := range messageChan {
-		fmt.Fprintf(web.W, "%s", msg.Content)
-		totalContent += msg.Content
+		fmt.Fprintf(web.W, "%s", msg)
+		totalContent += msg
 		web.Flusher.Flush()
 	}
 	
