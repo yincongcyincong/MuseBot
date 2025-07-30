@@ -1,9 +1,9 @@
 import React, {useEffect, useRef, useState} from "react";
 import ReactMarkdown from "react-markdown";
-import DOMPurify from "dompurify";
 import BotSelector from "../components/BotSelector";
-import {ArrowUp, Circle, Copy, Image as ImageIcon} from "lucide-react";
 import Toast from "../components/Toast";
+import Modal from "../components/Modal";
+import {ArrowUp, Circle, Copy, Image as ImageIcon} from "lucide-react";
 
 function Communicate() {
     const [botId, setBotId] = useState(null);
@@ -13,8 +13,11 @@ function Communicate() {
     const [chatPage, setChatPage] = useState(1);
     const [hasMoreHistory, setHasMoreHistory] = useState(true);
     const [toast, setToast] = useState(null);
-    const [mediaFile, setMediaFile] = useState(null); // actual file
-    const [mediaPreview, setMediaPreview] = useState(null); // base64 preview
+    const [mediaFile, setMediaFile] = useState(null);
+    const [mediaPreview, setMediaPreview] = useState(null);
+
+    const [modalVisible, setModalVisible] = useState(false);
+    const [modalMedia, setModalMedia] = useState(null);
 
     const messageEndRef = useRef(null);
     const chatContainerRef = useRef(null);
@@ -36,6 +39,20 @@ function Communicate() {
             return () => clearTimeout(timer);
         }
     }, [messages, botId, chatPage]);
+
+    useEffect(() => {
+        const handleEsc = (e) => {
+            if (e.key === "Escape") {
+                setModalVisible(false);
+            }
+        };
+        window.addEventListener("keydown", handleEsc);
+        return () => window.removeEventListener("keydown", handleEsc);
+    }, []);
+
+    const scrollToBottom = () => {
+        messageEndRef.current?.scrollIntoView({behavior: "smooth"});
+    };
 
     const fetchChatMessages = async (currentBotId, page, isInitialLoad = false) => {
         if (loading || !hasMoreHistory) return;
@@ -70,28 +87,15 @@ function Communicate() {
         }
     };
 
-    const scrollToBottom = () => {
-        messageEndRef.current?.scrollIntoView({behavior: "smooth"});
-    };
-
-    const handleChatScroll = () => {
-        const container = chatContainerRef.current;
-        if (!container || loading || !hasMoreHistory) return;
-        if (container.scrollTop === 0) {
-            const nextPage = chatPage + 1;
-            setChatPage(nextPage);
-            fetchChatMessages(botId, nextPage);
-        }
-    };
-
     const handleSendPrompt = async () => {
         if (!input.trim() && !mediaFile) return;
         const userPrompt = input.trim();
         const formData = new FormData();
         if (mediaFile) formData.append("file", mediaFile);
 
-        if (userPrompt.trim() === "/clear") {
+        if (userPrompt === "/clear") {
             setMessages([]);
+            return;
         }
 
         setMessages(prev => [...prev, {role: "user", content: userPrompt, media: mediaPreview}]);
@@ -133,6 +137,16 @@ function Communicate() {
         }
     };
 
+    const handleChatScroll = () => {
+        const container = chatContainerRef.current;
+        if (!container || loading || !hasMoreHistory) return;
+        if (container.scrollTop === 0) {
+            const nextPage = chatPage + 1;
+            setChatPage(nextPage);
+            fetchChatMessages(botId, nextPage);
+        }
+    };
+
     const handleFileUpload = (e) => {
         const file = e.target.files?.[0];
         if (!file) return;
@@ -154,9 +168,8 @@ function Communicate() {
 
     const handleCopyClick = async (text) => {
         try {
-            // 如果是 base64 图片
             if (text.startsWith("data:image/")) {
-                const res = await fetch(text); // 转换为 blob
+                const res = await fetch(text);
                 const blob = await res.blob();
                 await navigator.clipboard.write([
                     new ClipboardItem({[blob.type]: blob})
@@ -171,17 +184,34 @@ function Communicate() {
         }
     };
 
-    const handleCloseToast = () => setToast(null);
+    const handleMediaClick = (media) => {
+        setModalMedia(media);
+        setModalVisible(true);
+    };
 
     const renderContent = (msg) => {
         if (!msg.content) return null;
 
         if (msg.content.startsWith("data:image/")) {
-            return <img src={msg.content} alt="image" className="max-w-[100px] max-h-[100px]"/>;
+            return (
+                <img
+                    src={msg.content}
+                    alt="image"
+                    className="max-w-[100px] max-h-[100px] cursor-pointer"
+                    onClick={() => handleMediaClick(msg.content)}
+                />
+            );
         }
 
         if (msg.content.startsWith("data:video/")) {
-            return <video controls src={msg.content} className="max-w-[100px] max-h-[100px]"/>;
+            return (
+                <video
+                    controls
+                    src={msg.content}
+                    className="max-w-[100px] max-h-[100px] cursor-pointer"
+                    onClick={() => handleMediaClick(msg.content)}
+                />
+            );
         }
 
         return (
@@ -195,15 +225,31 @@ function Communicate() {
         if (!msg.media) return null;
 
         if (msg.media.startsWith("data:image/")) {
-            return <img src={msg.media} alt="media" className="max-w-[100px] max-h-[100px]"/>;
+            return (
+                <img
+                    src={msg.media}
+                    alt="media"
+                    className="max-w-[100px] max-h-[100px] cursor-pointer"
+                    onClick={() => handleMediaClick(msg.media)}
+                />
+            );
         }
 
         if (msg.media.startsWith("data:video/")) {
-            return <video controls src={msg.media} className="max-w-[100px] max-h-[100px]"/>;
+            return (
+                <video
+                    controls
+                    src={msg.media}
+                    className="max-w-[100px] max-h-[100px] cursor-pointer"
+                    onClick={() => handleMediaClick(msg.media)}
+                />
+            );
         }
 
         return null;
     };
+
+    const handleCloseToast = () => setToast(null);
 
     return (
         <div className="p-6 bg-gray-100 min-h-screen">
@@ -213,13 +259,18 @@ function Communicate() {
             </div>
             <div className="flex h-[70vh] bg-white shadow rounded-lg overflow-hidden">
                 <div className="w-full flex flex-col">
-                    <div ref={chatContainerRef} onScroll={handleChatScroll}
-                         className="flex-1 p-4 overflow-y-auto space-y-4 flex flex-col">
+                    <div
+                        ref={chatContainerRef}
+                        onScroll={handleChatScroll}
+                        className="flex-1 p-4 overflow-y-auto space-y-4 flex flex-col"
+                    >
                         {messages.map((msg, idx) => (
                             <div key={idx} className="relative flex flex-col items-start">
                                 <div
                                     className={`max-w-xl px-4 py-2 rounded-lg shadow flex flex-col ${
-                                        msg.role === "user" ? "bg-blue-100 self-end ml-auto" : "bg-gray-100 self-start mr-auto"
+                                        msg.role === "user"
+                                            ? "bg-blue-100 self-end ml-auto"
+                                            : "bg-gray-100 self-start mr-auto"
                                     }`}
                                 >
                                     {renderContent(msg)}
@@ -229,7 +280,9 @@ function Communicate() {
                                 {(msg.content || msg.media) && (
                                     <button
                                         onClick={() => handleCopyClick(msg.content || msg.media)}
-                                        className={`ml-2 mt-1 text-gray-400 hover:text-gray-600 ${msg.role === "user" ? "self-end" : "self-start"}`}
+                                        className={`ml-2 mt-1 text-gray-400 hover:text-gray-600 ${
+                                            msg.role === "user" ? "self-end" : "self-start"
+                                        }`}
                                         title="Copy"
                                     >
                                         <Copy size={16}/>
@@ -237,8 +290,9 @@ function Communicate() {
                                 )}
                             </div>
                         ))}
-                        {loading && chatPage > 1 &&
-                            <div className="text-center text-gray-500 py-2">Loading more history...</div>}
+                        {loading && chatPage > 1 && (
+                            <div className="text-center text-gray-500 py-2">Loading more history...</div>
+                        )}
                         <div ref={messageEndRef}/>
                     </div>
                     <div className="relative">
@@ -246,15 +300,20 @@ function Communicate() {
                             {mediaPreview && (
                                 <div className="mb-2">
                                     {mediaPreview.startsWith("data:image/") ? (
-                                        <img src={mediaPreview} alt="preview"
-                                             className="max-w-[50px] max-h-[50px] rounded"/>
+                                        <img
+                                            src={mediaPreview}
+                                            alt="preview"
+                                            className="max-w-[50px] max-h-[50px] rounded"
+                                        />
                                     ) : mediaPreview.startsWith("data:video/") ? (
-                                        <video controls src={mediaPreview}
-                                               className="max-w-[50px] max-h-[50px] rounded"/>
+                                        <video
+                                            controls
+                                            src={mediaPreview}
+                                            className="max-w-[50px] max-h-[50px] rounded"
+                                        />
                                     ) : null}
                                 </div>
                             )}
-
                             <textarea
                                 rows={2}
                                 className="w-full border rounded p-2 focus:outline-none focus:ring resize-none"
@@ -265,7 +324,7 @@ function Communicate() {
                             />
                         </div>
 
-                        <label className="absolute bottom-0 left-4 p-2 z-10">
+                        <label className="absolute bottom-0 left-4 p-2 z-10 cursor-pointer">
                             <ImageIcon size={22}/>
                             <input type="file" accept="image/*,video/*" hidden onChange={handleFileUpload}/>
                         </label>
@@ -277,9 +336,18 @@ function Communicate() {
                             {loading ? <Circle size={22}/> : <ArrowUp size={22}/>}
                         </button>
                     </div>
-
                 </div>
             </div>
+
+            {/* Modal */}
+            <Modal visible={modalVisible} title="Preview" onClose={() => setModalVisible(false)}>
+                {modalMedia?.startsWith("data:image/") && (
+                    <img src={modalMedia} alt="preview" className="max-w-full max-h-[80vh] mx-auto"/>
+                )}
+                {modalMedia?.startsWith("data:video/") && (
+                    <video src={modalMedia} controls className="max-w-full max-h-[80vh] mx-auto"/>
+                )}
+            </Modal>
         </div>
     );
 }
