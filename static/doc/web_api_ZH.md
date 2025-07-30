@@ -202,6 +202,46 @@
 | `/mcp`     | 使用多代理控制面板进行复杂任务规划 |
 | `/help`    | 显示帮助信息（本命令列表）     |
 
+#### /chat
+<img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/be9043ff-513b-4cb3-a8c5-53678ada3fc7" />
+
+#### /mode
+<img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/5a2cead9-5064-41f9-bfab-335efc83e360" />
+<img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/1a135dbb-2367-4ce0-836e-fe367c0e0ea5" />
+
+#### /balance
+<img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/b7dd73f6-adef-4367-90ea-96d0cb5ba692" />
+
+#### /state
+<img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/c85224b9-ed70-4c24-bc30-1c3c57174670" />
+
+
+#### /clear
+<img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/40b7ce66-6a58-4367-800e-9c909658f4ea" />
+
+#### /retry
+<img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/71c3611f-9087-4e76-9502-b928e4af3137" />
+
+
+#### /photo
+<img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/14424e36-169c-41c6-a58c-63f3625fd0a3" />
+
+
+#### /video
+<img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/e07a1ce3-2dae-44a9-b7ba-804649f24f05" />
+
+
+#### /task
+<img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/f58adc7c-4436-4908-baf9-0a7aed8b140c" />
+
+#### /mcp
+<img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/9c5db063-23b5-41c2-989c-4eda48b7440c" />
+
+#### /help
+<img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/f2734a79-9d82-4716-8916-86a01865ed97" />
+
+
+
 ---
 
 ### 响应说明
