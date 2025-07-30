@@ -25,7 +25,7 @@ func Communicate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	realUserId := "-" + r.URL.Query().Get("userId")
+	realUserId := "-" + r.URL.Query().Get("user_id")
 	intUserId, _ := strconv.ParseInt(realUserId, 10, 64)
 	
 	w.Header().Set("Content-Type", "text/event-stream")
