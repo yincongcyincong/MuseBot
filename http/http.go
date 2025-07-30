@@ -50,6 +50,7 @@ func (p *HTTPServer) Start() {
 		http.HandleFunc("/mcp/sync", SyncMCPConf)
 		
 		http.HandleFunc("/user/list", GetUsers)
+		http.HandleFunc("/user/update/mode", UpdateMode)
 		http.HandleFunc("/record/list", GetRecords)
 		
 		http.HandleFunc("/pong", PongHandler)
