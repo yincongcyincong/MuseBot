@@ -275,7 +275,7 @@ func GetBotUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	resp, err := adminUtils.GetCrtClient(botInfo).Get(strings.TrimSuffix(botInfo.Address, "/") +
-		fmt.Sprintf("/user/list?page=%s&pageSize=%s&userId=%s", r.FormValue("page"), r.FormValue("pageSize"), r.FormValue("userId")))
+		fmt.Sprintf("/user/list?page=%s&page_size=%s&user_id=%s", r.FormValue("page"), r.FormValue("pageSize"), r.FormValue("userId")))
 	if err != nil {
 		logger.Error("get bot user error", "err", err)
 		utils.Failure(w, param.CodeServerFail, param.MsgServerFail, err)
@@ -311,7 +311,7 @@ func GetBotAdminRecord(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	resp, err := adminUtils.GetCrtClient(botInfo).Get(strings.TrimSuffix(botInfo.Address, "/") +
-		fmt.Sprintf("/record/list?page=%s&pageSize=%s&userId=%d&isDeleted=0",
+		fmt.Sprintf("/record/list?page=%s&page_size=%s&user_id=%d&is_deleted=0",
 			r.FormValue("page"), r.FormValue("pageSize"), userIDValue.(int)*-1))
 	if err != nil {
 		logger.Error("get bot user record error", "err", err)
@@ -342,7 +342,7 @@ func GetBotUserRecord(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	resp, err := adminUtils.GetCrtClient(botInfo).Get(strings.TrimSuffix(botInfo.Address, "/") +
-		fmt.Sprintf("/record/list?page=%s&pageSize=%s&userId=%s", r.FormValue("page"), r.FormValue("pageSize"), r.FormValue("userId")))
+		fmt.Sprintf("/record/list?page=%s&page_size=%s&user_id=%s", r.FormValue("page"), r.FormValue("pageSize"), r.FormValue("userId")))
 	if err != nil {
 		logger.Error("get bot user record error", "err", err)
 		utils.Failure(w, param.CodeServerFail, param.MsgServerFail, err)

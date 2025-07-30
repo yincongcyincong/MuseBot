@@ -42,8 +42,8 @@ func GetUsers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	page := utils.ParseInt(r.FormValue("page"))
-	pageSize := utils.ParseInt(r.FormValue("pageSize"))
-	userId := r.FormValue("userId")
+	pageSize := utils.ParseInt(r.FormValue("page_size"))
+	userId := r.FormValue("user_id")
 	
 	users, err := db.GetUserByPage(page, pageSize, userId)
 	if err != nil {
@@ -76,7 +76,7 @@ func UpdateMode(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	userId := r.FormValue("userId")
+	userId := r.FormValue("user_id")
 	mode := r.FormValue("mode")
 	
 	err = db.UpdateUserMode(userId, mode)
@@ -93,12 +93,12 @@ func GetRecords(w http.ResponseWriter, r *http.Request) {
 	// 获取参数
 	query := r.URL.Query()
 	page := utils.ParseInt(query.Get("page"))
-	pageSize := utils.ParseInt(query.Get("pageSize"))
+	pageSize := utils.ParseInt(query.Get("page_size"))
 	isDeleted := -1
-	if query.Get("isDeleted") != "" {
-		isDeleted = utils.ParseInt(query.Get("isDeleted"))
+	if query.Get("is_deleted") != "" {
+		isDeleted = utils.ParseInt(query.Get("is_deleted"))
 	}
-	userId := query.Get("userId")
+	userId := query.Get("user_id")
 	
 	if page <= 0 {
 		page = 1
