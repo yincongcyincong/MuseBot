@@ -90,11 +90,17 @@ function Communicate() {
         const formData = new FormData();
         if (mediaFile) formData.append("file", mediaFile);
 
+        if (userPrompt.trim() === "/clear") {
+            setMessages([]);
+        }
+
         setMessages(prev => [...prev, {role: "user", content: userPrompt, media: mediaPreview}]);
         setInput("");
         setMediaFile(null);
         setMediaPreview(null);
         setLoading(true);
+        let assistantReply = "";
+        setMessages(prev => [...prev, {role: "assistant", content: "🤔thinking...", media: ""}]);
 
         try {
             const response = await fetch(`/bot/communicate?id=${botId}&prompt=${encodeURIComponent(userPrompt)}`, {
@@ -107,9 +113,6 @@ function Communicate() {
             const reader = response.body.getReader();
             const decoder = new TextDecoder("utf-8");
 
-            let assistantReply = "";
-            setMessages(prev => [...prev, {role: "assistant", content: "", media: ""}]);
-
             while (true) {
                 const {done, value} = await reader.read();
                 if (done) break;
@@ -120,10 +123,6 @@ function Communicate() {
                     updated[updated.length - 1] = {role: "assistant", content: assistantReply, media: ""};
                     return updated;
                 });
-            }
-
-            if (userPrompt === "/clear") {
-                setMessages([]);
             }
         } catch (err) {
             setMessages(prev => [...prev, {role: "system", content: "Error: Could not get a response."}]);
@@ -183,16 +182,6 @@ function Communicate() {
 
         if (msg.content.startsWith("data:video/")) {
             return <video controls src={msg.content} className="max-w-[100px] max-h-[100px]"/>;
-        }
-
-        const isHtml = /<\/?[a-z][\s\S]*>/i.test(msg.content); // 检查是否包含 HTML 标签
-        if (isHtml) {
-            return (
-                <div
-                    className="text-sm prose prose-sm max-w-none whitespace-pre-wrap mt-1"
-                    dangerouslySetInnerHTML={{__html: DOMPurify.sanitize(msg.content)}}
-                />
-            );
         }
 
         return (

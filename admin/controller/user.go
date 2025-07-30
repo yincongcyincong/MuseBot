@@ -1,10 +1,14 @@
 package controller
 
 import (
+	"fmt"
+	"io"
 	"net/http"
 	"strconv"
+	"strings"
 	
 	"github.com/yincongcyincong/telegram-deepseek-bot/admin/db"
+	adminUtils "github.com/yincongcyincong/telegram-deepseek-bot/admin/utils"
 	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
 	"github.com/yincongcyincong/telegram-deepseek-bot/param"
 	"github.com/yincongcyincong/telegram-deepseek-bot/utils"
@@ -101,6 +105,33 @@ func ListUsers(w http.ResponseWriter, r *http.Request) {
 		"list":  users,
 		"total": total,
 	})
+}
+
+func UpdateUserMode(w http.ResponseWriter, r *http.Request) {
+	botInfo, err := getBot(r)
+	if err != nil {
+		logger.Error("get bot conf error", "err", err)
+		utils.Failure(w, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
+		return
+	}
+	
+	userId := r.URL.Query().Get("userId")
+	mode := r.URL.Query().Get("mode")
+	
+	resp, err := adminUtils.GetCrtClient(botInfo).Get(strings.TrimSuffix(botInfo.Address, "/") +
+		fmt.Sprintf("/user/mode/update?userId=%s&mode=%s", userId, mode))
+	if err != nil {
+		logger.Error("get bot conf error", "err", err)
+		utils.Failure(w, param.CodeServerFail, param.MsgServerFail, err)
+		return
+	}
+	defer resp.Body.Close()
+	_, err = io.Copy(w, resp.Body)
+	if err != nil {
+		logger.Error("copy response body error", "err", err)
+		utils.Failure(w, param.CodeServerFail, param.MsgServerFail, err)
+		return
+	}
 }
 
 func parsePaginationParams(r *http.Request) (page int, pageSize int) {

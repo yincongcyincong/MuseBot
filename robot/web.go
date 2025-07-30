@@ -123,6 +123,17 @@ Available Commands:
 
 func (web *Web) sendModelSelection() {
 	chatId, msgId, _ := web.Robot.GetChatIdAndMsgIdAndUserID()
+	
+	prompt := strings.TrimSpace(web.Prompt)
+	if prompt != "" {
+		if param.GeminiModels[prompt] || param.OpenAIModels[prompt] ||
+			param.DeepseekModels[prompt] || param.DeepseekLocalModels[prompt] ||
+			param.OpenRouterModels[prompt] || param.VolModels[prompt] {
+			web.handleModeUpdate(prompt)
+		}
+		return
+	}
+	
 	var modelList []string
 	
 	switch *conf.BaseConfInfo.Type {
@@ -162,32 +173,61 @@ func (web *Web) sendModelSelection() {
 			modelList = append(modelList, k)
 		}
 	}
-	
-	var htmlBuilder strings.Builder
-	htmlBuilder.WriteString(`
-		<div class="max-w-xs bg-white shadow rounded-md p-4 my-2">
-			<h3 class="text-lg font-semibold mb-2 text-gray-900">Select Chat Model</h3>
-			<div class="flex flex-col gap-1.5">
-	`)
-	
+	totalContent := ""
 	for _, model := range modelList {
-		htmlBuilder.WriteString(fmt.Sprintf(`
-			<button onclick="selectModel('%s')" class="mb-2 bg-blue-100 hover:bg-blue-200 text-center text-sm text-blue-800 rounded-md transition flex items-center justify-center px-4 py-2">
-				%s
-			</button>`, model, model))
+		totalContent += fmt.Sprintf(`%s
+
+`, model)
 	}
 	
-	htmlBuilder.WriteString(`
-			</div>
-		</div>
-	`)
-	
-	web.Robot.SendMsg(chatId, htmlBuilder.String(), msgId, "", nil)
+	web.Robot.SendMsg(chatId, totalContent, msgId, "", nil)
 	
 	db.InsertRecordInfo(&db.Record{
 		UserId:     web.RealUserId,
 		Question:   web.OriginalPrompt,
-		Answer:     htmlBuilder.String(),
+		Answer:     totalContent,
+		Token:      0, // llm already calculate it
+		IsDeleted:  0,
+		RecordType: param.WEBRecordType,
+	})
+}
+
+func (web *Web) handleModeUpdate(prompt string) {
+	chatId, msgId, userId := web.Robot.GetChatIdAndMsgIdAndUserID()
+	
+	userInfo, err := db.GetUserByID(userId)
+	if err != nil {
+		logger.Warn("get user fail", "userID", userId, "err", err)
+		web.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "set_mode", nil),
+			msgId, tgbotapi.ModeMarkdown, nil)
+		return
+	}
+	
+	if userInfo != nil && userInfo.ID != 0 {
+		err = db.UpdateUserMode(userId, prompt)
+		if err != nil {
+			logger.Warn("update user fail", "userID", userId, "err", err)
+			web.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "set_mode", nil),
+				msgId, tgbotapi.ModeMarkdown, nil)
+			return
+		}
+	} else {
+		_, err = db.InsertUser(userId, prompt)
+		if err != nil {
+			logger.Warn("insert user fail", "userID", userId, "err", err)
+			web.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "set_mode", nil),
+				msgId, tgbotapi.ModeMarkdown, nil)
+			return
+		}
+	}
+	
+	totalContent := i18n.GetMessage(*conf.BaseConfInfo.Lang, "mode_choose", nil) + prompt
+	web.Robot.SendMsg(chatId, totalContent, msgId, "", nil)
+	
+	db.InsertRecordInfo(&db.Record{
+		UserId:     web.RealUserId,
+		Question:   web.OriginalPrompt,
+		Answer:     totalContent,
 		Token:      0, // llm already calculate it
 		IsDeleted:  0,
 		RecordType: param.WEBRecordType,
