@@ -109,14 +109,14 @@ func GetRecords(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	// 查询总数和数据
-	total, err := db.GetRecordCount(userId, isDeleted, param.WEBRecordType)
+	total, err := db.GetRecordCount(userId, isDeleted, param.AllRecordType)
 	if err != nil {
 		logger.Error("get record count error", "err", err)
 		utils.Failure(w, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
 		return
 	}
 	
-	list, err := db.GetRecordList(userId, page, pageSize, isDeleted, param.WEBRecordType)
+	list, err := db.GetRecordList(userId, page, pageSize, isDeleted, param.AllRecordType)
 	if err != nil {
 		logger.Error("get record list error", "err", err)
 		utils.Failure(w, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
