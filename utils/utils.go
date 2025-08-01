@@ -343,6 +343,8 @@ func DetectAudioFormat(data []byte) string {
 		return "flac"
 	case bytes.HasPrefix(data[4:], []byte("ftyp")):
 		return "m4a/mp4"
+	case len(data) >= 4 && data[0] == 0x1A && data[1] == 0x45 && data[2] == 0xDF && data[3] == 0xA3:
+		return "webm"
 	default:
 		return "unknown"
 	}

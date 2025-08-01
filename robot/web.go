@@ -473,7 +473,7 @@ func (web *Web) sendImg() {
 		
 		if len(web.BodyData) > 0 {
 			base64Content = base64.StdEncoding.EncodeToString(web.BodyData)
-			format = utils.DetectImageFormat(imageContent)
+			format = utils.DetectImageFormat(web.BodyData)
 			originImageURI = fmt.Sprintf("data:image/%s;base64,%s", format, base64Content)
 		}
 		
@@ -591,10 +591,19 @@ func (web *Web) handleChat() {
 			web.Flusher.Flush()
 		}
 		
+		originDataURI := ""
+		base64Content := base64.StdEncoding.EncodeToString(web.BodyData)
+		if format := utils.DetectImageFormat(web.BodyData); format != "unknown" {
+			originDataURI = fmt.Sprintf("data:image/%s;base64,%s", format, base64Content)
+		} else if format := utils.DetectAudioFormat(web.BodyData); format != "unknown" {
+			originDataURI = fmt.Sprintf("data:audio/%s;base64,%s", format, base64Content)
+		}
+		
 		db.InsertRecordInfo(&db.Record{
 			UserId:     web.RealUserId,
 			Question:   web.OriginalPrompt,
 			Answer:     totalContent,
+			Content:    originDataURI,
 			Token:      0, // llm already calculate it
 			IsDeleted:  0,
 			RecordType: param.WEBRecordType,

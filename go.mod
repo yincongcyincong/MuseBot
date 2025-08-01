@@ -5,6 +5,7 @@ go 1.24.0
 require (
 	github.com/bwmarrin/discordgo v0.29.0
 	github.com/cohesion-org/deepseek-go v1.3.2
+	github.com/disintegration/imaging v1.6.2
 	github.com/go-sql-driver/mysql v1.9.0
 	github.com/go-telegram-bot-api/telegram-bot-api/v5 v5.5.1
 	github.com/gorilla/sessions v1.2.1
@@ -23,7 +24,7 @@ require (
 	github.com/volcengine/volc-sdk-golang v1.0.196
 	github.com/volcengine/volcengine-go-sdk v1.1.1
 	github.com/yincongcyincong/langchaingo v0.0.2
-	github.com/yincongcyincong/mcp-client-go v0.0.24
+	github.com/yincongcyincong/mcp-client-go v0.0.25
 	golang.org/x/text v0.24.0
 	google.golang.org/genai v1.7.0
 	gopkg.in/fsnotify.v1 v1.4.7
@@ -149,6 +150,7 @@ require (
 	go.starlark.net v0.0.0-20230302034142-4b1e35fe2254 // indirect
 	golang.org/x/crypto v0.37.0 // indirect
 	golang.org/x/exp v0.0.0-20250218142911-aa4b98e5adaa // indirect
+	golang.org/x/image v0.22.0 // indirect
 	golang.org/x/net v0.39.0 // indirect
 	golang.org/x/oauth2 v0.25.0 // indirect
 	golang.org/x/sync v0.13.0 // indirect

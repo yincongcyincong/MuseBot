@@ -1,10 +1,12 @@
 package robot
 
 import (
+	"bytes"
 	"context"
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"image"
 	"io"
 	"net/http"
 	"net/url"
@@ -13,6 +15,7 @@ import (
 	"time"
 	
 	godeepseek "github.com/cohesion-org/deepseek-go"
+	"github.com/disintegration/imaging"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/yincongcyincong/langchaingo/chains"
 	"github.com/yincongcyincong/langchaingo/vectorstores"
@@ -984,6 +987,22 @@ func (t *TelegramRobot) sendImg() {
 			}
 		}
 		
+		img, _, err := image.Decode(bytes.NewReader(imageContent))
+		if err != nil {
+			logger.Error("decode image fail", "err", err)
+			return
+		}
+		resizedImg := imaging.Fit(img, 1280, 1280, imaging.Lanczos)
+		var buf bytes.Buffer
+		
+		err = imaging.Encode(&buf, resizedImg, imaging.JPEG)
+		if err != nil {
+			logger.Error("encode image fail", "err", err)
+			return
+		}
+		
+		imageContent = buf.Bytes()
+		
 		photo = tgbotapi.NewInputMediaPhoto(tgbotapi.FileBytes{
 			Name:  "image." + utils.DetectImageFormat(imageContent),
 			Bytes: imageContent,
@@ -1166,4 +1185,27 @@ func (t *TelegramRobot) GetMessage() *tgbotapi.Message {
 		return t.Update.CallbackQuery.Message
 	}
 	return nil
+}
+
+func isValidTelegramPhoto(imageContent []byte) bool {
+	img, format, err := image.DecodeConfig(bytes.NewReader(imageContent))
+	if err != nil {
+		return false
+	}
+	
+	if format != "jpeg" && format != "png" {
+		return false
+	}
+	if img.Width < 320 || img.Height < 320 {
+		return false
+	}
+	if img.Width > 1280 || img.Height > 1280 {
+		return false
+	}
+	
+	if len(imageContent) > 10*1024*1024 {
+		return false
+	}
+	
+	return true
 }

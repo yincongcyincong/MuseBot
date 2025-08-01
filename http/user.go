@@ -2,6 +2,7 @@ package http
 
 import (
 	"net/http"
+	"strconv"
 	
 	"github.com/yincongcyincong/telegram-deepseek-bot/db"
 	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
@@ -99,6 +100,11 @@ func GetRecords(w http.ResponseWriter, r *http.Request) {
 		isDeleted = utils.ParseInt(query.Get("is_deleted"))
 	}
 	userId := query.Get("user_id")
+	recordType := query.Get("record_type")
+	recordTypeInt, _ := strconv.Atoi(recordType)
+	if recordType == "" {
+		recordTypeInt = param.AllRecordType
+	}
 	
 	if page <= 0 {
 		page = 1
@@ -109,14 +115,14 @@ func GetRecords(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	// 查询总数和数据
-	total, err := db.GetRecordCount(userId, isDeleted, param.AllRecordType)
+	total, err := db.GetRecordCount(userId, isDeleted, recordTypeInt)
 	if err != nil {
 		logger.Error("get record count error", "err", err)
 		utils.Failure(w, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
 		return
 	}
 	
-	list, err := db.GetRecordList(userId, page, pageSize, isDeleted, param.AllRecordType)
+	list, err := db.GetRecordList(userId, page, pageSize, isDeleted, recordTypeInt)
 	if err != nil {
 		logger.Error("get record list error", "err", err)
 		utils.Failure(w, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
