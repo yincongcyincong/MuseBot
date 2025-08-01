@@ -311,7 +311,7 @@ func GetBotAdminRecord(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	resp, err := adminUtils.GetCrtClient(botInfo).Get(strings.TrimSuffix(botInfo.Address, "/") +
-		fmt.Sprintf("/record/list?page=%s&page_size=%s&user_id=%d&is_deleted=0",
+		fmt.Sprintf("/record/list?page=%s&page_size=%s&user_id=%d&is_deleted=0&record_type=3",
 			r.FormValue("page"), r.FormValue("pageSize"), userIDValue.(int)*-1))
 	if err != nil {
 		logger.Error("get bot user record error", "err", err)

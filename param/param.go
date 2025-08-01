@@ -132,7 +132,6 @@ var (
 		openai.GPT4Dot5Preview:         true,
 		openai.GPT4Dot5Preview20250227: true,
 		openai.GPT3Dot5Turbo1106:       true,
-		openai.GPT3Dot5Turbo0613:       true,
 		openai.GPT3Dot5Turbo0301:       true,
 		openai.GPT3Dot5Turbo16K:        true,
 		openai.GPT3Dot5Turbo16K0613:    true,

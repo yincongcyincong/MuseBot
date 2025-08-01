@@ -3,7 +3,7 @@ import ReactMarkdown from "react-markdown";
 import BotSelector from "../components/BotSelector";
 import Toast from "../components/Toast";
 import Modal from "../components/Modal";
-import {ArrowUp, Circle, Copy, Image as ImageIcon} from "lucide-react";
+import {ArrowUp, Circle, Copy, Mic, Check, Image as ImageIcon} from "lucide-react";
 
 function Communicate() {
     const [botId, setBotId] = useState(null);
@@ -15,9 +15,12 @@ function Communicate() {
     const [toast, setToast] = useState(null);
     const [mediaFile, setMediaFile] = useState(null);
     const [mediaPreview, setMediaPreview] = useState(null);
-
     const [modalVisible, setModalVisible] = useState(false);
     const [modalMedia, setModalMedia] = useState(null);
+
+    const [recording, setRecording] = useState(false);
+    const mediaRecorderRef = useRef(null);
+    const recordedChunksRef = useRef([]);
 
     const messageEndRef = useRef(null);
     const chatContainerRef = useRef(null);
@@ -88,7 +91,9 @@ function Communicate() {
     };
 
     const handleSendPrompt = async () => {
+        if (loading) return;
         if (!input.trim() && !mediaFile) return;
+
         const userPrompt = input.trim();
         const formData = new FormData();
         if (mediaFile) formData.append("file", mediaFile);
@@ -133,6 +138,44 @@ function Communicate() {
         } finally {
             setLoading(false);
             scrollToBottom();
+        }
+    };
+
+    const startRecording = async () => {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({audio: true});
+            mediaRecorderRef.current = new MediaRecorder(stream);
+            recordedChunksRef.current = [];
+
+            mediaRecorderRef.current.ondataavailable = (event) => {
+                if (event.data.size > 0) {
+                    recordedChunksRef.current.push(event.data);
+                }
+            };
+
+            mediaRecorderRef.current.onstop = () => {
+                const audioBlob = new Blob(recordedChunksRef.current, {type: "audio/webm"});
+                const audioFile = new File([audioBlob], "recording.webm", {type: "audio/webm"});
+                setMediaFile(audioFile);
+
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    setMediaPreview(reader.result);
+                };
+                reader.readAsDataURL(audioBlob);
+            };
+
+            mediaRecorderRef.current.start();
+            setRecording(true);
+        } catch (error) {
+            setToast({message: "Microphone access denied.", type: "error"});
+        }
+    };
+
+    const stopRecording = () => {
+        if (mediaRecorderRef.current) {
+            mediaRecorderRef.current.stop();
+            setRecording(false);
         }
     };
 
@@ -234,7 +277,7 @@ function Communicate() {
             );
         }
 
-        if (msg.media.startsWith("data:video/")) {
+        if (msg.media.startsWith("data:video/") || msg.media.startsWith("data:audio/")) {
             return (
                 <video
                     controls
@@ -294,22 +337,17 @@ function Communicate() {
                         )}
                         <div ref={messageEndRef}/>
                     </div>
+
                     <div className="relative">
                         <div className="border-t p-8">
                             {mediaPreview && (
                                 <div className="mb-2">
                                     {mediaPreview.startsWith("data:image/") ? (
-                                        <img
-                                            src={mediaPreview}
-                                            alt="preview"
-                                            className="max-w-[50px] max-h-[50px] rounded"
-                                        />
-                                    ) : mediaPreview.startsWith("data:video/") ? (
-                                        <video
-                                            controls
-                                            src={mediaPreview}
-                                            className="max-w-[50px] max-h-[50px] rounded"
-                                        />
+                                        <img src={mediaPreview} alt="preview"
+                                             className="max-w-[50px] max-h-[50px] rounded"/>
+                                    ) : mediaPreview.startsWith("data:video/") || mediaPreview.startsWith("data:audio/") ? (
+                                        <video controls src={mediaPreview}
+                                               className="max-w-[50px] max-h-[50px] rounded"/>
                                     ) : null}
                                 </div>
                             )}
@@ -320,6 +358,7 @@ function Communicate() {
                                 value={input}
                                 onChange={(e) => setInput(e.target.value)}
                                 onKeyDown={handleKeyDown}
+                                disabled={loading}
                             />
                         </div>
 
@@ -329,8 +368,19 @@ function Communicate() {
                         </label>
 
                         <button
+                            onClick={recording ? stopRecording : startRecording}
+                            className="absolute bottom-0 left-16 p-2 z-10 cursor-pointer"
+                            title={recording ? "Stop Recording" : "Start Recording"}
+                        >
+                            {recording ? <Check size={22} /> : <Mic size={22} />}
+                        </button>
+
+                        <button
                             onClick={handleSendPrompt}
-                            className="absolute bottom-0 right-4 p-2 rounded-full z-10"
+                            disabled={loading}
+                            className={`absolute bottom-0 right-4 p-2 rounded-full z-10 ${
+                                loading ? "opacity-50 cursor-not-allowed" : ""
+                            }`}
                         >
                             {loading ? <Circle size={22}/> : <ArrowUp size={22}/>}
                         </button>
@@ -338,12 +388,11 @@ function Communicate() {
                 </div>
             </div>
 
-            {/* Modal */}
             <Modal visible={modalVisible} title="Preview" onClose={() => setModalVisible(false)}>
                 {modalMedia?.startsWith("data:image/") && (
                     <img src={modalMedia} alt="preview" className="max-w-full max-h-[80vh] mx-auto"/>
                 )}
-                {modalMedia?.startsWith("data:video/") && (
+                {(modalMedia?.startsWith("data:video/") || modalMedia?.startsWith("data:audio/")) && (
                     <video src={modalMedia} controls className="max-w-full max-h-[80vh] mx-auto"/>
                 )}
             </Modal>

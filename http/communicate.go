@@ -13,15 +13,15 @@ import (
 // Communicate handles the Server-Sent Events
 func Communicate(w http.ResponseWriter, r *http.Request) {
 	prompt := r.URL.Query().Get("prompt")
-	if prompt == "" {
-		http.Error(w, "Missing prompt parameter", http.StatusBadRequest)
-		return
-	}
-	
-	imageData, err := io.ReadAll(r.Body)
+	fileData, err := io.ReadAll(r.Body)
 	if err != nil {
 		logger.Warn("Error reading request body", "err", err)
 		http.Error(w, "Error reading request body", http.StatusInternalServerError)
+		return
+	}
+	
+	if prompt == "" && len(fileData) == 0 {
+		http.Error(w, "Missing prompt parameter", http.StatusBadRequest)
 		return
 	}
 	
@@ -40,7 +40,7 @@ func Communicate(w http.ResponseWriter, r *http.Request) {
 	
 	command, p := parseCommand(prompt)
 	
-	web := robot.NewWeb(command, intUserId, realUserId, p, prompt, imageData, w, flusher)
+	web := robot.NewWeb(command, intUserId, realUserId, p, prompt, fileData, w, flusher)
 	web.Exec()
 }
 

@@ -83,7 +83,7 @@ func InitConf() {
 	BaseConfInfo.MaxUserChat = flag.Int("max_user_chat", 2, "max chat per user")
 	BaseConfInfo.VideoToken = flag.String("video_token", "", "video token")
 	BaseConfInfo.HTTPPort = flag.Int("http_port", 36060, "http server port")
-	BaseConfInfo.UseTools = flag.Bool("use_tools", true, "use tools")
+	BaseConfInfo.UseTools = flag.Bool("use_tools", false, "use tools")
 	
 	BaseConfInfo.CrtFile = flag.String("crt_file", "", "public key file")
 	BaseConfInfo.KeyFile = flag.String("key_file", "", "secret key file")
