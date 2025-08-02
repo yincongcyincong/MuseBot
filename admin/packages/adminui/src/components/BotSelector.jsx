@@ -13,7 +13,9 @@ function BotSelector({ value, onChange }) {
 
     useEffect(() => {
         const lower = searchText.toLowerCase();
-        setFilteredBots(bots.filter(bot => bot.address.toLowerCase().includes(lower)));
+        setFilteredBots(bots.filter(bot => {
+            return bot.name.toLowerCase().includes(lower) || bot.address.toLowerCase().includes(lower)
+        }));
     }, [searchText, bots]);
 
     useEffect(() => {
@@ -35,7 +37,7 @@ function BotSelector({ value, onChange }) {
                 setBots(data.data);
                 setFilteredBots(data.data);
                 const defaultBot = data.data[0];
-                setSearchText(defaultBot.address);
+                setSearchText(defaultBot.name || defaultBot.address);
                 onChange(defaultBot); // 选中第一个 bot
             }
         } catch (err) {
@@ -44,7 +46,7 @@ function BotSelector({ value, onChange }) {
     };
 
     const handleSelectBot = (bot) => {
-        setSearchText(bot.address);
+        setSearchText(bot.name || bot.address);
         setDropdownOpen(false);
         onChange(bot);
     };
@@ -72,7 +74,7 @@ function BotSelector({ value, onChange }) {
                                 onClick={() => handleSelectBot(bot)}
                                 className="px-4 py-2 cursor-pointer hover:bg-blue-100"
                             >
-                                {bot.address}
+                                {bot.name || bot.address}
                             </li>
                         ))
                     ) : (

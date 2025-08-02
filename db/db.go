@@ -91,6 +91,11 @@ var (
 	DB *sql.DB
 )
 
+type DailyStat struct {
+	Date     string `json:"date"`
+	NewCount int    `json:"new_count"`
+}
+
 func InitTable() {
 	var err error
 	if _, err = os.Stat("./data"); os.IsNotExist(err) {

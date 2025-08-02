@@ -21,6 +21,7 @@ var BotMap sync.Map
 
 type BotStatus struct {
 	Id        int       `json:"id"`
+	Name      string    `json:"name"`
 	Address   string    `json:"address"`
 	Status    string    `json:"status"`
 	LastCheck time.Time `json:"-"`
@@ -107,6 +108,7 @@ func ScheduleBotChecks() {
 				status := checkBotStatus(b)
 				BotMap.Store(b.ID, &BotStatus{
 					Id:        b.ID,
+					Name:      b.Name,
 					Address:   b.Address,
 					Status:    status,
 					LastCheck: time.Now(),

@@ -29,6 +29,7 @@ func main() {
 	http.HandleFunc("/user/list", controller.RequireLogin(controller.ListUsers))
 	
 	// Bot API
+	http.HandleFunc("/bot/dashboard", controller.RequireLogin(controller.Dashboard))
 	http.HandleFunc("/bot/create", controller.RequireLogin(controller.CreateBot))
 	http.HandleFunc("/bot/get", controller.RequireLogin(controller.GetBot))
 	http.HandleFunc("/bot/update", controller.RequireLogin(controller.UpdateBotAddress))

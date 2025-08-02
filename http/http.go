@@ -54,6 +54,7 @@ func (p *HTTPServer) Start() {
 		http.HandleFunc("/record/list", GetRecords)
 		
 		http.HandleFunc("/pong", PongHandler)
+		http.HandleFunc("/dashboard", DashboardHandler)
 		
 		http.HandleFunc("/communicate", Communicate)
 		

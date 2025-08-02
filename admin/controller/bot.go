@@ -49,6 +49,35 @@ var (
 	SkipKey = map[string]bool{"bot": true}
 )
 
+func Dashboard(w http.ResponseWriter, r *http.Request) {
+	botInfo, err := getBot(r)
+	if err != nil {
+		logger.Error("get bot conf error", "err", err)
+		utils.Failure(w, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
+		return
+	}
+	day := r.URL.Query().Get("day")
+	if day == "" {
+		day = "7"
+	}
+	
+	resp, err := adminUtils.GetCrtClient(botInfo).Get(strings.TrimSuffix(botInfo.Address, "/") +
+		fmt.Sprintf("/dashboard?day=%s", day))
+	if err != nil {
+		logger.Error("get bot conf error", "err", err)
+		utils.Failure(w, param.CodeServerFail, param.MsgServerFail, err)
+		return
+	}
+	defer resp.Body.Close()
+	
+	_, err = io.Copy(w, resp.Body)
+	if err != nil {
+		logger.Error("copy response body error", "err", err)
+		utils.Failure(w, param.CodeServerFail, param.MsgServerFail, err)
+		return
+	}
+}
+
 func CreateBot(w http.ResponseWriter, r *http.Request) {
 	var b Bot
 	err := utils.HandleJsonBody(r, &b)
