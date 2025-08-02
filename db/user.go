@@ -179,3 +179,63 @@ func GetUserCount(userId string) (int, error) {
 	
 	return total, nil
 }
+
+func GetDailyNewUsers(days int) ([]DailyStat, error) {
+	var query string
+	var intervalSeconds int64
+	
+	if days <= 3 {
+		intervalSeconds = 3600 // 每小时
+	} else if days <= 7 {
+		intervalSeconds = 3 * 3600 // 每3小时
+	} else {
+		intervalSeconds = 86400 // 每天
+	}
+	
+	if *conf.BaseConfInfo.DBType == "mysql" {
+		query = `
+			SELECT
+				FLOOR(create_time / ?) * ? AS time_group,
+				COUNT(DISTINCT user_id) AS new_count
+			FROM users
+			WHERE create_time >= UNIX_TIMESTAMP(DATE_SUB(NOW(), INTERVAL ? DAY))
+			GROUP BY time_group
+			ORDER BY time_group DESC;
+		`
+	} else if *conf.BaseConfInfo.DBType == "sqlite3" {
+		query = `
+			SELECT
+				(create_time / ?) * ? AS time_group,
+				COUNT(DISTINCT user_id) AS new_count
+			FROM users
+			WHERE create_time >= strftime('%s', date('now', ? || ' days'))
+			GROUP BY time_group
+			ORDER BY time_group DESC;
+		`
+	} else {
+		return nil, fmt.Errorf("unsupported DBType: %s", *conf.BaseConfInfo.DBType)
+	}
+	
+	var rows *sql.Rows
+	var err error
+	if *conf.BaseConfInfo.DBType == "sqlite3" {
+		rows, err = DB.Query(query, intervalSeconds, intervalSeconds, -days)
+	} else {
+		rows, err = DB.Query(query, intervalSeconds, intervalSeconds, days)
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	
+	var stats []DailyStat
+	for rows.Next() {
+		var stat DailyStat
+		if err := rows.Scan(&stat.Date, &stat.NewCount); err != nil {
+			return nil, err
+		}
+		stats = append(stats, stat)
+	}
+	
+	return stats, nil
+}
