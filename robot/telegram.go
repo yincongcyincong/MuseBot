@@ -794,7 +794,7 @@ func (t *TelegramRobot) sendMultiAgent(agentType string) {
 		// send response message
 		messageChan := make(chan *param.MsgInfo)
 		
-		dpReq := &llm.DeepseekTaskReq{
+		dpReq := &llm.LLMTaskReq{
 			Content:     prompt,
 			UserId:      userId,
 			ChatId:      chatId,
@@ -863,11 +863,14 @@ func (t *TelegramRobot) sendVideo() {
 		var videoUrl string
 		var videoContent []byte
 		var err error
+		var mode string
 		switch *conf.BaseConfInfo.MediaType {
 		case param.Vol:
 			videoUrl, err = llm.GenerateVolVideo(prompt)
+			mode = *conf.VideoConfInfo.VideoModel
 		case param.Gemini:
 			videoContent, err = llm.GenerateGeminiVideo(prompt)
+			mode = *conf.VideoConfInfo.GeminiVideoModel
 		default:
 			err = fmt.Errorf("unsupported type: %s", *conf.BaseConfInfo.MediaType)
 		}
@@ -920,6 +923,7 @@ func (t *TelegramRobot) sendVideo() {
 			Token:      param.VideoTokenUsage,
 			IsDeleted:  0,
 			RecordType: param.VideoRecordType,
+			Mode:       mode,
 		})
 	})
 }
@@ -960,16 +964,19 @@ func (t *TelegramRobot) sendImg() {
 		
 		var imageUrl string
 		var imageContent []byte
-		
+		var mode string
 		switch *conf.BaseConfInfo.MediaType {
 		case param.Vol:
 			imageUrl, err = llm.GenerateVolImg(prompt, lastImageContent)
+			mode = *conf.PhotoConfInfo.ModelVersion
 		case param.OpenAi:
 			imageContent, err = llm.GenerateOpenAIImg(prompt, lastImageContent)
+			mode = *conf.PhotoConfInfo.OpenAIImageModel
 		case param.Gemini:
 			imageContent, err = llm.GenerateGeminiImg(prompt, lastImageContent)
+			mode = *conf.PhotoConfInfo.GeminiImageModel
 		default:
-			err = fmt.Errorf("unsupported type: %s", *conf.BaseConfInfo.MediaType)
+			err = fmt.Errorf("unsupported media type: %s", *conf.BaseConfInfo.MediaType)
 		}
 		
 		if err != nil {
@@ -1033,6 +1040,7 @@ func (t *TelegramRobot) sendImg() {
 			Token:      param.ImageTokenUsage,
 			IsDeleted:  0,
 			RecordType: param.ImageRecordType,
+			Mode:       mode,
 		})
 	})
 }

@@ -18,9 +18,10 @@ const (
 				id INTEGER PRIMARY KEY AUTOINCREMENT,
 				user_id varchar(100) NOT NULL DEFAULT '0',
 				mode VARCHAR(100) NOT NULL DEFAULT '',
-				updatetime int(10) NOT NULL DEFAULT '0',
+				update_time int(10) NOT NULL DEFAULT '0',
 				token int(10) NOT NULL DEFAULT '0',
-				avail_token int(10) NOT NULL DEFAULT 0
+				avail_token int(10) NOT NULL DEFAULT 0,
+				create_time int(10) NOT NULL DEFAULT '0'
 			);
 			CREATE TABLE records (
 				id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -29,8 +30,10 @@ const (
 				answer TEXT NOT NULL,
 				content TEXT NOT NULL,
 				create_time int(10) NOT NULL DEFAULT '0',
+				update_time int(10) NOT NULL DEFAULT '0',
 				is_deleted int(10) NOT NULL DEFAULT '0',
 				token int(10) NOT NULL DEFAULT 0,
+				mode VARCHAR(100) NOT NULL DEFAULT '',
 				record_type tinyint(1) NOT NULL DEFAULT 0
 			);
 			CREATE TABLE rag_files (
@@ -41,6 +44,7 @@ const (
 				update_time int(10) NOT NULL DEFAULT '0',
 				is_deleted int(10) NOT NULL DEFAULT '0'
 			);
+			CREATE INDEX idx_users_user_id ON users(user_id);
 			CREATE INDEX idx_records_user_id ON records(user_id);
 			CREATE INDEX idx_records_create_time ON records(create_time);`
 	
@@ -49,9 +53,10 @@ const (
 				id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
 				user_id varchar(100) NOT NULL DEFAULT 0,
 				mode VARCHAR(100) NOT NULL DEFAULT '',
-				updatetime INT(10) NOT NULL DEFAULT 0,
+				update_time INT(10) NOT NULL DEFAULT 0,
 				token int(10) NOT NULL DEFAULT 0,
-				avail_token int(10) NOT NULL DEFAULT 0
+				avail_token int(10) NOT NULL DEFAULT 0,
+			    create_time int(10) NOT NULL DEFAULT '0'
 			);`
 	
 	mysqlCreateRecordsSQL = `
@@ -62,9 +67,11 @@ const (
 				answer MEDIUMTEXT NOT NULL,
 				content MEDIUMTEXT NOT NULL,
 				create_time int(10) NOT NULL DEFAULT '0',
+			    update_time int(10) NOT NULL DEFAULT '0',
 				is_deleted int(10) NOT NULL DEFAULT '0',
 				token int(10) NOT NULL DEFAULT 0,
-			    record_type tinyint(1) NOT NULL DEFAULT 0 COMMENT '0:text, 1:image 2:video'
+			    mode VARCHAR(100) NOT NULL DEFAULT '',
+			    record_type tinyint(1) NOT NULL DEFAULT 0 COMMENT '0:text, 1:image 2:video 3: web'
 			);`
 	
 	mysqlCreateRagFileSQL = `CREATE TABLE IF NOT EXISTS rag_files (
@@ -75,9 +82,9 @@ const (
 				update_time int(10) NOT NULL DEFAULT '0',
 				is_deleted int(10) NOT NULL DEFAULT '0'
 			);`
-	
-	mysqlCreateIndexSQL   = `CREATE INDEX idx_records_user_id ON records(user_id);`
-	mysqlCreateCTIndexSQL = `CREATE INDEX idx_records_create_time ON records(create_time);`
+	mysqlCreateUserIndexSQL = `CREATE INDEX idx_users_user_id ON users(user_id);`
+	mysqlCreateIndexSQL     = `CREATE INDEX idx_records_user_id ON records(user_id);`
+	mysqlCreateCTIndexSQL   = `CREATE INDEX idx_records_create_time ON records(create_time);`
 )
 
 var (
@@ -141,6 +148,10 @@ func initializeMysqlTable(db *sql.DB, tableName string, createSQL string) error 
 		
 		// 创建索引（防止重复创建）
 		if tableName == "records" {
+			_, err = db.Exec(mysqlCreateUserIndexSQL)
+			if err != nil {
+				logger.Fatal("Create index failed", "err", err)
+			}
 			_, err = db.Exec(mysqlCreateIndexSQL)
 			if err != nil {
 				logger.Fatal("Create index failed", "err", err)

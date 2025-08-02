@@ -24,6 +24,7 @@ const (
 			CREATE TABLE bot (
 				id INTEGER PRIMARY KEY AUTOINCREMENT,
 				address VARCHAR(255) NOT NULL DEFAULT '',
+				name VARCHAR(255) NOT NULL DEFAULT '',
 				key_file TEXT NOT NULL,
 				crt_file TEXT NOT NULL,
 				ca_file TEXT NOT NULL,
@@ -46,6 +47,7 @@ const (
 			CREATE TABLE IF NOT EXISTS bot (
 				id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
 				address VARCHAR(255) NOT NULL DEFAULT '',
+			    name VARCHAR(255) NOT NULL DEFAULT '',
 				crt_file TEXT NOT NULL,
 			    secret_file TEXT NOT NULL,
 				create_time int(10) NOT NULL DEFAULT '0',

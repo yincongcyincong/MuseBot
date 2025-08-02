@@ -297,7 +297,7 @@ func (r *RobotInfo) GetImageContent(imageContent []byte) (string, error) {
 
 func (r *RobotInfo) GetLastImageContent() ([]byte, error) {
 	_, _, userID := r.GetChatIdAndMsgIdAndUserID()
-	imageInfo, err := db.GetLastImageRecord(userID, param.ImageRecordType)
+	imageInfo, err := db.GetLastImageRecord(userID)
 	if err != nil {
 		logger.Warn("get last image content fail", "err", err)
 		return nil, err

@@ -149,12 +149,11 @@ func (d *OllamaDeepseekReq) Send(ctx context.Context, l *LLM) error {
 	}
 	
 	if !hasTools || len(d.CurrentToolMessage) == 0 {
-		data, _ := json.Marshal(d.ToolMessage)
 		db.InsertMsgRecord(l.UserId, &db.AQ{
 			Question: l.Content,
 			Answer:   l.WholeContent,
-			Content:  string(data),
 			Token:    l.Token,
+			Mode:     l.Model,
 		}, true)
 	} else {
 		d.CurrentToolMessage = append([]deepseek.ChatCompletionMessage{

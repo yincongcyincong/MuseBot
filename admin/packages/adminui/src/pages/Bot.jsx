@@ -193,6 +193,7 @@ function Bots() {
                     <tr>
                         {[
                             "ID",
+                            "Name",
                             "Address",
                             "Status",
                             "Create Time",
@@ -212,6 +213,7 @@ function Bots() {
                     {bots.map((bot) => (
                         <tr key={bot.id} className="hover:bg-gray-50">
                             <td className="px-6 py-4 text-sm text-gray-800">{bot.id}</td>
+                            <td className="px-6 py-4 text-sm text-gray-800">{bot.name}</td>
                             <td className="px-6 py-4 text-sm text-gray-800">{bot.address}</td>
                             <td className="px-6 py-4 text-sm text-gray-800">{bot.status}</td>
                             <td className="px-6 py-4 text-sm text-gray-600">
@@ -270,13 +272,22 @@ function Bots() {
                     />
                 </div>
                 <div className="mb-4">
-          <textarea
-              placeholder="CA File"
-              value={form.ca_file}
-              onChange={(e) => setForm({ ...form, ca_file: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring focus:border-blue-400"
-              rows={5}
-          />
+                    <input
+                        type="text"
+                        placeholder="name"
+                        value={form.name}
+                        onChange={(e) => setForm({ ...form, name: e.target.value })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring focus:border-blue-400"
+                    />
+                </div>
+                <div className="mb-4">
+                  <textarea
+                      placeholder="CA File"
+                      value={form.ca_file}
+                      onChange={(e) => setForm({ ...form, ca_file: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring focus:border-blue-400"
+                      rows={5}
+                  />
                 </div>
                 <div className="mb-4">
           <textarea

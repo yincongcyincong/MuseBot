@@ -125,7 +125,7 @@ function BotUserListPage() {
                 <table className="min-w-full bg-white divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                     <tr>
-                        {["ID", "User ID", "Mode", "Token", "Available Token"].map((title) => (
+                        {["ID", "User ID", "Mode", "Token", "Available Token", "Created", "Updated"].map((title) => (
                             <th
                                 key={title}
                                 className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
@@ -144,6 +144,12 @@ function BotUserListPage() {
                                 <td className="px-6 py-4 text-sm text-gray-800">{user.mode}</td>
                                 <td className="px-6 py-4 text-sm text-gray-800">{user.token}</td>
                                 <td className="px-6 py-4 text-sm text-gray-800">{user.avail_token}</td>
+                                <td className="px-6 py-4 text-sm text-gray-800">
+                                    {new Date(user.create_time * 1000).toLocaleString()}
+                                </td>
+                                <td className="px-6 py-4 text-sm text-gray-800">
+                                    {new Date(user.update_time * 1000).toLocaleString()}
+                                </td>
                             </tr>
                         ))
                     ) : (

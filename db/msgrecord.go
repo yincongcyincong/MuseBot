@@ -26,6 +26,7 @@ type AQ struct {
 	Answer   string
 	Content  string
 	Token    int
+	Mode     string
 }
 
 type Record struct {
@@ -38,6 +39,8 @@ type Record struct {
 	IsDeleted  int    `json:"is_deleted"`
 	CreateTime int64  `json:"create_time"`
 	RecordType int    `json:"record_type"`
+	Mode       string `json:"mode"`
+	UpdateTime int64  `json:"update_time"`
 }
 
 var MsgRecord = sync.Map{}
@@ -67,6 +70,7 @@ func InsertMsgRecord(userId string, aq *AQ, insertDB bool) {
 			Answer:     aq.Answer,
 			Content:    aq.Content,
 			Token:      aq.Token,
+			Mode:       aq.Mode,
 			RecordType: param.TextRecordType,
 		})
 	}
@@ -155,7 +159,7 @@ func InsertRecord() {
 // getRecordsByUserId get latest 10 records by user_id
 func getRecordsByUserId(userId string) ([]Record, error) {
 	// construct SQL statements
-	query := fmt.Sprintf("SELECT id, user_id, question, answer, content FROM records WHERE user_id =  ? " +
+	query := fmt.Sprintf("SELECT id, user_id, question, answer, content, mode FROM records WHERE user_id =  ? " +
 		"and is_deleted = 0 and record_type = 0 order by create_time desc limit 10")
 	
 	// execute query
@@ -168,7 +172,7 @@ func getRecordsByUserId(userId string) ([]Record, error) {
 	var records []Record
 	for rows.Next() {
 		var record Record
-		err := rows.Scan(&record.ID, &record.UserId, &record.Question, &record.Answer, &record.Content)
+		err := rows.Scan(&record.ID, &record.UserId, &record.Question, &record.Answer, &record.Content, &record.Mode)
 		if err != nil {
 			return nil, err
 		}
@@ -180,8 +184,8 @@ func getRecordsByUserId(userId string) ([]Record, error) {
 
 // InsertRecordInfo insert record
 func InsertRecordInfo(record *Record) {
-	query := `INSERT INTO records (user_id, question, answer, content, token, create_time, is_deleted, record_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
-	_, err := DB.Exec(query, record.UserId, record.Question, record.Answer, record.Content, record.Token, time.Now().Unix(), record.IsDeleted, record.RecordType)
+	query := `INSERT INTO records (user_id, question, answer, content, token, create_time, is_deleted, record_type, mode) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+	_, err := DB.Exec(query, record.UserId, record.Question, record.Answer, record.Content, record.Token, time.Now().Unix(), record.IsDeleted, record.RecordType, record.Mode)
 	metrics.TotalRecords.Inc()
 	if err != nil {
 		logger.Error("insertRecord err", "err", err)
@@ -199,7 +203,7 @@ func InsertRecordInfo(record *Record) {
 		}
 	}
 	
-	err = UpdateUserToken(record.UserId, record.Token)
+	err = AddToken(record.UserId, record.Token)
 	if err != nil {
 		logger.Error("Error update token by user", "err", err)
 	}
@@ -207,8 +211,8 @@ func InsertRecordInfo(record *Record) {
 
 // DeleteRecord delete record
 func DeleteRecord(userId string) error {
-	query := `UPDATE records set is_deleted = 1 WHERE user_id = ?`
-	_, err := DB.Exec(query, userId)
+	query := `UPDATE records set is_deleted = 1, update_time = ? WHERE user_id = ?`
+	_, err := DB.Exec(query, time.Now().Unix(), userId)
 	return err
 }
 
@@ -229,11 +233,11 @@ func GetTokenByUserIdAndTime(userId string, start, end int64) (int, error) {
 	return user.Token, nil
 }
 
-func GetLastImageRecord(userId string, recordType int) (*Record, error) {
-	query := fmt.Sprintf("SELECT id, user_id, question, answer, content FROM records WHERE user_id =  ? and record_type = ? and is_deleted = 0 order by id desc")
+func GetLastImageRecord(userId string) (*Record, error) {
+	query := fmt.Sprintf("SELECT id, user_id, question, answer, content FROM records WHERE user_id =  ? and record_type in (?, ?) and is_deleted = 0 order by id desc")
 	
 	// execute query
-	rows, err := DB.Query(query, userId, recordType)
+	rows, err := DB.Query(query, userId, param.WEBRecordType, param.ImageRecordType)
 	if err != nil {
 		return nil, err
 	}
@@ -295,7 +299,7 @@ func GetRecordList(userId string, page, pageSize, isDeleted, recordType int) ([]
 	offset := (page - 1) * pageSize
 	
 	query := `
-		SELECT id, user_id, question, answer, content, token, is_deleted, create_time
+		SELECT id, user_id, question, answer, content, token, is_deleted, create_time, mode, update_time
 		FROM records`
 	var args []interface{}
 	var conditions []string
@@ -330,7 +334,7 @@ func GetRecordList(userId string, page, pageSize, isDeleted, recordType int) ([]
 	var records []Record
 	for rows.Next() {
 		var r Record
-		if err := rows.Scan(&r.ID, &r.UserId, &r.Question, &r.Answer, &r.Content, &r.Token, &r.IsDeleted, &r.CreateTime); err != nil {
+		if err := rows.Scan(&r.ID, &r.UserId, &r.Question, &r.Answer, &r.Content, &r.Token, &r.IsDeleted, &r.CreateTime, &r.Mode, &r.UpdateTime); err != nil {
 			return nil, err
 		}
 		records = append(records, r)

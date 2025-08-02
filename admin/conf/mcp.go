@@ -49,6 +49,31 @@ var MCPConf = &param.McpClientGoConfig{
 				"GITHUB_PERSONAL_ACCESS_TOKEN": "<YOUR_TOKEN>",
 			},
 		},
+		"fetch": {
+			Command: "uvx",
+			Args:    []string{"mcp-server-fetch"},
+			Env:     nil, // 原始数据中无 env
+		},
+		"amap": {
+			Command: "npx",
+			Args:    []string{"-y", "@amap/amap-maps-mcp-server"},
+			Env: map[string]string{
+				"AMAP_MAPS_API_KEY": "",
+			},
+		},
+		"mcp-server-alipay": {
+			Command: "npx",
+			Args:    []string{"-y", "@alipay/mcp-server-alipay"},
+			Env: map[string]string{
+				"AP_APP_ID":     "2014...222",
+				"AP_APP_KEY":    "MIIE...DZdM=",
+				"AP_PUB_KEY":    "MIIB...DAQAB",
+				"AP_NOTIFY_URL": "https://your-own-server",
+				"AP_RETURN_URL": "https://success-page",
+				"...其他参数":   "...其他值", // Note: Key from original data
+			},
+		},
+		
 		"awslabs.core-mcp-server": {
 			Description: "As a core component of the MCP framework, this server provides foundational services and general support for other specific AWS-related MCP servers.",
 			Command:     "uvx",

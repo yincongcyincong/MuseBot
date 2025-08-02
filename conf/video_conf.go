@@ -15,6 +15,11 @@ type VideoConf struct {
 	FPS        *int    `json:"fps"`
 	Resolution *string `json:"resolution"`
 	Watermark  *bool   `json:"watermark"`
+	
+	GeminiVideoModel            *string `json:"gemini_video_model"`
+	GeminiVideoAspectRatio      *string `json:"gemini_video_aspect_ratio"`
+	GeminiVideoDurationSeconds  int32   `json:"gemini_video_duration_seconds"`
+	GeminiVideoPersonGeneration *string `json:"gemini_video_person_generation"`
 }
 
 var (
@@ -28,6 +33,11 @@ func InitVideoConf() {
 	VideoConfInfo.FPS = flag.Int("fps", 24, "the frame per second")
 	VideoConfInfo.Resolution = flag.String("resolution", "480p", "the resolution of video, only support 480p / 720p")
 	VideoConfInfo.Watermark = flag.Bool("watermark", false, "include watermark")
+	
+	VideoConfInfo.GeminiVideoModel = flag.String("gemini_video_model", "veo-2.0-generate-001", "create video model")
+	VideoConfInfo.GeminiVideoAspectRatio = flag.String("gemini_video_aspect_ratio", "16:9", "gemini video ratio")
+	VideoConfInfo.GeminiVideoDurationSeconds = int32(*flag.Int("gemini_video_duration_seconds", 0, "gemini video duration"))
+	VideoConfInfo.GeminiVideoPersonGeneration = flag.String("gemini_video_person_generation", "allow_all", "gemini video can generate person or not: allow_all or ")
 	
 }
 
@@ -56,10 +66,28 @@ func EnvVideoConf() {
 		*VideoConfInfo.Watermark, _ = strconv.ParseBool(os.Getenv("WATERMARK"))
 	}
 	
+	if os.Getenv("GEMINI_VIDEO_MODEL") != "" {
+		*VideoConfInfo.GeminiVideoModel = os.Getenv("GEMINI_VIDEO_MODEL")
+	}
+	if os.Getenv("GEMINI_VIDEO_PERSON_GENERATION") != "" {
+		*VideoConfInfo.GeminiVideoPersonGeneration = os.Getenv("GEMINI_VIDEO_PERSON_GENERATION")
+	}
+	if os.Getenv("GEMINI_VIDEO_ASPECT_RATIO") != "" {
+		*VideoConfInfo.GeminiVideoAspectRatio = os.Getenv("GEMINI_VIDEO_ASPECT_RATIO")
+	}
+	if os.Getenv("GEMINI_VIDEO_DURATION_SECONDS") != "" {
+		tmp, _ := strconv.Atoi(os.Getenv("GEMINI_VIDEO_DURATION_SECONDS"))
+		VideoConfInfo.GeminiVideoDurationSeconds = int32(tmp)
+	}
+	
 	logger.Info("VIDEO_CONF", "VIDEO_MODEL", *VideoConfInfo.VideoModel)
 	logger.Info("VIDEO_CONF", "RADIO", *VideoConfInfo.Radio)
 	logger.Info("VIDEO_CONF", "DURATION", *VideoConfInfo.Duration)
 	logger.Info("VIDEO_CONF", "FPS", *VideoConfInfo.FPS)
 	logger.Info("VIDEO_CONF", "RESOLUTION", *VideoConfInfo.Resolution)
 	logger.Info("VIDEO_CONF", "WATERMARK", *VideoConfInfo.Watermark)
+	logger.Info("AUDIO_CONF", "GeminiVideoModel", *VideoConfInfo.GeminiVideoModel)
+	logger.Info("AUDIO_CONF", "GeminiVideoPersonGeneration", *VideoConfInfo.GeminiVideoPersonGeneration)
+	logger.Info("AUDIO_CONF", "GeminiVideoAspectRatio", *VideoConfInfo.GeminiVideoAspectRatio)
+	logger.Info("AUDIO_CONF", "GeminiVideoDurationSeconds", VideoConfInfo.GeminiVideoDurationSeconds)
 }
