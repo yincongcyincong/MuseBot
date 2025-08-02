@@ -386,7 +386,7 @@ func GenerateOpenAIImg(prompt string, imageContent []byte) ([]byte, error) {
 	var respUrl openai.ImageResponse
 	var err error
 	if len(imageContent) != 0 {
-		imageFile, err := utils.ByteToTempFile(imageContent, "./data/temp."+utils.DetectImageFormat(imageContent))
+		imageFile, err := utils.ConvertToPNGFile(imageContent)
 		if err != nil {
 			logger.Error("failed to create temp file:", err)
 			return nil, err
@@ -395,12 +395,11 @@ func GenerateOpenAIImg(prompt string, imageContent []byte) ([]byte, error) {
 		defer imageFile.Close()
 		
 		respUrl, err = client.CreateEditImage(ctx, openai.ImageEditRequest{
-			Image:          imageFile,
-			Prompt:         prompt,
-			Model:          *conf.PhotoConfInfo.OpenAIImageModel,
-			N:              1,
-			Size:           *conf.PhotoConfInfo.OpenAIImageSize,
-			ResponseFormat: openai.CreateImageResponseFormatB64JSON,
+			Image:  imageFile,
+			Prompt: prompt,
+			Model:  *conf.PhotoConfInfo.OpenAIImageModel,
+			N:      1,
+			Size:   *conf.PhotoConfInfo.OpenAIImageSize,
 		})
 	} else {
 		respUrl, err = client.CreateImage(

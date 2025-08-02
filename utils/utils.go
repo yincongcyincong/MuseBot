@@ -7,6 +7,8 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"image"
+	"image/png"
 	"io"
 	"net/http"
 	"net/url"
@@ -371,22 +373,40 @@ func DetectImageFormat(data []byte) string {
 	}
 }
 
-func ByteToTempFile(data []byte, filename string) (*os.File, error) {
-	tmpFile, err := os.Create(filename)
-	if err != nil {
-		return nil, err
+func ConvertToPNGFile(imageContent []byte) (*os.File, error) {
+	contentType := DetectImageFormat(imageContent)
+	var img image.Image
+	var err error
+	
+	if contentType == "png" {
+		tmpFile, err := os.CreateTemp("", "image_*.png")
+		if err != nil {
+			return nil, fmt.Errorf("create tmp file fail: %v", err)
+		}
+		if _, err := tmpFile.Write(imageContent); err != nil {
+			tmpFile.Close()
+			return nil, fmt.Errorf("write tmp file fail: %v", err)
+		}
+		tmpFile.Seek(0, io.SeekStart)
+		return tmpFile, nil
 	}
 	
-	if _, err := tmpFile.Write(data); err != nil {
-		tmpFile.Close()
-		return nil, err
+	img, _, err = image.Decode(bytes.NewReader(imageContent))
+	if err != nil {
+		return nil, fmt.Errorf("image decode fail: %v", err)
 	}
 	
-	_, err = tmpFile.Seek(0, 0)
+	tmpFile, err := os.CreateTemp("", "image_*.png")
 	if err != nil {
-		tmpFile.Close()
-		return nil, err
+		return nil, fmt.Errorf("create tmp file fail: %v", err)
 	}
+	
+	if err := png.Encode(tmpFile, img); err != nil {
+		tmpFile.Close()
+		return nil, fmt.Errorf("png encode fail: %v", err)
+	}
+	
+	tmpFile.Seek(0, io.SeekStart) // 重置文件指针
 	return tmpFile, nil
 }
 

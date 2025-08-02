@@ -5,12 +5,15 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 	
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
 )
 
 type BaseConf struct {
+	StartTime int64 `json:"-"`
+	
 	TelegramBotToken *string `json:"telegram_bot_token"`
 	DiscordBotToken  *string `json:"discord_bot_token"`
 	SlackBotToken    *string `json:"slack_bot_token"`
@@ -56,6 +59,7 @@ var (
 )
 
 func InitConf() {
+	BaseConfInfo.StartTime = time.Now().Unix()
 	BaseConfInfo.TelegramBotToken = flag.String("telegram_bot_token", "", "Telegram bot tokens")
 	BaseConfInfo.DiscordBotToken = flag.String("discord_bot_token", "", "Discord bot tokens")
 	BaseConfInfo.SlackBotToken = flag.String("slack_bot_token", "", "Slack bot tokens")

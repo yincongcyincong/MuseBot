@@ -1194,26 +1194,3 @@ func (t *TelegramRobot) GetMessage() *tgbotapi.Message {
 	}
 	return nil
 }
-
-func isValidTelegramPhoto(imageContent []byte) bool {
-	img, format, err := image.DecodeConfig(bytes.NewReader(imageContent))
-	if err != nil {
-		return false
-	}
-	
-	if format != "jpeg" && format != "png" {
-		return false
-	}
-	if img.Width < 320 || img.Height < 320 {
-		return false
-	}
-	if img.Width > 1280 || img.Height > 1280 {
-		return false
-	}
-	
-	if len(imageContent) > 10*1024*1024 {
-		return false
-	}
-	
-	return true
-}

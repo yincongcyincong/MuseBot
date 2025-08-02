@@ -3,6 +3,7 @@ package http
 import (
 	"net/http"
 	
+	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
 	"github.com/yincongcyincong/telegram-deepseek-bot/db"
 	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
 	"github.com/yincongcyincong/telegram-deepseek-bot/param"
@@ -48,6 +49,7 @@ func DashboardHandler(w http.ResponseWriter, r *http.Request) {
 		"user_count":       userCount,
 		"user_day_count":   userDayCount,
 		"record_day_count": recordDayCount,
+		"start_time":       conf.BaseConfInfo.StartTime,
 	})
 	
 }
