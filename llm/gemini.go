@@ -145,6 +145,7 @@ func (h *GeminiReq) Send(ctx context.Context, l *LLM) error {
 			Question: l.Content,
 			Answer:   l.WholeContent,
 			Token:    l.Token,
+			Mode:     l.Model,
 		}, true)
 	} else {
 		h.ToolMessage = append(h.ToolMessage, h.CurrentToolMessage...)
@@ -419,12 +420,12 @@ func GenerateGeminiVideo(prompt string) ([]byte, error) {
 	}
 	
 	operation, err := client.Models.GenerateVideos(ctx,
-		*conf.AudioConfInfo.GeminiVideoModel, prompt,
+		*conf.VideoConfInfo.GeminiVideoModel, prompt,
 		nil,
 		&genai.GenerateVideosConfig{
-			AspectRatio:      *conf.AudioConfInfo.GeminiVideoAspectRatio,
-			PersonGeneration: *conf.AudioConfInfo.GeminiVideoPersonGeneration,
-			DurationSeconds:  &conf.AudioConfInfo.GeminiVideoDurationSeconds,
+			AspectRatio:      *conf.VideoConfInfo.GeminiVideoAspectRatio,
+			PersonGeneration: *conf.VideoConfInfo.GeminiVideoPersonGeneration,
+			DurationSeconds:  &conf.VideoConfInfo.GeminiVideoDurationSeconds,
 		})
 	if err != nil {
 		logger.Error("generate video fail", "err", err)

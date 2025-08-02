@@ -66,7 +66,7 @@ func (l *Rag) GenerateContent(ctx context.Context, messages []llms.MessageConten
 				tmpContent += part.(llms.TextContent).Text
 			}
 		}
-		l.LLM.Content = tmpContent
+		llm.WithContent(tmpContent)(l.LLM)
 	}
 	
 	err = l.LLM.CallLLM()

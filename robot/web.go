@@ -367,7 +367,7 @@ func (web *Web) sendMultiAgent(agentType string) {
 	
 	messageChan := make(chan string)
 	
-	dpReq := &llm.DeepseekTaskReq{
+	dpReq := &llm.LLMTaskReq{
 		Content:     prompt,
 		UserId:      userId,
 		ChatId:      chatId,
@@ -434,14 +434,17 @@ func (web *Web) sendImg() {
 		
 		var imageUrl string
 		var imageContent []byte
-		
+		var mode string
 		switch *conf.BaseConfInfo.MediaType {
 		case param.Vol:
 			imageUrl, err = llm.GenerateVolImg(prompt, lastImageContent)
+			mode = *conf.PhotoConfInfo.ModelVersion
 		case param.OpenAi:
 			imageContent, err = llm.GenerateOpenAIImg(prompt, lastImageContent)
+			mode = *conf.PhotoConfInfo.OpenAIImageModel
 		case param.Gemini:
 			imageContent, err = llm.GenerateGeminiImg(prompt, lastImageContent)
+			mode = *conf.PhotoConfInfo.GeminiImageModel
 		default:
 			err = fmt.Errorf("unsupported media type: %s", *conf.BaseConfInfo.MediaType)
 		}
@@ -486,6 +489,7 @@ func (web *Web) sendImg() {
 			Token:      param.ImageTokenUsage,
 			IsDeleted:  0,
 			RecordType: param.WEBRecordType,
+			Mode:       mode,
 		})
 	})
 }
@@ -507,11 +511,14 @@ func (web *Web) sendVideo() {
 			err          error
 		)
 		
+		var mode string
 		switch *conf.BaseConfInfo.MediaType {
 		case param.Vol:
 			videoUrl, err = llm.GenerateVolVideo(prompt)
+			mode = *conf.VideoConfInfo.VideoModel
 		case param.Gemini:
 			videoContent, err = llm.GenerateGeminiVideo(prompt)
+			mode = *conf.VideoConfInfo.GeminiVideoModel
 		default:
 			err = fmt.Errorf("unsupported type: %s", *conf.BaseConfInfo.MediaType)
 		}
@@ -551,6 +558,7 @@ func (web *Web) sendVideo() {
 			Token:      param.VideoTokenUsage,
 			IsDeleted:  0,
 			RecordType: param.WEBRecordType,
+			Mode:       mode,
 		})
 	})
 	

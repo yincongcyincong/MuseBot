@@ -178,6 +178,7 @@ func (d *OpenAIReq) Send(ctx context.Context, l *LLM) error {
 			Question: l.Content,
 			Answer:   l.WholeContent,
 			Token:    l.Token,
+			Mode:     l.Model,
 		}, true)
 	} else {
 		d.CurrentToolMessage = append([]openai.ChatCompletionMessage{

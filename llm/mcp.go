@@ -20,7 +20,7 @@ type McpResult struct {
 }
 
 // ExecuteMcp execute mcp request
-func (d *DeepseekTaskReq) ExecuteMcp() error {
+func (d *LLMTaskReq) ExecuteMcp() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
 	defer cancel()
 	

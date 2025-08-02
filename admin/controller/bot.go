@@ -29,6 +29,7 @@ import (
 type Bot struct {
 	ID      int    `json:"id"`
 	Address string `json:"address"`
+	Name    string `json:"name"`
 	CrtFile string `json:"crt_file"`
 	KeyFile string `json:"key_file"`
 	CaFile  string `json:"ca_file"`
@@ -62,7 +63,7 @@ func CreateBot(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	err = db.CreateBot(b.Address, b.CrtFile, b.KeyFile, b.CaFile)
+	err = db.CreateBot(b.Address, b.Name, b.CrtFile, b.KeyFile, b.CaFile)
 	if err != nil {
 		logger.Error("create bot error", "reason", "db fail", "err", err)
 		utils.Failure(w, param.CodeDBWriteFail, param.MsgDBWriteFail, err)
@@ -107,7 +108,7 @@ func UpdateBotAddress(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	err = db.UpdateBotAddress(b.ID, b.Address, b.CrtFile, b.KeyFile, b.CaFile)
+	err = db.UpdateBotAddress(b.ID, b.Address, b.Name, b.CrtFile, b.KeyFile, b.CaFile)
 	if err != nil {
 		logger.Error("update bot address error", "reason", "db fail", "err", err)
 		utils.Failure(w, param.CodeDBWriteFail, param.MsgDBWriteFail, err)

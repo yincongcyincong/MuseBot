@@ -19,8 +19,6 @@ func TestMain(m *testing.M) {
 }
 
 func setup() {
-	os.Setenv("TELEGRAM_BOT_TOKEN", "test_bot_token")
-	os.Setenv("DEEPSEEK_TOKEN", "test_deepseek_token")
 	conf.InitConf()
 	InitTable()
 }

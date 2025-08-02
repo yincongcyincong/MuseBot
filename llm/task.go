@@ -17,7 +17,7 @@ var (
 	jsonRe = regexp.MustCompile(`(?s)\{[\s\r\n]*"plan"\s*:\s*\[.*?][\s\r\n]*}`)
 )
 
-type DeepseekTaskReq struct {
+type LLMTaskReq struct {
 	MessageChan chan *param.MsgInfo
 	HTTPMsgChan chan string
 	Content     string
@@ -44,7 +44,7 @@ type TaskResult struct {
 }
 
 // ExecuteTask execute task command
-func (d *DeepseekTaskReq) ExecuteTask() error {
+func (d *LLMTaskReq) ExecuteTask() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
 	defer cancel()
 	
@@ -119,7 +119,7 @@ func (d *DeepseekTaskReq) ExecuteTask() error {
 }
 
 // loopTask loop task
-func (d *DeepseekTaskReq) loopTask(ctx context.Context, plans *TaskInfo, lastPlan string, llm *LLM, loop int) error {
+func (d *LLMTaskReq) loopTask(ctx context.Context, plans *TaskInfo, lastPlan string, llm *LLM, loop int) error {
 	if loop > MostLoop {
 		return errors.New("too many loops")
 	}
@@ -188,7 +188,7 @@ func (d *DeepseekTaskReq) loopTask(ctx context.Context, plans *TaskInfo, lastPla
 }
 
 // requestTask request task
-func (d *DeepseekTaskReq) requestTask(ctx context.Context, llm *LLM, plan *Task) error {
+func (d *LLMTaskReq) requestTask(ctx context.Context, llm *LLM, plan *Task) error {
 	
 	c, err := llm.LLMClient.SyncSend(ctx, llm)
 	if err != nil {
