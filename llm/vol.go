@@ -460,7 +460,7 @@ func GenerateVolVideo(prompt string) (string, error) {
 	httpClient := utils.GetDeepseekProxyClient()
 	
 	client := arkruntime.NewClientWithApiKey(
-		*conf.BaseConfInfo.VideoToken,
+		*conf.BaseConfInfo.VolToken,
 		arkruntime.WithTimeout(5*time.Minute),
 		arkruntime.WithHTTPClient(httpClient),
 	)
