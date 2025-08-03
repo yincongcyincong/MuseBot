@@ -350,3 +350,36 @@ func (r *RobotInfo) TalkingPreCheck(f func()) {
 	
 	f()
 }
+
+func (r *RobotInfo) handleModeUpdate(mode string) {
+	chatId, msgId, userId := r.GetChatIdAndMsgIdAndUserID()
+	
+	userInfo, err := db.GetUserByID(userId)
+	if err != nil {
+		logger.Warn("get user fail", "userID", userId, "err", err)
+		r.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "set_mode", nil),
+			msgId, tgbotapi.ModeMarkdown, nil)
+		return
+	}
+	
+	if userInfo != nil && userInfo.ID != 0 {
+		err = db.UpdateUserMode(userId, mode)
+		if err != nil {
+			logger.Warn("update user fail", "userID", userId, "err", err)
+			r.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "set_mode", nil),
+				msgId, tgbotapi.ModeMarkdown, nil)
+			return
+		}
+	} else {
+		_, err = db.InsertUser(userId, mode)
+		if err != nil {
+			logger.Warn("insert user fail", "userID", userId, "err", err)
+			r.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "set_mode", nil),
+				msgId, tgbotapi.ModeMarkdown, nil)
+			return
+		}
+	}
+	
+	totalContent := i18n.GetMessage(*conf.BaseConfInfo.Lang, "mode_choose", nil) + mode
+	r.SendMsg(chatId, totalContent, msgId, "", nil)
+}

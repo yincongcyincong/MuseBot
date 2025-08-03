@@ -438,6 +438,42 @@ func onInteractionCreate(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		if d.Robot.checkAdminUser(userId) {
 			d.addToken()
 		}
+	default:
+		if param.GeminiModels[cmd] || param.OpenAIModels[cmd] ||
+			param.DeepseekModels[cmd] || param.DeepseekLocalModels[cmd] ||
+			param.OpenRouterModels[cmd] || param.VolModels[cmd] {
+			d.Robot.handleModeUpdate(cmd)
+		}
+		
+		if param.OpenRouterModelTypes[cmd] {
+			buttons := make([]discordgo.MessageComponent, 0)
+			for k := range param.OpenRouterModels {
+				if strings.Contains(k, cmd+"/") {
+					buttons = append(buttons, discordgo.Button{Label: cmd, CustomID: cmd, Style: discordgo.SecondaryButton})
+				}
+			}
+			var rows []discordgo.MessageComponent
+			for i := 0; i < len(buttons); i += 5 {
+				end := i + 5
+				if end > len(buttons) {
+					end = len(buttons)
+				}
+				rows = append(rows, discordgo.ActionsRow{Components: buttons[i:end]})
+			}
+			
+			err := d.Session.InteractionRespond(d.Inter.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content:    i18n.GetMessage(*conf.BaseConfInfo.Lang, "chat_mode", nil),
+					Components: rows,
+					Flags:      1 << 6,
+				},
+			})
+			if err != nil {
+				logger.Error("Failed to defer interaction response", "err", err)
+			}
+			
+		}
 	}
 }
 

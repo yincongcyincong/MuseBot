@@ -155,7 +155,7 @@
 
 * `-openai_token`: Токен OpenAI (для эмбеддингов)
 * `-embedding_type`: Тип эмбеддингов (указать `openai`)
-* `-vector_db_type`: Тип векторной БД (указать `chroma`)
+* `-vector_db_type`: Тип векторной БД (указать `milvus`)
 
 ### 11. RAG с Milvus (`rag milvus`)
 

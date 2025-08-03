@@ -70,7 +70,7 @@ func TestInitConf_AllEnvVars(t *testing.T) {
 	os.Setenv("DEEPSEEK_TOKEN", "test_deepseek_token")
 	os.Setenv("EMBEDDING_TYPE", "openai")
 	os.Setenv("KNOWLEDGE_PATH", "/data/knowledge")
-	os.Setenv("VECTOR_DB_TYPE", "chroma")
+	os.Setenv("VECTOR_DB_TYPE", "milvus,weaviate")
 	os.Setenv("CHROMA_URL", "http://localhost:8000")
 	os.Setenv("SPACE", "test-space")
 	os.Setenv("CHUNK_SIZE", "500")
@@ -144,7 +144,7 @@ func TestInitConf_AllEnvVars(t *testing.T) {
 	
 	assertEqual(t, *RagConfInfo.EmbeddingType, "openai", "EmbeddingType")
 	assertEqual(t, *RagConfInfo.KnowledgePath, "/data/knowledge", "KnowledgePath")
-	assertEqual(t, *RagConfInfo.VectorDBType, "chroma", "VectorDBType")
+	assertEqual(t, *RagConfInfo.VectorDBType, "milvus", "VectorDBType")
 	assertEqual(t, *RagConfInfo.ChromaURL, "http://localhost:8000", "ChromaURL")
 	assertEqual(t, *RagConfInfo.Space, "test-space", "ChromaSpace")
 	assertInt(t, *RagConfInfo.ChunkSize, 500, "ChunkSize")

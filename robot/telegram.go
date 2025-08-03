@@ -712,7 +712,7 @@ func (t *TelegramRobot) handleCallbackQuery() {
 		if param.GeminiModels[t.Update.CallbackQuery.Data] || param.OpenAIModels[t.Update.CallbackQuery.Data] ||
 			param.DeepseekModels[t.Update.CallbackQuery.Data] || param.DeepseekLocalModels[t.Update.CallbackQuery.Data] ||
 			param.OpenRouterModels[t.Update.CallbackQuery.Data] || param.VolModels[t.Update.CallbackQuery.Data] {
-			t.handleModeUpdate()
+			t.Robot.handleModeUpdate(t.Update.CallbackQuery.Data)
 		}
 		if param.OpenRouterModelTypes[t.Update.CallbackQuery.Data] {
 			chatID, msgId, _ := t.Robot.GetChatIdAndMsgIdAndUserID()
@@ -731,46 +731,6 @@ func (t *TelegramRobot) handleCallbackQuery() {
 		}
 	}
 	
-}
-
-// handleModeUpdate handle mode update
-func (t *TelegramRobot) handleModeUpdate() {
-	chatId, msgId, userId := t.Robot.GetChatIdAndMsgIdAndUserID()
-	
-	userInfo, err := db.GetUserByID(userId)
-	if err != nil {
-		logger.Warn("get user fail", "userID", userId, "err", err)
-		t.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "set_mode", nil),
-			msgId, tgbotapi.ModeMarkdown, nil)
-		return
-	}
-	
-	if userInfo != nil && userInfo.ID != 0 {
-		err = db.UpdateUserMode(userId, t.Update.CallbackQuery.Data)
-		if err != nil {
-			logger.Warn("update user fail", "userID", userId, "err", err)
-			t.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "set_mode", nil),
-				msgId, tgbotapi.ModeMarkdown, nil)
-			return
-		}
-	} else {
-		_, err = db.InsertUser(userId, t.Update.CallbackQuery.Data)
-		if err != nil {
-			logger.Warn("insert user fail", "userID", t.Update.CallbackQuery.From.String(), "err", err)
-			t.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "set_mode", nil),
-				msgId, tgbotapi.ModeMarkdown, nil)
-			return
-		}
-	}
-	
-	// send response
-	callback := tgbotapi.NewCallback(t.Update.CallbackQuery.ID, t.Update.CallbackQuery.Data)
-	if _, err := t.Bot.Request(callback); err != nil {
-		logger.Warn("request callback fail", "err", err)
-	}
-	
-	//utils.SendMsg(update.CallbackQuery.Message.Chat.ID,
-	//	i18n.GetMessage(*conf.BaseConfInfo.Lang, "mode_choose", nil)+update.CallbackQuery.Data, bot, update.CallbackQuery.Message.MessageID)
 }
 
 func (t *TelegramRobot) sendMultiAgent(agentType string) {

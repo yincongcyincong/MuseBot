@@ -38,7 +38,7 @@ var (
 func InitRagConf() {
 	RagConfInfo.EmbeddingType = flag.String("embedding_type", "", "embedding split api: openai gemini ernie")
 	RagConfInfo.KnowledgePath = flag.String("knowledge_path", "./data/knowledge", "knowledge")
-	RagConfInfo.VectorDBType = flag.String("vector_db_type", "chroma", "vector db type: chroma weaviate milvus")
+	RagConfInfo.VectorDBType = flag.String("vector_db_type", "milvus", "vector db type: chroma weaviate milvus")
 	
 	RagConfInfo.ChromaURL = flag.String("chroma_url", "http://localhost:8000", "chroma url")
 	RagConfInfo.MilvusURL = flag.String("milvus_url", "http://localhost:19530", "milvus url")
