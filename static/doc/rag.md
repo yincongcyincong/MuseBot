@@ -4,7 +4,7 @@
 |-------------------|----------|-------------------|------------------------------------------|
 | `EMBEDDING_TYPE`  | `String` | Required          | embedding split api: openai gemini ernie |
 | `KNOWLEDGE_PATH`  | `String` | Required          | knowledge doc path                       |
-| `VECTOR_DB_TYPE`  | `String` | Required          | vector db type: chroma  weaviate milvus  |
+| `VECTOR_DB_TYPE`  | `String` | Required          | vector db type: weaviate milvus          |
 | `CHROMA_URL`      | `String` | Optional          | chroma url:http://localhost:8080         |
 | `MILVUS_URL`      | `String` | Optional          | weaviate url: http://localhost:19530     |
 | `WEAVIATE_URL`    | `String` | Optional          | weaviate url: localhost:8000             |

@@ -139,7 +139,7 @@ If your bot needs to use Amap (Gaode Map) related tools, such as geolocation que
 ```
 * `-use_tools`: Enables tool usage functionality, set to `true` default is `false`.
 
-#### 10\. RAG (Retrieval Augmented Generation) - ChromaDB (`rag chroma`)
+#### 10\. RAG (Retrieval Augmented Generation) - ChromaDB (`rag milvus`)
 
 To perform RAG with ChromaDB, you'll need to use OpenAI's Embedding service.
 
@@ -149,7 +149,7 @@ To perform RAG with ChromaDB, you'll need to use OpenAI's Embedding service.
 -deepseek_token=sk-xxx \
 -openai_token=sk-xxxx \
 -embedding_type=openai \
--vector_db_type=chroma
+-vector_db_type=milvus
 ```
 
 * `-openai_token`: Your OpenAI API Token (for embedding).

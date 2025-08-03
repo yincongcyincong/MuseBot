@@ -1,17 +1,17 @@
 ### Список параметров
 
-| Название параметра   | Тип      | Обязательность    | Описание                                  |
-|----------------------|----------|-------------------|-------------------------------------------|
+| Название параметра   | Тип      | Обязательность    | Описание                                |
+|----------------------|----------|-------------------|-----------------------------------------|
 | `EMBEDDING_TYPE`     | `String` | Обязательный      | API для эмбеддингов: openai, gemini, ernie |
-| `KNOWLEDGE_PATH`     | `String` | Обязательный      | Путь к документам с знаниями              |
-| `VECTOR_DB_TYPE`     | `String` | Обязательный      | Тип векторной БД: chroma, weaviate, milvus |
-| `CHROMA_URL`         | `String` | Опциональный      | URL Chroma: http://localhost:8080         |
-| `MILVUS_URL`         | `String` | Опциональный      | URL Milvus: http://localhost:19530        |
-| `WEAVIATE_URL`       | `String` | Опциональный      | URL Weaviate: localhost:8000              |
-| `WEAVIATE_SCHEME`    | `String` | Опциональный      | Протокол Weaviate: http                   |
-| `SPACE`              | `String` | Опциональный      | Название пространства в векторной БД      |
+| `KNOWLEDGE_PATH`     | `String` | Обязательный      | Путь к документам с знаниями            |
+| `VECTOR_DB_TYPE`     | `String` | Обязательный      | Тип векторной БД: weaviate, milvus |
+| `CHROMA_URL`         | `String` | Опциональный      | URL Chroma: http://localhost:8080       |
+| `MILVUS_URL`         | `String` | Опциональный      | URL Milvus: http://localhost:19530      |
+| `WEAVIATE_URL`       | `String` | Опциональный      | URL Weaviate: localhost:8000            |
+| `WEAVIATE_SCHEME`    | `String` | Опциональный      | Протокол Weaviate: http                 |
+| `SPACE`              | `String` | Опциональный      | Название пространства в векторной БД    |
 | `CHUNK_SIZE`         | `String` | Опциональный      | Размер чанков для обработки документов RAG |
-| `CHUNK_OVERLAP`      | `String` | Опциональный      | Перекрытие чанков при обработке RAG       |
+| `CHUNK_OVERLAP`      | `String` | Опциональный      | Перекрытие чанков при обработке RAG     |
 
 ### Пояснения:
 1. **Обязательные параметры**:

@@ -19,7 +19,6 @@ import (
 	"github.com/yincongcyincong/langchaingo/llms/openai"
 	"github.com/yincongcyincong/langchaingo/schema"
 	"github.com/yincongcyincong/langchaingo/textsplitter"
-	"github.com/yincongcyincong/langchaingo/vectorstores/chroma"
 	"github.com/yincongcyincong/langchaingo/vectorstores/milvus"
 	"github.com/yincongcyincong/langchaingo/vectorstores/weaviate"
 	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
@@ -113,12 +112,12 @@ func InitRag() {
 	}
 	
 	switch *conf.RagConfInfo.VectorDBType {
-	case "chroma":
-		conf.RagConfInfo.Store, err = chroma.NewV2(
-			chroma.WithChromaURLV2(*conf.RagConfInfo.ChromaURL),
-			chroma.WithEmbedderV2(conf.RagConfInfo.Embedder),
-			chroma.WithNameSpaceV2(*conf.RagConfInfo.Space),
-		)
+	//case "chroma":
+	//	conf.RagConfInfo.Store, err = chroma.NewV2(
+	//		chroma.WithChromaURLV2(*conf.RagConfInfo.ChromaURL),
+	//		chroma.WithEmbedderV2(conf.RagConfInfo.Embedder),
+	//		chroma.WithNameSpaceV2(*conf.RagConfInfo.Space),
+	//	)
 	case "milvus":
 		idx, err := entity.NewIndexAUTOINDEX(entity.L2)
 		if err != nil {

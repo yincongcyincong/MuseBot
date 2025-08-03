@@ -140,7 +140,7 @@
 
 * `-use_tools`: 启用工具使用功能，设置为 `true`，默认为`false`。
 
-#### 10\. RAG (Retrieval Augmented Generation) - ChromaDB (`rag chroma`)
+#### 10\. RAG (Retrieval Augmented Generation) - ChromaDB (`rag milvus`)
 
 结合 ChromaDB 进行 RAG，需要使用 OpenAI 的 Embedding 服务。
 
@@ -150,12 +150,12 @@
 -deepseek_token=sk-xxx \
 -openai_token=sk-xxxx \
 -embedding_type=openai \
--vector_db_type=chroma
+-vector_db_type=milvus
 ```
 
 * `-openai_token`: 您的 OpenAI API Token (用于 embedding)。
 * `-embedding_type`: Embedding 类型，设置为 `openai`。
-* `-vector_db_type`: 向量数据库类型，设置为 `chroma`。
+* `-vector_db_type`: 向量数据库类型，设置为 `milvus`。
 
 #### 11\. RAG (Retrieval Augmented Generation) - Milvus (`rag milvus`)
 

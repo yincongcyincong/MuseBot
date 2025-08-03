@@ -73,7 +73,7 @@ compile_and_package() {
 compile_and_package linux amd64
 compile_and_package darwin amd64
 compile_and_package darwin arm64
-# compile_and_package windows amd64
+compile_and_package windows amd64
 
 # Final cleanup
 rm -rf ./output
