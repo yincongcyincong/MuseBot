@@ -26,22 +26,21 @@ type BaseConf struct {
 	ErnieAK         *string `json:"ernie_ak"`
 	ErnieSK         *string `json:"ernie_sk"`
 	
-	Type          *string `json:"type"`
-	MediaType     *string `json:"media_type"`
-	CustomUrl     *string `json:"custom_url"`
-	VolcAK        *string `json:"volc_ak"`
-	VolcSK        *string `json:"volc_sk"`
-	DBType        *string `json:"db_type"`
-	DBConf        *string `json:"db_conf"`
-	DeepseekProxy *string `json:"deepseek_proxy"`
-	TelegramProxy *string `json:"telegram_proxy"`
-	Lang          *string `json:"lang"`
-	TokenPerUser  *int    `json:"token_per_user"`
-	NeedATBOt     *bool   `json:"need_at_bot"`
-	MaxUserChat   *int    `json:"max_user_chat"`
-	VideoToken    *string `json:"video_token"`
-	HTTPPort      *int    `json:"http_port"`
-	UseTools      *bool   `json:"use_tools"`
+	Type         *string `json:"type"`
+	MediaType    *string `json:"media_type"`
+	CustomUrl    *string `json:"custom_url"`
+	VolcAK       *string `json:"volc_ak"`
+	VolcSK       *string `json:"volc_sk"`
+	DBType       *string `json:"db_type"`
+	DBConf       *string `json:"db_conf"`
+	LLMProxy     *string `json:"llm_proxy"`
+	RobotProxy   *string `json:"robot_proxy"`
+	Lang         *string `json:"lang"`
+	TokenPerUser *int    `json:"token_per_user"`
+	NeedATBOt    *bool   `json:"need_at_bot"`
+	MaxUserChat  *int    `json:"max_user_chat"`
+	HTTPPort     *int    `json:"http_port"`
+	UseTools     *bool   `json:"use_tools"`
 	
 	CrtFile *string `json:"crt_file"`
 	KeyFile *string `json:"key_file"`
@@ -79,13 +78,12 @@ func InitConf() {
 	BaseConfInfo.MediaType = flag.String("media_type", "vol", "media type: vol gemini openai openrouter")
 	BaseConfInfo.DBType = flag.String("db_type", "sqlite3", "db type")
 	BaseConfInfo.DBConf = flag.String("db_conf", "./data/telegram_bot.db", "db conf")
-	BaseConfInfo.DeepseekProxy = flag.String("deepseek_proxy", "", "db conf")
-	BaseConfInfo.TelegramProxy = flag.String("telegram_proxy", "", "db conf")
+	BaseConfInfo.LLMProxy = flag.String("llm_proxy", "", "llm proxy: http://127.0.0.1:7890")
+	BaseConfInfo.RobotProxy = flag.String("robot_proxy", "", "robot proxy: http://127.0.0.1:7890")
 	BaseConfInfo.Lang = flag.String("lang", "en", "lang")
 	BaseConfInfo.TokenPerUser = flag.Int("token_per_user", 10000, "token per user")
 	BaseConfInfo.NeedATBOt = flag.Bool("need_at_bot", false, "need at bot")
 	BaseConfInfo.MaxUserChat = flag.Int("max_user_chat", 2, "max chat per user")
-	BaseConfInfo.VideoToken = flag.String("video_token", "", "video token")
 	BaseConfInfo.HTTPPort = flag.Int("http_port", 36060, "http server port")
 	BaseConfInfo.UseTools = flag.Bool("use_tools", false, "use tools")
 	
@@ -158,11 +156,11 @@ func InitConf() {
 	}
 	
 	if os.Getenv("DEEPSEEK_PROXY") != "" {
-		*BaseConfInfo.DeepseekProxy = os.Getenv("DEEPSEEK_PROXY")
+		*BaseConfInfo.LLMProxy = os.Getenv("DEEPSEEK_PROXY")
 	}
 	
 	if os.Getenv("TELEGRAM_PROXY") != "" {
-		*BaseConfInfo.TelegramProxy = os.Getenv("TELEGRAM_PROXY")
+		*BaseConfInfo.RobotProxy = os.Getenv("TELEGRAM_PROXY")
 	}
 	
 	if os.Getenv("LANG") != "" {
@@ -183,10 +181,6 @@ func InitConf() {
 	
 	if os.Getenv("MAX_USER_CHAT") != "" {
 		*BaseConfInfo.MaxUserChat, _ = strconv.Atoi(os.Getenv("MAX_USER_CHAT"))
-	}
-	
-	if os.Getenv("VIDEO_TOKEN") != "" {
-		*BaseConfInfo.VideoToken = os.Getenv("VIDEO_TOKEN")
 	}
 	
 	if os.Getenv("HTTP_PORT") != "" {
@@ -272,14 +266,13 @@ func InitConf() {
 	logger.Info("CONF", "DBConf", *BaseConfInfo.DBConf)
 	logger.Info("CONF", "AllowedTelegramUserIds", *allowedUserIds)
 	logger.Info("CONF", "AllowedTelegramGroupIds", *allowedGroupIds)
-	logger.Info("CONF", "DeepseekProxy", *BaseConfInfo.DeepseekProxy)
-	logger.Info("CONF", "TelegramProxy", *BaseConfInfo.TelegramProxy)
+	logger.Info("CONF", "LLMProxy", *BaseConfInfo.LLMProxy)
+	logger.Info("CONF", "RobotProxy", *BaseConfInfo.RobotProxy)
 	logger.Info("CONF", "Lang", *BaseConfInfo.Lang)
 	logger.Info("CONF", "TokenPerUser", *BaseConfInfo.TokenPerUser)
 	logger.Info("CONF", "AdminUserIds", *adminUserIds)
 	logger.Info("CONF", "NeedATBOt", *BaseConfInfo.NeedATBOt)
 	logger.Info("CONF", "MaxUserChat", *BaseConfInfo.MaxUserChat)
-	logger.Info("CONF", "VideoToken", *BaseConfInfo.VideoToken)
 	logger.Info("CONF", "HTTPPort", *BaseConfInfo.HTTPPort)
 	logger.Info("CONF", "OpenAIToken", *BaseConfInfo.OpenAIToken)
 	logger.Info("CONF", "GeminiToken", *BaseConfInfo.GeminiToken)

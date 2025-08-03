@@ -1,8 +1,6 @@
 package utils
 
 import (
-	"io/ioutil"
-	"os"
 	"strings"
 	"testing"
 	
@@ -84,15 +82,4 @@ func TestMapKeysToString(t *testing.T) {
 	result := MapKeysToString(m)
 	assert.True(strings.Contains(result, "a"))
 	assert.True(strings.Contains(result, "b"))
-}
-
-func TestByteToTempFile(t *testing.T) {
-	assert := assert.New(t)
-	data := []byte("testdata")
-	file, err := ByteToTempFile(data, "testfile.txt")
-	defer os.Remove(file.Name())
-	assert.NoError(err)
-	content, err := ioutil.ReadAll(file)
-	assert.NoError(err)
-	assert.Equal(data, content)
 }

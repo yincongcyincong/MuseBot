@@ -1078,8 +1078,8 @@ func (t *TelegramRobot) GetAudioContent() []byte {
 	
 	transport := &http.Transport{}
 	
-	if *conf.BaseConfInfo.TelegramProxy != "" {
-		proxy, err := url.Parse(*conf.BaseConfInfo.TelegramProxy)
+	if *conf.BaseConfInfo.RobotProxy != "" {
+		proxy, err := url.Parse(*conf.BaseConfInfo.RobotProxy)
 		if err != nil {
 			logger.Warn("parse proxy url fail", "err", err)
 			return nil
