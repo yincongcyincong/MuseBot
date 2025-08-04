@@ -153,7 +153,7 @@ func (d *OllamaDeepseekReq) Send(ctx context.Context, l *LLM) error {
 			Question: l.Content,
 			Answer:   l.WholeContent,
 			Token:    l.Token,
-			Mode:     l.Model,
+			Mode:     param.DeepSeek,
 		}, true)
 	} else {
 		d.CurrentToolMessage = append([]deepseek.ChatCompletionMessage{

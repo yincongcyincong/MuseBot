@@ -5,6 +5,8 @@ import (
 	"os"
 	"strconv"
 	
+	"github.com/milvus-io/milvus-sdk-go/v2/client"
+	"github.com/weaviate/weaviate-go-client/v4/weaviate"
 	"github.com/yincongcyincong/langchaingo/embeddings"
 	"github.com/yincongcyincong/langchaingo/vectorstores"
 	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
@@ -25,8 +27,10 @@ type RagConf struct {
 	ChunkSize    *int `json:"chunk_size"`
 	ChunkOverlap *int `json:"chunk_overlap"`
 	
-	Store    vectorstores.VectorStore
-	Embedder embeddings.Embedder
+	Store          vectorstores.VectorStore `json:"-"`
+	Embedder       embeddings.Embedder      `json:"-"`
+	MilvusClient   client.Client            `json:"-"`
+	WeaviateClient *weaviate.Client         `json:"-"`
 }
 
 var (

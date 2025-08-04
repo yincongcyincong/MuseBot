@@ -11,6 +11,7 @@ import (
 	
 	"github.com/milvus-io/milvus-sdk-go/v2/client"
 	"github.com/milvus-io/milvus-sdk-go/v2/entity"
+	db_weaviate "github.com/weaviate/weaviate-go-client/v4/weaviate"
 	"github.com/yincongcyincong/langchaingo/documentloaders"
 	"github.com/yincongcyincong/langchaingo/embeddings"
 	"github.com/yincongcyincong/langchaingo/llms"
@@ -27,6 +28,10 @@ import (
 	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
 	"github.com/yincongcyincong/telegram-deepseek-bot/utils"
 	"gopkg.in/fsnotify.v1"
+)
+
+const (
+	weaviateIndexName = "TelegramDeepseekBot"
 )
 
 type Rag struct {
@@ -124,18 +129,26 @@ func InitRag() {
 			logger.Error("get index fail", "err", err)
 			return
 		}
-		
-		conf.RagConfInfo.Store, err = milvus.New(ctx, client.Config{
+		clientConf := client.Config{
 			Address: *conf.RagConfInfo.MilvusURL,
-		}, milvus.WithCollectionName(*conf.RagConfInfo.Space),
+		}
+		conf.RagConfInfo.Store, err = milvus.New(ctx, clientConf,
+			milvus.WithCollectionName(*conf.RagConfInfo.Space),
 			milvus.WithEmbedder(conf.RagConfInfo.Embedder),
-			milvus.WithIndex(idx))
+			milvus.WithIndex(idx),
+			milvus.WithDropOld())
+		conf.RagConfInfo.MilvusClient, _ = client.NewClient(ctx, clientConf)
 	case "weaviate":
 		conf.RagConfInfo.Store, err = weaviate.New(
 			weaviate.WithEmbedder(conf.RagConfInfo.Embedder),
 			weaviate.WithScheme(*conf.RagConfInfo.WeaviateScheme),
 			weaviate.WithHost(*conf.RagConfInfo.WeaviateURL),
-			weaviate.WithIndexName("Text"))
+			weaviate.WithIndexName(weaviateIndexName))
+		
+		conf.RagConfInfo.WeaviateClient, _ = db_weaviate.NewClient(db_weaviate.Config{
+			Scheme: *conf.RagConfInfo.WeaviateScheme,
+			Host:   *conf.RagConfInfo.WeaviateURL,
+		})
 	default:
 		logger.Error("vector db not exist", "VectorDBTypee", *conf.RagConfInfo.VectorDBType)
 		return
@@ -153,15 +166,32 @@ func InitRag() {
 	}
 	
 	if len(docs) > 0 {
-		_, err = conf.RagConfInfo.Store.AddDocuments(ctx, docs)
-		if err != nil {
-			logger.Error("get save doc fail", "err", err)
-			return
-		}
+		insertVectorDb(ctx, docs)
 	}
 	
 	go CheckDirChange()
 	
+}
+
+func insertVectorDb(ctx context.Context, docs []schema.Document) {
+	ids, err := conf.RagConfInfo.Store.AddDocuments(ctx, docs)
+	if err != nil {
+		logger.Error("get save doc fail", "err", err)
+		return
+	}
+	
+	fileVectorIds := make(map[string]string)
+	for i := range docs {
+		fileMd5 := docs[i].Metadata["file_md5"].(string)
+		fileVectorIds[fileMd5] += ids[i] + ","
+	}
+	
+	for fileMd5, vectorIds := range fileVectorIds {
+		err = db.UpdateVectorIdByFileMd5(fileMd5, strings.TrimRight(vectorIds, ","))
+		if err != nil {
+			logger.Error("update vector id fail", "err", err)
+		}
+	}
 }
 
 func handleKnowledgeBase(ctx context.Context) ([]schema.Document, error) {
@@ -422,29 +452,60 @@ func CheckDirChange() {
 func insertNewDoc(event fsnotify.Event) {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
 	defer cancel()
-	logger.Info("rag dir changed", "event", event.Name, "op", event.Op)
-	if event.Op&fsnotify.Create == fsnotify.Create || event.Op&fsnotify.Write == fsnotify.Write {
-		fileInfo, err := os.Stat(event.Name)
+	switch {
+	case event.Op&fsnotify.Create == fsnotify.Create:
+		logger.Info("rag dir changed", "event", event.Name, "op", "create")
+		InsertDoc(ctx, event)
+	case event.Op&fsnotify.Write == fsnotify.Write:
+		logger.Info("rag dir changed", "event", event.Name, "op", "write")
+		DeleteDoc(ctx, event)
+		InsertDoc(ctx, event)
+	case event.Op&fsnotify.Remove == fsnotify.Remove:
+		logger.Info("rag dir changed", "event", event.Name, "op", "remove")
+		DeleteDoc(ctx, event)
+	}
+	
+}
+
+func DeleteDoc(ctx context.Context, event fsnotify.Event) {
+	fileName := filepath.Base(event.Name)
+	fileDbInfo, err := db.GetRagFileByFileName(fileName)
+	if err != nil {
+		logger.Error("get file db info fail", "err", err)
+		return
+	}
+	if fileDbInfo != nil && len(fileDbInfo) > 0 {
+		err = DeleteStoreData(ctx, fileDbInfo[0].VectorId)
 		if err != nil {
-			logger.Error("stat file fail", "err", err)
+			logger.Error("delete doc fail", "err", err)
 			return
 		}
-		entry, err := findDirEntry(*conf.RagConfInfo.KnowledgePath, fileInfo.Name())
+		err = db.DeleteRagFileByFileName(fileDbInfo[0].FileName)
 		if err != nil {
-			logger.Error("find dir entry fail", "err", err)
+			logger.Error("delete doc in db fail", "err", err)
 			return
 		}
-		docs, err := handleEntry(ctx, []os.DirEntry{entry})
-		if err != nil {
-			logger.Error("handle entry fail", "err", err)
-			return
-		}
-		if len(docs) > 0 {
-			_, err = conf.RagConfInfo.Store.AddDocuments(ctx, docs)
-			if err != nil {
-				logger.Error("get save doc fail", "err", err)
-			}
-		}
+	}
+}
+
+func InsertDoc(ctx context.Context, event fsnotify.Event) {
+	fileInfo, err := os.Stat(event.Name)
+	if err != nil {
+		logger.Error("stat file fail", "err", err)
+		return
+	}
+	entry, err := findDirEntry(*conf.RagConfInfo.KnowledgePath, fileInfo.Name())
+	if err != nil {
+		logger.Error("find dir entry fail", "err", err)
+		return
+	}
+	docs, err := handleEntry(ctx, []os.DirEntry{entry})
+	if err != nil {
+		logger.Error("handle entry fail", "err", err)
+		return
+	}
+	if len(docs) > 0 {
+		insertVectorDb(ctx, docs)
 	}
 }
 
@@ -460,4 +521,28 @@ func findDirEntry(path string, filename string) (os.DirEntry, error) {
 		}
 	}
 	return nil, fmt.Errorf("file not exist: %s", filename)
+}
+
+func DeleteStoreData(ctx context.Context, vectorIds string) error {
+	var err error
+	switch *conf.RagConfInfo.VectorDBType {
+	case "weaviate":
+		for _, vectorId := range strings.Split(vectorIds, ",") {
+			err = conf.RagConfInfo.WeaviateClient.Data().Deleter().
+				WithClassName(weaviateIndexName).
+				WithID(vectorId).
+				Do(ctx)
+			if err != nil {
+				logger.Error("delete store data fail", "err", err)
+			}
+		}
+	
+	case "milvus":
+		for _, vectorId := range strings.Split(vectorIds, ",") {
+			expr := fmt.Sprintf(`pk == %s`, vectorId)
+			err = conf.RagConfInfo.MilvusClient.Delete(ctx, *conf.RagConfInfo.Space, "", expr)
+		}
+	}
+	
+	return nil
 }

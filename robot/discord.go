@@ -715,7 +715,7 @@ func (d *DiscordRobot) sendVideo() {
 			return
 		}
 		
-		msgThinking := d.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "thinking", nil),
+		d.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "thinking", nil),
 			msgId, tgbotapi.ModeMarkdown, nil)
 		
 		var videoUrl string
@@ -751,10 +751,9 @@ func (d *DiscordRobot) sendVideo() {
 			Name:   "video." + utils.DetectVideoMimeType(videoContent),
 			Reader: bytes.NewReader(videoContent),
 		}
-		_, err = d.Session.ChannelMessageEditComplex(&discordgo.MessageEdit{
-			ID:      strconv.Itoa(msgThinking),
-			Channel: strconv.FormatInt(chatId, 10),
-			Files:   []*discordgo.File{file},
+		
+		_, err = d.Session.InteractionResponseEdit(d.Inter.Interaction, &discordgo.WebhookEdit{
+			Files: []*discordgo.File{file},
 		})
 		
 		if err != nil {
