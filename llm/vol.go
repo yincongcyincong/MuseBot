@@ -387,7 +387,7 @@ func (h *VolReq) requestOneToolsCall(ctx context.Context, toolsCall []*model.Too
 }
 
 // GenerateVolImg generate image
-func GenerateVolImg(prompt string, imageContent []byte) (string, error) {
+func GenerateVolImg(prompt string, imageContent []byte) (string, int, error) {
 	start := time.Now()
 	visual.DefaultInstance.Client.SetAccessKey(*conf.BaseConfInfo.VolcAK)
 	visual.DefaultInstance.Client.SetSecretKey(*conf.BaseConfInfo.VolcSK)
@@ -422,7 +422,7 @@ func GenerateVolImg(prompt string, imageContent []byte) (string, error) {
 	resp, _, err := visual.DefaultInstance.CVProcess(reqBody)
 	if err != nil {
 		logger.Error("request img api fail", "err", err)
-		return "", err
+		return "", 0, err
 	}
 	
 	respByte, _ := json.Marshal(resp)
@@ -430,7 +430,7 @@ func GenerateVolImg(prompt string, imageContent []byte) (string, error) {
 	err = json.Unmarshal(respByte, data)
 	if err != nil {
 		logger.Error("unmarshal response fail", "err", err)
-		return "", err
+		return "", 0, err
 	}
 	
 	logger.Info("image response", "respByte", respByte)
@@ -441,17 +441,17 @@ func GenerateVolImg(prompt string, imageContent []byte) (string, error) {
 	
 	if data.Data == nil || len(data.Data.ImageUrls) == 0 {
 		logger.Warn("no image generated")
-		return "", errors.New("no image generated")
+		return "", 0, errors.New("no image generated")
 	}
 	
-	return data.Data.ImageUrls[0], nil
+	return data.Data.ImageUrls[0], param.ImageTokenUsage, nil
 }
 
 // GenerateVolVideo generate video
-func GenerateVolVideo(prompt string) (string, error) {
+func GenerateVolVideo(prompt string) (string, int, error) {
 	if prompt == "" {
 		logger.Warn("prompt is empty", "prompt", prompt)
-		return "", errors.New("prompt is empty")
+		return "", 0, errors.New("prompt is empty")
 	}
 	
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
@@ -480,7 +480,7 @@ func GenerateVolVideo(prompt string) (string, error) {
 	})
 	if err != nil {
 		logger.Error("request create video api fail", "err", err)
-		return "", err
+		return "", 0, err
 	}
 	
 	for {
@@ -490,7 +490,7 @@ func GenerateVolVideo(prompt string) (string, error) {
 		
 		if err != nil {
 			logger.Error("request get video api fail", "err", err)
-			return "", err
+			return "", 0, err
 		}
 		
 		if getResp.Status == model.StatusRunning || getResp.Status == model.StatusQueued {
@@ -501,14 +501,14 @@ func GenerateVolVideo(prompt string) (string, error) {
 		
 		if getResp.Error != nil {
 			logger.Error("request get video api fail", "err", getResp.Error)
-			return "", errors.New(getResp.Error.Message)
+			return "", 0, errors.New(getResp.Error.Message)
 		}
 		
 		if getResp.Status == model.StatusSucceeded {
-			return getResp.Content.VideoURL, nil
+			return getResp.Content.VideoURL, getResp.Usage.TotalTokens, nil
 		} else {
 			logger.Error("request get video api fail", "status", getResp.Status)
-			return "", errors.New("create video fail")
+			return "", 0, errors.New("create video fail")
 		}
 	}
 }

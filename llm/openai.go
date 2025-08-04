@@ -369,7 +369,7 @@ func (d *OpenAIReq) RequestToolsCall(ctx context.Context, choice openai.ChatComp
 }
 
 // GenerateOpenAIImg generate image
-func GenerateOpenAIImg(prompt string, imageContent []byte) ([]byte, error) {
+func GenerateOpenAIImg(prompt string, imageContent []byte) ([]byte, int, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 	
@@ -389,7 +389,7 @@ func GenerateOpenAIImg(prompt string, imageContent []byte) ([]byte, error) {
 		imageFile, err := utils.ConvertToPNGFile(imageContent)
 		if err != nil {
 			logger.Error("failed to create temp file:", err)
-			return nil, err
+			return nil, 0, err
 		}
 		defer os.Remove(imageFile.Name())
 		defer imageFile.Close()
@@ -405,32 +405,32 @@ func GenerateOpenAIImg(prompt string, imageContent []byte) ([]byte, error) {
 		respUrl, err = client.CreateImage(
 			ctx,
 			openai.ImageRequest{
-				Prompt:         prompt,
-				Size:           *conf.PhotoConfInfo.OpenAIImageSize,
-				ResponseFormat: openai.CreateImageResponseFormatB64JSON,
-				N:              1,
-				Style:          *conf.PhotoConfInfo.OpenAIImageStyle,
+				Prompt: prompt,
+				Model:  *conf.PhotoConfInfo.OpenAIImageModel,
+				Size:   *conf.PhotoConfInfo.OpenAIImageSize,
+				N:      1,
+				Style:  *conf.PhotoConfInfo.OpenAIImageStyle,
 			},
 		)
 	}
 	
 	if err != nil {
 		logger.Error("CreateImage error", "err", err)
-		return nil, err
+		return nil, 0, err
 	}
 	
 	if len(respUrl.Data) == 0 {
 		logger.Error("response is emtpy", "response", respUrl)
-		return nil, errors.New("response is empty")
+		return nil, 0, errors.New("response is empty")
 	}
 	
 	imageContentByte, err := base64.StdEncoding.DecodeString(respUrl.Data[0].B64JSON)
 	if err != nil {
 		logger.Error("decode image error", "err", err)
-		return nil, err
+		return nil, 0, err
 	}
 	
-	return imageContentByte, nil
+	return imageContentByte, respUrl.Usage.TotalTokens, nil
 }
 
 func GenerateOpenAIText(audioContent []byte) (string, error) {
