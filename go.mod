@@ -23,7 +23,8 @@ require (
 	github.com/stretchr/testify v1.10.0
 	github.com/volcengine/volc-sdk-golang v1.0.196
 	github.com/volcengine/volcengine-go-sdk v1.1.1
-	github.com/yincongcyincong/langchaingo v0.0.2
+	github.com/weaviate/weaviate-go-client/v4 v4.13.1
+	github.com/yincongcyincong/langchaingo v0.0.3
 	github.com/yincongcyincong/mcp-client-go v0.0.25
 	golang.org/x/text v0.24.0
 	google.golang.org/genai v1.7.0
@@ -44,13 +45,11 @@ require (
 	filippo.io/edwards25519 v1.1.0 // indirect
 	github.com/AssemblyAI/assemblyai-go-sdk v1.3.0 // indirect
 	github.com/Masterminds/goutils v1.1.1 // indirect
-	github.com/Masterminds/semver v1.5.0 // indirect
 	github.com/Masterminds/semver/v3 v3.2.0 // indirect
 	github.com/Masterminds/sprig/v3 v3.2.3 // indirect
 	github.com/PuerkitoBio/goquery v1.8.1 // indirect
 	github.com/PuerkitoBio/purell v1.1.1 // indirect
 	github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578 // indirect
-	github.com/amikos-tech/chroma-go v0.2.3 // indirect
 	github.com/andybalholm/cascadia v1.3.2 // indirect
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2 // indirect
 	github.com/aymerick/douceur v0.2.0 // indirect
@@ -77,7 +76,7 @@ require (
 	github.com/go-openapi/strfmt v0.21.3 // indirect
 	github.com/go-openapi/swag v0.22.4 // indirect
 	github.com/go-openapi/validate v0.21.0 // indirect
-	github.com/go-viper/mapstructure/v2 v2.2.1 // indirect
+	github.com/go-playground/validator/v10 v10.22.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/generative-ai-go v0.19.0 // indirect
@@ -131,8 +130,6 @@ require (
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.0 // indirect
 	github.com/weaviate/weaviate v1.24.1 // indirect
-	github.com/weaviate/weaviate-go-client/v4 v4.13.1 // indirect
-	github.com/yalue/onnxruntime_go v1.19.0 // indirect
 	github.com/yargevad/filepathx v1.0.0 // indirect
 	github.com/yosida95/uritemplate/v3 v3.0.2 // indirect
 	gitlab.com/golang-commonmark/html v0.0.0-20191124015941-a22733972181 // indirect

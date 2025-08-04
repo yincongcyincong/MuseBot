@@ -11,7 +11,7 @@ import {
     Tooltip
 } from "chart.js";
 import {Line} from "react-chartjs-2";
-import {ClipboardList, Users} from "lucide-react";
+import {Bot, ClipboardList, Users} from "lucide-react";
 
 ChartJS.register(
     CategoryScale,
@@ -84,6 +84,12 @@ export default function DashboardPage() {
     }
 
     const buildChartData = (dayCountArray, color = "rgb(59 130 246)") => {
+        if (!dayCountArray || dayCountArray.length === 0) {
+            return {
+                labels: [],
+                datasets: []
+            };
+        }
         const sorted = [...dayCountArray].sort(
             (a, b) => parseInt(a.date, 10) - parseInt(b.date, 10)
         );
@@ -100,6 +106,7 @@ export default function DashboardPage() {
             ]
         };
     };
+
 
     const chartOptions = {
         plugins: {
@@ -155,7 +162,7 @@ export default function DashboardPage() {
 
                         <div className="flex-1 bg-white rounded shadow p-4 text-center flex flex-col items-center">
                             <div className="text-gray-500 mb-2 flex items-center justify-center space-x-2">
-                                <Users className="text-black-600 w-6 h-6"/>
+                                <Bot className="text-black-600 w-6 h-6"/>
                                 <span>Running time</span>
                             </div>
                             <div className="text-3xl font-semibold text-black-700">

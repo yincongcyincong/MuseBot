@@ -145,7 +145,7 @@ func (h *GeminiReq) Send(ctx context.Context, l *LLM) error {
 			Question: l.Content,
 			Answer:   l.WholeContent,
 			Token:    l.Token,
-			Mode:     l.Model,
+			Mode:     param.Gemini,
 		}, true)
 	} else {
 		h.ToolMessage = append(h.ToolMessage, h.CurrentToolMessage...)

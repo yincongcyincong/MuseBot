@@ -40,6 +40,7 @@ const (
 				id INTEGER PRIMARY KEY AUTOINCREMENT,
 				file_name VARCHAR(255) NOT NULL DEFAULT '',
 				file_md5 VARCHAR(255) NOT NULL DEFAULT '',
+				vector_id TEXT NOT NULL DEFAULT '',
 				create_time int(10) NOT NULL DEFAULT '0',
 				update_time int(10) NOT NULL DEFAULT '0',
 				is_deleted int(10) NOT NULL DEFAULT '0'
@@ -78,6 +79,7 @@ const (
 				id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
 				file_name VARCHAR(255) NOT NULL DEFAULT '',
 				file_md5 VARCHAR(255) NOT NULL DEFAULT '',
+    			vector_id TEXT NOT NULL,
 				create_time int(10) NOT NULL DEFAULT '0',
 				update_time int(10) NOT NULL DEFAULT '0',
 				is_deleted int(10) NOT NULL DEFAULT '0'
