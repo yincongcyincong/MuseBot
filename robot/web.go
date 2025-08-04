@@ -401,15 +401,16 @@ func (web *Web) sendImg() {
 		var imageUrl string
 		var imageContent []byte
 		var mode string
+		var totalToken int
 		switch *conf.BaseConfInfo.MediaType {
 		case param.Vol:
-			imageUrl, err = llm.GenerateVolImg(prompt, lastImageContent)
+			imageUrl, totalToken, err = llm.GenerateVolImg(prompt, lastImageContent)
 			mode = *conf.PhotoConfInfo.ModelVersion
 		case param.OpenAi:
-			imageContent, err = llm.GenerateOpenAIImg(prompt, lastImageContent)
+			imageContent, totalToken, err = llm.GenerateOpenAIImg(prompt, lastImageContent)
 			mode = *conf.PhotoConfInfo.OpenAIImageModel
 		case param.Gemini:
-			imageContent, err = llm.GenerateGeminiImg(prompt, lastImageContent)
+			imageContent, totalToken, err = llm.GenerateGeminiImg(prompt, lastImageContent)
 			mode = *conf.PhotoConfInfo.GeminiImageModel
 		default:
 			err = fmt.Errorf("unsupported media type: %s", *conf.BaseConfInfo.MediaType)
@@ -452,7 +453,7 @@ func (web *Web) sendImg() {
 			Question:   web.OriginalPrompt,
 			Answer:     dataURI,
 			Content:    originImageURI,
-			Token:      param.ImageTokenUsage,
+			Token:      totalToken,
 			IsDeleted:  0,
 			RecordType: param.WEBRecordType,
 			Mode:       mode,
@@ -478,12 +479,13 @@ func (web *Web) sendVideo() {
 		)
 		
 		var mode string
+		var totalToken int
 		switch *conf.BaseConfInfo.MediaType {
 		case param.Vol:
-			videoUrl, err = llm.GenerateVolVideo(prompt)
+			videoUrl, totalToken, err = llm.GenerateVolVideo(prompt)
 			mode = *conf.VideoConfInfo.VideoModel
 		case param.Gemini:
-			videoContent, err = llm.GenerateGeminiVideo(prompt)
+			videoContent, totalToken, err = llm.GenerateGeminiVideo(prompt)
 			mode = *conf.VideoConfInfo.GeminiVideoModel
 		default:
 			err = fmt.Errorf("unsupported type: %s", *conf.BaseConfInfo.MediaType)
@@ -521,7 +523,7 @@ func (web *Web) sendVideo() {
 			UserId:     web.RealUserId,
 			Question:   web.OriginalPrompt,
 			Answer:     dataURI,
-			Token:      param.VideoTokenUsage,
+			Token:      totalToken,
 			IsDeleted:  0,
 			RecordType: param.WEBRecordType,
 			Mode:       mode,

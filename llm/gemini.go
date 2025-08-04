@@ -352,7 +352,7 @@ func (h *GeminiReq) GetModel(l *LLM) {
 	}
 }
 
-func GenerateGeminiImg(prompt string, imageContent []byte) ([]byte, error) {
+func GenerateGeminiImg(prompt string, imageContent []byte) ([]byte, int, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 	
@@ -363,7 +363,7 @@ func GenerateGeminiImg(prompt string, imageContent []byte) ([]byte, error) {
 	})
 	if err != nil {
 		logger.Error("create client fail", "err", err)
-		return nil, err
+		return nil, 0, err
 	}
 	
 	geminiContent := genai.Text(prompt)
@@ -391,21 +391,21 @@ func GenerateGeminiImg(prompt string, imageContent []byte) ([]byte, error) {
 	)
 	if err != nil {
 		logger.Error("generate image fail", "err", err)
-		return nil, err
+		return nil, 0, err
 	}
 	
 	if len(response.Candidates) > 0 {
 		for _, part := range response.Candidates[0].Content.Parts {
 			if part.InlineData != nil {
-				return part.InlineData.Data, nil
+				return part.InlineData.Data, int(response.UsageMetadata.TotalTokenCount), nil
 			}
 		}
 	}
 	
-	return nil, errors.New("image is empty")
+	return nil, 0, errors.New("image is empty")
 }
 
-func GenerateGeminiVideo(prompt string) ([]byte, error) {
+func GenerateGeminiVideo(prompt string) ([]byte, int, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 	
@@ -416,7 +416,7 @@ func GenerateGeminiVideo(prompt string) ([]byte, error) {
 	})
 	if err != nil {
 		logger.Error("create client fail", "err", err)
-		return nil, err
+		return nil, 0, err
 	}
 	
 	operation, err := client.Models.GenerateVideos(ctx,
@@ -429,7 +429,7 @@ func GenerateGeminiVideo(prompt string) ([]byte, error) {
 		})
 	if err != nil {
 		logger.Error("generate video fail", "err", err)
-		return nil, err
+		return nil, 0, err
 	}
 	
 	for !operation.Done {
@@ -438,16 +438,29 @@ func GenerateGeminiVideo(prompt string) ([]byte, error) {
 		operation, err = client.Operations.GetVideosOperation(ctx, operation, nil)
 		if err != nil {
 			logger.Error("get video operation fail", "err", err)
-			return nil, err
+			return nil, 0, err
 		}
 	}
 	
 	if len(operation.Response.GeneratedVideos) == 0 {
 		logger.Error("generate video fail", "err", "video is empty", "resp", operation.Response)
-		return nil, errors.New("video is empty")
+		return nil, 0, errors.New("video is empty")
 	}
 	
-	return operation.Response.GeneratedVideos[0].Video.VideoBytes, nil
+	var totalToken int
+	if operation.Metadata != nil {
+		if usageRaw, ok := operation.Metadata["usageMetadata"]; ok {
+			if usage, ok := usageRaw.(map[string]interface{}); ok {
+				if tokenValue, ok := usage["totalTokenCount"]; ok {
+					if tokenFloat, ok := tokenValue.(float64); ok {
+						totalToken = int(tokenFloat)
+					}
+				}
+			}
+		}
+	}
+	
+	return operation.Response.GeneratedVideos[0].Video.VideoBytes, totalToken, nil
 }
 
 func GenerateGeminiText(audioContent []byte) (string, error) {
