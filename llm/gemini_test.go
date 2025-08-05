@@ -73,7 +73,7 @@ func TestGenerateGeminiText_EmptyAudio(t *testing.T) {
 }
 
 func TestGenerateGeminiImage_EmptyPrompt(t *testing.T) {
-	image, err := GenerateGeminiImg("", nil)
+	image, _, err := GenerateGeminiImg("", nil)
 	assert.Error(t, err)
 	assert.Nil(t, image)
 }
@@ -85,7 +85,7 @@ func TestGetGeminiImageContent_EmptyData(t *testing.T) {
 }
 
 func TestGenerateGeminiVideo_InvalidPrompt(t *testing.T) {
-	video, err := GenerateGeminiVideo("")
+	video, _, err := GenerateGeminiVideo("")
 	assert.Error(t, err)
 	assert.Nil(t, video)
 }

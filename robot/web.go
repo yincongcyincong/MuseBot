@@ -400,18 +400,15 @@ func (web *Web) sendImg() {
 		
 		var imageUrl string
 		var imageContent []byte
-		var mode string
 		var totalToken int
+		mode := *conf.BaseConfInfo.MediaType
 		switch *conf.BaseConfInfo.MediaType {
 		case param.Vol:
 			imageUrl, totalToken, err = llm.GenerateVolImg(prompt, lastImageContent)
-			mode = *conf.PhotoConfInfo.ModelVersion
 		case param.OpenAi:
 			imageContent, totalToken, err = llm.GenerateOpenAIImg(prompt, lastImageContent)
-			mode = *conf.PhotoConfInfo.OpenAIImageModel
 		case param.Gemini:
 			imageContent, totalToken, err = llm.GenerateGeminiImg(prompt, lastImageContent)
-			mode = *conf.PhotoConfInfo.GeminiImageModel
 		default:
 			err = fmt.Errorf("unsupported media type: %s", *conf.BaseConfInfo.MediaType)
 		}
@@ -447,7 +444,19 @@ func (web *Web) sendImg() {
 			originImageURI = fmt.Sprintf("data:image/%s;base64,%s", format, base64Content)
 		}
 		
-		// 保存记录
+		// save message record
+		db.InsertRecordInfo(&db.Record{
+			UserId:     web.RealUserId,
+			Question:   web.OriginalPrompt,
+			Answer:     dataURI,
+			Content:    originImageURI,
+			Token:      0,
+			IsDeleted:  0,
+			RecordType: param.WEBRecordType,
+			Mode:       mode,
+		})
+		
+		// save data record
 		db.InsertRecordInfo(&db.Record{
 			UserId:     web.RealUserId,
 			Question:   web.OriginalPrompt,
@@ -455,7 +464,7 @@ func (web *Web) sendImg() {
 			Content:    originImageURI,
 			Token:      totalToken,
 			IsDeleted:  0,
-			RecordType: param.WEBRecordType,
+			RecordType: param.ImageRecordType,
 			Mode:       mode,
 		})
 	})
@@ -478,15 +487,13 @@ func (web *Web) sendVideo() {
 			err          error
 		)
 		
-		var mode string
+		mode := *conf.BaseConfInfo.MediaType
 		var totalToken int
 		switch *conf.BaseConfInfo.MediaType {
 		case param.Vol:
 			videoUrl, totalToken, err = llm.GenerateVolVideo(prompt)
-			mode = *conf.VideoConfInfo.VideoModel
 		case param.Gemini:
 			videoContent, totalToken, err = llm.GenerateGeminiVideo(prompt)
-			mode = *conf.VideoConfInfo.GeminiVideoModel
 		default:
 			err = fmt.Errorf("unsupported type: %s", *conf.BaseConfInfo.MediaType)
 		}
@@ -518,14 +525,23 @@ func (web *Web) sendVideo() {
 		fmt.Fprintf(web.W, "%s", dataURI)
 		web.Flusher.Flush()
 		
-		// 插入数据库
+		db.InsertRecordInfo(&db.Record{
+			UserId:     web.RealUserId,
+			Question:   web.OriginalPrompt,
+			Answer:     dataURI,
+			Token:      0,
+			IsDeleted:  0,
+			RecordType: param.WEBRecordType,
+			Mode:       mode,
+		})
+		
 		db.InsertRecordInfo(&db.Record{
 			UserId:     web.RealUserId,
 			Question:   web.OriginalPrompt,
 			Answer:     dataURI,
 			Token:      totalToken,
 			IsDeleted:  0,
-			RecordType: param.WEBRecordType,
+			RecordType: param.VideoRecordType,
 			Mode:       mode,
 		})
 	})
