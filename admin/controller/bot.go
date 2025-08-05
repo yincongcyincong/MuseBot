@@ -372,7 +372,7 @@ func GetBotUserRecord(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	resp, err := adminUtils.GetCrtClient(botInfo).Get(strings.TrimSuffix(botInfo.Address, "/") +
-		fmt.Sprintf("/record/list?page=%s&page_size=%s&user_id=%s", r.FormValue("page"), r.FormValue("pageSize"), r.FormValue("userId")))
+		fmt.Sprintf("/record/list?page=%s&page_size=%s&user_id=%s&record_type=0,1,2", r.FormValue("page"), r.FormValue("pageSize"), r.FormValue("userId")))
 	if err != nil {
 		logger.Error("get bot user record error", "err", err)
 		utils.Failure(w, param.CodeServerFail, param.MsgServerFail, err)
@@ -766,7 +766,7 @@ func CompareFlagsWithStructTags(cfg interface{}) map[string]any {
 	for i := 0; i < t.NumField(); i++ {
 		field := t.Field(i)
 		jsonTag := field.Tag.Get("json")
-		if jsonTag == "" || SkipKey[jsonTag] {
+		if jsonTag == "" || SkipKey[jsonTag] || jsonTag == "-" {
 			continue
 		}
 		

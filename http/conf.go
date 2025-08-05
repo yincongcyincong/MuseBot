@@ -315,7 +315,7 @@ func CompareFlagsWithStructTags(cfg interface{}) string {
 	for i := 0; i < t.NumField(); i++ {
 		field := t.Field(i)
 		jsonTag := field.Tag.Get("json")
-		if jsonTag == "" {
+		if jsonTag == "" || jsonTag == "-" {
 			continue
 		}
 		

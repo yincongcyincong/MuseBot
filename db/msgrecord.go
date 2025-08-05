@@ -235,10 +235,10 @@ func GetTokenByUserIdAndTime(userId string, start, end int64) (int, error) {
 }
 
 func GetLastImageRecord(userId string) (*Record, error) {
-	query := fmt.Sprintf("SELECT id, user_id, question, answer, content FROM records WHERE user_id =  ? and record_type in (?, ?) and is_deleted = 0 order by id desc")
+	query := fmt.Sprintf("SELECT id, user_id, question, answer, content FROM records WHERE user_id =  ? and record_type = ? and is_deleted = 0 order by id desc")
 	
 	// execute query
-	rows, err := DB.Query(query, userId, param.WEBRecordType, param.ImageRecordType)
+	rows, err := DB.Query(query, userId, param.ImageRecordType)
 	if err != nil {
 		return nil, err
 	}
@@ -261,7 +261,7 @@ func GetLastImageRecord(userId string) (*Record, error) {
 	return &records[0], nil
 }
 
-func GetRecordCount(userId string, isDeleted, recordType int) (int, error) {
+func GetRecordCount(userId string, isDeleted int, recordType string) (int, error) {
 	var count int
 	query := "SELECT COUNT(*) FROM records"
 	var args []interface{}
@@ -277,9 +277,18 @@ func GetRecordCount(userId string, isDeleted, recordType int) (int, error) {
 		args = append(args, isDeleted)
 	}
 	
-	if recordType >= 0 {
-		conditions = append(conditions, "record_type = ?")
-		args = append(args, recordType)
+	if recordType != "" {
+		types := strings.Split(recordType, ",")
+		if len(types) > 0 {
+			placeholders := make([]string, len(types))
+			for i := range types {
+				placeholders[i] = "?"
+			}
+			conditions = append(conditions, "record_type IN ("+strings.Join(placeholders, ",")+")")
+			for _, t := range types {
+				args = append(args, strings.TrimSpace(t))
+			}
+		}
 	}
 	
 	if len(conditions) > 0 {
@@ -290,7 +299,7 @@ func GetRecordCount(userId string, isDeleted, recordType int) (int, error) {
 	return count, err
 }
 
-func GetRecordList(userId string, page, pageSize, isDeleted, recordType int) ([]Record, error) {
+func GetRecordList(userId string, page, pageSize, isDeleted int, recordType string) ([]Record, error) {
 	if page < 1 {
 		page = 1
 	}
@@ -314,9 +323,18 @@ func GetRecordList(userId string, page, pageSize, isDeleted, recordType int) ([]
 		args = append(args, isDeleted)
 	}
 	
-	if recordType >= 0 {
-		conditions = append(conditions, "record_type = ?")
-		args = append(args, recordType)
+	if recordType != "" {
+		types := strings.Split(recordType, ",")
+		if len(types) > 0 {
+			placeholders := make([]string, len(types))
+			for i := range types {
+				placeholders[i] = "?"
+			}
+			conditions = append(conditions, "record_type IN ("+strings.Join(placeholders, ",")+")")
+			for _, t := range types {
+				args = append(args, strings.TrimSpace(t))
+			}
+		}
 	}
 	
 	if len(conditions) > 0 {

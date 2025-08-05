@@ -645,18 +645,15 @@ func (d *DiscordRobot) sendImage() {
 		
 		var imageUrl string
 		var imageContent []byte
-		var mode string
 		var totalToken int
+		mode := *conf.BaseConfInfo.MediaType
 		switch *conf.BaseConfInfo.MediaType {
 		case param.Vol:
 			imageUrl, totalToken, err = llm.GenerateVolImg(prompt, lastImageContent)
-			mode = *conf.PhotoConfInfo.ModelVersion
 		case param.OpenAi:
 			imageContent, totalToken, err = llm.GenerateOpenAIImg(prompt, lastImageContent)
-			mode = *conf.PhotoConfInfo.OpenAIImageModel
 		case param.Gemini:
 			imageContent, totalToken, err = llm.GenerateGeminiImg(prompt, lastImageContent)
-			mode = *conf.PhotoConfInfo.GeminiImageModel
 		default:
 			err = fmt.Errorf("unsupported media type: %s", *conf.BaseConfInfo.MediaType)
 		}
@@ -722,15 +719,13 @@ func (d *DiscordRobot) sendVideo() {
 		var videoUrl string
 		var videoContent []byte
 		var err error
-		var mode string
 		var totalToken int
+		mode := *conf.BaseConfInfo.MediaType
 		switch *conf.BaseConfInfo.MediaType {
 		case param.Vol:
 			videoUrl, totalToken, err = llm.GenerateVolVideo(prompt)
-			mode = *conf.VideoConfInfo.VideoModel
 		case param.Gemini:
 			videoContent, totalToken, err = llm.GenerateGeminiVideo(prompt)
-			mode = *conf.VideoConfInfo.GeminiVideoModel
 		default:
 			err = fmt.Errorf("unsupported type: %s", *conf.BaseConfInfo.MediaType)
 		}

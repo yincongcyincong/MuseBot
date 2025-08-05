@@ -15,7 +15,7 @@ func PongHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func DashboardHandler(w http.ResponseWriter, r *http.Request) {
-	recordCount, err := db.GetRecordCount("", -1, -1)
+	recordCount, err := db.GetRecordCount("", -1, "")
 	if err != nil {
 		logger.Error("parse json body error", "err", err)
 		utils.Failure(w, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
