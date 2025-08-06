@@ -13,7 +13,7 @@ function Toast({ message, type = "error", onClose }) {
 
     return (
         <div
-            className={`fixed top-1/5 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 
+            className={`fixed top-1/5 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-[1000]
                         px-6 py-3 rounded shadow-lg text-white text-center ${bgColor}`}
         >
             {message}

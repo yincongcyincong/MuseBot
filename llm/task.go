@@ -133,8 +133,7 @@ func (d *LLMTaskReq) loopTask(ctx context.Context, plans *TaskInfo, lastPlan str
 		if ok {
 			tool = toolInter.(*conf.AgentInfo)
 		}
-		o := WithTaskTools(tool)
-		o(taskLLM)
+		WithTaskTools(tool)(taskLLM)
 		taskLLM.LLMClient.GetUserMessage(plan.Description)
 		taskLLM.Content = plan.Description
 		

@@ -127,6 +127,13 @@ func UpdateMCPConf(w http.ResponseWriter, r *http.Request) {
 	
 	mcpConfigs.McpServers[name] = config
 	
+	mcpClientConf := clients.GetOneMCPClient(name, config)
+	if mcpClientConf == nil {
+		logger.Error("get mcp client error")
+		utils.Failure(w, param.CodeConfigError, param.MsgConfigError, err)
+		return
+	}
+	
 	err = updateMCPConfFile(mcpConfigs)
 	if err != nil {
 		logger.Error("update mcp conf error", "err", err)
@@ -134,7 +141,7 @@ func UpdateMCPConf(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	go updateMCPConf(name, config)
+	go updateMCPConf(name, mcpClientConf)
 	utils.Success(w, "")
 }
 
@@ -148,12 +155,10 @@ func DeleteMCPConf(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	if mcpConfigs.McpServers[name] != nil && !mcpConfigs.McpServers[name].Disabled {
+	if mcpConfigs.McpServers[name] != nil {
 		err = clients.RemoveMCPClient(name)
 		if err != nil {
 			logger.Error("remove mcp client error", "err", err)
-			utils.Failure(w, param.CodeConfigError, param.MsgConfigError, err)
-			return
 		}
 	}
 	
@@ -188,8 +193,6 @@ func DisableMCPConf(w http.ResponseWriter, r *http.Request) {
 				err = clients.RemoveMCPClient(name)
 				if err != nil {
 					logger.Error("remove mcp client error", "err", err)
-					utils.Failure(w, param.CodeConfigError, param.MsgConfigError, err)
-					return
 				}
 			}
 		}
@@ -197,7 +200,13 @@ func DisableMCPConf(w http.ResponseWriter, r *http.Request) {
 		for mcpName, client := range config.McpServers {
 			if mcpName == name {
 				client.Disabled = false
-				go updateMCPConf(name, client)
+				mcpClientConf := clients.GetOneMCPClient(name, client)
+				if mcpClientConf == nil {
+					logger.Error("get mcp client error")
+					utils.Failure(w, param.CodeConfigError, param.MsgConfigError, err)
+					return
+				}
+				go updateMCPConf(name, mcpClientConf)
 			}
 		}
 	}
@@ -255,7 +264,7 @@ func updateMCPConfFile(config *mcpParam.McpClientGoConfig) error {
 	return nil
 }
 
-func updateMCPConf(name string, config *mcpParam.MCPConfig) {
+func updateMCPConf(name string, mcpClientConf *mcpParam.MCPClientConf) {
 	defer func() {
 		if err := recover(); err != nil {
 			logger.Error("update mcp conf error", "err", err, "stack", string(debug.Stack()))
@@ -263,8 +272,7 @@ func updateMCPConf(name string, config *mcpParam.MCPConfig) {
 	}()
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*60)
 	defer cancel()
-	mcpCleintConf := clients.GetOneMCPClient(name, config)
-	errs := clients.RegisterMCPClient(ctx, []*mcpParam.MCPClientConf{mcpCleintConf})
+	errs := clients.RegisterMCPClient(ctx, []*mcpParam.MCPClientConf{mcpClientConf})
 	if len(errs) > 0 {
 		for mcpServer, err := range errs {
 			logger.Error("register mcp client error", "server", mcpServer, "error", err)
