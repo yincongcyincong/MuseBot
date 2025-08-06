@@ -12,6 +12,7 @@ function Bots() {
     const [editingBot, setEditingBot] = useState(null);
     const [form, setForm] = useState({
         id: 0,
+        name: "",
         address: "",
         crt_file: "",
         key_file: "",
@@ -70,6 +71,7 @@ function Bots() {
     const handleEditClick = (bot) => {
         setForm({
             id: bot.id,
+            name: bot.name || "",
             address: bot.address,
             crt_file: bot.crt_file,
             key_file: bot.key_file,
