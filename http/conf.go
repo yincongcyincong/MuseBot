@@ -284,7 +284,7 @@ func updateMCPConf(name string, mcpClientConf *mcpParam.MCPClientConf) {
 
 func handleSpecialData(updateConfParam *UpdateConfParam) {
 	switch updateConfParam.Key {
-	case "allowed_telegram_user_ids", "allowed_telegram_group_ids", "admin_user_ids":
+	case "allowed_user_ids", "allowed_group_ids", "admin_user_ids":
 		ids := strings.Split(updateConfParam.Value.(string), ",")
 		idMap := make(map[int64]bool)
 		for _, idStr := range ids {
@@ -335,7 +335,7 @@ func CompareFlagsWithStructTags(cfg interface{}) string {
 		
 		structValue := ""
 		switch jsonTag {
-		case "allowed_telegram_user_ids", "allowed_telegram_group_ids", "admin_user_ids":
+		case "allowed_user_ids", "allowed_group_ids", "admin_user_ids":
 			structValue = utils.MapKeysToString(v.Field(i).Interface())
 		default:
 			structValue = utils.ValueToString(v.Field(i).Interface())

@@ -1,17 +1,17 @@
-## `telegram-deepseek-bot` 参数使用指南
+## `MuseBot` 参数使用指南
 
-本文档详细介绍了 `telegram-deepseek-bot` 运行时的各种配置参数，帮助用户根据需求灵活部署和使用。
+本文档详细介绍了 `MuseBot` 运行时的各种配置参数，帮助用户根据需求灵活部署和使用。
 
 ### 配置参数 (`conf param`)
 
-`telegram-deepseek-bot` 通过命令行参数进行配置。以下是不同场景下的参数使用示例：
+`MuseBot` 通过命令行参数进行配置。以下是不同场景下的参数使用示例：
 
 #### 1\. 基础配置 (`basic`)
 
 这是运行机器人所需的最基本参数，用于连接 Telegram 和 DeepSeek API。
 
 ```bash
-./telegram-deepseek-bot \
+./MuseBot \
 -telegram_bot_token=xxxx \
 -deepseek_token=sk-xxx
 ```
@@ -24,7 +24,7 @@
 如果需要持久化聊天记录或用户数据，可以使用 MySQL 数据库。
 
 ```bash
-./telegram-deepseek-bot \
+./MuseBot \
 -telegram_bot_token=xxxx \
 -deepseek_token=sk-xxx \
 -db_type=mysql \
@@ -39,7 +39,7 @@
 当您的网络环境需要通过代理访问 Telegram 或 DeepSeek API 时，可以使用此配置。
 
 ```bash
-./telegram-deepseek-bot \
+./MuseBot \
 -telegram_bot_token=xxxx \
 -deepseek_token=sk-xxx \
 -telegram_proxy=http://127.0.0.1:7890 \
@@ -54,7 +54,7 @@
 除了 DeepSeek，机器人也支持使用 OpenAI 模型。
 
 ```bash
-./telegram-deepseek-bot \
+./MuseBot \
 -telegram_bot_token=xxxx \
 -type=openai \
 -openai_token=sk-xxxx
@@ -68,7 +68,7 @@
 机器人还支持使用 Google Gemini 模型。
 
 ```bash
-./telegram-deepseek-bot \
+./MuseBot \
 -telegram_bot_token=xxxx \
 -type=gemini \
 -gemini_token=xxxxx
@@ -82,7 +82,7 @@
 集成 OpenRouter 平台，可以使用其提供的多种模型。
 
 ```bash
-./telegram-deepseek-bot \
+./MuseBot \
 -telegram_bot_token=xxxx \
 -type=openrouter \
 -openrouter_token=sk-or-v1-xxxx
@@ -96,7 +96,7 @@
 集成火山引擎（VolcEngine）的图片识别功能，需要提供火山引擎的 AK/SK。
 
 ```bash
-./telegram-deepseek-bot \
+./MuseBot \
 -telegram_bot_token=xxxx \
 -deepseek_token=sk-xxx \
 -volc_ak=xxx \
@@ -113,7 +113,7 @@
 集成火山引擎（VolcEngine）的语音识别功能。
 
 ```bash
-./telegram-deepseek-bot \
+./MuseBot \
 -telegram_bot_token=xxxx \
 -deepseek_token=sk-xxx \
 -audio_app_id=xxx \
@@ -132,7 +132,7 @@
 如果您的机器人需要使用高德地图的相关工具，例如地理位置查询等。
 
 ```bash
-./telegram-deepseek-bot \
+./MuseBot \
 -telegram_bot_token=xxxx \
 -deepseek_token=sk-xxx \
 -use_tools=true
@@ -145,7 +145,7 @@
 结合 ChromaDB 进行 RAG，需要使用 OpenAI 的 Embedding 服务。
 
 ```bash
-./telegram-deepseek-bot \
+./MuseBot \
 -telegram_bot_token=xxxx \
 -deepseek_token=sk-xxx \
 -openai_token=sk-xxxx \
@@ -162,7 +162,7 @@
 结合 Milvus 进行 RAG，需要使用 Gemini 的 Embedding 服务。
 
 ```bash
-./telegram-deepseek-bot \
+./MuseBot \
 -telegram_bot_token=xxxx \
 -deepseek_token=sk-xxx \
 -gemini_token=xxx \
@@ -179,7 +179,7 @@
 结合 Weaviate 进行 RAG，需要使用 Ernie 的 Embedding 服务。
 
 ```bash
-./telegram-deepseek-bot \
+./MuseBot \
 -telegram_bot_token=xxxx \
 -deepseek_token=sk-xxx \
 -ernie_ak=xxx \

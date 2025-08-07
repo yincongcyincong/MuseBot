@@ -1,6 +1,6 @@
 ## 配置 `MCP_CONF_PATH` 环境变量以使用 MCP 服务器 (Go 二进制文件)
 
-本文档将指导您如何在 `telegram-deepseek-bot` 项目中使用 Go 二进制文件时配置 `MCP_CONF_PATH` 环境变量，以便使用自定义的 MCP 服务器配置。
+本文档将指导您如何在 `MuseBot` 项目中使用 Go 二进制文件时配置 `MCP_CONF_PATH` 环境变量，以便使用自定义的 MCP 服务器配置。
 
 ### 1. 创建 MCP 配置文件
 
@@ -67,12 +67,12 @@
 
 ```bash
 export MCP_CONF_PATH=/path/to/your/mcp_config.json
-./telegram-deepseek-bot # 假设这是您的 Go 二进制文件
+./MuseBot # 假设这是您的 Go 二进制文件
 ```
 
 #### 方法二：在 Docker Compose 或 Dockerfile 中设置 (如果您使用 Docker)
 
-如果您通过 Docker 部署 `telegram-deepseek-bot`，您可以在文件 `Dockerfile` 中设置环境变量。
+如果您通过 Docker 部署 `MuseBot`，您可以在文件 `Dockerfile` 中设置环境变量。
 
 
 **在 `Dockerfile` 中设置：**
@@ -87,18 +87,18 @@ ENV MCP_CONF_PATH /app/mcp_config.json
 # ... 其他 Dockerfile 指令 ...
 ```
 
-### 3. 运行 `telegram-deepseek-bot` Go 二进制文件
+### 3. 运行 `MuseBot` Go 二进制文件
 
-在设置好 `MCP_CONF_PATH` 环境变量后，您可以正常运行 `telegram-deepseek-bot` 的 Go 二进制文件。项目将加载您指定的 MCP 配置文件，并能够使用其中定义的 MCP 服务器。
+在设置好 `MCP_CONF_PATH` 环境变量后，您可以正常运行 `MuseBot` 的 Go 二进制文件。项目将加载您指定的 MCP 配置文件，并能够使用其中定义的 MCP 服务器。
 
 例如：
 
 ```bash
-./telegram-deepseek-bot \
+./MuseBot \
 -telegram_bot_token=xxxx \
 -deepseek_token=sk-xxx \
 -use_tools=true
 ```
 
-现在，您的 `telegram-deepseek-bot` 应该能够与您配置的 MCP 服务器进行交互。
+现在，您的 `MuseBot` 应该能够与您配置的 MCP 服务器进行交互。
 ---

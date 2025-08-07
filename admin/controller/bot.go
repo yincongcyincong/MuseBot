@@ -772,7 +772,7 @@ func CompareFlagsWithStructTags(cfg interface{}) map[string]any {
 		
 		structValue := ""
 		switch jsonTag {
-		case "allowed_telegram_user_ids", "allowed_telegram_group_ids", "admin_user_ids":
+		case "allowed_user_ids", "allowed_group_ids", "admin_user_ids":
 			structValue = utils.MapKeysToString(v.Field(i).Interface())
 		default:
 			structValue = utils.ValueToString(v.Field(i).Interface())

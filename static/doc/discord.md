@@ -7,7 +7,7 @@ This project is a cross-platform chatbot powered by the **DeepSeek LLM**, suppor
 You can launch the bot in Discord mode using the following command:
 
 ```bash
-./telegram-deepseek-bot-darwin-amd64 \
+./MuseBot-darwin-amd64 \
   -discord_bot_token=xxx \
   -deepseek_token=sk-xxx \
   -gemini_token=xxx \
@@ -24,7 +24,7 @@ You can launch the bot in Discord mode using the following command:
 * `volc_ak` / `volc_sk`: Volcano Engine Access Key and Secret Key (required for `/photo` and `/video` commands)
 * `vol_token`: Token for using Volcano Engine video capabilities
 
-other usage see this [doc](https://github.com/yincongcyincong/telegram-deepseek-bot))
+other usage see this [doc](https://github.com/yincongcyincong/MuseBot))
 
 ## 💬 How to Use
 

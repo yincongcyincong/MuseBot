@@ -136,7 +136,7 @@ func NewLLM(opts ...Option) *LLM {
 
 func (l *LLM) SendMsg(msgInfoContent *param.MsgInfo, content string) *param.MsgInfo {
 	if l.MessageChan != nil {
-		// exceed max telegram one message length
+		// exceed max one message length
 		if utils.Utf16len(msgInfoContent.Content) > OneMsgLen {
 			l.MessageChan <- msgInfoContent
 			msgInfoContent = &param.MsgInfo{

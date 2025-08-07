@@ -41,7 +41,7 @@ telegram-группа: https://t.me/+WtaMcDpaMOlhZTE1, или можете по�
 
 1. **Клонируйте репозиторий**
    ```sh
-   git clone https://github.com/yincongcyincong/telegram-deepseek-bot.git
+   git clone https://github.com/yincongcyincong/MuseBot.git
    cd deepseek-telegram-bot
    ```
 2. **Установите зависимости**
@@ -66,42 +66,42 @@ telegram-группа: https://t.me/+WtaMcDpaMOlhZTE1, или можете по�
 Используйте Docker:
 
    ```sh
-   docker pull jackyin0822/telegram-deepseek-bot:latest
-   docker run -d -v /home/user/data:/app/data -e TELEGRAM_BOT_TOKEN="токен-телеграм-бота" -e DEEPSEEK_TOKEN="токен-авторизации-deepseek" --name my-telegram-bot jackyin0822/telegram-deepseek-bot:latest
+   docker pull jackyin0822/musebot:latest
+   docker run -d -v /home/user/data:/app/data -e TELEGRAM_BOT_TOKEN="токен-телеграм-бота" -e DEEPSEEK_TOKEN="токен-авторизации-deepseek" --name my-telegram-bot jackyin0822/MuseBot:latest
    ```
 
 ## ⚙️ Конфигурация
 
 Вы можете настроить бота через переменные окружения:
 
-| Имя переменной                  | Описание                                                                                                                   | Значение по умолчанию       |
-|--------------------------------|---------------------------------------------------------------------------------------------------------------------------|----------------------------|
-| TELEGRAM_BOT_TOKEN (обязательно)| Токен вашего Telegram бота                                                                                                | -                          |
-| DEEPSEEK_TOKEN (обязательно)    | API-ключ DeepSeek                                                                                                         | -                          |
-| OPENAI_TOKEN                    | Токен OpenAI                                                                                                              | -                          |
-| GEMINI_TOKEN                    | Токен Gemini                                                                                                              | -                          |
-| OPEN_ROUTER_TOKEN               | Токен OpenRouter [документация](https://openrouter.ai/docs/quickstart)                                                     | -                          |
-| VOL_TOKEN                       | Токен Vol [документация](https://www.volcengine.com/docs/82379/1399008#b00dee71)                                          | -                          |
-| CUSTOM_URL                      | пользовательский URL DeepSeek                                                                                             | https://api.deepseek.com/  |
-| TYPE                            | deepseek/openai/gemini/openrouter/vol                                                                                     | deepseek                   |
-| VOLC_AK                         | AK для модели фото Volcengine [документация](https://www.volcengine.com/docs/6444/1340578)                                 | -                          |
-| VOLC_SK                         | SK для модели фото Volcengine [документация](https://www.volcengine.com/docs/6444/1340578)                                 | -                          |
-| Ernie_AK                        | AK для Ernie [документация](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Sly8bm96d)                                       | -                          |
-| Ernie_SK                        | SK для Ernie [документация](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Sly8bm96d)                                       | -                          |
-| DB_TYPE                         | sqlite3 / mysql                                                                                                           | sqlite3                    |
-| DB_CONF                         | ./data/telegram_bot.db / root:admin@tcp(127.0.0.1:3306)/dbname?charset=utf8mb4&parseTime=True&loc=Local                   | ./data/telegram_bot.db     |
-| ALLOWED_TELEGRAM_USER_IDS       | ID пользователей Telegram, только они могут использовать бота (разделитель ","). Пусто — все пользователи. 0 — все забанены. | -                          |
-| ALLOWED_TELEGRAM_GROUP_IDS      | ID чатов Telegram, только они могут использовать бота (разделитель ","). Пусто — все чаты. 0 — все чаты забанены.          | -                          |
-| DEEPSEEK_PROXY                  | прокси для DeepSeek                                                                                                       | -                          |
-| TELEGRAM_PROXY                  | прокси для Telegram                                                                                                       | -                          |
-| LANG                            | en / zh                                                                                                                   | en                         |
-| TOKEN_PER_USER                  | Количество токенов, доступных каждому пользователю                                                                        | 10000                      |
-| ADMIN_USER_IDS                  | ID администраторов (могут использовать административные команды)                                                           | -                          |
-| NEED_AT_BOT                     | необходимо ли упоминание бота в группе для активации                                                                       | false                      |
-| MAX_USER_CHAT                   | максимальное количество активных чатов на пользователя                                                                     | 2                          |
-| VIDEO_TOKEN                     | API-ключ Volcengine для видео [документация](https://www.volcengine.com/docs/82379/1399008#b00dee71)                      | -                          |
-| HTTP_PORT                       | порт HTTP-сервера                                                                                                         | 36060                      |
-| USE_TOOLS                       | использовать ли вызов функций в обычном диалоге                                                                            | false                      |
+| Имя переменной                   | Описание                                                                                                                   | Значение по умолчанию       |
+|----------------------------------|---------------------------------------------------------------------------------------------------------------------------|----------------------------|
+| TELEGRAM_BOT_TOKEN (обязательно) | Токен вашего Telegram бота                                                                                                | -                          |
+| DEEPSEEK_TOKEN (обязательно)     | API-ключ DeepSeek                                                                                                         | -                          |
+| OPENAI_TOKEN                     | Токен OpenAI                                                                                                              | -                          |
+| GEMINI_TOKEN                     | Токен Gemini                                                                                                              | -                          |
+| OPEN_ROUTER_TOKEN                | Токен OpenRouter [документация](https://openrouter.ai/docs/quickstart)                                                     | -                          |
+| VOL_TOKEN                        | Токен Vol [документация](https://www.volcengine.com/docs/82379/1399008#b00dee71)                                          | -                          |
+| CUSTOM_URL                       | пользовательский URL DeepSeek                                                                                             | https://api.deepseek.com/  |
+| TYPE                             | deepseek/openai/gemini/openrouter/vol                                                                                     | deepseek                   |
+| VOLC_AK                          | AK для модели фото Volcengine [документация](https://www.volcengine.com/docs/6444/1340578)                                 | -                          |
+| VOLC_SK                          | SK для модели фото Volcengine [документация](https://www.volcengine.com/docs/6444/1340578)                                 | -                          |
+| Ernie_AK                         | AK для Ernie [документация](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Sly8bm96d)                                       | -                          |
+| Ernie_SK                         | SK для Ernie [документация](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Sly8bm96d)                                       | -                          |
+| DB_TYPE                          | sqlite3 / mysql                                                                                                           | sqlite3                    |
+| DB_CONF                          | ./data/telegram_bot.db / root:admin@tcp(127.0.0.1:3306)/dbname?charset=utf8mb4&parseTime=True&loc=Local                   | ./data/telegram_bot.db     |
+| ALLOWED_USER_IDS                 | ID пользователей , только они могут использовать бота (разделитель ","). Пусто — все пользователи. 0 — все забанены. | -                          |
+| ALLOWED_GROUP_IDS       | ID чатов , только они могут использовать бота (разделитель ","). Пусто — все чаты. 0 — все чаты забанены.          | -                          |
+| DEEPSEEK_PROXY                   | прокси для DeepSeek                                                                                                       | -                          |
+| TELEGRAM_PROXY                   | прокси для Telegram                                                                                                       | -                          |
+| LANG                             | en / zh                                                                                                                   | en                         |
+| TOKEN_PER_USER                   | Количество токенов, доступных каждому пользователю                                                                        | 10000                      |
+| ADMIN_USER_IDS                   | ID администраторов (могут использовать административные команды)                                                           | -                          |
+| NEED_AT_BOT                      | необходимо ли упоминание бота в группе для активации                                                                       | false                      |
+| MAX_USER_CHAT                    | максимальное количество активных чатов на пользователя                                                                     | 2                          |
+| VIDEO_TOKEN                      | API-ключ Volcengine для видео [документация](https://www.volcengine.com/docs/82379/1399008#b00dee71)                      | -                          |
+| HTTP_PORT                        | порт HTTP-сервера                                                                                                         | 36060                      |
+| USE_TOOLS                        | использовать ли вызов функций в обычном диалоге                                                                            | false                      |
 
 ### CUSTOM_URL
 
@@ -199,7 +199,7 @@ telegram-группа: https://t.me/+WtaMcDpaMOlhZTE1, или можете по�
 
 2. **Запустите контейнер**
    ```sh
-   docker run -d -v /home/user/xxx/data:/app/data -e TELEGRAM_BOT_TOKEN="токен-телеграм-бота" -e DEEPSEEK_TOKEN="токен-авторизации-deepseek" --name my-telegram-bot telegram-deepseek-bot
+   docker run -d -v /home/user/xxx/data:/app/data -e TELEGRAM_BOT_TOKEN="токен-телеграм-бота" -e DEEPSEEK_TOKEN="токен-авторизации-deepseek" --name my-telegram-bot MuseBot
    ```
 
 ## Участие

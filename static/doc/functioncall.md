@@ -1,6 +1,6 @@
 ## Configuring the `MCP_CONF_PATH` Environment Variable for MCP Servers (Go Binary)
 
-This document guides you on configuring the **`MCP_CONF_PATH`** environment variable when using the Go binary of the **`telegram-deepseek-bot`** project. This allows you to use a custom MCP server configuration.
+This document guides you on configuring the **`MCP_CONF_PATH`** environment variable when using the Go binary of the **`MuseBot`** project. This allows you to use a custom MCP server configuration.
 
 ### 1. Create the MCP Configuration File
 
@@ -67,12 +67,12 @@ If you just need to run the binary temporarily for testing, you can set the envi
 
 ```bash
 export MCP_CONF_PATH=/path/to/your/mcp_config.json
-./telegram-deepseek-bot # Assuming this is your Go binary
+./MuseBot # Assuming this is your Go binary
 ```
 
 #### Method 2: Set in Docker Compose or Dockerfile (If Using Docker)
 
-If you're deploying **`telegram-deepseek-bot`** using Docker, you can set the environment variable in `Dockerfile`.
+If you're deploying **`MuseBot`** using Docker, you can set the environment variable in `Dockerfile`.
 
 
 **Setting in `Dockerfile`:**
@@ -87,16 +87,16 @@ ENV MCP_CONF_PATH /app/mcp_config.json
 # ... other Dockerfile instructions ...
 ```
 
-### 3. Run the `telegram-deepseek-bot` Go Binary
+### 3. Run the `MuseBot` Go Binary
 
-After setting the **`MCP_CONF_PATH`** environment variable, you can run the **`telegram-deepseek-bot`** Go binary as usual. The project will load your specified MCP configuration file and will be able to use the MCP servers defined within it.
+After setting the **`MCP_CONF_PATH`** environment variable, you can run the **`MuseBot`** Go binary as usual. The project will load your specified MCP configuration file and will be able to use the MCP servers defined within it.
 
 For example:
 
 ```bash
-./telegram-deepseek-bot
+./MuseBot
 ```
 
-Your **`telegram-deepseek-bot`** should now be able to interact with your configured MCP servers.
+Your **`MuseBot`** should now be able to interact with your configured MCP servers.
 
 ---

@@ -1,7 +1,7 @@
 #!/bin/bash
-docker build -t telegram-deepseek-bot .
-docker tag telegram-deepseek-bot jackyin0822/telegram-deepseek-bot:${1}
-docker push  jackyin0822/telegram-deepseek-bot:${1}
-docker tag telegram-deepseek-bot jackyin0822/telegram-deepseek-bot:latest
-docker push  jackyin0822/telegram-deepseek-bot:latest
+docker build -t musebot .
+docker tag musebot jackyin0822/musebot:${1}
+docker push  jackyin0822/musebot:${1}
+docker tag musebot jackyin0822/musebot:latest
+docker push  jackyin0822/musebot:latest
 
