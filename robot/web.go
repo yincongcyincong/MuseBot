@@ -84,32 +84,6 @@ func (web *Web) Exec() {
 func (web *Web) sendHelpConfigurationOptions() {
 	chatId, msgId, _ := web.Robot.GetChatIdAndMsgIdAndUserID()
 	
-	helpText := `
-Available Commands:
-
-/chat   - Start a normal chat session
-
-/mode   - Set the LLM mode
-
-/balance - Check your current balance (tokens or credits)
-
-/state  - View your current session state and settings
-
-/clear  - Clear all conversation history
-
-/retry  - Retry your last question
-
-/photo  - Create a Image base on your prompt or your Image
-
-/video  - Generate a video based on your prompt
-
-/task   - Let multiple agents collaborate to complete a task
-
-/mcp    - Use Multi-Agent Control Panel for complex task planning
-
-/help   - Show this help message
-
-`
 	web.Robot.SendMsg(chatId, helpText, msgId, tgbotapi.ModeMarkdown, nil)
 	db.InsertRecordInfo(&db.Record{
 		UserId:     web.RealUserId,
@@ -601,7 +575,6 @@ func (web *Web) handleChat() {
 			RecordType: param.WEBRecordType,
 		})
 	})
-	
 }
 
 func (web *Web) GetContent(content string) (string, error) {

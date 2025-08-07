@@ -34,9 +34,9 @@ type LLM struct {
 	Model       string
 	Token       int
 	
-	ChatId int64
+	ChatId string
 	UserId string
-	MsgId  int
+	MsgId  string
 	
 	LLMClient LLMClient
 	
@@ -199,7 +199,7 @@ func WithHTTPMsgChan(messageChan chan string) Option {
 	}
 }
 
-func WithChatId(chatId int64) Option {
+func WithChatId(chatId string) Option {
 	return func(p *LLM) {
 		p.ChatId = chatId
 	}
@@ -211,7 +211,7 @@ func WithUserId(userId string) Option {
 	}
 }
 
-func WithMsgId(msgId int) Option {
+func WithMsgId(msgId string) Option {
 	return func(p *LLM) {
 		p.MsgId = msgId
 	}

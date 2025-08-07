@@ -4,7 +4,6 @@ import (
 	"io"
 	"net/http"
 	"strconv"
-	"strings"
 	
 	"github.com/yincongcyincong/MuseBot/logger"
 	"github.com/yincongcyincong/MuseBot/robot"
@@ -38,21 +37,8 @@ func Communicate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	command, p := parseCommand(prompt)
+	command, p := robot.ParseCommand(prompt)
 	
 	web := robot.NewWeb(command, intUserId, realUserId, p, prompt, fileData, w, flusher)
 	web.Exec()
-}
-
-// parseCommand extracts command and arguments like /photo xxx
-func parseCommand(prompt string) (command string, args string) {
-	if len(prompt) == 0 || prompt[0] != '/' {
-		return "", prompt
-	}
-	parts := strings.SplitN(prompt, " ", 2)
-	command = parts[0]
-	if len(parts) > 1 {
-		args = parts[1]
-	}
-	return command, args
 }

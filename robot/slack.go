@@ -7,8 +7,6 @@ import (
 	"time"
 	
 	"github.com/slack-go/slack"
-	"github.com/yincongcyincong/langchaingo/chains"
-	"github.com/yincongcyincong/langchaingo/vectorstores"
 	"github.com/yincongcyincong/MuseBot/conf"
 	"github.com/yincongcyincong/MuseBot/i18n"
 	"github.com/yincongcyincong/MuseBot/llm"
@@ -16,6 +14,8 @@ import (
 	"github.com/yincongcyincong/MuseBot/param"
 	"github.com/yincongcyincong/MuseBot/rag"
 	"github.com/yincongcyincong/MuseBot/utils"
+	"github.com/yincongcyincong/langchaingo/chains"
+	"github.com/yincongcyincong/langchaingo/vectorstores"
 )
 
 type SlackRobot struct {
@@ -55,7 +55,7 @@ func (r *SlackRobot) Exec() {
 func (r *SlackRobot) requestDeepseekAndResp(content string) {
 	chatID, _, userID := r.Robot.GetChatIdAndMsgIdAndUserID()
 	
-	if r.Robot.checkUserTokenExceed(chatID, 0, userID) {
+	if r.Robot.checkUserTokenExceed(chatID, "", userID) {
 		logger.Warn("user token exceed", "userID", userID)
 		return
 	}
@@ -80,7 +80,7 @@ func (r *SlackRobot) executeChain(content string) {
 		}()
 		
 		if utils.CheckUserChatExceed(userID) {
-			r.Robot.SendMsg(chatID, i18n.GetMessage(*conf.BaseConfInfo.Lang, "chat_exceed", nil), 0, "", nil)
+			r.Robot.SendMsg(chatID, i18n.GetMessage(*conf.BaseConfInfo.Lang, "chat_exceed", nil), "", "", nil)
 			return
 		}
 		
@@ -100,7 +100,7 @@ func (r *SlackRobot) executeChain(content string) {
 		)
 		_, err := chains.Run(ctx, qaChain, text)
 		if err != nil {
-			r.Robot.SendMsg(chatID, err.Error(), 0, "", nil)
+			r.Robot.SendMsg(chatID, err.Error(), "", "", nil)
 		}
 	}()
 	
@@ -132,7 +132,7 @@ func (r *SlackRobot) callLLM(content string, messageChan chan *param.MsgInfo) {
 	}()
 	
 	if utils.CheckUserChatExceed(userID) {
-		r.Robot.SendMsg(chatID, i18n.GetMessage(*conf.BaseConfInfo.Lang, "chat_exceed", nil), 0, "", nil)
+		r.Robot.SendMsg(chatID, i18n.GetMessage(*conf.BaseConfInfo.Lang, "chat_exceed", nil), "", "", nil)
 		return
 	}
 	
@@ -153,6 +153,6 @@ func (r *SlackRobot) callLLM(content string, messageChan chan *param.MsgInfo) {
 	err := l.CallLLM()
 	if err != nil {
 		logger.Error("callLLM error", "err", err)
-		r.Robot.SendMsg(chatID, err.Error(), 0, "", nil)
+		r.Robot.SendMsg(chatID, err.Error(), "", "", nil)
 	}
 }
