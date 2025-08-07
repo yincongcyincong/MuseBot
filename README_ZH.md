@@ -7,7 +7,7 @@ telegram群: https://t.me/+WtaMcDpaMOlhZTE1, 或者尝试一下GWSbot。
 
 本仓库提供了一个基于 **Golang** 构建的 **Telegram 机器人**，集成了 **LLM API**，实现 AI 驱动的回复。
 该机器人支持 **openai** **deepseek** **gemini** **openrouter**等大模型，让对话体验更加自然和流畅。
-[English Doc](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/Readme.md)
+[English Doc](https://github.com/yincongcyincong/MuseBot/blob/main/Readme.md)
 
 ---
 
@@ -15,13 +15,13 @@ telegram群: https://t.me/+WtaMcDpaMOlhZTE1, 或者尝试一下GWSbot。
 - 🤖 **AI 回复**：使用 DeepSeek API 提供聊天机器人回复。
 - ⏳ **流式输出**：实时发送回复，提升用户体验。
 - 🏗 **轻松部署**：可本地运行或部署到云服务器。
-- 👀 **图像识别**：使用图片与 DeepSeek 进行交流，详见[文档](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/static/doc/imageconf.md)。
-- 🎺 **支持语音**：使用语音与 DeepSeek 进行交流，详见[文档](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/static/doc/audioconf.md)。
-- 🐂 **函数调用**：将 MCP 协议转换为函数调用，详见[文档](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/static/doc/functioncall.md)。
-- 🌊 **RAG（检索增强生成）**：支持 RAG 以填充上下文，详见[文档](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/static/doc/rag.md)。
+- 👀 **图像识别**：使用图片与 DeepSeek 进行交流，详见[文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/imageconf.md)。
+- 🎺 **支持语音**：使用语音与 DeepSeek 进行交流，详见[文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/audioconf.md)。
+- 🐂 **函数调用**：将 MCP 协议转换为函数调用，详见[文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/functioncall.md)。
+- 🌊 **RAG（检索增强生成）**：支持 RAG 以填充上下文，详见[文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/rag.md)。
 - ⛰️ **OpenRouter**：支持 OpenRouter 上的 400 多个大型语言模型（LLMs），详见[文档](https://openrouter.ai/docs/quickstart)。
-- 🌞 **管理平台（AdminPlatform）**：使用管理平台来管理 telegram-deepseek-bot，详见[文档](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/static/doc/admin_ZH.md)。
-- 🌈 **Discord 支持**：使用 Discord 机器人，详见[文档](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/static/doc/discord_ZH.md)。
+- 🌞 **管理平台（AdminPlatform）**：使用管理平台来管理 telegram-deepseek-bot，详见[文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/admin_ZH.md)。
+- 🌈 **Discord 支持**：使用 Discord 机器人，详见[文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/discord_ZH.md)。
 
 ---
 
@@ -114,9 +114,9 @@ docker run -d -v /home/user/data:/app/data -e TELEGRAM_BOT_TOKEN="你的Telegram
 
 ### 其他配置
 
-[deepseek参数](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/static/doc/deepseekconf_ZH.md)
-[图片参数](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/static/doc/photoconf_ZH.md)
-[视频参数](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/static/doc/videoconf_ZH.md)
+[deepseek参数](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/deepseekconf_ZH.md)
+[图片参数](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/photoconf_ZH.md)
+[视频参数](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/videoconf_ZH.md)
 
 ---
 

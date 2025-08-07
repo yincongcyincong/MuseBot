@@ -72,15 +72,15 @@
 ./telegram-deepseek-bot \
 -telegram_bot_token=xxx \
 -deepseek_token=sk-xxx \
--crt_file=/Users/yincong/go/src/github.com/yincongcyincong/telegram-deepseek-bot/admin/shell/certs/server.crt
--ca_file=/Users/yincong/go/src/github.com/yincongcyincong/telegram-deepseek-bot/admin/shell/certs/ca.crt
--key_file=/Users/yincong/go/src/github.com/yincongcyincong/telegram-deepseek-bot/admin/shell/certs/server.key
+-crt_file=/Users/yincong/go/src/github.com/yincongcyincong/MuseBot/admin/shell/certs/server.crt
+-ca_file=/Users/yincong/go/src/github.com/yincongcyincong/MuseBot/admin/shell/certs/ca.crt
+-key_file=/Users/yincong/go/src/github.com/yincongcyincong/MuseBot/admin/shell/certs/server.key
 ```
 
 在管理页面添加配置：
 ![image](https://github.com/user-attachments/assets/2a518841-abf6-4a31-b1b3-b26b258a5fab)
 
-可以使用此[文件](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/admin/shell/generate_cert.sh)生成
+可以使用此[文件](https://github.com/yincongcyincong/MuseBot/blob/main/admin/shell/generate_cert.sh)生成
 ca、key 和 crt 文件。
 
 #### 机器人启动参数

@@ -9,8 +9,8 @@ import (
 	_ "net/http/pprof"
 	
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
-	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
+	"github.com/yincongcyincong/MuseBot/conf"
+	"github.com/yincongcyincong/MuseBot/logger"
 )
 
 type HTTPServer struct {

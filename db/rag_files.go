@@ -3,7 +3,7 @@ package db
 import (
 	"time"
 	
-	"github.com/yincongcyincong/telegram-deepseek-bot/metrics"
+	"github.com/yincongcyincong/MuseBot/metrics"
 )
 
 type RagFiles struct {

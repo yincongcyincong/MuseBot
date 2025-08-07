@@ -8,17 +8,17 @@ telegram-группа: https://t.me/+WtaMcDpaMOlhZTE1, или можете по�
 # DeepSeek Telegram Bot
 
 Этот репозиторий предоставляет **Telegram бота**, написанного на **Golang**, который интегрируется с **DeepSeek API** для предоставления ответов на основе ИИ. Бот поддерживает **потоковые ответы**, делая взаимодействие более естественным и динамичным.  
-[Документация на китайском](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/Readme_ZH.md)
+[Документация на китайском](https://github.com/yincongcyincong/MuseBot/blob/main/Readme_ZH.md)
 
 ## 🚀 Возможности
 
 - 🤖 **Ответы ИИ**: Использует DeepSeek API для ответов чат-бота.
 - ⏳ **Потоковый вывод**: Отправляет ответы в реальном времени для улучшения пользовательского опыта.
 - 🏗 **Простое развертывание**: Запускайте локально или развертывайте на облачном сервере.
-- 👀 **Распознавание изображений**: общение с DeepSeek через изображения, см. [документацию](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/static/doc/imageconf.md).
-- 🎺 **Поддержка голоса**: общение с DeepSeek через голосовые сообщения, см. [документацию](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/static/doc/audioconf.md).
-- 🐂 **Вызов функций**: преобразование протокола MCP в вызов функций, см. [документацию](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/static/doc/functioncall.md).
-- 🌊 **RAG**: Поддержка RAG для заполнения контекста, см. [документацию](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/static/doc/rag.md).
+- 👀 **Распознавание изображений**: общение с DeepSeek через изображения, см. [документацию](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/imageconf.md).
+- 🎺 **Поддержка голоса**: общение с DeepSeek через голосовые сообщения, см. [документацию](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/audioconf.md).
+- 🐂 **Вызов функций**: преобразование протокола MCP в вызов функций, см. [документацию](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/functioncall.md).
+- 🌊 **RAG**: Поддержка RAG для заполнения контекста, см. [документацию](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/rag.md).
 - ⛰️ **OpenRouter**: Поддержка OpenRouter (более 400 языковых моделей), см. [документацию](https://openrouter.ai/docs/quickstart).
 
 ## 🤖 Пример текста
@@ -128,10 +128,10 @@ telegram-группа: https://t.me/+WtaMcDpaMOlhZTE1, или можете по�
 
 ### Другие настройки
 
-- [Конфигурация DeepSeek](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/static/doc/deepseekconf.md)
-- [Конфигурация фото](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/static/doc/photoconf.md)
-- [Конфигурация видео](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/static/doc/videoconf.md)
-- [Конфигурация аудио](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/static/doc/audioconf.md)
+- [Конфигурация DeepSeek](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/deepseekconf.md)
+- [Конфигурация фото](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/photoconf.md)
+- [Конфигурация видео](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/videoconf.md)
+- [Конфигурация аудио](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/audioconf.md)
 
 ## Команды
 

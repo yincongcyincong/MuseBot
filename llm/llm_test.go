@@ -5,7 +5,7 @@ import (
 	"time"
 	
 	"github.com/stretchr/testify/assert"
-	"github.com/yincongcyincong/telegram-deepseek-bot/param"
+	"github.com/yincongcyincong/MuseBot/param"
 )
 
 func TestSendMsg_WithMessageChan(t *testing.T) {
@@ -31,9 +31,9 @@ func TestSendMsg_WithHTTPMsgChan(t *testing.T) {
 }
 
 func TestOverLoop(t *testing.T) {
-	l := &LLM{LoopNum: 4}
+	l := &LLM{LoopNum: 9}
 	assert.False(t, l.OverLoop())
-	assert.Equal(t, 5, l.LoopNum)
+	assert.Equal(t, 10, l.LoopNum)
 	assert.True(t, l.OverLoop())
 }
 

@@ -9,9 +9,9 @@ import (
 	"github.com/cohesion-org/deepseek-go"
 	"github.com/cohesion-org/deepseek-go/constants"
 	"github.com/stretchr/testify/assert"
-	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
-	"github.com/yincongcyincong/telegram-deepseek-bot/db"
-	"github.com/yincongcyincong/telegram-deepseek-bot/param"
+	"github.com/yincongcyincong/MuseBot/conf"
+	"github.com/yincongcyincong/MuseBot/db"
+	"github.com/yincongcyincong/MuseBot/param"
 )
 
 func TestMain(m *testing.M) {

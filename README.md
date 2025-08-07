@@ -8,7 +8,7 @@ every body have **3000** token to try this bot, please give me a star!
 This repository provides a **Telegram bot** built with **Golang** that integrates with **LLM API** to provide
 AI-powered responses. The bot supports **openai** **deepseek** **gemini** **openrouter** LLMs, making interactions feel
 more natural and dynamic.
-[中文文档](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/README_ZH.md)
+[中文文档](https://github.com/yincongcyincong/MuseBot/blob/main/README_ZH.md)
 
 ## 🚀 Features
 
@@ -16,18 +16,18 @@ more natural and dynamic.
 - ⏳ **Streaming Output**: Sends responses in real-time to improve user experience.
 - 🏗 **Easy Deployment**: Run locally or deploy to a cloud server.
 - 👀 **Identify Image**: use image to communicate with deepseek,
-  see [doc](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/static/doc/imageconf.md).
+  see [doc](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/imageconf.md).
 - 🎺 **Support Voice**: use voice to communicate with deepseek,
-  see [doc](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/static/doc/audioconf.md).
+  see [doc](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/audioconf.md).
 - 🐂 **Function Call**: transform mcp protocol to function call,
-  see [doc](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/static/doc/functioncall.md).
+  see [doc](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/functioncall.md).
 - 🌊 **RAG**: Support Rag to fill context,
-  see [doc](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/static/doc/rag.md).
+  see [doc](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/rag.md).
 - ⛰️ **OpenRouter**: Support OpenRouter more than 400 llms, see [doc](https://openrouter.ai/docs/quickstart).
 - 🌞 **AdminPlatform**: Use platform to manage telegram-deepseek-bot,
-  see [doc](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/static/doc/admin.md).
-- 🌈 **Discord**: Support Discord Robot, see [doc](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/static/doc/discord.md).
-- 🌛 **Web API**: Support API Interact with LLM, see [doc](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/static/doc/web_api.md).
+  see [doc](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/admin.md).
+- 🌈 **Discord**: Support Discord Robot, see [doc](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/discord.md).
+- 🌛 **Web API**: Support API Interact with LLM, see [doc](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/web_api.md).
 
 ## 🤖 Text Example
 
@@ -140,10 +140,10 @@ choose a language for bot, English (`en`), Chinese (`zh`), Russian (`ru`).
 
 ### other config
 
-[deepseek_conf](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/static/doc/deepseekconf.md)
-[photo_conf](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/static/doc/photoconf.md)
-[video_conf](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/static/doc/videoconf.md)
-[audio_conf](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/static/doc/audioconf.md)
+[deepseek_conf](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/deepseekconf.md)
+[photo_conf](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/photoconf.md)
+[video_conf](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/videoconf.md)
+[audio_conf](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/audioconf.md)
 
 ## Command
 

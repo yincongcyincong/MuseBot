@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"time"
 	
-	"github.com/yincongcyincong/telegram-deepseek-bot/utils"
+	"github.com/yincongcyincong/MuseBot/utils"
 )
 
 type User struct {

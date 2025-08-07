@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 	
-	"github.com/yincongcyincong/telegram-deepseek-bot/metrics"
+	"github.com/yincongcyincong/MuseBot/metrics"
 )
 
 // TestNewPProfServer checks that the server is created with the correct address.

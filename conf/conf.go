@@ -8,7 +8,7 @@ import (
 	"time"
 	
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
+	"github.com/yincongcyincong/MuseBot/logger"
 )
 
 type BaseConf struct {

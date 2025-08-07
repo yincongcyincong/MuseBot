@@ -5,7 +5,7 @@ import (
 	"os"
 	"strconv"
 	
-	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
+	"github.com/yincongcyincong/MuseBot/logger"
 )
 
 type VideoConf struct {

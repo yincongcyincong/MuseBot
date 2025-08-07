@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	
 	"github.com/nicksnyder/go-i18n/v2/i18n"
-	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
+	"github.com/yincongcyincong/MuseBot/logger"
 	"golang.org/x/text/language"
 )
 

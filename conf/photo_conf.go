@@ -6,7 +6,7 @@ import (
 	"strconv"
 	
 	"github.com/sashabaranov/go-openai"
-	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
+	"github.com/yincongcyincong/MuseBot/logger"
 )
 
 type PhotoConf struct {

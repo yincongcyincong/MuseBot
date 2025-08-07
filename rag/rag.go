@@ -22,11 +22,11 @@ import (
 	"github.com/yincongcyincong/langchaingo/textsplitter"
 	"github.com/yincongcyincong/langchaingo/vectorstores/milvus"
 	"github.com/yincongcyincong/langchaingo/vectorstores/weaviate"
-	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
-	"github.com/yincongcyincong/telegram-deepseek-bot/db"
-	"github.com/yincongcyincong/telegram-deepseek-bot/llm"
-	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
-	"github.com/yincongcyincong/telegram-deepseek-bot/utils"
+	"github.com/yincongcyincong/MuseBot/conf"
+	"github.com/yincongcyincong/MuseBot/db"
+	"github.com/yincongcyincong/MuseBot/llm"
+	"github.com/yincongcyincong/MuseBot/logger"
+	"github.com/yincongcyincong/MuseBot/utils"
 	"gopkg.in/fsnotify.v1"
 )
 

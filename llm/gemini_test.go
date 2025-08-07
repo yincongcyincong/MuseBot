@@ -6,8 +6,8 @@ import (
 	"testing"
 	
 	"github.com/stretchr/testify/assert"
-	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
-	"github.com/yincongcyincong/telegram-deepseek-bot/param"
+	"github.com/yincongcyincong/MuseBot/conf"
+	"github.com/yincongcyincong/MuseBot/param"
 	"google.golang.org/genai"
 )
 

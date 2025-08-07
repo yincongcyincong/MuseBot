@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 	
-	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
-	"github.com/yincongcyincong/telegram-deepseek-bot/metrics"
+	"github.com/yincongcyincong/MuseBot/conf"
+	"github.com/yincongcyincong/MuseBot/metrics"
 )
 
 type User struct {

@@ -12,7 +12,7 @@ import (
 	
 	"github.com/gorilla/websocket"
 	"github.com/satori/go.uuid"
-	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
+	"github.com/yincongcyincong/MuseBot/logger"
 )
 
 type ProtocolVersion byte

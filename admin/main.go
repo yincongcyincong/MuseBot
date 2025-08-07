@@ -5,11 +5,11 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 	
-	"github.com/yincongcyincong/telegram-deepseek-bot/admin/checkpoint"
-	"github.com/yincongcyincong/telegram-deepseek-bot/admin/conf"
-	"github.com/yincongcyincong/telegram-deepseek-bot/admin/controller"
-	"github.com/yincongcyincong/telegram-deepseek-bot/admin/db"
-	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
+	"github.com/yincongcyincong/MuseBot/admin/checkpoint"
+	"github.com/yincongcyincong/MuseBot/admin/conf"
+	"github.com/yincongcyincong/MuseBot/admin/controller"
+	"github.com/yincongcyincong/MuseBot/admin/db"
+	"github.com/yincongcyincong/MuseBot/logger"
 )
 
 func main() {
