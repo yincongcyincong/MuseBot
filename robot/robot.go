@@ -10,6 +10,8 @@ import (
 	"github.com/bwmarrin/discordgo"
 	godeepseek "github.com/cohesion-org/deepseek-go"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	larkcore "github.com/larksuite/oapi-sdk-go/v3/core"
+	larkim "github.com/larksuite/oapi-sdk-go/v3/service/im/v1"
 	"github.com/slack-go/slack"
 	"github.com/yincongcyincong/MuseBot/conf"
 	"github.com/yincongcyincong/MuseBot/db"
@@ -18,6 +20,35 @@ import (
 	"github.com/yincongcyincong/MuseBot/logger"
 	"github.com/yincongcyincong/MuseBot/param"
 	"github.com/yincongcyincong/MuseBot/utils"
+)
+
+var (
+	helpText = `
+Available Commands:
+
+/chat   - Start a normal chat session
+
+/mode   - Set the LLM mode
+
+/balance - Check your current balance (tokens or credits)
+
+/state  - View your current session state and settings
+
+/clear  - Clear all conversation history
+
+/retry  - Retry your last question
+
+/photo  - Create a Image base on your prompt or your Image
+
+/video  - Generate a video based on your prompt
+
+/task   - Let multiple agents collaborate to complete a task
+
+/mcp    - Use Multi-Agent Control Panel for complex task planning
+
+/help   - Show this help message
+
+`
 )
 
 type RobotInfo struct {
@@ -51,33 +82,33 @@ func (r *RobotInfo) Exec() {
 	r.Robot.Exec()
 }
 
-func (r *RobotInfo) GetChatIdAndMsgIdAndUserID() (int64, int, string) {
-	chatId := int64(0)
-	msgId := 0
+func (r *RobotInfo) GetChatIdAndMsgIdAndUserID() (string, string, string) {
+	chatId := ""
+	msgId := ""
 	userId := ""
 	
 	switch r.Robot.(type) {
 	case *TelegramRobot:
 		telegramRobot := r.Robot.(*TelegramRobot)
 		if telegramRobot.Update.Message != nil {
-			chatId = telegramRobot.Update.Message.Chat.ID
+			chatId = strconv.FormatInt(telegramRobot.Update.Message.Chat.ID, 10)
 			userId = strconv.FormatInt(telegramRobot.Update.Message.From.ID, 10)
-			msgId = telegramRobot.Update.Message.MessageID
+			msgId = strconv.Itoa(telegramRobot.Update.Message.MessageID)
 		}
 		if telegramRobot.Update.CallbackQuery != nil {
-			chatId = telegramRobot.Update.CallbackQuery.Message.Chat.ID
+			chatId = strconv.FormatInt(telegramRobot.Update.CallbackQuery.Message.Chat.ID, 10)
 			userId = strconv.FormatInt(telegramRobot.Update.CallbackQuery.From.ID, 10)
-			msgId = telegramRobot.Update.CallbackQuery.Message.MessageID
+			msgId = strconv.Itoa(telegramRobot.Update.CallbackQuery.Message.MessageID)
 		}
 	case *DiscordRobot:
 		discordRobot := r.Robot.(*DiscordRobot)
 		if discordRobot.Msg != nil {
-			chatId, _ = strconv.ParseInt(discordRobot.Msg.ChannelID, 10, 64)
+			chatId = discordRobot.Msg.ChannelID
 			userId = discordRobot.Msg.Author.ID
-			msgId = utils.ParseInt(discordRobot.Msg.Message.ID)
+			msgId = discordRobot.Msg.Message.ID
 		}
 		if discordRobot.Inter != nil {
-			chatId, _ = strconv.ParseInt(discordRobot.Inter.ChannelID, 10, 64)
+			chatId = discordRobot.Inter.ChannelID
 			if discordRobot.Inter.User != nil {
 				userId = discordRobot.Inter.User.ID
 			}
@@ -88,15 +119,22 @@ func (r *RobotInfo) GetChatIdAndMsgIdAndUserID() (int64, int, string) {
 	case *SlackRobot:
 		slackRobot := r.Robot.(*SlackRobot)
 		if slackRobot != nil {
-			chatId, _ = strconv.ParseInt(slackRobot.Event.Channel, 10, 64)
+			chatId = slackRobot.Event.Channel
 			userId = slackRobot.Event.User
-			msgId, _ = strconv.Atoi(slackRobot.Event.ClientMsgID)
+			msgId = slackRobot.Event.ClientMsgID
+		}
+	case *LarkRobot:
+		lark := r.Robot.(*LarkRobot)
+		if lark.Message != nil {
+			msgId = larkcore.StringValue(lark.Message.Event.Message.MessageId)
+			chatId = larkcore.StringValue(lark.Message.Event.Message.ChatId)
+			userId = larkcore.StringValue(lark.Message.Event.Sender.SenderId.UserId)
 		}
 	case *Web:
 		web := r.Robot.(*Web)
 		if web != nil {
-			chatId = web.UserId
-			msgId = int(web.UserId)
+			chatId = web.RealUserId
+			msgId = web.RealUserId
 			userId = web.RealUserId
 		}
 	}
@@ -104,21 +142,21 @@ func (r *RobotInfo) GetChatIdAndMsgIdAndUserID() (int64, int, string) {
 	return chatId, msgId, userId
 }
 
-func (r *RobotInfo) SendMsg(chatId int64, msgContent string, replyToMessageID int,
-	mode string, inlineKeyboard *tgbotapi.InlineKeyboardMarkup) int {
+func (r *RobotInfo) SendMsg(chatId string, msgContent string, replyToMessageID string,
+	mode string, inlineKeyboard *tgbotapi.InlineKeyboardMarkup) string {
 	switch r.Robot.(type) {
 	case *TelegramRobot:
 		telegramRobot := r.Robot.(*TelegramRobot)
-		msg := tgbotapi.NewMessage(chatId, msgContent)
+		msg := tgbotapi.NewMessage(int64(utils.ParseInt(chatId)), msgContent)
 		msg.ParseMode = mode
 		msg.ReplyMarkup = inlineKeyboard
-		msg.ReplyToMessageID = replyToMessageID
+		msg.ReplyToMessageID = utils.ParseInt(replyToMessageID)
 		msgInfo, err := telegramRobot.Bot.Send(msg)
 		if err != nil {
 			logger.Warn("send clear message fail", "err", err)
-			return 0
+			return ""
 		}
-		return msgInfo.MessageID
+		return utils.ValueToString(msgInfo.MessageID)
 	case *DiscordRobot:
 		discordRobot := r.Robot.(*DiscordRobot)
 		if discordRobot.Msg != nil {
@@ -128,9 +166,9 @@ func (r *RobotInfo) SendMsg(chatId int64, msgContent string, replyToMessageID in
 			
 			// 设置引用消息
 			chatIdStr := fmt.Sprintf("%d", chatId)
-			if replyToMessageID != 0 {
+			if replyToMessageID != "" {
 				messageSend.Reference = &discordgo.MessageReference{
-					MessageID: strconv.Itoa(replyToMessageID),
+					MessageID: replyToMessageID,
 					ChannelID: chatIdStr,
 				}
 			}
@@ -138,9 +176,9 @@ func (r *RobotInfo) SendMsg(chatId int64, msgContent string, replyToMessageID in
 			sentMsg, err := discordRobot.Session.ChannelMessageSendComplex(chatIdStr, messageSend)
 			if err != nil {
 				logger.Warn("send discord message fail", "err", err)
-				return 0
+				return ""
 			}
-			return utils.ParseInt(sentMsg.ID)
+			return sentMsg.ID
 		}
 		
 		if discordRobot.Inter != nil {
@@ -161,17 +199,54 @@ func (r *RobotInfo) SendMsg(chatId int64, msgContent string, replyToMessageID in
 			if err != nil {
 				logger.Warn("send discord interaction response fail", "err", err)
 			}
-			return 0
+			return ""
 		}
 	
 	case *SlackRobot:
 		slackRobot := r.Robot.(*SlackRobot)
-		_, timestamp, err := slackRobot.Client.PostMessage(strconv.FormatInt(chatId, 10), slack.MsgOptionText(msgContent, false))
+		_, timestamp, err := slackRobot.Client.PostMessage(chatId, slack.MsgOptionText(msgContent, false))
 		if err != nil {
 			logger.Warn("send message fail", "err", err)
 		}
 		
-		return utils.ParseInt(timestamp)
+		return timestamp
+	case *LarkRobot:
+		lark := r.Robot.(*LarkRobot)
+		content := larkim.NewTextMsgBuilder().
+			Text(msgContent).
+			Build()
+		
+		if replyToMessageID != "" {
+			resp, err := lark.Client.Im.Message.Reply(lark.Ctx, larkim.NewReplyMessageReqBuilder().
+				MessageId(replyToMessageID).
+				Body(larkim.NewReplyMessageReqBodyBuilder().
+					MsgType(larkim.MsgTypeText).
+					Content(content).
+					Build()).
+				Build())
+			if err != nil {
+				logger.Warn("send message fail", "err", err)
+				return ""
+			}
+			
+			return *resp.Data.MessageId
+		} else {
+			resp, err := lark.Client.Im.Message.Create(lark.Ctx, larkim.NewCreateMessageReqBuilder().
+				ReceiveIdType(larkim.ReceiveIdTypeChatId).
+				Body(larkim.NewCreateMessageReqBodyBuilder().
+					MsgType(larkim.MsgTypeText).
+					ReceiveId(chatId).
+					Content(content).
+					Build()).
+				Build())
+			if err != nil {
+				logger.Warn("send message fail", "err", err)
+				return ""
+			}
+			
+			return *resp.Data.MessageId
+		}
+	
 	case *Web:
 		web := r.Robot.(*Web)
 		_, err := web.W.Write([]byte(msgContent))
@@ -181,7 +256,7 @@ func (r *RobotInfo) SendMsg(chatId int64, msgContent string, replyToMessageID in
 		web.Flusher.Flush()
 	}
 	
-	return 0
+	return ""
 }
 
 func WithRobot(robot Robot) func(*RobotInfo) {
@@ -202,6 +277,12 @@ func StartRobot() {
 			StartDiscordRobot()
 		}()
 	}
+	
+	if *conf.BaseConfInfo.LarkAPPID != "" && *conf.BaseConfInfo.LarkAppSecret != "" {
+		go func() {
+			StartLarkRobot()
+		}()
+	}
 }
 
 // checkUserAllow check use can use telegram bot or not
@@ -217,12 +298,12 @@ func (r *RobotInfo) checkUserAllow(userId string) bool {
 	return ok
 }
 
-func (r *RobotInfo) checkGroupAllow(chatId int64) bool {
+func (r *RobotInfo) checkGroupAllow(chatId string) bool {
 	
 	if len(conf.BaseConfInfo.AllowedGroupIds) == 0 {
 		return true
 	}
-	if conf.BaseConfInfo.AllowedGroupIds[0] {
+	if conf.BaseConfInfo.AllowedGroupIds["0"] {
 		return false
 	}
 	if _, ok := conf.BaseConfInfo.AllowedGroupIds[chatId]; ok {
@@ -233,7 +314,7 @@ func (r *RobotInfo) checkGroupAllow(chatId int64) bool {
 }
 
 // checkUserTokenExceed check use token exceeded
-func (r *RobotInfo) checkUserTokenExceed(chatId int64, msgId int, userId string) bool {
+func (r *RobotInfo) checkUserTokenExceed(chatId string, msgId string, userId string) bool {
 	if *conf.BaseConfInfo.TokenPerUser == 0 {
 		return false
 	}
@@ -382,4 +463,17 @@ func (r *RobotInfo) handleModeUpdate(mode string) {
 	
 	totalContent := i18n.GetMessage(*conf.BaseConfInfo.Lang, "mode_choose", nil) + mode
 	r.SendMsg(chatId, totalContent, msgId, "", nil)
+}
+
+// ParseCommand extracts command and arguments like /photo xxx
+func ParseCommand(prompt string) (command string, args string) {
+	if len(prompt) == 0 || prompt[0] != '/' {
+		return "", prompt
+	}
+	parts := strings.SplitN(prompt, " ", 2)
+	command = parts[0]
+	if len(parts) > 1 {
+		args = parts[1]
+	}
+	return command, args
 }

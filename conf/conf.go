@@ -17,6 +17,8 @@ type BaseConf struct {
 	TelegramBotToken *string `json:"telegram_bot_token"`
 	DiscordBotToken  *string `json:"discord_bot_token"`
 	SlackBotToken    *string `json:"slack_bot_token"`
+	LarkAPPID        *string `json:"lark_app_id"`
+	LarkAppSecret    *string `json:"lark_app_secret"`
 	
 	DeepseekToken   *string `json:"deepseek_token"`
 	OpenAIToken     *string `json:"openai_token"`
@@ -47,7 +49,7 @@ type BaseConf struct {
 	CaFile  *string `json:"ca_file"`
 	
 	AllowedUserIds  map[string]bool `json:"allowed_user_ids"`
-	AllowedGroupIds map[int64]bool  `json:"allowed_group_ids"`
+	AllowedGroupIds map[string]bool `json:"allowed_group_ids"`
 	AdminUserIds    map[string]bool `json:"admin_user_ids"`
 	
 	Bot *tgbotapi.BotAPI `json:"bot"`
@@ -62,6 +64,8 @@ func InitConf() {
 	BaseConfInfo.TelegramBotToken = flag.String("telegram_bot_token", "", "Telegram bot tokens")
 	BaseConfInfo.DiscordBotToken = flag.String("discord_bot_token", "", "Discord bot tokens")
 	BaseConfInfo.SlackBotToken = flag.String("slack_bot_token", "", "Slack bot tokens")
+	BaseConfInfo.LarkAPPID = flag.String("lark_app_id", "", "Lark app id")
+	BaseConfInfo.LarkAppSecret = flag.String("lark_app_secret", "", "Lark app secret")
 	
 	BaseConfInfo.DeepseekToken = flag.String("deepseek_token", "", "deepseek auth token")
 	BaseConfInfo.OpenAIToken = flag.String("openai_token", "", "openai auth token")
@@ -96,7 +100,7 @@ func InitConf() {
 	allowedGroupIds := flag.String("allowed_group_ids", "", "allowed group ids")
 	
 	BaseConfInfo.AllowedUserIds = make(map[string]bool)
-	BaseConfInfo.AllowedGroupIds = make(map[int64]bool)
+	BaseConfInfo.AllowedGroupIds = make(map[string]bool)
 	BaseConfInfo.AdminUserIds = make(map[string]bool)
 	
 	InitDeepseekConf()
@@ -117,6 +121,14 @@ func InitConf() {
 	
 	if os.Getenv("SLACK_BOT_TOKEN") != "" {
 		*BaseConfInfo.SlackBotToken = os.Getenv("SLACK_BOT_TOKEN")
+	}
+	
+	if os.Getenv("LARK_APP_ID") != "" {
+		*BaseConfInfo.LarkAPPID = os.Getenv("LARK_APP_ID")
+	}
+	
+	if os.Getenv("LARK_APP_SECRET") != "" {
+		*BaseConfInfo.LarkAppSecret = os.Getenv("LARK_APP_SECRET")
 	}
 	
 	if os.Getenv("DEEPSEEK_TOKEN") != "" {
@@ -239,12 +251,7 @@ func InitConf() {
 	}
 	
 	for _, groupIdStr := range strings.Split(*allowedGroupIds, ",") {
-		groupId, err := strconv.Atoi(groupIdStr)
-		if err != nil {
-			logger.Warn("AllowedTelegramGroupIds parse error", "groupId", groupIdStr)
-			continue
-		}
-		BaseConfInfo.AllowedGroupIds[int64(groupId)] = true
+		BaseConfInfo.AllowedGroupIds[groupIdStr] = true
 	}
 	
 	for _, userIdStr := range strings.Split(*adminUserIds, ",") {
@@ -257,6 +264,8 @@ func InitConf() {
 	logger.Info("CONF", "TelegramBotToken", *BaseConfInfo.TelegramBotToken)
 	logger.Info("CONF", "DiscordBotToken", *BaseConfInfo.DiscordBotToken)
 	logger.Info("CONF", "SlackBotToken", *BaseConfInfo.SlackBotToken)
+	logger.Info("CONF", "LarkAPPID", *BaseConfInfo.LarkAPPID)
+	logger.Info("CONF", "LarkAppSecret", *BaseConfInfo.LarkAppSecret)
 	logger.Info("CONF", "DeepseekToken", *BaseConfInfo.DeepseekToken)
 	logger.Info("CONF", "CustomUrl", *BaseConfInfo.CustomUrl)
 	logger.Info("CONF", "Type", *BaseConfInfo.Type)

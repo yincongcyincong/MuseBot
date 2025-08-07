@@ -257,7 +257,9 @@ func (t *TelegramRobot) handleUpdate(messageChan chan *param.MsgInfo) {
 	
 	var msg *param.MsgInfo
 	
-	chatId, msgId, _ := t.Robot.GetChatIdAndMsgIdAndUserID()
+	chatIdStr, msgIdStr, _ := t.Robot.GetChatIdAndMsgIdAndUserID()
+	msgId := utils.ParseInt(msgIdStr)
+	chatId := int64(utils.ParseInt(chatIdStr))
 	parseMode := tgbotapi.ModeMarkdown
 	
 	tgMsgInfo := tgbotapi.NewMessage(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "thinking", nil))
@@ -269,7 +271,7 @@ func (t *TelegramRobot) handleUpdate(messageChan chan *param.MsgInfo) {
 	
 	for msg = range messageChan {
 		if len(msg.Content) == 0 {
-			msg.Content = "get nothing from deepseek!"
+			msg.Content = "get nothing from llm!"
 		}
 		if firstSendInfo.MessageID != 0 {
 			msg.MsgId = firstSendInfo.MessageID
@@ -453,7 +455,7 @@ func (t *TelegramRobot) sendChatMessage() {
 	t.Update.Message.Text = content
 	
 	if len(content) == 0 {
-		err := utils.ForceReply(chatId, msgID, "chat_empty_content", t.Bot)
+		err := utils.ForceReply(int64(utils.ParseInt(chatId)), utils.ParseInt(msgID), "chat_empty_content", t.Bot)
 		if err != nil {
 			logger.Warn("force reply fail", "err", err)
 		}
@@ -744,7 +746,7 @@ func (t *TelegramRobot) sendMultiAgent(agentType string) {
 		prompt = utils.ReplaceCommand(prompt, "/mcp", t.Bot.Self.UserName)
 		prompt = utils.ReplaceCommand(prompt, "/task", t.Bot.Self.UserName)
 		if len(prompt) == 0 {
-			err := utils.ForceReply(chatId, replyToMessageID, agentType, t.Bot)
+			err := utils.ForceReply(int64(utils.ParseInt(chatId)), utils.ParseInt(replyToMessageID), agentType, t.Bot)
 			if err != nil {
 				logger.Warn("force reply fail", "err", err)
 			}
@@ -810,7 +812,7 @@ func (t *TelegramRobot) sendVideo() {
 		
 		prompt = utils.ReplaceCommand(prompt, "/video", t.Bot.Self.UserName)
 		if len(prompt) == 0 {
-			err := utils.ForceReply(chatId, replyToMessageID, "video_empty_content", t.Bot)
+			err := utils.ForceReply(int64(utils.ParseInt(chatId)), utils.ParseInt(replyToMessageID), "video_empty_content", t.Bot)
 			if err != nil {
 				logger.Warn("force reply fail", "err", err)
 			}
@@ -851,8 +853,8 @@ func (t *TelegramRobot) sendVideo() {
 		
 		edit := tgbotapi.EditMessageMediaConfig{
 			BaseEdit: tgbotapi.BaseEdit{
-				ChatID:    chatId,
-				MessageID: thinkingMsgId,
+				ChatID:    int64(utils.ParseInt(chatId)),
+				MessageID: utils.ParseInt(thinkingMsgId),
 			},
 			Media: video,
 		}
@@ -902,7 +904,7 @@ func (t *TelegramRobot) sendImg() {
 		}
 		
 		if len(prompt) == 0 {
-			err := utils.ForceReply(chatId, replyToMessageID, "photo_empty_content", t.Bot)
+			err := utils.ForceReply(int64(utils.ParseInt(chatId)), utils.ParseInt(replyToMessageID), "photo_empty_content", t.Bot)
 			if err != nil {
 				logger.Warn("force reply fail", "err", err)
 			}
@@ -974,8 +976,8 @@ func (t *TelegramRobot) sendImg() {
 		
 		edit := tgbotapi.EditMessageMediaConfig{
 			BaseEdit: tgbotapi.BaseEdit{
-				ChatID:    chatId,
-				MessageID: thinkingMsgId,
+				ChatID:    int64(utils.ParseInt(chatId)),
+				MessageID: utils.ParseInt(thinkingMsgId),
 			},
 			Media: photo,
 		}

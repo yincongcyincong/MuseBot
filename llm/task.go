@@ -25,8 +25,8 @@ type LLMTaskReq struct {
 	Token       int
 	
 	UserId string
-	ChatId int64
-	MsgId  int
+	ChatId string
+	MsgId  string
 }
 
 type Task struct {
