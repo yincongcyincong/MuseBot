@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"strings"
 	
-	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
-	"github.com/yincongcyincong/telegram-deepseek-bot/robot"
+	"github.com/yincongcyincong/MuseBot/logger"
+	"github.com/yincongcyincong/MuseBot/robot"
 )
 
 // Communicate handles the Server-Sent Events

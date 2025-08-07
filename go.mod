@@ -1,4 +1,4 @@
-module github.com/yincongcyincong/telegram-deepseek-bot
+module github.com/yincongcyincong/MuseBot
 
 go 1.24.0
 
@@ -76,7 +76,6 @@ require (
 	github.com/go-openapi/strfmt v0.21.3 // indirect
 	github.com/go-openapi/swag v0.22.4 // indirect
 	github.com/go-openapi/validate v0.21.0 // indirect
-	github.com/go-playground/validator/v10 v10.22.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/generative-ai-go v0.19.0 // indirect

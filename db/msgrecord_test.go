@@ -7,7 +7,7 @@ import (
 	"testing"
 	
 	"github.com/stretchr/testify/assert"
-	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
+	"github.com/yincongcyincong/MuseBot/conf"
 )
 
 func TestMain(m *testing.M) {

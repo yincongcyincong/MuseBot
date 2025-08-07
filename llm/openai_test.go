@@ -8,8 +8,8 @@ import (
 	
 	"github.com/sashabaranov/go-openai"
 	"github.com/stretchr/testify/assert"
-	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
-	"github.com/yincongcyincong/telegram-deepseek-bot/param"
+	"github.com/yincongcyincong/MuseBot/conf"
+	"github.com/yincongcyincong/MuseBot/param"
 )
 
 func TestOpenAISend(t *testing.T) {

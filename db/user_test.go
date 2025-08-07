@@ -4,7 +4,7 @@ import (
 	"testing"
 	
 	_ "github.com/mattn/go-sqlite3"
-	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
+	"github.com/yincongcyincong/MuseBot/conf"
 )
 
 func TestInsertAndGetUser(t *testing.T) {

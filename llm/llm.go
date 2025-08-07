@@ -9,10 +9,10 @@ import (
 	"github.com/revrost/go-openrouter"
 	"github.com/sashabaranov/go-openai"
 	"github.com/volcengine/volcengine-go-sdk/service/arkruntime/model"
-	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
-	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
-	"github.com/yincongcyincong/telegram-deepseek-bot/param"
-	"github.com/yincongcyincong/telegram-deepseek-bot/utils"
+	"github.com/yincongcyincong/MuseBot/conf"
+	"github.com/yincongcyincong/MuseBot/logger"
+	"github.com/yincongcyincong/MuseBot/param"
+	"github.com/yincongcyincong/MuseBot/utils"
 	"google.golang.org/genai"
 )
 

@@ -9,10 +9,10 @@ import (
 	"time"
 	
 	"github.com/cohesion-org/deepseek-go"
-	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
-	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
-	"github.com/yincongcyincong/telegram-deepseek-bot/metrics"
-	"github.com/yincongcyincong/telegram-deepseek-bot/param"
+	"github.com/yincongcyincong/MuseBot/conf"
+	"github.com/yincongcyincong/MuseBot/logger"
+	"github.com/yincongcyincong/MuseBot/metrics"
+	"github.com/yincongcyincong/MuseBot/param"
 )
 
 const MaxQAPair = 10

@@ -9,7 +9,7 @@ import (
 	"github.com/weaviate/weaviate-go-client/v4/weaviate"
 	"github.com/yincongcyincong/langchaingo/embeddings"
 	"github.com/yincongcyincong/langchaingo/vectorstores"
-	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
+	"github.com/yincongcyincong/MuseBot/logger"
 )
 
 type RagConf struct {

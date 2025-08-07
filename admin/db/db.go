@@ -8,8 +8,8 @@ import (
 	
 	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/mattn/go-sqlite3"
-	"github.com/yincongcyincong/telegram-deepseek-bot/admin/conf"
-	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
+	"github.com/yincongcyincong/MuseBot/admin/conf"
+	"github.com/yincongcyincong/MuseBot/logger"
 )
 
 const (

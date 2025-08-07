@@ -76,15 +76,15 @@ Start telegram-deepseek-bot in this way:
 ./telegram-deepseek-bot \
 -telegram_bot_token=xxx \
 -deepseek_token=sk-xxx \
--crt_file=/Users/yincong/go/src/github.com/yincongcyincong/telegram-deepseek-bot/admin/shell/certs/server.crt
--ca_file=/Users/yincong/go/src/github.com/yincongcyincong/telegram-deepseek-bot/admin/shell/certs/ca.crt
--key_file=/Users/yincong/go/src/github.com/yincongcyincong/telegram-deepseek-bot/admin/shell/certs/server.key
+-crt_file=/Users/yincong/go/src/github.com/yincongcyincong/MuseBot/admin/shell/certs/server.crt
+-ca_file=/Users/yincong/go/src/github.com/yincongcyincong/MuseBot/admin/shell/certs/ca.crt
+-key_file=/Users/yincong/go/src/github.com/yincongcyincong/MuseBot/admin/shell/certs/server.key
 ```
 
 add configurations in admin page:
 ![image](https://github.com/user-attachments/assets/2a518841-abf6-4a31-b1b3-b26b258a5fab)
 
-can use this [file](https://github.com/yincongcyincong/telegram-deepseek-bot/blob/main/admin/shell/generate_cert.sh) to
+can use this [file](https://github.com/yincongcyincong/MuseBot/blob/main/admin/shell/generate_cert.sh) to
 generate ca, key and crt.
 
 #### Bot Start Parameter

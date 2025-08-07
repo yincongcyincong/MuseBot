@@ -5,7 +5,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	
-	"github.com/yincongcyincong/telegram-deepseek-bot/param"
+	"github.com/yincongcyincong/MuseBot/param"
 )
 
 type Response struct {

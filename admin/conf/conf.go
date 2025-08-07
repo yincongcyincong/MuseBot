@@ -4,7 +4,7 @@ import (
 	"flag"
 	"os"
 	
-	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
+	"github.com/yincongcyincong/MuseBot/logger"
 )
 
 type BaseConfig struct {

@@ -21,9 +21,9 @@ import (
 	
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/volcengine/volc-sdk-golang/service/visual"
-	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
-	"github.com/yincongcyincong/telegram-deepseek-bot/i18n"
-	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
+	"github.com/yincongcyincong/MuseBot/conf"
+	"github.com/yincongcyincong/MuseBot/i18n"
+	"github.com/yincongcyincong/MuseBot/logger"
 )
 
 // Utf16len calculates the length of a string in UTF-16 code units.

@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"time"
 	
-	"github.com/yincongcyincong/telegram-deepseek-bot/admin/db"
-	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
+	"github.com/yincongcyincong/MuseBot/admin/db"
+	"github.com/yincongcyincong/MuseBot/logger"
 )
 
 func GetCrtClient(bot *db.Bot) *http.Client {

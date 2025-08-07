@@ -13,7 +13,7 @@ import (
 	"github.com/volcengine/volcengine-go-sdk/service/arkruntime/model"
 	"github.com/yincongcyincong/mcp-client-go/clients"
 	"github.com/yincongcyincong/mcp-client-go/utils"
-	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
+	"github.com/yincongcyincong/MuseBot/logger"
 	"google.golang.org/genai"
 )
 

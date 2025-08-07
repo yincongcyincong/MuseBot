@@ -9,13 +9,13 @@ import (
 	"github.com/slack-go/slack"
 	"github.com/yincongcyincong/langchaingo/chains"
 	"github.com/yincongcyincong/langchaingo/vectorstores"
-	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
-	"github.com/yincongcyincong/telegram-deepseek-bot/i18n"
-	"github.com/yincongcyincong/telegram-deepseek-bot/llm"
-	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
-	"github.com/yincongcyincong/telegram-deepseek-bot/param"
-	"github.com/yincongcyincong/telegram-deepseek-bot/rag"
-	"github.com/yincongcyincong/telegram-deepseek-bot/utils"
+	"github.com/yincongcyincong/MuseBot/conf"
+	"github.com/yincongcyincong/MuseBot/i18n"
+	"github.com/yincongcyincong/MuseBot/llm"
+	"github.com/yincongcyincong/MuseBot/logger"
+	"github.com/yincongcyincong/MuseBot/param"
+	"github.com/yincongcyincong/MuseBot/rag"
+	"github.com/yincongcyincong/MuseBot/utils"
 )
 
 type SlackRobot struct {

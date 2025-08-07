@@ -7,11 +7,11 @@ import (
 	"strconv"
 	"strings"
 	
-	"github.com/yincongcyincong/telegram-deepseek-bot/admin/db"
-	adminUtils "github.com/yincongcyincong/telegram-deepseek-bot/admin/utils"
-	"github.com/yincongcyincong/telegram-deepseek-bot/logger"
-	"github.com/yincongcyincong/telegram-deepseek-bot/param"
-	"github.com/yincongcyincong/telegram-deepseek-bot/utils"
+	"github.com/yincongcyincong/MuseBot/admin/db"
+	adminUtils "github.com/yincongcyincong/MuseBot/admin/utils"
+	"github.com/yincongcyincong/MuseBot/logger"
+	"github.com/yincongcyincong/MuseBot/param"
+	"github.com/yincongcyincong/MuseBot/utils"
 )
 
 type User struct {

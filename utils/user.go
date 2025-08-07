@@ -3,7 +3,7 @@ package utils
 import (
 	"sync"
 	
-	"github.com/yincongcyincong/telegram-deepseek-bot/conf"
+	"github.com/yincongcyincong/MuseBot/conf"
 )
 
 var (
