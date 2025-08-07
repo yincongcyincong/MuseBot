@@ -345,7 +345,7 @@ Content-Type: application/octet-stream
 
 * **Note**:
 
-    * Special fields (e.g., `allowed_telegram_user_ids`, `admin_user_ids`) are processed specially.
+    * Special fields (e.g., `allowed_user_ids`, `admin_user_ids`) are processed specially.
     * Unsupported types return parameter error.
 
 ---

@@ -7,7 +7,7 @@
 你可以使用以下命令启动 Discord 模式：
 
 ```bash
-./telegram-deepseek-bot-darwin-amd64 \
+./MuseBot-darwin-amd64 \
 -discord_bot_token=xxx \
 -deepseek_token=sk-xxx \
 -volc_ak=xxx \
@@ -22,7 +22,7 @@
 * `volc_ak` / `volc_sk`：用于生成图片和视频的火山引擎 Access Key 和 Secret Key（使用 `/photo` 和 `/video` 命令时必填）
 * `vol_token`：火山引擎视频功能使用的 Token
 
-其他参数请使用首页[readme](https://github.com/yincongcyincong/telegram-deepseek-bot)
+其他参数请使用首页[readme](https://github.com/yincongcyincong/MuseBot)
 
 ## 💬 使用方式
 

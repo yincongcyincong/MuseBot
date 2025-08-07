@@ -66,10 +66,10 @@
 
 在此页面配置和添加新的 Telegram 机器人。为增强安全性，**强烈建议使用 HTTP 双向认证**。
 
-通过以下方式启动 telegram-deepseek-bot：
+通过以下方式启动 MuseBot：
 
 ```
-./telegram-deepseek-bot \
+./MuseBot \
 -telegram_bot_token=xxx \
 -deepseek_token=sk-xxx \
 -crt_file=/Users/yincong/go/src/github.com/yincongcyincong/MuseBot/admin/shell/certs/server.crt

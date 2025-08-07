@@ -11,7 +11,7 @@ RUN go mod download
 COPY . .
 
 # Build the application
-RUN go build -ldflags="-s -w" -o telegram-deepseek-bot main.go
+RUN go build -ldflags="-s -w" -o MuseBot main.go
 
 # Runtime stage
 FROM debian:stable-slim
@@ -27,7 +27,7 @@ WORKDIR /app
 RUN mkdir -p ./conf/i18n ./conf/mcp
 
 # Copy only necessary files from builder
-COPY --from=builder /app/telegram-deepseek-bot .
+COPY --from=builder /app/MuseBot .
 COPY --from=builder /app/conf/i18n/ ./conf/i18n/
 COPY --from=builder /app/conf/mcp/ ./conf/mcp/
 
@@ -37,4 +37,4 @@ RUN useradd -m appuser && \
 USER appuser
 
 # Runtime command
-ENTRYPOINT ["./telegram-deepseek-bot"]
+ENTRYPOINT ["./MuseBot"]

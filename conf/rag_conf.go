@@ -7,9 +7,9 @@ import (
 	
 	"github.com/milvus-io/milvus-sdk-go/v2/client"
 	"github.com/weaviate/weaviate-go-client/v4/weaviate"
+	"github.com/yincongcyincong/MuseBot/logger"
 	"github.com/yincongcyincong/langchaingo/embeddings"
 	"github.com/yincongcyincong/langchaingo/vectorstores"
-	"github.com/yincongcyincong/MuseBot/logger"
 )
 
 type RagConf struct {
@@ -48,7 +48,7 @@ func InitRagConf() {
 	RagConfInfo.MilvusURL = flag.String("milvus_url", "http://localhost:19530", "milvus url")
 	RagConfInfo.WeaviateURL = flag.String("weaviate_url", "localhost:8000", "weaviate url localhost:8000")
 	RagConfInfo.WeaviateScheme = flag.String("weaviate_scheme", "http", "weaviate scheme: http")
-	RagConfInfo.Space = flag.String("space", "telegramDeepseekBot", "chroma space")
+	RagConfInfo.Space = flag.String("space", "MuseBot", "chroma space")
 	
 	RagConfInfo.ChunkSize = flag.Int("chunk_size", 500, "rag file chunk size")
 	RagConfInfo.ChunkOverlap = flag.Int("chunk_overlap", 50, "rag file chunk overlap")

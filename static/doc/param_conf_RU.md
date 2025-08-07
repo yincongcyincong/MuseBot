@@ -1,17 +1,17 @@
-# Руководство по параметрам `telegram-deepseek-bot`
+# Руководство по параметрам `MuseBot`
 
-В этом документе подробно описаны различные параметры конфигурации для запуска `telegram-deepseek-bot`, что позволяет гибко развертывать и использовать бота в соответствии с вашими потребностями.
+В этом документе подробно описаны различные параметры конфигурации для запуска `MuseBot`, что позволяет гибко развертывать и использовать бота в соответствии с вашими потребностями.
 
 ## Параметры конфигурации (`conf param`)
 
-`telegram-deepseek-bot` настраивается через параметры командной строки. Ниже приведены примеры использования параметров для различных сценариев:
+`MuseBot` настраивается через параметры командной строки. Ниже приведены примеры использования параметров для различных сценариев:
 
 ### 1. Базовая конфигурация (`basic`)
 
 Минимально необходимые параметры для подключения бота к Telegram и API DeepSeek.
 
 ```bash
-./telegram-deepseek-bot \
+./MuseBot \
 -telegram_bot_token=xxxx \
 -deepseek_token=sk-xxx
 ```
@@ -24,7 +24,7 @@
 Для сохранения истории чатов и данных пользователей можно использовать базу данных MySQL.
 
 ```bash
-./telegram-deepseek-bot \
+./MuseBot \
 -telegram_bot_token=xxxx \
 -deepseek_token=sk-xxx \
 -db_type=mysql \
@@ -39,7 +39,7 @@
 Используйте, если требуется доступ к API Telegram/DeepSeek через прокси.
 
 ```bash
-./telegram-deepseek-bot \
+./MuseBot \
 -telegram_bot_token=xxxx \
 -deepseek_token=sk-xxx \
 -telegram_proxy=http://127.0.0.1:7890 \
@@ -54,7 +54,7 @@
 Бот поддерживает работу с моделями OpenAI.
 
 ```bash
-./telegram-deepseek-bot \
+./MuseBot \
 -telegram_bot_token=xxxx \
 -type=openai \
 -openai_token=sk-xxxx
@@ -68,7 +68,7 @@
 Бот поддерживает работу с моделями Google Gemini.
 
 ```bash
-./telegram-deepseek-bot \
+./MuseBot \
 -telegram_bot_token=xxxx \
 -type=gemini \
 -gemini_token=xxxxx
@@ -82,7 +82,7 @@
 Интеграция с платформой OpenRouter для доступа к различным моделям.
 
 ```bash
-./telegram-deepseek-bot \
+./MuseBot \
 -telegram_bot_token=xxxx \
 -type=openrouter \
 -openrouter_token=sk-or-v1-xxxx
@@ -96,7 +96,7 @@
 Для интеграции с сервисом распознавания изображений VolcEngine.
 
 ```bash
-./telegram-deepseek-bot \
+./MuseBot \
 -telegram_bot_token=xxxx \
 -deepseek_token=sk-xxx \
 -volc_ak=xxx \
@@ -113,7 +113,7 @@
 Для интеграции с сервисом распознавания речи VolcEngine.
 
 ```bash
-./telegram-deepseek-bot \
+./MuseBot \
 -telegram_bot_token=xxxx \
 -deepseek_token=sk-xxx \
 -audio_app_id=xxx \
@@ -132,7 +132,7 @@
 Для использования инструментов Amap (например, геолокации).
 
 ```bash
-./telegram-deepseek-bot \
+./MuseBot \
 -telegram_bot_token=xxxx \
 -deepseek_token=sk-xxx \
 -use_tools=true
@@ -145,7 +145,7 @@
 Для использования RAG с ChromaDB и сервисом эмбеддингов OpenAI.
 
 ```bash
-./telegram-deepseek-bot \
+./MuseBot \
 -telegram_bot_token=xxxx \
 -deepseek_token=sk-xxx \
 -openai_token=sk-xxxx \
@@ -162,7 +162,7 @@
 Для использования RAG с Milvus и сервисом эмбеддингов Gemini.
 
 ```bash
-./telegram-deepseek-bot \
+./MuseBot \
 -telegram_bot_token=xxxx \
 -deepseek_token=sk-xxx \
 -gemini_token=xxx \
@@ -179,7 +179,7 @@
 Для использования RAG с Weaviate и сервисом эмбеддингов Ernie.
 
 ```bash
-./telegram-deepseek-bot \
+./MuseBot \
 -telegram_bot_token=xxxx \
 -deepseek_token=sk-xxx \
 -ernie_ak=xxx \

@@ -1,7 +1,7 @@
 # Golang Makefile Example
 
 # Project name and binary file name
-APP_NAME := telegram-deepseek-bot
+APP_NAME := MuseBot
 VERSION := 0.0.14
 BUILD_DIR := ./bin
 SRC := $(shell find . -name '*.go' -not -path "./vendor/*")

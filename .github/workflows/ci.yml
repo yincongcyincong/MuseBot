@@ -1,4 +1,4 @@
-name: Telegram-deepseek-bot CI/CD Pipeline
+name: MuseBot CI/CD Pipeline
 
 # 触发条件：在 push 和 pull request 时运行
 on:
@@ -52,6 +52,6 @@ jobs:
       - name: Build
         run: |
           mkdir -p ./bin
-          go build -o ./bin/telegram-deepseek-bot main.go
-          go build -o ./bin/telegram-deepseek-bot-admin ./admin
+          go build -o ./bin/MuseBot main.go
+          go build -o ./bin/MuseBot-admin ./admin
 

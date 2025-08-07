@@ -46,9 +46,9 @@ type BaseConf struct {
 	KeyFile *string `json:"key_file"`
 	CaFile  *string `json:"ca_file"`
 	
-	AllowedTelegramUserIds  map[string]bool `json:"allowed_telegram_user_ids"`
-	AllowedTelegramGroupIds map[int64]bool  `json:"allowed_telegram_group_ids"`
-	AdminUserIds            map[string]bool `json:"admin_user_ids"`
+	AllowedUserIds  map[string]bool `json:"allowed_user_ids"`
+	AllowedGroupIds map[int64]bool  `json:"allowed_group_ids"`
+	AdminUserIds    map[string]bool `json:"admin_user_ids"`
 	
 	Bot *tgbotapi.BotAPI `json:"bot"`
 }
@@ -92,11 +92,11 @@ func InitConf() {
 	BaseConfInfo.CaFile = flag.String("ca_file", "", "ca file")
 	
 	adminUserIds := flag.String("admin_user_ids", "", "admin user ids")
-	allowedUserIds := flag.String("allowed_telegram_user_ids", "", "allowed telegram user ids")
-	allowedGroupIds := flag.String("allowed_telegram_group_ids", "", "allowed telegram group ids")
+	allowedUserIds := flag.String("allowed_user_ids", "", "allowed user ids")
+	allowedGroupIds := flag.String("allowed_group_ids", "", "allowed group ids")
 	
-	BaseConfInfo.AllowedTelegramUserIds = make(map[string]bool)
-	BaseConfInfo.AllowedTelegramGroupIds = make(map[int64]bool)
+	BaseConfInfo.AllowedUserIds = make(map[string]bool)
+	BaseConfInfo.AllowedGroupIds = make(map[int64]bool)
 	BaseConfInfo.AdminUserIds = make(map[string]bool)
 	
 	InitDeepseekConf()
@@ -147,20 +147,20 @@ func InitConf() {
 		*BaseConfInfo.DBConf = os.Getenv("DB_CONF")
 	}
 	
-	if os.Getenv("ALLOWED_TELEGRAM_USER_IDS") != "" {
-		*allowedUserIds = os.Getenv("ALLOWED_TELEGRAM_USER_IDS")
+	if os.Getenv("ALLOWED_USER_IDS") != "" {
+		*allowedUserIds = os.Getenv("ALLOWED_USER_IDS")
 	}
 	
-	if os.Getenv("ALLOWED_TELEGRAM_GROUP_IDS") != "" {
-		*allowedGroupIds = os.Getenv("ALLOWED_TELEGRAM_GROUP_IDS")
+	if os.Getenv("ALLOWED_GROUP_IDS") != "" {
+		*allowedGroupIds = os.Getenv("ALLOWED_GROUP_IDS")
 	}
 	
-	if os.Getenv("DEEPSEEK_PROXY") != "" {
-		*BaseConfInfo.LLMProxy = os.Getenv("DEEPSEEK_PROXY")
+	if os.Getenv("LLM_PROXY") != "" {
+		*BaseConfInfo.LLMProxy = os.Getenv("LLM_PROXY")
 	}
 	
-	if os.Getenv("TELEGRAM_PROXY") != "" {
-		*BaseConfInfo.RobotProxy = os.Getenv("TELEGRAM_PROXY")
+	if os.Getenv("ROBOT_PROXY") != "" {
+		*BaseConfInfo.RobotProxy = os.Getenv("ROBOT_PROXY")
 	}
 	
 	if os.Getenv("LANG") != "" {
@@ -235,7 +235,7 @@ func InitConf() {
 		if userIdStr == "" {
 			continue
 		}
-		BaseConfInfo.AllowedTelegramUserIds[userIdStr] = true
+		BaseConfInfo.AllowedUserIds[userIdStr] = true
 	}
 	
 	for _, groupIdStr := range strings.Split(*allowedGroupIds, ",") {
@@ -244,7 +244,7 @@ func InitConf() {
 			logger.Warn("AllowedTelegramGroupIds parse error", "groupId", groupIdStr)
 			continue
 		}
-		BaseConfInfo.AllowedTelegramGroupIds[int64(groupId)] = true
+		BaseConfInfo.AllowedGroupIds[int64(groupId)] = true
 	}
 	
 	for _, userIdStr := range strings.Split(*adminUserIds, ",") {

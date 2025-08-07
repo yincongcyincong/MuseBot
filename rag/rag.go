@@ -31,7 +31,7 @@ import (
 )
 
 const (
-	weaviateIndexName = "TelegramDeepseekBot"
+	weaviateIndexName = "MuseBot"
 )
 
 type Rag struct {

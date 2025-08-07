@@ -13,7 +13,7 @@ import (
 
 var (
 	sessionStore *sessions.CookieStore
-	sessionName  = "telegram-deepseek-bot-session"
+	sessionName  = "MuseBot-session"
 )
 
 func InitSessionStore() {

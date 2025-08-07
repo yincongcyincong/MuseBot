@@ -206,26 +206,26 @@ func StartRobot() {
 
 // checkUserAllow check use can use telegram bot or not
 func (r *RobotInfo) checkUserAllow(userId string) bool {
-	if len(conf.BaseConfInfo.AllowedTelegramUserIds) == 0 {
+	if len(conf.BaseConfInfo.AllowedUserIds) == 0 {
 		return true
 	}
-	if conf.BaseConfInfo.AllowedTelegramUserIds["0"] {
+	if conf.BaseConfInfo.AllowedUserIds["0"] {
 		return false
 	}
 	
-	_, ok := conf.BaseConfInfo.AllowedTelegramUserIds[userId]
+	_, ok := conf.BaseConfInfo.AllowedUserIds[userId]
 	return ok
 }
 
 func (r *RobotInfo) checkGroupAllow(chatId int64) bool {
 	
-	if len(conf.BaseConfInfo.AllowedTelegramGroupIds) == 0 {
+	if len(conf.BaseConfInfo.AllowedGroupIds) == 0 {
 		return true
 	}
-	if conf.BaseConfInfo.AllowedTelegramGroupIds[0] {
+	if conf.BaseConfInfo.AllowedGroupIds[0] {
 		return false
 	}
-	if _, ok := conf.BaseConfInfo.AllowedTelegramGroupIds[chatId]; ok {
+	if _, ok := conf.BaseConfInfo.AllowedGroupIds[chatId]; ok {
 		return true
 	}
 	

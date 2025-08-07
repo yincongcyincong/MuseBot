@@ -350,7 +350,7 @@ Content-Type: application/octet-stream
 
 * **注意**：
 
-    * 对于特殊字段（如 `allowed_telegram_user_ids`、`admin_user_ids` 等）会做特殊格式转换。
+    * 对于特殊字段（如 `allowed_user_ids`、`admin_user_ids` 等）会做特殊格式转换。
     * 不支持的类型会返回参数错误。
 
 ---

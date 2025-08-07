@@ -35,21 +35,21 @@ compile_and_package() {
     [[ "$os" == "windows" ]] && ext=".exe"
 
     echo "=============================="
-    echo "Building telegram-deepseek-bot [$os/$arch] using xgo..."
+    echo "Building MuseBot [$os/$arch] using xgo..."
     echo "=============================="
 
     # Build the main bot binary
-    xgo -out telegram-deepseek-bot -targets="$os/$arch" .
+    xgo -out MuseBot -targets="$os/$arch" .
 
     # Build admin binary
     build_admin_local $os $arch
 
-    local bot_binary="telegram-deepseek-bot-${os}-${arch}${ext}"
-    local admin_binary="admin-${os}-${arch}${ext}"
-    local release_name="telegram-deepseek-bot-${os}-${arch}.tar.gz"
+    local bot_binary="MuseBot-${os}-${arch}${ext}"
+    local admin_binary="MuseBot-admin-${os}-${arch}${ext}"
+    local release_name="MuseBot-${os}-${arch}.tar.gz"
 
     # Move compiled binaries to output
-    mv ./telegram-deepseek-bot-${os}* ./output/${bot_binary}
+    mv ./MuseBot-${os}* ./output/${bot_binary}
     mv ./admin-${os}* ./output/${admin_binary}
 
     # Copy config files

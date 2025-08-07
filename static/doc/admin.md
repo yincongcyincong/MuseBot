@@ -70,10 +70,10 @@ Manage your configured Telegram bots.
 
 Configure and add new Telegram bots on this page. For enhanced security, it's highly recommended to use **HTTP mutual
 authentication**.
-Start telegram-deepseek-bot in this way:
+Start MuseBot in this way:
 
 ```
-./telegram-deepseek-bot \
+./MuseBot \
 -telegram_bot_token=xxx \
 -deepseek_token=sk-xxx \
 -crt_file=/Users/yincong/go/src/github.com/yincongcyincong/MuseBot/admin/shell/certs/server.crt

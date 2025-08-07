@@ -3,10 +3,10 @@
 telegram群: https://t.me/+WtaMcDpaMOlhZTE1, 或者尝试一下GWSbot。
 每个人有 **3000** token 去试用robot, 点个star吧!
 
-# DeepSeek Telegram Bot
+# MuseBot
 
-本仓库提供了一个基于 **Golang** 构建的 **Telegram 机器人**，集成了 **LLM API**，实现 AI 驱动的回复。
-该机器人支持 **openai** **deepseek** **gemini** **openrouter**等大模型，让对话体验更加自然和流畅。
+本仓库提供了一个基于 **Golang** 构建的 **Telegram, Discord 机器人**，集成了 **LLM API**，实现 AI 驱动的回复。
+该机器人支持 **openai** **deepseek** **gemini** **Doubao** **openrouter**等大模型，让对话体验更加自然和流畅。
 [English Doc](https://github.com/yincongcyincong/MuseBot/blob/main/Readme.md)
 
 ---
@@ -20,7 +20,7 @@ telegram群: https://t.me/+WtaMcDpaMOlhZTE1, 或者尝试一下GWSbot。
 - 🐂 **函数调用**：将 MCP 协议转换为函数调用，详见[文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/functioncall.md)。
 - 🌊 **RAG（检索增强生成）**：支持 RAG 以填充上下文，详见[文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/rag.md)。
 - ⛰️ **OpenRouter**：支持 OpenRouter 上的 400 多个大型语言模型（LLMs），详见[文档](https://openrouter.ai/docs/quickstart)。
-- 🌞 **管理平台（AdminPlatform）**：使用管理平台来管理 telegram-deepseek-bot，详见[文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/admin_ZH.md)。
+- 🌞 **管理平台（AdminPlatform）**：使用管理平台来管理 MuseBot，详见[文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/admin_ZH.md)。
 - 🌈 **Discord 支持**：使用 Discord 机器人，详见[文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/discord_ZH.md)。
 
 ---
@@ -47,8 +47,8 @@ telegram群: https://t.me/+WtaMcDpaMOlhZTE1, 或者尝试一下GWSbot。
 
 1. **克隆仓库**
    ```sh
-   git clone https://github.com/yourusername/deepseek-telegram-bot.git
-   cd deepseek-telegram-bot
+   git clone git@github.com:yincongcyincong/MuseBot.git
+   cd MuseBot
    ```
 
 2. **安装依赖**
@@ -75,8 +75,8 @@ go run main.go -telegram_bot_token=telegram-bot-token -deepseek_token=deepseek-a
 使用 Docker 运行：
 
 ```sh
-docker pull jackyin0822/telegram-deepseek-bot:latest
-docker run -d -v /home/user/data:/app/data -e TELEGRAM_BOT_TOKEN="你的Telegram Bot Token" -e DEEPSEEK_TOKEN="你的DeepSeek API密钥" --name my-telegram-bot jackyin0822/telegram-deepseek-bot:latest
+docker pull jackyin0822/musebot:latest
+docker run -d -v /home/user/data:/app/data -e TELEGRAM_BOT_TOKEN="你的Telegram Bot Token" -e DEEPSEEK_TOKEN="你的DeepSeek API密钥" --name my-telegram-bot jackyin0822/MuseBot:latest
 ```
 
 ---
@@ -99,8 +99,8 @@ docker run -d -v /home/user/data:/app/data -e TELEGRAM_BOT_TOKEN="你的Telegram
 | **Ernie_SK**                   | 文心一言 SK [文档](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Sly8bm96d)                                          | -                         |
 | **DB_TYPE**                    | 数据库类型：sqlite3 / mysql                                                                                         | sqlite3                   |
 | **DB_CONF**                    | 数据库配置：./data/telegram_bot.db 或 root:admin@tcp(127.0.0.1:3306)/dbname?charset=utf8mb4&parseTime=True&loc=Local | ./data/telegram_bot.db    |
-| **ALLOWED_TELEGRAM_USER_IDS**  | 允许使用机器人的 Telegram 用户 ID，多个 ID 用逗号分隔。为空表示所有用户可用。为 0 表示禁止所有用户。                                                  | -                         |
-| **ALLOWED_TELEGRAM_GROUP_IDS** | 允许使用机器人的 Telegram 群组 ID，多个 ID 用逗号分隔。为空表示所有群组可用。为 0 表示禁止所有群组。                                                  | -                         |
+| **ALLOWED_USER_IDS**  | 允许使用机器人的 Telegram 用户 ID，多个 ID 用逗号分隔。为空表示所有用户可用。为 0 表示禁止所有用户。                                                  | -                         |
+| **ALLOWED_GROUP_IDS** | 允许使用机器人的 Telegram 群组 ID，多个 ID 用逗号分隔。为空表示所有群组可用。为 0 表示禁止所有群组。                                                  | -                         |
 | **DEEPSEEK_PROXY**             | DeepSeek 代理                                                                                                   | -                         |
 | **TELEGRAM_PROXY**             | Telegram 代理                                                                                                   | -                         |
 | **LANG**                       | 语言：en / zh                                                                                                    | en                        |

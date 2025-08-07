@@ -1,17 +1,17 @@
-## `telegram-deepseek-bot` Parameter Usage Guide
+## `MuseBot` Parameter Usage Guide
 
-This document provides a detailed overview of the various configuration parameters for running `telegram-deepseek-bot`, helping users deploy and utilize it flexibly according to their needs.
+This document provides a detailed overview of the various configuration parameters for running `MuseBot`, helping users deploy and utilize it flexibly according to their needs.
 
 ### Configuration Parameters (`conf param`)
 
-`telegram-deepseek-bot` is configured via command-line parameters. Below are examples of parameter usage for different scenarios:
+`MuseBot` is configured via command-line parameters. Below are examples of parameter usage for different scenarios:
 
 #### 1\. Basic Configuration (`basic`)
 
 These are the most essential parameters required to run the bot, connecting it to Telegram and the DeepSeek API.
 
 ```bash
-./telegram-deepseek-bot \
+./MuseBot \
 -telegram_bot_token=xxxx \
 -deepseek_token=sk-xxx
 ```
@@ -24,7 +24,7 @@ These are the most essential parameters required to run the bot, connecting it t
 If you need to persist chat history or user data, you can use a MySQL database.
 
 ```bash
-./telegram-deepseek-bot \
+./MuseBot \
 -telegram_bot_token=xxxx \
 -deepseek_token=sk-xxx \
 -db_type=mysql \
@@ -39,7 +39,7 @@ If you need to persist chat history or user data, you can use a MySQL database.
 Use this configuration if your network environment requires accessing Telegram or DeepSeek API through a proxy.
 
 ```bash
-./telegram-deepseek-bot \
+./MuseBot \
 -telegram_bot_token=xxxx \
 -deepseek_token=sk-xxx \
 -telegram_proxy=http://127.0.0.1:7890 \
@@ -54,7 +54,7 @@ Use this configuration if your network environment requires accessing Telegram o
 In addition to DeepSeek, the bot also supports using OpenAI models.
 
 ```bash
-./telegram-deepseek-bot \
+./MuseBot \
 -telegram_bot_token=xxxx \
 -type=openai \
 -openai_token=sk-xxxx
@@ -68,7 +68,7 @@ In addition to DeepSeek, the bot also supports using OpenAI models.
 The bot also supports using Google Gemini models.
 
 ```bash
-./telegram-deepseek-bot \
+./MuseBot \
 -telegram_bot_token=xxxx \
 -type=gemini \
 -gemini_token=xxxxx
@@ -82,7 +82,7 @@ The bot also supports using Google Gemini models.
 Integrate with the OpenRouter platform to use various models it provides.
 
 ```bash
-./telegram-deepseek-bot \
+./MuseBot \
 -telegram_bot_token=xxxx \
 -type=openrouter \
 -openrouter_token=sk-or-v1-xxxx
@@ -96,7 +96,7 @@ Integrate with the OpenRouter platform to use various models it provides.
 To integrate with VolcEngine's photo identification feature, you'll need to provide your VolcEngine AK/SK.
 
 ```bash
-./telegram-deepseek-bot \
+./MuseBot \
 -telegram_bot_token=xxxx \
 -deepseek_token=sk-xxx \
 -volc_ak=xxx \
@@ -113,7 +113,7 @@ For more details, please refer to: [VolcEngine Image Recognition Documentation](
 To integrate with VolcEngine's voice recognition feature.
 
 ```bash
-./telegram-deepseek-bot \
+./MuseBot \
 -telegram_bot_token=xxxx \
 -deepseek_token=sk-xxx \
 -audio_app_id=xxx \
@@ -132,7 +132,7 @@ For more details, please refer to: [VolcEngine Voice Recognition Documentation](
 If your bot needs to use Amap (Gaode Map) related tools, such as geolocation queries.
 
 ```bash
-./telegram-deepseek-bot \
+./MuseBot \
 -telegram_bot_token=xxxx \
 -deepseek_token=sk-xxx \
 -use_tools=true
@@ -144,7 +144,7 @@ If your bot needs to use Amap (Gaode Map) related tools, such as geolocation que
 To perform RAG with ChromaDB, you'll need to use OpenAI's Embedding service.
 
 ```bash
-./telegram-deepseek-bot \
+./MuseBot \
 -telegram_bot_token=xxxx \
 -deepseek_token=sk-xxx \
 -openai_token=sk-xxxx \
@@ -161,7 +161,7 @@ To perform RAG with ChromaDB, you'll need to use OpenAI's Embedding service.
 To perform RAG with Milvus, you'll need to use Gemini's Embedding service.
 
 ```bash
-./telegram-deepseek-bot \
+./MuseBot \
 -telegram_bot_token=xxxx \
 -deepseek_token=sk-xxx \
 -gemini_token=xxx \
@@ -178,7 +178,7 @@ To perform RAG with Milvus, you'll need to use Gemini's Embedding service.
 To perform RAG with Weaviate, you'll need to use Ernie's Embedding service.
 
 ```bash
-./telegram-deepseek-bot \
+./MuseBot \
 -telegram_bot_token=xxxx \
 -deepseek_token=sk-xxx \
 -ernie_ak=xxx \
