@@ -24,7 +24,7 @@ func TestOpenAISend(t *testing.T) {
 	*conf.BaseConfInfo.CustomUrl = os.Getenv("TEST_CUSTOM_URL")
 	*conf.BaseConfInfo.Type = param.OpenAi
 	
-	callLLM := NewLLM(WithChatId(1), WithMsgId(2), WithUserId("5"),
+	callLLM := NewLLM(WithChatId("1"), WithMsgId("2"), WithUserId("5"),
 		WithMessageChan(messageChan), WithContent("hi"))
 	callLLM.LLMClient.GetModel(callLLM)
 	callLLM.LLMClient.GetMessages("5", "hi")

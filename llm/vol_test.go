@@ -21,7 +21,7 @@ func TestVolSend(t *testing.T) {
 	
 	*conf.BaseConfInfo.Type = param.Vol
 	
-	callLLM := NewLLM(WithChatId(1), WithMsgId(2), WithUserId("7"),
+	callLLM := NewLLM(WithChatId("1"), WithMsgId("2"), WithUserId("7"),
 		WithMessageChan(messageChan), WithContent("hi"))
 	callLLM.LLMClient.GetModel(callLLM)
 	callLLM.LLMClient.GetMessages("7", "hi")
