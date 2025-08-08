@@ -12,7 +12,6 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	larkcore "github.com/larksuite/oapi-sdk-go/v3/core"
 	larkim "github.com/larksuite/oapi-sdk-go/v3/service/im/v1"
-	"github.com/slack-go/slack"
 	"github.com/yincongcyincong/MuseBot/conf"
 	"github.com/yincongcyincong/MuseBot/db"
 	"github.com/yincongcyincong/MuseBot/i18n"
@@ -56,7 +55,31 @@ type RobotInfo struct {
 }
 
 type Robot interface {
-	Exec()
+	checkValid() bool
+	
+	getMsgContent() string
+	
+	requestLLMAndResp(content string)
+	
+	sendChatMessage()
+	
+	sendModeConfigurationOptions()
+	
+	showBalanceInfo()
+	
+	showStateInfo()
+	
+	clearAllRecord()
+	
+	retryLastQuestion()
+	
+	sendImg()
+	
+	sendVideo()
+	
+	sendHelpConfigurationOptions()
+	
+	sendMultiAgent(t string)
 }
 
 type botOption func(r *RobotInfo)
@@ -79,7 +102,9 @@ func (r *RobotInfo) Exec() {
 		return
 	}
 	
-	r.Robot.Exec()
+	if r.Robot.checkValid() {
+		r.Robot.requestLLMAndResp(r.Robot.getMsgContent())
+	}
 }
 
 func (r *RobotInfo) GetChatIdAndMsgIdAndUserID() (string, string, string) {
@@ -116,13 +141,13 @@ func (r *RobotInfo) GetChatIdAndMsgIdAndUserID() (string, string, string) {
 				userId = discordRobot.Inter.Member.User.ID
 			}
 		}
-	case *SlackRobot:
-		slackRobot := r.Robot.(*SlackRobot)
-		if slackRobot != nil {
-			chatId = slackRobot.Event.Channel
-			userId = slackRobot.Event.User
-			msgId = slackRobot.Event.ClientMsgID
-		}
+	//case *SlackRobot:
+	//	slackRobot := r.Robot.(*SlackRobot)
+	//	if slackRobot != nil {
+	//		chatId = slackRobot.Event.Channel
+	//		userId = slackRobot.Event.User
+	//		msgId = slackRobot.Event.ClientMsgID
+	//	}
 	case *LarkRobot:
 		lark := r.Robot.(*LarkRobot)
 		if lark.Message != nil {
@@ -200,23 +225,29 @@ func (r *RobotInfo) SendMsg(chatId string, msgContent string, replyToMessageID s
 			return ""
 		}
 	
-	case *SlackRobot:
-		slackRobot := r.Robot.(*SlackRobot)
-		_, timestamp, err := slackRobot.Client.PostMessage(chatId, slack.MsgOptionText(msgContent, false))
-		if err != nil {
-			logger.Warn("send message fail", "err", err)
-		}
-		
-		return timestamp
+	//case *SlackRobot:
+	//	slackRobot := r.Robot.(*SlackRobot)
+	//	_, timestamp, err := slackRobot.Client.PostMessage(chatId, slack.MsgOptionText(msgContent, false))
+	//	if err != nil {
+	//		logger.Warn("send message fail", "err", err)
+	//	}
+	//
+	//	return timestamp
 	case *LarkRobot:
 		lark := r.Robot.(*LarkRobot)
+		msgContent, _ = larkim.NewMessagePost().ZhCn(larkim.NewMessagePostContent().AppendContent(
+			[]larkim.MessagePostElement{
+				&MessagePostMarkdown{
+					Text: strings.ReplaceAll(strings.ReplaceAll(msgContent, "\"", ""), "\n", "\\n"),
+				},
+			}).Build()).Build()
 		
 		if replyToMessageID != "" {
 			resp, err := lark.Client.Im.Message.Reply(lark.Ctx, larkim.NewReplyMessageReqBuilder().
 				MessageId(replyToMessageID).
 				Body(larkim.NewReplyMessageReqBodyBuilder().
 					MsgType(larkim.MsgTypePost).
-					Content(GetMarkdownContent(msgContent)).
+					Content(msgContent).
 					Build()).
 				Build())
 			if err != nil || !resp.Success() {
@@ -231,7 +262,7 @@ func (r *RobotInfo) SendMsg(chatId string, msgContent string, replyToMessageID s
 				Body(larkim.NewCreateMessageReqBodyBuilder().
 					MsgType(larkim.MsgTypePost).
 					ReceiveId(chatId).
-					Content(GetMarkdownContent(msgContent)).
+					Content(msgContent).
 					Build()).
 				Build())
 			if err != nil || !resp.Success() {
@@ -471,4 +502,33 @@ func ParseCommand(prompt string) (command string, args string) {
 		args = parts[1]
 	}
 	return command, args
+}
+
+func (r *RobotInfo) ExecCmd(cmd string) {
+	switch cmd {
+	case "chat", "/chat":
+		r.Robot.sendChatMessage()
+	case "mode", "/mode":
+		r.Robot.sendModeConfigurationOptions()
+	case "balance", "/balance":
+		r.Robot.showBalanceInfo()
+	case "state", "/state":
+		r.Robot.showStateInfo()
+	case "clear", "/clear":
+		r.Robot.clearAllRecord()
+	case "retry", "/retry":
+		r.Robot.retryLastQuestion()
+	case "photo", "/photo":
+		r.Robot.sendImg()
+	case "video", "/video":
+		r.Robot.sendVideo()
+	case "help", "/help":
+		r.Robot.sendHelpConfigurationOptions()
+	case "task", "/task":
+		r.Robot.sendMultiAgent("task_empty_content")
+	case "mcp", "/mcp":
+		r.Robot.sendMultiAgent("mcp_empty_content")
+	default:
+		r.Robot.sendChatMessage()
+	}
 }

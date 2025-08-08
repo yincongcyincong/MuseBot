@@ -63,20 +63,26 @@ func NewDiscordRobot(s *discordgo.Session, msg *discordgo.MessageCreate, i *disc
 	}
 }
 
-func (d *DiscordRobot) Exec() {
+func (d *DiscordRobot) checkValid() bool {
 	chatId, msgId, _ := d.Robot.GetChatIdAndMsgIdAndUserID()
-	
 	// check whether you have new message
 	if d.Msg != nil {
 		if d.skipThisMsg() {
 			logger.Warn("skip this msg", "msgId", msgId, "chat", chatId, "content", d.Msg.Content)
-			return
+			return false
 		}
-		d.requestDeepseekAndResp(d.Msg.Content)
+		
+		return true
 	}
+	
+	return false
 }
 
-func (d *DiscordRobot) requestDeepseekAndResp(content string) {
+func (d *DiscordRobot) getMsgContent() string {
+	return d.Msg.Content
+}
+
+func (d *DiscordRobot) requestLLMAndResp(content string) {
 	d.Robot.TalkingPreCheck(func() {
 		if conf.RagConfInfo.Store != nil {
 			d.executeChain(content)
@@ -401,77 +407,59 @@ func onInteractionCreate(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	case discordgo.InteractionApplicationCommand, discordgo.InteractionApplicationCommandAutocomplete:
 		cmd = i.ApplicationCommandData().Name
 	case discordgo.InteractionMessageComponent:
-		cmd = i.MessageComponentData().CustomID
+		d.changeMode(i.MessageComponentData().CustomID)
 	}
 	
-	switch cmd {
-	case "chat":
-		prompt := i.ApplicationCommandData().Options[0].StringValue()
-		d.sendChatMessage(prompt)
-	case "mode":
-		d.sendModeOptions()
-	case "balance":
-		d.showBalanceInfo()
-	case "state":
-		d.showStateInfo()
-	case "clear":
-		d.clearAllRecord()
-	case "retry":
-		d.retryLastQuestion()
-	case "photo":
-		d.sendImage()
-	case "video":
-		d.sendVideo()
-	case "help":
-		d.sendHelp()
-	case "task":
-		d.sendMultiAgent("task_empty_content")
-	case "mcp":
-		d.sendMultiAgent("mcp_empty_content")
-	default:
-		if param.GeminiModels[cmd] || param.OpenAIModels[cmd] ||
-			param.DeepseekModels[cmd] || param.DeepseekLocalModels[cmd] ||
-			param.OpenRouterModels[cmd] || param.VolModels[cmd] {
-			d.Robot.handleModeUpdate(cmd)
+	d.Robot.ExecCmd(cmd)
+}
+
+func (d *DiscordRobot) changeMode(mode string) {
+	if param.GeminiModels[mode] || param.OpenAIModels[mode] ||
+		param.DeepseekModels[mode] || param.DeepseekLocalModels[mode] ||
+		param.OpenRouterModels[mode] || param.VolModels[mode] {
+		d.Robot.handleModeUpdate(mode)
+	}
+	
+	if param.OpenRouterModelTypes[mode] {
+		buttons := make([]discordgo.MessageComponent, 0)
+		for k := range param.OpenRouterModels {
+			if strings.Contains(k, mode+"/") {
+				buttons = append(buttons, discordgo.Button{Label: mode, CustomID: mode, Style: discordgo.SecondaryButton})
+			}
+		}
+		var rows []discordgo.MessageComponent
+		for i := 0; i < len(buttons); i += 5 {
+			end := i + 5
+			if end > len(buttons) {
+				end = len(buttons)
+			}
+			rows = append(rows, discordgo.ActionsRow{Components: buttons[i:end]})
 		}
 		
-		if param.OpenRouterModelTypes[cmd] {
-			buttons := make([]discordgo.MessageComponent, 0)
-			for k := range param.OpenRouterModels {
-				if strings.Contains(k, cmd+"/") {
-					buttons = append(buttons, discordgo.Button{Label: cmd, CustomID: cmd, Style: discordgo.SecondaryButton})
-				}
-			}
-			var rows []discordgo.MessageComponent
-			for i := 0; i < len(buttons); i += 5 {
-				end := i + 5
-				if end > len(buttons) {
-					end = len(buttons)
-				}
-				rows = append(rows, discordgo.ActionsRow{Components: buttons[i:end]})
-			}
-			
-			err := d.Session.InteractionRespond(d.Inter.Interaction, &discordgo.InteractionResponse{
-				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionResponseData{
-					Content:    i18n.GetMessage(*conf.BaseConfInfo.Lang, "chat_mode", nil),
-					Components: rows,
-					Flags:      1 << 6,
-				},
-			})
-			if err != nil {
-				logger.Error("Failed to defer interaction response", "err", err)
-			}
-			
+		err := d.Session.InteractionRespond(d.Inter.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseChannelMessageWithSource,
+			Data: &discordgo.InteractionResponseData{
+				Content:    i18n.GetMessage(*conf.BaseConfInfo.Lang, "chat_mode", nil),
+				Components: rows,
+				Flags:      1 << 6,
+			},
+		})
+		if err != nil {
+			logger.Error("Failed to defer interaction response", "err", err)
 		}
+		
 	}
 }
 
-func (d *DiscordRobot) sendChatMessage(prompt string) {
-	d.requestDeepseekAndResp(prompt)
+func (d *DiscordRobot) sendChatMessage() {
+	prompt := ""
+	if d.Inter != nil && d.Inter.Type == discordgo.InteractionApplicationCommand && len(d.Inter.ApplicationCommandData().Options) > 0 {
+		prompt = d.Inter.ApplicationCommandData().Options[0].StringValue()
+	}
+	d.requestLLMAndResp(prompt)
 }
 
-func (d *DiscordRobot) sendModeOptions() {
+func (d *DiscordRobot) sendModeConfigurationOptions() {
 	var buttons []discordgo.MessageComponent
 	switch *conf.BaseConfInfo.Type {
 	case param.DeepSeek:
@@ -592,14 +580,14 @@ func (d *DiscordRobot) retryLastQuestion() {
 	
 	records := db.GetMsgRecord(userId)
 	if records != nil && len(records.AQs) > 0 {
-		d.requestDeepseekAndResp(records.AQs[len(records.AQs)-1].Question)
+		d.requestLLMAndResp(records.AQs[len(records.AQs)-1].Question)
 	} else {
 		d.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "last_question_fail", nil),
 			msgId, tgbotapi.ModeMarkdown, nil)
 	}
 }
 
-func (d *DiscordRobot) sendImage() {
+func (d *DiscordRobot) sendImg() {
 	d.Robot.TalkingPreCheck(func() {
 		chatId, msgId, userId := d.Robot.GetChatIdAndMsgIdAndUserID()
 		
@@ -764,7 +752,7 @@ func (d *DiscordRobot) sendVideo() {
 	})
 }
 
-func (d *DiscordRobot) sendHelp() {
+func (d *DiscordRobot) sendHelpConfigurationOptions() {
 	chatId, replyToMessageID, _ := d.Robot.GetChatIdAndMsgIdAndUserID()
 	d.Robot.SendMsg(chatId, helpText, replyToMessageID, tgbotapi.ModeMarkdown, nil)
 }
