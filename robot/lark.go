@@ -1,12 +1,13 @@
 package robot
 
 import (
+	"bytes"
 	"context"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"runtime/debug"
 	"strings"
 	"time"
@@ -25,7 +26,10 @@ import (
 	"github.com/yincongcyincong/MuseBot/llm"
 	"github.com/yincongcyincong/MuseBot/logger"
 	"github.com/yincongcyincong/MuseBot/param"
+	"github.com/yincongcyincong/MuseBot/rag"
 	"github.com/yincongcyincong/MuseBot/utils"
+	"github.com/yincongcyincong/langchaingo/chains"
+	"github.com/yincongcyincong/langchaingo/vectorstores"
 )
 
 type MessageText struct {
@@ -43,11 +47,12 @@ type LarkRobot struct {
 	Robot   *RobotInfo
 	Client  *lark.Client
 	
-	Ctx     context.Context
-	Cancel  context.CancelFunc
-	Command string
-	Prompt  string
-	BotName string
+	Ctx          context.Context
+	Cancel       context.CancelFunc
+	Command      string
+	Prompt       string
+	BotName      string
+	ImageContent []byte
 }
 
 func StartLarkRobot() {
@@ -91,62 +96,42 @@ func NewLarkRobot(ctx context.Context, message *larkim.P2MessageReceiveV1) *Lark
 func LarkMessageHandler(ctx context.Context, message *larkim.P2MessageReceiveV1) error {
 	l := NewLarkRobot(ctx, message)
 	l.Robot = NewRobot(WithRobot(l))
-	go l.Robot.Exec()
+	go func() {
+		if err := recover(); err != nil {
+			logger.Error("exec panic", "err", err, "stack", string(debug.Stack()))
+		}
+		l.Robot.Exec()
+	}()
+	
 	return nil
 }
 
-func (l *LarkRobot) Exec() {
+func (l *LarkRobot) checkValid() bool {
 	chatId, msgId, _ := l.Robot.GetChatIdAndMsgIdAndUserID()
 	
-	msgType := larkcore.StringValue(l.Message.Event.Message.MessageType)
-	if msgType == larkim.MsgTypeText {
-		textMsg := new(MessageText)
-		err := json.Unmarshal([]byte(larkcore.StringValue(l.Message.Event.Message.Content)), textMsg)
-		if err != nil {
-			logger.Error("unmarshal text message error", "error", err)
-			l.Robot.SendMsg(chatId, err.Error(), msgId, "", nil)
-			return
+	// group need to at bot
+	atBot, err := l.GetMessageContent()
+	if err != nil {
+		logger.Error("get message content error", "err", err)
+		l.Robot.SendMsg(chatId, err.Error(), msgId, "", nil)
+		return false
+	}
+	if larkcore.StringValue(l.Message.Event.Message.ChatType) == "group" && *conf.BaseConfInfo.NeedATBOt {
+		if !atBot {
+			logger.Warn("no at bot")
+			return false
 		}
-		l.Command, l.Prompt = ParseCommand(textMsg.Text)
-		botShowName := ""
-		for _, at := range l.Message.Event.Message.Mentions {
-			if larkcore.StringValue(at.Name) == l.BotName {
-				botShowName = larkcore.StringValue(at.Key)
-				break
-			}
-		}
-		
-		l.Prompt = strings.ReplaceAll(l.Prompt, "@"+botShowName, "")
 	}
 	
-	logger.Info("web exec", "command", l.Command)
-	
-	switch l.Command {
-	case "/chat":
-		l.handleChat()
-	case "/mode":
-		l.sendModelSelection()
-	case "/balance":
-		l.showBalanceInfo()
-	case "/state":
-		l.showStateInfo()
-	case "/clear":
-		l.clearAllRecord()
-	case "/retry":
-		l.retryLastQuestion()
-	case "/photo":
-		l.sendImg()
-	case "/video":
-		l.sendVideo()
-	case "/help":
-		l.sendHelpConfigurationOptions()
-	case "/task":
-		l.sendMultiAgent("task_empty_content")
-	case "/mcp":
-		l.sendMultiAgent("mcp_empty_content")
-	default:
-		l.handleChat()
-	}
+	return true
+}
+
+func (l *LarkRobot) getMsgContent() string {
+	return l.Command
+}
+
+func (l *LarkRobot) requestLLMAndResp(content string) {
+	l.Robot.ExecCmd(content)
 }
 
 func (l *LarkRobot) sendHelpConfigurationOptions() {
@@ -154,7 +139,7 @@ func (l *LarkRobot) sendHelpConfigurationOptions() {
 	l.Robot.SendMsg(chatId, helpText, msgId, tgbotapi.ModeMarkdown, nil)
 }
 
-func (l *LarkRobot) sendModelSelection() {
+func (l *LarkRobot) sendModeConfigurationOptions() {
 	chatId, msgId, _ := l.Robot.GetChatIdAndMsgIdAndUserID()
 	
 	prompt := strings.TrimSpace(l.Prompt)
@@ -300,7 +285,7 @@ func (l *LarkRobot) retryLastQuestion() {
 	records := db.GetMsgRecord(userId)
 	if records != nil && len(records.AQs) > 0 {
 		l.Prompt = records.AQs[len(records.AQs)-1].Question
-		l.handleChat()
+		l.sendChatMessage()
 	} else {
 		l.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "last_question_fail", nil),
 			msgId, tgbotapi.ModeMarkdown, nil)
@@ -321,14 +306,14 @@ func (l *LarkRobot) sendMultiAgent(agentType string) {
 			return
 		}
 		
-		messageChan := make(chan string)
+		messageChan := make(chan *param.MsgInfo)
 		
 		dpReq := &llm.LLMTaskReq{
 			Content:     prompt,
 			UserId:      userId,
 			ChatId:      chatId,
 			MsgId:       msgId,
-			HTTPMsgChan: messageChan,
+			MessageChan: messageChan,
 		}
 		
 		go func() {
@@ -351,6 +336,8 @@ func (l *LarkRobot) sendMultiAgent(agentType string) {
 				return
 			}
 		}()
+		
+		go l.handleUpdate(messageChan)
 	})
 }
 
@@ -365,7 +352,10 @@ func (l *LarkRobot) sendImg() {
 			return
 		}
 		
-		var lastImageContent []byte
+		originalMsgID := l.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "thinking", nil),
+			msgId, "", nil)
+		
+		lastImageContent := l.ImageContent
 		var err error
 		if len(lastImageContent) == 0 {
 			lastImageContent, err = l.Robot.GetLastImageContent()
@@ -411,11 +401,43 @@ func (l *LarkRobot) sendImg() {
 		
 		originImageURI := ""
 		
-		//if len(l.BodyData) > 0 {
-		//	base64Content = base64.StdEncoding.EncodeToString(l.BodyData)
-		//	format = utils.DetectImageFormat(l.BodyData)
-		//	originImageURI = fmt.Sprintf("data:image/%s;base64,%s", format, base64Content)
-		//}
+		if len(l.ImageContent) > 0 {
+			base64Content = base64.StdEncoding.EncodeToString(l.ImageContent)
+			format = utils.DetectImageFormat(l.ImageContent)
+			originImageURI = fmt.Sprintf("data:image/%s;base64,%s", format, base64Content)
+		}
+		
+		resp, err := l.Client.Im.V1.Image.Create(l.Ctx, larkim.NewCreateImageReqBuilder().
+			Body(larkim.NewCreateImageReqBodyBuilder().
+				ImageType("message").
+				Image(bytes.NewReader(imageContent)).
+				Build()).
+			Build())
+		if err != nil || !resp.Success() {
+			logger.Warn("create image fail", "err", err, "resp", resp)
+			l.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
+			return
+		}
+		
+		msgContent, _ := larkim.NewMessagePost().ZhCn(larkim.NewMessagePostContent().AppendContent(
+			[]larkim.MessagePostElement{
+				&larkim.MessagePostImage{
+					ImageKey: larkcore.StringValue(resp.Data.ImageKey),
+				},
+			}).Build()).Build()
+		
+		updateRes, err := l.Client.Im.Message.Update(l.Ctx, larkim.NewUpdateMessageReqBuilder().
+			MessageId(originalMsgID).
+			Body(larkim.NewUpdateMessageReqBodyBuilder().
+				MsgType(larkim.MsgTypePost).
+				Content(msgContent).
+				Build()).
+			Build())
+		if err != nil || !updateRes.Success() {
+			logger.Warn("send message fail", "err", err, "resp", resp)
+			l.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
+			return
+		}
 		
 		// save data record
 		db.InsertRecordInfo(&db.Record{
@@ -442,6 +464,10 @@ func (l *LarkRobot) sendVideo() {
 			l.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "photo_empty_content", nil), msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
+		
+		originalMsgID := l.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "thinking", nil),
+			msgId, "", nil)
+		
 		var (
 			videoUrl     string
 			videoContent []byte
@@ -480,6 +506,40 @@ func (l *LarkRobot) sendVideo() {
 			return
 		}
 		
+		resp, err := l.Client.Im.V1.File.Create(l.Ctx, larkim.NewCreateFileReqBuilder().
+			Body(larkim.NewCreateFileReqBodyBuilder().
+				FileType(utils.DetectVideoMimeType(videoContent)).
+				FileName(fmt.Sprintf("%s.%s", prompt, utils.DetectVideoMimeType(videoContent))).
+				Duration(*conf.VideoConfInfo.Duration).
+				File(bytes.NewReader(videoContent)).
+				Build()).
+			Build())
+		if err != nil || !resp.Success() {
+			logger.Warn("create image fail", "err", err, "resp", resp)
+			l.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
+			return
+		}
+		
+		msgContent, _ := larkim.NewMessagePost().ZhCn(larkim.NewMessagePostContent().AppendContent(
+			[]larkim.MessagePostElement{
+				&larkim.MessagePostMedia{
+					FileKey: larkcore.StringValue(resp.Data.FileKey),
+				},
+			}).Build()).Build()
+		
+		updateRes, err := l.Client.Im.Message.Update(l.Ctx, larkim.NewUpdateMessageReqBuilder().
+			MessageId(originalMsgID).
+			Body(larkim.NewUpdateMessageReqBodyBuilder().
+				MsgType(larkim.MsgTypePost).
+				Content(msgContent).
+				Build()).
+			Build())
+		if err != nil || !updateRes.Success() {
+			logger.Warn("send message fail", "err", err, "resp", resp)
+			l.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
+			return
+		}
+		
 		base64Content := base64.StdEncoding.EncodeToString(videoContent)
 		dataURI := fmt.Sprintf("data:video/%s;base64,%s", utils.DetectVideoMimeType(videoContent), base64Content)
 		
@@ -496,7 +556,7 @@ func (l *LarkRobot) sendVideo() {
 	
 }
 
-func (l *LarkRobot) handleChat() {
+func (l *LarkRobot) sendChatMessage() {
 	chatId, msgId, _ := l.Robot.GetChatIdAndMsgIdAndUserID()
 	
 	content, err := l.GetContent(strings.TrimSpace(l.Prompt))
@@ -507,12 +567,52 @@ func (l *LarkRobot) handleChat() {
 	}
 	l.Robot.TalkingPreCheck(func() {
 		if conf.RagConfInfo.Store != nil {
-			//l.executeChain(content)
+			l.executeChain(content)
 		} else {
 			l.executeLLM(content)
 		}
 	})
 	
+}
+
+func (l *LarkRobot) executeChain(content string) {
+	messageChan := make(chan *param.MsgInfo)
+	chatId, msgId, userId := l.Robot.GetChatIdAndMsgIdAndUserID()
+	
+	go func() {
+		defer func() {
+			if err := recover(); err != nil {
+				logger.Error("GetContent panic err", "err", err, "stack", string(debug.Stack()))
+			}
+			close(messageChan)
+		}()
+		
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+		defer cancel()
+		
+		text, err := l.GetContent(content)
+		if err != nil {
+			logger.Error("get content fail", "err", err)
+			l.Robot.SendMsg(chatId, err.Error(), msgId, "", nil)
+			return
+		}
+		
+		dpLLM := rag.NewRag(llm.WithMessageChan(messageChan), llm.WithContent(content),
+			llm.WithChatId(chatId), llm.WithMsgId(msgId),
+			llm.WithUserId(userId))
+		
+		qaChain := chains.NewRetrievalQAFromLLM(
+			dpLLM,
+			vectorstores.ToRetriever(conf.RagConfInfo.Store, 3),
+		)
+		_, err = chains.Run(ctx, qaChain, text)
+		if err != nil {
+			logger.Warn("execute chain fail", "err", err)
+			l.Robot.SendMsg(chatId, err.Error(), msgId, "", nil)
+		}
+	}()
+	// send response message
+	go l.handleUpdate(messageChan)
 }
 
 func (l *LarkRobot) handleUpdate(messageChan chan *param.MsgInfo) {
@@ -600,6 +700,7 @@ func (l *LarkRobot) GetContent(content string) (string, error) {
 	
 	var err error
 	msgType := larkcore.StringValue(l.Message.Event.Message.MessageType)
+	_, msgId, _ := l.Robot.GetChatIdAndMsgIdAndUserID()
 	
 	switch msgType {
 	case larkim.MsgTypeImage:
@@ -609,14 +710,19 @@ func (l *LarkRobot) GetContent(content string) (string, error) {
 			logger.Warn("unmarshal message image failed", "err", err)
 			return "", err
 		}
-		resp, err := l.Client.Im.Image.Get(l.Ctx,
-			larkim.NewGetImageReqBuilder().ImageKey(msgImage.ImageKey).Build())
-		if err != nil {
-			logger.Error("get image failed", "err", err)
+		
+		resp, err := l.Client.Im.V1.MessageResource.Get(l.Ctx,
+			larkim.NewGetMessageResourceReqBuilder().
+				MessageId(msgId).
+				FileKey(msgImage.ImageKey).
+				Type("image").
+				Build())
+		if err != nil || !resp.Success() {
+			logger.Error("get image failed", "err", err, "resp", resp)
 			return "", err
 		}
 		
-		bs, err := ioutil.ReadAll(resp.File)
+		bs, err := io.ReadAll(resp.File)
 		if err != nil {
 			logger.Error("read image failed", "err", err)
 			return "", err
@@ -634,16 +740,20 @@ func (l *LarkRobot) GetContent(content string) (string, error) {
 			logger.Warn("unmarshal message audio failed", "err", err)
 			return "", err
 		}
-		resp, err := l.Client.Im.File.Get(l.Ctx,
-			larkim.NewGetFileReqBuilder().FileKey(msgAudio.FileKey).Build())
-		if err != nil {
-			logger.Error("get audio failed", "err", err)
+		resp, err := l.Client.Im.V1.MessageResource.Get(l.Ctx,
+			larkim.NewGetMessageResourceReqBuilder().
+				MessageId(msgId).
+				FileKey(msgAudio.FileKey).
+				Type("file").
+				Build())
+		if err != nil || !resp.Success() {
+			logger.Error("get image failed", "err", err, "resp", resp)
 			return "", err
 		}
 		
-		bs, err := ioutil.ReadAll(resp.File)
+		bs, err := io.ReadAll(resp.File)
 		if err != nil {
-			logger.Error("read audio failed", "err", err)
+			logger.Error("read image failed", "err", err)
 			return "", err
 		}
 		
@@ -686,4 +796,93 @@ func (m *MessagePostMarkdown) IsPost() {
 
 func (m *MessagePostMarkdown) MarshalJSON() ([]byte, error) {
 	return []byte(`{"tag":"md","text":"` + m.Text + `"}`), nil
+}
+
+type MessagePostContent struct {
+	Title   string                 `json:"title"`
+	Content [][]MessagePostElement `json:"content"`
+}
+
+type MessagePostElement struct {
+	Tag      string `json:"tag"`
+	Text     string `json:"text"`
+	ImageKey string `json:"image_key"`
+	UserName string `json:"user_name"`
+}
+
+func (l *LarkRobot) GetMessageContent() (bool, error) {
+	_, msgId, _ := l.Robot.GetChatIdAndMsgIdAndUserID()
+	msgType := larkcore.StringValue(l.Message.Event.Message.MessageType)
+	botShowName := ""
+	if msgType == larkim.MsgTypeText {
+		textMsg := new(MessageText)
+		err := json.Unmarshal([]byte(larkcore.StringValue(l.Message.Event.Message.Content)), textMsg)
+		if err != nil {
+			logger.Error("unmarshal text message error", "error", err)
+			return false, err
+		}
+		l.Command, l.Prompt = ParseCommand(textMsg.Text)
+		for _, at := range l.Message.Event.Message.Mentions {
+			if larkcore.StringValue(at.Name) == l.BotName {
+				botShowName = larkcore.StringValue(at.Key)
+				break
+			}
+		}
+		
+		l.Prompt = strings.ReplaceAll(l.Prompt, "@"+botShowName, "")
+		for _, at := range l.Message.Event.Message.Mentions {
+			if larkcore.StringValue(at.Name) == l.BotName {
+				botShowName = larkcore.StringValue(at.Key)
+				break
+			}
+		}
+	} else if msgType == larkim.MsgTypePost {
+		postMsg := new(MessagePostContent)
+		err := json.Unmarshal([]byte(larkcore.StringValue(l.Message.Event.Message.Content)), postMsg)
+		if err != nil {
+			logger.Error("unmarshal text message error", "error", err)
+			return false, err
+		}
+		
+		for _, msgPostContents := range postMsg.Content {
+			for _, msgPostContent := range msgPostContents {
+				switch msgPostContent.Tag {
+				case "text":
+					command, prompt := ParseCommand(msgPostContent.Text)
+					if command != "" {
+						l.Command = command
+					}
+					if prompt != "" {
+						l.Prompt = prompt
+					}
+				case "img":
+					resp, err := l.Client.Im.V1.MessageResource.Get(l.Ctx,
+						larkim.NewGetMessageResourceReqBuilder().
+							MessageId(msgId).
+							FileKey(msgPostContent.ImageKey).
+							Type("image").
+							Build())
+					if err != nil || !resp.Success() {
+						logger.Error("get image failed", "err", err, "resp", resp)
+						return false, err
+					}
+					
+					bs, err := io.ReadAll(resp.File)
+					if err != nil {
+						logger.Error("read image failed", "err", err)
+						return false, err
+					}
+					l.ImageContent = bs
+				case "at":
+					if l.BotName == msgPostContent.UserName {
+						botShowName = msgPostContent.UserName
+					}
+					
+				}
+			}
+		}
+	}
+	
+	l.Prompt = strings.ReplaceAll(l.Prompt, "@"+l.BotName, "")
+	return botShowName == l.BotName, nil
 }

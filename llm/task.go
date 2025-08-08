@@ -195,7 +195,7 @@ func (d *LLMTaskReq) requestTask(ctx context.Context, llm *LLM, plan *Task) erro
 		return err
 	}
 	
-	// deepseek response merge into msg
+	// llm response merge into msg
 	if c == "" {
 		c = plan.Name + " is completed"
 	}

@@ -126,23 +126,30 @@ func CreateBot() *tgbotapi.BotAPI {
 	return bot
 }
 
-func (t *TelegramRobot) Exec() {
+func (t *TelegramRobot) checkValid() bool {
 	chatId, msgId, _ := t.Robot.GetChatIdAndMsgIdAndUserID()
 	if t.handleCommandAndCallback() {
-		return
+		return false
 	}
-	// check whether you have new message
+	
 	if t.Update.Message != nil {
 		if t.skipThisMsg() {
 			logger.Warn("skip this msg", "msgId", msgId, "chat", chatId, "type", t.Update.Message.Chat.Type, "content", t.Update.Message.Text)
-			return
+			return false
 		}
-		t.requestDeepseekAndResp(t.Update.Message.Text)
+		
+		return true
 	}
+	
+	return false
 }
 
-// requestDeepseekAndResp request deepseek api
-func (t *TelegramRobot) requestDeepseekAndResp(content string) {
+func (t *TelegramRobot) getMsgContent() string {
+	return t.Update.Message.Text
+}
+
+// requestLLMAndResp request deepseek api
+func (t *TelegramRobot) requestLLMAndResp(content string) {
 	t.Robot.TalkingPreCheck(func() {
 		if conf.RagConfInfo.Store != nil {
 			t.executeChain(content)
@@ -394,36 +401,12 @@ func (t *TelegramRobot) handleCommand() {
 		}
 	}
 	
-	switch cmd {
-	case "chat":
-		t.sendChatMessage()
-	case "mode":
-		t.sendModeConfigurationOptions()
-	case "balance":
-		t.showBalanceInfo()
-	case "state":
-		t.showStateInfo()
-	case "clear":
-		t.clearAllRecord()
-	case "retry":
-		t.retryLastQuestion()
-	case "photo":
-		t.sendImg()
-	case "video":
-		t.sendVideo()
-	case "help":
-		t.sendHelpConfigurationOptions()
-	case "task":
-		t.sendMultiAgent("task_empty_content")
-	case "mcp":
-		t.sendMultiAgent("mcp_empty_content")
-	}
+	t.Robot.ExecCmd(cmd)
 }
 
 // sendChatMessage response chat command to telegram
 func (t *TelegramRobot) sendChatMessage() {
 	chatId, msgID, _ := t.Robot.GetChatIdAndMsgIdAndUserID()
-	
 	messageText := ""
 	var err error
 	if t.Update.Message != nil {
@@ -450,7 +433,7 @@ func (t *TelegramRobot) sendChatMessage() {
 	}
 	
 	// Reply to the chat content
-	t.requestDeepseekAndResp(content)
+	t.requestLLMAndResp(content)
 }
 
 // retryLastQuestion retry last question
@@ -459,7 +442,7 @@ func (t *TelegramRobot) retryLastQuestion() {
 	
 	records := db.GetMsgRecord(userId)
 	if records != nil && len(records.AQs) > 0 {
-		t.requestDeepseekAndResp(records.AQs[len(records.AQs)-1].Question)
+		t.requestLLMAndResp(records.AQs[len(records.AQs)-1].Question)
 	} else {
 		t.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "last_question_fail", nil),
 			msgId, tgbotapi.ModeMarkdown, nil)

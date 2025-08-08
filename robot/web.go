@@ -50,35 +50,17 @@ func NewWeb(command string, userId int64, realUserId, prompt, originalPrompt str
 	return web
 }
 
-func (web *Web) Exec() {
+func (web *Web) checkValid() bool {
+	return true
+}
+
+func (web *Web) getMsgContent() string {
+	return web.Command
+}
+
+func (web *Web) requestLLMAndResp(content string) {
 	logger.Info("web exec", "command", web.Command, "userId", web.UserId, "prompt", web.Prompt)
-	
-	switch web.Command {
-	case "/chat":
-		web.handleChat()
-	case "/mode":
-		web.sendModelSelection()
-	case "/balance":
-		web.showBalanceInfo()
-	case "/state":
-		web.showStateInfo()
-	case "/clear":
-		web.clearAllRecord()
-	case "/retry":
-		web.retryLastQuestion()
-	case "/photo":
-		web.sendImg()
-	case "/video":
-		web.sendVideo()
-	case "/help":
-		web.sendHelpConfigurationOptions()
-	case "/task":
-		web.sendMultiAgent("task_empty_content")
-	case "/mcp":
-		web.sendMultiAgent("mcp_empty_content")
-	default:
-		web.handleChat()
-	}
+	web.Robot.ExecCmd(web.Command)
 }
 
 func (web *Web) sendHelpConfigurationOptions() {
@@ -95,7 +77,7 @@ func (web *Web) sendHelpConfigurationOptions() {
 	})
 }
 
-func (web *Web) sendModelSelection() {
+func (web *Web) sendModeConfigurationOptions() {
 	chatId, msgId, _ := web.Robot.GetChatIdAndMsgIdAndUserID()
 	
 	prompt := strings.TrimSpace(web.Prompt)
@@ -285,7 +267,7 @@ func (web *Web) retryLastQuestion() {
 	records := db.GetMsgRecord(userId)
 	if records != nil && len(records.AQs) > 0 {
 		web.Prompt = records.AQs[len(records.AQs)-1].Question
-		web.handleChat()
+		web.sendChatMessage()
 	} else {
 		web.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "last_question_fail", nil),
 			msgId, tgbotapi.ModeMarkdown, nil)
@@ -522,7 +504,7 @@ func (web *Web) sendVideo() {
 	
 }
 
-func (web *Web) handleChat() {
+func (web *Web) sendChatMessage() {
 	web.Robot.TalkingPreCheck(func() {
 		chatId, msgId, userId := web.Robot.GetChatIdAndMsgIdAndUserID()
 		
