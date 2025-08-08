@@ -11,13 +11,13 @@ import (
 	
 	"github.com/cohesion-org/deepseek-go"
 	"github.com/cohesion-org/deepseek-go/constants"
-	"github.com/yincongcyincong/mcp-client-go/clients"
 	"github.com/yincongcyincong/MuseBot/conf"
 	"github.com/yincongcyincong/MuseBot/db"
 	"github.com/yincongcyincong/MuseBot/logger"
 	"github.com/yincongcyincong/MuseBot/metrics"
 	"github.com/yincongcyincong/MuseBot/param"
 	"github.com/yincongcyincong/MuseBot/utils"
+	"github.com/yincongcyincong/mcp-client-go/clients"
 )
 
 type DeepseekReq struct {
@@ -90,7 +90,7 @@ func (d *DeepseekReq) Send(ctx context.Context, l *LLM) error {
 	start := time.Now()
 	
 	// set deepseek proxy
-	httpClient := utils.GetDeepseekProxyClient()
+	httpClient := utils.GetLLMProxyClient()
 	
 	client, err := deepseek.NewClientWithOptions(*conf.BaseConfInfo.DeepseekToken, deepseek.WithHTTPClient(httpClient))
 	if err != nil {
@@ -236,7 +236,7 @@ func (d *DeepseekReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 	
 	d.GetModel(l)
 	
-	httpClient := utils.GetDeepseekProxyClient()
+	httpClient := utils.GetLLMProxyClient()
 	
 	client, err := deepseek.NewClientWithOptions(*conf.BaseConfInfo.DeepseekToken, deepseek.WithHTTPClient(httpClient))
 	if err != nil {

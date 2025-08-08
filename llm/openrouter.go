@@ -11,13 +11,13 @@ import (
 	
 	"github.com/cohesion-org/deepseek-go/constants"
 	openrouter "github.com/revrost/go-openrouter"
-	"github.com/yincongcyincong/mcp-client-go/clients"
 	"github.com/yincongcyincong/MuseBot/conf"
 	"github.com/yincongcyincong/MuseBot/db"
 	"github.com/yincongcyincong/MuseBot/logger"
 	"github.com/yincongcyincong/MuseBot/metrics"
 	"github.com/yincongcyincong/MuseBot/param"
 	"github.com/yincongcyincong/MuseBot/utils"
+	"github.com/yincongcyincong/mcp-client-go/clients"
 )
 
 type AIRouterReq struct {
@@ -113,7 +113,7 @@ func (d *AIRouterReq) Send(ctx context.Context, l *LLM) error {
 	
 	// set deepseek proxy
 	config := openrouter.DefaultConfig(*conf.BaseConfInfo.OpenRouterToken)
-	config.HTTPClient = utils.GetDeepseekProxyClient()
+	config.HTTPClient = utils.GetLLMProxyClient()
 	client := openrouter.NewClientWithConfig(*config)
 	
 	request := openrouter.ChatCompletionRequest{
@@ -265,7 +265,7 @@ func (d *AIRouterReq) GetMessage(role, msg string) {
 func (d *AIRouterReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 	d.GetModel(l)
 	config := openrouter.DefaultConfig(*conf.BaseConfInfo.OpenRouterToken)
-	config.HTTPClient = utils.GetDeepseekProxyClient()
+	config.HTTPClient = utils.GetLLMProxyClient()
 	client := openrouter.NewClientWithConfig(*config)
 	
 	request := openrouter.ChatCompletionRequest{

@@ -59,7 +59,8 @@ func StartLarkRobot() {
 		larkws.WithLogLevel(larkcore.LogLevelInfo),
 	)
 	
-	botClient = lark.NewClient(*conf.BaseConfInfo.LarkAPPID, *conf.BaseConfInfo.LarkAppSecret)
+	botClient = lark.NewClient(*conf.BaseConfInfo.LarkAPPID, *conf.BaseConfInfo.LarkAppSecret,
+		lark.WithHttpClient(utils.GetRobotProxyClient()))
 	
 	// get bot name
 	resp, err := botClient.Application.Application.Get(context.Background(), larkapplication.NewGetApplicationReqBuilder().
@@ -310,45 +311,47 @@ func (l *LarkRobot) retryLastQuestion() {
 }
 
 func (l *LarkRobot) sendMultiAgent(agentType string) {
-	chatId, msgId, userId := l.Robot.GetChatIdAndMsgIdAndUserID()
-	
-	prompt := strings.TrimSpace(l.Prompt)
-	if prompt == "" {
-		logger.Warn("prompt is empty")
-		l.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "photo_empty_content", nil), msgId, tgbotapi.ModeMarkdown, nil)
-		return
-	}
-	
-	messageChan := make(chan string)
-	
-	dpReq := &llm.LLMTaskReq{
-		Content:     prompt,
-		UserId:      userId,
-		ChatId:      chatId,
-		MsgId:       msgId,
-		HTTPMsgChan: messageChan,
-	}
-	
-	go func() {
-		defer func() {
-			if err := recover(); err != nil {
-				logger.Error("multi agent panic", "err", err, "stack", string(debug.Stack()))
-			}
-			close(messageChan)
-		}()
+	l.Robot.TalkingPreCheck(func() {
+		chatId, msgId, userId := l.Robot.GetChatIdAndMsgIdAndUserID()
 		
-		var err error
-		if agentType == "mcp_empty_content" {
-			err = dpReq.ExecuteMcp()
-		} else {
-			err = dpReq.ExecuteTask()
-		}
-		if err != nil {
-			logger.Warn("execute task fail", "err", err)
-			l.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
+		prompt := strings.TrimSpace(l.Prompt)
+		if prompt == "" {
+			logger.Warn("prompt is empty")
+			l.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "photo_empty_content", nil), msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
-	}()
+		
+		messageChan := make(chan string)
+		
+		dpReq := &llm.LLMTaskReq{
+			Content:     prompt,
+			UserId:      userId,
+			ChatId:      chatId,
+			MsgId:       msgId,
+			HTTPMsgChan: messageChan,
+		}
+		
+		go func() {
+			defer func() {
+				if err := recover(); err != nil {
+					logger.Error("multi agent panic", "err", err, "stack", string(debug.Stack()))
+				}
+				close(messageChan)
+			}()
+			
+			var err error
+			if agentType == "mcp_empty_content" {
+				err = dpReq.ExecuteMcp()
+			} else {
+				err = dpReq.ExecuteTask()
+			}
+			if err != nil {
+				logger.Warn("execute task fail", "err", err)
+				l.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
+				return
+			}
+		}()
+	})
 }
 
 func (l *LarkRobot) sendImg() {
@@ -502,12 +505,13 @@ func (l *LarkRobot) handleChat() {
 		l.Robot.SendMsg(chatId, err.Error(), msgId, "", nil)
 		return
 	}
-	
-	if conf.RagConfInfo.Store != nil {
-		//l.executeChain(content)
-	} else {
-		l.executeLLM(content)
-	}
+	l.Robot.TalkingPreCheck(func() {
+		if conf.RagConfInfo.Store != nil {
+			//l.executeChain(content)
+		} else {
+			l.executeLLM(content)
+		}
+	})
 	
 }
 
@@ -529,38 +533,37 @@ func (l *LarkRobot) handleUpdate(messageChan chan *param.MsgInfo) {
 		if len(msg.Content) == 0 {
 			msg.Content = "get nothing from llm!"
 		}
+		if originalMsgID != "" {
+			msg.MsgId = originalMsgID
+		}
 		
-		if msg.MsgId == 0 {
+		if msg.MsgId == "" && originalMsgID == "" {
 			resp, err := l.Client.Im.Message.Reply(l.Ctx, larkim.NewReplyMessageReqBuilder().
 				MessageId(messageId).
 				Body(larkim.NewReplyMessageReqBodyBuilder().
-					MsgType(larkim.MsgTypeText).
-					Content(larkim.NewMessageTextBuilder().
-						Text(msg.Content).Build()).
+					MsgType(larkim.MsgTypePost).
+					Content(GetMarkdownContent(msg.Content)).
 					Build()).
 				Build())
-			if err != nil {
-				logger.Warn("send message fail", "err", err)
+			if err != nil || !resp.Success() {
+				logger.Warn("send message fail", "err", err, "resp", resp)
+				continue
 			}
-			if !resp.Success() {
-				logger.Warn("send message fail", "resp", resp)
-			}
-			
+			msg.MsgId = larkcore.StringValue(resp.Data.MessageId)
 		} else {
+			
 			resp, err := l.Client.Im.Message.Update(l.Ctx, larkim.NewUpdateMessageReqBuilder().
-				MessageId(originalMsgID).
+				MessageId(msg.MsgId).
 				Body(larkim.NewUpdateMessageReqBodyBuilder().
-					MsgType(larkim.MsgTypeText).
-					Content(larkim.NewMessageTextBuilder().
-						Text(msg.Content).Build()).
+					MsgType(larkim.MsgTypePost).
+					Content(GetMarkdownContent(msg.Content)).
 					Build()).
 				Build())
-			if err != nil {
-				logger.Warn("send message fail", "err", err)
+			if err != nil || !resp.Success() {
+				logger.Warn("send message fail", "err", err, "resp", resp)
+				continue
 			}
-			if !resp.Success() {
-				logger.Warn("send message fail", "resp", resp)
-			}
+			originalMsgID = ""
 		}
 	}
 }
@@ -569,7 +572,7 @@ func (l *LarkRobot) executeLLM(content string) {
 	messageChan := make(chan *param.MsgInfo)
 	go l.handleUpdate(messageChan)
 	
-	l.Robot.TalkingPreCheck(func() {
+	go func() {
 		chatId, msgId, userId := l.Robot.GetChatIdAndMsgIdAndUserID()
 		
 		llmClient := llm.NewLLM(
@@ -586,7 +589,7 @@ func (l *LarkRobot) executeLLM(content string) {
 			l.Robot.SendMsg(chatId, err.Error(), msgId, "", nil)
 		}
 		
-	})
+	}()
 	
 }
 
@@ -657,4 +660,30 @@ func (l *LarkRobot) GetContent(content string) (string, error) {
 	}
 	
 	return content, nil
+}
+
+func GetMarkdownContent(content string) string {
+	markdownMsg, _ := larkim.NewMessagePost().ZhCn(larkim.NewMessagePostContent().AppendContent(
+		[]larkim.MessagePostElement{
+			&MessagePostMarkdown{
+				Text: strings.ReplaceAll(content, "\n", "\\n"),
+			},
+		}).Build()).Build()
+	
+	return markdownMsg
+}
+
+type MessagePostMarkdown struct {
+	Text string `json:"text,omitempty"`
+}
+
+func (m *MessagePostMarkdown) Tag() string {
+	return "md"
+}
+
+func (m *MessagePostMarkdown) IsPost() {
+}
+
+func (m *MessagePostMarkdown) MarshalJSON() ([]byte, error) {
+	return []byte(`{"tag":"md","text":"` + m.Text + `"}`), nil
 }

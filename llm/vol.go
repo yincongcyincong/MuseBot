@@ -16,13 +16,13 @@ import (
 	"github.com/volcengine/volc-sdk-golang/service/visual"
 	"github.com/volcengine/volcengine-go-sdk/service/arkruntime"
 	"github.com/volcengine/volcengine-go-sdk/service/arkruntime/model"
-	"github.com/yincongcyincong/mcp-client-go/clients"
 	"github.com/yincongcyincong/MuseBot/conf"
 	"github.com/yincongcyincong/MuseBot/db"
 	"github.com/yincongcyincong/MuseBot/logger"
 	"github.com/yincongcyincong/MuseBot/metrics"
 	"github.com/yincongcyincong/MuseBot/param"
 	"github.com/yincongcyincong/MuseBot/utils"
+	"github.com/yincongcyincong/mcp-client-go/clients"
 )
 
 type VolReq struct {
@@ -105,7 +105,7 @@ func (h *VolReq) Send(ctx context.Context, l *LLM) error {
 	h.GetModel(l)
 	
 	// set deepseek proxy
-	httpClient := utils.GetDeepseekProxyClient()
+	httpClient := utils.GetLLMProxyClient()
 	
 	client := arkruntime.NewClientWithApiKey(
 		*conf.BaseConfInfo.VolToken,
@@ -309,7 +309,7 @@ func (h *VolReq) GetMessage(role, msg string) {
 func (h *VolReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 	h.GetModel(l)
 	
-	httpClient := utils.GetDeepseekProxyClient()
+	httpClient := utils.GetLLMProxyClient()
 	
 	client := arkruntime.NewClientWithApiKey(
 		*conf.BaseConfInfo.VolToken,
@@ -457,7 +457,7 @@ func GenerateVolVideo(prompt string) (string, int, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 	
-	httpClient := utils.GetDeepseekProxyClient()
+	httpClient := utils.GetLLMProxyClient()
 	
 	client := arkruntime.NewClientWithApiKey(
 		*conf.BaseConfInfo.VolToken,

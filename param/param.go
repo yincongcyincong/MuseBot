@@ -165,7 +165,7 @@ var (
 )
 
 type MsgInfo struct {
-	MsgId   int
+	MsgId   string
 	Content string
 	SendLen int
 }

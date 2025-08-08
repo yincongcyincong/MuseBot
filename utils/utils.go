@@ -67,7 +67,7 @@ func MD5(input string) string {
 	return md5Str
 }
 
-func GetTelegramProxyClient() *http.Client {
+func GetRobotProxyClient() *http.Client {
 	transport := &http.Transport{}
 	
 	if *conf.BaseConfInfo.RobotProxy != "" {
@@ -83,7 +83,7 @@ func GetTelegramProxyClient() *http.Client {
 	}
 }
 
-func GetDeepseekProxyClient() *http.Client {
+func GetLLMProxyClient() *http.Client {
 	transport := &http.Transport{}
 	
 	if *conf.BaseConfInfo.LLMProxy != "" {
@@ -305,9 +305,7 @@ func DownloadFile(url string) ([]byte, error) {
 		return nil, errors.New("url is empty")
 	}
 	
-	client := &http.Client{
-		Timeout: 5 * time.Minute,
-	}
+	client := GetLLMProxyClient()
 	
 	resp, err := client.Get(url)
 	if err != nil {
