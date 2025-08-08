@@ -39,7 +39,7 @@ func TestDeepseekSend(t *testing.T) {
 	
 	*conf.BaseConfInfo.Type = param.DeepSeek
 	
-	callLLM := NewLLM(WithChatId(1), WithMsgId(2), WithUserId("3"),
+	callLLM := NewLLM(WithChatId("1"), WithMsgId("2"), WithUserId("3"),
 		WithMessageChan(messageChan), WithContent("hi"))
 	callLLM.LLMClient.GetModel(callLLM)
 	callLLM.LLMClient.GetMessages("3", "hi")
