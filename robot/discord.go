@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"runtime/debug"
-	"strconv"
 	"strings"
 	"time"
 	
@@ -39,7 +38,7 @@ func StartDiscordRobot() {
 	if err != nil {
 		logger.Fatal("create discord bot", "err", err)
 	}
-	dg.Client = utils.GetTelegramProxyClient()
+	dg.Client = utils.GetRobotProxyClient()
 	
 	// 添加消息处理函数
 	dg.AddHandler(messageCreate)
@@ -78,18 +77,21 @@ func (d *DiscordRobot) Exec() {
 }
 
 func (d *DiscordRobot) requestDeepseekAndResp(content string) {
-	if conf.RagConfInfo.Store != nil {
-		d.executeChain(content)
-	} else {
-		d.executeLLM(content)
-	}
+	d.Robot.TalkingPreCheck(func() {
+		if conf.RagConfInfo.Store != nil {
+			d.executeChain(content)
+		} else {
+			d.executeLLM(content)
+		}
+	})
+	
 }
 
 func (d *DiscordRobot) executeChain(content string) {
 	messageChan := make(chan *param.MsgInfo)
 	chatId, msgId, userId := d.Robot.GetChatIdAndMsgIdAndUserID()
 	
-	go d.Robot.TalkingPreCheck(func() {
+	go func() {
 		defer func() {
 			if err := recover(); err != nil {
 				logger.Error("GetContent panic err", "err", err, "stack", string(debug.Stack()))
@@ -120,8 +122,7 @@ func (d *DiscordRobot) executeChain(content string) {
 			logger.Warn("execute chain fail", "err", err)
 			d.Robot.SendMsg(chatId, err.Error(), msgId, "", nil)
 		}
-	})
-	
+	}()
 	// send response message
 	go d.handleUpdate(messageChan)
 }
@@ -174,81 +175,80 @@ func (d *DiscordRobot) handleUpdate(messageChan chan *param.MsgInfo) {
 	var msg *param.MsgInfo
 	for msg = range messageChan {
 		if len(msg.Content) == 0 {
-			msg.Content = "get nothing from deepseek!"
+			msg.Content = "get nothing from llm!"
 		}
 		
-		if msg.MsgId == 0 && originalMsgID != "" {
-			msg.MsgId = utils.ParseInt(originalMsgID)
+		if msg.MsgId == "" && originalMsgID != "" {
+			msg.MsgId = originalMsgID
 		}
 		
 		if d.Msg != nil {
-			// 普通消息：编辑占位，或发送新消息
-			if msg.MsgId == 0 {
+			if msg.MsgId == "" && originalMsgID == "" {
 				_, err = d.Session.ChannelMessageSend(channelID, msg.Content)
 				if err != nil {
 					logger.Warn("Sending message failed", "err", err)
 				}
 			} else {
-				_, err = d.Session.ChannelMessageEdit(channelID, strconv.Itoa(msg.MsgId), msg.Content)
+				_, err = d.Session.ChannelMessageEdit(channelID, msg.MsgId, msg.Content)
 				if err != nil {
 					logger.Warn("Editing message failed", "msgID", msg.MsgId, "err", err)
 				}
 				originalMsgID = ""
 			}
 		} else if d.Inter != nil {
-			if msg.MsgId == 0 {
+			if msg.MsgId == "" && originalMsgID == "" {
 				_, err = d.Session.InteractionResponseEdit(d.Inter.Interaction, &discordgo.WebhookEdit{
 					Content: &msg.Content,
 				})
 				if err != nil {
-					logger.Warn("Editing interaction response failed", "err", err)
+					logger.Warn("Sending interaction response failed", "err", err)
 				}
 			} else {
 				_, err = d.Session.FollowupMessageCreate(d.Inter.Interaction, true, &discordgo.WebhookParams{
 					Content: msg.Content,
 				})
 				if err != nil {
-					logger.Warn("Sending followup interaction message failed", "err", err)
+					logger.Warn("Editing followup interaction message failed", "err", err)
 				}
+				originalMsgID = ""
 			}
 		}
 	}
 }
 
 func (d *DiscordRobot) callLLM(content string, messageChan chan *param.MsgInfo) {
-	d.Robot.TalkingPreCheck(func() {
-		chatId, msgId, userId := d.Robot.GetChatIdAndMsgIdAndUserID()
-		defer func() {
-			if err := recover(); err != nil {
-				logger.Error("GetContent panic err", "err", err, "stack", string(debug.Stack()))
-			}
-			close(messageChan)
-		}()
-		
-		text, err := d.getContent(content)
-		if err != nil {
-			logger.Error("get content fail", "err", err)
-			d.Robot.SendMsg(chatId, err.Error(), msgId, "", nil)
-			return
+	
+	chatId, msgId, userId := d.Robot.GetChatIdAndMsgIdAndUserID()
+	defer func() {
+		if err := recover(); err != nil {
+			logger.Error("GetContent panic err", "err", err, "stack", string(debug.Stack()))
 		}
-		
-		l := llm.NewLLM(llm.WithMessageChan(messageChan), llm.WithContent(text),
-			llm.WithChatId(chatId), llm.WithMsgId(msgId),
-			llm.WithUserId(userId),
-			llm.WithTaskTools(&conf.AgentInfo{
-				DeepseekTool:    conf.DeepseekTools,
-				VolTool:         conf.VolTools,
-				OpenAITools:     conf.OpenAITools,
-				GeminiTools:     conf.GeminiTools,
-				OpenRouterTools: conf.OpenRouterTools,
-			}))
-		
-		err = l.CallLLM()
-		if err != nil {
-			logger.Error("get content fail", "err", err)
-			d.Robot.SendMsg(chatId, err.Error(), msgId, "", nil)
-		}
-	})
+		close(messageChan)
+	}()
+	
+	text, err := d.getContent(content)
+	if err != nil {
+		logger.Error("get content fail", "err", err)
+		d.Robot.SendMsg(chatId, err.Error(), msgId, "", nil)
+		return
+	}
+	
+	l := llm.NewLLM(llm.WithMessageChan(messageChan), llm.WithContent(text),
+		llm.WithChatId(chatId), llm.WithMsgId(msgId),
+		llm.WithUserId(userId),
+		llm.WithTaskTools(&conf.AgentInfo{
+			DeepseekTool:    conf.DeepseekTools,
+			VolTool:         conf.VolTools,
+			OpenAITools:     conf.OpenAITools,
+			GeminiTools:     conf.GeminiTools,
+			OpenRouterTools: conf.OpenRouterTools,
+		}))
+	
+	err = l.CallLLM()
+	if err != nil {
+		logger.Error("get content fail", "err", err)
+		d.Robot.SendMsg(chatId, err.Error(), msgId, "", nil)
+	}
 }
 
 func (d *DiscordRobot) getContent(defaultText string) (string, error) {
@@ -381,11 +381,6 @@ func registerSlashCommands(s *discordgo.Session) {
 		{Name: "mcp", Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.mcp.description", nil), Options: []*discordgo.ApplicationCommandOption{
 			{Type: discordgo.ApplicationCommandOptionString, Name: "prompt", Description: "Prompt", Required: true},
 		}},
-		
-		{Name: "add", Description: "add", Options: []*discordgo.ApplicationCommandOption{
-			//{Type: discordgo.ApplicationCommandOptionString, Name: "user", Description: "userid", Required: true},
-			{Type: discordgo.ApplicationCommandOptionString, Name: "token", Description: "token", Required: true},
-		}},
 	}
 	
 	for _, cmd := range commands {
@@ -400,7 +395,6 @@ func onInteractionCreate(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	d := NewDiscordRobot(s, nil, i)
 	d.Robot = NewRobot(WithRobot(d))
 	d.Robot.Exec()
-	_, _, userId := d.Robot.GetChatIdAndMsgIdAndUserID()
 	
 	cmd := ""
 	switch i.Type {
@@ -434,10 +428,6 @@ func onInteractionCreate(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		d.sendMultiAgent("task_empty_content")
 	case "mcp":
 		d.sendMultiAgent("mcp_empty_content")
-	case "addtoken":
-		if d.Robot.checkAdminUser(userId) {
-			d.addToken()
-		}
 	default:
 		if param.GeminiModels[cmd] || param.OpenAIModels[cmd] ||
 			param.DeepseekModels[cmd] || param.DeepseekLocalModels[cmd] ||
@@ -776,32 +766,6 @@ func (d *DiscordRobot) sendVideo() {
 
 func (d *DiscordRobot) sendHelp() {
 	chatId, replyToMessageID, _ := d.Robot.GetChatIdAndMsgIdAndUserID()
-	
-	helpText := `
-Available Commands:
-
-/chat   - Start a normal chat session
-
-/mode   - Set the LLM mode
-
-/balance - Check your current balance (tokens or credits)
-
-/state  - View your current session state and settings
-
-/clear  - Clear all conversation history
-
-/retry  - Retry your last question
-
-/photo  - Create a Image base on your prompt or your Image
-
-/video  - Generate a video based on your prompt
-
-/task   - Let multiple agents collaborate to complete a task
-
-/mcp    - Use Multi-Agent Control Panel for complex task planning
-
-/help   - Show this help message
-`
 	d.Robot.SendMsg(chatId, helpText, replyToMessageID, tgbotapi.ModeMarkdown, nil)
 }
 
@@ -850,14 +814,4 @@ func (d *DiscordRobot) sendMultiAgent(agentType string) {
 		
 		go d.handleUpdate(messageChan)
 	})
-}
-
-func (d *DiscordRobot) addToken() {
-	chatId, msgId, _ := d.Robot.GetChatIdAndMsgIdAndUserID()
-	userId := d.Inter.ApplicationCommandData().Options[0].StringValue()
-	token := d.Inter.ApplicationCommandData().Options[1].StringValue()
-	
-	db.AddAvailToken(userId, utils.ParseInt(token))
-	d.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "add_token_succ", nil),
-		msgId, tgbotapi.ModeMarkdown, nil)
 }

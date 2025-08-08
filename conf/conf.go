@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 	
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/yincongcyincong/MuseBot/logger"
 )
 
@@ -51,8 +50,6 @@ type BaseConf struct {
 	AllowedUserIds  map[string]bool `json:"allowed_user_ids"`
 	AllowedGroupIds map[string]bool `json:"allowed_group_ids"`
 	AdminUserIds    map[string]bool `json:"admin_user_ids"`
-	
-	Bot *tgbotapi.BotAPI `json:"bot"`
 }
 
 var (

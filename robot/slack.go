@@ -116,7 +116,7 @@ func (r *SlackRobot) executeLLM(content string) {
 func (r *SlackRobot) handleUpdate(messageChan chan *param.MsgInfo) {
 	for msg := range messageChan {
 		if msg.Content == "" {
-			msg.Content = "get nothing from deepseek!"
+			msg.Content = "get nothing from llm!"
 		}
 	}
 }

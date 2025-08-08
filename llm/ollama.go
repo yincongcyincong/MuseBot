@@ -11,13 +11,13 @@ import (
 	
 	"github.com/cohesion-org/deepseek-go"
 	"github.com/cohesion-org/deepseek-go/constants"
-	"github.com/yincongcyincong/mcp-client-go/clients"
 	"github.com/yincongcyincong/MuseBot/conf"
 	"github.com/yincongcyincong/MuseBot/db"
 	"github.com/yincongcyincong/MuseBot/logger"
 	"github.com/yincongcyincong/MuseBot/metrics"
 	"github.com/yincongcyincong/MuseBot/param"
 	"github.com/yincongcyincong/MuseBot/utils"
+	"github.com/yincongcyincong/mcp-client-go/clients"
 )
 
 type OllamaDeepseekReq struct {
@@ -211,7 +211,7 @@ func (d *OllamaDeepseekReq) GetMessage(role, msg string) {
 }
 func (d *OllamaDeepseekReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 	
-	httpClient := utils.GetDeepseekProxyClient()
+	httpClient := utils.GetLLMProxyClient()
 	
 	client, err := deepseek.NewClientWithOptions(*conf.BaseConfInfo.DeepseekToken,
 		deepseek.WithBaseURL(*conf.BaseConfInfo.CustomUrl), deepseek.WithHTTPClient(httpClient))

@@ -164,16 +164,14 @@ func (r *RobotInfo) SendMsg(chatId string, msgContent string, replyToMessageID s
 				Content: msgContent,
 			}
 			
-			// 设置引用消息
-			chatIdStr := fmt.Sprintf("%d", chatId)
 			if replyToMessageID != "" {
 				messageSend.Reference = &discordgo.MessageReference{
 					MessageID: replyToMessageID,
-					ChannelID: chatIdStr,
+					ChannelID: chatId,
 				}
 			}
 			
-			sentMsg, err := discordRobot.Session.ChannelMessageSendComplex(chatIdStr, messageSend)
+			sentMsg, err := discordRobot.Session.ChannelMessageSendComplex(chatId, messageSend)
 			if err != nil {
 				logger.Warn("send discord message fail", "err", err)
 				return ""
@@ -212,20 +210,17 @@ func (r *RobotInfo) SendMsg(chatId string, msgContent string, replyToMessageID s
 		return timestamp
 	case *LarkRobot:
 		lark := r.Robot.(*LarkRobot)
-		content := larkim.NewTextMsgBuilder().
-			Text(msgContent).
-			Build()
 		
 		if replyToMessageID != "" {
 			resp, err := lark.Client.Im.Message.Reply(lark.Ctx, larkim.NewReplyMessageReqBuilder().
 				MessageId(replyToMessageID).
 				Body(larkim.NewReplyMessageReqBodyBuilder().
-					MsgType(larkim.MsgTypeText).
-					Content(content).
+					MsgType(larkim.MsgTypePost).
+					Content(GetMarkdownContent(msgContent)).
 					Build()).
 				Build())
-			if err != nil {
-				logger.Warn("send message fail", "err", err)
+			if err != nil || !resp.Success() {
+				logger.Warn("send message fail", "err", err, "resp", resp)
 				return ""
 			}
 			
@@ -234,12 +229,12 @@ func (r *RobotInfo) SendMsg(chatId string, msgContent string, replyToMessageID s
 			resp, err := lark.Client.Im.Message.Create(lark.Ctx, larkim.NewCreateMessageReqBuilder().
 				ReceiveIdType(larkim.ReceiveIdTypeChatId).
 				Body(larkim.NewCreateMessageReqBodyBuilder().
-					MsgType(larkim.MsgTypeText).
+					MsgType(larkim.MsgTypePost).
 					ReceiveId(chatId).
-					Content(content).
+					Content(GetMarkdownContent(msgContent)).
 					Build()).
 				Build())
-			if err != nil {
+			if err != nil || !resp.Success() {
 				logger.Warn("send message fail", "err", err)
 				return ""
 			}

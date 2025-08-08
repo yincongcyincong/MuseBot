@@ -7,10 +7,8 @@ import (
 	"errors"
 	"fmt"
 	"image"
-	"io"
-	"net/http"
-	"net/url"
 	"runtime/debug"
+	"strconv"
 	"strings"
 	"time"
 	
@@ -62,18 +60,18 @@ func StartTelegramRobot() {
 }
 
 func CreateBot() *tgbotapi.BotAPI {
-	// 配置自定义 HTTP Client 并设置代理
-	client := utils.GetTelegramProxyClient()
+	client := utils.GetRobotProxyClient()
 	
 	var err error
-	conf.BaseConfInfo.Bot, err = tgbotapi.NewBotAPIWithClient(*conf.BaseConfInfo.TelegramBotToken, tgbotapi.APIEndpoint, client)
+	var bot *tgbotapi.BotAPI
+	bot, err = tgbotapi.NewBotAPIWithClient(*conf.BaseConfInfo.TelegramBotToken, tgbotapi.APIEndpoint, client)
 	if err != nil {
 		logger.Error("telegramBot Error", "error", err)
 		return nil
 	}
 	
 	if *logger.LogLevel == "debug" {
-		conf.BaseConfInfo.Bot.Debug = true
+		bot.Debug = true
 	}
 	
 	// set command
@@ -123,9 +121,9 @@ func CreateBot() *tgbotapi.BotAPI {
 			Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.mcp.description", nil),
 		},
 	)
-	conf.BaseConfInfo.Bot.Send(cmdCfg)
+	bot.Send(cmdCfg)
 	
-	return conf.BaseConfInfo.Bot
+	return bot
 }
 
 func (t *TelegramRobot) Exec() {
@@ -145,12 +143,13 @@ func (t *TelegramRobot) Exec() {
 
 // requestDeepseekAndResp request deepseek api
 func (t *TelegramRobot) requestDeepseekAndResp(content string) {
-	if conf.RagConfInfo.Store != nil {
-		t.executeChain(content)
-	} else {
-		t.executeLLM(content)
-	}
-	
+	t.Robot.TalkingPreCheck(func() {
+		if conf.RagConfInfo.Store != nil {
+			t.executeChain(content)
+		} else {
+			t.executeLLM(content)
+		}
+	})
 }
 
 // executeChain use langchain to interact llm
@@ -158,38 +157,36 @@ func (t *TelegramRobot) executeChain(content string) {
 	messageChan := make(chan *param.MsgInfo)
 	chatId, msgId, userId := t.Robot.GetChatIdAndMsgIdAndUserID()
 	go func() {
-		t.Robot.TalkingPreCheck(func() {
-			defer func() {
-				if err := recover(); err != nil {
-					logger.Error("GetContent panic err", "err", err, "stack", string(debug.Stack()))
-				}
-				close(messageChan)
-			}()
-			
-			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
-			defer cancel()
-			
-			text, err := t.GetContent(content)
-			if err != nil {
-				logger.Error("get content fail", "err", err)
-				t.Robot.SendMsg(chatId, err.Error(), msgId, "", nil)
-				return
+		defer func() {
+			if err := recover(); err != nil {
+				logger.Error("GetContent panic err", "err", err, "stack", string(debug.Stack()))
 			}
-			
-			dpLLM := rag.NewRag(llm.WithMessageChan(messageChan), llm.WithContent(content),
-				llm.WithChatId(chatId), llm.WithMsgId(msgId),
-				llm.WithUserId(userId))
-			
-			qaChain := chains.NewRetrievalQAFromLLM(
-				dpLLM,
-				vectorstores.ToRetriever(conf.RagConfInfo.Store, 3),
-			)
-			_, err = chains.Run(ctx, qaChain, text)
-			if err != nil {
-				logger.Warn("execute chain fail", "err", err)
-				t.Robot.SendMsg(chatId, err.Error(), msgId, "", nil)
-			}
-		})
+			close(messageChan)
+		}()
+		
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+		defer cancel()
+		
+		text, err := t.GetContent(content)
+		if err != nil {
+			logger.Error("get content fail", "err", err)
+			t.Robot.SendMsg(chatId, err.Error(), msgId, "", nil)
+			return
+		}
+		
+		dpLLM := rag.NewRag(llm.WithMessageChan(messageChan), llm.WithContent(content),
+			llm.WithChatId(chatId), llm.WithMsgId(msgId),
+			llm.WithUserId(userId))
+		
+		qaChain := chains.NewRetrievalQAFromLLM(
+			dpLLM,
+			vectorstores.ToRetriever(conf.RagConfInfo.Store, 3),
+		)
+		_, err = chains.Run(ctx, qaChain, text)
+		if err != nil {
+			logger.Warn("execute chain fail", "err", err)
+			t.Robot.SendMsg(chatId, err.Error(), msgId, "", nil)
+		}
 	}()
 	
 	// send response message
@@ -200,7 +197,6 @@ func (t *TelegramRobot) executeChain(content string) {
 // executeLLM directly interact llm
 func (t *TelegramRobot) executeLLM(content string) {
 	messageChan := make(chan *param.MsgInfo)
-	
 	// request DeepSeek API
 	go t.callLLM(content, messageChan)
 	
@@ -210,41 +206,39 @@ func (t *TelegramRobot) executeLLM(content string) {
 }
 
 func (t *TelegramRobot) callLLM(content string, messageChan chan *param.MsgInfo) {
-	t.Robot.TalkingPreCheck(func() {
-		chatId, msgId, userId := t.Robot.GetChatIdAndMsgIdAndUserID()
-		
-		defer func() {
-			if err := recover(); err != nil {
-				logger.Error("GetContent panic err", "err", err, "stack", string(debug.Stack()))
-			}
-			close(messageChan)
-		}()
-		
-		text, err := t.GetContent(content)
-		if err != nil {
-			logger.Error("get content fail", "err", err)
-			t.Robot.SendMsg(chatId, err.Error(), msgId, "", nil)
-			return
-		}
-		
-		l := llm.NewLLM(llm.WithMessageChan(messageChan), llm.WithContent(text),
-			llm.WithChatId(chatId), llm.WithMsgId(msgId),
-			llm.WithUserId(userId),
-			llm.WithTaskTools(&conf.AgentInfo{
-				DeepseekTool:    conf.DeepseekTools,
-				VolTool:         conf.VolTools,
-				OpenAITools:     conf.OpenAITools,
-				GeminiTools:     conf.GeminiTools,
-				OpenRouterTools: conf.OpenRouterTools,
-			}))
-		
-		err = l.CallLLM()
-		if err != nil {
-			logger.Error("get content fail", "err", err)
-			t.Robot.SendMsg(chatId, err.Error(), msgId, "", nil)
-		}
-	})
 	
+	chatId, msgId, userId := t.Robot.GetChatIdAndMsgIdAndUserID()
+	
+	defer func() {
+		if err := recover(); err != nil {
+			logger.Error("GetContent panic err", "err", err, "stack", string(debug.Stack()))
+		}
+		close(messageChan)
+	}()
+	
+	text, err := t.GetContent(content)
+	if err != nil {
+		logger.Error("get content fail", "err", err)
+		t.Robot.SendMsg(chatId, err.Error(), msgId, "", nil)
+		return
+	}
+	
+	l := llm.NewLLM(llm.WithMessageChan(messageChan), llm.WithContent(text),
+		llm.WithChatId(chatId), llm.WithMsgId(msgId),
+		llm.WithUserId(userId),
+		llm.WithTaskTools(&conf.AgentInfo{
+			DeepseekTool:    conf.DeepseekTools,
+			VolTool:         conf.VolTools,
+			OpenAITools:     conf.OpenAITools,
+			GeminiTools:     conf.GeminiTools,
+			OpenRouterTools: conf.OpenRouterTools,
+		}))
+	
+	err = l.CallLLM()
+	if err != nil {
+		logger.Error("get content fail", "err", err)
+		t.Robot.SendMsg(chatId, err.Error(), msgId, "", nil)
+	}
 }
 
 // handleUpdate handle robot msg sending
@@ -274,10 +268,10 @@ func (t *TelegramRobot) handleUpdate(messageChan chan *param.MsgInfo) {
 			msg.Content = "get nothing from llm!"
 		}
 		if firstSendInfo.MessageID != 0 {
-			msg.MsgId = firstSendInfo.MessageID
+			msg.MsgId = strconv.Itoa(firstSendInfo.MessageID)
 		}
 		
-		if msg.MsgId == 0 && firstSendInfo.MessageID == 0 {
+		if msg.MsgId == "" && firstSendInfo.MessageID == 0 {
 			tgMsgInfo = tgbotapi.NewMessage(chatId, msg.Content)
 			tgMsgInfo.ReplyToMessageID = msgId
 			tgMsgInfo.ParseMode = parseMode
@@ -296,9 +290,9 @@ func (t *TelegramRobot) handleUpdate(messageChan chan *param.MsgInfo) {
 					continue
 				}
 			}
-			msg.MsgId = sendInfo.MessageID
+			msg.MsgId = strconv.Itoa(sendInfo.MessageID)
 		} else {
-			updateMsg := tgbotapi.NewEditMessageText(chatId, msg.MsgId, msg.Content)
+			updateMsg := tgbotapi.NewEditMessageText(chatId, utils.ParseInt(msg.MsgId), msg.Content)
 			updateMsg.ParseMode = parseMode
 			_, err = t.Bot.Send(updateMsg)
 			if err != nil {
@@ -424,13 +418,6 @@ func (t *TelegramRobot) handleCommand() {
 	case "mcp":
 		t.sendMultiAgent("mcp_empty_content")
 	}
-	
-	if t.Robot.checkAdminUser(userID) {
-		switch cmd {
-		case "addtoken":
-			t.addToken()
-		}
-	}
 }
 
 // sendChatMessage response chat command to telegram
@@ -484,19 +471,6 @@ func (t *TelegramRobot) clearAllRecord() {
 	chatId, msgId, userId := t.Robot.GetChatIdAndMsgIdAndUserID()
 	db.DeleteMsgRecord(userId)
 	t.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "delete_succ", nil),
-		msgId, tgbotapi.ModeMarkdown, nil)
-}
-
-// addToken clear all record
-func (t *TelegramRobot) addToken() {
-	chatId, msgId, _ := t.Robot.GetChatIdAndMsgIdAndUserID()
-	msg := t.GetMessage()
-	
-	content := utils.ReplaceCommand(msg.Text, "/addtoken", t.Bot.Self.UserName)
-	splitContent := strings.Split(content, " ")
-	
-	db.AddAvailToken(splitContent[0], utils.ParseInt(splitContent[1]))
-	t.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "add_token_succ", nil),
 		msgId, tgbotapi.ModeMarkdown, nil)
 }
 
@@ -1072,33 +1046,8 @@ func (t *TelegramRobot) GetAudioContent() []byte {
 		return nil
 	}
 	
-	// 构造下载 URL
 	downloadURL := file.Link(t.Bot.Token)
-	
-	transport := &http.Transport{}
-	
-	if *conf.BaseConfInfo.RobotProxy != "" {
-		proxy, err := url.Parse(*conf.BaseConfInfo.RobotProxy)
-		if err != nil {
-			logger.Warn("parse proxy url fail", "err", err)
-			return nil
-		}
-		transport.Proxy = http.ProxyURL(proxy)
-	}
-	
-	client := &http.Client{
-		Transport: transport,
-		Timeout:   30 * time.Second, // 设置超时
-	}
-	
-	// 通过代理下载
-	resp, err := client.Get(downloadURL)
-	if err != nil {
-		logger.Warn("download fail", "err", err)
-		return nil
-	}
-	defer resp.Body.Close()
-	voice, err := io.ReadAll(resp.Body)
+	voice, err := utils.DownloadFile(downloadURL)
 	if err != nil {
 		logger.Warn("read response fail", "err", err)
 		return nil
@@ -1127,15 +1076,7 @@ func (t *TelegramRobot) GetPhotoContent() []byte {
 	}
 	
 	downloadURL := file.Link(t.Bot.Token)
-	
-	client := utils.GetTelegramProxyClient()
-	resp, err := client.Get(downloadURL)
-	if err != nil {
-		logger.Warn("download fail", "err", err)
-		return nil
-	}
-	defer resp.Body.Close()
-	photoContent, err := io.ReadAll(resp.Body)
+	photoContent, err := utils.DownloadFile(downloadURL)
 	if err != nil {
 		logger.Warn("read response fail", "err", err)
 		return nil

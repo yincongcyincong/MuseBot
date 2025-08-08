@@ -15,13 +15,13 @@ import (
 	"github.com/cohesion-org/deepseek-go"
 	"github.com/cohesion-org/deepseek-go/constants"
 	"github.com/sashabaranov/go-openai"
-	"github.com/yincongcyincong/mcp-client-go/clients"
 	"github.com/yincongcyincong/MuseBot/conf"
 	"github.com/yincongcyincong/MuseBot/db"
 	"github.com/yincongcyincong/MuseBot/logger"
 	"github.com/yincongcyincong/MuseBot/metrics"
 	"github.com/yincongcyincong/MuseBot/param"
 	"github.com/yincongcyincong/MuseBot/utils"
+	"github.com/yincongcyincong/mcp-client-go/clients"
 )
 
 type OpenAIReq struct {
@@ -96,7 +96,7 @@ func (d *OpenAIReq) Send(ctx context.Context, l *LLM) error {
 	d.GetModel(l)
 	
 	// set deepseek proxy
-	httpClient := utils.GetDeepseekProxyClient()
+	httpClient := utils.GetLLMProxyClient()
 	openaiConfig := openai.DefaultConfig(*conf.BaseConfInfo.OpenAIToken)
 	if *conf.BaseConfInfo.CustomUrl != "" {
 		openaiConfig.BaseURL = *conf.BaseConfInfo.CustomUrl
@@ -238,7 +238,7 @@ func (d *OpenAIReq) GetMessage(role, msg string) {
 func (d *OpenAIReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 	// set deepseek proxy
 	d.GetModel(l)
-	httpClient := utils.GetDeepseekProxyClient()
+	httpClient := utils.GetLLMProxyClient()
 	
 	openaiConfig := openai.DefaultConfig(*conf.BaseConfInfo.OpenAIToken)
 	if *conf.BaseConfInfo.CustomUrl != "" {
@@ -373,7 +373,7 @@ func GenerateOpenAIImg(prompt string, imageContent []byte) ([]byte, int, error) 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 	
-	httpClient := utils.GetDeepseekProxyClient()
+	httpClient := utils.GetLLMProxyClient()
 	openaiConfig := openai.DefaultConfig(*conf.BaseConfInfo.OpenAIToken)
 	if *conf.BaseConfInfo.CustomUrl != "" {
 		openaiConfig.BaseURL = *conf.BaseConfInfo.CustomUrl
@@ -437,7 +437,7 @@ func GenerateOpenAIText(audioContent []byte) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 	
-	httpClient := utils.GetDeepseekProxyClient()
+	httpClient := utils.GetLLMProxyClient()
 	openaiConfig := openai.DefaultConfig(*conf.BaseConfInfo.OpenAIToken)
 	if *conf.BaseConfInfo.CustomUrl != "" {
 		openaiConfig.BaseURL = *conf.BaseConfInfo.CustomUrl
@@ -467,7 +467,7 @@ func GetOpenAIImageContent(imageContent []byte) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 	
-	httpClient := utils.GetDeepseekProxyClient()
+	httpClient := utils.GetLLMProxyClient()
 	openaiConfig := openai.DefaultConfig(*conf.BaseConfInfo.OpenAIToken)
 	if *conf.BaseConfInfo.CustomUrl != "" {
 		openaiConfig.BaseURL = *conf.BaseConfInfo.CustomUrl

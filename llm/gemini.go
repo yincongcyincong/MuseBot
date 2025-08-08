@@ -8,13 +8,13 @@ import (
 	"time"
 	"unicode"
 	
-	"github.com/yincongcyincong/mcp-client-go/clients"
 	"github.com/yincongcyincong/MuseBot/conf"
 	"github.com/yincongcyincong/MuseBot/db"
 	"github.com/yincongcyincong/MuseBot/logger"
 	"github.com/yincongcyincong/MuseBot/metrics"
 	"github.com/yincongcyincong/MuseBot/param"
 	"github.com/yincongcyincong/MuseBot/utils"
+	"github.com/yincongcyincong/mcp-client-go/clients"
 	"google.golang.org/genai"
 )
 
@@ -73,7 +73,7 @@ func (h *GeminiReq) Send(ctx context.Context, l *LLM) error {
 	start := time.Now()
 	h.GetModel(l)
 	
-	httpClient := utils.GetDeepseekProxyClient()
+	httpClient := utils.GetLLMProxyClient()
 	client, err := genai.NewClient(ctx, &genai.ClientConfig{
 		HTTPClient: httpClient,
 		APIKey:     *conf.BaseConfInfo.GeminiToken,
@@ -205,7 +205,7 @@ func (h *GeminiReq) GetMessage(role, msg string) {
 func (h *GeminiReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 	h.GetModel(l)
 	
-	httpClient := utils.GetDeepseekProxyClient()
+	httpClient := utils.GetLLMProxyClient()
 	client, err := genai.NewClient(ctx, &genai.ClientConfig{
 		HTTPClient: httpClient,
 		APIKey:     *conf.BaseConfInfo.GeminiToken,
@@ -356,7 +356,7 @@ func GenerateGeminiImg(prompt string, imageContent []byte) ([]byte, int, error) 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 	
-	httpClient := utils.GetDeepseekProxyClient()
+	httpClient := utils.GetLLMProxyClient()
 	client, err := genai.NewClient(ctx, &genai.ClientConfig{
 		HTTPClient: httpClient,
 		APIKey:     *conf.BaseConfInfo.GeminiToken,
@@ -409,7 +409,7 @@ func GenerateGeminiVideo(prompt string) ([]byte, int, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 	
-	httpClient := utils.GetDeepseekProxyClient()
+	httpClient := utils.GetLLMProxyClient()
 	client, err := genai.NewClient(ctx, &genai.ClientConfig{
 		HTTPClient: httpClient,
 		APIKey:     *conf.BaseConfInfo.GeminiToken,
@@ -467,7 +467,7 @@ func GenerateGeminiText(audioContent []byte) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 	
-	httpClient := utils.GetDeepseekProxyClient()
+	httpClient := utils.GetLLMProxyClient()
 	client, err := genai.NewClient(ctx, &genai.ClientConfig{
 		HTTPClient: httpClient,
 		APIKey:     *conf.BaseConfInfo.GeminiToken,
@@ -509,7 +509,7 @@ func GetGeminiImageContent(imageContent []byte) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 	
-	httpClient := utils.GetDeepseekProxyClient()
+	httpClient := utils.GetLLMProxyClient()
 	client, err := genai.NewClient(ctx, &genai.ClientConfig{
 		HTTPClient: httpClient,
 		APIKey:     *conf.BaseConfInfo.GeminiToken,
