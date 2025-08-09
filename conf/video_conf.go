@@ -27,7 +27,7 @@ var (
 )
 
 func InitVideoConf() {
-	VideoConfInfo.VideoModel = flag.String("video_model", "doubao-seaweed-241128", "video model")
+	VideoConfInfo.VideoModel = flag.String("video_model", "doubao-seedance-1-0-pro-250528", "video model")
 	VideoConfInfo.Radio = flag.String("radio", "1:1", "the width to height ratio")
 	VideoConfInfo.Duration = flag.Int("duration", 5, "the duration in seconds, only support 5s / 10s")
 	VideoConfInfo.FPS = flag.Int("fps", 24, "the frame per second")

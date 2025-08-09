@@ -404,7 +404,7 @@ func ConvertToPNGFile(imageContent []byte) (*os.File, error) {
 		return nil, fmt.Errorf("png encode fail: %v", err)
 	}
 	
-	tmpFile.Seek(0, io.SeekStart) // 重置文件指针
+	tmpFile.Seek(0, io.SeekStart)
 	return tmpFile, nil
 }
 
