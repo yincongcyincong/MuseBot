@@ -40,5 +40,5 @@ func Communicate(w http.ResponseWriter, r *http.Request) {
 	command, p := robot.ParseCommand(prompt)
 	
 	web := robot.NewWeb(command, intUserId, realUserId, p, prompt, fileData, w, flusher)
-	web.Robot.Exec()
+	web.Exec()
 }
