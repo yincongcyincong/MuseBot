@@ -57,7 +57,7 @@ func (web *Web) getMsgContent() string {
 	return web.Command
 }
 
-func (web *Web) requestLLMAndResp(content string) {
+func (web *Web) Exec() {
 	logger.Info("web exec", "command", web.Command, "userId", web.UserId, "prompt", web.Prompt)
 	switch web.Command {
 	case "/chat":
