@@ -1,24 +1,31 @@
 package robot
 
 import (
+	"context"
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"runtime/debug"
 	"strconv"
 	"strings"
+	"time"
 	
 	"github.com/bwmarrin/discordgo"
 	godeepseek "github.com/cohesion-org/deepseek-go"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	larkcore "github.com/larksuite/oapi-sdk-go/v3/core"
 	larkim "github.com/larksuite/oapi-sdk-go/v3/service/im/v1"
+	"github.com/slack-go/slack"
 	"github.com/yincongcyincong/MuseBot/conf"
 	"github.com/yincongcyincong/MuseBot/db"
 	"github.com/yincongcyincong/MuseBot/i18n"
 	"github.com/yincongcyincong/MuseBot/llm"
 	"github.com/yincongcyincong/MuseBot/logger"
 	"github.com/yincongcyincong/MuseBot/param"
+	"github.com/yincongcyincong/MuseBot/rag"
 	"github.com/yincongcyincong/MuseBot/utils"
+	"github.com/yincongcyincong/langchaingo/chains"
+	"github.com/yincongcyincong/langchaingo/vectorstores"
 )
 
 var (
@@ -65,21 +72,15 @@ type Robot interface {
 	
 	sendModeConfigurationOptions()
 	
-	showBalanceInfo()
-	
-	showStateInfo()
-	
-	clearAllRecord()
-	
-	retryLastQuestion()
-	
 	sendImg()
 	
 	sendVideo()
 	
 	sendHelpConfigurationOptions()
 	
-	sendMultiAgent(t string)
+	handleUpdate(messageChan chan *param.MsgInfo)
+	
+	getPrompt() string
 }
 
 type botOption func(r *RobotInfo)
@@ -141,26 +142,28 @@ func (r *RobotInfo) GetChatIdAndMsgIdAndUserID() (string, string, string) {
 				userId = discordRobot.Inter.Member.User.ID
 			}
 		}
-	//case *SlackRobot:
-	//	slackRobot := r.Robot.(*SlackRobot)
-	//	if slackRobot != nil {
-	//		chatId = slackRobot.Event.Channel
-	//		userId = slackRobot.Event.User
-	//		msgId = slackRobot.Event.ClientMsgID
-	//	}
+	case *SlackRobot:
+		slackRobot := r.Robot.(*SlackRobot)
+		if slackRobot.Event != nil {
+			chatId = slackRobot.Event.Channel
+			userId = slackRobot.Event.User
+			msgId = slackRobot.Event.ClientMsgID
+		}
+		if slackRobot.Callback != nil {
+			chatId = slackRobot.Callback.Channel.ID
+			userId = slackRobot.Callback.User.ID
+			msgId = slackRobot.Callback.MessageTs
+		}
+		if slackRobot.CmdEvent != nil {
+			chatId = slackRobot.CmdEvent.ChannelID
+			userId = slackRobot.CmdEvent.UserID
+		}
 	case *LarkRobot:
 		lark := r.Robot.(*LarkRobot)
 		if lark.Message != nil {
 			msgId = larkcore.StringValue(lark.Message.Event.Message.MessageId)
 			chatId = larkcore.StringValue(lark.Message.Event.Message.ChatId)
 			userId = larkcore.StringValue(lark.Message.Event.Sender.SenderId.UserId)
-		}
-	case *Web:
-		web := r.Robot.(*Web)
-		if web != nil {
-			chatId = web.RealUserId
-			msgId = web.RealUserId
-			userId = web.RealUserId
 		}
 	}
 	
@@ -225,29 +228,23 @@ func (r *RobotInfo) SendMsg(chatId string, msgContent string, replyToMessageID s
 			return ""
 		}
 	
-	//case *SlackRobot:
-	//	slackRobot := r.Robot.(*SlackRobot)
-	//	_, timestamp, err := slackRobot.Client.PostMessage(chatId, slack.MsgOptionText(msgContent, false))
-	//	if err != nil {
-	//		logger.Warn("send message fail", "err", err)
-	//	}
-	//
-	//	return timestamp
+	case *SlackRobot:
+		slackRobot := r.Robot.(*SlackRobot)
+		_, timestamp, err := slackRobot.Client.PostMessage(chatId, slack.MsgOptionText(msgContent, false))
+		if err != nil {
+			logger.Warn("send message fail", "err", err)
+		}
+		
+		return timestamp
 	case *LarkRobot:
 		lark := r.Robot.(*LarkRobot)
-		msgContent, _ = larkim.NewMessagePost().ZhCn(larkim.NewMessagePostContent().AppendContent(
-			[]larkim.MessagePostElement{
-				&MessagePostMarkdown{
-					Text: strings.ReplaceAll(strings.ReplaceAll(msgContent, "\"", ""), "\n", "\\n"),
-				},
-			}).Build()).Build()
 		
 		if replyToMessageID != "" {
 			resp, err := lark.Client.Im.Message.Reply(lark.Ctx, larkim.NewReplyMessageReqBuilder().
 				MessageId(replyToMessageID).
 				Body(larkim.NewReplyMessageReqBodyBuilder().
 					MsgType(larkim.MsgTypePost).
-					Content(msgContent).
+					Content(GetMarkdownContent(msgContent)).
 					Build()).
 				Build())
 			if err != nil || !resp.Success() {
@@ -262,7 +259,7 @@ func (r *RobotInfo) SendMsg(chatId string, msgContent string, replyToMessageID s
 				Body(larkim.NewCreateMessageReqBodyBuilder().
 					MsgType(larkim.MsgTypePost).
 					ReceiveId(chatId).
-					Content(msgContent).
+					Content(GetMarkdownContent(msgContent)).
 					Build()).
 				Build())
 			if err != nil || !resp.Success() {
@@ -272,14 +269,7 @@ func (r *RobotInfo) SendMsg(chatId string, msgContent string, replyToMessageID s
 			
 			return *resp.Data.MessageId
 		}
-	
-	case *Web:
-		web := r.Robot.(*Web)
-		_, err := web.W.Write([]byte(msgContent))
-		if err != nil {
-			logger.Warn("send message fail", "err", err)
-		}
-		web.Flusher.Flush()
+		
 	}
 	
 	return ""
@@ -307,6 +297,12 @@ func StartRobot() {
 	if *conf.BaseConfInfo.LarkAPPID != "" && *conf.BaseConfInfo.LarkAppSecret != "" {
 		go func() {
 			StartLarkRobot()
+		}()
+	}
+	
+	if *conf.BaseConfInfo.SlackBotToken != "" && *conf.BaseConfInfo.SlackAppToken != "" {
+		go func() {
+			StartSlackRobot()
 		}()
 	}
 }
@@ -504,20 +500,20 @@ func ParseCommand(prompt string) (command string, args string) {
 	return command, args
 }
 
-func (r *RobotInfo) ExecCmd(cmd string) {
+func (r *RobotInfo) ExecCmd(cmd string, defaultFunc func()) {
 	switch cmd {
+	case "balance", "/balance":
+		r.showBalanceInfo()
+	case "state", "/state":
+		r.showStateInfo()
+	case "clear", "/clear":
+		r.clearAllRecord()
+	case "retry", "/retry":
+		r.retryLastQuestion()
 	case "chat", "/chat":
 		r.Robot.sendChatMessage()
 	case "mode", "/mode":
 		r.Robot.sendModeConfigurationOptions()
-	case "balance", "/balance":
-		r.Robot.showBalanceInfo()
-	case "state", "/state":
-		r.Robot.showStateInfo()
-	case "clear", "/clear":
-		r.Robot.clearAllRecord()
-	case "retry", "/retry":
-		r.Robot.retryLastQuestion()
 	case "photo", "/photo":
 		r.Robot.sendImg()
 	case "video", "/video":
@@ -525,10 +521,193 @@ func (r *RobotInfo) ExecCmd(cmd string) {
 	case "help", "/help":
 		r.Robot.sendHelpConfigurationOptions()
 	case "task", "/task":
-		r.Robot.sendMultiAgent("task_empty_content")
+		var emptyPromptFunc func()
+		if t, ok := r.Robot.(*TelegramRobot); ok {
+			emptyPromptFunc = t.sendForceReply("task_empty_content")
+		}
+		r.sendMultiAgent("task_empty_content", emptyPromptFunc)
 	case "mcp", "/mcp":
-		r.Robot.sendMultiAgent("mcp_empty_content")
+		var emptyPromptFunc func()
+		if t, ok := r.Robot.(*TelegramRobot); ok {
+			emptyPromptFunc = t.sendForceReply("mcp_empty_content")
+		}
+		r.sendMultiAgent("mcp_empty_content", emptyPromptFunc)
 	default:
-		r.Robot.sendChatMessage()
+		defaultFunc()
 	}
+}
+
+func (r *RobotInfo) ExecChain(content string, msgChan chan *param.MsgInfo) {
+	r.TalkingPreCheck(func() {
+		chatId, msgId, userId := r.GetChatIdAndMsgIdAndUserID()
+		
+		defer func() {
+			if err := recover(); err != nil {
+				logger.Error("panic", "err", err, "stack", string(debug.Stack()))
+			}
+		}()
+		
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+		defer cancel()
+		
+		text := content
+		dpLLM := rag.NewRag(
+			llm.WithMessageChan(msgChan),
+			llm.WithContent(content),
+			llm.WithChatId(chatId),
+			llm.WithUserId(userId),
+		)
+		qaChain := chains.NewRetrievalQAFromLLM(
+			dpLLM,
+			vectorstores.ToRetriever(conf.RagConfInfo.Store, 3),
+		)
+		_, err := chains.Run(ctx, qaChain, text)
+		if err != nil {
+			r.SendMsg(chatId, err.Error(), msgId, "", nil)
+		}
+	})
+}
+
+func (r *RobotInfo) showBalanceInfo() {
+	chatId, msgId, _ := r.GetChatIdAndMsgIdAndUserID()
+	
+	if *conf.BaseConfInfo.Type != param.DeepSeek {
+		r.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "not_deepseek", nil),
+			msgId, tgbotapi.ModeMarkdown, nil)
+		return
+	}
+	
+	balance := llm.GetBalanceInfo()
+	
+	// handle balance info msg
+	msgContent := fmt.Sprintf(i18n.GetMessage(*conf.BaseConfInfo.Lang, "balance_title", nil), balance.IsAvailable)
+	
+	template := i18n.GetMessage(*conf.BaseConfInfo.Lang, "balance_content", nil)
+	
+	for _, bInfo := range balance.BalanceInfos {
+		msgContent += fmt.Sprintf(template, bInfo.Currency, bInfo.TotalBalance,
+			bInfo.ToppedUpBalance, bInfo.GrantedBalance)
+	}
+	
+	r.SendMsg(chatId, msgContent, msgId, tgbotapi.ModeMarkdown, nil)
+	
+}
+
+func (r *RobotInfo) showStateInfo() {
+	chatId, msgId, userId := r.GetChatIdAndMsgIdAndUserID()
+	userInfo, err := db.GetUserByID(userId)
+	if err != nil {
+		logger.Warn("get user info fail", "err", err)
+		r.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
+		return
+	}
+	
+	if userInfo == nil {
+		db.InsertUser(userId, godeepseek.DeepSeekChat)
+		userInfo, err = db.GetUserByID(userId)
+	}
+	
+	// get today token
+	now := time.Now()
+	startOfDay := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	endOfDay := time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 59, 999999999, now.Location())
+	todayTokey, err := db.GetTokenByUserIdAndTime(userId, startOfDay.Unix(), endOfDay.Unix())
+	if err != nil {
+		logger.Warn("get today token fail", "err", err)
+	}
+	
+	// get this week token
+	startOf7DaysAgo := now.AddDate(0, 0, -7).Truncate(24 * time.Hour)
+	weekToken, err := db.GetTokenByUserIdAndTime(userId, startOf7DaysAgo.Unix(), endOfDay.Unix())
+	if err != nil {
+		logger.Warn("get week token fail", "err", err)
+	}
+	
+	// handle balance info msg
+	startOf30DaysAgo := now.AddDate(0, 0, -30).Truncate(24 * time.Hour)
+	monthToken, err := db.GetTokenByUserIdAndTime(userId, startOf30DaysAgo.Unix(), endOfDay.Unix())
+	if err != nil {
+		logger.Warn("get week token fail", "err", err)
+	}
+	
+	template := i18n.GetMessage(*conf.BaseConfInfo.Lang, "state_content", nil)
+	msgContent := fmt.Sprintf(template, userInfo.Token, todayTokey, weekToken, monthToken)
+	r.SendMsg(chatId, msgContent, msgId, tgbotapi.ModeMarkdown, nil)
+	
+}
+
+func (r *RobotInfo) clearAllRecord() {
+	chatId, msgId, userId := r.GetChatIdAndMsgIdAndUserID()
+	db.DeleteMsgRecord(userId)
+	deleteSuccMsg := i18n.GetMessage(*conf.BaseConfInfo.Lang, "delete_succ", nil)
+	r.SendMsg(chatId, deleteSuccMsg,
+		msgId, tgbotapi.ModeMarkdown, nil)
+	return
+	
+}
+
+func (r *RobotInfo) retryLastQuestion() {
+	chatId, msgId, userId := r.GetChatIdAndMsgIdAndUserID()
+	
+	records := db.GetMsgRecord(userId)
+	if records != nil && len(records.AQs) > 0 {
+		r.Robot.requestLLMAndResp(records.AQs[len(records.AQs)-1].Question)
+	} else {
+		r.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "last_question_fail", nil),
+			msgId, tgbotapi.ModeMarkdown, nil)
+	}
+	
+	return
+	
+}
+
+func (r *RobotInfo) sendMultiAgent(agentType string, emptyPromptFunc func()) {
+	r.TalkingPreCheck(func() {
+		chatId, msgId, userId := r.GetChatIdAndMsgIdAndUserID()
+		
+		prompt := r.Robot.getPrompt()
+		prompt = strings.TrimSpace(prompt)
+		if len(prompt) == 0 {
+			if emptyPromptFunc != nil {
+				emptyPromptFunc()
+			} else {
+				logger.Warn("prompt is empty")
+				r.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "photo_empty_content", nil), msgId, tgbotapi.ModeMarkdown, nil)
+			}
+			return
+		}
+		
+		messageChan := make(chan *param.MsgInfo)
+		
+		dpReq := &llm.LLMTaskReq{
+			Content:     prompt,
+			UserId:      userId,
+			ChatId:      chatId,
+			MsgId:       msgId,
+			MessageChan: messageChan,
+		}
+		
+		go func() {
+			defer func() {
+				if err := recover(); err != nil {
+					logger.Error("multi agent panic", "err", err, "stack", string(debug.Stack()))
+				}
+				close(messageChan)
+			}()
+			
+			var err error
+			if agentType == "mcp_empty_content" {
+				err = dpReq.ExecuteMcp()
+			} else {
+				err = dpReq.ExecuteTask()
+			}
+			if err != nil {
+				logger.Warn("execute task fail", "err", err)
+				r.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
+				return
+			}
+		}()
+		
+		go r.Robot.handleUpdate(messageChan)
+	})
 }

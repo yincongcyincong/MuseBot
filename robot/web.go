@@ -10,7 +10,6 @@ import (
 	"time"
 	
 	godeepseek "github.com/cohesion-org/deepseek-go"
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/yincongcyincong/MuseBot/conf"
 	"github.com/yincongcyincong/MuseBot/db"
 	"github.com/yincongcyincong/MuseBot/i18n"
@@ -46,7 +45,7 @@ func NewWeb(command string, userId int64, realUserId, prompt, originalPrompt str
 		W:              w,
 		Flusher:        flusher,
 	}
-	web.Robot = NewRobot(WithRobot(web))
+	web.Robot = NewRobot()
 	return web
 }
 
@@ -60,13 +59,36 @@ func (web *Web) getMsgContent() string {
 
 func (web *Web) requestLLMAndResp(content string) {
 	logger.Info("web exec", "command", web.Command, "userId", web.UserId, "prompt", web.Prompt)
-	web.Robot.ExecCmd(web.Command)
+	switch web.Command {
+	case "/chat":
+		web.sendChatMessage()
+	case "/mode":
+		web.sendModeConfigurationOptions()
+	case "/balance":
+		web.showBalanceInfo()
+	case "/state":
+		web.showStateInfo()
+	case "/clear":
+		web.clearAllRecord()
+	case "/retry":
+		web.retryLastQuestion()
+	case "/photo":
+		web.sendImg()
+	case "/video":
+		web.sendVideo()
+	case "/help":
+		web.sendHelpConfigurationOptions()
+	case "/task":
+		web.sendMultiAgent("task_empty_content")
+	case "/mcp":
+		web.sendMultiAgent("mcp_empty_content")
+	default:
+		web.sendChatMessage()
+	}
 }
 
 func (web *Web) sendHelpConfigurationOptions() {
-	chatId, msgId, _ := web.Robot.GetChatIdAndMsgIdAndUserID()
-	
-	web.Robot.SendMsg(chatId, helpText, msgId, tgbotapi.ModeMarkdown, nil)
+	web.SendMsg(helpText)
 	db.InsertRecordInfo(&db.Record{
 		UserId:     web.RealUserId,
 		Question:   web.OriginalPrompt,
@@ -78,7 +100,6 @@ func (web *Web) sendHelpConfigurationOptions() {
 }
 
 func (web *Web) sendModeConfigurationOptions() {
-	chatId, msgId, _ := web.Robot.GetChatIdAndMsgIdAndUserID()
 	
 	prompt := strings.TrimSpace(web.Prompt)
 	if prompt != "" {
@@ -144,7 +165,7 @@ func (web *Web) sendModeConfigurationOptions() {
 `, model)
 	}
 	
-	web.Robot.SendMsg(chatId, totalContent, msgId, "", nil)
+	web.SendMsg(totalContent)
 	
 	db.InsertRecordInfo(&db.Record{
 		UserId:     web.RealUserId,
@@ -157,11 +178,9 @@ func (web *Web) sendModeConfigurationOptions() {
 }
 
 func (web *Web) showBalanceInfo() {
-	chatId, msgId, _ := web.Robot.GetChatIdAndMsgIdAndUserID()
 	
 	if *conf.BaseConfInfo.Type != param.DeepSeek {
-		web.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "not_deepseek", nil),
-			msgId, tgbotapi.ModeMarkdown, nil)
+		web.SendMsg(i18n.GetMessage(*conf.BaseConfInfo.Lang, "not_deepseek", nil))
 		return
 	}
 	
@@ -177,7 +196,7 @@ func (web *Web) showBalanceInfo() {
 			bInfo.ToppedUpBalance, bInfo.GrantedBalance)
 	}
 	
-	web.Robot.SendMsg(chatId, msgContent, msgId, tgbotapi.ModeMarkdown, nil)
+	web.SendMsg(msgContent)
 	
 	db.InsertRecordInfo(&db.Record{
 		UserId:     web.RealUserId,
@@ -191,11 +210,11 @@ func (web *Web) showBalanceInfo() {
 }
 
 func (web *Web) showStateInfo() {
-	chatId, msgId, userId := web.Robot.GetChatIdAndMsgIdAndUserID()
+	userId := web.RealUserId
 	userInfo, err := db.GetUserByID(userId)
 	if err != nil {
 		logger.Warn("get user info fail", "err", err)
-		web.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
+		web.SendMsg(err.Error())
 		return
 	}
 	
@@ -229,7 +248,7 @@ func (web *Web) showStateInfo() {
 	
 	template := i18n.GetMessage(*conf.BaseConfInfo.Lang, "state_content", nil)
 	msgContent := fmt.Sprintf(template, userInfo.Token, todayTokey, weekToken, monthToken)
-	web.Robot.SendMsg(chatId, msgContent, msgId, tgbotapi.ModeMarkdown, nil)
+	web.SendMsg(msgContent)
 	
 	db.InsertRecordInfo(&db.Record{
 		UserId:     web.RealUserId,
@@ -243,11 +262,10 @@ func (web *Web) showStateInfo() {
 }
 
 func (web *Web) clearAllRecord() {
-	chatId, msgId, userId := web.Robot.GetChatIdAndMsgIdAndUserID()
+	userId := web.RealUserId
 	db.DeleteMsgRecord(userId)
 	deleteSuccMsg := i18n.GetMessage(*conf.BaseConfInfo.Lang, "delete_succ", nil)
-	web.Robot.SendMsg(chatId, deleteSuccMsg,
-		msgId, tgbotapi.ModeMarkdown, nil)
+	web.SendMsg(deleteSuccMsg)
 	
 	db.InsertRecordInfo(&db.Record{
 		UserId:     web.RealUserId,
@@ -262,15 +280,14 @@ func (web *Web) clearAllRecord() {
 }
 
 func (web *Web) retryLastQuestion() {
-	chatId, msgId, userId := web.Robot.GetChatIdAndMsgIdAndUserID()
+	userId := web.RealUserId
 	
 	records := db.GetMsgRecord(userId)
 	if records != nil && len(records.AQs) > 0 {
 		web.Prompt = records.AQs[len(records.AQs)-1].Question
 		web.sendChatMessage()
 	} else {
-		web.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "last_question_fail", nil),
-			msgId, tgbotapi.ModeMarkdown, nil)
+		web.SendMsg(i18n.GetMessage(*conf.BaseConfInfo.Lang, "last_question_fail", nil))
 	}
 	
 	return
@@ -278,12 +295,11 @@ func (web *Web) retryLastQuestion() {
 }
 
 func (web *Web) sendMultiAgent(agentType string) {
-	chatId, msgId, userId := web.Robot.GetChatIdAndMsgIdAndUserID()
 	
 	prompt := strings.TrimSpace(web.Prompt)
 	if prompt == "" {
 		logger.Warn("prompt is empty")
-		web.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "photo_empty_content", nil), msgId, tgbotapi.ModeMarkdown, nil)
+		web.SendMsg(i18n.GetMessage(*conf.BaseConfInfo.Lang, "photo_empty_content", nil))
 		return
 	}
 	
@@ -291,9 +307,9 @@ func (web *Web) sendMultiAgent(agentType string) {
 	
 	dpReq := &llm.LLMTaskReq{
 		Content:     prompt,
-		UserId:      userId,
-		ChatId:      chatId,
-		MsgId:       msgId,
+		UserId:      web.RealUserId,
+		ChatId:      web.RealUserId,
+		MsgId:       web.RealUserId,
 		HTTPMsgChan: messageChan,
 	}
 	
@@ -336,12 +352,10 @@ func (web *Web) sendMultiAgent(agentType string) {
 
 func (web *Web) sendImg() {
 	web.Robot.TalkingPreCheck(func() {
-		chatId, msgId, _ := web.Robot.GetChatIdAndMsgIdAndUserID()
-		
 		prompt := strings.TrimSpace(web.Prompt)
 		if prompt == "" {
 			logger.Warn("prompt is empty")
-			web.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "photo_empty_content", nil), msgId, tgbotapi.ModeMarkdown, nil)
+			web.SendMsg(i18n.GetMessage(*conf.BaseConfInfo.Lang, "photo_empty_content", nil))
 			return
 		}
 		
@@ -371,7 +385,7 @@ func (web *Web) sendImg() {
 		
 		if err != nil {
 			logger.Warn("generate image fail", "err", err)
-			web.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
+			web.SendMsg(err.Error())
 			return
 		}
 		
@@ -379,7 +393,7 @@ func (web *Web) sendImg() {
 			imageContent, err = utils.DownloadFile(imageUrl)
 			if err != nil {
 				logger.Warn("download image fail", "err", err)
-				web.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
+				web.SendMsg(err.Error())
 				return
 			}
 		}
@@ -429,12 +443,11 @@ func (web *Web) sendImg() {
 func (web *Web) sendVideo() {
 	// 检查 prompt
 	web.Robot.TalkingPreCheck(func() {
-		chatId, msgId, _ := web.Robot.GetChatIdAndMsgIdAndUserID()
 		
 		prompt := strings.TrimSpace(web.Prompt)
 		if prompt == "" {
 			logger.Warn("prompt is empty")
-			web.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "photo_empty_content", nil), msgId, tgbotapi.ModeMarkdown, nil)
+			web.SendMsg(i18n.GetMessage(*conf.BaseConfInfo.Lang, "photo_empty_content", nil))
 			return
 		}
 		var (
@@ -456,7 +469,7 @@ func (web *Web) sendVideo() {
 		
 		if err != nil {
 			logger.Warn("generate video fail", "err", err)
-			web.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
+			web.SendMsg(err.Error())
 			return
 		}
 		
@@ -465,13 +478,13 @@ func (web *Web) sendVideo() {
 			videoContent, err = utils.DownloadFile(videoUrl)
 			if err != nil {
 				logger.Warn("download video fail", "err", err)
-				web.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
+				web.SendMsg(err.Error())
 				return
 			}
 		}
 		
 		if len(videoContent) == 0 {
-			web.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
+			web.SendMsg(err.Error())
 			return
 		}
 		
@@ -506,20 +519,19 @@ func (web *Web) sendVideo() {
 
 func (web *Web) sendChatMessage() {
 	web.Robot.TalkingPreCheck(func() {
-		chatId, msgId, userId := web.Robot.GetChatIdAndMsgIdAndUserID()
 		
 		prompt, err := web.GetContent(strings.TrimSpace(web.Prompt))
 		if err != nil {
 			logger.Error("get content fail", "err", err)
-			web.Robot.SendMsg(chatId, err.Error(), msgId, "", nil)
+			web.SendMsg(err.Error())
 			return
 		}
 		
 		messageChan := make(chan string)
 		l := llm.NewLLM(
-			llm.WithChatId(chatId),
-			llm.WithUserId(userId),
-			llm.WithMsgId(msgId),
+			llm.WithChatId(web.RealUserId),
+			llm.WithUserId(web.RealUserId),
+			llm.WithMsgId(web.RealUserId),
 			llm.WithHTTPChain(messageChan),
 			llm.WithContent(prompt),
 		)
@@ -528,7 +540,7 @@ func (web *Web) sendChatMessage() {
 			err := l.CallLLM()
 			if err != nil {
 				logger.Warn("Error sending message", "err", err)
-				web.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
+				web.SendMsg(err.Error())
 			}
 		}()
 		
@@ -593,4 +605,12 @@ func (web *Web) GetContent(content string) (string, error) {
 	}
 	
 	return content, nil
+}
+
+func (web *Web) SendMsg(msgContent string) {
+	_, err := web.W.Write([]byte(msgContent))
+	if err != nil {
+		logger.Warn("send message fail", "err", err)
+	}
+	web.Flusher.Flush()
 }
