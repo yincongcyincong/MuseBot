@@ -23,11 +23,28 @@ more natural and dynamic.
   see [doc](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/functioncall.md).
 - 🌊 **RAG**: Support Rag to fill context,
   see [doc](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/rag.md).
-- ⛰️ **OpenRouter**: Support OpenRouter more than 400 llms, see [doc](https://openrouter.ai/docs/quickstart).
 - 🌞 **AdminPlatform**: Use platform to manage MuseBot,
   see [doc](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/admin.md).
-- 🌈 **Discord**: Support Discord Robot, see [doc](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/discord.md).
-- 🌛 **Web API**: Support API Interact with LLM, see [doc](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/web_api.md).
+
+## 📸 Support Platform
+
+| Platform             | Supported | Description                                                                                                           | Docs / Links                                                                     |
+|----------------------|:---------:|-----------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------|
+| 🟦 **Telegram**      |     ✅     | Supports Telegram bot (go-telegram-bot-api based, handles commands, inline buttons, ForceReply, etc.)                 | Repo: https://github.com/yincongcyincong/MuseBot                                 |
+| 🌈 **Discord**       |     ✅     | Supports Discord bot                                                                                                  | Docs: https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/discord.md |
+| 🌛 **Web API**       |     ✅     | Provides HTTP/Web API for interacting with LLM (great for custom frontends/backends)                                  | Docs: https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/web_api.md |
+| 🔷 **Slack**         |     ✅     | Supports Slack (Socket Mode / Events API / Block Kit interactions)                                                    | Docs: https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/slack.md   |
+| 🟣 **Lark (Feishu)** |     ✅     | Supports Lark long connection & message handling (based on larksuite SDK, with image/audio download & message update) | Docs: https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/lark.md    |
+
+## Supported Large Language Models
+
+| Model             | Provider   | Text Generation | Image Generation | Video Generation |
+|-------------------|------------|-----------------|:----------------:|:----------------:|
+| 🌟 **Gemini**     | Google     | ✅               |        ✅         |        ✅         |
+| 💬 **ChatGPT**    | OpenAI     | ✅               |        ✅         |        ❌         |
+| 🐦 **Doubao**     | ByteDance  | ✅               |        ✅         |        ✅         |
+| 🧠 **DeepSeek**   | DeepSeek   | ✅               |        ❌         |        ❌         |
+| 🌐 **OpenRouter** | OpenRouter | ✅               |        ✅         |        ✅         |
 
 ## 🤖 Text Example
 
@@ -82,38 +99,38 @@ Use docker
 
 You can configure the bot via environment variables:
 
-| Variable Name                  | 	Description                                                                                                                 | Default Value             |
-|--------------------------------|------------------------------------------------------------------------------------------------------------------------------|---------------------------|
-| TELEGRAM_BOT_TOKEN (required)	 | Your Telegram bot token                                                                                                      | -                         |
-| DEEPSEEK_TOKEN	  (required)    | DeepSeek Api Key                                                                                                             | -                         |
-| OPENAI_TOKEN	                  | Open AI Token                                                                                                                | -                         |
-| GEMINI_TOKEN	                  | Gemini Token                                                                                                                 | -                         |
-| OPEN_ROUTER_TOKEN	             | OpenRouter Token  [doc](https://openrouter.ai/docs/quickstart)                                                               | -                         |
-| VOL_TOKEN	                     | Vol Token  [doc](https://www.volcengine.com/docs/82379/1399008#b00dee71)                                                     | -                         |
-| CUSTOM_URL	                    | custom deepseek url                                                                                                          | https://api.deepseek.com/ |
-| TYPE	                          | deepseek/openai/gemini/openrouter/vol                                                                                        | deepseek                  |
-| VOLC_AK	                       | volcengine photo model ak     [doc](https://www.volcengine.com/docs/6444/1340578)                                            | -                         |
-| VOLC_SK	                       | volcengine photo model sk      [doc](https://www.volcengine.com/docs/6444/1340578)                                           | -                         |
-| Ernie_AK	                      | ernie ak     [doc](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Sly8bm96d)                                                   | -                         |
-| Ernie_SK	                      | ernie sk      [doc](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Sly8bm96d)                                                  | -                         |
-| DB_TYPE                        | sqlite3 / mysql                                                                                                              | sqlite3                   |
-| DB_CONF	                       | ./data/telegram_bot.db / root:admin@tcp(127.0.0.1:3306)/dbname?charset=utf8mb4&parseTime=True&loc=Local                      | ./data/telegram_bot.db    |
-| ALLOWED_USER_IDS	     | user id, only these users can use bot, using "," splite. empty means all use can use it. 0 means all user is banned   | -                         |
-| ALLOWED_GROUP_IDS	    | chat id, only these chat can use bot, using "," splite. empty means all group can use it. 0 means all group is banned | -                         |
-| DEEPSEEK_PROXY	                | deepseek proxy                                                                                                               | -                         |
-| TELEGRAM_PROXY	                | telegram proxy                                                                                                               | -                         |
-| LANG	                          | en / zh                                                                                                                      | en                        |
-| TOKEN_PER_USER	                | The tokens that each user can use                                                                                            | 10000                     |
-| ADMIN_USER_IDS	                | admin user, can use some admin commands                                                                                      | -                         |
-| NEED_AT_BOT	                   | is it necessary to trigger an at robot in the group                                                                          | false                     |
-| MAX_USER_CHAT	                 | max existing chat per user                                                                                                   | 2                         |
-| VIDEO_TOKEN	                   | volcengine Api key[doc](https://www.volcengine.com/docs/82379/1399008#b00dee71)                                              | -                         |
-| HTTP_PORT	                     | http server port                                                                                                             | 36060                     |
-| USE_TOOLS	                     | if normal conversation  use function call tools or not                                                                       | false                     |
-| CA_FILE	                       | http server ca file                                                                                                          | -                         |
-| CRT_FILE	                      | http server crt file                                                                                                         | -                         |
-| KEY_FILE	                      | http server key file                                                                                                         | -                         |
-| MEDIA_TYPE	                    | openai/gemini/vol  create photo or video                                                                                     | vol                       |
+| Variable Name                  | 	Description                                                                                                          | Default Value             |
+|--------------------------------|-----------------------------------------------------------------------------------------------------------------------|---------------------------|
+| TELEGRAM_BOT_TOKEN (required)	 | Your Telegram bot token                                                                                               | -                         |
+| DEEPSEEK_TOKEN	  (required)    | DeepSeek Api Key                                                                                                      | -                         |
+| OPENAI_TOKEN	                  | Open AI Token                                                                                                         | -                         |
+| GEMINI_TOKEN	                  | Gemini Token                                                                                                          | -                         |
+| OPEN_ROUTER_TOKEN	             | OpenRouter Token  [doc](https://openrouter.ai/docs/quickstart)                                                        | -                         |
+| VOL_TOKEN	                     | Vol Token  [doc](https://www.volcengine.com/docs/82379/1399008#b00dee71)                                              | -                         |
+| CUSTOM_URL	                    | custom deepseek url                                                                                                   | https://api.deepseek.com/ |
+| TYPE	                          | deepseek/openai/gemini/openrouter/vol                                                                                 | deepseek                  |
+| VOLC_AK	                       | volcengine photo model ak     [doc](https://www.volcengine.com/docs/6444/1340578)                                     | -                         |
+| VOLC_SK	                       | volcengine photo model sk      [doc](https://www.volcengine.com/docs/6444/1340578)                                    | -                         |
+| Ernie_AK	                      | ernie ak     [doc](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Sly8bm96d)                                            | -                         |
+| Ernie_SK	                      | ernie sk      [doc](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Sly8bm96d)                                           | -                         |
+| DB_TYPE                        | sqlite3 / mysql                                                                                                       | sqlite3                   |
+| DB_CONF	                       | ./data/telegram_bot.db / root:admin@tcp(127.0.0.1:3306)/dbname?charset=utf8mb4&parseTime=True&loc=Local               | ./data/telegram_bot.db    |
+| ALLOWED_USER_IDS	              | user id, only these users can use bot, using "," splite. empty means all use can use it. 0 means all user is banned   | -                         |
+| ALLOWED_GROUP_IDS	             | chat id, only these chat can use bot, using "," splite. empty means all group can use it. 0 means all group is banned | -                         |
+| DEEPSEEK_PROXY	                | deepseek proxy                                                                                                        | -                         |
+| TELEGRAM_PROXY	                | telegram proxy                                                                                                        | -                         |
+| LANG	                          | en / zh                                                                                                               | en                        |
+| TOKEN_PER_USER	                | The tokens that each user can use                                                                                     | 10000                     |
+| ADMIN_USER_IDS	                | admin user, can use some admin commands                                                                               | -                         |
+| NEED_AT_BOT	                   | is it necessary to trigger an at robot in the group                                                                   | false                     |
+| MAX_USER_CHAT	                 | max existing chat per user                                                                                            | 2                         |
+| VIDEO_TOKEN	                   | volcengine Api key[doc](https://www.volcengine.com/docs/82379/1399008#b00dee71)                                       | -                         |
+| HTTP_PORT	                     | http server port                                                                                                      | 36060                     |
+| USE_TOOLS	                     | if normal conversation  use function call tools or not                                                                | false                     |
+| CA_FILE	                       | http server ca file                                                                                                   | -                         |
+| CRT_FILE	                      | http server crt file                                                                                                  | -                         |
+| KEY_FILE	                      | http server key file                                                                                                  | -                         |
+| MEDIA_TYPE	                    | openai/gemini/vol  create photo or video                                                                              | vol                       |
 
 ### CUSTOM_URL
 
