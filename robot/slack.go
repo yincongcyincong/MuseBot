@@ -590,12 +590,7 @@ func (s *SlackRobot) sendVideo() {
 	s.Robot.TalkingPreCheck(func() {
 		chatId, replyToMessageID, userID := s.Robot.GetChatIdAndMsgIdAndUserID()
 		
-		var prompt string
-		if s.Event != nil && s.Event.Text != "" {
-			prompt = s.Event.Text
-		}
-		
-		// 去掉命令 /video（你可以按需替换机器人名字）
+		prompt := s.Prompt
 		prompt = utils.ReplaceCommand(prompt, "/video", s.BotName)
 		if prompt == "" {
 			logger.Warn("prompt is empty")
@@ -639,9 +634,9 @@ func (s *SlackRobot) sendVideo() {
 		}
 		
 		uploadParams := slack.UploadFileV2Parameters{
-			Filename: "image." + utils.DetectImageFormat(videoContent),
+			Filename: "video." + utils.DetectVideoMimeType(videoContent),
 			Reader:   bytes.NewReader(videoContent),
-			Title:    "image",
+			Title:    "video",
 			FileSize: len(videoContent),
 			Channel:  chatId,
 		}
