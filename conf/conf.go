@@ -16,6 +16,7 @@ type BaseConf struct {
 	TelegramBotToken *string `json:"telegram_bot_token"`
 	DiscordBotToken  *string `json:"discord_bot_token"`
 	SlackBotToken    *string `json:"slack_bot_token"`
+	SlackAppToken    *string `json:"slack_app_token"`
 	LarkAPPID        *string `json:"lark_app_id"`
 	LarkAppSecret    *string `json:"lark_app_secret"`
 	
@@ -61,6 +62,7 @@ func InitConf() {
 	BaseConfInfo.TelegramBotToken = flag.String("telegram_bot_token", "", "Telegram bot tokens")
 	BaseConfInfo.DiscordBotToken = flag.String("discord_bot_token", "", "Discord bot tokens")
 	BaseConfInfo.SlackBotToken = flag.String("slack_bot_token", "", "Slack bot tokens")
+	BaseConfInfo.SlackAppToken = flag.String("slack_app_token", "", "Slack app tokens")
 	BaseConfInfo.LarkAPPID = flag.String("lark_app_id", "", "Lark app id")
 	BaseConfInfo.LarkAppSecret = flag.String("lark_app_secret", "", "Lark app secret")
 	
@@ -118,6 +120,10 @@ func InitConf() {
 	
 	if os.Getenv("SLACK_BOT_TOKEN") != "" {
 		*BaseConfInfo.SlackBotToken = os.Getenv("SLACK_BOT_TOKEN")
+	}
+	
+	if os.Getenv("SLACK_APP_TOKEN") != "" {
+		*BaseConfInfo.SlackAppToken = os.Getenv("SLACK_APP_TOKEN")
 	}
 	
 	if os.Getenv("LARK_APP_ID") != "" {
@@ -261,6 +267,7 @@ func InitConf() {
 	logger.Info("CONF", "TelegramBotToken", *BaseConfInfo.TelegramBotToken)
 	logger.Info("CONF", "DiscordBotToken", *BaseConfInfo.DiscordBotToken)
 	logger.Info("CONF", "SlackBotToken", *BaseConfInfo.SlackBotToken)
+	logger.Info("CONF", "SlackAppToken", *BaseConfInfo.SlackAppToken)
 	logger.Info("CONF", "LarkAPPID", *BaseConfInfo.LarkAPPID)
 	logger.Info("CONF", "LarkAppSecret", *BaseConfInfo.LarkAppSecret)
 	logger.Info("CONF", "DeepseekToken", *BaseConfInfo.DeepseekToken)

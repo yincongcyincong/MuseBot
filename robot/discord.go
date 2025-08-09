@@ -2,13 +2,11 @@ package robot
 
 import (
 	"bytes"
-	"context"
 	"encoding/base64"
 	"errors"
 	"fmt"
 	"runtime/debug"
 	"strings"
-	"time"
 	
 	"github.com/bwmarrin/discordgo"
 	godeepseek "github.com/cohesion-org/deepseek-go"
@@ -19,10 +17,7 @@ import (
 	"github.com/yincongcyincong/MuseBot/llm"
 	"github.com/yincongcyincong/MuseBot/logger"
 	"github.com/yincongcyincong/MuseBot/param"
-	"github.com/yincongcyincong/MuseBot/rag"
 	"github.com/yincongcyincong/MuseBot/utils"
-	"github.com/yincongcyincong/langchaingo/chains"
-	"github.com/yincongcyincong/langchaingo/vectorstores"
 )
 
 type DiscordRobot struct {
@@ -30,7 +25,8 @@ type DiscordRobot struct {
 	Msg     *discordgo.MessageCreate
 	Inter   *discordgo.InteractionCreate
 	
-	Robot *RobotInfo
+	Robot  *RobotInfo
+	Prompt string
 }
 
 func StartDiscordRobot() {
@@ -95,40 +91,8 @@ func (d *DiscordRobot) requestLLMAndResp(content string) {
 
 func (d *DiscordRobot) executeChain(content string) {
 	messageChan := make(chan *param.MsgInfo)
-	chatId, msgId, userId := d.Robot.GetChatIdAndMsgIdAndUserID()
 	
-	go func() {
-		defer func() {
-			if err := recover(); err != nil {
-				logger.Error("GetContent panic err", "err", err, "stack", string(debug.Stack()))
-			}
-			close(messageChan)
-		}()
-		
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
-		defer cancel()
-		
-		text, err := d.getContent(content)
-		if err != nil {
-			logger.Error("get content fail", "err", err)
-			d.Robot.SendMsg(chatId, err.Error(), msgId, "", nil)
-			return
-		}
-		
-		dpLLM := rag.NewRag(llm.WithMessageChan(messageChan), llm.WithContent(content),
-			llm.WithChatId(chatId), llm.WithMsgId(msgId),
-			llm.WithUserId(userId))
-		
-		qaChain := chains.NewRetrievalQAFromLLM(
-			dpLLM,
-			vectorstores.ToRetriever(conf.RagConfInfo.Store, 3),
-		)
-		_, err = chains.Run(ctx, qaChain, text)
-		if err != nil {
-			logger.Warn("execute chain fail", "err", err)
-			d.Robot.SendMsg(chatId, err.Error(), msgId, "", nil)
-		}
-	}()
+	go d.Robot.ExecChain(content, messageChan)
 	// send response message
 	go d.handleUpdate(messageChan)
 }
@@ -410,7 +374,7 @@ func onInteractionCreate(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		d.changeMode(i.MessageComponentData().CustomID)
 	}
 	
-	d.Robot.ExecCmd(cmd)
+	d.Robot.ExecCmd(cmd, d.sendChatMessage)
 }
 
 func (d *DiscordRobot) changeMode(mode string) {
@@ -456,6 +420,7 @@ func (d *DiscordRobot) sendChatMessage() {
 	if d.Inter != nil && d.Inter.Type == discordgo.InteractionApplicationCommand && len(d.Inter.ApplicationCommandData().Options) > 0 {
 		prompt = d.Inter.ApplicationCommandData().Options[0].StringValue()
 	}
+	d.Prompt = prompt
 	d.requestLLMAndResp(prompt)
 }
 
@@ -520,70 +485,6 @@ func (d *DiscordRobot) sendModeConfigurationOptions() {
 	
 	if err != nil {
 		logger.Error("send message error", "err", err)
-	}
-}
-
-func (d *DiscordRobot) showBalanceInfo() {
-	chatId, msgId, _ := d.Robot.GetChatIdAndMsgIdAndUserID()
-	if *conf.BaseConfInfo.Type != param.DeepSeek {
-		d.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "not_deepseek", nil),
-			msgId, "", nil)
-		return
-	}
-	
-	balance := llm.GetBalanceInfo()
-	msgContent := fmt.Sprintf(i18n.GetMessage(*conf.BaseConfInfo.Lang, "balance_title", nil), balance.IsAvailable)
-	
-	template := i18n.GetMessage(*conf.BaseConfInfo.Lang, "balance_content", nil)
-	for _, bInfo := range balance.BalanceInfos {
-		msgContent += fmt.Sprintf(template, bInfo.Currency, bInfo.TotalBalance, bInfo.ToppedUpBalance, bInfo.GrantedBalance)
-	}
-	
-	d.Robot.SendMsg(chatId, msgContent, msgId, "", nil)
-}
-
-func (d *DiscordRobot) showStateInfo() {
-	chatId, msgId, userId := d.Robot.GetChatIdAndMsgIdAndUserID()
-	
-	userInfo, err := db.GetUserByID(userId)
-	if err != nil {
-		logger.Warn("get user info fail", "err", err)
-		return
-	}
-	if userInfo == nil {
-		db.InsertUser(userId, godeepseek.DeepSeekChat)
-		userInfo, err = db.GetUserByID(userId)
-	}
-	
-	now := time.Now()
-	startOfDay := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
-	endOfDay := time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 59, 999999999, now.Location())
-	
-	todayToken, _ := db.GetTokenByUserIdAndTime(userId, startOfDay.Unix(), endOfDay.Unix())
-	weekToken, _ := db.GetTokenByUserIdAndTime(userId, now.AddDate(0, 0, -7).Unix(), endOfDay.Unix())
-	monthToken, _ := db.GetTokenByUserIdAndTime(userId, now.AddDate(0, 0, -30).Unix(), endOfDay.Unix())
-	
-	template := i18n.GetMessage(*conf.BaseConfInfo.Lang, "state_content", nil)
-	msgContent := fmt.Sprintf(template, userInfo.Token, todayToken, weekToken, monthToken)
-	
-	d.Robot.SendMsg(chatId, msgContent, msgId, "", nil)
-}
-
-func (d *DiscordRobot) clearAllRecord() {
-	chatId, msgId, userId := d.Robot.GetChatIdAndMsgIdAndUserID()
-	db.DeleteMsgRecord(userId)
-	d.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "delete_succ", nil),
-		msgId, tgbotapi.ModeMarkdown, nil)
-}
-func (d *DiscordRobot) retryLastQuestion() {
-	chatId, msgId, userId := d.Robot.GetChatIdAndMsgIdAndUserID()
-	
-	records := db.GetMsgRecord(userId)
-	if records != nil && len(records.AQs) > 0 {
-		d.requestLLMAndResp(records.AQs[len(records.AQs)-1].Question)
-	} else {
-		d.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "last_question_fail", nil),
-			msgId, tgbotapi.ModeMarkdown, nil)
 	}
 }
 
@@ -802,4 +703,8 @@ func (d *DiscordRobot) sendMultiAgent(agentType string) {
 		
 		go d.handleUpdate(messageChan)
 	})
+}
+
+func (d *DiscordRobot) getPrompt() string {
+	return d.Prompt
 }

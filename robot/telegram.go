@@ -2,7 +2,6 @@ package robot
 
 import (
 	"bytes"
-	"context"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -21,10 +20,7 @@ import (
 	"github.com/yincongcyincong/MuseBot/llm"
 	"github.com/yincongcyincong/MuseBot/logger"
 	"github.com/yincongcyincong/MuseBot/param"
-	"github.com/yincongcyincong/MuseBot/rag"
 	"github.com/yincongcyincong/MuseBot/utils"
-	"github.com/yincongcyincong/langchaingo/chains"
-	"github.com/yincongcyincong/langchaingo/vectorstores"
 )
 
 type TelegramRobot struct {
@@ -162,39 +158,7 @@ func (t *TelegramRobot) requestLLMAndResp(content string) {
 // executeChain use langchain to interact llm
 func (t *TelegramRobot) executeChain(content string) {
 	messageChan := make(chan *param.MsgInfo)
-	chatId, msgId, userId := t.Robot.GetChatIdAndMsgIdAndUserID()
-	go func() {
-		defer func() {
-			if err := recover(); err != nil {
-				logger.Error("GetContent panic err", "err", err, "stack", string(debug.Stack()))
-			}
-			close(messageChan)
-		}()
-		
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
-		defer cancel()
-		
-		text, err := t.GetContent(content)
-		if err != nil {
-			logger.Error("get content fail", "err", err)
-			t.Robot.SendMsg(chatId, err.Error(), msgId, "", nil)
-			return
-		}
-		
-		dpLLM := rag.NewRag(llm.WithMessageChan(messageChan), llm.WithContent(content),
-			llm.WithChatId(chatId), llm.WithMsgId(msgId),
-			llm.WithUserId(userId))
-		
-		qaChain := chains.NewRetrievalQAFromLLM(
-			dpLLM,
-			vectorstores.ToRetriever(conf.RagConfInfo.Store, 3),
-		)
-		_, err = chains.Run(ctx, qaChain, text)
-		if err != nil {
-			logger.Warn("execute chain fail", "err", err)
-			t.Robot.SendMsg(chatId, err.Error(), msgId, "", nil)
-		}
-	}()
+	go t.Robot.ExecChain(content, messageChan)
 	
 	// send response message
 	go t.handleUpdate(messageChan)
@@ -393,7 +357,7 @@ func (t *TelegramRobot) handleCommand() {
 	logger.Info("command info", "userID", userID, "cmd", cmd)
 	
 	// check if at bot
-	chatType := t.GetMessage().Chat.Type
+	chatType := t.getMessage().Chat.Type
 	if (chatType == "group" || chatType == "supergroup") && *conf.BaseConfInfo.NeedATBOt {
 		if !strings.Contains(t.Update.Message.Text, "@"+t.Bot.Self.UserName) {
 			logger.Warn("not at bot", "userID", userID, "cmd", cmd)
@@ -401,7 +365,7 @@ func (t *TelegramRobot) handleCommand() {
 		}
 	}
 	
-	t.Robot.ExecCmd(cmd)
+	t.Robot.ExecCmd(cmd, t.sendChatMessage)
 }
 
 // sendChatMessage response chat command to telegram
@@ -434,95 +398,6 @@ func (t *TelegramRobot) sendChatMessage() {
 	
 	// Reply to the chat content
 	t.requestLLMAndResp(content)
-}
-
-// retryLastQuestion retry last question
-func (t *TelegramRobot) retryLastQuestion() {
-	chatId, msgId, userId := t.Robot.GetChatIdAndMsgIdAndUserID()
-	
-	records := db.GetMsgRecord(userId)
-	if records != nil && len(records.AQs) > 0 {
-		t.requestLLMAndResp(records.AQs[len(records.AQs)-1].Question)
-	} else {
-		t.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "last_question_fail", nil),
-			msgId, tgbotapi.ModeMarkdown, nil)
-	}
-}
-
-// clearAllRecord clear all record
-func (t *TelegramRobot) clearAllRecord() {
-	chatId, msgId, userId := t.Robot.GetChatIdAndMsgIdAndUserID()
-	db.DeleteMsgRecord(userId)
-	t.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "delete_succ", nil),
-		msgId, tgbotapi.ModeMarkdown, nil)
-}
-
-// showBalanceInfo show balance info
-func (t *TelegramRobot) showBalanceInfo() {
-	chatId, msgId, _ := t.Robot.GetChatIdAndMsgIdAndUserID()
-	
-	if *conf.BaseConfInfo.Type != param.DeepSeek {
-		t.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "not_deepseek", nil),
-			msgId, tgbotapi.ModeMarkdown, nil)
-		return
-	}
-	
-	balance := llm.GetBalanceInfo()
-	
-	// handle balance info msg
-	msgContent := fmt.Sprintf(i18n.GetMessage(*conf.BaseConfInfo.Lang, "balance_title", nil), balance.IsAvailable)
-	
-	template := i18n.GetMessage(*conf.BaseConfInfo.Lang, "balance_content", nil)
-	
-	for _, bInfo := range balance.BalanceInfos {
-		msgContent += fmt.Sprintf(template, bInfo.Currency, bInfo.TotalBalance,
-			bInfo.ToppedUpBalance, bInfo.GrantedBalance)
-	}
-	
-	t.Robot.SendMsg(chatId, msgContent, msgId, tgbotapi.ModeMarkdown, nil)
-}
-
-// showStateInfo show user's usage of token
-func (t *TelegramRobot) showStateInfo() {
-	chatId, msgId, userId := t.Robot.GetChatIdAndMsgIdAndUserID()
-	userInfo, err := db.GetUserByID(userId)
-	if err != nil {
-		t.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
-		logger.Warn("get user info fail", "err", err)
-		return
-	}
-	
-	if userInfo == nil {
-		db.InsertUser(userId, godeepseek.DeepSeekChat)
-		userInfo, err = db.GetUserByID(userId)
-	}
-	
-	// get today token
-	now := time.Now()
-	startOfDay := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
-	endOfDay := time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 59, 999999999, now.Location())
-	todayTokey, err := db.GetTokenByUserIdAndTime(userId, startOfDay.Unix(), endOfDay.Unix())
-	if err != nil {
-		logger.Warn("get today token fail", "err", err)
-	}
-	
-	// get this week token
-	startOf7DaysAgo := now.AddDate(0, 0, -7).Truncate(24 * time.Hour)
-	weekToken, err := db.GetTokenByUserIdAndTime(userId, startOf7DaysAgo.Unix(), endOfDay.Unix())
-	if err != nil {
-		logger.Warn("get week token fail", "err", err)
-	}
-	
-	// handle balance info msg
-	startOf30DaysAgo := now.AddDate(0, 0, -30).Truncate(24 * time.Hour)
-	monthToken, err := db.GetTokenByUserIdAndTime(userId, startOf30DaysAgo.Unix(), endOfDay.Unix())
-	if err != nil {
-		logger.Warn("get week token fail", "err", err)
-	}
-	
-	template := i18n.GetMessage(*conf.BaseConfInfo.Lang, "state_content", nil)
-	msgContent := fmt.Sprintf(template, userInfo.Token, todayTokey, weekToken, monthToken)
-	t.Robot.SendMsg(chatId, msgContent, msgId, tgbotapi.ModeMarkdown, nil)
 }
 
 // sendModeConfigurationOptions send config view
@@ -640,120 +515,34 @@ func (t *TelegramRobot) handleCallbackQuery() {
 			logger.Error("handleCommand panic err", "err", err, "stack", string(debug.Stack()))
 		}
 	}()
-	
-	switch t.Update.CallbackQuery.Data {
-	case "mode":
-		t.sendModeConfigurationOptions()
-	case "balance":
-		t.showBalanceInfo()
-	case "clear":
-		t.clearAllRecord()
-	case "retry":
-		t.retryLastQuestion()
-	case "state":
-		t.showStateInfo()
-	case "photo":
-		if t.Update.CallbackQuery.Message.ReplyToMessage != nil {
-			t.Update.CallbackQuery.Message.MessageID = t.Update.CallbackQuery.Message.ReplyToMessage.MessageID
-		}
-		t.sendImg()
-	case "video":
-		if t.Update.CallbackQuery.Message.ReplyToMessage != nil {
-			t.Update.CallbackQuery.Message.MessageID = t.Update.CallbackQuery.Message.ReplyToMessage.MessageID
-		}
-		t.sendVideo()
-	case "chat":
-		if t.Update.CallbackQuery.Message.ReplyToMessage != nil {
-			t.Update.CallbackQuery.Message.MessageID = t.Update.CallbackQuery.Message.ReplyToMessage.MessageID
-		}
-		t.sendChatMessage()
-	default:
-		if param.GeminiModels[t.Update.CallbackQuery.Data] || param.OpenAIModels[t.Update.CallbackQuery.Data] ||
-			param.DeepseekModels[t.Update.CallbackQuery.Data] || param.DeepseekLocalModels[t.Update.CallbackQuery.Data] ||
-			param.OpenRouterModels[t.Update.CallbackQuery.Data] || param.VolModels[t.Update.CallbackQuery.Data] {
-			t.Robot.handleModeUpdate(t.Update.CallbackQuery.Data)
-		}
-		if param.OpenRouterModelTypes[t.Update.CallbackQuery.Data] {
-			chatID, msgId, _ := t.Robot.GetChatIdAndMsgIdAndUserID()
-			inlineButton := make([][]tgbotapi.InlineKeyboardButton, 0)
-			for k := range param.OpenRouterModels {
-				if strings.Contains(k, t.Update.CallbackQuery.Data+"/") {
-					inlineButton = append(inlineButton, tgbotapi.NewInlineKeyboardRow(
-						tgbotapi.NewInlineKeyboardButtonData(k, k),
-					))
-				}
-			}
-			inlineKeyboard := tgbotapi.NewInlineKeyboardMarkup(inlineButton...)
-			t.Robot.SendMsg(chatID, i18n.GetMessage(*conf.BaseConfInfo.Lang, "chat_mode", nil),
-				msgId, tgbotapi.ModeMarkdown, &inlineKeyboard)
-			
-		}
+	if t.Update.CallbackQuery.Message.ReplyToMessage != nil {
+		t.Update.CallbackQuery.Message.MessageID = t.Update.CallbackQuery.Message.ReplyToMessage.MessageID
 	}
 	
+	t.Robot.ExecCmd(t.Update.CallbackQuery.Data, t.chooseMode)
 }
 
-func (t *TelegramRobot) sendMultiAgent(agentType string) {
-	t.Robot.TalkingPreCheck(func() {
-		chatId, replyToMessageID, userId := t.Robot.GetChatIdAndMsgIdAndUserID()
-		
-		prompt := ""
-		if t.Update.Message != nil {
-			prompt = t.Update.Message.Text
-		}
-		prompt = utils.ReplaceCommand(prompt, "/mcp", t.Bot.Self.UserName)
-		prompt = utils.ReplaceCommand(prompt, "/task", t.Bot.Self.UserName)
-		if len(prompt) == 0 {
-			err := utils.ForceReply(int64(utils.ParseInt(chatId)), utils.ParseInt(replyToMessageID), agentType, t.Bot)
-			if err != nil {
-				logger.Warn("force reply fail", "err", err)
+func (t *TelegramRobot) chooseMode() {
+	if param.GeminiModels[t.Update.CallbackQuery.Data] || param.OpenAIModels[t.Update.CallbackQuery.Data] ||
+		param.DeepseekModels[t.Update.CallbackQuery.Data] || param.DeepseekLocalModels[t.Update.CallbackQuery.Data] ||
+		param.OpenRouterModels[t.Update.CallbackQuery.Data] || param.VolModels[t.Update.CallbackQuery.Data] {
+		t.Robot.handleModeUpdate(t.Update.CallbackQuery.Data)
+	}
+	if param.OpenRouterModelTypes[t.Update.CallbackQuery.Data] {
+		chatID, msgId, _ := t.Robot.GetChatIdAndMsgIdAndUserID()
+		inlineButton := make([][]tgbotapi.InlineKeyboardButton, 0)
+		for k := range param.OpenRouterModels {
+			if strings.Contains(k, t.Update.CallbackQuery.Data+"/") {
+				inlineButton = append(inlineButton, tgbotapi.NewInlineKeyboardRow(
+					tgbotapi.NewInlineKeyboardButtonData(k, k),
+				))
 			}
-			return
 		}
+		inlineKeyboard := tgbotapi.NewInlineKeyboardMarkup(inlineButton...)
+		t.Robot.SendMsg(chatID, i18n.GetMessage(*conf.BaseConfInfo.Lang, "chat_mode", nil),
+			msgId, tgbotapi.ModeMarkdown, &inlineKeyboard)
 		
-		// send response message
-		messageChan := make(chan *param.MsgInfo)
-		
-		dpReq := &llm.LLMTaskReq{
-			Content:     prompt,
-			UserId:      userId,
-			ChatId:      chatId,
-			MsgId:       replyToMessageID,
-			MessageChan: messageChan,
-		}
-		
-		if agentType == "mcp_empty_content" {
-			go func() {
-				defer func() {
-					if err := recover(); err != nil {
-						logger.Error("handleCommand panic err", "err", err, "stack", string(debug.Stack()))
-					}
-					close(messageChan)
-				}()
-				
-				err := dpReq.ExecuteMcp()
-				if err != nil {
-					t.Robot.SendMsg(chatId, err.Error(), replyToMessageID, "", nil)
-				}
-			}()
-		} else {
-			go func() {
-				defer func() {
-					if err := recover(); err != nil {
-						logger.Error("handleCommand panic err", "err", err, "stack", string(debug.Stack()))
-					}
-					close(messageChan)
-				}()
-				
-				err := dpReq.ExecuteTask()
-				if err != nil {
-					t.Robot.SendMsg(chatId, err.Error(), replyToMessageID, "", nil)
-				}
-			}()
-		}
-		
-		go t.handleUpdate(messageChan)
-	})
-	
+	}
 }
 
 // sendVideo send video to telegram
@@ -977,9 +766,9 @@ func (t *TelegramRobot) ExecuteForceReply() {
 	case i18n.GetMessage(*conf.BaseConfInfo.Lang, "video_empty_content", nil):
 		t.sendVideo()
 	case i18n.GetMessage(*conf.BaseConfInfo.Lang, "task_empty_content", nil):
-		t.sendMultiAgent("task_empty_content")
+		t.Robot.sendMultiAgent("task_empty_content", t.sendForceReply("task_empty_content"))
 	case i18n.GetMessage(*conf.BaseConfInfo.Lang, "mcp_empty_content", nil):
-		t.sendMultiAgent("mcp_empty_content")
+		t.Robot.sendMultiAgent("task_empty_content", t.sendForceReply("mcp_empty_content"))
 	}
 }
 
@@ -1068,7 +857,7 @@ func (t *TelegramRobot) GetPhotoContent() []byte {
 	return photoContent
 }
 
-func (t *TelegramRobot) GetMessage() *tgbotapi.Message {
+func (t *TelegramRobot) getMessage() *tgbotapi.Message {
 	if t.Update.Message != nil {
 		return t.Update.Message
 	}
@@ -1076,4 +865,21 @@ func (t *TelegramRobot) GetMessage() *tgbotapi.Message {
 		return t.Update.CallbackQuery.Message
 	}
 	return nil
+}
+
+func (t *TelegramRobot) getPrompt() string {
+	prompt := t.getMessage().Text
+	prompt = utils.ReplaceCommand(prompt, "/mcp", t.Bot.Self.UserName)
+	prompt = utils.ReplaceCommand(prompt, "/task", t.Bot.Self.UserName)
+	return prompt
+}
+
+func (t *TelegramRobot) sendForceReply(agentType string) func() {
+	return func() {
+		chatId, msgId, _ := t.Robot.GetChatIdAndMsgIdAndUserID()
+		err := utils.ForceReply(int64(utils.ParseInt(chatId)), utils.ParseInt(msgId), agentType, t.Bot)
+		if err != nil {
+			logger.Warn("force reply fail", "err", err)
+		}
+	}
 }
