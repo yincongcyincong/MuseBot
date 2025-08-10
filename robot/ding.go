@@ -67,7 +67,8 @@ func StartDingRobot() {
 	
 	err := dingBotClient.Start(context.Background())
 	if err != nil {
-		panic(err)
+		logger.Error("start dingbot fail", "err", err)
+		return
 	}
 	
 	logger.Info("DingRobot Info", "username", dingBotClient.UserAgent)
@@ -77,9 +78,12 @@ func OnChatReceive(ctx context.Context, message *chatbot.BotCallbackDataModel) (
 	d := NewDingRobot(ctx, message)
 	d.Robot = NewRobot(WithRobot(d))
 	go func() {
-		if err := recover(); err != nil {
-			logger.Error("exec panic", "err", err, "stack", string(debug.Stack()))
-		}
+		defer func() {
+			if err := recover(); err != nil {
+				logger.Error("ding exec panic", "err", err, "stack", string(debug.Stack()))
+			}
+		}()
+		
 		d.Robot.Exec()
 	}()
 	

@@ -42,8 +42,18 @@ func NewTelegramRobot(update tgbotapi.Update, bot *tgbotapi.BotAPI) *TelegramRob
 
 // StartTelegramRobot start listen robot callback
 func StartTelegramRobot() {
+	var bot *tgbotapi.BotAPI
+	
+	defer func() {
+		bot.StopReceivingUpdates()
+		if err := recover(); err != nil {
+			logger.Error("StartTelegramRobot panic", "err", err, "stack", string(debug.Stack()))
+			StartTelegramRobot()
+		}
+	}()
+	
 	for {
-		bot := CreateBot()
+		bot = CreateBot()
 		logger.Info("telegramBot Info", "username", bot.Self.UserName)
 		
 		u := tgbotapi.NewUpdate(0)

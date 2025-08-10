@@ -327,6 +327,12 @@ func registerSlashCommands(s *discordgo.Session) {
 }
 
 func onInteractionCreate(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	defer func() {
+		if err := recover(); err != nil {
+			logger.Error("onInteractionCreate panic err", "err", err, "stack", string(debug.Stack()))
+		}
+	}()
+	
 	d := NewDiscordRobot(s, nil, i)
 	d.Robot = NewRobot(WithRobot(d))
 	d.Robot.Exec()

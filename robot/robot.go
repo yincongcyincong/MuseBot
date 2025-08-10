@@ -301,45 +301,30 @@ func WithRobot(robot Robot) func(*RobotInfo) {
 func StartRobot() {
 	if *conf.BaseConfInfo.TelegramBotToken != "" {
 		go func() {
-			if err := recover(); err != nil {
-				logger.Error("StartTelegramRobot panic", "err", err, "stack", string(debug.Stack()))
-			}
 			StartTelegramRobot()
 		}()
 	}
 	
 	if *conf.BaseConfInfo.DiscordBotToken != "" {
 		go func() {
-			if err := recover(); err != nil {
-				logger.Error("StartDiscordRobot panic", "err", err, "stack", string(debug.Stack()))
-			}
 			StartDiscordRobot()
 		}()
 	}
 	
 	if *conf.BaseConfInfo.LarkAPPID != "" && *conf.BaseConfInfo.LarkAppSecret != "" {
 		go func() {
-			if err := recover(); err != nil {
-				logger.Error("StartLarkRobot panic", "err", err, "stack", string(debug.Stack()))
-			}
 			StartLarkRobot()
 		}()
 	}
 	
 	if *conf.BaseConfInfo.SlackBotToken != "" && *conf.BaseConfInfo.SlackAppToken != "" {
 		go func() {
-			if err := recover(); err != nil {
-				logger.Error("StartSlackRobot panic", "err", err, "stack", string(debug.Stack()))
-			}
 			StartSlackRobot()
 		}()
 	}
 	
 	if *conf.BaseConfInfo.DingClientId != "" && *conf.BaseConfInfo.DingClientSecret != "" {
 		go func() {
-			if err := recover(); err != nil {
-				logger.Error("StartDingRobot panic", "err", err, "stack", string(debug.Stack()))
-			}
 			StartDingRobot()
 		}()
 	}
