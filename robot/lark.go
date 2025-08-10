@@ -76,7 +76,7 @@ func StartLarkRobot() {
 	
 	err = cli.Start(context.Background())
 	if err != nil {
-		panic(err)
+		logger.Error("start larkbot fail", "err", err)
 	}
 }
 
@@ -95,9 +95,11 @@ func LarkMessageHandler(ctx context.Context, message *larkim.P2MessageReceiveV1)
 	l := NewLarkRobot(ctx, message)
 	l.Robot = NewRobot(WithRobot(l))
 	go func() {
-		if err := recover(); err != nil {
-			logger.Error("exec panic", "err", err, "stack", string(debug.Stack()))
-		}
+		defer func() {
+			if err := recover(); err != nil {
+				logger.Error("exec panic", "err", err, "stack", string(debug.Stack()))
+			}
+		}()
 		l.Robot.Exec()
 	}()
 	
