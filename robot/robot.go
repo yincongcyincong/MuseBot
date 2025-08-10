@@ -81,6 +81,8 @@ type Robot interface {
 	handleUpdate(messageChan chan *param.MsgInfo)
 	
 	getPrompt() string
+	
+	GetContent(content string) (string, error)
 }
 
 type botOption func(r *RobotInfo)
@@ -164,6 +166,13 @@ func (r *RobotInfo) GetChatIdAndMsgIdAndUserID() (string, string, string) {
 			msgId = larkcore.StringValue(lark.Message.Event.Message.MessageId)
 			chatId = larkcore.StringValue(lark.Message.Event.Message.ChatId)
 			userId = larkcore.StringValue(lark.Message.Event.Sender.SenderId.UserId)
+		}
+	case *DingRobot:
+		dingRobot := r.Robot.(*DingRobot)
+		if dingRobot.Message != nil {
+			chatId = dingRobot.Message.ConversationId
+			msgId = dingRobot.Message.MsgId
+			userId = dingRobot.Message.SenderId
 		}
 	}
 	
@@ -269,6 +278,14 @@ func (r *RobotInfo) SendMsg(chatId string, msgContent string, replyToMessageID s
 			
 			return *resp.Data.MessageId
 		}
+	
+	case *DingRobot:
+		d := r.Robot.(*DingRobot)
+		_, err := d.SimpleReplyMarkdown(d.Ctx, []byte(msgContent))
+		if err != nil {
+			logger.Warn("send message fail", "err", err)
+			return ""
+		}
 		
 	}
 	
@@ -284,25 +301,46 @@ func WithRobot(robot Robot) func(*RobotInfo) {
 func StartRobot() {
 	if *conf.BaseConfInfo.TelegramBotToken != "" {
 		go func() {
+			if err := recover(); err != nil {
+				logger.Error("StartTelegramRobot panic", "err", err, "stack", string(debug.Stack()))
+			}
 			StartTelegramRobot()
 		}()
 	}
 	
 	if *conf.BaseConfInfo.DiscordBotToken != "" {
 		go func() {
+			if err := recover(); err != nil {
+				logger.Error("StartDiscordRobot panic", "err", err, "stack", string(debug.Stack()))
+			}
 			StartDiscordRobot()
 		}()
 	}
 	
 	if *conf.BaseConfInfo.LarkAPPID != "" && *conf.BaseConfInfo.LarkAppSecret != "" {
 		go func() {
+			if err := recover(); err != nil {
+				logger.Error("StartLarkRobot panic", "err", err, "stack", string(debug.Stack()))
+			}
 			StartLarkRobot()
 		}()
 	}
 	
 	if *conf.BaseConfInfo.SlackBotToken != "" && *conf.BaseConfInfo.SlackAppToken != "" {
 		go func() {
+			if err := recover(); err != nil {
+				logger.Error("StartSlackRobot panic", "err", err, "stack", string(debug.Stack()))
+			}
 			StartSlackRobot()
+		}()
+	}
+	
+	if *conf.BaseConfInfo.DingClientId != "" && *conf.BaseConfInfo.DingClientSecret != "" {
+		go func() {
+			if err := recover(); err != nil {
+				logger.Error("StartDingRobot panic", "err", err, "stack", string(debug.Stack()))
+			}
+			StartDingRobot()
 		}()
 	}
 }
@@ -537,7 +575,7 @@ func (r *RobotInfo) ExecCmd(cmd string, defaultFunc func()) {
 	}
 }
 
-func (r *RobotInfo) ExecChain(content string, msgChan chan *param.MsgInfo) {
+func (r *RobotInfo) ExecChain(msgContent string, msgChan chan *param.MsgInfo) {
 	r.TalkingPreCheck(func() {
 		chatId, msgId, userId := r.GetChatIdAndMsgIdAndUserID()
 		
@@ -550,7 +588,12 @@ func (r *RobotInfo) ExecChain(content string, msgChan chan *param.MsgInfo) {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 		defer cancel()
 		
-		text := content
+		content, err := r.Robot.GetContent(strings.TrimSpace(msgContent))
+		if err != nil {
+			logger.Error("get content fail", "err", err)
+			r.SendMsg(chatId, err.Error(), msgId, "", nil)
+			return
+		}
 		dpLLM := rag.NewRag(
 			llm.WithMessageChan(msgChan),
 			llm.WithContent(content),
@@ -561,11 +604,44 @@ func (r *RobotInfo) ExecChain(content string, msgChan chan *param.MsgInfo) {
 			dpLLM,
 			vectorstores.ToRetriever(conf.RagConfInfo.Store, 3),
 		)
-		_, err := chains.Run(ctx, qaChain, text)
+		_, err = chains.Run(ctx, qaChain, content)
 		if err != nil {
 			r.SendMsg(chatId, err.Error(), msgId, "", nil)
 		}
 	})
+}
+
+func (r *RobotInfo) ExecLLM(msgContent string, msgChan chan *param.MsgInfo) {
+	defer func() {
+		if err := recover(); err != nil {
+			logger.Error("GetContent panic err", "err", err, "stack", string(debug.Stack()))
+		}
+		close(msgChan)
+	}()
+	
+	chatId, msgId, userId := r.GetChatIdAndMsgIdAndUserID()
+	
+	content, err := r.Robot.GetContent(strings.TrimSpace(msgContent))
+	if err != nil {
+		logger.Error("get content fail", "err", err)
+		r.SendMsg(chatId, err.Error(), msgId, "", nil)
+		return
+	}
+	
+	llmClient := llm.NewLLM(
+		llm.WithChatId(chatId),
+		llm.WithUserId(userId),
+		llm.WithMsgId(msgId),
+		llm.WithMessageChan(msgChan),
+		llm.WithContent(content),
+	)
+	
+	err = llmClient.CallLLM()
+	if err != nil {
+		logger.Error("get content fail", "err", err)
+		r.SendMsg(chatId, err.Error(), msgId, "", nil)
+	}
+	
 }
 
 func (r *RobotInfo) showBalanceInfo() {

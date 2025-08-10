@@ -105,7 +105,7 @@ func StartSlackRobot() {
 			}
 		}
 	}()
-	logger.Info("Slack bot started")
+	logger.Info("SlackBot Info", "username", slackUserId)
 	socketClient.Run()
 }
 
@@ -218,19 +218,11 @@ func (s *SlackRobot) requestLLMAndResp(content string) {
 }
 
 func (s *SlackRobot) sendChatMessage() {
-	chatId, msgId, _ := s.Robot.GetChatIdAndMsgIdAndUserID()
-	
-	content, err := s.GetContent(strings.TrimSpace(s.Prompt))
-	if err != nil {
-		logger.Error("get content fail", "err", err)
-		s.Robot.SendMsg(chatId, err.Error(), msgId, "", nil)
-		return
-	}
 	s.Robot.TalkingPreCheck(func() {
 		if conf.RagConfInfo.Store != nil {
-			s.executeChain(content)
+			s.executeChain(s.Prompt)
 		} else {
-			s.executeLLM(content)
+			s.executeLLM(s.Prompt)
 		}
 	})
 	
@@ -245,7 +237,7 @@ func (s *SlackRobot) executeChain(content string) {
 
 func (s *SlackRobot) executeLLM(content string) {
 	messageChan := make(chan *param.MsgInfo)
-	go s.callLLM(content, messageChan)
+	go s.Robot.ExecLLM(content, messageChan)
 	go s.handleUpdate(messageChan)
 }
 
@@ -295,37 +287,6 @@ func (s *SlackRobot) handleUpdate(messageChan chan *param.MsgInfo) {
 			}
 			originalMsgID = ""
 		}
-	}
-}
-
-func (s *SlackRobot) callLLM(content string, messageChan chan *param.MsgInfo) {
-	chatID, _, userID := s.Robot.GetChatIdAndMsgIdAndUserID()
-	
-	defer func() {
-		if err := recover(); err != nil {
-			logger.Error("GetContent panic err", "err", err, "stack", string(debug.Stack()))
-		}
-		close(messageChan)
-	}()
-	
-	l := llm.NewLLM(
-		llm.WithMessageChan(messageChan),
-		llm.WithContent(content),
-		llm.WithChatId(chatID),
-		llm.WithUserId(userID),
-		llm.WithTaskTools(&conf.AgentInfo{
-			DeepseekTool:    conf.DeepseekTools,
-			VolTool:         conf.VolTools,
-			OpenAITools:     conf.OpenAITools,
-			GeminiTools:     conf.GeminiTools,
-			OpenRouterTools: conf.OpenRouterTools,
-		}),
-	)
-	
-	err := l.CallLLM()
-	if err != nil {
-		logger.Error("callLLM error", "err", err)
-		s.Robot.SendMsg(chatID, err.Error(), "", "", nil)
 	}
 }
 

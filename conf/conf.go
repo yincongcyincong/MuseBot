@@ -19,6 +19,9 @@ type BaseConf struct {
 	SlackAppToken    *string `json:"slack_app_token"`
 	LarkAPPID        *string `json:"lark_app_id"`
 	LarkAppSecret    *string `json:"lark_app_secret"`
+	DingClientId     *string `json:"ding_client_id"`
+	DingClientSecret *string `json:"ding_app_secret"`
+	DingTemplateId   *string `json:"ding_template_id"`
 	
 	DeepseekToken   *string `json:"deepseek_token"`
 	OpenAIToken     *string `json:"openai_token"`
@@ -41,7 +44,7 @@ type BaseConf struct {
 	TokenPerUser *int    `json:"token_per_user"`
 	NeedATBOt    *bool   `json:"need_at_bot"`
 	MaxUserChat  *int    `json:"max_user_chat"`
-	HTTPPort     *int    `json:"http_port"`
+	HTTPHost     *string `json:"http_host"`
 	UseTools     *bool   `json:"use_tools"`
 	
 	CrtFile *string `json:"crt_file"`
@@ -65,6 +68,9 @@ func InitConf() {
 	BaseConfInfo.SlackAppToken = flag.String("slack_app_token", "", "Slack app tokens")
 	BaseConfInfo.LarkAPPID = flag.String("lark_app_id", "", "Lark app id")
 	BaseConfInfo.LarkAppSecret = flag.String("lark_app_secret", "", "Lark app secret")
+	BaseConfInfo.DingClientId = flag.String("ding_client_id", "", "Dingding client id")
+	BaseConfInfo.DingClientSecret = flag.String("ding_client_secret", "", "Dingding app secret")
+	BaseConfInfo.DingTemplateId = flag.String("ding_template_id", "", "Dingding template id")
 	
 	BaseConfInfo.DeepseekToken = flag.String("deepseek_token", "", "deepseek auth token")
 	BaseConfInfo.OpenAIToken = flag.String("openai_token", "", "openai auth token")
@@ -87,7 +93,7 @@ func InitConf() {
 	BaseConfInfo.TokenPerUser = flag.Int("token_per_user", 10000, "token per user")
 	BaseConfInfo.NeedATBOt = flag.Bool("need_at_bot", false, "need at bot")
 	BaseConfInfo.MaxUserChat = flag.Int("max_user_chat", 2, "max chat per user")
-	BaseConfInfo.HTTPPort = flag.Int("http_port", 36060, "http server port")
+	BaseConfInfo.HTTPHost = flag.String("http_host", "127.0.0.1:36060", "http server port")
 	BaseConfInfo.UseTools = flag.Bool("use_tools", false, "use tools")
 	
 	BaseConfInfo.CrtFile = flag.String("crt_file", "", "public key file")
@@ -108,6 +114,7 @@ func InitConf() {
 	InitAudioConf()
 	InitToolsConf()
 	InitRagConf()
+	InitRegisterConf()
 	flag.Parse()
 	
 	if os.Getenv("TELEGRAM_BOT_TOKEN") != "" {
@@ -132,6 +139,18 @@ func InitConf() {
 	
 	if os.Getenv("LARK_APP_SECRET") != "" {
 		*BaseConfInfo.LarkAppSecret = os.Getenv("LARK_APP_SECRET")
+	}
+	
+	if os.Getenv("DING_CLIENT_ID") != "" {
+		*BaseConfInfo.DingClientId = os.Getenv("DING_CLIENT_ID")
+	}
+	
+	if os.Getenv("DING_CLIENT_SECRET") != "" {
+		*BaseConfInfo.DingClientSecret = os.Getenv("DING_CLIENT_SECRET")
+	}
+	
+	if os.Getenv("DING_TEMPLATE_ID") != "" {
+		*BaseConfInfo.DingTemplateId = os.Getenv("DING_TEMPLATE_ID")
 	}
 	
 	if os.Getenv("DEEPSEEK_TOKEN") != "" {
@@ -198,8 +217,8 @@ func InitConf() {
 		*BaseConfInfo.MaxUserChat, _ = strconv.Atoi(os.Getenv("MAX_USER_CHAT"))
 	}
 	
-	if os.Getenv("HTTP_PORT") != "" {
-		*BaseConfInfo.HTTPPort, _ = strconv.Atoi(os.Getenv("HTTP_PORT"))
+	if os.Getenv("HTTP_HOST") != "" {
+		*BaseConfInfo.HTTPHost = os.Getenv("HTTP_HOST")
 	}
 	
 	if os.Getenv("USE_TOOLS") == "false" {
@@ -270,6 +289,9 @@ func InitConf() {
 	logger.Info("CONF", "SlackAppToken", *BaseConfInfo.SlackAppToken)
 	logger.Info("CONF", "LarkAPPID", *BaseConfInfo.LarkAPPID)
 	logger.Info("CONF", "LarkAppSecret", *BaseConfInfo.LarkAppSecret)
+	logger.Info("CONF", "DingClientId", *BaseConfInfo.DingClientId)
+	logger.Info("CONF", "DingClientSecret", *BaseConfInfo.DingClientSecret)
+	logger.Info("CONF", "DingCorpId", *BaseConfInfo.DingTemplateId)
 	logger.Info("CONF", "DeepseekToken", *BaseConfInfo.DeepseekToken)
 	logger.Info("CONF", "CustomUrl", *BaseConfInfo.CustomUrl)
 	logger.Info("CONF", "Type", *BaseConfInfo.Type)
@@ -286,7 +308,7 @@ func InitConf() {
 	logger.Info("CONF", "AdminUserIds", *adminUserIds)
 	logger.Info("CONF", "NeedATBOt", *BaseConfInfo.NeedATBOt)
 	logger.Info("CONF", "MaxUserChat", *BaseConfInfo.MaxUserChat)
-	logger.Info("CONF", "HTTPPort", *BaseConfInfo.HTTPPort)
+	logger.Info("CONF", "HTTPPort", *BaseConfInfo.HTTPHost)
 	logger.Info("CONF", "OpenAIToken", *BaseConfInfo.OpenAIToken)
 	logger.Info("CONF", "GeminiToken", *BaseConfInfo.GeminiToken)
 	logger.Info("CONF", "OpenRouterToken", *BaseConfInfo.OpenRouterToken)
@@ -304,5 +326,6 @@ func InitConf() {
 	EnvPhotoConf()
 	EnvToolsConf()
 	EnvVideoConf()
+	EnvRegisterConf()
 	
 }

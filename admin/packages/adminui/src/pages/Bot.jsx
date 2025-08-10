@@ -335,14 +335,6 @@ function Bots() {
         </pre>
             </Modal>
 
-            <Modal
-                visible={structuredConfigVisible}
-                title="Edit Config"
-                onClose={() => setStructuredConfigVisible(false)}
-            >
-                <ConfigForm botId={selectId} />
-            </Modal>
-
             <ConfirmModal
                 visible={confirmVisible}
                 message="Are you sure you want to delete this bot?"

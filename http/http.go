@@ -18,7 +18,7 @@ type HTTPServer struct {
 }
 
 func InitHTTP() {
-	pprofServer := NewHTTPServer(fmt.Sprintf(":%d", *conf.BaseConfInfo.HTTPPort))
+	pprofServer := NewHTTPServer(fmt.Sprintf("%s", *conf.BaseConfInfo.HTTPHost))
 	pprofServer.Start()
 }
 
@@ -93,7 +93,7 @@ func runTLSServer() error {
 	}
 	
 	server := &http.Server{
-		Addr:      fmt.Sprintf(":%d", *conf.BaseConfInfo.HTTPPort),
+		Addr:      fmt.Sprintf("%s", *conf.BaseConfInfo.HTTPHost),
 		TLSConfig: tlsConfig,
 	}
 	

@@ -14,6 +14,7 @@ import (
 	"github.com/yincongcyincong/MuseBot/logger"
 	"github.com/yincongcyincong/MuseBot/metrics"
 	"github.com/yincongcyincong/MuseBot/rag"
+	"github.com/yincongcyincong/MuseBot/register"
 	"github.com/yincongcyincong/MuseBot/robot"
 )
 
@@ -28,6 +29,7 @@ func main() {
 	http.InitHTTP()
 	metrics.RegisterMetrics()
 	robot.StartRobot()
+	register.InitRegister()
 	
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
