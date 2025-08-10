@@ -28,13 +28,14 @@ more natural and dynamic.
 
 ## 📸 Support Platform
 
-| Platform             | Supported | Description                                                                                                           | Docs / Links                                                                     |
-|----------------------|:---------:|-----------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------|
-| 🟦 **Telegram**      |     ✅     | Supports Telegram bot (go-telegram-bot-api based, handles commands, inline buttons, ForceReply, etc.)                 | Repo: https://github.com/yincongcyincong/MuseBot                                 |
-| 🌈 **Discord**       |     ✅     | Supports Discord bot                                                                                                  | Docs: https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/discord.md |
-| 🌛 **Web API**       |     ✅     | Provides HTTP/Web API for interacting with LLM (great for custom frontends/backends)                                  | Docs: https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/web_api.md |
-| 🔷 **Slack**         |     ✅     | Supports Slack (Socket Mode / Events API / Block Kit interactions)                                                    | Docs: https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/slack.md   |
-| 🟣 **Lark (Feishu)** |     ✅     | Supports Lark long connection & message handling (based on larksuite SDK, with image/audio download & message update) | Docs: https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/lark.md    |
+| Platform             | Supported | Description                                                                                                           | Docs / Links                                                                        |
+|----------------------|:---------:|-----------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------|
+| 🟦 **Telegram**      |     ✅     | Supports Telegram bot (go-telegram-bot-api based, handles commands, inline buttons, ForceReply, etc.)                 | [Docs](https://github.com/yincongcyincong/MuseBot)                                  |
+| 🌈 **Discord**       |     ✅     | Supports Discord bot                                                                                                  | [Docs](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/discord.md)  |
+| 🌛 **Web API**       |     ✅     | Provides HTTP/Web API for interacting with LLM (great for custom frontends/backends)                                  | [Docs](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/web_api.md)  |
+| 🔷 **Slack**         |     ✅     | Supports Slack (Socket Mode / Events API / Block Kit interactions)                                                    | [Docs](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/slack.md)    |
+| 🟣 **Lark (Feishu)** |     ✅     | Supports Lark long connection & message handling (based on larksuite SDK, with image/audio download & message update) | [Docs](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/lark.md)     |
+| 🆙 **DingDing**      |     ✅     | Supports Dingding long connection                                                                                     | [Docs](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/dingding.md) |
 
 ## Supported Large Language Models
 
