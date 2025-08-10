@@ -27,7 +27,7 @@ You can launch the bot in DingTalk mode with the following command:
 
 ### 1. Private Chat with the Bot
 
-Send commands directly to the bot in a DingTalk private chat.
+Send commands directly to the bot in a DingTalk private chat.    
 <img width="400" alt="image" src="https://github.com/user-attachments/assets/f73094cb-7ae1-4ea5-a8be-75bac24b4a4c" />
 
 
