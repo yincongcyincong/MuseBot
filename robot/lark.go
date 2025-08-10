@@ -72,6 +72,7 @@ func StartLarkRobot() {
 		return
 	}
 	BotName = larkcore.StringValue(resp.Data.App.AppName)
+	logger.Info("LarkBot Info", "username", BotName)
 	
 	err = cli.Start(context.Background())
 	if err != nil {
@@ -417,27 +418,19 @@ func (l *LarkRobot) sendVideo() {
 }
 
 func (l *LarkRobot) sendChatMessage() {
-	chatId, msgId, _ := l.Robot.GetChatIdAndMsgIdAndUserID()
-	
-	content, err := l.GetContent(strings.TrimSpace(l.Prompt))
-	if err != nil {
-		logger.Error("get content fail", "err", err)
-		l.Robot.SendMsg(chatId, err.Error(), msgId, "", nil)
-		return
-	}
 	l.Robot.TalkingPreCheck(func() {
 		if conf.RagConfInfo.Store != nil {
-			l.executeChain(content)
+			l.executeChain()
 		} else {
-			l.executeLLM(content)
+			l.executeLLM()
 		}
 	})
 	
 }
 
-func (l *LarkRobot) executeChain(content string) {
+func (l *LarkRobot) executeChain() {
 	messageChan := make(chan *param.MsgInfo)
-	go l.Robot.ExecChain(content, messageChan)
+	go l.Robot.ExecChain(l.Prompt, messageChan)
 	
 	// send response message
 	go l.handleUpdate(messageChan)
@@ -496,28 +489,11 @@ func (l *LarkRobot) handleUpdate(messageChan chan *param.MsgInfo) {
 	}
 }
 
-func (l *LarkRobot) executeLLM(content string) {
+func (l *LarkRobot) executeLLM() {
 	messageChan := make(chan *param.MsgInfo)
 	go l.handleUpdate(messageChan)
 	
-	go func() {
-		chatId, msgId, userId := l.Robot.GetChatIdAndMsgIdAndUserID()
-		
-		llmClient := llm.NewLLM(
-			llm.WithChatId(chatId),
-			llm.WithUserId(userId),
-			llm.WithMsgId(msgId),
-			llm.WithMessageChan(messageChan),
-			llm.WithContent(content),
-		)
-		
-		err := llmClient.CallLLM()
-		if err != nil {
-			logger.Error("get content fail", "err", err)
-			l.Robot.SendMsg(chatId, err.Error(), msgId, "", nil)
-		}
-		
-	}()
+	go l.Robot.ExecLLM(l.Prompt, messageChan)
 	
 }
 
@@ -604,7 +580,7 @@ func GetMarkdownContent(content string) string {
 	markdownMsg, _ := larkim.NewMessagePost().ZhCn(larkim.NewMessagePostContent().AppendContent(
 		[]larkim.MessagePostElement{
 			&MessagePostMarkdown{
-				Text: strings.ReplaceAll(strings.ReplaceAll(content, "\"", ""), "\n", "\\n"),
+				Text: strings.ReplaceAll(content, "\n", "\\n"),
 			},
 		}).Build()).Build()
 	
@@ -623,7 +599,11 @@ func (m *MessagePostMarkdown) IsPost() {
 }
 
 func (m *MessagePostMarkdown) MarshalJSON() ([]byte, error) {
-	return []byte(`{"tag":"md","text":"` + m.Text + `"}`), nil
+	data := map[string]interface{}{
+		"tag":  "md",
+		"text": m.Text,
+	}
+	return json.Marshal(data)
 }
 
 type MessagePostContent struct {

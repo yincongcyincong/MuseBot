@@ -101,7 +101,7 @@ func (d *DiscordRobot) executeLLM(content string) {
 	messageChan := make(chan *param.MsgInfo)
 	
 	// request DeepSeek API
-	go d.callLLM(content, messageChan)
+	go d.Robot.ExecLLM(content, messageChan)
 	
 	// send response message
 	go d.handleUpdate(messageChan)
@@ -186,42 +186,7 @@ func (d *DiscordRobot) handleUpdate(messageChan chan *param.MsgInfo) {
 	}
 }
 
-func (d *DiscordRobot) callLLM(content string, messageChan chan *param.MsgInfo) {
-	
-	chatId, msgId, userId := d.Robot.GetChatIdAndMsgIdAndUserID()
-	defer func() {
-		if err := recover(); err != nil {
-			logger.Error("GetContent panic err", "err", err, "stack", string(debug.Stack()))
-		}
-		close(messageChan)
-	}()
-	
-	text, err := d.getContent(content)
-	if err != nil {
-		logger.Error("get content fail", "err", err)
-		d.Robot.SendMsg(chatId, err.Error(), msgId, "", nil)
-		return
-	}
-	
-	l := llm.NewLLM(llm.WithMessageChan(messageChan), llm.WithContent(text),
-		llm.WithChatId(chatId), llm.WithMsgId(msgId),
-		llm.WithUserId(userId),
-		llm.WithTaskTools(&conf.AgentInfo{
-			DeepseekTool:    conf.DeepseekTools,
-			VolTool:         conf.VolTools,
-			OpenAITools:     conf.OpenAITools,
-			GeminiTools:     conf.GeminiTools,
-			OpenRouterTools: conf.OpenRouterTools,
-		}))
-	
-	err = l.CallLLM()
-	if err != nil {
-		logger.Error("get content fail", "err", err)
-		d.Robot.SendMsg(chatId, err.Error(), msgId, "", nil)
-	}
-}
-
-func (d *DiscordRobot) getContent(defaultText string) (string, error) {
+func (d *DiscordRobot) GetContent(defaultText string) (string, error) {
 	var content string
 	var attachments []*discordgo.MessageAttachment
 	
