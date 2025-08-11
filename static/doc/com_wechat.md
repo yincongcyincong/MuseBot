@@ -1,7 +1,3 @@
-Sure! Here’s the English version of the WeChat Work (Enterprise WeChat) bot introduction, styled similarly to the DingTalk example you shared:
-
----
-
 # ✨ Enterprise WeChat Bot
 
 This project is a cross-platform chatbot supporting **Enterprise WeChat** in both private and group chats.
@@ -34,42 +30,46 @@ You can launch the bot with the following command and parameters:
 
 1. Log in to the Enterprise WeChat admin console:https://work.weixin.qq.com/wework_admin/   
 
-
 2. Create a new application to obtain the `AgentId`, `Secret`, and configure the `Token` and `EncodingAESKey`
+  <img width="400" alt="image" src="https://github.com/user-attachments/assets/9ba4ea00-b4f5-441c-b6ac-1d4dd6fbccde" />
+   
+3. Set the callback URL to receive events and messages from Enterprise WeChat    
+  <img width="400" alt="image" src="https://github.com/user-attachments/assets/cd2ef979-de8c-46e4-952e-f0f30304e0aa" />
 
+4. Enterprise Trusted IP is necessary
+ <img width="400" alt="image" src="https://github.com/user-attachments/assets/9a1560d7-3cde-43cd-bc10-e95cb471e975" />  
 
-3. Set the callback URL to receive events and messages from Enterprise WeChat
 
 ### 1. Private Chat with the Bot
 
 Send messages directly to the bot in Enterprise WeChat private chat. The bot will automatically respond based on message content.
+  <img width="400" alt="image" src="https://github.com/user-attachments/assets/e8dcce5e-bc93-4448-8a0a-0a6ed47d3348" />
 
----
 
 ## Supported Commands Example
 
 * `/photo` — Generate an image    
-  <img width="400" alt="image" src="https://github.com/user-attachments/assets/b3634f64-43ef-4884-9212-b8fadba5a474" />
+  <img width="400" alt="image" src="https://github.com/user-attachments/assets/64146ff8-f296-49ee-9393-4908c818d5b8" />
 
 * `/video` — Generate a video    
-  <img width="400" alt="image" src="https://github.com/user-attachments/assets/ba39278d-83e8-4db0-9a72-b4f0d8c0785b" />
+  <img width="400" alt="image" src="https://github.com/user-attachments/assets/f5d7185b-060e-4894-917d-91d6766e46b1" />
 
+  
 * `/balance` — Check your DeepSeek Token balance    
-  <img width="400" alt="image" src="https://github.com/user-attachments/assets/fd2ec827-a876-4bad-8e68-a762385b064f" />
+  <img width="400" alt="image" src="https://github.com/user-attachments/assets/f94e420a-1259-4565-b2aa-757b758f6553" />
 
-* `/state` — View the current conversation state (including model info and system prompts)
+* `/state` — View the current conversation state (including model info and system prompts)    
   <img width="400" alt="image" src="https://github.com/user-attachments/assets/adfc9015-6d2b-4663-80fa-34491a6f9a8a" />
+  
+* `/clear` — Clear the current conversation context    
+  <img width="400" alt="image" src="https://github.com/user-attachments/assets/70b79d5e-c429-40c5-bf90-6a56fbcd99d8" />
 
-* `/clear` — Clear the current conversation context
-  <img width="400" alt="image" src="https://github.com/user-attachments/assets/47b74d3e-1425-402e-a117-882a8003bbe9" />
-
-
-* `/help` — Display help information
-  <img width="400" alt="image" src="https://github.com/user-attachments/assets/2971ff23-9b68-4dbc-ad06-ad92b3c12bc8" />
+* `/help` — Display help information    
+  <img width="400" alt="image" src="https://github.com/user-attachments/assets/07e787f1-67ba-441a-ba03-1e80fb3d2929" />
 
 * `/mode` — Choose LLM mode    
-  <img width="400" alt="image" src="https://github.com/user-attachments/assets/c8020a59-2619-4160-beac-5fd628b62e4c" />
-  <img width="400" alt="image" src="https://github.com/user-attachments/assets/5327afba-9160-44e8-a0e5-f05bae6cbfd6" />
+  <img width="400" alt="image" src="https://github.com/user-attachments/assets/4e4dfa98-16b7-46a2-a1a9-b91ac9272b4b" />
+
 
 
   
