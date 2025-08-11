@@ -467,7 +467,7 @@ func (c *ComWechatRobot) GetContent(content string) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		return c.Robot.GetImageContent(data)
+		return c.Robot.GetAudioContent(data)
 		
 	}
 	
