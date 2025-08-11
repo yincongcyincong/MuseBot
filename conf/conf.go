@@ -13,15 +13,20 @@ import (
 type BaseConf struct {
 	StartTime int64 `json:"-"`
 	
-	TelegramBotToken *string `json:"telegram_bot_token"`
-	DiscordBotToken  *string `json:"discord_bot_token"`
-	SlackBotToken    *string `json:"slack_bot_token"`
-	SlackAppToken    *string `json:"slack_app_token"`
-	LarkAPPID        *string `json:"lark_app_id"`
-	LarkAppSecret    *string `json:"lark_app_secret"`
-	DingClientId     *string `json:"ding_client_id"`
-	DingClientSecret *string `json:"ding_app_secret"`
-	DingTemplateId   *string `json:"ding_template_id"`
+	TelegramBotToken        *string `json:"telegram_bot_token"`
+	DiscordBotToken         *string `json:"discord_bot_token"`
+	SlackBotToken           *string `json:"slack_bot_token"`
+	SlackAppToken           *string `json:"slack_app_token"`
+	LarkAPPID               *string `json:"lark_app_id"`
+	LarkAppSecret           *string `json:"lark_app_secret"`
+	DingClientId            *string `json:"ding_client_id"`
+	DingClientSecret        *string `json:"ding_app_secret"`
+	DingTemplateId          *string `json:"ding_template_id"`
+	ComWechatToken          *string `json:"com_wechat_token"`
+	ComWechatEncodingAESKey *string `json:"com_wechat_encoding_aes_key"`
+	ComWechatCorpID         *string `json:"com_wechat_corp_id"`
+	ComWechatSecret         *string `json:"com_wechat_secret"`
+	ComWechatAgentID        *string `json:"com_wechat_agent_id"`
 	
 	DeepseekToken   *string `json:"deepseek_token"`
 	OpenAIToken     *string `json:"openai_token"`
@@ -71,6 +76,11 @@ func InitConf() {
 	BaseConfInfo.DingClientId = flag.String("ding_client_id", "", "Dingding client id")
 	BaseConfInfo.DingClientSecret = flag.String("ding_client_secret", "", "Dingding app secret")
 	BaseConfInfo.DingTemplateId = flag.String("ding_template_id", "", "Dingding template id")
+	BaseConfInfo.ComWechatToken = flag.String("com_wechat_token", "", "ComWechat token")
+	BaseConfInfo.ComWechatEncodingAESKey = flag.String("com_wechat_encoding_aes_key", "", "ComWechat encoding aes key")
+	BaseConfInfo.ComWechatCorpID = flag.String("com_wechat_corp_id", "", "ComWechat corp id")
+	BaseConfInfo.ComWechatSecret = flag.String("com_wechat_secret", "", "ComWechat secret")
+	BaseConfInfo.ComWechatAgentID = flag.String("com_wechat_agent_id", "", "ComWechat agent id")
 	
 	BaseConfInfo.DeepseekToken = flag.String("deepseek_token", "", "deepseek auth token")
 	BaseConfInfo.OpenAIToken = flag.String("openai_token", "", "openai auth token")
@@ -151,6 +161,26 @@ func InitConf() {
 	
 	if os.Getenv("DING_TEMPLATE_ID") != "" {
 		*BaseConfInfo.DingTemplateId = os.Getenv("DING_TEMPLATE_ID")
+	}
+	
+	if os.Getenv("COM_WECHAT_TOKEN") != "" {
+		*BaseConfInfo.ComWechatToken = os.Getenv("COM_WECHAT_TOKEN")
+	}
+	
+	if os.Getenv("COM_WECHAT_ENCODING_AES_KEY") != "" {
+		*BaseConfInfo.ComWechatEncodingAESKey = os.Getenv("COM_WECHAT_ENCODING_AES_KEY")
+	}
+	
+	if os.Getenv("COM_WECHAT_CORP_ID") != "" {
+		*BaseConfInfo.ComWechatCorpID = os.Getenv("COM_WECHAT_CORP_ID")
+	}
+	
+	if os.Getenv("COM_WECHAT_SECRET") != "" {
+		*BaseConfInfo.ComWechatSecret = os.Getenv("COM_WECHAT_SECRET")
+	}
+	
+	if os.Getenv("COM_WECHAT_AGENT_ID") != "" {
+		*BaseConfInfo.ComWechatAgentID = os.Getenv("COM_WECHAT_AGENT_ID")
 	}
 	
 	if os.Getenv("DEEPSEEK_TOKEN") != "" {
@@ -291,7 +321,12 @@ func InitConf() {
 	logger.Info("CONF", "LarkAppSecret", *BaseConfInfo.LarkAppSecret)
 	logger.Info("CONF", "DingClientId", *BaseConfInfo.DingClientId)
 	logger.Info("CONF", "DingClientSecret", *BaseConfInfo.DingClientSecret)
-	logger.Info("CONF", "DingCorpId", *BaseConfInfo.DingTemplateId)
+	logger.Info("CONF", "DingTemplateId", *BaseConfInfo.DingTemplateId)
+	logger.Info("CONF", "ComWechatToken", *BaseConfInfo.ComWechatToken)
+	logger.Info("CONF", "ComWechatEncodingAESKey", *BaseConfInfo.ComWechatEncodingAESKey)
+	logger.Info("CONF", "ComWechatCorpID", *BaseConfInfo.ComWechatCorpID)
+	logger.Info("CONF", "ComWechatSecret", *BaseConfInfo.ComWechatSecret)
+	logger.Info("CONF", "ComWechatAgentID", *BaseConfInfo.ComWechatAgentID)
 	logger.Info("CONF", "DeepseekToken", *BaseConfInfo.DeepseekToken)
 	logger.Info("CONF", "CustomUrl", *BaseConfInfo.CustomUrl)
 	logger.Info("CONF", "Type", *BaseConfInfo.Type)

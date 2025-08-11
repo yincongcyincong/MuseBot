@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 	
+	"github.com/ArtisanCloud/PowerWeChat/v3/src/work/message/request"
 	"github.com/bwmarrin/discordgo"
 	godeepseek "github.com/cohesion-org/deepseek-go"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -182,6 +183,13 @@ func (r *RobotInfo) GetChatIdAndMsgIdAndUserID() (string, string, string) {
 			msgId = dingRobot.Message.MsgId
 			userId = dingRobot.Message.SenderId
 		}
+	case *ComWechatRobot:
+		comWechatRobot := r.Robot.(*ComWechatRobot)
+		if comWechatRobot.Event != nil {
+			chatId = comWechatRobot.Event.GetFromUserName()
+			msgId = ""
+			userId = comWechatRobot.Event.GetFromUserName()
+		}
 	}
 	
 	return chatId, msgId, userId
@@ -289,10 +297,26 @@ func (r *RobotInfo) SendMsg(chatId string, msgContent string, replyToMessageID s
 	
 	case *DingRobot:
 		d := r.Robot.(*DingRobot)
-		_, err := d.SimpleReplyMarkdown(d.Ctx, []byte(msgContent))
+		_, err := d.SimpleReplyMarkdown(d.Ctx, []byte(">"+d.OriginPrompt+"\n\n"+msgContent))
 		if err != nil {
 			logger.Warn("send message fail", "err", err)
 			return ""
+		}
+	case *ComWechatRobot:
+		c := r.Robot.(*ComWechatRobot)
+		_, err := c.App.Message.SendMarkdown(c.Ctx, &request.RequestMessageSendMarkdown{
+			RequestMessageSend: request.RequestMessageSend{
+				ToUser:                 chatId,
+				MsgType:                "markdown",
+				AgentID:                utils.ParseInt(*conf.BaseConfInfo.ComWechatAgentID),
+				DuplicateCheckInterval: 1800,
+			},
+			Markdown: &request.RequestMarkdown{
+				Content: ">" + c.OriginPrompt + "\n\n" + msgContent,
+			},
+		})
+		if err != nil {
+			logger.Warn("send message fail", "err", err)
 		}
 		
 	}
@@ -337,6 +361,12 @@ func StartRobot() {
 	if *conf.BaseConfInfo.DingClientId != "" && *conf.BaseConfInfo.DingClientSecret != "" {
 		go func() {
 			StartDingRobot(ctx)
+		}()
+	}
+	
+	if *conf.BaseConfInfo.ComWechatSecret != "" && *conf.BaseConfInfo.ComWechatAgentID != "" && *conf.BaseConfInfo.ComWechatCorpID != "" {
+		go func() {
+			StartComWechatRobot()
 		}()
 	}
 }

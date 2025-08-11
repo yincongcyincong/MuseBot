@@ -488,12 +488,12 @@ func GetOpenAIImageContent(imageContent []byte) (string, error) {
 						Type: openai.ChatMessagePartTypeImageURL,
 						ImageURL: &openai.ChatMessageImageURL{
 							URL:    imageDataURL,
-							Detail: openai.ImageURLDetailHigh, // 高精度模式
+							Detail: openai.ImageURLDetailHigh,
 						},
 					},
 					{
 						Type: openai.ChatMessagePartTypeText,
-						Text: "get content from this image",
+						Text: "Give me the text content in the picture",
 					},
 				},
 			},
