@@ -2,6 +2,7 @@ package robot
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -41,14 +42,14 @@ func NewTelegramRobot(update tgbotapi.Update, bot *tgbotapi.BotAPI) *TelegramRob
 }
 
 // StartTelegramRobot start listen robot callback
-func StartTelegramRobot() {
+func StartTelegramRobot(ctx context.Context) {
 	var bot *tgbotapi.BotAPI
 	
 	defer func() {
 		bot.StopReceivingUpdates()
 		if err := recover(); err != nil {
 			logger.Error("StartTelegramRobot panic", "err", err, "stack", string(debug.Stack()))
-			StartTelegramRobot()
+			StartTelegramRobot(ctx)
 		}
 	}()
 	
@@ -60,10 +61,15 @@ func StartTelegramRobot() {
 		u.Timeout = 60
 		
 		updates := bot.GetUpdatesChan(u)
-		for update := range updates {
-			t := NewTelegramRobot(update, bot)
-			t.Robot = NewRobot(WithRobot(t))
-			t.Robot.Exec()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case update := <-updates:
+				t := NewTelegramRobot(update, bot)
+				t.Robot = NewRobot(WithRobot(t))
+				t.Robot.Exec()
+			}
 		}
 	}
 }
@@ -137,6 +143,8 @@ func CreateBot() *tgbotapi.BotAPI {
 
 func (t *TelegramRobot) checkValid() bool {
 	chatId, msgId, _ := t.Robot.GetChatIdAndMsgIdAndUserID()
+	
+	t.Cmd, t.Prompt = ParseCommand(t.getMsgContent())
 	if t.handleCommandAndCallback() {
 		return false
 	}
@@ -146,8 +154,6 @@ func (t *TelegramRobot) checkValid() bool {
 			logger.Warn("skip this msg", "msgId", msgId, "chat", chatId, "type", t.getMessage().Chat.Type, "content", t.getMsgContent())
 			return false
 		}
-		
-		t.Cmd, t.Prompt = ParseCommand(t.getMsgContent())
 		return true
 	}
 	

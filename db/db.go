@@ -137,6 +137,7 @@ func InitTable() {
 		}
 	}
 	
+	InsertRecord()
 	logger.Info("db initialize successfully")
 }
 

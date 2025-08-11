@@ -23,7 +23,6 @@ func main() {
 	conf.InitConf()
 	i18n.InitI18n()
 	db.InitTable()
-	db.UpdateUserTime()
 	conf.InitTools()
 	rag.InitRag()
 	http.InitHTTP()

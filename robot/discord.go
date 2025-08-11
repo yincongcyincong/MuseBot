@@ -2,6 +2,7 @@ package robot
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -29,7 +30,7 @@ type DiscordRobot struct {
 	Prompt string
 }
 
-func StartDiscordRobot() {
+func StartDiscordRobot(ctx context.Context) {
 	dg, err := discordgo.New("Bot " + *conf.BaseConfInfo.DiscordBotToken)
 	if err != nil {
 		logger.Fatal("create discord bot", "err", err)
@@ -49,6 +50,11 @@ func StartDiscordRobot() {
 	logger.Info("discordBot Info", "username", dg.State.User.Username)
 	
 	registerSlashCommands(dg)
+	
+	select {
+	case <-ctx.Done():
+		dg.Close()
+	}
 }
 
 func NewDiscordRobot(s *discordgo.Session, msg *discordgo.MessageCreate, i *discordgo.InteractionCreate) *DiscordRobot {
@@ -246,7 +252,6 @@ func (d *DiscordRobot) GetContent(defaultText string) (string, error) {
 		return "", errors.New("content empty")
 	}
 	
-	// 去除 @bot 提及
 	if d.Session != nil && d.Session.State != nil && d.Session.State.User != nil {
 		content = strings.ReplaceAll(content, "<@"+d.Session.State.User.ID+">", "")
 	}

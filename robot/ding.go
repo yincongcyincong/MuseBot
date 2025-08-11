@@ -25,6 +25,7 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/open-dingtalk/dingtalk-stream-sdk-go/chatbot"
 	"github.com/open-dingtalk/dingtalk-stream-sdk-go/client"
+	dingLogger "github.com/open-dingtalk/dingtalk-stream-sdk-go/logger"
 	dingUtils "github.com/open-dingtalk/dingtalk-stream-sdk-go/utils"
 	"github.com/yincongcyincong/MuseBot/conf"
 	"github.com/yincongcyincong/MuseBot/db"
@@ -58,14 +59,21 @@ type DingRobot struct {
 	ImageContent []byte
 }
 
-func StartDingRobot() {
+type DingResp struct {
+	ErrCode int32  `json:"errcode"`
+	ErrMsg  string `json:"errmsg"`
+}
+
+func StartDingRobot(ctx context.Context) {
+	dingLogger.SetLogger(logger.Logger)
 	dingBotClient = client.NewStreamClient(
 		client.WithAppCredential(client.NewAppCredentialConfig(*conf.BaseConfInfo.DingClientId, *conf.BaseConfInfo.DingClientSecret)),
 		client.WithUserAgent(client.NewDingtalkGoSDKUserAgent()),
-		client.WithSubscription(dingUtils.SubscriptionTypeKCallback, "/v1.0/im/bot/messages/get", chatbot.NewDefaultChatBotFrameHandler(OnChatReceive).OnEventReceived),
+		client.WithSubscription(dingUtils.SubscriptionTypeKCallback, "/v1.0/im/bot/messages/get",
+			chatbot.NewDefaultChatBotFrameHandler(OnChatReceive).OnEventReceived),
 	)
 	
-	err := dingBotClient.Start(context.Background())
+	err := dingBotClient.Start(ctx)
 	if err != nil {
 		logger.Error("start dingbot fail", "err", err)
 		return
@@ -592,7 +600,7 @@ func (d *DingRobot) getPrompt() string {
 	return d.Prompt
 }
 
-func (d *DingRobot) SimpleReplyMarkdown(ctx context.Context, content []byte) ([]byte, error) {
+func (d *DingRobot) SimpleReplyMarkdown(ctx context.Context, content []byte) (*DingResp, error) {
 	requestBody := map[string]interface{}{
 		"msgtype": "markdown",
 		"markdown": map[string]interface{}{
@@ -603,7 +611,7 @@ func (d *DingRobot) SimpleReplyMarkdown(ctx context.Context, content []byte) ([]
 	return d.ReplyMessage(ctx, requestBody)
 }
 
-func (d *DingRobot) VideoReplyMarkdown(ctx context.Context, mediaId, format string) ([]byte, error) {
+func (d *DingRobot) VideoReplyMarkdown(ctx context.Context, mediaId, format string) (*DingResp, error) {
 	requestBody := map[string]interface{}{
 		"msgtype": "video",
 		"video": map[string]interface{}{
@@ -616,7 +624,7 @@ func (d *DingRobot) VideoReplyMarkdown(ctx context.Context, mediaId, format stri
 	return d.ReplyMessage(ctx, requestBody)
 }
 
-func (d *DingRobot) ReplyMessage(ctx context.Context, requestBody map[string]interface{}) ([]byte, error) {
+func (d *DingRobot) ReplyMessage(ctx context.Context, requestBody map[string]interface{}) (*DingResp, error) {
 	requestJsonBody, _ := json.Marshal(requestBody)
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, d.Message.SessionWebhook, bytes.NewReader(requestJsonBody))
 	if err != nil {
@@ -636,7 +644,22 @@ func (d *DingRobot) ReplyMessage(ctx context.Context, requestBody map[string]int
 		return nil, err
 	}
 	
-	return io.ReadAll(resp.Body)
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	
+	sendRsp := new(DingResp)
+	err = json.Unmarshal(data, sendRsp)
+	if err != nil {
+		return nil, err
+	}
+	
+	if sendRsp.ErrCode != 0 {
+		return nil, errors.New(sendRsp.ErrMsg)
+	}
+	
+	return sendRsp, err
 }
 
 func (d *DingRobot) CreateDingRobotClient() (result *dingtalkrobot.Client, err error) {

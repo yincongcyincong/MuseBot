@@ -52,20 +52,21 @@ type LarkRobot struct {
 	ImageContent []byte
 }
 
-func StartLarkRobot() {
+func StartLarkRobot(ctx context.Context) {
 	eventHandler := dispatcher.NewEventDispatcher("", "").
 		OnP2MessageReceiveV1(LarkMessageHandler)
 	
 	cli = larkws.NewClient(*conf.BaseConfInfo.LarkAPPID, *conf.BaseConfInfo.LarkAppSecret,
 		larkws.WithEventHandler(eventHandler),
 		larkws.WithLogLevel(larkcore.LogLevelInfo),
+		larkws.WithLogger(logger.Logger),
 	)
 	
 	botClient = lark.NewClient(*conf.BaseConfInfo.LarkAPPID, *conf.BaseConfInfo.LarkAppSecret,
 		lark.WithHttpClient(utils.GetRobotProxyClient()))
 	
 	// get bot name
-	resp, err := botClient.Application.Application.Get(context.Background(), larkapplication.NewGetApplicationReqBuilder().
+	resp, err := botClient.Application.Application.Get(ctx, larkapplication.NewGetApplicationReqBuilder().
 		AppId(*conf.BaseConfInfo.LarkAPPID).Lang("zh_cn").Build())
 	if err != nil {
 		logger.Error("get robot name error", "error", err)
@@ -74,7 +75,7 @@ func StartLarkRobot() {
 	BotName = larkcore.StringValue(resp.Data.App.AppName)
 	logger.Info("LarkBot Info", "username", BotName)
 	
-	err = cli.Start(context.Background())
+	err = cli.Start(ctx)
 	if err != nil {
 		logger.Error("start larkbot fail", "err", err)
 	}
@@ -582,7 +583,7 @@ func GetMarkdownContent(content string) string {
 	markdownMsg, _ := larkim.NewMessagePost().ZhCn(larkim.NewMessagePostContent().AppendContent(
 		[]larkim.MessagePostElement{
 			&MessagePostMarkdown{
-				Text: strings.ReplaceAll(content, "\n", "\\n"),
+				Text: content,
 			},
 		}).Build()).Build()
 	
