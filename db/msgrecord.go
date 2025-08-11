@@ -3,7 +3,6 @@ package db
 import (
 	"database/sql"
 	"fmt"
-	"runtime/debug"
 	"strings"
 	"sync"
 	"time"
@@ -90,44 +89,6 @@ func DeleteMsgRecord(userId string) {
 	err := DeleteRecord(userId)
 	if err != nil {
 		logger.Error("Error deleting record", "err", err)
-	}
-}
-
-func UpdateUserTime() {
-	InsertRecord()
-	go func() {
-		defer func() {
-			if err := recover(); err != nil {
-				logger.Error("StarCheckUserLen panic err", "err", err, "stack", string(debug.Stack()))
-			}
-		}()
-		timer := time.NewTicker(time.Minute)
-		for range timer.C {
-			UpdateDBData()
-		}
-		
-	}()
-}
-
-func UpdateDBData() {
-	totalNum := 0
-	timeUserPair := make(map[int64][]string)
-	MsgRecord.Range(func(k, v interface{}) bool {
-		msgRecord := v.(*MsgRecordInfo)
-		if _, ok := timeUserPair[msgRecord.updateTime]; !ok {
-			timeUserPair[msgRecord.updateTime] = make([]string, 0)
-		}
-		timeUserPair[msgRecord.updateTime] = append(timeUserPair[msgRecord.updateTime], k.(string))
-		UpdateUserInfo(k.(string), msgRecord.updateTime)
-		totalNum++
-		return true
-	})
-}
-
-func UpdateUserInfo(userId string, updateTime int64) {
-	err := UpdateUserUpdateTime(userId, updateTime)
-	if err != nil {
-		logger.Error("StarCheckUserLen UpdateUserUpdateTime err", "err", err)
 	}
 }
 

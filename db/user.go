@@ -66,7 +66,7 @@ func GetUserByID(userId string) (*User, error) {
 
 // GetUsers get 1000 users order by updatetime
 func GetUsers() ([]User, error) {
-	rows, err := DB.Query("SELECT id, user_id, mode, update_time FROM users order by update_time limit 1000")
+	rows, err := DB.Query("SELECT id, user_id, mode, update_time FROM users order by update_time limit 10000")
 	if err != nil {
 		return nil, err
 	}

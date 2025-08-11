@@ -57,9 +57,17 @@ Available Commands:
 `
 )
 
+type RobotController struct {
+	Cancel context.CancelFunc
+}
+
 type RobotInfo struct {
 	Robot Robot
 }
+
+var (
+	robotController = new(RobotController)
+)
 
 type Robot interface {
 	checkValid() bool
@@ -299,33 +307,36 @@ func WithRobot(robot Robot) func(*RobotInfo) {
 }
 
 func StartRobot() {
+	ctx, cancel := context.WithCancel(context.Background())
+	robotController.Cancel = cancel
+	
 	if *conf.BaseConfInfo.TelegramBotToken != "" {
 		go func() {
-			StartTelegramRobot()
+			StartTelegramRobot(ctx)
 		}()
 	}
 	
 	if *conf.BaseConfInfo.DiscordBotToken != "" {
 		go func() {
-			StartDiscordRobot()
+			StartDiscordRobot(ctx)
 		}()
 	}
 	
 	if *conf.BaseConfInfo.LarkAPPID != "" && *conf.BaseConfInfo.LarkAppSecret != "" {
 		go func() {
-			StartLarkRobot()
+			StartLarkRobot(ctx)
 		}()
 	}
 	
 	if *conf.BaseConfInfo.SlackBotToken != "" && *conf.BaseConfInfo.SlackAppToken != "" {
 		go func() {
-			StartSlackRobot()
+			StartSlackRobot(ctx)
 		}()
 	}
 	
 	if *conf.BaseConfInfo.DingClientId != "" && *conf.BaseConfInfo.DingClientSecret != "" {
 		go func() {
-			StartDingRobot()
+			StartDingRobot(ctx)
 		}()
 	}
 }
@@ -771,4 +782,8 @@ func (r *RobotInfo) sendMultiAgent(agentType string, emptyPromptFunc func()) {
 		
 		go r.Robot.handleUpdate(messageChan)
 	})
+}
+
+func StopAllRobot() {
+	robotController.Cancel()
 }

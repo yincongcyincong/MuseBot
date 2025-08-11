@@ -46,15 +46,16 @@ type SlackRobot struct {
 	BotName string
 }
 
-func StartSlackRobot() {
+func StartSlackRobot(ctx context.Context) {
 	if *conf.BaseConfInfo.SlackAppToken == "" || *conf.BaseConfInfo.SlackBotToken == "" {
 		return
 	}
 	
 	slackClient = slack.New(
 		*conf.BaseConfInfo.SlackBotToken,
-		slack.OptionDebug(true),
+		slack.OptionDebug(false),
 		slack.OptionAppLevelToken(*conf.BaseConfInfo.SlackAppToken),
+		slack.OptionLog(logger.Logger),
 	)
 	socketClient = socketmode.New(slackClient)
 	
@@ -104,9 +105,13 @@ func StartSlackRobot() {
 				}
 			}
 		}
+		
 	}()
 	logger.Info("SlackBot Info", "username", slackUserId)
-	socketClient.Run()
+	err = socketClient.RunContext(ctx)
+	if err != nil {
+		logger.Error("SlackBot Run failed", "err", err)
+	}
 }
 
 func NewSlackRobot(message *slackevents.MessageEvent, command *slack.SlashCommand,
