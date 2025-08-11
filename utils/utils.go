@@ -3,6 +3,7 @@ package utils
 import (
 	"bytes"
 	"crypto/md5"
+	"crypto/rand"
 	"encoding/base64"
 	"encoding/hex"
 	"errors"
@@ -427,4 +428,11 @@ func DetectVideoMimeType(data []byte) string {
 	
 	// fallback
 	return "unknown"
+}
+
+func RandomFilename(ext string) string {
+	b := make([]byte, 8)
+	_, _ = rand.Read(b)
+	
+	return fmt.Sprintf("%d_%s.%s", time.Now().UnixNano(), hex.EncodeToString(b), ext)
 }

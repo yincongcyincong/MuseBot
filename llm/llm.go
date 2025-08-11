@@ -138,6 +138,7 @@ func (l *LLM) SendMsg(msgInfoContent *param.MsgInfo, content string) *param.MsgI
 	if l.MessageChan != nil {
 		// exceed max one message length
 		if utils.Utf16len(msgInfoContent.Content) > OneMsgLen {
+			msgInfoContent.Finished = true
 			l.MessageChan <- msgInfoContent
 			msgInfoContent = &param.MsgInfo{
 				SendLen: NonFirstSendLen,

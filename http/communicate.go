@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"strconv"
 	
+	"github.com/ArtisanCloud/PowerWeChat/v3/src/kernel"
+	"github.com/ArtisanCloud/PowerWeChat/v3/src/kernel/contract"
 	"github.com/yincongcyincong/MuseBot/logger"
 	"github.com/yincongcyincong/MuseBot/robot"
 )
@@ -41,4 +43,36 @@ func Communicate(w http.ResponseWriter, r *http.Request) {
 	
 	web := robot.NewWeb(command, intUserId, realUserId, p, prompt, fileData, w, flusher)
 	web.Exec()
+}
+
+func ComWechatComm(w http.ResponseWriter, r *http.Request) {
+	var rs *http.Response
+	var err error
+	if r.Method == http.MethodGet {
+		rs, err = robot.ComWechatApp.Server.VerifyURL(r)
+		if err != nil {
+			logger.Error("ComWechatComm", "err", err)
+		}
+	} else {
+		rs, err = robot.ComWechatApp.Server.Notify(r, func(event contract.EventInterface) interface{} {
+			
+			c := robot.NewComWechatRobot(event)
+			c.Robot = robot.NewRobot(robot.WithRobot(c))
+			c.Robot.Exec()
+			return kernel.SUCCESS_EMPTY_RESPONSE
+		})
+		if err != nil {
+			logger.Error("ComWechatComm", "err", err)
+		}
+	}
+	
+	if rs != nil {
+		err = rs.Write(w)
+		if err != nil {
+			logger.Error("ComWechatComm", "err", err)
+		}
+		return
+	}
+	
+	w.WriteHeader(http.StatusInternalServerError)
 }

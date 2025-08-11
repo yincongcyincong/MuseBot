@@ -57,6 +57,7 @@ type DingRobot struct {
 	Prompt       string
 	BotName      string
 	ImageContent []byte
+	OriginPrompt string
 }
 
 type DingResp struct {
@@ -218,9 +219,6 @@ func (d *DingRobot) sendImg() {
 			d.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "photo_empty_content", nil), msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
-		
-		d.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "thinking", nil),
-			msgId, "", nil)
 		
 		accessToken, err := d.GetAccessToken()
 		if err != nil {
@@ -438,23 +436,20 @@ func (d *DingRobot) handleUpdate(messageChan chan *param.MsgInfo) {
 		}
 	}()
 	
-	chatId, msgId, _ := d.Robot.GetChatIdAndMsgIdAndUserID()
-	d.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "thinking", nil),
-		msgId, "", nil)
-	
+	chatId, messageId, _ := d.Robot.GetChatIdAndMsgIdAndUserID()
 	var msg *param.MsgInfo
 	for msg = range messageChan {
+		if msg.Finished {
+			d.Robot.SendMsg(chatId, msg.Content, messageId, "", nil)
+		}
 	}
 	
 	if msg == nil || len(msg.Content) == 0 {
 		msg = new(param.MsgInfo)
-		msg.Content = "get nothing from llm!"
+		return
 	}
 	
-	_, err := d.SimpleReplyMarkdown(d.Ctx, []byte(msg.Content))
-	if err != nil {
-		logger.Error("send msg fail", "err", err)
-	}
+	d.Robot.SendMsg(chatId, msg.Content, messageId, "", nil)
 }
 
 //func (d *DingRobot) handleUpdate(messageChan chan *param.MsgInfo) {
@@ -585,6 +580,7 @@ func (d *DingRobot) GetMessageContent() (bool, error) {
 		}
 	}
 	
+	d.OriginPrompt = content
 	d.Command, d.Prompt = ParseCommand(content)
 	for _, atID := range d.Message.AtUsers {
 		if atID.DingtalkId == d.Message.ChatbotUserId {

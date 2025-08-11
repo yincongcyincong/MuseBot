@@ -521,7 +521,7 @@ func GetGeminiImageContent(imageContent []byte) (string, error) {
 	
 	parts := []*genai.Part{
 		genai.NewPartFromBytes(imageContent, "image/jpeg"),
-		genai.NewPartFromText("get content from this image."),
+		genai.NewPartFromText("Give me the text content in the picture"),
 	}
 	
 	contents := []*genai.Content{

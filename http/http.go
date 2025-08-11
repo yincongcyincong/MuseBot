@@ -57,6 +57,7 @@ func (p *HTTPServer) Start() {
 		http.HandleFunc("/dashboard", DashboardHandler)
 		
 		http.HandleFunc("/communicate", Communicate)
+		http.HandleFunc("/com/wechat", ComWechatComm)
 		
 		var err error
 		if conf.BaseConfInfo.CrtFile == nil || conf.BaseConfInfo.KeyFile == nil ||
