@@ -7,6 +7,7 @@ It is powered by the **LLM**, with built-in commands for image and video generat
 
 ---
 
+
 ## 🚀 Starting in DingTalk Mode
 
 You can launch the bot in DingTalk mode with the following command:
@@ -24,6 +25,12 @@ You can launch the bot in DingTalk mode with the following command:
 ---
 
 ## 💬 How to Use
+
+### Create a bot
+go to websit : https://open-dev.dingtalk.com/fe/ai    
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/7928d526-739d-4a3c-8077-5d4734e786ab" />
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/4423a309-71a2-47ae-b816-8924d5092314" />
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/e6f98e5b-c682-474f-b35e-d5df0e2491e0" />
 
 ### 1. Private Chat with the Bot
 
