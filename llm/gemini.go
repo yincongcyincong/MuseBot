@@ -405,7 +405,7 @@ func GenerateGeminiImg(prompt string, imageContent []byte) ([]byte, int, error) 
 	return nil, 0, errors.New("image is empty")
 }
 
-func GenerateGeminiVideo(prompt string) ([]byte, int, error) {
+func GenerateGeminiVideo(prompt string, image []byte) ([]byte, int, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 	
@@ -419,9 +419,17 @@ func GenerateGeminiVideo(prompt string) ([]byte, int, error) {
 		return nil, 0, err
 	}
 	
+	var geminiImage *genai.Image
+	if len(image) > 0 {
+		geminiImage = &genai.Image{
+			ImageBytes: image,
+			MIMEType:   "image/" + utils.DetectImageFormat(image),
+		}
+	}
+	
 	operation, err := client.Models.GenerateVideos(ctx,
 		*conf.VideoConfInfo.GeminiVideoModel, prompt,
-		nil,
+		geminiImage,
 		&genai.GenerateVideosConfig{
 			AspectRatio:      *conf.VideoConfInfo.GeminiVideoAspectRatio,
 			PersonGeneration: *conf.VideoConfInfo.GeminiVideoPersonGeneration,

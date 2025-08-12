@@ -568,6 +568,15 @@ func (s *SlackRobot) sendVideo() {
 		thinkingMsg := s.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "thinking", nil), replyToMessageID, "", nil)
 		
 		var err error
+		var lastImageContent []byte
+		if s.Event != nil && s.Event.Message.Files != nil && len(s.Event.Message.Files) > 0 {
+			file := s.Event.Message.Files[0]
+			lastImageContent, err = s.downloadSlackFile(file.URLPrivateDownload)
+			if err != nil {
+				logger.Error("download image failed", "err", err)
+			}
+		}
+		
 		var videoURL string
 		var videoContent []byte
 		var totalToken int
@@ -576,9 +585,9 @@ func (s *SlackRobot) sendVideo() {
 		// 调用对应服务生成视频
 		switch *conf.BaseConfInfo.MediaType {
 		case param.Vol:
-			videoURL, totalToken, err = llm.GenerateVolVideo(prompt)
+			videoURL, totalToken, err = llm.GenerateVolVideo(prompt, lastImageContent)
 		case param.Gemini:
-			videoContent, totalToken, err = llm.GenerateGeminiVideo(prompt)
+			videoContent, totalToken, err = llm.GenerateGeminiVideo(prompt, lastImageContent)
 		default:
 			err = fmt.Errorf("unsupported media type: %s", *conf.BaseConfInfo.MediaType)
 		}

@@ -448,7 +448,7 @@ func GenerateVolImg(prompt string, imageContent []byte) (string, int, error) {
 }
 
 // GenerateVolVideo generate video
-func GenerateVolVideo(prompt string) (string, int, error) {
+func GenerateVolVideo(prompt string, imageContent []byte) (string, int, error) {
 	if prompt == "" {
 		logger.Warn("prompt is empty", "prompt", prompt)
 		return "", 0, errors.New("prompt is empty")
@@ -469,14 +469,26 @@ func GenerateVolVideo(prompt string) (string, int, error) {
 		*conf.VideoConfInfo.Radio, *conf.VideoConfInfo.FPS, *conf.VideoConfInfo.Duration, *conf.VideoConfInfo.Resolution, *conf.VideoConfInfo.Watermark)
 	
 	text := prompt + videoParam
-	resp, err := client.CreateContentGenerationTask(ctx, model.CreateContentGenerationTaskRequest{
-		Model: *conf.VideoConfInfo.VideoModel,
-		Content: []*model.CreateContentGenerationContentItem{
-			{
-				Type: model.ContentGenerationContentItemTypeText,
-				Text: &text,
+	contents := make([]*model.CreateContentGenerationContentItem, 0)
+	contents = append(contents, &model.CreateContentGenerationContentItem{
+		Type: model.ContentGenerationContentItemTypeText,
+		Text: &text,
+	})
+	
+	if len(imageContent) > 0 {
+		frame := "first_frame"
+		contents = append(contents, &model.CreateContentGenerationContentItem{
+			Type: model.ContentGenerationContentItemTypeImage,
+			ImageURL: &model.ImageURL{
+				URL: "data:image/" + utils.DetectImageFormat(imageContent) + ";base64," + base64.StdEncoding.EncodeToString(imageContent),
 			},
-		},
+			Role: &frame,
+		})
+	}
+	
+	resp, err := client.CreateContentGenerationTask(ctx, model.CreateContentGenerationTaskRequest{
+		Model:   *conf.VideoConfInfo.VideoModel,
+		Content: contents,
 	})
 	if err != nil {
 		logger.Error("request create video api fail", "err", err)
