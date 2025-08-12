@@ -333,22 +333,40 @@ func (d *DingRobot) sendVideo() {
 			return
 		}
 		
-		d.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "thinking", nil),
-			msgId, "", nil)
+		accessToken, err := d.GetAccessToken()
+		if err != nil {
+			logger.Warn("get access token fail", "err", err)
+			d.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
+			return
+		}
+		
+		var imageContent []byte
+		if d.Message.Msgtype == "richText" {
+			cMap := d.Message.Content.(map[string]interface{})
+			for _, c := range cMap["richText"].([]interface{}) {
+				if cMap, ok := c.(map[string]interface{}); ok {
+					if _, ok := cMap["downloadCode"].(string); ok {
+						imageContent, err = d.GetImageContent(accessToken, cMap)
+						if err != nil {
+							logger.Warn("get last image record fail", "err", err)
+						}
+					}
+				}
+			}
+		}
 		
 		var (
 			videoUrl     string
 			videoContent []byte
-			err          error
 		)
 		
 		mode := *conf.BaseConfInfo.MediaType
 		var totalToken int
 		switch *conf.BaseConfInfo.MediaType {
 		case param.Vol:
-			videoUrl, totalToken, err = llm.GenerateVolVideo(prompt)
+			videoUrl, totalToken, err = llm.GenerateVolVideo(prompt, imageContent)
 		case param.Gemini:
-			videoContent, totalToken, err = llm.GenerateGeminiVideo(prompt)
+			videoContent, totalToken, err = llm.GenerateGeminiVideo(prompt, imageContent)
 		default:
 			err = fmt.Errorf("unsupported type: %s", *conf.BaseConfInfo.MediaType)
 		}
@@ -369,13 +387,6 @@ func (d *DingRobot) sendVideo() {
 		}
 		
 		if len(videoContent) == 0 {
-			d.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
-			return
-		}
-		
-		accessToken, err := d.GetAccessToken()
-		if err != nil {
-			logger.Warn("get access token fail", "err", err)
 			d.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
@@ -530,8 +541,7 @@ func (d *DingRobot) GetContent(content string) (string, error) {
 	msgType := d.Message.Msgtype
 	
 	switch msgType {
-	case "picture", "voice":
-		
+	case "picture":
 		if c, ok := d.Message.Content.(map[string]interface{}); ok {
 			accessToken, err := d.GetAccessToken()
 			if err != nil {
@@ -546,6 +556,26 @@ func (d *DingRobot) GetContent(content string) (string, error) {
 			}
 			
 			content, err = d.Robot.GetImageContent(data)
+			if err != nil {
+				logger.Warn("generate text from audio failed", "err", err)
+				return "", err
+			}
+		}
+	case "audio":
+		if c, ok := d.Message.Content.(map[string]interface{}); ok {
+			accessToken, err := d.GetAccessToken()
+			if err != nil {
+				logger.Error("get access token failed", "err", err)
+				return "", err
+			}
+			
+			data, err := d.GetImageContent(accessToken, c)
+			if err != nil {
+				logger.Error("get image content fail", "err", err)
+				return "", err
+			}
+			
+			content, err = d.Robot.GetAudioContent(data)
 			if err != nil {
 				logger.Warn("generate text from audio failed", "err", err)
 				return "", err

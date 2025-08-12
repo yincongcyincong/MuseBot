@@ -544,6 +544,8 @@ func (t *TelegramRobot) sendVideo() {
 			return
 		}
 		
+		lastImageContent := t.GetPhotoContent()
+		
 		thinkingMsgId := t.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "thinking", nil),
 			replyToMessageID, tgbotapi.ModeMarkdown, nil)
 		
@@ -554,9 +556,9 @@ func (t *TelegramRobot) sendVideo() {
 		mode := *conf.BaseConfInfo.MediaType
 		switch *conf.BaseConfInfo.MediaType {
 		case param.Vol:
-			videoUrl, totalToken, err = llm.GenerateVolVideo(prompt)
+			videoUrl, totalToken, err = llm.GenerateVolVideo(prompt, lastImageContent)
 		case param.Gemini:
-			videoContent, totalToken, err = llm.GenerateGeminiVideo(prompt)
+			videoContent, totalToken, err = llm.GenerateGeminiVideo(prompt, lastImageContent)
 		default:
 			err = fmt.Errorf("unsupported type: %s", *conf.BaseConfInfo.MediaType)
 		}

@@ -215,12 +215,12 @@ func (client *AsrClient) RequestAsr(audioData []byte) (AsrResponse, error) {
 		c.WriteMessage(websocket.BinaryMessage, audioMsg)
 		_, msg, err := c.ReadMessage()
 		if err != nil {
-			logger.Info("fail to read message fail", "err", err.Error())
+			logger.Error("fail to read message fail", "err", err.Error())
 			return AsrResponse{}, err
 		}
 		asrResponse, err = client.parseResponse(msg)
 		if err != nil {
-			logger.Info("fail to parse response ", "err", err.Error())
+			logger.Error("fail to parse response ", "err", err.Error())
 			return AsrResponse{}, err
 		}
 	}

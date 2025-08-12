@@ -5,6 +5,7 @@ import (
 	"crypto/md5"
 	"crypto/rand"
 	"encoding/base64"
+	"encoding/binary"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -14,6 +15,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"os/exec"
 	"reflect"
 	"strconv"
 	"strings"
@@ -22,6 +24,7 @@ import (
 	
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/volcengine/volc-sdk-golang/service/visual"
+	"github.com/wdvxdr1123/go-silk"
 	"github.com/yincongcyincong/MuseBot/conf"
 	"github.com/yincongcyincong/MuseBot/i18n"
 	"github.com/yincongcyincong/MuseBot/logger"
@@ -346,6 +349,10 @@ func DetectAudioFormat(data []byte) string {
 		return "m4a/mp4"
 	case len(data) >= 4 && data[0] == 0x1A && data[1] == 0x45 && data[2] == 0xDF && data[3] == 0xA3:
 		return "webm"
+	case bytes.HasPrefix(data, []byte("#!AMR")):
+		return "amr"
+	case bytes.HasPrefix(data, []byte("#!AMR-WB")):
+		return "amr-wb"
 	default:
 		return "unknown"
 	}
@@ -435,4 +442,53 @@ func RandomFilename(ext string) string {
 	_, _ = rand.Read(b)
 	
 	return fmt.Sprintf("%d_%s.%s", time.Now().UnixNano(), hex.EncodeToString(b), ext)
+}
+
+func SilkToWav(silkBytes []byte) ([]byte, error) {
+	pcm, err := silk.DecodeSilkBuffToPcm(silkBytes, 24000)
+	if err != nil {
+		return nil, err
+	}
+	var buf bytes.Buffer
+	dataLen := uint32(len(pcm))
+	var chunkSize = 36 + dataLen
+	binary.Write(&buf, binary.LittleEndian, []byte("RIFF"))
+	binary.Write(&buf, binary.LittleEndian, chunkSize)
+	binary.Write(&buf, binary.LittleEndian, []byte("WAVEfmt "))
+	binary.Write(&buf, binary.LittleEndian, uint32(16)) // fmt chunk size
+	binary.Write(&buf, binary.LittleEndian, uint16(1))  // PCM
+	binary.Write(&buf, binary.LittleEndian, uint16(1))  // channels
+	binary.Write(&buf, binary.LittleEndian, uint32(24000))
+	binary.Write(&buf, binary.LittleEndian, uint32(24000*2))
+	binary.Write(&buf, binary.LittleEndian, uint16(2))
+	binary.Write(&buf, binary.LittleEndian, uint16(16))
+	binary.Write(&buf, binary.LittleEndian, []byte("data"))
+	binary.Write(&buf, binary.LittleEndian, dataLen)
+	buf.Write(pcm)
+	return buf.Bytes(), nil
+}
+
+func AmrToOgg(amrData []byte) ([]byte, error) {
+	cmd := exec.Command("ffmpeg",
+		"-f", "amr",
+		"-i", "pipe:0",
+		"-ar", "16000",
+		"-c:a", "libopus",
+		"-f", "ogg",
+		"pipe:1",
+	)
+	
+	cmd.Stdin = bytes.NewReader(amrData)
+	
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	
+	if err := cmd.Run(); err != nil {
+		return nil, fmt.Errorf("ffmpeg error: %v, details: %s", err, stderr.String())
+	}
+	
+	return out.Bytes(), nil
 }

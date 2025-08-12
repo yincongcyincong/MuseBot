@@ -29,9 +29,9 @@ require (
 	github.com/slack-go/slack v0.17.3
 	github.com/stretchr/testify v1.10.0
 	github.com/volcengine/volc-sdk-golang v1.0.196
-	github.com/volcengine/volcengine-go-sdk v1.1.1
+	github.com/volcengine/volcengine-go-sdk v1.1.26
+	github.com/wdvxdr1123/go-silk v0.0.0-20220304095002-f67345df09ea
 	github.com/weaviate/weaviate-go-client/v4 v4.13.1
-	github.com/xen0n/go-workwx/v2 v2.0.0-20250714090614-a03bf8c0afc1
 	github.com/yincongcyincong/langchaingo v0.0.3
 	github.com/yincongcyincong/mcp-client-go v0.0.25
 	go.etcd.io/etcd/client/v3 v3.5.0
@@ -144,6 +144,7 @@ require (
 	github.com/prometheus/common v0.44.0 // indirect
 	github.com/prometheus/procfs v0.11.1 // indirect
 	github.com/redis/go-redis/v9 v9.6.3 // indirect
+	github.com/remyoudompheng/bigfft v0.0.0-20200410134404-eec4a21b6bb0 // indirect
 	github.com/rogpeppe/go-internal v1.13.1 // indirect
 	github.com/shopspring/decimal v1.2.0 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
@@ -189,5 +190,8 @@ require (
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
+	modernc.org/libc v1.8.1 // indirect
+	modernc.org/mathutil v1.2.2 // indirect
+	modernc.org/memory v1.0.4 // indirect
 	nhooyr.io/websocket v1.8.7 // indirect
 )

@@ -571,16 +571,26 @@ func (d *DiscordRobot) sendVideo() {
 		d.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "thinking", nil),
 			msgId, tgbotapi.ModeMarkdown, nil)
 		
+		var imageContent []byte
+		var err error
+		if d.Inter.ApplicationCommandData().GetOption("image") != nil {
+			if attachment, ok := d.Inter.ApplicationCommandData().GetOption("image").Value.(string); ok {
+				imageContent, err = utils.DownloadFile(d.Inter.ApplicationCommandData().Resolved.Attachments[attachment].URL)
+				if err != nil {
+					logger.Warn("download image fail", "err", err)
+				}
+			}
+		}
+		
 		var videoUrl string
 		var videoContent []byte
-		var err error
 		var totalToken int
 		mode := *conf.BaseConfInfo.MediaType
 		switch *conf.BaseConfInfo.MediaType {
 		case param.Vol:
-			videoUrl, totalToken, err = llm.GenerateVolVideo(prompt)
+			videoUrl, totalToken, err = llm.GenerateVolVideo(prompt, imageContent)
 		case param.Gemini:
-			videoContent, totalToken, err = llm.GenerateGeminiVideo(prompt)
+			videoContent, totalToken, err = llm.GenerateGeminiVideo(prompt, imageContent)
 		default:
 			err = fmt.Errorf("unsupported type: %s", *conf.BaseConfInfo.MediaType)
 		}

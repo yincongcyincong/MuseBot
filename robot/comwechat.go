@@ -296,9 +296,9 @@ func (c *ComWechatRobot) sendVideo() {
 		var totalToken int
 		switch *conf.BaseConfInfo.MediaType {
 		case param.Vol:
-			videoUrl, totalToken, err = llm.GenerateVolVideo(prompt)
+			videoUrl, totalToken, err = llm.GenerateVolVideo(prompt, nil)
 		case param.Gemini:
-			videoContent, totalToken, err = llm.GenerateGeminiVideo(prompt)
+			videoContent, totalToken, err = llm.GenerateGeminiVideo(prompt, nil)
 		default:
 			err = fmt.Errorf("unsupported type: %s", *conf.BaseConfInfo.MediaType)
 		}
@@ -465,6 +465,13 @@ func (c *ComWechatRobot) GetContent(content string) (string, error) {
 		defer resp.Body.Close()
 		data, err := io.ReadAll(resp.Body)
 		if err != nil {
+			logger.Error("read media fail", "err", err)
+			return "", err
+		}
+		
+		data, err = utils.AmrToOgg(data)
+		if err != nil {
+			logger.Error("convert amr to wav fail", "err", err)
 			return "", err
 		}
 		return c.Robot.GetAudioContent(data)

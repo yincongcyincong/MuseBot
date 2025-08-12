@@ -342,9 +342,9 @@ func (l *LarkRobot) sendVideo() {
 		var totalToken int
 		switch *conf.BaseConfInfo.MediaType {
 		case param.Vol:
-			videoUrl, totalToken, err = llm.GenerateVolVideo(prompt)
+			videoUrl, totalToken, err = llm.GenerateVolVideo(prompt, l.ImageContent)
 		case param.Gemini:
-			videoContent, totalToken, err = llm.GenerateGeminiVideo(prompt)
+			videoContent, totalToken, err = llm.GenerateGeminiVideo(prompt, l.ImageContent)
 		default:
 			err = fmt.Errorf("unsupported type: %s", *conf.BaseConfInfo.MediaType)
 		}

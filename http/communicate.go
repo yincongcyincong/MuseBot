@@ -51,7 +51,7 @@ func ComWechatComm(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
 		rs, err = robot.ComWechatApp.Server.VerifyURL(r)
 		if err != nil {
-			logger.Error("ComWechatComm", "err", err)
+			logger.Error("verify url fail", "err", err)
 		}
 	} else {
 		rs, err = robot.ComWechatApp.Server.Notify(r, func(event contract.EventInterface) interface{} {
@@ -62,14 +62,19 @@ func ComWechatComm(w http.ResponseWriter, r *http.Request) {
 			return kernel.SUCCESS_EMPTY_RESPONSE
 		})
 		if err != nil {
-			logger.Error("ComWechatComm", "err", err)
+			logger.Error("request notify fail", "err", err)
 		}
 	}
 	
 	if rs != nil {
-		err = rs.Write(w)
+		defer rs.Body.Close()
+		data, err := io.ReadAll(rs.Body)
 		if err != nil {
-			logger.Error("ComWechatComm", "err", err)
+			logger.Error("read response body fail", "err", err)
+		}
+		_, err = w.Write(data)
+		if err != nil {
+			logger.Error("write response body fail", "err", err)
 		}
 		return
 	}
