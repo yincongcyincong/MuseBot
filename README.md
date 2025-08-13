@@ -25,6 +25,7 @@ more natural and dynamic.
   see [doc](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/rag.md).
 - 🌞 **AdminPlatform**: Use platform to manage MuseBot,
   see [doc](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/admin.md).
+- **Register**: With the service registration module, robot instances can be automatically registered to the registration center [doc](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/register.md) 
 
 ## 📸 Support Platform
 
