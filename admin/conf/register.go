@@ -22,8 +22,8 @@ var (
 )
 
 func InitRegisterConf() {
-	RegisterConfInfo.Type = flag.String("register_type", "etcd", "register type: etcd")
-	RegisterConfInfo.etcdURLs = flag.String("etcd_urls", "http://127.0.0.1:2379", "etcd urls")
+	RegisterConfInfo.Type = flag.String("register_type", "", "register type: etcd")
+	RegisterConfInfo.etcdURLs = flag.String("etcd_urls", "", "etcd urls")
 	RegisterConfInfo.EtcdUsername = flag.String("etcd_username", "", "etcd username")
 	RegisterConfInfo.EtcdPassword = flag.String("etcd_password", "", "etcd password")
 }
