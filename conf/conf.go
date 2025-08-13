@@ -36,6 +36,7 @@ type BaseConf struct {
 	ErnieAK         *string `json:"ernie_ak"`
 	ErnieSK         *string `json:"ernie_sk"`
 	
+	BotName      *string `json:"name"`
 	Type         *string `json:"type"`
 	MediaType    *string `json:"media_type"`
 	CustomUrl    *string `json:"custom_url"`
@@ -92,6 +93,7 @@ func InitConf() {
 	BaseConfInfo.VolcAK = flag.String("volc_ak", "", "volc ak")
 	BaseConfInfo.VolcSK = flag.String("volc_sk", "", "volc sk")
 	
+	BaseConfInfo.BotName = flag.String("bot_name", "MuseBot", "bot name")
 	BaseConfInfo.CustomUrl = flag.String("custom_url", "", "deepseek custom url")
 	BaseConfInfo.Type = flag.String("type", "deepseek", "llm type: deepseek gemini openai openrouter vol")
 	BaseConfInfo.MediaType = flag.String("media_type", "vol", "media type: vol gemini openai openrouter")
@@ -189,6 +191,10 @@ func InitConf() {
 	
 	if os.Getenv("CUSTOM_URL") != "" {
 		*BaseConfInfo.CustomUrl = os.Getenv("CUSTOM_URL")
+	}
+	
+	if os.Getenv("BOT_NAME") != "" {
+		*BaseConfInfo.BotName = os.Getenv("BOT_NAME")
 	}
 	
 	if os.Getenv("TYPE") != "" {
@@ -354,6 +360,7 @@ func InitConf() {
 	logger.Info("CONF", "KeyFile", *BaseConfInfo.KeyFile)
 	logger.Info("CONF", "CaFile", *BaseConfInfo.CaFile)
 	logger.Info("CONF", "MediaType", *BaseConfInfo.MediaType)
+	logger.Info("CONF", "BotName", *BaseConfInfo.BotName)
 	
 	EnvAudioConf()
 	EnvRagConf()

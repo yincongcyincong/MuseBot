@@ -15,7 +15,6 @@ import (
 	"strings"
 	"time"
 	
-	mcpParam "github.com/yincongcyincong/mcp-client-go/clients/param"
 	"github.com/yincongcyincong/MuseBot/admin/checkpoint"
 	adminConf "github.com/yincongcyincong/MuseBot/admin/conf"
 	"github.com/yincongcyincong/MuseBot/admin/db"
@@ -24,6 +23,7 @@ import (
 	"github.com/yincongcyincong/MuseBot/logger"
 	"github.com/yincongcyincong/MuseBot/param"
 	"github.com/yincongcyincong/MuseBot/utils"
+	mcpParam "github.com/yincongcyincong/mcp-client-go/clients/param"
 )
 
 type Bot struct {
@@ -33,6 +33,15 @@ type Bot struct {
 	CrtFile string `json:"crt_file"`
 	KeyFile string `json:"key_file"`
 	CaFile  string `json:"ca_file"`
+}
+
+type RegisterBot struct {
+	ID         string `json:"id"`
+	Name       string `json:"name"`
+	Address    string `json:"address"`
+	CreateTime int64  `json:"create_time"`
+	UpdateTime int64  `json:"update_time"`
+	Status     string `json:"status"`
 }
 
 type GetBotConfRes struct {
@@ -106,16 +115,15 @@ func CreateBot(w http.ResponseWriter, r *http.Request) {
 
 func GetBot(w http.ResponseWriter, r *http.Request) {
 	idStr := r.URL.Query().Get("id")
-	id, err := strconv.Atoi(idStr)
-	if err != nil || id <= 0 {
+	if idStr == "" {
 		logger.Error("get bot error", "id", idStr)
-		utils.Failure(w, param.CodeParamError, param.MsgParamError, err)
+		utils.Failure(w, param.CodeParamError, param.MsgParamError, errors.New("empty id"))
 		return
 	}
 	
-	bot, err := db.GetBotByID(id)
+	bot, err := db.GetBotByID(idStr)
 	if err != nil {
-		logger.Error("get bot error", "reason", "not found", "id", id, "err", err)
+		logger.Error("get bot error", "reason", "not found", "id", idStr, "err", err)
 		utils.Failure(w, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
 		return
 	}
@@ -173,6 +181,40 @@ func SoftDeleteBot(w http.ResponseWriter, r *http.Request) {
 func ListBots(w http.ResponseWriter, r *http.Request) {
 	page, pageSize := parsePaginationParams(r)
 	
+	if *adminConf.RegisterConfInfo.Type != "" {
+		bots := make([]*RegisterBot, 0)
+		
+		var total = 0
+		var index = 0
+		start := (page - 1) * pageSize
+		end := start + pageSize
+		
+		checkpoint.BotMap.Range(func(key, value any) bool {
+			total++
+			if index >= start && index < end {
+				if bot, ok := value.(*checkpoint.BotStatus); ok {
+					bots = append(bots, &RegisterBot{
+						ID:         bot.Address,
+						Name:       key.(string),
+						Address:    bot.Address,
+						Status:     bot.Status,
+						CreateTime: bot.LastCheck.Unix(),
+						UpdateTime: bot.LastCheck.Unix(),
+					})
+				}
+			}
+			index++
+			return true
+		})
+		
+		utils.Success(w, map[string]interface{}{
+			"list":        bots,
+			"total":       total,
+			"is_register": true,
+		})
+		return
+	}
+	
 	address := r.URL.Query().Get("address")
 	
 	offset := (page - 1) * pageSize
@@ -196,8 +238,9 @@ func ListBots(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	utils.Success(w, map[string]interface{}{
-		"list":  bots,
-		"total": total,
+		"list":        bots,
+		"total":       total,
+		"is_register": false,
 	})
 }
 
@@ -728,15 +771,20 @@ func Communicate(w http.ResponseWriter, r *http.Request) {
 
 func getBot(r *http.Request) (*db.Bot, error) {
 	idStr := r.URL.Query().Get("id")
-	id, err := strconv.Atoi(idStr)
-	if err != nil || id <= 0 {
+	if idStr == "" {
 		logger.Error("get bot error", "id", idStr)
 		return nil, param.ErrParamError
 	}
 	
-	bot, err := db.GetBotByID(id)
+	if *adminConf.RegisterConfInfo.Type != "" {
+		return &db.Bot{
+			Address: idStr,
+		}, nil
+	}
+	
+	bot, err := db.GetBotByID(idStr)
 	if err != nil {
-		logger.Error("get bot error", "id", id, "err", err)
+		logger.Error("get bot error", "id", idStr, "err", err)
 		return nil, param.ErrDBQueryFail
 	}
 	

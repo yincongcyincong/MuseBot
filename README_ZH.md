@@ -31,13 +31,15 @@ telegram群: https://t.me/+WtaMcDpaMOlhZTE1, 或者尝试一下GWSbot。
 
 ## 支持平台
 
-| 平台              | 支持情况 | 简要说明                                                            | 文档 / 链接                                                                           |
-|-----------------|:----:|-----------------------------------------------------------------|-----------------------------------------------------------------------------------|
-| 🟦 **Telegram** |  ✅   | 支持 Telegram 机器人（基于 go-telegram-bot-api，可处理命令、内联按钮、ForceReply 等） | 仓库: https://github.com/yincongcyincong/MuseBot                                    |
-| 🌈 **Discord**  |  ✅   | 支持 Discord 机器人                                                  | 文档: https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/discord_ZH.md |
-| 🌛 **Web API**  |  ✅   | 提供 HTTP/Web API 与 LLM 交互（适合构建自己的前端或后端集成）                        | 文档: https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/web_api_ZH.md |
-| 🔷 **Slack**    |  ✅   | 支持 Slack（Socket Mode / Events API / Block Kit 交互）               | 文档: https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/slack_ZH.md   |
-| 🟣 **Lark（飞书）** |  ✅   | 支持 Lark 长连接与消息处理（基于 larksuite SDK，支持图片/音频下载与消息更新）               | 文档: https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/lark_ZH.md    |
+| 平台                 | 支持情况 | 简要说明                                                            | 文档 / 链接                                                                                |
+|--------------------|:----:|-----------------------------------------------------------------|----------------------------------------------------------------------------------------|
+| 🟦 **Telegram**    |  ✅   | 支持 Telegram 机器人（基于 go-telegram-bot-api，可处理命令、内联按钮、ForceReply 等） | [文档](https://github.com/yincongcyincong/MuseBot/blob/main/README_ZH.md)                |
+| 🌈 **Discord**     |  ✅   | 支持 Discord 机器人                                                  | [文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/discord_ZH.md)    |
+| 🌛 **Web API**     |  ✅   | 提供 HTTP/Web API 与 LLM 交互（适合构建自己的前端或后端集成）                        | [文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/web_api_ZH.md)    |
+| 🔷 **Slack**       |  ✅   | 支持 Slack（Socket Mode / Events API / Block Kit 交互）               | [文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/slack_ZH.md)      |
+| 🟣 **Lark（飞书）**    |  ✅   | 支持 Lark 长连接与消息处理（基于 larksuite SDK，支持图片/音频下载与消息更新）               | [文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/lark_ZH.md)       |
+| 🆙 **钉钉**          |  ✅   | 支持钉钉长链接服务                                                       | [文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/dingding_ZH.md)   |
+| ⚡️ **Work WeChat** |  ✅   | 支持企业微信触发大模型                                                     | [文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/com_wechat_ZH.md) |
 
 ## 支持大模型
 

@@ -1,7 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, {useEffect, useState} from "react";
 import Modal from "../components/Modal";
 import Pagination from "../components/Pagination";
-import ConfigForm from "./ConfigForm";
 import Toast from "../components/Toast";
 import ConfirmModal from "../components/ConfirmModal";
 
@@ -11,7 +10,7 @@ function Bots() {
     const [modalVisible, setModalVisible] = useState(false);
     const [editingBot, setEditingBot] = useState(null);
     const [form, setForm] = useState({
-        id: 0,
+        id: "",
         name: "",
         address: "",
         crt_file: "",
@@ -20,20 +19,19 @@ function Bots() {
     });
 
     const [rawConfigVisible, setRawConfigVisible] = useState(false);
-    const [structuredConfigVisible, setStructuredConfigVisible] = useState(false);
     const [rawConfigText, setRawConfigText] = useState("");
-    const [selectId, setSelectId] = useState(0);
 
     const [page, setPage] = useState(1);
     const [pageSize] = useState(10);
     const [total, setTotal] = useState(0);
+    const [isRegister, setIsRegister] = useState(false);
 
-    const [toast, setToast] = useState({ show: false, message: "", type: "error" });
+    const [toast, setToast] = useState({show: false, message: "", type: "error"});
     const [confirmVisible, setConfirmVisible] = useState(false);
     const [botToDelete, setBotToDelete] = useState(null);
 
     const showToast = (message, type = "error") => {
-        setToast({ show: true, message, type });
+        setToast({show: true, message, type});
     };
 
     useEffect(() => {
@@ -52,6 +50,7 @@ function Bots() {
             }
             setBots(data.data.list);
             setTotal(data.data.total);
+            setIsRegister(data.data.is_register);
         } catch (err) {
             showToast("Request error: " + err.message);
         }
@@ -63,7 +62,7 @@ function Bots() {
     };
 
     const handleAddClick = () => {
-        setForm({ id: 0, address: "", crt_file: "", key_file: "", ca_file: "" });
+        setForm({id: 0, address: "", crt_file: "", key_file: "", ca_file: ""});
         setEditingBot(null);
         setModalVisible(true);
     };
@@ -94,7 +93,7 @@ function Bots() {
     const confirmDelete = async () => {
         if (!botToDelete) return;
         try {
-            const res = await fetch(`/bot/delete?id=${botToDelete}`, { method: "DELETE" });
+            const res = await fetch(`/bot/delete?id=${botToDelete}`, {method: "DELETE"});
             const data = await res.json();
             if (data.code !== 0) {
                 showToast(data.message || "Failed to delete bot");
@@ -114,7 +113,7 @@ function Bots() {
             const url = editingBot ? "/bot/update" : "/bot/create";
             const res = await fetch(url, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: {"Content-Type": "application/json"},
                 body: JSON.stringify(form),
             });
             const data = await res.json();
@@ -144,11 +143,6 @@ function Bots() {
         }
     };
 
-    const handleShowStructuredConfig = (botId) => {
-        setStructuredConfigVisible(true);
-        setSelectId(botId);
-    };
-
     const handlePageChange = (newPage) => {
         setPage(newPage);
     };
@@ -159,18 +153,20 @@ function Bots() {
                 <Toast
                     message={toast.message}
                     type={toast.type}
-                    onClose={() => setToast({ ...toast, show: false })}
+                    onClose={() => setToast({...toast, show: false})}
                 />
             )}
 
             <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold text-gray-800">Bot Management</h2>
-                <button
-                    onClick={handleAddClick}
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow"
-                >
-                    + Add Bot
-                </button>
+                {!isRegister && (
+                    <button
+                        onClick={handleAddClick}
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow"
+                    >
+                        + Add Bot
+                    </button>
+                )}
             </div>
 
             <div className="flex mb-4 space-x-2">
@@ -225,29 +221,27 @@ function Bots() {
                                 {new Date(bot.update_time * 1000).toLocaleString()}
                             </td>
                             <td className="px-6 py-4 space-x-2 text-sm">
-                                <button
-                                    onClick={() => handleEditClick(bot)}
-                                    className="text-blue-600 hover:underline"
-                                >
-                                    Edit
-                                </button>
+                                {!isRegister && (
+                                    <>
+                                        <button
+                                            onClick={() => handleEditClick(bot)}
+                                            className="text-blue-600 hover:underline"
+                                        >
+                                            Edit
+                                        </button>
+                                        <button
+                                            onClick={() => handleDeleteClick(bot.id)}
+                                            className="text-red-600 hover:underline"
+                                        >
+                                            Delete
+                                        </button>
+                                    </>
+                                )}
                                 <button
                                     onClick={() => handleShowRawConfig(bot.id)}
                                     className="text-purple-600 hover:underline"
                                 >
                                     Command
-                                </button>
-                                <button
-                                    onClick={() => handleShowStructuredConfig(bot.id)}
-                                    className="text-green-600 hover:underline"
-                                >
-                                    Config
-                                </button>
-                                <button
-                                    onClick={() => handleDeleteClick(bot.id)}
-                                    className="text-red-600 hover:underline"
-                                >
-                                    Delete
                                 </button>
                             </td>
                         </tr>
@@ -256,20 +250,20 @@ function Bots() {
                 </table>
             </div>
 
-            <Pagination page={page} pageSize={pageSize} total={total} onPageChange={handlePageChange} />
+            <Pagination page={page} pageSize={pageSize} total={total} onPageChange={handlePageChange}/>
 
             <Modal
                 visible={modalVisible}
                 title={editingBot ? "Edit Bot" : "Add Bot"}
                 onClose={() => setModalVisible(false)}
             >
-                <input type="hidden" value={form.id} />
+                <input type="hidden" value={form.id}/>
                 <div className="mb-4">
                     <input
                         type="text"
                         placeholder="Address"
                         value={form.address}
-                        onChange={(e) => setForm({ ...form, address: e.target.value })}
+                        onChange={(e) => setForm({...form, address: e.target.value})}
                         className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring focus:border-blue-400"
                     />
                 </div>
@@ -278,7 +272,7 @@ function Bots() {
                         type="text"
                         placeholder="name"
                         value={form.name}
-                        onChange={(e) => setForm({ ...form, name: e.target.value })}
+                        onChange={(e) => setForm({...form, name: e.target.value})}
                         className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring focus:border-blue-400"
                     />
                 </div>
@@ -286,7 +280,7 @@ function Bots() {
                   <textarea
                       placeholder="CA File"
                       value={form.ca_file}
-                      onChange={(e) => setForm({ ...form, ca_file: e.target.value })}
+                      onChange={(e) => setForm({...form, ca_file: e.target.value})}
                       className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring focus:border-blue-400"
                       rows={5}
                   />
@@ -295,7 +289,7 @@ function Bots() {
           <textarea
               placeholder="KEY File"
               value={form.key_file}
-              onChange={(e) => setForm({ ...form, key_file: e.target.value })}
+              onChange={(e) => setForm({...form, key_file: e.target.value})}
               className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring focus:border-blue-400"
               rows={5}
           />
@@ -304,7 +298,7 @@ function Bots() {
           <textarea
               placeholder="CRT File"
               value={form.crt_file}
-              onChange={(e) => setForm({ ...form, crt_file: e.target.value })}
+              onChange={(e) => setForm({...form, crt_file: e.target.value})}
               className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring focus:border-blue-400"
               rows={5}
           />
