@@ -2,6 +2,7 @@ package db
 
 import (
 	"database/sql"
+	"strconv"
 	"time"
 )
 
@@ -26,7 +27,8 @@ func CreateBot(address, name, crtFile, secretFile, caFile string) error {
 }
 
 func GetBotByID(id string) (*Bot, error) {
-	row := DB.QueryRow(`SELECT id, address, name, key_file, crt_file, ca_file, create_time, update_time, is_deleted FROM bot WHERE id = ? AND is_deleted = 0`, id)
+	idInt, _ := strconv.Atoi(id)
+	row := DB.QueryRow(`SELECT id, address, name, key_file, crt_file, ca_file, create_time, update_time, is_deleted FROM bot WHERE id = ? AND is_deleted = 0`, idInt)
 	b := &Bot{}
 	err := row.Scan(&b.ID, &b.Address, &b.Name, &b.KeyFile, &b.CrtFile, &b.CaFile, &b.CreateTime, &b.UpdateTime, &b.IsDeleted)
 	if err != nil {

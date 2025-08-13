@@ -20,7 +20,7 @@ type BaseConf struct {
 	LarkAPPID               *string `json:"lark_app_id"`
 	LarkAppSecret           *string `json:"lark_app_secret"`
 	DingClientId            *string `json:"ding_client_id"`
-	DingClientSecret        *string `json:"ding_app_secret"`
+	DingClientSecret        *string `json:"ding_client_secret"`
 	DingTemplateId          *string `json:"ding_template_id"`
 	ComWechatToken          *string `json:"com_wechat_token"`
 	ComWechatEncodingAESKey *string `json:"com_wechat_encoding_aes_key"`
@@ -36,7 +36,7 @@ type BaseConf struct {
 	ErnieAK         *string `json:"ernie_ak"`
 	ErnieSK         *string `json:"ernie_sk"`
 	
-	BotName      *string `json:"name"`
+	BotName      *string `json:"bot_name"`
 	Type         *string `json:"type"`
 	MediaType    *string `json:"media_type"`
 	CustomUrl    *string `json:"custom_url"`

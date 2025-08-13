@@ -190,7 +190,6 @@ function Bots() {
                     <thead className="bg-gray-50">
                     <tr>
                         {[
-                            "ID",
                             "Name",
                             "Address",
                             "Status",
@@ -210,7 +209,6 @@ function Bots() {
                     <tbody className="divide-y divide-gray-100">
                     {bots.map((bot) => (
                         <tr key={bot.id} className="hover:bg-gray-50">
-                            <td className="px-6 py-4 text-sm text-gray-800">{bot.id}</td>
                             <td className="px-6 py-4 text-sm text-gray-800">{bot.name}</td>
                             <td className="px-6 py-4 text-sm text-gray-800">{bot.address}</td>
                             <td className="px-6 py-4 text-sm text-gray-800">{bot.status}</td>
