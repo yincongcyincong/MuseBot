@@ -1,15 +1,19 @@
 package checkpoint
 
 import (
+	"context"
 	"net/http"
 	"runtime/debug"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
 	
+	"github.com/yincongcyincong/MuseBot/admin/conf"
 	"github.com/yincongcyincong/MuseBot/admin/db"
 	"github.com/yincongcyincong/MuseBot/admin/utils"
 	"github.com/yincongcyincong/MuseBot/logger"
+	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
 const (
@@ -20,7 +24,7 @@ const (
 var BotMap sync.Map
 
 type BotStatus struct {
-	Id        int       `json:"id"`
+	Id        string    `json:"id"`
 	Name      string    `json:"name"`
 	Address   string    `json:"address"`
 	Status    string    `json:"status"`
@@ -28,18 +32,35 @@ type BotStatus struct {
 }
 
 func InitStatusCheck() {
-	go func() {
-		ScheduleBotChecks()
-		ticker := time.NewTicker(60 * time.Second)
-		defer ticker.Stop()
+	if *conf.RegisterConfInfo.Type != "" {
+		go func() {
+			InitRegister()
+		}()
 		
-		for {
-			select {
-			case <-ticker.C: // 每 60 秒触发一次
-				go ScheduleBotChecks()
-			}
+	} else {
+		go func() {
+			ManualCheckPoint()
+		}()
+	}
+	
+}
+
+func ManualCheckPoint() {
+	defer func() {
+		if err := recover(); err != nil {
+			logger.Error("InitStatusCheck panic", "err", err, "stack", string(debug.Stack()))
 		}
 	}()
+	ScheduleBotChecks()
+	ticker := time.NewTicker(60 * time.Second)
+	defer ticker.Stop()
+	
+	for {
+		select {
+		case <-ticker.C: // 每 60 秒触发一次
+			go ScheduleBotChecks()
+		}
+	}
 }
 
 // 健康检查
@@ -60,7 +81,6 @@ func checkBotStatus(bot *db.Bot) string {
 	return OnlineStatus
 }
 
-// ScheduleBotChecks 分批调度，每批 10 秒执行一次
 func ScheduleBotChecks() {
 	defer func() {
 		if err := recover(); err != nil {
@@ -74,8 +94,8 @@ func ScheduleBotChecks() {
 		return
 	}
 	
-	batchCount := 60                                       // 60 秒内分 60 批执行
-	batchSize := (len(bots) + batchCount - 1) / batchCount // 向上取整
+	batchCount := 60
+	batchSize := (len(bots) + batchCount - 1) / batchCount
 	
 	var wg sync.WaitGroup
 	for i := 0; i < batchCount; i++ {
@@ -88,7 +108,6 @@ func ScheduleBotChecks() {
 			break
 		}
 		
-		// 复制下标范围，防止闭包变量覆盖
 		batch := bots[start:end]
 		batchIndex := i
 		
@@ -100,14 +119,14 @@ func ScheduleBotChecks() {
 				}
 				wg.Done()
 			}()
-			// 延迟 10 * batchIndex 秒启动
+			
 			timer := time.NewTimer(time.Duration(batchIndex) * time.Second)
 			<-timer.C
 			
 			for _, b := range batch {
 				status := checkBotStatus(b)
 				BotMap.Store(b.ID, &BotStatus{
-					Id:        b.ID,
+					Id:        strconv.Itoa(b.ID),
 					Name:      b.Name,
 					Address:   b.Address,
 					Status:    status,
@@ -118,4 +137,79 @@ func ScheduleBotChecks() {
 	}
 	
 	wg.Wait()
+}
+
+func InitRegister() {
+	switch *conf.RegisterConfInfo.Type {
+	case "etcd":
+		InitEtcdRegister()
+	}
+}
+
+func InitEtcdRegister() {
+	if len(conf.RegisterConfInfo.EtcdURLs) == 0 {
+		return
+	}
+	
+	cli, err := clientv3.New(clientv3.Config{
+		Endpoints:   conf.RegisterConfInfo.EtcdURLs,
+		DialTimeout: 5 * time.Second,
+		Username:    *conf.RegisterConfInfo.EtcdUsername,
+		Password:    *conf.RegisterConfInfo.EtcdPassword,
+	})
+	if err != nil {
+		logger.Error("register init failed: ", err)
+		return
+	}
+	defer cli.Close()
+	
+	ctx := context.Background()
+	prefix := "/services/musebot/"
+	
+	resp, err := cli.Get(ctx, prefix, clientv3.WithPrefix())
+	if err != nil {
+		logger.Error("register get failed: ", err)
+		return
+	}
+	
+	for _, kv := range resp.Kvs {
+		parts := strings.Split(string(kv.Key), "/")
+		name := parts[len(parts)-1]
+		
+		id := utils.NormalizeAddress(string(kv.Value))
+		
+		BotMap.Store(name, &BotStatus{
+			Id:        id,
+			Name:      name,
+			Address:   id,
+			Status:    OnlineStatus,
+			LastCheck: time.Now(),
+		})
+	}
+	
+	rch := cli.Watch(ctx, prefix, clientv3.WithPrefix(), clientv3.WithPrevKV())
+	
+	for wresp := range rch {
+		for _, ev := range wresp.Events {
+			key := string(ev.Kv.Key)
+			val := string(ev.Kv.Value)
+			
+			switch ev.Type {
+			case clientv3.EventTypePut:
+				parts := strings.Split(key, "/")
+				name := parts[len(parts)-1]
+				
+				id := utils.NormalizeAddress(val)
+				BotMap.Store(name, &BotStatus{
+					Id:        id,
+					Name:      name,
+					Address:   id,
+					Status:    OnlineStatus,
+					LastCheck: time.Now(),
+				})
+			case clientv3.EventTypeDelete:
+				BotMap.Delete(key)
+			}
+		}
+	}
 }

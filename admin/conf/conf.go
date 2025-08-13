@@ -24,6 +24,7 @@ func InitConfig() {
 	BaseConfInfo.SessionKey = flag.String("session_key", "telegram_bot_session_key", "session key")
 	BaseConfInfo.AdminPort = flag.String("admin_port", "18080", "admin port")
 	
+	InitRegisterConf()
 	flag.Parse()
 	
 	if os.Getenv("DB_TYPE") != "" {
@@ -46,4 +47,6 @@ func InitConfig() {
 	logger.Info("CONF", "DBConf", *BaseConfInfo.DBConf)
 	logger.Info("CONF", "SessionKey", *BaseConfInfo.SessionKey)
 	logger.Info("CONF", "AdminPort", *BaseConfInfo.AdminPort)
+	
+	EnvRegisterConf()
 }

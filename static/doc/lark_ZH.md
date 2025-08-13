@@ -1,4 +1,4 @@
-# ✨ Lark（飞书 Bot
+# ✨ Lark（飞书 Bot）
 
 本项目是一个由 **DeepSeek LLM** 驱动的跨平台聊天机器人，支持 **Telegram**、**Slack**、**Discord** 和 **Lark（飞书）**。
 它内置了多种命令，包括图片生成、视频生成、额度查询、清空对话等功能。

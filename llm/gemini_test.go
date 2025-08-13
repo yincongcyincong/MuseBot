@@ -85,7 +85,7 @@ func TestGetGeminiImageContent_EmptyData(t *testing.T) {
 }
 
 func TestGenerateGeminiVideo_InvalidPrompt(t *testing.T) {
-	video, _, err := GenerateGeminiVideo("")
+	video, _, err := GenerateGeminiVideo("", nil)
 	assert.Error(t, err)
 	assert.Nil(t, video)
 }

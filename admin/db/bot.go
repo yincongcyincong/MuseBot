@@ -25,7 +25,7 @@ func CreateBot(address, name, crtFile, secretFile, caFile string) error {
 	return err
 }
 
-func GetBotByID(id int) (*Bot, error) {
+func GetBotByID(id string) (*Bot, error) {
 	row := DB.QueryRow(`SELECT id, address, name, key_file, crt_file, ca_file, create_time, update_time, is_deleted FROM bot WHERE id = ? AND is_deleted = 0`, id)
 	b := &Bot{}
 	err := row.Scan(&b.ID, &b.Address, &b.Name, &b.KeyFile, &b.CrtFile, &b.CaFile, &b.CreateTime, &b.UpdateTime, &b.IsDeleted)

@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"net/http"
+	"strings"
 	"time"
 	
 	"github.com/yincongcyincong/MuseBot/admin/db"
@@ -43,4 +44,11 @@ func GetCrtClient(bot *db.Bot) *http.Client {
 	}
 	
 	return client
+}
+
+func NormalizeAddress(addr string) string {
+	if strings.HasPrefix(addr, "http://") || strings.HasPrefix(addr, "https://") {
+		return addr
+	}
+	return "http://" + addr
 }
