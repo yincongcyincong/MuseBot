@@ -98,22 +98,26 @@ func (d *DiscordRobot) requestLLMAndResp(content string) {
 func (d *DiscordRobot) executeChain(content string) {
 	messageChan := make(chan *param.MsgInfo)
 	
-	go d.Robot.ExecChain(content, messageChan)
+	go d.Robot.ExecChain(content, messageChan, nil)
 	// send response message
-	go d.handleUpdate(messageChan)
+	go d.handleUpdate(&MsgChan{
+		NormalMessageChan: messageChan,
+	})
 }
 
 func (d *DiscordRobot) executeLLM(content string) {
 	messageChan := make(chan *param.MsgInfo)
 	
 	// request DeepSeek API
-	go d.Robot.ExecLLM(content, messageChan)
+	go d.Robot.ExecLLM(content, messageChan, nil)
 	
 	// send response message
-	go d.handleUpdate(messageChan)
+	go d.handleUpdate(&MsgChan{
+		NormalMessageChan: messageChan,
+	})
 }
 
-func (d *DiscordRobot) handleUpdate(messageChan chan *param.MsgInfo) {
+func (d *DiscordRobot) handleUpdate(messageChan *MsgChan) {
 	defer func() {
 		if err := recover(); err != nil {
 			logger.Error("handleUpdateDiscord panic", "err", err, "stack", string(debug.Stack()))
@@ -149,7 +153,7 @@ func (d *DiscordRobot) handleUpdate(messageChan chan *param.MsgInfo) {
 	}
 	
 	var msg *param.MsgInfo
-	for msg = range messageChan {
+	for msg = range messageChan.NormalMessageChan {
 		if len(msg.Content) == 0 {
 			msg.Content = "get nothing from llm!"
 		}
@@ -642,53 +646,6 @@ func (d *DiscordRobot) sendVideo() {
 func (d *DiscordRobot) sendHelpConfigurationOptions() {
 	chatId, replyToMessageID, _ := d.Robot.GetChatIdAndMsgIdAndUserID()
 	d.Robot.SendMsg(chatId, helpText, replyToMessageID, tgbotapi.ModeMarkdown, nil)
-}
-
-func (d *DiscordRobot) sendMultiAgent(agentType string) {
-	d.Robot.TalkingPreCheck(func() {
-		chatId, replyToMessageID, userId := d.Robot.GetChatIdAndMsgIdAndUserID()
-		
-		// 获取 prompt 内容
-		prompt := d.Inter.ApplicationCommandData().Options[0].StringValue()
-		prompt = strings.TrimSpace(prompt)
-		if prompt == "" {
-			d.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "video_empty_content", nil),
-				replyToMessageID, tgbotapi.ModeMarkdown, nil)
-			return
-		}
-		
-		// 处理异步任务
-		messageChan := make(chan *param.MsgInfo)
-		
-		dpReq := &llm.LLMTaskReq{
-			Content:     prompt,
-			UserId:      userId,
-			ChatId:      chatId,
-			MsgId:       replyToMessageID,
-			MessageChan: messageChan,
-		}
-		
-		go func() {
-			defer func() {
-				if r := recover(); r != nil {
-					logger.Error("panic recover", "err", r)
-				}
-				close(messageChan)
-			}()
-			
-			var err error
-			if agentType == "mcp_empty_content" {
-				err = dpReq.ExecuteMcp()
-			} else {
-				err = dpReq.ExecuteTask()
-			}
-			if err != nil {
-				d.Robot.SendMsg(chatId, err.Error(), replyToMessageID, tgbotapi.ModeMarkdown, nil)
-			}
-		}()
-		
-		go d.handleUpdate(messageChan)
-	})
 }
 
 func (d *DiscordRobot) getPrompt() string {

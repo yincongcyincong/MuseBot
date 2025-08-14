@@ -54,7 +54,6 @@ type BaseConf struct {
 	MaxUserChat  *int    `json:"max_user_chat"`
 	HTTPHost     *string `json:"http_host"`
 	UseTools     *bool   `json:"use_tools"`
-	FileDomain   *string `json:"file_domain"`
 	
 	CrtFile *string `json:"crt_file"`
 	KeyFile *string `json:"key_file"`
@@ -87,7 +86,6 @@ func InitConf() {
 	BaseConfInfo.ComWechatAgentID = flag.String("com_wechat_agent_id", "", "ComWechat agent id")
 	BaseConfInfo.QQAppID = flag.String("qq_app_id", "", "QQ app id")
 	BaseConfInfo.QQAppSecret = flag.String("qq_app_secret", "", "QQ app secret")
-	BaseConfInfo.FileDomain = flag.String("file_domain", "", "file domain")
 	
 	BaseConfInfo.DeepseekToken = flag.String("deepseek_token", "", "deepseek auth token")
 	BaseConfInfo.OpenAIToken = flag.String("openai_token", "", "openai auth token")
@@ -197,10 +195,6 @@ func InitConf() {
 	
 	if os.Getenv("QQ_APP_SECRET") != "" {
 		*BaseConfInfo.QQAppSecret = os.Getenv("QQ_APP_SECRET")
-	}
-	
-	if os.Getenv("FILE_DOMAIN") != "" {
-		*BaseConfInfo.FileDomain = os.Getenv("FILE_DOMAIN")
 	}
 	
 	if os.Getenv("DEEPSEEK_TOKEN") != "" {
@@ -353,7 +347,6 @@ func InitConf() {
 	logger.Info("CONF", "ComWechatAgentID", *BaseConfInfo.ComWechatAgentID)
 	logger.Info("CONF", "QQAppID", *BaseConfInfo.QQAppID)
 	logger.Info("CONF", "QQAppSecret", *BaseConfInfo.QQAppSecret)
-	logger.Info("CONF", "FileDomain", *BaseConfInfo.FileDomain)
 	logger.Info("CONF", "DeepseekToken", *BaseConfInfo.DeepseekToken)
 	logger.Info("CONF", "CustomUrl", *BaseConfInfo.CustomUrl)
 	logger.Info("CONF", "Type", *BaseConfInfo.Type)

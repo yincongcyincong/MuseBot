@@ -382,13 +382,15 @@ func (c *ComWechatRobot) sendChatMessage() {
 
 func (c *ComWechatRobot) executeChain() {
 	messageChan := make(chan *param.MsgInfo)
-	go c.Robot.ExecChain(c.Prompt, messageChan)
+	go c.Robot.ExecChain(c.Prompt, messageChan, nil)
 	
 	// send response message
-	go c.handleUpdate(messageChan)
+	go c.handleUpdate(&MsgChan{
+		NormalMessageChan: messageChan,
+	})
 }
 
-func (c *ComWechatRobot) handleUpdate(messageChan chan *param.MsgInfo) {
+func (c *ComWechatRobot) handleUpdate(messageChan *MsgChan) {
 	defer func() {
 		if err := recover(); err != nil {
 			logger.Error("handleUpdate panic err", "err", err, "stack", string(debug.Stack()))
@@ -399,7 +401,7 @@ func (c *ComWechatRobot) handleUpdate(messageChan chan *param.MsgInfo) {
 	
 	chatId, messageId, _ := c.Robot.GetChatIdAndMsgIdAndUserID()
 	
-	for msg = range messageChan {
+	for msg = range messageChan.NormalMessageChan {
 		if msg.Finished {
 			c.Robot.SendMsg(chatId, msg.Content, messageId, "", nil)
 		}
@@ -415,9 +417,11 @@ func (c *ComWechatRobot) handleUpdate(messageChan chan *param.MsgInfo) {
 
 func (c *ComWechatRobot) executeLLM() {
 	messageChan := make(chan *param.MsgInfo)
-	go c.handleUpdate(messageChan)
+	go c.handleUpdate(&MsgChan{
+		NormalMessageChan: messageChan,
+	})
 	
-	go c.Robot.ExecLLM(c.Prompt, messageChan)
+	go c.Robot.ExecLLM(c.Prompt, messageChan, nil)
 	
 }
 

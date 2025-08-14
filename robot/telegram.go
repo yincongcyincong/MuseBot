@@ -178,10 +178,12 @@ func (t *TelegramRobot) requestLLMAndResp(content string) {
 // executeChain use langchain to interact llm
 func (t *TelegramRobot) executeChain(content string) {
 	messageChan := make(chan *param.MsgInfo)
-	go t.Robot.ExecChain(content, messageChan)
+	go t.Robot.ExecChain(content, messageChan, nil)
 	
 	// send response message
-	go t.handleUpdate(messageChan)
+	go t.handleUpdate(&MsgChan{
+		NormalMessageChan: messageChan,
+	})
 	
 }
 
@@ -189,15 +191,17 @@ func (t *TelegramRobot) executeChain(content string) {
 func (t *TelegramRobot) executeLLM(content string) {
 	messageChan := make(chan *param.MsgInfo)
 	// request DeepSeek API
-	go t.Robot.ExecLLM(content, messageChan)
+	go t.Robot.ExecLLM(content, messageChan, nil)
 	
 	// send response message
-	go t.handleUpdate(messageChan)
+	go t.handleUpdate(&MsgChan{
+		NormalMessageChan: messageChan,
+	})
 	
 }
 
 // handleUpdate handle robot msg sending
-func (t *TelegramRobot) handleUpdate(messageChan chan *param.MsgInfo) {
+func (t *TelegramRobot) handleUpdate(messageChan *MsgChan) {
 	defer func() {
 		if err := recover(); err != nil {
 			logger.Error("handleUpdate panic err", "err", err, "stack", string(debug.Stack()))
@@ -218,7 +222,7 @@ func (t *TelegramRobot) handleUpdate(messageChan chan *param.MsgInfo) {
 		logger.Warn("Sending first message fail", "err", err)
 	}
 	
-	for msg = range messageChan {
+	for msg = range messageChan.NormalMessageChan {
 		if len(msg.Content) == 0 {
 			msg.Content = "get nothing from llm!"
 		}

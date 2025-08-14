@@ -182,12 +182,6 @@ func WithContent(content string) Option {
 	}
 }
 
-func WithHTTPChain(msgChan chan string) Option {
-	return func(p *LLM) {
-		p.HTTPMsgChan = msgChan
-	}
-}
-
 func WithMessageChan(messageChan chan *param.MsgInfo) Option {
 	return func(p *LLM) {
 		p.MessageChan = messageChan

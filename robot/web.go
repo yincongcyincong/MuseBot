@@ -532,7 +532,7 @@ func (web *Web) sendChatMessage() {
 			llm.WithChatId(web.RealUserId),
 			llm.WithUserId(web.RealUserId),
 			llm.WithMsgId(web.RealUserId),
-			llm.WithHTTPChain(messageChan),
+			llm.WithHTTPMsgChan(messageChan),
 			llm.WithContent(prompt),
 		)
 		go func() {
