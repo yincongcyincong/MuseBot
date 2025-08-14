@@ -165,10 +165,11 @@ var (
 )
 
 type MsgInfo struct {
-	MsgId    string
-	Content  string
-	SendLen  int
-	Finished bool
+	MsgId       string
+	Content     string
+	PartContent string
+	SendLen     int
+	Finished    bool
 }
 
 type ImgResponse struct {

@@ -60,9 +60,6 @@ func (p *HTTPServer) Start() {
 		http.HandleFunc("/com/wechat", ComWechatComm)
 		http.HandleFunc("/qq", QQBotComm)
 		
-		fs := http.FileServer(http.Dir("./data/file/"))
-		http.Handle("/data/", http.StripPrefix("/data/", fs))
-		
 		var err error
 		if conf.BaseConfInfo.CrtFile == nil || conf.BaseConfInfo.KeyFile == nil ||
 			*conf.BaseConfInfo.CrtFile == "" || *conf.BaseConfInfo.KeyFile == "" {

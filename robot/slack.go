@@ -235,18 +235,22 @@ func (s *SlackRobot) sendChatMessage() {
 
 func (s *SlackRobot) executeChain(content string) {
 	messageChan := make(chan *param.MsgInfo)
-	go s.Robot.ExecChain(content, messageChan)
+	go s.Robot.ExecChain(content, messageChan, nil)
 	
-	go s.handleUpdate(messageChan)
+	go s.handleUpdate(&MsgChan{
+		NormalMessageChan: messageChan,
+	})
 }
 
 func (s *SlackRobot) executeLLM(content string) {
 	messageChan := make(chan *param.MsgInfo)
-	go s.Robot.ExecLLM(content, messageChan)
-	go s.handleUpdate(messageChan)
+	go s.Robot.ExecLLM(content, messageChan, nil)
+	go s.handleUpdate(&MsgChan{
+		NormalMessageChan: messageChan,
+	})
 }
 
-func (s *SlackRobot) handleUpdate(messageChan chan *param.MsgInfo) {
+func (s *SlackRobot) handleUpdate(messageChan *MsgChan) {
 	defer func() {
 		if err := recover(); err != nil {
 			logger.Error("handleUpdate panic err", "err", err, "stack", string(debug.Stack()))
@@ -259,7 +263,7 @@ func (s *SlackRobot) handleUpdate(messageChan chan *param.MsgInfo) {
 	originalMsgID := s.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "thinking", nil),
 		messageId, "", nil)
 	
-	for msg := range messageChan {
+	for msg := range messageChan.NormalMessageChan {
 		if msg.Content == "" {
 			msg.Content = "get nothing from llm!"
 		}

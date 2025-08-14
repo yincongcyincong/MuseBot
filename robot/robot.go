@@ -60,6 +60,11 @@ Available Commands:
 `
 )
 
+type MsgChan struct {
+	NormalMessageChan chan *param.MsgInfo
+	StrMessageChan    chan string
+}
+
 type RobotController struct {
 	Cancel context.CancelFunc
 }
@@ -89,7 +94,7 @@ type Robot interface {
 	
 	sendHelpConfigurationOptions()
 	
-	handleUpdate(messageChan chan *param.MsgInfo)
+	handleUpdate(msgChan *MsgChan)
 	
 	getPrompt() string
 	
@@ -659,7 +664,7 @@ func (r *RobotInfo) ExecCmd(cmd string, defaultFunc func()) {
 	}
 }
 
-func (r *RobotInfo) ExecChain(msgContent string, msgChan chan *param.MsgInfo) {
+func (r *RobotInfo) ExecChain(msgContent string, msgChan chan *param.MsgInfo, httpMsgChan chan string) {
 	r.TalkingPreCheck(func() {
 		chatId, msgId, userId := r.GetChatIdAndMsgIdAndUserID()
 		
@@ -680,6 +685,7 @@ func (r *RobotInfo) ExecChain(msgContent string, msgChan chan *param.MsgInfo) {
 		}
 		dpLLM := rag.NewRag(
 			llm.WithMessageChan(msgChan),
+			llm.WithHTTPMsgChan(httpMsgChan),
 			llm.WithContent(content),
 			llm.WithChatId(chatId),
 			llm.WithUserId(userId),
@@ -695,12 +701,18 @@ func (r *RobotInfo) ExecChain(msgContent string, msgChan chan *param.MsgInfo) {
 	})
 }
 
-func (r *RobotInfo) ExecLLM(msgContent string, msgChan chan *param.MsgInfo) {
+func (r *RobotInfo) ExecLLM(msgContent string, msgChan chan *param.MsgInfo, httpMsgChan chan string) {
 	defer func() {
 		if err := recover(); err != nil {
 			logger.Error("GetContent panic err", "err", err, "stack", string(debug.Stack()))
 		}
-		close(msgChan)
+		if msgChan != nil {
+			close(msgChan)
+		}
+		
+		if httpMsgChan != nil {
+			close(httpMsgChan)
+		}
 	}()
 	
 	chatId, msgId, userId := r.GetChatIdAndMsgIdAndUserID()
@@ -717,6 +729,7 @@ func (r *RobotInfo) ExecLLM(msgContent string, msgChan chan *param.MsgInfo) {
 		llm.WithUserId(userId),
 		llm.WithMsgId(msgId),
 		llm.WithMessageChan(msgChan),
+		llm.WithHTTPMsgChan(httpMsgChan),
 		llm.WithContent(content),
 	)
 	
@@ -837,14 +850,17 @@ func (r *RobotInfo) sendMultiAgent(agentType string, emptyPromptFunc func()) {
 			return
 		}
 		
-		messageChan := make(chan *param.MsgInfo)
-		
 		dpReq := &llm.LLMTaskReq{
-			Content:     prompt,
-			UserId:      userId,
-			ChatId:      chatId,
-			MsgId:       msgId,
-			MessageChan: messageChan,
+			Content: prompt,
+			UserId:  userId,
+			ChatId:  chatId,
+			MsgId:   msgId,
+		}
+		
+		if _, ok := r.Robot.(*QQRobot); ok {
+			dpReq.HTTPMsgChan = make(chan string)
+		} else {
+			dpReq.MessageChan = make(chan *param.MsgInfo)
 		}
 		
 		go func() {
@@ -852,7 +868,12 @@ func (r *RobotInfo) sendMultiAgent(agentType string, emptyPromptFunc func()) {
 				if err := recover(); err != nil {
 					logger.Error("multi agent panic", "err", err, "stack", string(debug.Stack()))
 				}
-				close(messageChan)
+				if dpReq.HTTPMsgChan != nil {
+					close(dpReq.HTTPMsgChan)
+				}
+				if dpReq.MessageChan != nil {
+					close(dpReq.MessageChan)
+				}
 			}()
 			
 			var err error
@@ -868,7 +889,10 @@ func (r *RobotInfo) sendMultiAgent(agentType string, emptyPromptFunc func()) {
 			}
 		}()
 		
-		go r.Robot.handleUpdate(messageChan)
+		go r.Robot.handleUpdate(&MsgChan{
+			NormalMessageChan: dpReq.MessageChan,
+			StrMessageChan:    dpReq.HTTPMsgChan,
+		})
 	})
 }
 

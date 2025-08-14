@@ -36,11 +36,14 @@ require (
 	github.com/yincongcyincong/langchaingo v0.0.3
 	github.com/yincongcyincong/mcp-client-go v0.0.25
 	go.etcd.io/etcd/client/v3 v3.5.0
+	golang.org/x/oauth2 v0.25.0
 	golang.org/x/text v0.27.0
 	google.golang.org/genai v1.7.0
 	gopkg.in/fsnotify.v1 v1.4.7
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 )
+
+replace github.com/tencent-connect/botgo => ../botgo
 
 require (
 	cloud.google.com/go v0.116.0 // indirect
@@ -179,7 +182,6 @@ require (
 	golang.org/x/exp v0.0.0-20250218142911-aa4b98e5adaa // indirect
 	golang.org/x/image v0.22.0 // indirect
 	golang.org/x/net v0.42.0 // indirect
-	golang.org/x/oauth2 v0.25.0 // indirect
 	golang.org/x/sync v0.16.0 // indirect
 	golang.org/x/sys v0.34.0 // indirect
 	golang.org/x/time v0.9.0 // indirect

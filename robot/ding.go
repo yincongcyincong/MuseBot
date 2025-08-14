@@ -433,13 +433,15 @@ func (d *DingRobot) sendChatMessage() {
 
 func (d *DingRobot) executeChain() {
 	messageChan := make(chan *param.MsgInfo)
-	go d.Robot.ExecChain(d.Prompt, messageChan)
+	go d.Robot.ExecChain(d.Prompt, messageChan, nil)
 	
 	// send response message
-	go d.handleUpdate(messageChan)
+	go d.handleUpdate(&MsgChan{
+		NormalMessageChan: messageChan,
+	})
 }
 
-func (d *DingRobot) handleUpdate(messageChan chan *param.MsgInfo) {
+func (d *DingRobot) handleUpdate(messageChan *MsgChan) {
 	defer func() {
 		if err := recover(); err != nil {
 			logger.Error("handleUpdate panic err", "err", err, "stack", string(debug.Stack()))
@@ -448,7 +450,7 @@ func (d *DingRobot) handleUpdate(messageChan chan *param.MsgInfo) {
 	
 	chatId, messageId, _ := d.Robot.GetChatIdAndMsgIdAndUserID()
 	var msg *param.MsgInfo
-	for msg = range messageChan {
+	for msg = range messageChan.NormalMessageChan {
 		if msg.Finished {
 			d.Robot.SendMsg(chatId, msg.Content, messageId, "", nil)
 		}
@@ -526,9 +528,11 @@ func (d *DingRobot) handleUpdate(messageChan chan *param.MsgInfo) {
 
 func (d *DingRobot) executeLLM() {
 	messageChan := make(chan *param.MsgInfo)
-	go d.handleUpdate(messageChan)
+	go d.handleUpdate(&MsgChan{
+		NormalMessageChan: messageChan,
+	})
 	
-	go d.Robot.ExecLLM(d.Prompt, messageChan)
+	go d.Robot.ExecLLM(d.Prompt, messageChan, nil)
 	
 }
 

@@ -433,13 +433,15 @@ func (l *LarkRobot) sendChatMessage() {
 
 func (l *LarkRobot) executeChain() {
 	messageChan := make(chan *param.MsgInfo)
-	go l.Robot.ExecChain(l.Prompt, messageChan)
+	go l.Robot.ExecChain(l.Prompt, messageChan, nil)
 	
 	// send response message
-	go l.handleUpdate(messageChan)
+	go l.handleUpdate(&MsgChan{
+		NormalMessageChan: messageChan,
+	})
 }
 
-func (l *LarkRobot) handleUpdate(messageChan chan *param.MsgInfo) {
+func (l *LarkRobot) handleUpdate(messageChan *MsgChan) {
 	defer func() {
 		if err := recover(); err != nil {
 			logger.Error("handleUpdate panic err", "err", err, "stack", string(debug.Stack()))
@@ -453,7 +455,7 @@ func (l *LarkRobot) handleUpdate(messageChan chan *param.MsgInfo) {
 	originalMsgID := l.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "thinking", nil),
 		messageId, "", nil)
 	
-	for msg = range messageChan {
+	for msg = range messageChan.NormalMessageChan {
 		if len(msg.Content) == 0 {
 			msg.Content = "get nothing from llm!"
 		}
@@ -494,9 +496,11 @@ func (l *LarkRobot) handleUpdate(messageChan chan *param.MsgInfo) {
 
 func (l *LarkRobot) executeLLM() {
 	messageChan := make(chan *param.MsgInfo)
-	go l.handleUpdate(messageChan)
+	go l.handleUpdate(&MsgChan{
+		NormalMessageChan: messageChan,
+	})
 	
-	go l.Robot.ExecLLM(l.Prompt, messageChan)
+	go l.Robot.ExecLLM(l.Prompt, messageChan, nil)
 	
 }
 
