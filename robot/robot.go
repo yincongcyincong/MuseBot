@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"hash/crc32"
 	"runtime/debug"
 	"strconv"
 	"strings"
@@ -17,6 +18,7 @@ import (
 	larkcore "github.com/larksuite/oapi-sdk-go/v3/core"
 	larkim "github.com/larksuite/oapi-sdk-go/v3/service/im/v1"
 	"github.com/slack-go/slack"
+	"github.com/tencent-connect/botgo/dto"
 	"github.com/yincongcyincong/MuseBot/conf"
 	"github.com/yincongcyincong/MuseBot/db"
 	"github.com/yincongcyincong/MuseBot/i18n"
@@ -190,6 +192,18 @@ func (r *RobotInfo) GetChatIdAndMsgIdAndUserID() (string, string, string) {
 			msgId = ""
 			userId = comWechatRobot.Event.GetFromUserName()
 		}
+	case *QQRobot:
+		q := r.Robot.(*QQRobot)
+		if q.C2CMessage != nil {
+			chatId = q.C2CMessage.Author.ID
+			userId = q.C2CMessage.Author.ID
+			msgId = q.C2CMessage.ID
+		}
+		if q.ATMessage != nil {
+			chatId = q.C2CMessage.GroupID
+			userId = q.C2CMessage.Author.ID
+			msgId = q.C2CMessage.ID
+		}
 	}
 	
 	return chatId, msgId, userId
@@ -318,7 +332,45 @@ func (r *RobotInfo) SendMsg(chatId string, msgContent string, replyToMessageID s
 		if err != nil {
 			logger.Warn("send message fail", "err", err)
 		}
+	case *QQRobot:
+		q := r.Robot.(*QQRobot)
+		if q.C2CMessage != nil {
+			resp, err := q.QQApi.PostC2CMessage(q.Ctx, q.C2CMessage.Author.ID, &dto.MessageToCreate{
+				MsgType: dto.TextMsg,
+				Content: msgContent,
+				MsgID:   replyToMessageID,
+				MsgSeq:  crc32.ChecksumIEEE([]byte(msgContent)),
+				MessageReference: &dto.MessageReference{
+					MessageID:             replyToMessageID,
+					IgnoreGetMessageError: true,
+				},
+			})
+			if err != nil {
+				logger.Warn("send message fail", "err", err)
+				return ""
+			}
+			
+			return resp.ID
+		}
 		
+		if q.ATMessage != nil {
+			resp, err := q.QQApi.PostGroupMessage(q.Ctx, q.ATMessage.GroupID, &dto.MessageToCreate{
+				MsgType: dto.TextMsg,
+				Content: msgContent,
+				MsgID:   replyToMessageID,
+				MsgSeq:  crc32.ChecksumIEEE([]byte(msgContent)),
+				MessageReference: &dto.MessageReference{
+					MessageID:             replyToMessageID,
+					IgnoreGetMessageError: true,
+				},
+			})
+			if err != nil {
+				logger.Warn("send message fail", "err", err)
+				return ""
+			}
+			
+			return resp.ID
+		}
 	}
 	
 	return ""
@@ -367,6 +419,12 @@ func StartRobot() {
 	if *conf.BaseConfInfo.ComWechatSecret != "" && *conf.BaseConfInfo.ComWechatAgentID != "" && *conf.BaseConfInfo.ComWechatCorpID != "" {
 		go func() {
 			StartComWechatRobot()
+		}()
+	}
+	
+	if *conf.BaseConfInfo.QQAppID != "" && *conf.BaseConfInfo.QQAppSecret != "" {
+		go func() {
+			StartQQRobot(ctx)
 		}()
 	}
 }

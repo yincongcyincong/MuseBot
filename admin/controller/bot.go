@@ -435,7 +435,8 @@ func GetAllOnlineBot(w http.ResponseWriter, r *http.Request) {
 	res := make([]*checkpoint.BotStatus, 0)
 	checkpoint.BotMap.Range(func(key any, value any) bool {
 		status := value.(*checkpoint.BotStatus)
-		if status.LastCheck.Add(3*time.Minute).After(time.Now()) && status.Status != checkpoint.OfflineStatus {
+		if (*adminConf.RegisterConfInfo.Type != "" || status.LastCheck.Add(3*time.Minute).After(time.Now())) &&
+			status.Status != checkpoint.OfflineStatus {
 			res = append(res, status)
 		}
 		return true

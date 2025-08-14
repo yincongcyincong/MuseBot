@@ -28,6 +28,7 @@ require (
 	github.com/satori/go.uuid v1.2.0
 	github.com/slack-go/slack v0.17.3
 	github.com/stretchr/testify v1.10.0
+	github.com/tencent-connect/botgo v0.2.1
 	github.com/volcengine/volc-sdk-golang v1.0.196
 	github.com/volcengine/volcengine-go-sdk v1.1.26
 	github.com/wdvxdr1123/go-silk v0.0.0-20220304095002-f67345df09ea
@@ -97,6 +98,7 @@ require (
 	github.com/go-openapi/strfmt v0.21.3 // indirect
 	github.com/go-openapi/swag v0.22.4 // indirect
 	github.com/go-openapi/validate v0.21.0 // indirect
+	github.com/go-resty/resty/v2 v2.6.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/generative-ai-go v0.19.0 // indirect
