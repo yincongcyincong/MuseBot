@@ -56,7 +56,6 @@ type DingRobot struct {
 	Command      string
 	Prompt       string
 	BotName      string
-	ImageContent []byte
 	OriginPrompt string
 }
 
@@ -301,9 +300,9 @@ func (d *DingRobot) sendImg() {
 		
 		originImageURI := ""
 		
-		if len(d.ImageContent) > 0 {
-			base64Content = base64.StdEncoding.EncodeToString(d.ImageContent)
-			format = utils.DetectImageFormat(d.ImageContent)
+		if len(lastImageContent) > 0 {
+			base64Content = base64.StdEncoding.EncodeToString(lastImageContent)
+			format = utils.DetectImageFormat(lastImageContent)
 			originImageURI = fmt.Sprintf("data:image/%s;base64,%s", format, base64Content)
 		}
 		

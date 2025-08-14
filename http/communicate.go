@@ -7,6 +7,9 @@ import (
 	
 	"github.com/ArtisanCloud/PowerWeChat/v3/src/kernel"
 	"github.com/ArtisanCloud/PowerWeChat/v3/src/kernel/contract"
+	"github.com/tencent-connect/botgo/interaction/webhook"
+	"github.com/tencent-connect/botgo/token"
+	"github.com/yincongcyincong/MuseBot/conf"
 	"github.com/yincongcyincong/MuseBot/logger"
 	"github.com/yincongcyincong/MuseBot/robot"
 )
@@ -80,4 +83,11 @@ func ComWechatComm(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	w.WriteHeader(http.StatusInternalServerError)
+}
+
+func QQBotComm(w http.ResponseWriter, r *http.Request) {
+	webhook.HTTPHandler(w, r, &token.QQBotCredentials{
+		AppSecret: *conf.BaseConfInfo.QQAppSecret,
+		AppID:     *conf.BaseConfInfo.QQAppID,
+	})
 }
