@@ -29,29 +29,36 @@ Other usage see this [doc](https://github.com/yincongcyincong/MuseBot)
 ## 💬 How to Use
 
 ### Private Chat with the Bot
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/44394437-ed93-4e89-bb15-a0bbe55ea0e6" />
 
-You can directly chat with the bot via QQ private message. <img width="400" alt="image" src="https://github.com/user-attachments/assets/6d8ded05-8454-4946-9025-bdd4bb7f8dbb" />
+You can directly chat with the bot via QQ private message. 
 
 Supported commands:
 
-* `/photo`: Generate an image.
+* `/photo`: Generate an image.    
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/0e15c7cc-cd24-4418-821a-2675d0e2ed9a" />
 
 
+* `/video`: Generate a video.    
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/8e895453-6e2d-49b0-a3f8-a625404d136e" />
 
-* `/video`: Generate a video.
+
+* `/balance`: Check the remaining quota of your DeepSeek Token.    
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/4bff7083-05c4-4645-8c0f-83d53c601eec" />
 
 
-* `/balance`: Check the remaining quota of your DeepSeek Token.
+* `/state`: View the current chat state (including model info and system prompts).    
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/c6bf87b0-706f-40dc-9aa1-20790af94923" />
+  
+* `/clear`: Clear the current conversation context.    
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/d49ff765-6a62-4a8c-aefd-77fe5bc834e7" />
 
-* `/state`: View the current chat state (including model info and system prompts).
-
-* `/clear`: Clear the current conversation context.
 
 ---
 
 ### Group Chat Mode
 
-In a QQ group chat, you can talk to the bot by mentioning it using `@YourBotName`, or directly using the command. For example: <img width="400" alt="image" src="https://github.com/user-attachments/assets/c93196d9-8506-474b-8b09-1930b8bb42f1" />
+In a QQ group chat, you can talk to the bot by mentioning it using `@YourBotName`, or directly using the command.
 
 All the above commands are also available in group chats without needing to switch to private chat.
 
