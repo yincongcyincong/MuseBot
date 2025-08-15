@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"hash/crc32"
 	"io"
 	"net/http"
 	"runtime/debug"
@@ -43,8 +44,9 @@ type QQRobot struct {
 	QQTokenSource oauth2.TokenSource
 	RobotInfo     *dto.User
 	
-	C2CMessage *dto.WSC2CMessageData
-	ATMessage  *dto.WSATMessageData
+	C2CMessage     *dto.WSC2CMessageData
+	GroupAtMessage *dto.WSGroupATMessageData
+	ATMessage      *dto.WSATMessageData
 	
 	Ctx          context.Context
 	Cancel       context.CancelFunc
@@ -66,7 +68,7 @@ func StartQQRobot(ctx context.Context) {
 		return
 	}
 	
-	QQApi = botgo.NewOpenAPI(*conf.BaseConfInfo.QQAppID, QQTokenSource).WithTimeout(5 * time.Second).SetDebug(true)
+	QQApi = botgo.NewOpenAPI(*conf.BaseConfInfo.QQAppID, QQTokenSource).WithTimeout(5 * time.Second)
 	QQRobotInfo, err = QQApi.Me(ctx)
 	if err != nil {
 		logger.Error("get me error", "err", err)
@@ -75,13 +77,14 @@ func StartQQRobot(ctx context.Context) {
 	logger.Info("QQRobot Info", "username", QQRobotInfo.Username)
 	
 	event.RegisterHandlers(
+		event.GroupATMessageEventHandler(QQGroupATMessageEventHandler),
 		event.ATMessageEventHandler(QQATMessageEventHandler),
 		event.C2CMessageEventHandler(C2CMessageEventHandler),
 	)
 }
 
 func C2CMessageEventHandler(event *dto.WSPayload, message *dto.WSC2CMessageData) error {
-	d := NewQQRobot(event, message, nil)
+	d := NewQQRobot(event, message, nil, nil)
 	d.Robot = NewRobot(WithRobot(d))
 	go func() {
 		defer func() {
@@ -95,8 +98,8 @@ func C2CMessageEventHandler(event *dto.WSPayload, message *dto.WSC2CMessageData)
 	return nil
 }
 
-func QQATMessageEventHandler(event *dto.WSPayload, atMessage *dto.WSATMessageData) error {
-	d := NewQQRobot(event, nil, atMessage)
+func QQGroupATMessageEventHandler(event *dto.WSPayload, atMessage *dto.WSGroupATMessageData) error {
+	d := NewQQRobot(event, nil, atMessage, nil)
 	d.Robot = NewRobot(WithRobot(d))
 	go func() {
 		defer func() {
@@ -111,18 +114,36 @@ func QQATMessageEventHandler(event *dto.WSPayload, atMessage *dto.WSATMessageDat
 	return nil
 }
 
-func NewQQRobot(event *dto.WSPayload, c2cMessage *dto.WSC2CMessageData, atMessage *dto.WSATMessageData) *QQRobot {
+func QQATMessageEventHandler(event *dto.WSPayload, atMessage *dto.WSATMessageData) error {
+	d := NewQQRobot(event, nil, nil, atMessage)
+	d.Robot = NewRobot(WithRobot(d))
+	go func() {
+		defer func() {
+			if err := recover(); err != nil {
+				logger.Error("QQ exec panic", "err", err, "stack", string(debug.Stack()))
+			}
+		}()
+		
+		d.Robot.Exec()
+	}()
+	
+	return nil
+}
+
+func NewQQRobot(event *dto.WSPayload, c2cMessage *dto.WSC2CMessageData,
+	atGroupMessage *dto.WSGroupATMessageData, atMessage *dto.WSATMessageData) *QQRobot {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute*5)
 	return &QQRobot{
-		QQApi:         QQApi,
-		QQTokenSource: QQTokenSource,
-		RobotInfo:     QQRobotInfo,
-		C2CMessage:    c2cMessage,
-		ATMessage:     atMessage,
-		event:         event,
-		Ctx:           ctx,
-		Cancel:        cancel,
-		BotName:       BotName,
+		QQApi:          QQApi,
+		QQTokenSource:  QQTokenSource,
+		RobotInfo:      QQRobotInfo,
+		C2CMessage:     c2cMessage,
+		ATMessage:      atMessage,
+		GroupAtMessage: atGroupMessage,
+		event:          event,
+		Ctx:            ctx,
+		Cancel:         cancel,
+		BotName:        BotName,
 	}
 }
 
@@ -132,6 +153,9 @@ func (q *QQRobot) checkValid() bool {
 	}
 	if q.ATMessage != nil {
 		q.Command, q.Prompt = ParseCommand(q.ATMessage.Content)
+	}
+	if q.GroupAtMessage != nil {
+		q.Command, q.Prompt = ParseCommand(q.GroupAtMessage.Content)
 	}
 	
 	return true
@@ -417,13 +441,20 @@ func (q *QQRobot) sendChatMessage() {
 }
 
 func (q *QQRobot) executeChain() {
-	messageChan := make(chan string)
-	go q.Robot.ExecChain(q.Prompt, nil, messageChan)
+	var msgChan *MsgChan
+	if q.C2CMessage != nil {
+		msgChan = &MsgChan{
+			StrMessageChan: make(chan string),
+		}
+	} else {
+		msgChan = &MsgChan{
+			NormalMessageChan: make(chan *param.MsgInfo),
+		}
+	}
+	go q.Robot.ExecChain(q.Prompt, msgChan)
 	
 	// send response message
-	go q.handleUpdate(&MsgChan{
-		StrMessageChan: messageChan,
-	})
+	go q.handleUpdate(msgChan)
 }
 
 func (q *QQRobot) handleUpdate(messageChan *MsgChan) {
@@ -433,31 +464,54 @@ func (q *QQRobot) handleUpdate(messageChan *MsgChan) {
 		}
 	}()
 	
-	var id string
-	var err error
-	idx := int32(0)
-	
-	for msg := range messageChan.StrMessageChan {
-		id, err = q.PostStreamMessage(1, idx, id, msg)
+	chatId, msgId, _ := q.Robot.GetChatIdAndMsgIdAndUserID()
+	if messageChan.NormalMessageChan != nil {
+		var msg *param.MsgInfo
+		for msg = range messageChan.NormalMessageChan {
+			if msg.Finished {
+				q.Robot.SendMsg(chatId, msg.Content, msgId, "", nil)
+			}
+		}
+		
+		if msg != nil {
+			q.Robot.SendMsg(chatId, msg.Content, msgId, "", nil)
+		}
+	} else {
+		var id string
+		var err error
+		idx := int32(1)
+		
+		for msg := range messageChan.StrMessageChan {
+			id, err = q.PostStreamMessage(1, idx, id, msg)
+			if err != nil {
+				logger.Warn("send stream msg fail", "err", err)
+			}
+			idx++
+		}
+		
+		_, err = q.PostStreamMessage(10, idx, id, " ")
 		if err != nil {
 			logger.Warn("send stream msg fail", "err", err)
 		}
-		idx++
 	}
 	
-	_, err = q.PostStreamMessage(10, idx, id, "")
-	if err != nil {
-		logger.Warn("send stream msg fail", "err", err)
-	}
 }
 
 func (q *QQRobot) executeLLM() {
-	messageChan := make(chan string)
-	go q.handleUpdate(&MsgChan{
-		StrMessageChan: messageChan,
-	})
+	var msgChan *MsgChan
+	if q.C2CMessage != nil {
+		msgChan = &MsgChan{
+			StrMessageChan: make(chan string),
+		}
+	} else {
+		msgChan = &MsgChan{
+			NormalMessageChan: make(chan *param.MsgInfo),
+		}
+	}
 	
-	go q.Robot.ExecLLM(q.Prompt, nil, messageChan)
+	go q.handleUpdate(msgChan)
+	
+	go q.Robot.ExecLLM(q.Prompt, msgChan)
 	
 }
 
@@ -489,6 +543,12 @@ func (q *QQRobot) GetContent(content string) (string, error) {
 		data, err := utils.DownloadFile(attachment.URL)
 		if err != nil {
 			logger.Error("get image content fail", "err", err)
+			return "", err
+		}
+		
+		data, err = utils.SilkToWav(data)
+		if err != nil {
+			logger.Error("silk to wav fail", "err", err)
 			return "", err
 		}
 		
@@ -530,7 +590,10 @@ func (q *QQRobot) UploadFile(imageContent string, fileType int) ([]byte, error) 
 	
 	apiURL := fmt.Sprintf("https://api.sgroup.qq.com/v2/users/%s/files", chatId)
 	if q.ATMessage != nil {
-		apiURL = fmt.Sprintf("https://api.sgroup.qq.com/v2/groups/%s/messages", chatId)
+		apiURL = fmt.Sprintf("https://api.sgroup.qq.com/v2/groups/%s/files", chatId)
+	}
+	if q.GroupAtMessage != nil {
+		apiURL = fmt.Sprintf("https://api.sgroup.qq.com/v2/groups/%s/files", chatId)
 	}
 	
 	reqBody := UploadFileRequest{
@@ -591,6 +654,10 @@ func (q *QQRobot) GetAttachment() *dto.MessageAttachment {
 		return q.ATMessage.Attachments[0]
 	}
 	
+	if q.GroupAtMessage != nil && len(q.GroupAtMessage.Attachments) != 0 {
+		return q.GroupAtMessage.Attachments[0]
+	}
+	
 	return nil
 }
 
@@ -608,7 +675,17 @@ func (q *QQRobot) PostRichMediaMessage(data []byte) error {
 	}
 	
 	if q.ATMessage != nil {
-		_, err = q.QQApi.PostGroupMessage(q.Ctx, q.ATMessage.GroupID, &dto.MessageToCreate{
+		_, err = q.QQApi.PostMessage(q.Ctx, q.ATMessage.GuildID, &dto.MessageToCreate{
+			MsgType: dto.RichMediaMsg,
+			MsgID:   msgId,
+			Media: &dto.MediaInfo{
+				FileInfo: data,
+			},
+		})
+	}
+	
+	if q.GroupAtMessage != nil {
+		_, err = q.QQApi.PostGroupMessage(q.Ctx, q.GroupAtMessage.GroupID, &dto.MessageToCreate{
 			MsgType: dto.RichMediaMsg,
 			MsgID:   msgId,
 			Media: &dto.MediaInfo{
@@ -623,41 +700,39 @@ func (q *QQRobot) PostRichMediaMessage(data []byte) error {
 
 func (q *QQRobot) PostStreamMessage(state, idx int32, id, content string) (string, error) {
 	_, msgId, _ := q.Robot.GetChatIdAndMsgIdAndUserID()
+	msg := &dto.MessageToCreate{
+		MsgType: dto.TextMsg,
+		MsgID:   msgId,
+		Content: content,
+		MsgSeq:  crc32.ChecksumIEEE([]byte(content)),
+		Stream: &dto.Stream{
+			State: state,
+			Index: idx,
+			ID:    id,
+		},
+	}
+	
 	if q.C2CMessage != nil {
-		resp, err := q.QQApi.PostC2CMessage(q.Ctx, q.C2CMessage.Author.ID, &dto.MessageToCreate{
-			MsgType: dto.TextMsg,
-			MsgID:   msgId,
-			Content: content,
-			Stream: &dto.Stream{
-				State: state,
-				Index: idx,
-				ID:    id,
-			},
-		})
-		
+		resp, err := q.QQApi.PostC2CMessage(q.Ctx, q.C2CMessage.Author.ID, msg)
 		if err != nil {
 			return "", err
 		}
-		
+		return resp.ID, err
+	}
+	
+	if q.GroupAtMessage != nil {
+		resp, err := q.QQApi.PostGroupMessage(q.Ctx, q.GroupAtMessage.GroupID, msg)
+		if err != nil {
+			return "", err
+		}
 		return resp.ID, err
 	}
 	
 	if q.ATMessage != nil {
-		resp, err := q.QQApi.PostGroupMessage(q.Ctx, q.ATMessage.GroupID, &dto.MessageToCreate{
-			MsgType: dto.TextMsg,
-			MsgID:   msgId,
-			Content: content,
-			Stream: &dto.Stream{
-				State: state,
-				Index: idx,
-				ID:    id,
-			},
-		})
-		
+		resp, err := q.QQApi.PostGroupMessage(q.Ctx, q.ATMessage.GuildID, msg)
 		if err != nil {
 			return "", err
 		}
-		
 		return resp.ID, err
 	}
 	

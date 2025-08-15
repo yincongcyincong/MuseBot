@@ -25,7 +25,8 @@ more natural and dynamic.
   see [doc](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/rag.md).
 - 🌞 **AdminPlatform**: Use platform to manage MuseBot,
   see [doc](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/admin.md).
-- 🌛 **Register**: With the service registration module, robot instances can be automatically registered to the registration center [doc](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/register.md) 
+- 🌛 **Register**: With the service registration module, robot instances can be automatically registered to the
+  registration center [doc](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/register.md)
 
 ## 📸 Support Platform
 
@@ -38,6 +39,7 @@ more natural and dynamic.
 | 🟣 **Lark (Feishu)** |     ✅     | Supports Lark long connection & message handling (based on larksuite SDK, with image/audio download & message update) | [Docs](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/lark.md)       |
 | 🆙 **DingDing**      |     ✅     | Supports Dingding long connection                                                                                     | [Docs](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/dingding.md)   |
 | ⚡️ **Work WeChat**   |     ✅     | Support Work WeChat http callback to trigger LLM                                                                      | [Docs](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/com_wechat.md) |
+| ⚡️ **QQ**            |     ✅     | Support QQ http callback to trigger LLM                                                                               | [Docs](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/qq.md)         |
 
 ## Supported Large Language Models
 

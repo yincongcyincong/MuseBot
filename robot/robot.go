@@ -204,10 +204,15 @@ func (r *RobotInfo) GetChatIdAndMsgIdAndUserID() (string, string, string) {
 			userId = q.C2CMessage.Author.ID
 			msgId = q.C2CMessage.ID
 		}
+		if q.GroupAtMessage != nil {
+			chatId = q.GroupAtMessage.GroupID
+			userId = q.GroupAtMessage.Author.ID
+			msgId = q.GroupAtMessage.ID
+		}
 		if q.ATMessage != nil {
-			chatId = q.C2CMessage.GroupID
-			userId = q.C2CMessage.Author.ID
-			msgId = q.C2CMessage.ID
+			chatId = q.ATMessage.GuildID
+			userId = q.ATMessage.Author.ID
+			msgId = q.ATMessage.ID
 		}
 	}
 	
@@ -339,17 +344,18 @@ func (r *RobotInfo) SendMsg(chatId string, msgContent string, replyToMessageID s
 		}
 	case *QQRobot:
 		q := r.Robot.(*QQRobot)
+		qqMsg := &dto.MessageToCreate{
+			MsgType: dto.TextMsg,
+			Content: msgContent,
+			MsgID:   replyToMessageID,
+			MsgSeq:  crc32.ChecksumIEEE([]byte(msgContent)),
+			MessageReference: &dto.MessageReference{
+				MessageID:             replyToMessageID,
+				IgnoreGetMessageError: true,
+			},
+		}
 		if q.C2CMessage != nil {
-			resp, err := q.QQApi.PostC2CMessage(q.Ctx, q.C2CMessage.Author.ID, &dto.MessageToCreate{
-				MsgType: dto.TextMsg,
-				Content: msgContent,
-				MsgID:   replyToMessageID,
-				MsgSeq:  crc32.ChecksumIEEE([]byte(msgContent)),
-				MessageReference: &dto.MessageReference{
-					MessageID:             replyToMessageID,
-					IgnoreGetMessageError: true,
-				},
-			})
+			resp, err := q.QQApi.PostC2CMessage(q.Ctx, q.C2CMessage.Author.ID, qqMsg)
 			if err != nil {
 				logger.Warn("send message fail", "err", err)
 				return ""
@@ -359,16 +365,17 @@ func (r *RobotInfo) SendMsg(chatId string, msgContent string, replyToMessageID s
 		}
 		
 		if q.ATMessage != nil {
-			resp, err := q.QQApi.PostGroupMessage(q.Ctx, q.ATMessage.GroupID, &dto.MessageToCreate{
-				MsgType: dto.TextMsg,
-				Content: msgContent,
-				MsgID:   replyToMessageID,
-				MsgSeq:  crc32.ChecksumIEEE([]byte(msgContent)),
-				MessageReference: &dto.MessageReference{
-					MessageID:             replyToMessageID,
-					IgnoreGetMessageError: true,
-				},
-			})
+			resp, err := q.QQApi.PostMessage(q.Ctx, q.ATMessage.GuildID, qqMsg)
+			if err != nil {
+				logger.Warn("send message fail", "err", err)
+				return ""
+			}
+			
+			return resp.ID
+		}
+		
+		if q.GroupAtMessage != nil {
+			resp, err := q.QQApi.PostGroupMessage(q.Ctx, q.GroupAtMessage.GroupID, qqMsg)
 			if err != nil {
 				logger.Warn("send message fail", "err", err)
 				return ""
@@ -616,6 +623,7 @@ func (r *RobotInfo) handleModeUpdate(mode string) {
 
 // ParseCommand extracts command and arguments like /photo xxx
 func ParseCommand(prompt string) (command string, args string) {
+	prompt = strings.TrimSpace(prompt)
 	if len(prompt) == 0 || prompt[0] != '/' {
 		return "", prompt
 	}
@@ -664,7 +672,7 @@ func (r *RobotInfo) ExecCmd(cmd string, defaultFunc func()) {
 	}
 }
 
-func (r *RobotInfo) ExecChain(msgContent string, msgChan chan *param.MsgInfo, httpMsgChan chan string) {
+func (r *RobotInfo) ExecChain(msgContent string, msgChan *MsgChan) {
 	r.TalkingPreCheck(func() {
 		chatId, msgId, userId := r.GetChatIdAndMsgIdAndUserID()
 		
@@ -684,8 +692,8 @@ func (r *RobotInfo) ExecChain(msgContent string, msgChan chan *param.MsgInfo, ht
 			return
 		}
 		dpLLM := rag.NewRag(
-			llm.WithMessageChan(msgChan),
-			llm.WithHTTPMsgChan(httpMsgChan),
+			llm.WithMessageChan(msgChan.NormalMessageChan),
+			llm.WithHTTPMsgChan(msgChan.StrMessageChan),
 			llm.WithContent(content),
 			llm.WithChatId(chatId),
 			llm.WithUserId(userId),
@@ -701,17 +709,17 @@ func (r *RobotInfo) ExecChain(msgContent string, msgChan chan *param.MsgInfo, ht
 	})
 }
 
-func (r *RobotInfo) ExecLLM(msgContent string, msgChan chan *param.MsgInfo, httpMsgChan chan string) {
+func (r *RobotInfo) ExecLLM(msgContent string, msgChan *MsgChan) {
 	defer func() {
 		if err := recover(); err != nil {
 			logger.Error("GetContent panic err", "err", err, "stack", string(debug.Stack()))
 		}
-		if msgChan != nil {
-			close(msgChan)
+		if msgChan.NormalMessageChan != nil {
+			close(msgChan.NormalMessageChan)
 		}
 		
-		if httpMsgChan != nil {
-			close(httpMsgChan)
+		if msgChan.StrMessageChan != nil {
+			close(msgChan.StrMessageChan)
 		}
 	}()
 	
@@ -728,8 +736,8 @@ func (r *RobotInfo) ExecLLM(msgContent string, msgChan chan *param.MsgInfo, http
 		llm.WithChatId(chatId),
 		llm.WithUserId(userId),
 		llm.WithMsgId(msgId),
-		llm.WithMessageChan(msgChan),
-		llm.WithHTTPMsgChan(httpMsgChan),
+		llm.WithMessageChan(msgChan.NormalMessageChan),
+		llm.WithHTTPMsgChan(msgChan.StrMessageChan),
 		llm.WithContent(content),
 	)
 	

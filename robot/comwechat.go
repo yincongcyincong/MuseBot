@@ -381,13 +381,13 @@ func (c *ComWechatRobot) sendChatMessage() {
 }
 
 func (c *ComWechatRobot) executeChain() {
-	messageChan := make(chan *param.MsgInfo)
-	go c.Robot.ExecChain(c.Prompt, messageChan, nil)
+	messageChan := &MsgChan{
+		NormalMessageChan: make(chan *param.MsgInfo),
+	}
+	go c.Robot.ExecChain(c.Prompt, messageChan)
 	
 	// send response message
-	go c.handleUpdate(&MsgChan{
-		NormalMessageChan: messageChan,
-	})
+	go c.handleUpdate(messageChan)
 }
 
 func (c *ComWechatRobot) handleUpdate(messageChan *MsgChan) {
@@ -416,12 +416,12 @@ func (c *ComWechatRobot) handleUpdate(messageChan *MsgChan) {
 }
 
 func (c *ComWechatRobot) executeLLM() {
-	messageChan := make(chan *param.MsgInfo)
-	go c.handleUpdate(&MsgChan{
-		NormalMessageChan: messageChan,
-	})
+	messageChan := &MsgChan{
+		NormalMessageChan: make(chan *param.MsgInfo),
+	}
+	go c.handleUpdate(messageChan)
 	
-	go c.Robot.ExecLLM(c.Prompt, messageChan, nil)
+	go c.Robot.ExecLLM(c.Prompt, messageChan)
 	
 }
 

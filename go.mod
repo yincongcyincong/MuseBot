@@ -43,8 +43,6 @@ require (
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 )
 
-replace github.com/tencent-connect/botgo => ../botgo
-
 require (
 	cloud.google.com/go v0.116.0 // indirect
 	cloud.google.com/go/ai v0.8.0 // indirect
