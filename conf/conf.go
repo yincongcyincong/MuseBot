@@ -27,6 +27,10 @@ type BaseConf struct {
 	ComWechatCorpID         *string `json:"com_wechat_corp_id"`
 	ComWechatSecret         *string `json:"com_wechat_secret"`
 	ComWechatAgentID        *string `json:"com_wechat_agent_id"`
+	WechatAppID             *string `json:"wechat_app_id"`
+	WechatAppSecret         *string `json:"wechat_app_secret"`
+	WechatToken             *string `json:"wechat_token"`
+	WechatEncodingAESKey    *string `json:"wechat_encoding_aes_key"`
 	QQAppID                 *string `json:"qq_app_id"`
 	QQAppSecret             *string `json:"qq_app_secret"`
 	
@@ -50,7 +54,6 @@ type BaseConf struct {
 	RobotProxy   *string `json:"robot_proxy"`
 	Lang         *string `json:"lang"`
 	TokenPerUser *int    `json:"token_per_user"`
-	NeedATBOt    *bool   `json:"need_at_bot"`
 	MaxUserChat  *int    `json:"max_user_chat"`
 	HTTPHost     *string `json:"http_host"`
 	UseTools     *bool   `json:"use_tools"`
@@ -84,6 +87,10 @@ func InitConf() {
 	BaseConfInfo.ComWechatCorpID = flag.String("com_wechat_corp_id", "", "ComWechat corp id")
 	BaseConfInfo.ComWechatSecret = flag.String("com_wechat_secret", "", "ComWechat secret")
 	BaseConfInfo.ComWechatAgentID = flag.String("com_wechat_agent_id", "", "ComWechat agent id")
+	BaseConfInfo.WechatAppID = flag.String("wechat_app_id", "", "Wechat app id")
+	BaseConfInfo.WechatAppSecret = flag.String("wechat_app_secret", "", "Wechat app secret")
+	BaseConfInfo.WechatEncodingAESKey = flag.String("wechat_encoding_aes_key", "", "Wechat encoding aes key")
+	BaseConfInfo.WechatToken = flag.String("wechat_token", "", "Wechat token")
 	BaseConfInfo.QQAppID = flag.String("qq_app_id", "", "QQ app id")
 	BaseConfInfo.QQAppSecret = flag.String("qq_app_secret", "", "QQ app secret")
 	
@@ -107,7 +114,6 @@ func InitConf() {
 	BaseConfInfo.RobotProxy = flag.String("robot_proxy", "", "robot proxy: http://127.0.0.1:7890")
 	BaseConfInfo.Lang = flag.String("lang", "en", "lang")
 	BaseConfInfo.TokenPerUser = flag.Int("token_per_user", 10000, "token per user")
-	BaseConfInfo.NeedATBOt = flag.Bool("need_at_bot", false, "need at bot")
 	BaseConfInfo.MaxUserChat = flag.Int("max_user_chat", 2, "max chat per user")
 	BaseConfInfo.HTTPHost = flag.String("http_host", "127.0.0.1:36060", "http server port")
 	BaseConfInfo.UseTools = flag.Bool("use_tools", false, "use tools")
@@ -171,6 +177,22 @@ func InitConf() {
 	
 	if os.Getenv("COM_WECHAT_TOKEN") != "" {
 		*BaseConfInfo.ComWechatToken = os.Getenv("COM_WECHAT_TOKEN")
+	}
+	
+	if os.Getenv("WECHAT_TOKEN") != "" {
+		*BaseConfInfo.WechatToken = os.Getenv("WECHAT_TOKEN")
+	}
+	
+	if os.Getenv("WECHAT_APP_ID") != "" {
+		*BaseConfInfo.WechatAppID = os.Getenv("WECHAT_APP_ID")
+	}
+	
+	if os.Getenv("WECHAT_APP_SECRET") != "" {
+		*BaseConfInfo.WechatAppSecret = os.Getenv("WECHAT_APP_SECRET")
+	}
+	
+	if os.Getenv("WECHAT_ENCODING_AES_KEY") != "" {
+		*BaseConfInfo.WechatEncodingAESKey = os.Getenv("WECHAT_ENCODING_AES_KEY")
 	}
 	
 	if os.Getenv("COM_WECHAT_ENCODING_AES_KEY") != "" {
@@ -257,10 +279,6 @@ func InitConf() {
 		*adminUserIds = os.Getenv("ADMIN_USER_IDS")
 	}
 	
-	if os.Getenv("NEED_AT_BOT") != "" {
-		*BaseConfInfo.NeedATBOt, _ = strconv.ParseBool(os.Getenv("NEED_AT_BOT"))
-	}
-	
 	if os.Getenv("MAX_USER_CHAT") != "" {
 		*BaseConfInfo.MaxUserChat, _ = strconv.Atoi(os.Getenv("MAX_USER_CHAT"))
 	}
@@ -345,6 +363,10 @@ func InitConf() {
 	logger.Info("CONF", "ComWechatCorpID", *BaseConfInfo.ComWechatCorpID)
 	logger.Info("CONF", "ComWechatSecret", *BaseConfInfo.ComWechatSecret)
 	logger.Info("CONF", "ComWechatAgentID", *BaseConfInfo.ComWechatAgentID)
+	logger.Info("CONF", "WechatToken", *BaseConfInfo.WechatToken)
+	logger.Info("CONF", "WechatAppSecret", *BaseConfInfo.WechatAppSecret)
+	logger.Info("CONF", "WechatAppID", *BaseConfInfo.WechatAppID)
+	logger.Info("CONF", "WechatEncodingAESKey", *BaseConfInfo.WechatEncodingAESKey)
 	logger.Info("CONF", "QQAppID", *BaseConfInfo.QQAppID)
 	logger.Info("CONF", "QQAppSecret", *BaseConfInfo.QQAppSecret)
 	logger.Info("CONF", "DeepseekToken", *BaseConfInfo.DeepseekToken)
@@ -361,7 +383,6 @@ func InitConf() {
 	logger.Info("CONF", "Lang", *BaseConfInfo.Lang)
 	logger.Info("CONF", "TokenPerUser", *BaseConfInfo.TokenPerUser)
 	logger.Info("CONF", "AdminUserIds", *adminUserIds)
-	logger.Info("CONF", "NeedATBOt", *BaseConfInfo.NeedATBOt)
 	logger.Info("CONF", "MaxUserChat", *BaseConfInfo.MaxUserChat)
 	logger.Info("CONF", "HTTPPort", *BaseConfInfo.HTTPHost)
 	logger.Info("CONF", "OpenAIToken", *BaseConfInfo.OpenAIToken)

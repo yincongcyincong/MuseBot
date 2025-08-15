@@ -120,7 +120,7 @@ func (d *DingRobot) checkValid() bool {
 		d.Robot.SendMsg(chatId, err.Error(), msgId, "", nil)
 		return false
 	}
-	if d.Message.ConversationType == "2" && *conf.BaseConfInfo.NeedATBOt {
+	if d.Message.ConversationType == "2" {
 		if !atBot {
 			logger.Warn("no at bot")
 			return false

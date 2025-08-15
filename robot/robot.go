@@ -194,9 +194,19 @@ func (r *RobotInfo) GetChatIdAndMsgIdAndUserID() (string, string, string) {
 		comWechatRobot := r.Robot.(*ComWechatRobot)
 		if comWechatRobot.Event != nil {
 			chatId = comWechatRobot.Event.GetFromUserName()
-			msgId = ""
 			userId = comWechatRobot.Event.GetFromUserName()
 		}
+		
+		if comWechatRobot.TextMsg != nil {
+			msgId = comWechatRobot.TextMsg.MsgID
+		}
+		if comWechatRobot.ImageMsg != nil {
+			msgId = comWechatRobot.ImageMsg.MsgID
+		}
+		if comWechatRobot.VoiceMsg != nil {
+			msgId = comWechatRobot.VoiceMsg.MsgID
+		}
+	
 	case *QQRobot:
 		q := r.Robot.(*QQRobot)
 		if q.C2CMessage != nil {
@@ -213,6 +223,22 @@ func (r *RobotInfo) GetChatIdAndMsgIdAndUserID() (string, string, string) {
 			chatId = q.ATMessage.GuildID
 			userId = q.ATMessage.Author.ID
 			msgId = q.ATMessage.ID
+		}
+	case *WechatRobot:
+		wechatRobot := r.Robot.(*WechatRobot)
+		if wechatRobot.Event != nil {
+			chatId = wechatRobot.Event.GetFromUserName()
+			userId = wechatRobot.Event.GetFromUserName()
+		}
+		
+		if wechatRobot.TextMsg != nil {
+			msgId = wechatRobot.TextMsg.MsgID
+		}
+		if wechatRobot.ImageMsg != nil {
+			msgId = wechatRobot.ImageMsg.MsgID
+		}
+		if wechatRobot.VoiceMsg != nil {
+			msgId = wechatRobot.VoiceMsg.MsgID
 		}
 	}
 	
@@ -346,7 +372,7 @@ func (r *RobotInfo) SendMsg(chatId string, msgContent string, replyToMessageID s
 		q := r.Robot.(*QQRobot)
 		qqMsg := &dto.MessageToCreate{
 			MsgType: dto.TextMsg,
-			Content: msgContent,
+			Content: strings.ReplaceAll(strings.ReplaceAll(msgContent, "http", ""), "https", ""),
 			MsgID:   replyToMessageID,
 			MsgSeq:  crc32.ChecksumIEEE([]byte(msgContent)),
 			MessageReference: &dto.MessageReference{
@@ -382,6 +408,16 @@ func (r *RobotInfo) SendMsg(chatId string, msgContent string, replyToMessageID s
 			}
 			
 			return resp.ID
+		}
+	case *WechatRobot:
+		w := r.Robot.(*WechatRobot)
+		_, msgId, _ := w.Robot.GetChatIdAndMsgIdAndUserID()
+		if msgId != "" {
+			WechatMsgMap.Store(msgId, &WechatMessage{
+				Msg:       msgContent,
+				Status:    msgFinished,
+				StartTime: time.Now(),
+			})
 		}
 	}
 	
@@ -428,7 +464,7 @@ func StartRobot() {
 		}()
 	}
 	
-	if *conf.BaseConfInfo.ComWechatSecret != "" && *conf.BaseConfInfo.ComWechatAgentID != "" && *conf.BaseConfInfo.ComWechatCorpID != "" {
+	if *conf.BaseConfInfo.ComWechatSecret != "" && *conf.BaseConfInfo.ComWechatAgentID != "" && *conf.BaseConfInfo.ComWechatEncodingAESKey != "" {
 		go func() {
 			StartComWechatRobot()
 		}()
@@ -437,6 +473,12 @@ func StartRobot() {
 	if *conf.BaseConfInfo.QQAppID != "" && *conf.BaseConfInfo.QQAppSecret != "" {
 		go func() {
 			StartQQRobot(ctx)
+		}()
+	}
+	
+	if *conf.BaseConfInfo.WechatAppID != "" && *conf.BaseConfInfo.WechatAppSecret != "" && *conf.BaseConfInfo.WechatEncodingAESKey != "" {
+		go func() {
+			StartWechatRobot()
 		}()
 	}
 }

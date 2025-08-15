@@ -346,7 +346,7 @@ func (t *TelegramRobot) handleCommand() {
 	
 	// check if at bot
 	chatType := t.getMessage().Chat.Type
-	if (chatType == "group" || chatType == "supergroup") && *conf.BaseConfInfo.NeedATBOt {
+	if chatType == "group" || chatType == "supergroup" {
 		if !strings.Contains(t.getMsgContent(), "@"+t.Bot.Self.UserName) {
 			logger.Warn("not at bot", "userID", userID, "cmd", cmd)
 			return
