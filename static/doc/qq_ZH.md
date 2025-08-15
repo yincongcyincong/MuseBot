@@ -22,11 +22,19 @@
 * `qq_app_id`：你的 QQ Bot APP ID（必填）
 * `qq_app_secret`：你的 QQ Bot APP Secret（必填）
 
-更多用法请参考 [文档](https://github.com/yincongcyincong/MuseBot)
 
 ---
 
 ## 💬 使用方法
+
+去网页创建机器人: https://q.qq.com/qqbot/
+
+沙盒设置:    
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/ab2ab481-3a41-41f7-b279-0873175ec6c0" />
+
+回调设置:    
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/dd88981f-eca8-4728-a021-c5ebdc0767ca" />
+
 
 ### 私聊机器人
 
