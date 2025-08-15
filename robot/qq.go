@@ -479,7 +479,7 @@ func (q *QQRobot) handleUpdate(messageChan *MsgChan) {
 	} else {
 		var id string
 		var err error
-		idx := int32(1)
+		idx := int32(0)
 		
 		for msg := range messageChan.StrMessageChan {
 			id, err = q.PostStreamMessage(1, idx, id, msg)
