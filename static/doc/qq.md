@@ -22,11 +22,19 @@ You can launch the bot in QQ mode using the following command:
 * `qq_bot_token`: Your QQ Bot APP ID (required)
 * `qq_app_secret`: Your QQ Bot APP Secret (required)
 
-Other usage see this [doc](https://github.com/yincongcyincong/MuseBot)
 
 ---
 
 ## 💬 How to Use
+
+### set QQ
+go to website: https://q.qq.com/qqbot/
+
+sandbox config:    
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/ab2ab481-3a41-41f7-b279-0873175ec6c0" />
+
+callback config:    
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/dd88981f-eca8-4728-a021-c5ebdc0767ca" />
 
 ### Private Chat with the Bot
 <img width="400" alt="image" src="https://github.com/user-attachments/assets/44394437-ed93-4e89-bb15-a0bbe55ea0e6" />
