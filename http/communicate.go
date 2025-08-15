@@ -102,10 +102,17 @@ func WechatComm(w http.ResponseWriter, r *http.Request) {
 				c.Robot.Exec()
 			}
 			_, msgId, _ = c.Robot.GetChatIdAndMsgIdAndUserID()
-			return messages.NewText(c.GetLLMContent())
+			content := c.GetLLMContent()
+			if content == "" {
+				w.WriteHeader(http.StatusInternalServerError)
+				return nil
+			}
+			return messages.NewText(content)
 		})
 		if err != nil {
 			logger.Error("request notify fail", "err", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
 		}
 	}
 	

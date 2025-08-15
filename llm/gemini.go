@@ -140,6 +140,7 @@ func (h *GeminiReq) Send(ctx context.Context, l *LLM) error {
 		l.MessageChan <- msgInfoContent
 	}
 	
+	logger.Info("Stream finished", "updateMsgID", l.MsgId)
 	if !hasTools || len(h.CurrentToolMessage) == 0 {
 		db.InsertMsgRecord(l.UserId, &db.AQ{
 			Question: l.Content,
