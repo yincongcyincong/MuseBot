@@ -551,7 +551,7 @@ func (w *WechatRobot) getPrompt() string {
 
 func (w *WechatRobot) GetLLMContent() string {
 	_, msgId, _ := w.Robot.GetChatIdAndMsgIdAndUserID()
-	for i := 0; i < 7; i++ {
+	for i := 0; i < 15; i++ {
 		if msgInfo, ok := WechatMsgMap.Load(msgId); ok {
 			wechatMsg := msgInfo.(*WechatMessage)
 			if wechatMsg.Status != msgHandling {
