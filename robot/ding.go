@@ -432,13 +432,13 @@ func (d *DingRobot) sendChatMessage() {
 }
 
 func (d *DingRobot) executeChain() {
-	messageChan := make(chan *param.MsgInfo)
-	go d.Robot.ExecChain(d.Prompt, messageChan, nil)
+	messageChan := &MsgChan{
+		NormalMessageChan: make(chan *param.MsgInfo),
+	}
+	go d.Robot.ExecChain(d.Prompt, messageChan)
 	
 	// send response message
-	go d.handleUpdate(&MsgChan{
-		NormalMessageChan: messageChan,
-	})
+	go d.handleUpdate(messageChan)
 }
 
 func (d *DingRobot) handleUpdate(messageChan *MsgChan) {
@@ -527,12 +527,12 @@ func (d *DingRobot) handleUpdate(messageChan *MsgChan) {
 //}
 
 func (d *DingRobot) executeLLM() {
-	messageChan := make(chan *param.MsgInfo)
-	go d.handleUpdate(&MsgChan{
-		NormalMessageChan: messageChan,
-	})
+	messageChan := &MsgChan{
+		NormalMessageChan: make(chan *param.MsgInfo),
+	}
+	go d.handleUpdate(messageChan)
 	
-	go d.Robot.ExecLLM(d.Prompt, messageChan, nil)
+	go d.Robot.ExecLLM(d.Prompt, messageChan)
 	
 }
 

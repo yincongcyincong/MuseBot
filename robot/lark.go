@@ -432,13 +432,13 @@ func (l *LarkRobot) sendChatMessage() {
 }
 
 func (l *LarkRobot) executeChain() {
-	messageChan := make(chan *param.MsgInfo)
-	go l.Robot.ExecChain(l.Prompt, messageChan, nil)
+	messageChan := &MsgChan{
+		NormalMessageChan: make(chan *param.MsgInfo),
+	}
+	go l.Robot.ExecChain(l.Prompt, messageChan)
 	
 	// send response message
-	go l.handleUpdate(&MsgChan{
-		NormalMessageChan: messageChan,
-	})
+	go l.handleUpdate(messageChan)
 }
 
 func (l *LarkRobot) handleUpdate(messageChan *MsgChan) {
@@ -495,12 +495,12 @@ func (l *LarkRobot) handleUpdate(messageChan *MsgChan) {
 }
 
 func (l *LarkRobot) executeLLM() {
-	messageChan := make(chan *param.MsgInfo)
-	go l.handleUpdate(&MsgChan{
-		NormalMessageChan: messageChan,
-	})
+	messageChan := &MsgChan{
+		NormalMessageChan: make(chan *param.MsgInfo),
+	}
+	go l.handleUpdate(messageChan)
 	
-	go l.Robot.ExecLLM(l.Prompt, messageChan, nil)
+	go l.Robot.ExecLLM(l.Prompt, messageChan)
 	
 }
 

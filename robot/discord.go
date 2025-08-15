@@ -96,25 +96,25 @@ func (d *DiscordRobot) requestLLMAndResp(content string) {
 }
 
 func (d *DiscordRobot) executeChain(content string) {
-	messageChan := make(chan *param.MsgInfo)
+	messageChan := &MsgChan{
+		NormalMessageChan: make(chan *param.MsgInfo),
+	}
 	
-	go d.Robot.ExecChain(content, messageChan, nil)
+	go d.Robot.ExecChain(content, messageChan)
 	// send response message
-	go d.handleUpdate(&MsgChan{
-		NormalMessageChan: messageChan,
-	})
+	go d.handleUpdate(messageChan)
 }
 
 func (d *DiscordRobot) executeLLM(content string) {
-	messageChan := make(chan *param.MsgInfo)
+	messageChan := &MsgChan{
+		NormalMessageChan: make(chan *param.MsgInfo),
+	}
 	
 	// request DeepSeek API
-	go d.Robot.ExecLLM(content, messageChan, nil)
+	go d.Robot.ExecLLM(content, messageChan)
 	
 	// send response message
-	go d.handleUpdate(&MsgChan{
-		NormalMessageChan: messageChan,
-	})
+	go d.handleUpdate(messageChan)
 }
 
 func (d *DiscordRobot) handleUpdate(messageChan *MsgChan) {

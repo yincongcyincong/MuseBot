@@ -234,20 +234,21 @@ func (s *SlackRobot) sendChatMessage() {
 }
 
 func (s *SlackRobot) executeChain(content string) {
-	messageChan := make(chan *param.MsgInfo)
-	go s.Robot.ExecChain(content, messageChan, nil)
+	messageChan := &MsgChan{
+		NormalMessageChan: make(chan *param.MsgInfo),
+	}
+	go s.Robot.ExecChain(content, messageChan)
 	
-	go s.handleUpdate(&MsgChan{
-		NormalMessageChan: messageChan,
-	})
+	go s.handleUpdate(messageChan)
 }
 
 func (s *SlackRobot) executeLLM(content string) {
-	messageChan := make(chan *param.MsgInfo)
-	go s.Robot.ExecLLM(content, messageChan, nil)
-	go s.handleUpdate(&MsgChan{
-		NormalMessageChan: messageChan,
-	})
+	messageChan := &MsgChan{
+		NormalMessageChan: make(chan *param.MsgInfo),
+	}
+	go s.Robot.ExecLLM(content, messageChan)
+	
+	go s.handleUpdate(messageChan)
 }
 
 func (s *SlackRobot) handleUpdate(messageChan *MsgChan) {

@@ -177,26 +177,26 @@ func (t *TelegramRobot) requestLLMAndResp(content string) {
 
 // executeChain use langchain to interact llm
 func (t *TelegramRobot) executeChain(content string) {
-	messageChan := make(chan *param.MsgInfo)
-	go t.Robot.ExecChain(content, messageChan, nil)
+	messageChan := &MsgChan{
+		NormalMessageChan: make(chan *param.MsgInfo),
+	}
+	
+	go t.Robot.ExecChain(content, messageChan)
 	
 	// send response message
-	go t.handleUpdate(&MsgChan{
-		NormalMessageChan: messageChan,
-	})
+	go t.handleUpdate(messageChan)
 	
 }
 
 // executeLLM directly interact llm
 func (t *TelegramRobot) executeLLM(content string) {
-	messageChan := make(chan *param.MsgInfo)
-	// request DeepSeek API
-	go t.Robot.ExecLLM(content, messageChan, nil)
+	messageChan := &MsgChan{
+		NormalMessageChan: make(chan *param.MsgInfo),
+	}
+	go t.Robot.ExecLLM(content, messageChan)
 	
 	// send response message
-	go t.handleUpdate(&MsgChan{
-		NormalMessageChan: messageChan,
-	})
+	go t.handleUpdate(messageChan)
 	
 }
 

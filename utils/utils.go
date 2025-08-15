@@ -445,7 +445,7 @@ func RandomFilename(ext string) string {
 }
 
 func SilkToWav(silkBytes []byte) ([]byte, error) {
-	pcm, err := silk.DecodeSilkBuffToPcm(silkBytes, 24000)
+	pcm, err := silk.DecodeSilkBuffToPcm(silkBytes, 16000)
 	if err != nil {
 		return nil, err
 	}
@@ -458,8 +458,8 @@ func SilkToWav(silkBytes []byte) ([]byte, error) {
 	binary.Write(&buf, binary.LittleEndian, uint32(16)) // fmt chunk size
 	binary.Write(&buf, binary.LittleEndian, uint16(1))  // PCM
 	binary.Write(&buf, binary.LittleEndian, uint16(1))  // channels
-	binary.Write(&buf, binary.LittleEndian, uint32(24000))
-	binary.Write(&buf, binary.LittleEndian, uint32(24000*2))
+	binary.Write(&buf, binary.LittleEndian, uint32(16000))
+	binary.Write(&buf, binary.LittleEndian, uint32(16000*2))
 	binary.Write(&buf, binary.LittleEndian, uint16(2))
 	binary.Write(&buf, binary.LittleEndian, uint16(16))
 	binary.Write(&buf, binary.LittleEndian, []byte("data"))
