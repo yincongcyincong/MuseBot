@@ -58,6 +58,7 @@ func (p *HTTPServer) Start() {
 		
 		http.HandleFunc("/communicate", Communicate)
 		http.HandleFunc("/com/wechat", ComWechatComm)
+		http.HandleFunc("/wechat", WechatComm)
 		http.HandleFunc("/qq", QQBotComm)
 		
 		var err error

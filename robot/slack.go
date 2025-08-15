@@ -203,7 +203,7 @@ func (s *SlackRobot) checkValid() bool {
 	// group need at bot
 	atRobot := fmt.Sprintf("<@%s>", slackUserId)
 	if (strings.HasPrefix(s.Event.Channel, "C") || strings.HasPrefix(s.Event.Channel, "G")) &&
-		strings.Contains(s.Event.Text, atRobot) && *conf.BaseConfInfo.NeedATBOt {
+		strings.Contains(s.Event.Text, atRobot) {
 		return false
 	}
 	

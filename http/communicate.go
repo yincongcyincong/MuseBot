@@ -7,6 +7,7 @@ import (
 	
 	"github.com/ArtisanCloud/PowerWeChat/v3/src/kernel"
 	"github.com/ArtisanCloud/PowerWeChat/v3/src/kernel/contract"
+	"github.com/ArtisanCloud/PowerWeChat/v3/src/kernel/messages"
 	"github.com/tencent-connect/botgo/interaction/webhook"
 	"github.com/tencent-connect/botgo/token"
 	"github.com/yincongcyincong/MuseBot/conf"
@@ -79,6 +80,50 @@ func ComWechatComm(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			logger.Error("write response body fail", "err", err)
 		}
+		return
+	}
+	
+	w.WriteHeader(http.StatusInternalServerError)
+}
+
+func WechatComm(w http.ResponseWriter, r *http.Request) {
+	var rs *http.Response
+	var err error
+	var msgId string
+	if r.Method == http.MethodGet {
+		rs, err = robot.OfficialAccountApp.Server.VerifyURL(r)
+		if err != nil {
+			logger.Error("verify url fail", "err", err)
+		}
+	} else {
+		rs, err = robot.OfficialAccountApp.Server.Notify(r, func(event contract.EventInterface) interface{} {
+			c, isExec := robot.NewWechatRobot(event)
+			if isExec {
+				c.Robot.Exec()
+			}
+			_, msgId, _ = c.Robot.GetChatIdAndMsgIdAndUserID()
+			return messages.NewText(c.GetLLMContent())
+		})
+		if err != nil {
+			logger.Error("request notify fail", "err", err)
+		}
+	}
+	
+	if rs != nil {
+		defer rs.Body.Close()
+		data, err := io.ReadAll(rs.Body)
+		if err != nil {
+			logger.Error("read response body fail", "err", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		_, err = w.Write(data)
+		if err != nil {
+			logger.Error("write response body fail", "err", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		robot.WechatMsgSent(msgId)
 		return
 	}
 	

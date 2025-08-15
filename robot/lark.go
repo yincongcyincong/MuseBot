@@ -117,7 +117,7 @@ func (l *LarkRobot) checkValid() bool {
 		l.Robot.SendMsg(chatId, err.Error(), msgId, "", nil)
 		return false
 	}
-	if larkcore.StringValue(l.Message.Event.Message.ChatType) == "group" && *conf.BaseConfInfo.NeedATBOt {
+	if larkcore.StringValue(l.Message.Event.Message.ChatType) == "group" {
 		if !atBot {
 			logger.Warn("no at bot")
 			return false

@@ -41,6 +41,9 @@ type ComWechatRobot struct {
 	Command      string
 	Prompt       string
 	OriginPrompt string
+	TextMsg      *serverModel.MessageText
+	VoiceMsg     *serverModel.MessageVoice
+	ImageMsg     *serverModel.MessageImage
 }
 
 func StartComWechatRobot() {
@@ -68,24 +71,47 @@ func StartComWechatRobot() {
 func NewComWechatRobot(event contract.EventInterface) *ComWechatRobot {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute*5)
 	
-	return &ComWechatRobot{
+	c := &ComWechatRobot{
 		Event:  event,
 		App:    ComWechatApp,
 		Ctx:    ctx,
 		Cancel: cancel,
 	}
+	
+	switch event.GetMsgType() {
+	case models.CALLBACK_MSG_TYPE_TEXT:
+		msg := &serverModel.MessageText{}
+		err := event.ReadMessage(msg)
+		if err != nil {
+			logger.Error("ComWechatRobot", "err", err)
+			return nil
+		}
+		c.TextMsg = msg
+	case models.CALLBACK_MSG_TYPE_IMAGE:
+		msg := &serverModel.MessageImage{}
+		err := event.ReadMessage(msg)
+		if err != nil {
+			logger.Error("ComWechatRobot", "err", err)
+			return nil
+		}
+		c.ImageMsg = msg
+	case models.CALLBACK_MSG_TYPE_VOICE:
+		msg := &serverModel.MessageVoice{}
+		err := event.ReadMessage(msg)
+		if err != nil {
+			logger.Error("ComWechatRobot", "err", err)
+			return nil
+		}
+		c.VoiceMsg = msg
+	}
+	
+	return c
 }
 
 func (c *ComWechatRobot) checkValid() bool {
 	if c.Event.GetMsgType() == models.CALLBACK_MSG_TYPE_TEXT {
-		msg := serverModel.MessageText{}
-		err := c.Event.ReadMessage(&msg)
-		if err != nil {
-			logger.Error("ComWechatRobot", "err", err)
-			return false
-		}
-		c.OriginPrompt = msg.Content
-		c.Command, c.Prompt = ParseCommand(msg.Content)
+		c.OriginPrompt = c.TextMsg.Content
+		c.Command, c.Prompt = ParseCommand(c.TextMsg.Content)
 		logger.Info("ComWechatRobot msg", "Command", c.Command, "Prompt", c.Prompt)
 	}
 	
@@ -434,13 +460,8 @@ func (c *ComWechatRobot) GetContent(content string) (string, error) {
 	
 	switch msgType {
 	case models.CALLBACK_MSG_TYPE_IMAGE:
-		msg := serverModel.MessageImage{}
-		err := c.Event.ReadMessage(&msg)
-		if err != nil {
-			logger.Error("read message", "err", err)
-			return "", err
-		}
-		resp, err := c.App.Media.Get(c.Ctx, msg.MediaID)
+		
+		resp, err := c.App.Media.Get(c.Ctx, c.ImageMsg.MediaID)
 		if err != nil {
 			logger.Error("get media fail", "err", err)
 			return "", err
@@ -454,13 +475,7 @@ func (c *ComWechatRobot) GetContent(content string) (string, error) {
 		return c.Robot.GetImageContent(data)
 	
 	case models.CALLBACK_MSG_TYPE_VOICE:
-		msg := serverModel.MessageVoice{}
-		err := c.Event.ReadMessage(&msg)
-		if err != nil {
-			logger.Error("read message", "err", err)
-			return "", err
-		}
-		resp, err := c.App.Media.Get(c.Ctx, msg.MediaID)
+		resp, err := c.App.Media.Get(c.Ctx, c.VoiceMsg.MediaID)
 		if err != nil {
 			logger.Error("get media fail", "err", err)
 			return "", err
