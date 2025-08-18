@@ -42,17 +42,9 @@ Other usage see this [doc](https://github.com/yincongcyincong/MuseBot)
 
 ### Create a WeChat Official Account App
 
-1. Go to the [WeChat Official Account Platform](https://mp.weixin.qq.com/).
+1. Go to the [WeChat Official Account Platform](https://mp.weixin.qq.com/). set domain, token and EncodingAESKey    
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/ee252dfd-3a93-41d6-b7af-dcaba530f4fd" />
 
-2. Register a public account (建议使用测试号 sandbox)。
-
-3. Get the following values:
-
-    * **AppID**
-    * **AppSecret**
-    * **Token** (自行设置，在“开发 → 基本配置 → 服务器配置”中填写)
-
-4. Start your bot with these parameters.
 
 ---
 
@@ -62,12 +54,24 @@ Once connected, you can chat with the bot directly via **WeChat Official Account
 
 Supported commands:
 
-* **Normal chat**: Input text and get AI responses.
+* **Normal chat**: Input text and get AI responses.    
 * `/photo`: Generate an image.
-* `/video`: Generate a video.
-* `/balance`: Check the remaining quota of your DeepSeek Token.
-* `/state`: View the current chat state (including model info and system prompts).
-* `/clear`: Clear the current conversation context.
-* `/help`: Show command help info.
-* `/mode`: Show model info.
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/1d3ee270-98f1-437d-900f-8dba6b8c9bf0" />
 
+* `/video`: Generate a video.    
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/8332c9f0-08aa-4f72-a037-6c94c4a97f60" />
+
+* `/balance`: Check the remaining quota of your DeepSeek Token.    
+  <img width="400" alt="image" src="https://github.com/user-attachments/assets/1f51e14c-346c-4a6d-a57d-ae06a1b7f4a5" />
+  
+* `/state`: View the current chat state (including model info and system prompts).    
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/e7e2260e-d279-4660-962a-99dbc0e7d1f9" />
+
+* `/clear`: Clear the current conversation context.    
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/6c53c15c-7f2a-41ea-8e53-103c1e8c1e24" />
+
+* `/help`: Show command help info.    
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/d8cfe98c-b424-4e65-8a29-e95320d51e49" />
+
+* `/mode`: Show model info.    
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/85477f22-2592-41d0-971b-a41e1d80e54a" />
