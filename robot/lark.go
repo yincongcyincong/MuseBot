@@ -325,7 +325,7 @@ func (l *LarkRobot) sendVideo() {
 		prompt := strings.TrimSpace(l.Prompt)
 		if prompt == "" {
 			logger.Warn("prompt is empty")
-			l.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "photo_empty_content", nil), msgId, tgbotapi.ModeMarkdown, nil)
+			l.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "video_empty_content", nil), msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
 		
@@ -647,7 +647,7 @@ func (l *LarkRobot) GetMessageContent() (bool, error) {
 		l.Prompt = strings.ReplaceAll(l.Prompt, "@"+botShowName, "")
 		for _, at := range l.Message.Event.Message.Mentions {
 			if larkcore.StringValue(at.Name) == l.BotName {
-				botShowName = larkcore.StringValue(at.Key)
+				botShowName = larkcore.StringValue(at.Name)
 				break
 			}
 		}
@@ -704,4 +704,8 @@ func (l *LarkRobot) GetMessageContent() (bool, error) {
 
 func (l *LarkRobot) getPrompt() string {
 	return l.Prompt
+}
+
+func (l *LarkRobot) GetPerMsgLen() int {
+	return 2000
 }

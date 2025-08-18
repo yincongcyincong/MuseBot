@@ -328,7 +328,7 @@ func (d *DingRobot) sendVideo() {
 		prompt := strings.TrimSpace(d.Prompt)
 		if prompt == "" {
 			logger.Warn("prompt is empty")
-			d.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "photo_empty_content", nil), msgId, tgbotapi.ModeMarkdown, nil)
+			d.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "video_empty_content", nil), msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
 		
@@ -851,4 +851,8 @@ func (d *DingRobot) GetImageContent(accessToken string, c map[string]interface{}
 	}
 	
 	return nil, errors.New("download code not exist")
+}
+
+func (d *DingRobot) GetPerMsgLen() int {
+	return 2000
 }

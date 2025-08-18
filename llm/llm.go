@@ -34,9 +34,10 @@ type LLM struct {
 	Model       string
 	Token       int
 	
-	ChatId string
-	UserId string
-	MsgId  string
+	ChatId    string
+	UserId    string
+	MsgId     string
+	PerMsgLen int
 	
 	LLMClient LLMClient
 	
@@ -136,8 +137,12 @@ func NewLLM(opts ...Option) *LLM {
 
 func (l *LLM) SendMsg(msgInfoContent *param.MsgInfo, content string) *param.MsgInfo {
 	if l.MessageChan != nil {
+		if l.PerMsgLen == 0 {
+			l.PerMsgLen = OneMsgLen
+		}
+		
 		// exceed max one message length
-		if utils.Utf16len(msgInfoContent.Content) > OneMsgLen {
+		if utils.Utf16len(msgInfoContent.Content) > l.PerMsgLen {
 			msgInfoContent.Finished = true
 			l.MessageChan <- msgInfoContent
 			msgInfoContent = &param.MsgInfo{
@@ -179,6 +184,12 @@ func WithModel(model string) Option {
 func WithContent(content string) Option {
 	return func(p *LLM) {
 		p.Content = content
+	}
+}
+
+func WithPerMsgLen(perMsgLen int) Option {
+	return func(p *LLM) {
+		p.PerMsgLen = perMsgLen
 	}
 }
 

@@ -18,6 +18,10 @@ type LoggerInfo struct {
 	logger zerolog.Logger
 }
 
+type QQLoggerInfo struct {
+	logger zerolog.Logger
+}
+
 var (
 	LogLevel *string
 )
@@ -34,6 +38,7 @@ func init() {
 
 // Logger instance
 var Logger = new(LoggerInfo)
+var QQLogger = new(QQLoggerInfo)
 
 // InitLogger init logger
 func InitLogger() {
@@ -54,6 +59,7 @@ func InitLogger() {
 	Logger.logger = zerolog.New(zerolog.MultiLevelWriter(fileWriter, stdoutWriter)).With().
 		Timestamp().
 		Logger()
+	QQLogger.logger = Logger.logger
 	
 	log.SetOutput(Logger.logger)
 	log.SetFlags(0)
@@ -192,4 +198,43 @@ func Error(msg string, fields ...interface{}) {
 func Fatal(msg string, fields ...interface{}) {
 	callerFile := getCallerFile()
 	Logger.logger.Fatal().Fields(fields).Msg(callerFile + " " + msg)
+}
+
+func (l *QQLoggerInfo) Debug(v ...interface{}) {
+	callerFile := getCallerFile()
+	Logger.logger.Debug().Fields(v).Msg(callerFile)
+}
+func (l *QQLoggerInfo) Info(v ...interface{}) {
+	callerFile := getCallerFile()
+	Logger.logger.Info().Fields(v).Msg(callerFile)
+}
+func (l *QQLoggerInfo) Warn(v ...interface{}) {
+	callerFile := getCallerFile()
+	Logger.logger.Warn().Fields(v).Msg(callerFile)
+}
+func (l *QQLoggerInfo) Error(v ...interface{}) {
+	callerFile := getCallerFile()
+	Logger.logger.Error().Fields(v).Msg(callerFile)
+}
+
+func (l *QQLoggerInfo) Debugf(format string, v ...interface{}) {
+	callerFile := getCallerFile()
+	Logger.logger.Debug().Msg(callerFile + " " + fmt.Sprintf(format, v...))
+}
+func (l *QQLoggerInfo) Infof(format string, v ...interface{}) {
+	callerFile := getCallerFile()
+	Logger.logger.Info().Msg(callerFile + " " + fmt.Sprintf(format, v...))
+}
+func (l *QQLoggerInfo) Warnf(format string, v ...interface{}) {
+	callerFile := getCallerFile()
+	Logger.logger.Warn().Msg(callerFile + " " + fmt.Sprintf(format, v...))
+}
+func (l *QQLoggerInfo) Errorf(format string, v ...interface{}) {
+	callerFile := getCallerFile()
+	Logger.logger.Error().Msg(callerFile + " " + fmt.Sprintf(format, v...))
+}
+
+// Sync logger Sync calls to flush buffer
+func (l *QQLoggerInfo) Sync() error {
+	return nil
 }

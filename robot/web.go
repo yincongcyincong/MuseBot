@@ -447,7 +447,7 @@ func (web *Web) sendVideo() {
 		prompt := strings.TrimSpace(web.Prompt)
 		if prompt == "" {
 			logger.Warn("prompt is empty")
-			web.SendMsg(i18n.GetMessage(*conf.BaseConfInfo.Lang, "photo_empty_content", nil))
+			web.SendMsg(i18n.GetMessage(*conf.BaseConfInfo.Lang, "video_empty_content", nil))
 			return
 		}
 		var (

@@ -565,7 +565,7 @@ func (s *SlackRobot) sendVideo() {
 		prompt = utils.ReplaceCommand(prompt, "/video", s.BotName)
 		if prompt == "" {
 			logger.Warn("prompt is empty")
-			s.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "photo_empty_content", nil),
+			s.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "video_empty_content", nil),
 				replyToMessageID, tgbotapi.ModeMarkdown, nil)
 			return
 		}
@@ -724,4 +724,8 @@ func submissionHandler(callback *slack.InteractionCallback) {
 
 func (s *SlackRobot) getPrompt() string {
 	return s.Prompt
+}
+
+func (s *SlackRobot) GetPerMsgLen() int {
+	return 2000
 }

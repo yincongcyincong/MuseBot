@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 	
+	"github.com/ArtisanCloud/PowerWeChat/v3/src/kernel/messages"
 	"github.com/ArtisanCloud/PowerWeChat/v3/src/work/message/request"
 	"github.com/bwmarrin/discordgo"
 	godeepseek "github.com/cohesion-org/deepseek-go"
@@ -99,6 +100,8 @@ type Robot interface {
 	getPrompt() string
 	
 	GetContent(content string) (string, error)
+	
+	GetPerMsgLen() int
 }
 
 type botOption func(r *RobotInfo)
@@ -411,14 +414,26 @@ func (r *RobotInfo) SendMsg(chatId string, msgContent string, replyToMessageID s
 		}
 	case *WechatRobot:
 		w := r.Robot.(*WechatRobot)
-		_, msgId, _ := w.Robot.GetChatIdAndMsgIdAndUserID()
-		if msgId != "" {
-			WechatMsgMap.Store(msgId, &WechatMessage{
-				Msg:       msgContent,
-				Status:    msgFinished,
-				StartTime: time.Now(),
-			})
+		if *conf.BaseConfInfo.WechatActive {
+			resp, err := w.App.CustomerService.Message(w.Ctx, messages.NewText(msgContent)).
+				SetTo(w.Event.GetFromUserName()).From(w.Event.GetToUserName()).Send(w.Ctx)
+			if err != nil {
+				logger.Error("send image fail", "err", err, "resp", resp)
+				return ""
+			}
+		} else {
+			_, msgId, _ := w.Robot.GetChatIdAndMsgIdAndUserID()
+			_, ok := WechatMsgMap.Load(msgId)
+			if msgId != "" && !ok {
+				msgContent = strings.ReplaceAll(strings.ReplaceAll(msgContent, "http", ""), "https", "")
+				WechatMsgMap.Store(msgId, &WechatMessage{
+					Msg:       msgContent,
+					Status:    msgFinished,
+					StartTime: time.Now(),
+				})
+			}
 		}
+		
 	}
 	
 	return ""
@@ -476,7 +491,7 @@ func StartRobot() {
 		}()
 	}
 	
-	if *conf.BaseConfInfo.WechatAppID != "" && *conf.BaseConfInfo.WechatAppSecret != "" && *conf.BaseConfInfo.WechatEncodingAESKey != "" {
+	if *conf.BaseConfInfo.WechatAppID != "" && *conf.BaseConfInfo.WechatAppSecret != "" {
 		go func() {
 			StartWechatRobot()
 		}()
@@ -781,6 +796,7 @@ func (r *RobotInfo) ExecLLM(msgContent string, msgChan *MsgChan) {
 		llm.WithMessageChan(msgChan.NormalMessageChan),
 		llm.WithHTTPMsgChan(msgChan.StrMessageChan),
 		llm.WithContent(content),
+		llm.WithPerMsgLen(r.Robot.GetPerMsgLen()),
 	)
 	
 	err = llmClient.CallLLM()

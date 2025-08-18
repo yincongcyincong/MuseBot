@@ -864,3 +864,7 @@ func (t *TelegramRobot) sendForceReply(agentType string) func() {
 		}
 	}
 }
+
+func (t *TelegramRobot) GetPerMsgLen() int {
+	return 3896
+}
