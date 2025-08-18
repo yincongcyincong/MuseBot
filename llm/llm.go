@@ -12,7 +12,6 @@ import (
 	"github.com/yincongcyincong/MuseBot/conf"
 	"github.com/yincongcyincong/MuseBot/logger"
 	"github.com/yincongcyincong/MuseBot/param"
-	"github.com/yincongcyincong/MuseBot/utils"
 	"google.golang.org/genai"
 )
 
@@ -142,7 +141,7 @@ func (l *LLM) SendMsg(msgInfoContent *param.MsgInfo, content string) *param.MsgI
 		}
 		
 		// exceed max one message length
-		if utils.Utf16len(msgInfoContent.Content) > l.PerMsgLen {
+		if len([]byte(msgInfoContent.Content)) > l.PerMsgLen {
 			msgInfoContent.Finished = true
 			l.MessageChan <- msgInfoContent
 			msgInfoContent = &param.MsgInfo{
