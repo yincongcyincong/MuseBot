@@ -58,6 +58,7 @@ type QQRobot struct {
 
 func StartQQRobot(ctx context.Context) {
 	var err error
+	botgo.SetLogger(logger.QQLogger)
 	QQTokenSource = token.NewQQBotTokenSource(
 		&token.QQBotCredentials{
 			AppID:     *conf.BaseConfInfo.QQAppID,
@@ -68,7 +69,7 @@ func StartQQRobot(ctx context.Context) {
 		return
 	}
 	
-	QQApi = botgo.NewOpenAPI(*conf.BaseConfInfo.QQAppID, QQTokenSource).WithTimeout(5 * time.Second)
+	QQApi = botgo.NewOpenAPI(*conf.BaseConfInfo.QQAppID, QQTokenSource).WithTimeout(5 * time.Second).SetDebug(false)
 	QQRobotInfo, err = QQApi.Me(ctx)
 	if err != nil {
 		logger.Error("get me error", "err", err)
@@ -346,7 +347,7 @@ func (q *QQRobot) sendVideo() {
 		prompt := strings.TrimSpace(q.Prompt)
 		if prompt == "" {
 			logger.Warn("prompt is empty")
-			q.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "photo_empty_content", nil), msgId, tgbotapi.ModeMarkdown, nil)
+			q.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "video_empty_content", nil), msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
 		
@@ -738,4 +739,8 @@ func (q *QQRobot) PostStreamMessage(state, idx int32, id, content string) (strin
 	
 	return "", errors.New("don't get message")
 	
+}
+
+func (q *QQRobot) GetPerMsgLen() int {
+	return 2000
 }

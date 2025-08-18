@@ -101,13 +101,18 @@ func WechatComm(w http.ResponseWriter, r *http.Request) {
 			if isExec {
 				c.Robot.Exec()
 			}
-			_, msgId, _ = c.Robot.GetChatIdAndMsgIdAndUserID()
-			content := c.GetLLMContent()
-			if content == "" {
-				w.WriteHeader(http.StatusInternalServerError)
-				return nil
+			
+			if !*conf.BaseConfInfo.WechatActive {
+				_, msgId, _ = c.Robot.GetChatIdAndMsgIdAndUserID()
+				content := c.GetLLMContent()
+				if content == "" {
+					w.WriteHeader(http.StatusInternalServerError)
+					return nil
+				}
+				return messages.NewText(content.(string))
 			}
-			return messages.NewText(content)
+			
+			return kernel.SUCCESS_EMPTY_RESPONSE
 		})
 		if err != nil {
 			logger.Error("request notify fail", "err", err)

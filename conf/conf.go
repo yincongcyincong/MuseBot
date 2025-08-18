@@ -31,6 +31,7 @@ type BaseConf struct {
 	WechatAppSecret         *string `json:"wechat_app_secret"`
 	WechatToken             *string `json:"wechat_token"`
 	WechatEncodingAESKey    *string `json:"wechat_encoding_aes_key"`
+	WechatActive            *bool   `json:"wechat_active"`
 	QQAppID                 *string `json:"qq_app_id"`
 	QQAppSecret             *string `json:"qq_app_secret"`
 	
@@ -91,6 +92,7 @@ func InitConf() {
 	BaseConfInfo.WechatAppSecret = flag.String("wechat_app_secret", "", "Wechat app secret")
 	BaseConfInfo.WechatEncodingAESKey = flag.String("wechat_encoding_aes_key", "", "Wechat encoding aes key")
 	BaseConfInfo.WechatToken = flag.String("wechat_token", "", "Wechat token")
+	BaseConfInfo.WechatActive = flag.Bool("wechat_active", false, "Wechat active")
 	BaseConfInfo.QQAppID = flag.String("qq_app_id", "", "QQ app id")
 	BaseConfInfo.QQAppSecret = flag.String("qq_app_secret", "", "QQ app secret")
 	
@@ -193,6 +195,10 @@ func InitConf() {
 	
 	if os.Getenv("WECHAT_ENCODING_AES_KEY") != "" {
 		*BaseConfInfo.WechatEncodingAESKey = os.Getenv("WECHAT_ENCODING_AES_KEY")
+	}
+	
+	if os.Getenv("WECHAT_ACTIVE") != "" {
+		*BaseConfInfo.WechatActive = os.Getenv("WECHAT_ACTIVE") == "true"
 	}
 	
 	if os.Getenv("COM_WECHAT_ENCODING_AES_KEY") != "" {
@@ -366,6 +372,7 @@ func InitConf() {
 	logger.Info("CONF", "WechatToken", *BaseConfInfo.WechatToken)
 	logger.Info("CONF", "WechatAppSecret", *BaseConfInfo.WechatAppSecret)
 	logger.Info("CONF", "WechatAppID", *BaseConfInfo.WechatAppID)
+	logger.Info("CONF", "WechatActive", *BaseConfInfo.WechatActive)
 	logger.Info("CONF", "WechatEncodingAESKey", *BaseConfInfo.WechatEncodingAESKey)
 	logger.Info("CONF", "QQAppID", *BaseConfInfo.QQAppID)
 	logger.Info("CONF", "QQAppSecret", *BaseConfInfo.QQAppSecret)

@@ -492,3 +492,20 @@ func AmrToOgg(amrData []byte) ([]byte, error) {
 	
 	return out.Bytes(), nil
 }
+
+func TruncateText(text string, maxBytes int) string {
+	data := []byte(text)
+	if len(data) <= maxBytes {
+		return text
+	}
+	
+	end := maxBytes
+	for end > 0 && (data[end]&0xC0) == 0x80 {
+		end--
+	}
+	if end == 0 {
+		end = maxBytes
+	}
+	
+	return string(data[:end])
+}

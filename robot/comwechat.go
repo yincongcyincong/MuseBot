@@ -508,3 +508,7 @@ func (c *ComWechatRobot) GetContent(content string) (string, error) {
 func (c *ComWechatRobot) getPrompt() string {
 	return c.Prompt
 }
+
+func (c *ComWechatRobot) GetPerMsgLen() int {
+	return 2000
+}

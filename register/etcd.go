@@ -68,7 +68,7 @@ func StartEtcdRegister() {
 				continue
 			}
 			
-			logger.Info("service registered:", serviceKey)
+			logger.Info("service registered", "serviceKey", serviceKey)
 			
 			keepAliveOK := true
 			for ka := range ch {

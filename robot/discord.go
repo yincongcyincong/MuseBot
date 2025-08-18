@@ -651,3 +651,7 @@ func (d *DiscordRobot) sendHelpConfigurationOptions() {
 func (d *DiscordRobot) getPrompt() string {
 	return d.Prompt
 }
+
+func (d *DiscordRobot) GetPerMsgLen() int {
+	return 2000
+}

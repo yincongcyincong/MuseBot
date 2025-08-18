@@ -15,7 +15,6 @@ import (
 	"github.com/ArtisanCloud/PowerWeChat/v3/src/kernel/contract"
 	"github.com/ArtisanCloud/PowerWeChat/v3/src/kernel/messages"
 	"github.com/ArtisanCloud/PowerWeChat/v3/src/kernel/models"
-	"github.com/ArtisanCloud/PowerWeChat/v3/src/kernel/power"
 	"github.com/ArtisanCloud/PowerWeChat/v3/src/officialAccount"
 	serverModel "github.com/ArtisanCloud/PowerWeChat/v3/src/work/server/handlers/models"
 	godeepseek "github.com/cohesion-org/deepseek-go"
@@ -41,7 +40,7 @@ const (
 )
 
 type WechatMessage struct {
-	Msg       string
+	Msg       interface{}
 	Status    int
 	StartTime time.Time
 }
@@ -69,17 +68,16 @@ func StartWechatRobot() {
 		Token:  *conf.BaseConfInfo.WechatToken,
 		AESKey: *conf.BaseConfInfo.WechatEncodingAESKey,
 		Log: officialAccount.Log{
-			Level:  "debug",
+			Level:  "info",
 			File:   "./wechat/info.log",
 			Error:  "./wechat/info.log",
 			Stdout: true,
 		},
-		
-		HttpDebug: true,
+		HttpDebug: false,
 		Debug:     false,
 	})
 	if err != nil {
-		logger.Error("ComWechatApp init error: ", err)
+		logger.Error("Wechat init error: ", err)
 		return
 	}
 	
@@ -322,16 +320,23 @@ func (w *WechatRobot) sendImg() {
 		err = os.WriteFile(fileName, imageContent, 0666)
 		if err != nil {
 			logger.Error("save image fail", "err", err)
+			w.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
 		
-		mediaID, err := w.App.Media.UploadImage(w.Ctx, fileName)
+		mediaResp, err := w.App.Media.UploadImage(w.Ctx, fileName)
 		if err != nil {
 			logger.Error("upload image fail", "err", err)
+			w.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
-		
-		messages.NewImage(mediaID.MediaID, &power.HashMap{})
+		resp, err := w.App.CustomerService.Message(w.Ctx, messages.NewMedia(mediaResp.MediaID, "image", nil)).
+			SetTo(w.Event.GetFromUserName()).SetBy(w.Event.GetToUserName()).Send(w.Ctx)
+		if err != nil {
+			logger.Error("send image fail", "err", err, "resp", resp)
+			w.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
+			return
+		}
 		
 		// save data record
 		db.InsertRecordInfo(&db.Record{
@@ -354,7 +359,7 @@ func (w *WechatRobot) sendVideo() {
 		prompt := strings.TrimSpace(w.Prompt)
 		if prompt == "" {
 			logger.Warn("prompt is empty")
-			w.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "photo_empty_content", nil), msgId, tgbotapi.ModeMarkdown, nil)
+			w.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "video_empty_content", nil), msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
 		
@@ -406,13 +411,19 @@ func (w *WechatRobot) sendVideo() {
 			logger.Error("save image fail", "err", err)
 			return
 		}
-		mediaID, err := w.App.Media.UploadVideo(w.Ctx, fileName)
+		mediaResp, err := w.App.Media.UploadVideo(w.Ctx, fileName)
 		if err != nil {
 			logger.Error("upload image fail", "err", err)
 			return
 		}
 		
-		messages.NewVideo(mediaID.MediaID, &power.HashMap{})
+		resp, err := w.App.CustomerService.Message(w.Ctx, messages.NewMedia(mediaResp.MediaID, "video", nil)).
+			SetTo(w.Event.GetFromUserName()).Send(w.Ctx)
+		if err != nil {
+			logger.Error("send image fail", "err", err, "resp", resp)
+			w.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
+			return
+		}
 		
 		db.InsertRecordInfo(&db.Record{
 			UserId:     userId,
@@ -460,6 +471,9 @@ func (w *WechatRobot) handleUpdate(messageChan *MsgChan) {
 	chatId, messageId, _ := w.Robot.GetChatIdAndMsgIdAndUserID()
 	
 	for msg = range messageChan.NormalMessageChan {
+		if msg.Finished {
+			w.Robot.SendMsg(chatId, msg.Content, messageId, "", nil)
+		}
 	}
 	
 	if msg == nil || len(msg.Content) == 0 {
@@ -549,13 +563,13 @@ func (w *WechatRobot) getPrompt() string {
 	return w.Prompt
 }
 
-func (w *WechatRobot) GetLLMContent() string {
+func (w *WechatRobot) GetLLMContent() interface{} {
 	_, msgId, _ := w.Robot.GetChatIdAndMsgIdAndUserID()
 	for i := 0; i < 15; i++ {
 		if msgInfo, ok := WechatMsgMap.Load(msgId); ok {
 			wechatMsg := msgInfo.(*WechatMessage)
 			if wechatMsg.Status != msgHandling {
-				return strings.ReplaceAll(strings.ReplaceAll(wechatMsg.Msg, "http", ""), "https", "")
+				return wechatMsg.Msg
 			}
 		}
 		time.Sleep(1 * time.Second)
@@ -570,4 +584,8 @@ func WechatMsgSent(msgId string) {
 		wechatMsg.Status = msgSent
 		WechatMsgMap.Store(msgId, wechatMsg)
 	}
+}
+
+func (w *WechatRobot) GetPerMsgLen() int {
+	return 1800
 }
