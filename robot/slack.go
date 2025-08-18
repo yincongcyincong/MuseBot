@@ -513,7 +513,7 @@ func (s *SlackRobot) sendImg() {
 			return
 		}
 		
-		if len(imageContent) == 0 {
+		if len(imageContent) == 0 && strings.Contains(s.Command, "edit_photo") {
 			imageContent, err = utils.DownloadFile(imageUrl)
 			if err != nil {
 				logger.Warn("download image fail", "err", err)

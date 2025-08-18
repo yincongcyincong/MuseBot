@@ -274,7 +274,7 @@ func (w *WechatRobot) sendImg() {
 		
 		var lastImageContent []byte
 		var err error
-		if len(lastImageContent) == 0 {
+		if len(lastImageContent) == 0 && strings.Contains(w.Command, "edit_photo") {
 			lastImageContent, err = w.Robot.GetLastImageContent()
 			if err != nil {
 				logger.Warn("get last image record fail", "err", err)

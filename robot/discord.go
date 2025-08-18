@@ -26,8 +26,9 @@ type DiscordRobot struct {
 	Msg     *discordgo.MessageCreate
 	Inter   *discordgo.InteractionCreate
 	
-	Robot  *RobotInfo
-	Prompt string
+	Robot   *RobotInfo
+	Prompt  string
+	Command string
 }
 
 func StartDiscordRobot(ctx context.Context) {
@@ -354,6 +355,7 @@ func onInteractionCreate(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		d.changeMode(i.MessageComponentData().CustomID)
 	}
 	
+	d.Command = cmd
 	d.Robot.ExecCmd(cmd, d.sendChatMessage)
 }
 
@@ -495,7 +497,7 @@ func (d *DiscordRobot) sendImg() {
 			}
 		}
 		
-		if len(lastImageContent) == 0 {
+		if len(lastImageContent) == 0 && strings.Contains(d.Command, "edit_photo") {
 			lastImageContent, err = d.Robot.GetLastImageContent()
 			if err != nil {
 				logger.Warn("get last image record fail", "err", err)
