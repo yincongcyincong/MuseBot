@@ -1,4 +1,4 @@
-# ✨ Slack DeepSeek Bot
+# ✨ Slack Bot
 
 This project is a cross-platform chatbot powered by the **LLM**, supporting **Slack**. It comes with a variety of built-in commands, including image and video generation, balance checking, conversation clearing, and more.
 
