@@ -263,7 +263,7 @@ func (q *QQRobot) sendImg() {
 			}
 		}
 		
-		if len(lastImageContent) == 0 {
+		if len(lastImageContent) == 0 && strings.Contains(q.Command, "edit_photo") {
 			lastImageContent, err = q.Robot.GetLastImageContent()
 			if err != nil {
 				logger.Warn("get last image record fail", "err", err)

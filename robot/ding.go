@@ -241,7 +241,7 @@ func (d *DingRobot) sendImg() {
 			}
 		}
 		
-		if len(lastImageContent) == 0 {
+		if len(lastImageContent) == 0 && strings.Contains(d.Command, "edit_photo") {
 			lastImageContent, err = d.Robot.GetLastImageContent()
 			if err != nil {
 				logger.Warn("get last image record fail", "err", err)

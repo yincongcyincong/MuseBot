@@ -361,7 +361,7 @@ func (web *Web) sendImg() {
 		
 		lastImageContent := web.BodyData
 		var err error
-		if len(lastImageContent) == 0 {
+		if len(lastImageContent) == 0 && strings.Contains(web.Command, "edit_photo") {
 			lastImageContent, err = web.Robot.GetLastImageContent()
 			if err != nil {
 				logger.Warn("get last image record fail", "err", err)

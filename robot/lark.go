@@ -221,7 +221,7 @@ func (l *LarkRobot) sendImg() {
 		
 		lastImageContent := l.ImageContent
 		var err error
-		if len(lastImageContent) == 0 {
+		if len(lastImageContent) == 0 && strings.Contains(l.Command, "edit_photo") {
 			lastImageContent, err = l.Robot.GetLastImageContent()
 			if err != nil {
 				logger.Warn("get last image record fail", "err", err)

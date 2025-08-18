@@ -640,7 +640,7 @@ func (t *TelegramRobot) sendImg() {
 		
 		var err error
 		lastImageContent := t.GetPhotoContent()
-		if len(lastImageContent) == 0 {
+		if len(lastImageContent) == 0 && strings.Contains(t.Cmd, "edit_photo") {
 			lastImageContent, err = t.Robot.GetLastImageContent()
 			if err != nil {
 				logger.Warn("get last image record fail", "err", err)
