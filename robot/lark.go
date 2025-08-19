@@ -140,7 +140,7 @@ func (l *LarkRobot) requestLLMAndResp(content string) {
 
 func (l *LarkRobot) sendHelpConfigurationOptions() {
 	chatId, msgId, _ := l.Robot.GetChatIdAndMsgIdAndUserID()
-	l.Robot.SendMsg(chatId, helpText, msgId, tgbotapi.ModeMarkdown, nil)
+	l.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "help_text", nil), msgId, tgbotapi.ModeMarkdown, nil)
 }
 
 func (l *LarkRobot) sendModeConfigurationOptions() {
@@ -707,5 +707,5 @@ func (l *LarkRobot) getPrompt() string {
 }
 
 func (l *LarkRobot) GetPerMsgLen() int {
-	return 2000
+	return 1800
 }

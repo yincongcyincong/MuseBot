@@ -208,7 +208,9 @@ func InitEtcdRegister() {
 					LastCheck: time.Now(),
 				})
 			case clientv3.EventTypeDelete:
-				BotMap.Delete(key)
+				parts := strings.Split(key, "/")
+				name := parts[len(parts)-1]
+				BotMap.Delete(name)
 			}
 		}
 	}

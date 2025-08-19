@@ -107,7 +107,7 @@ func StartSlackRobot(ctx context.Context) {
 		}
 		
 	}()
-	logger.Info("SlackBot Info", "username", slackUserId)
+	logger.Info("SlackBot Info", "username", authResp.User)
 	err = socketClient.RunContext(ctx)
 	if err != nil {
 		logger.Error("SlackBot Run failed", "err", err)
@@ -727,5 +727,5 @@ func (s *SlackRobot) getPrompt() string {
 }
 
 func (s *SlackRobot) GetPerMsgLen() int {
-	return 2000
+	return 1800
 }

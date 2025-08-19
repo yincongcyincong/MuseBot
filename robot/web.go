@@ -88,11 +88,11 @@ func (web *Web) Exec() {
 }
 
 func (web *Web) sendHelpConfigurationOptions() {
-	web.SendMsg(helpText)
+	web.SendMsg(i18n.GetMessage(*conf.BaseConfInfo.Lang, "help_text", nil))
 	db.InsertRecordInfo(&db.Record{
 		UserId:     web.RealUserId,
 		Question:   web.OriginalPrompt,
-		Answer:     helpText,
+		Answer:     i18n.GetMessage(*conf.BaseConfInfo.Lang, "help_text", nil),
 		Token:      0, // llm already calculate it
 		IsDeleted:  0,
 		RecordType: param.WEBRecordType,

@@ -143,7 +143,7 @@ func (d *DingRobot) requestLLMAndResp(content string) {
 
 func (d *DingRobot) sendHelpConfigurationOptions() {
 	chatId, msgId, _ := d.Robot.GetChatIdAndMsgIdAndUserID()
-	d.Robot.SendMsg(chatId, helpText, msgId, tgbotapi.ModeMarkdown, nil)
+	d.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "help_text", nil), msgId, tgbotapi.ModeMarkdown, nil)
 }
 
 func (d *DingRobot) sendModeConfigurationOptions() {
@@ -854,5 +854,5 @@ func (d *DingRobot) GetImageContent(accessToken string, c map[string]interface{}
 }
 
 func (d *DingRobot) GetPerMsgLen() int {
-	return 2000
+	return 1800
 }

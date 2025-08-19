@@ -32,35 +32,6 @@ import (
 	"github.com/yincongcyincong/langchaingo/vectorstores"
 )
 
-var (
-	helpText = `
-Available Commands:
-
-/chat   - Start a normal chat session
-
-/mode   - Set the LLM mode
-
-/balance - Check your current balance (tokens or credits)
-
-/state  - View your current session state and settings
-
-/clear  - Clear all conversation history
-
-/retry  - Retry your last question
-
-/photo  - Create a Image base on your prompt or your Image
-
-/video  - Generate a video based on your prompt
-
-/task   - Let multiple agents collaborate to complete a task
-
-/mcp    - Use Multi-Agent Control Panel for complex task planning
-
-/help   - Show this help message
-
-`
-)
-
 type MsgChan struct {
 	NormalMessageChan chan *param.MsgInfo
 	StrMessageChan    chan string
@@ -706,7 +677,7 @@ func (r *RobotInfo) ExecCmd(cmd string, defaultFunc func()) {
 		r.Robot.sendChatMessage()
 	case "mode", "/mode":
 		r.Robot.sendModeConfigurationOptions()
-	case "photo", "/photo":
+	case "photo", "/photo", "edit_photo", "/edit_photo":
 		r.Robot.sendImg()
 	case "video", "/video":
 		r.Robot.sendVideo()

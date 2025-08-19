@@ -65,7 +65,12 @@ func StartComWechatRobot() {
 		return
 	}
 	
-	logger.Info("ComWechatbot", "username", ComWechatApp.ID)
+	resp, err := ComWechatApp.Agent.Get(context.Background(), utils.ParseInt(*conf.BaseConfInfo.ComWechatAgentID))
+	if err != nil {
+		logger.Error("ComWechatApp get agent error: ", err)
+		return
+	}
+	logger.Info("ComWechatbot", "username", resp.Name)
 }
 
 func NewComWechatRobot(event contract.EventInterface) *ComWechatRobot {
@@ -138,7 +143,8 @@ func (c *ComWechatRobot) requestLLMAndResp(content string) {
 
 func (c *ComWechatRobot) sendHelpConfigurationOptions() {
 	chatId, msgId, _ := c.Robot.GetChatIdAndMsgIdAndUserID()
-	c.Robot.SendMsg(chatId, helpText, msgId, tgbotapi.ModeMarkdown, nil)
+	c.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "help_text", nil),
+		msgId, tgbotapi.ModeMarkdown, nil)
 }
 
 func (c *ComWechatRobot) sendModeConfigurationOptions() {
@@ -510,5 +516,5 @@ func (c *ComWechatRobot) getPrompt() string {
 }
 
 func (c *ComWechatRobot) GetPerMsgLen() int {
-	return 2000
+	return 1800
 }

@@ -647,7 +647,7 @@ func (d *DiscordRobot) sendVideo() {
 
 func (d *DiscordRobot) sendHelpConfigurationOptions() {
 	chatId, replyToMessageID, _ := d.Robot.GetChatIdAndMsgIdAndUserID()
-	d.Robot.SendMsg(chatId, helpText, replyToMessageID, tgbotapi.ModeMarkdown, nil)
+	d.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "help_text", nil), replyToMessageID, tgbotapi.ModeMarkdown, nil)
 }
 
 func (d *DiscordRobot) getPrompt() string {
@@ -655,5 +655,5 @@ func (d *DiscordRobot) getPrompt() string {
 }
 
 func (d *DiscordRobot) GetPerMsgLen() int {
-	return 2000
+	return 1800
 }
