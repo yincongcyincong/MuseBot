@@ -10,6 +10,11 @@ AI-powered responses. The bot supports **openai** **deepseek** **gemini** **open
 more natural and dynamic.
 [中文文档](https://github.com/yincongcyincong/MuseBot/blob/main/README_ZH.md)
 
+## Usage Video
+deepseek: https://www.youtube.com/watch?v=kPtNdLjKVn0   
+gemini: https://www.youtube.com/watch?v=7mV9RYvdE6I    
+chatgpt: https://www.youtube.com/watch?v=G_DZYMvd5Ug    
+
 ## 🚀 Features
 
 - 🤖 **AI Responses**: Uses DeepSeek API for chatbot replies.

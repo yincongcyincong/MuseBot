@@ -11,6 +11,14 @@ telegram群: https://t.me/+WtaMcDpaMOlhZTE1, 或者尝试一下GWSbot。
 
 ---
 
+## 🌞 视频
+deepseek： https://www.bilibili.com/video/BV1CB8kzHEJi/    
+gemini： https://www.bilibili.com/video/BV1D4htz4Ekv/    
+chatgpt: https://www.bilibili.com/video/BV1RutxzJEGY/    
+豆包：https://www.bilibili.com/video/BV1QDbEzwE43/    
+怎么使用mcp: https://www.bilibili.com/video/BV1JbtJzVEJd/
+
+
 ## 🚀 功能特性
 
 - 🤖 **AI 回复**：使用 DeepSeek API 提供聊天机器人回复。
@@ -40,6 +48,9 @@ telegram群: https://t.me/+WtaMcDpaMOlhZTE1, 或者尝试一下GWSbot。
 | 🟣 **Lark（飞书）**    |  ✅   | 支持 Lark 长连接与消息处理（基于 larksuite SDK，支持图片/音频下载与消息更新）               | [文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/lark_ZH.md)       |
 | 🆙 **钉钉**          |  ✅   | 支持钉钉长链接服务                                                       | [文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/dingding_ZH.md)   |
 | ⚡️ **Work WeChat** |  ✅   | 支持企业微信触发大模型                                                     | [文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/com_wechat_ZH.md) |
+| ⚡️ **QQ** |  ✅   | 支持QQ触发大模型                                                     | [文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/qq_ZH.md) |
+| ⚡️ **WeChat** |  ✅   | 支持微信触发大模型                                                     | [文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/wechat_ZH.md) |
+
 
 ## 支持大模型
 
