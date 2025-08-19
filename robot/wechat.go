@@ -196,7 +196,7 @@ func (w *WechatRobot) requestLLMAndResp(content string) {
 
 func (w *WechatRobot) sendHelpConfigurationOptions() {
 	chatId, msgId, _ := w.Robot.GetChatIdAndMsgIdAndUserID()
-	w.Robot.SendMsg(chatId, helpText, msgId, tgbotapi.ModeMarkdown, nil)
+	w.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "help_text", nil), msgId, tgbotapi.ModeMarkdown, nil)
 }
 
 func (w *WechatRobot) sendModeConfigurationOptions() {

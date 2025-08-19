@@ -175,7 +175,7 @@ func (q *QQRobot) requestLLMAndResp(content string) {
 
 func (q *QQRobot) sendHelpConfigurationOptions() {
 	chatId, msgId, _ := q.Robot.GetChatIdAndMsgIdAndUserID()
-	q.Robot.SendMsg(chatId, helpText, msgId, tgbotapi.ModeMarkdown, nil)
+	q.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "help_text", nil), msgId, tgbotapi.ModeMarkdown, nil)
 }
 
 func (q *QQRobot) sendModeConfigurationOptions() {
@@ -742,5 +742,5 @@ func (q *QQRobot) PostStreamMessage(state, idx int32, id, content string) (strin
 }
 
 func (q *QQRobot) GetPerMsgLen() int {
-	return 2000
+	return 1800
 }
