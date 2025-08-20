@@ -79,7 +79,7 @@ func TestGenerateGeminiImage_EmptyPrompt(t *testing.T) {
 }
 
 func TestGetGeminiImageContent_EmptyData(t *testing.T) {
-	text, _, err := GetGeminiImageContent([]byte{}, "")
+	text, _, err := GetGeminiImageContent([]byte("123"), "")
 	assert.Error(t, err)
 	assert.Empty(t, text)
 }

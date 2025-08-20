@@ -1,7 +1,9 @@
 ## group
 
 telegram-group: https://t.me/+WtaMcDpaMOlhZTE1 , or you can have a try robot `GWSbot`.
-every body have **3000** token to try this bot, please give me a star!
+every body have **10000** token to try this bot, please give me a star!
+
+QQ群：1031411708
 
 # MuseBot
 
