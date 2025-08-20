@@ -1,7 +1,9 @@
 ## group
 
 telegram群: https://t.me/+WtaMcDpaMOlhZTE1, 或者尝试一下GWSbot。
-每个人有 **3000** token 去试用robot, 点个star吧!
+每个人有 **10000** token 去试用robot, 点个star吧!
+
+QQ群：1031411708
 
 # MuseBot
 
