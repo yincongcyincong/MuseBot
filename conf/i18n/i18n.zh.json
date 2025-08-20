@@ -5,8 +5,9 @@
   "commands.mode.description": "选择 llm 模式，包括聊天模式、编程模式、推理模式。",
   "commands.balance.description": "显示 DeepSeek 余额。",
   "commands.state.description": "计算单个用户的 Token 使用情况。",
-  "commands.photo.description": "使用火山引擎图片模型生成图片。",
-  "commands.video.description": "使用火山引擎视频模型生成视频。",
+  "commands.photo.description": "使用图片模型生成图片。",
+  "commands.edit_photo.description": "使用图片模型修改图片。",
+  "commands.video.description": "使用视频模型生成视频。",
   "commands.chat.description": "允许机器人通过 /chat 命令在群组中聊天，无需将机器人设为群组管理员。",
   "commands.task.description": "多个智能体互相协作，获取最终结果。",
   "commands.mcp.description": "基于 MCP 服务器，多个智能体互相协作，获取最终结果。",
@@ -29,6 +30,7 @@
   "chat_empty_content": "请输入聊天prompt",
   "video_empty_content": "请输入视频prompt",
   "photo_empty_content": "请输入图片prompt",
+  "edit_photo_empty_content": "请输入修改图片prompt",
   "task_empty_content": "请输入任务prompt",
   "mcp_empty_content": "请输入 mcp prompt",
   "mode_change_fail": "此mode仅自部署deepseek可用",
@@ -36,5 +38,7 @@
   "loop_task_prompt": "**主要任务：** {{.user_task}}\n\n**已完成的子任务：**\n{{range $task, $res := .complete_tasks}}\n\t- 子任务：{{$task}}\n{{end}}\n\n**当前任务计划：**\n{{.last_plan}}\n\n请根据以上信息创建或更新任务计划。如果任务已完成，请返回一个空的计划列表。\n\n**注意：**\n- 仔细分析上次完成的子任务的完成状态，以确定下一个任务计划。\n- 适当且合理地补充细节，以确保工作代理或工具拥有足够的执行任务的信息。\n- 扩展后的描述不得偏离子任务的主要目标。",
   "summary_task_prompt": "---\n\n**主要任务：**\n{{.user_task}}\n\n根据问题，用纯文本格式总结搜索结果和其他参考信息中的要点。\n\n主要任务：\n{{.user_task}}",
   "mcp_prompt": "请选择您的角色来处理以下任务：\n\n**角色选择：专业深度研究员**\n\n作为一名**专业的深度研究员**，您的核心职责是利用一支由专业智能代理组成的团队，为“输出专家”收集充分且必要的信息，从而规划和执行任务。\n\n**您的具体职责包括：**\n\n1.  **分析任务需求**：深入分析主要任务，明确输出专家为生成最终可交付成果（如文档、电子表格、图像、音频等）所需的所有数据和信息。\n2. \t**挑选代理进行工作**：根据代理的相关描述，选择一个最合适的代理进行工作。\n3.  **直接处理简单任务**：如果任务简单且可以直接处理（例如，编写代码、创意写作、基本数据分析或预测），您可以立即使用 `llm_tool`，无需进一步的规划。\n\n**可用的工作代理包括：**\n{{range $i, $tool := .assign_param}}- **代理名称**：{{$tool.tool_name}}\n - **代理描述**：{{$tool.tool_desc}}\n{{end}}\n\n**当前主要任务：**\n{{.user_task}}\n\n**您的输出将采用以下JSON格式：**\n\n```json\n{\n  \"agent\": \"任务所需的代理名称\"\n}\n```",
-  "help_text": "可用命令：\n\n/chat - 开始一个常规聊天会话\n\n/mode - 设置大语言模型模式\n\n/balance - 查看您当前的余额（代币或积分）\n\n/state - 查看您当前的会话状态和设置\n\n/clear - 清除所有对话历史记录\n\n/retry - 重新尝试您的上一个问题\n\n/photo - 根据您的提示或图片创建一张图像\n\n/video - 根据您的提示生成一段视频\n\n/task - 让多个代理协作完成一个任务\n\n/mcp - 使用多代理控制面板进行复杂的任务规划\n\n/help - 显示此帮助信息"
+  "help_text": "可用命令：\n\n/chat - 开始一个常规聊天会话\n\n/mode - 设置大语言模型模式\n\n/balance - 查看您当前的余额（代币或积分）\n\n/state - 查看您当前的会话状态和设置\n\n/clear - 清除所有对话历史记录\n\n/retry - 重新尝试您的上一个问题\n\n/photo - 根据您的提示或图片创建一张图像\n\n/edit_photo - 修改发送的图片或者上一张机器人生成的图片\n\n/video - 根据您的提示生成一段视频\n\n/task - 让多个代理协作完成一个任务\n\n/mcp - 使用多代理控制面板进行复杂的任务规划\n\n/help - 显示此帮助信息",
+  "photo_handle_prompt": "给我找出图片里面的全部文字，仅返回文字。",
+  "photo_export_prompt": "我对这张图片有一个疑问：\n\n {{.question}} \n\n 这是识别后的图片内容：{{.answer}}\n\n 请进行总结"
 }

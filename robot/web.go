@@ -573,11 +573,6 @@ func (web *Web) sendChatMessage() {
 
 func (web *Web) GetContent(content string) (string, error) {
 	var err error
-	
-	if content != "" {
-		return content, nil
-	}
-	
 	if len(web.BodyData) == 0 {
 		logger.Warn("BodyData is empty")
 		return "", errors.New("BodyData is empty")
@@ -592,7 +587,7 @@ func (web *Web) GetContent(content string) (string, error) {
 	}
 	
 	if utils.DetectImageFormat(web.BodyData) != "unknown" {
-		content, err = web.Robot.GetImageContent(web.BodyData)
+		content, err = web.Robot.GetImageContent(web.BodyData, content)
 		if err != nil {
 			logger.Warn("get content from image failed", "err", err)
 			return "", err

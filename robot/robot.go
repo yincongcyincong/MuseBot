@@ -547,17 +547,28 @@ func (r *RobotInfo) GetAudioContent(audioContent []byte) (string, error) {
 	return "", nil
 }
 
-func (r *RobotInfo) GetImageContent(imageContent []byte) (string, error) {
+func (r *RobotInfo) GetImageContent(imageContent []byte, content string) (string, error) {
+	var answer string
+	var err error
 	switch *conf.BaseConfInfo.MediaType {
 	case param.Vol:
-		return utils.GetImageContent(imageContent)
+		answer, err = llm.GetVolImageContent(imageContent, content)
 	case param.Gemini:
-		return llm.GetGeminiImageContent(imageContent)
+		answer, err = llm.GetGeminiImageContent(imageContent, content)
 	case param.OpenAi:
-		return llm.GetOpenAIImageContent(imageContent)
+		answer, err = llm.GetOpenAIImageContent(imageContent, content)
 	}
 	
-	return "", nil
+	if err != nil {
+		return "", err
+	}
+	
+	param := map[string]interface{}{
+		"question": content,
+		"answer":   answer,
+	}
+	prompt := i18n.GetMessage(*conf.BaseConfInfo.Lang, "photo_export_prompt", param)
+	return prompt, nil
 }
 
 func (r *RobotInfo) GetLastImageContent() ([]byte, error) {

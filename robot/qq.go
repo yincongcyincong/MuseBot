@@ -517,10 +517,6 @@ func (q *QQRobot) executeLLM() {
 }
 
 func (q *QQRobot) GetContent(content string) (string, error) {
-	if len(content) != 0 {
-		return content, nil
-	}
-	
 	attachment := q.GetAttachment()
 	if attachment == nil {
 		return "", errors.New("no attachments found")
@@ -534,7 +530,7 @@ func (q *QQRobot) GetContent(content string) (string, error) {
 			return "", err
 		}
 		
-		content, err = q.Robot.GetImageContent(data)
+		content, err = q.Robot.GetImageContent(data, content)
 		if err != nil {
 			logger.Warn("generate text from audio failed", "err", err)
 			return "", err

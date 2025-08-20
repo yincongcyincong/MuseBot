@@ -458,9 +458,6 @@ func (c *ComWechatRobot) executeLLM() {
 }
 
 func (c *ComWechatRobot) GetContent(content string) (string, error) {
-	if len(content) != 0 {
-		return content, nil
-	}
 	
 	msgType := c.Event.GetMsgType()
 	
@@ -478,7 +475,7 @@ func (c *ComWechatRobot) GetContent(content string) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		return c.Robot.GetImageContent(data)
+		return c.Robot.GetImageContent(data, content)
 	
 	case models.CALLBACK_MSG_TYPE_VOICE:
 		resp, err := c.App.Media.Get(c.Ctx, c.VoiceMsg.MediaID)

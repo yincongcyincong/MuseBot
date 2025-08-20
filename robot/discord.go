@@ -234,7 +234,7 @@ func (d *DiscordRobot) GetContent(defaultText string) (string, error) {
 		}
 	}
 	
-	if content == "" && len(attachments) > 0 {
+	if len(attachments) > 0 {
 		for _, att := range attachments {
 			if strings.HasPrefix(att.ContentType, "image/") {
 				image, err := utils.DownloadFile(att.URL)
@@ -242,7 +242,7 @@ func (d *DiscordRobot) GetContent(defaultText string) (string, error) {
 					logger.Warn("image url empty", "url", att.URL, "err", err)
 					return "", errors.New("image url empty")
 				}
-				content, err = d.Robot.GetImageContent(image)
+				content, err = d.Robot.GetImageContent(image, content)
 				if err != nil {
 					logger.Warn("get image content err", "err", err)
 					return "", err

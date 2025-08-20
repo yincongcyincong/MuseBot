@@ -537,12 +537,7 @@ func (d *DingRobot) executeLLM() {
 }
 
 func (d *DingRobot) GetContent(content string) (string, error) {
-	if len(content) != 0 {
-		return content, nil
-	}
-	
 	msgType := d.Message.Msgtype
-	
 	switch msgType {
 	case "picture":
 		if c, ok := d.Message.Content.(map[string]interface{}); ok {
@@ -558,7 +553,7 @@ func (d *DingRobot) GetContent(content string) (string, error) {
 				return "", err
 			}
 			
-			content, err = d.Robot.GetImageContent(data)
+			content, err = d.Robot.GetImageContent(data, content)
 			if err != nil {
 				logger.Warn("generate text from audio failed", "err", err)
 				return "", err
