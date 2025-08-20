@@ -14,7 +14,7 @@ import (
 	"github.com/yincongcyincong/MuseBot/param"
 )
 
-const MaxQAPair = 10
+const MaxQAPair = 20
 
 type MsgRecordInfo struct {
 	AQs        []*AQ

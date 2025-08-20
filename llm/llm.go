@@ -10,6 +10,7 @@ import (
 	"github.com/sashabaranov/go-openai"
 	"github.com/volcengine/volcengine-go-sdk/service/arkruntime/model"
 	"github.com/yincongcyincong/MuseBot/conf"
+	"github.com/yincongcyincong/MuseBot/db"
 	"github.com/yincongcyincong/MuseBot/logger"
 	"github.com/yincongcyincong/MuseBot/param"
 	"google.golang.org/genai"
@@ -238,4 +239,42 @@ func WithTaskTools(taskTool *conf.AgentInfo) Option {
 		p.GeminiTools = taskTool.GeminiTools
 		p.OpenRouterTools = taskTool.OpenRouterTools
 	}
+}
+
+func estimateTokens(text string) int {
+	count := 0
+	for _, r := range text {
+		if r <= 127 {
+			count += 1
+		} else {
+			count += 1
+		}
+	}
+	englishApprox := count / 4
+	if englishApprox == 0 {
+		englishApprox = 1
+	}
+	return englishApprox
+}
+
+func TruncateAQsByToken(aqs []*db.AQ, maxToken int) []*db.AQ {
+	if len(aqs) == 0 {
+		return []*db.AQ{}
+	}
+	
+	totalToken := 0
+	var truncated []*db.AQ
+	
+	// 从最新消息开始向前遍历
+	for i := len(aqs) - 1; i >= 0; i-- {
+		a := aqs[i]
+		token := estimateTokens(a.Question) + estimateTokens(a.Answer)
+		if totalToken+token > maxToken {
+			break
+		}
+		totalToken += token
+		truncated = append([]*db.AQ{a}, truncated...)
+	}
+	
+	return truncated
 }

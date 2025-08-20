@@ -52,8 +52,8 @@ func (h *VolReq) GetMessages(userId string, prompt string) {
 	msgRecords := db.GetMsgRecord(userId)
 	if msgRecords != nil {
 		aqs := msgRecords.AQs
-		if len(aqs) > 10 {
-			aqs = aqs[len(aqs)-10:]
+		if len(aqs) > db.MaxQAPair {
+			aqs = aqs[len(aqs)-db.MaxQAPair:]
 		}
 		for i, record := range aqs {
 			if record.Answer != "" && record.Question != "" {
@@ -526,7 +526,7 @@ func GenerateVolVideo(prompt string, imageContent []byte) (string, int, error) {
 	}
 }
 
-func GetVolImageContent(imageContent []byte, content string) (string, error) {
+func GetVolImageContent(imageContent []byte, content string) (string, int, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 	
@@ -568,13 +568,13 @@ func GetVolImageContent(imageContent []byte, content string) (string, error) {
 	response, err := client.CreateChatCompletion(ctx, req)
 	if err != nil {
 		logger.Error("CreateChatCompletion error", "err", err)
-		return "", err
+		return "", 0, err
 	}
 	
 	if len(response.Choices) == 0 {
 		logger.Error("response is emtpy", "response", response)
-		return "", errors.New("response is empty")
+		return "", 0, errors.New("response is empty")
 	}
 	
-	return *response.Choices[0].Message.Content.StringValue, nil
+	return *response.Choices[0].Message.Content.StringValue, response.Usage.TotalTokens, nil
 }
