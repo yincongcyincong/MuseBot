@@ -51,8 +51,8 @@ func (d *OpenAIReq) GetMessages(userId string, prompt string) {
 	msgRecords := db.GetMsgRecord(userId)
 	if msgRecords != nil {
 		aqs := msgRecords.AQs
-		if len(aqs) > 10 {
-			aqs = aqs[len(aqs)-10:]
+		if len(aqs) > db.MaxQAPair {
+			aqs = aqs[len(aqs)-db.MaxQAPair:]
 		}
 		
 		for i, record := range aqs {
@@ -464,7 +464,7 @@ func GenerateOpenAIText(audioContent []byte) (string, error) {
 	return resp.Text, nil
 }
 
-func GetOpenAIImageContent(imageContent []byte, content string) (string, error) {
+func GetOpenAIImageContent(imageContent []byte, content string) (string, int, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 	
@@ -510,8 +510,8 @@ func GetOpenAIImageContent(imageContent []byte, content string) (string, error) 
 	resp, err := client.CreateChatCompletion(ctx, req)
 	if err != nil {
 		logger.Error("CreateChatCompletion error", "err", err)
-		return "", err
+		return "", 0, err
 	}
 	
-	return resp.Choices[0].Message.Content, nil
+	return resp.Choices[0].Message.Content, resp.Usage.TotalTokens, nil
 }

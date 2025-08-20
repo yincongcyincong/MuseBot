@@ -552,11 +552,11 @@ func (r *RobotInfo) GetImageContent(imageContent []byte, content string) (string
 	var err error
 	switch *conf.BaseConfInfo.MediaType {
 	case param.Vol:
-		answer, err = llm.GetVolImageContent(imageContent, content)
+		answer, _, err = llm.GetVolImageContent(imageContent, content)
 	case param.Gemini:
-		answer, err = llm.GetGeminiImageContent(imageContent, content)
+		answer, _, err = llm.GetGeminiImageContent(imageContent, content)
 	case param.OpenAi:
-		answer, err = llm.GetOpenAIImageContent(imageContent, content)
+		answer, _, err = llm.GetOpenAIImageContent(imageContent, content)
 	}
 	
 	if err != nil {

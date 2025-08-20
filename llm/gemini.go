@@ -33,8 +33,8 @@ func (h *GeminiReq) GetMessages(userId string, prompt string) {
 	msgRecords := db.GetMsgRecord(userId)
 	if msgRecords != nil {
 		aqs := msgRecords.AQs
-		if len(aqs) > 10 {
-			aqs = aqs[len(aqs)-10:]
+		if len(aqs) > db.MaxQAPair {
+			aqs = aqs[len(aqs)-db.MaxQAPair:]
 		}
 		for i, record := range aqs {
 			if record.Answer != "" && record.Question != "" {
@@ -72,7 +72,6 @@ func (h *GeminiReq) Send(ctx context.Context, l *LLM) error {
 	}
 	
 	start := time.Now()
-	h.GetModel(l)
 	
 	httpClient := utils.GetLLMProxyClient()
 	client, err := genai.NewClient(ctx, &genai.ClientConfig{
@@ -515,7 +514,7 @@ func GenerateGeminiText(audioContent []byte) (string, error) {
 	return result.Text(), nil
 }
 
-func GetGeminiImageContent(imageContent []byte, content string) (string, error) {
+func GetGeminiImageContent(imageContent []byte, content string) (string, int, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 	
@@ -526,7 +525,7 @@ func GetGeminiImageContent(imageContent []byte, content string) (string, error) 
 	})
 	if err != nil {
 		logger.Error("create client fail", "err", err)
-		return "", err
+		return "", 0, err
 	}
 	
 	contentPrompt := content
@@ -552,9 +551,9 @@ func GetGeminiImageContent(imageContent []byte, content string) (string, error) 
 	
 	if err != nil || result == nil {
 		logger.Error("generate text fail", "err", err)
-		return "", err
+		return "", 0, err
 	}
 	
-	return result.Text(), nil
+	return result.Text(), int(result.UsageMetadata.TotalTokenCount), nil
 	
 }

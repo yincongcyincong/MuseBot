@@ -38,8 +38,8 @@ func (d *OllamaDeepseekReq) GetMessages(userId string, prompt string) {
 	msgRecords := db.GetMsgRecord(userId)
 	if msgRecords != nil {
 		aqs := msgRecords.AQs
-		if len(aqs) > 10 {
-			aqs = aqs[len(aqs)-10:]
+		if len(aqs) > db.MaxQAPair {
+			aqs = aqs[len(aqs)-db.MaxQAPair:]
 		}
 		
 		for i, record := range aqs {
