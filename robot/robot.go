@@ -168,7 +168,7 @@ func (r *RobotInfo) GetChatIdAndMsgIdAndUserID() (string, string, string) {
 		comWechatRobot := r.Robot.(*ComWechatRobot)
 		if comWechatRobot.Event != nil {
 			chatId = comWechatRobot.Event.GetFromUserName()
-			userId = comWechatRobot.Event.GetFromUserName()
+			userId = comWechatRobot.Event.GetToUserName()
 		}
 		
 		if comWechatRobot.TextMsg != nil {
@@ -202,7 +202,7 @@ func (r *RobotInfo) GetChatIdAndMsgIdAndUserID() (string, string, string) {
 		wechatRobot := r.Robot.(*WechatRobot)
 		if wechatRobot.Event != nil {
 			chatId = wechatRobot.Event.GetFromUserName()
-			userId = wechatRobot.Event.GetFromUserName()
+			userId = wechatRobot.Event.GetToUserName()
 		}
 		
 		if wechatRobot.TextMsg != nil {
@@ -561,6 +561,10 @@ func (r *RobotInfo) GetImageContent(imageContent []byte, content string) (string
 	
 	if err != nil {
 		return "", err
+	}
+	
+	if content == "" {
+		return answer, nil
 	}
 	
 	param := map[string]interface{}{
