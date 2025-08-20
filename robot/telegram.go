@@ -120,6 +120,10 @@ func CreateBot() *tgbotapi.BotAPI {
 			Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.photo.description", nil),
 		},
 		tgbotapi.BotCommand{
+			Command:     "edit_photo",
+			Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.edit_photo.description", nil),
+		},
+		tgbotapi.BotCommand{
 			Command:     "video",
 			Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.video.description", nil),
 		},
@@ -161,7 +165,11 @@ func (t *TelegramRobot) checkValid() bool {
 }
 
 func (t *TelegramRobot) getMsgContent() string {
-	return t.getMessage().Text
+	content := t.getMessage().Text
+	if content == "" {
+		content = t.getMessage().Caption
+	}
+	return content
 }
 
 // requestLLMAndResp request deepseek api
@@ -363,6 +371,9 @@ func (t *TelegramRobot) sendChatMessage() {
 	var err error
 	if t.Update.Message != nil {
 		messageText = t.getMsgContent()
+		if messageText == "" {
+			messageText = t.Update.Message.Caption
+		}
 		messageText, err = t.GetContent(messageText)
 		if err != nil {
 			logger.Warn("GetContent error", "err", err)
@@ -630,15 +641,20 @@ func (t *TelegramRobot) sendImg() {
 			prompt = t.Update.Message.Caption
 		}
 		
+		var err error
 		if len(prompt) == 0 {
-			err := utils.ForceReply(int64(utils.ParseInt(chatId)), utils.ParseInt(replyToMessageID), "photo_empty_content", t.Bot)
+			if strings.Contains(t.Cmd, "edit_photo") {
+				err = utils.ForceReply(int64(utils.ParseInt(chatId)), utils.ParseInt(replyToMessageID), "edit_photo_empty_content", t.Bot)
+			} else {
+				err = utils.ForceReply(int64(utils.ParseInt(chatId)), utils.ParseInt(replyToMessageID), "photo_empty_content", t.Bot)
+			}
+			
 			if err != nil {
 				logger.Warn("force reply fail", "err", err)
 			}
 			return
 		}
 		
-		var err error
 		lastImageContent := t.GetPhotoContent()
 		if len(lastImageContent) == 0 && strings.Contains(t.Cmd, "edit_photo") {
 			lastImageContent, err = t.Robot.GetLastImageContent()
@@ -744,6 +760,9 @@ func (t *TelegramRobot) ExecuteForceReply() {
 		t.sendChatMessage()
 	case i18n.GetMessage(*conf.BaseConfInfo.Lang, "photo_empty_content", nil):
 		t.sendImg()
+	case i18n.GetMessage(*conf.BaseConfInfo.Lang, "edit_photo_empty_content", nil):
+		t.Cmd = "edit_photo"
+		t.sendImg()
 	case i18n.GetMessage(*conf.BaseConfInfo.Lang, "video_empty_content", nil):
 		t.sendVideo()
 	case i18n.GetMessage(*conf.BaseConfInfo.Lang, "task_empty_content", nil):
@@ -770,8 +789,8 @@ func (t *TelegramRobot) GetContent(content string) (string, error) {
 		
 	}
 	
-	if content == "" && t.Update.Message.Photo != nil {
-		content, err = t.Robot.GetImageContent(t.GetPhotoContent())
+	if t.Update.Message.Photo != nil {
+		content, err = t.Robot.GetImageContent(t.GetPhotoContent(), content)
 		if err != nil {
 			logger.Warn("get image content err", "err", err)
 			return "", err

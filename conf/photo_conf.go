@@ -27,6 +27,8 @@ type PhotoConf struct {
 	Opacity         *float64 `json:"opacity"`
 	LogoTextContent *string  `json:"logo_text_content"`
 	
+	VolImageModel *string `json:"vol_image_model"`
+	
 	GeminiImageModel *string `json:"gemini_image_model"`
 	GeminiRecModel   *string `json:"gemini_rec_model"`
 	
@@ -63,6 +65,8 @@ func InitPhotoConf() {
 	PhotoConfInfo.OpenAIImageModel = flag.String("openai_image_model", "gpt-image-1", "openai create photo model")
 	PhotoConfInfo.OpenAIImageSize = flag.String("openai_image_size", openai.CreateImageSize1024x1024, "openai image size")
 	PhotoConfInfo.OpenAIImageStyle = flag.String("openai_image_style", "", "openai image style")
+	
+	PhotoConfInfo.VolImageModel = flag.String("vol_image_model", "doubao-seed-1-6-250615", "vol image model")
 }
 
 func EnvPhotoConf() {
@@ -154,6 +158,10 @@ func EnvPhotoConf() {
 		*PhotoConfInfo.OpenAIImageStyle = os.Getenv("OPENAI_IMAGE_STYLE")
 	}
 	
+	if os.Getenv("VOL_IMAGE_MODEL") != "" {
+		*PhotoConfInfo.VolImageModel = os.Getenv("VOL_IMAGE_MODEL")
+	}
+	
 	logger.Info("PHOTO_CONF", "ReqKey", *PhotoConfInfo.ReqKey)
 	logger.Info("PHOTO_CONF", "ModelVersion", *PhotoConfInfo.ModelVersion)
 	logger.Info("PHOTO_CONF", "ReqScheduleConf", *PhotoConfInfo.ReqScheduleConf)
@@ -177,4 +185,5 @@ func EnvPhotoConf() {
 	logger.Info("PHOTO_CONF", "OpenAIImageModel", *PhotoConfInfo.OpenAIImageModel)
 	logger.Info("PHOTO_CONF", "OpenAIImageSize", *PhotoConfInfo.OpenAIImageSize)
 	logger.Info("PHOTO_CONF", "OpenAIRecModel", *PhotoConfInfo.OpenAIRecModel)
+	logger.Info("PHOTO_CONF", "VolImageModel", *PhotoConfInfo.VolImageModel)
 }

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"crypto/md5"
 	"crypto/rand"
-	"encoding/base64"
 	"encoding/binary"
 	"encoding/hex"
 	"errors"
@@ -23,7 +22,6 @@ import (
 	"unicode/utf16"
 	
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	"github.com/volcengine/volc-sdk-golang/service/visual"
 	"github.com/wdvxdr1123/go-silk"
 	"github.com/yincongcyincong/MuseBot/conf"
 	"github.com/yincongcyincong/MuseBot/i18n"
@@ -124,27 +122,6 @@ func FileRecognize(audioContent []byte) (string, error) {
 	
 	return asrResponse.Results[0].Text, nil
 	
-}
-
-func GetImageContent(imageContent []byte) (string, error) {
-	visual.DefaultInstance.Client.SetAccessKey(*conf.BaseConfInfo.VolcAK)
-	visual.DefaultInstance.Client.SetSecretKey(*conf.BaseConfInfo.VolcSK)
-	
-	form := url.Values{}
-	form.Add("image_base64", base64.StdEncoding.EncodeToString(imageContent))
-	
-	resp, _, err := visual.DefaultInstance.OCRNormal(form)
-	if err != nil {
-		logger.Error("request img api fail", "err", err)
-		return "", err
-	}
-	
-	if resp.Code != 10000 {
-		logger.Error("request img api fail", "code", resp.Code, "msg", resp.Message)
-		return "", errors.New("request img api fail")
-	}
-	
-	return strings.Join(resp.Data.LineTexts, ","), nil
 }
 
 func FileToMd5(filePath string) (string, error) {

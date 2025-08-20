@@ -10,6 +10,7 @@ import (
 	
 	"github.com/yincongcyincong/MuseBot/conf"
 	"github.com/yincongcyincong/MuseBot/db"
+	"github.com/yincongcyincong/MuseBot/i18n"
 	"github.com/yincongcyincong/MuseBot/logger"
 	"github.com/yincongcyincong/MuseBot/metrics"
 	"github.com/yincongcyincong/MuseBot/param"
@@ -501,7 +502,7 @@ func GenerateGeminiText(audioContent []byte) (string, error) {
 	
 	result, err := client.Models.GenerateContent(
 		ctx,
-		"gemini-2.0-flash",
+		*conf.PhotoConfInfo.GeminiRecModel,
 		contents,
 		nil,
 	)
@@ -514,7 +515,7 @@ func GenerateGeminiText(audioContent []byte) (string, error) {
 	return result.Text(), nil
 }
 
-func GetGeminiImageContent(imageContent []byte) (string, error) {
+func GetGeminiImageContent(imageContent []byte, content string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 	
@@ -528,9 +529,14 @@ func GetGeminiImageContent(imageContent []byte) (string, error) {
 		return "", err
 	}
 	
+	contentPrompt := content
+	if content == "" {
+		contentPrompt = i18n.GetMessage(*conf.BaseConfInfo.Lang, "photo_handle_prompt", nil)
+	}
+	
 	parts := []*genai.Part{
 		genai.NewPartFromBytes(imageContent, "image/jpeg"),
-		genai.NewPartFromText("Give me the text content in the picture"),
+		genai.NewPartFromText(contentPrompt),
 	}
 	
 	contents := []*genai.Content{

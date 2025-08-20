@@ -17,6 +17,7 @@ import (
 	"github.com/sashabaranov/go-openai"
 	"github.com/yincongcyincong/MuseBot/conf"
 	"github.com/yincongcyincong/MuseBot/db"
+	"github.com/yincongcyincong/MuseBot/i18n"
 	"github.com/yincongcyincong/MuseBot/logger"
 	"github.com/yincongcyincong/MuseBot/metrics"
 	"github.com/yincongcyincong/MuseBot/param"
@@ -463,7 +464,7 @@ func GenerateOpenAIText(audioContent []byte) (string, error) {
 	return resp.Text, nil
 }
 
-func GetOpenAIImageContent(imageContent []byte) (string, error) {
+func GetOpenAIImageContent(imageContent []byte, content string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 	
@@ -476,6 +477,11 @@ func GetOpenAIImageContent(imageContent []byte) (string, error) {
 	//openaiConfig.BaseURL = "https://api.chatanywhere.org"
 	openaiConfig.HTTPClient = httpClient
 	client := openai.NewClientWithConfig(openaiConfig)
+	
+	contentPrompt := content
+	if content == "" {
+		contentPrompt = i18n.GetMessage(*conf.BaseConfInfo.Lang, "photo_handle_prompt", nil)
+	}
 	
 	imageDataURL := "data:image/png;base64," + base64.StdEncoding.EncodeToString(imageContent)
 	req := openai.ChatCompletionRequest{
@@ -493,7 +499,7 @@ func GetOpenAIImageContent(imageContent []byte) (string, error) {
 					},
 					{
 						Type: openai.ChatMessagePartTypeText,
-						Text: "Give me the text content in the picture",
+						Text: contentPrompt,
 					},
 				},
 			},

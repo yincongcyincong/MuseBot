@@ -18,6 +18,7 @@ import (
 	"github.com/volcengine/volcengine-go-sdk/service/arkruntime/model"
 	"github.com/yincongcyincong/MuseBot/conf"
 	"github.com/yincongcyincong/MuseBot/db"
+	"github.com/yincongcyincong/MuseBot/i18n"
 	"github.com/yincongcyincong/MuseBot/logger"
 	"github.com/yincongcyincong/MuseBot/metrics"
 	"github.com/yincongcyincong/MuseBot/param"
@@ -523,4 +524,57 @@ func GenerateVolVideo(prompt string, imageContent []byte) (string, int, error) {
 			return "", 0, errors.New("create video fail")
 		}
 	}
+}
+
+func GetVolImageContent(imageContent []byte, content string) (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+	
+	httpClient := utils.GetLLMProxyClient()
+	client := arkruntime.NewClientWithApiKey(
+		*conf.BaseConfInfo.VolToken,
+		arkruntime.WithTimeout(5*time.Minute),
+		arkruntime.WithHTTPClient(httpClient),
+	)
+	
+	contentPrompt := content
+	if content == "" {
+		contentPrompt = i18n.GetMessage(*conf.BaseConfInfo.Lang, "photo_handle_prompt", nil)
+	}
+	
+	req := model.ChatCompletionRequest{
+		Model: *conf.PhotoConfInfo.VolImageModel,
+		Messages: []*model.ChatCompletionMessage{
+			{
+				Role: model.ChatMessageRoleUser,
+				Content: &model.ChatCompletionMessageContent{
+					ListValue: []*model.ChatCompletionMessageContentPart{
+						{
+							Type: model.ChatCompletionMessageContentPartTypeImageURL,
+							ImageURL: &model.ChatMessageImageURL{
+								URL: "data:image/" + utils.DetectImageFormat(imageContent) + ";base64," + base64.StdEncoding.EncodeToString(imageContent),
+							},
+						},
+						{
+							Type: model.ChatCompletionMessageContentPartTypeText,
+							Text: contentPrompt,
+						},
+					},
+				},
+			},
+		},
+	}
+	
+	response, err := client.CreateChatCompletion(ctx, req)
+	if err != nil {
+		logger.Error("CreateChatCompletion error", "err", err)
+		return "", err
+	}
+	
+	if len(response.Choices) == 0 {
+		logger.Error("response is emtpy", "response", response)
+		return "", errors.New("response is empty")
+	}
+	
+	return *response.Choices[0].Message.Content.StringValue, nil
 }

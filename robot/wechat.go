@@ -495,10 +495,6 @@ func (w *WechatRobot) executeLLM() {
 }
 
 func (w *WechatRobot) GetContent(content string) (string, error) {
-	if len(content) != 0 {
-		return content, nil
-	}
-	
 	msgType := w.Event.GetMsgType()
 	
 	switch msgType {
@@ -520,7 +516,7 @@ func (w *WechatRobot) GetContent(content string) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		return w.Robot.GetImageContent(data)
+		return w.Robot.GetImageContent(data, content)
 	
 	case models.CALLBACK_MSG_TYPE_VOICE:
 		msg := serverModel.MessageVoice{}

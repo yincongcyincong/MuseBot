@@ -301,12 +301,8 @@ func (s *SlackRobot) handleUpdate(messageChan *MsgChan) {
 }
 
 func (s *SlackRobot) GetContent(content string) (string, error) {
-	if len(content) != 0 {
-		return content, nil
-	}
-	
 	if len(s.Event.Message.Files) == 0 {
-		return "", errors.New("no content or files found")
+		return content, nil
 	}
 	
 	file := s.Event.Message.Files[0]
@@ -320,7 +316,7 @@ func (s *SlackRobot) GetContent(content string) (string, error) {
 			logger.Error("download image failed", "err", err)
 			return "", err
 		}
-		content, err = s.Robot.GetImageContent(bs)
+		content, err = s.Robot.GetImageContent(bs, content)
 		if err != nil {
 			logger.Warn("generate text from image failed", "err", err)
 			return "", err

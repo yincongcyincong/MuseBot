@@ -103,7 +103,6 @@ func TestInitConf_AllEnvVars(t *testing.T) {
 	assertEqual(t, *BaseConfInfo.RobotProxy, "http://proxy.telegram", "RobotProxy")
 	assertEqual(t, *BaseConfInfo.Lang, "zh-CN", "Lang")
 	assertInt(t, *BaseConfInfo.TokenPerUser, 888, "TokenPerUser")
-	assertBool(t, *BaseConfInfo.NeedATBOt, true, "NeedATBOt")
 	assertInt(t, *BaseConfInfo.MaxUserChat, 10, "MaxUserChat")
 	assertEqual(t, *BaseConfInfo.HTTPHost, "8888", "HTTPPort")
 	assertBool(t, *BaseConfInfo.UseTools, false, "UseTools")

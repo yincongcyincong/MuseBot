@@ -505,10 +505,6 @@ func (l *LarkRobot) executeLLM() {
 }
 
 func (l *LarkRobot) GetContent(content string) (string, error) {
-	if len(content) != 0 {
-		return content, nil
-	}
-	
 	var err error
 	msgType := larkcore.StringValue(l.Message.Event.Message.MessageType)
 	_, msgId, _ := l.Robot.GetChatIdAndMsgIdAndUserID()
@@ -539,7 +535,7 @@ func (l *LarkRobot) GetContent(content string) (string, error) {
 			return "", err
 		}
 		
-		content, err = l.Robot.GetImageContent(bs)
+		content, err = l.Robot.GetImageContent(bs, content)
 		if err != nil {
 			logger.Warn("generate text from audio failed", "err", err)
 			return "", err
