@@ -300,7 +300,7 @@ func (s *SlackRobot) handleUpdate(messageChan *MsgChan) {
 	}
 }
 
-func (s *SlackRobot) GetContent(content string) (string, error) {
+func (s *SlackRobot) getContent(content string) (string, error) {
 	if len(s.Event.Message.Files) == 0 {
 		return content, nil
 	}
@@ -481,7 +481,7 @@ func (s *SlackRobot) sendImg() {
 				logger.Error("download image failed", "err", err)
 			}
 		}
-		if len(lastImageContent) == 0 {
+		if len(lastImageContent) == 0 && strings.Contains(s.Command, "edit_photo") {
 			lastImageContent, err = s.Robot.GetLastImageContent()
 			if err != nil {
 				logger.Warn("get last image record fail", "err", err)
@@ -722,6 +722,6 @@ func (s *SlackRobot) getPrompt() string {
 	return s.Prompt
 }
 
-func (s *SlackRobot) GetPerMsgLen() int {
+func (s *SlackRobot) getPerMsgLen() int {
 	return 1800
 }

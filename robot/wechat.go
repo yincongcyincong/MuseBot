@@ -9,7 +9,6 @@ import (
 	"os"
 	"runtime/debug"
 	"strings"
-	"sync"
 	"time"
 	
 	"github.com/ArtisanCloud/PowerWeChat/v3/src/kernel/contract"
@@ -30,20 +29,16 @@ import (
 
 var (
 	OfficialAccountApp *officialAccount.OfficialAccount
-	WechatMsgMap       sync.Map
 )
 
 const (
 	msgHandling = 1
 	msgFinished = 2
 	msgSent     = 3
+	
+	msgChangePhoto    = 10
+	msgRecognizePhoto = 11
 )
-
-type WechatMessage struct {
-	Msg       interface{}
-	Status    int
-	StartTime time.Time
-}
 
 type WechatRobot struct {
 	Event contract.EventInterface
@@ -55,9 +50,11 @@ type WechatRobot struct {
 	Command      string
 	Prompt       string
 	OriginPrompt string
-	TextMsg      *serverModel.MessageText
-	VoiceMsg     *serverModel.MessageVoice
-	ImageMsg     *serverModel.MessageImage
+	ImageContent []byte
+	
+	TextMsg  *serverModel.MessageText
+	VoiceMsg *serverModel.MessageVoice
+	ImageMsg *serverModel.MessageImage
 }
 
 func StartWechatRobot() {
@@ -90,14 +87,14 @@ func deleteMsgMapData() {
 	
 	for {
 		<-ticker.C
-		WechatMsgMap.Range(func(key, value interface{}) bool {
-			msg, ok := value.(*WechatMessage)
+		TencentMsgMap.Range(func(key, value interface{}) bool {
+			msg, ok := value.(*TencentWechatMessage)
 			if !ok {
 				return true
 			}
-			if time.Now().Sub(msg.StartTime) > 10*time.Minute {
+			if time.Now().Sub(msg.StartTime) > 5*time.Minute {
 				logger.Info("msg deleted", "msgId", key)
-				WechatMsgMap.Delete(key)
+				TencentMsgMap.Delete(key)
 			}
 			return true
 		})
@@ -144,14 +141,14 @@ func NewWechatRobot(event contract.EventInterface) (*WechatRobot, bool) {
 		msgId = msg.MsgID
 	}
 	
-	if _, ok := WechatMsgMap.Load(msgId); !ok {
-		WechatMsgMap.Store(msgId, &WechatMessage{
+	if _, ok := TencentMsgMap.Load(msgId); !ok {
+		TencentMsgMap.Store(msgId, &TencentWechatMessage{
 			Status:    msgHandling,
 			Msg:       "",
 			StartTime: time.Now(),
 		})
 		
-		w.Robot = NewRobot(WithRobot(w))
+		w.Robot = NewRobot(WithRobot(w), WithTencentRobot(w))
 		return w, true
 	}
 	
@@ -162,15 +159,22 @@ func NewWechatRobot(event contract.EventInterface) (*WechatRobot, bool) {
 
 func (w *WechatRobot) checkValid() bool {
 	if w.Event.GetMsgType() == models.CALLBACK_MSG_TYPE_TEXT {
-		msg := serverModel.MessageText{}
-		err := w.Event.ReadMessage(&msg)
-		if err != nil {
-			logger.Error("WechatRobot", "err", err)
-			return false
+		w.OriginPrompt = w.TextMsg.Content
+		w.Command, w.Prompt = ParseCommand(w.TextMsg.Content)
+		logger.Info("WechatRobot msg", "Command", w.Command, "Prompt", w.Prompt, "msgId", w.TextMsg.MsgID)
+	}
+	
+	if w.Event.GetMsgType() == models.CALLBACK_MSG_TYPE_IMAGE {
+		_, msgId, userId := w.Robot.GetChatIdAndMsgIdAndUserID()
+		if msgInfoInter, ok := TencentMsgMap.Load(userId); ok {
+			if msgInfo, ok := msgInfoInter.(*TencentWechatMessage); ok {
+				if msgInfo.Status == msgChangePhoto || msgInfo.Status == msgRecognizePhoto {
+					logger.Info("WechatRobot handle photo msg", "msgId", msgId, "userId", userId)
+					w.passiveExecCmd()
+					return false
+				}
+			}
 		}
-		w.OriginPrompt = msg.Content
-		w.Command, w.Prompt = ParseCommand(msg.Content)
-		logger.Info("WechatRobot msg", "Command", w.Command, "Prompt", w.Prompt, "msgId", msg.MsgID)
 	}
 	
 	return true
@@ -264,6 +268,11 @@ func (w *WechatRobot) sendModeConfigurationOptions() {
 func (w *WechatRobot) sendImg() {
 	w.Robot.TalkingPreCheck(func() {
 		chatId, msgId, userId := w.Robot.GetChatIdAndMsgIdAndUserID()
+		if !*conf.BaseConfInfo.WechatActive {
+			logger.Warn("only wechat_active is true can generate image")
+			w.Robot.SendMsg(chatId, "only wechat_active is true can generate image", msgId, tgbotapi.ModeMarkdown, nil)
+			return
+		}
 		
 		prompt := strings.TrimSpace(w.Prompt)
 		if prompt == "" {
@@ -272,7 +281,7 @@ func (w *WechatRobot) sendImg() {
 			return
 		}
 		
-		var lastImageContent []byte
+		lastImageContent := w.ImageContent
 		var err error
 		if len(lastImageContent) == 0 && strings.Contains(w.Command, "edit_photo") {
 			lastImageContent, err = w.Robot.GetLastImageContent()
@@ -355,6 +364,11 @@ func (w *WechatRobot) sendVideo() {
 	// 检查 prompt
 	w.Robot.TalkingPreCheck(func() {
 		chatId, msgId, userId := w.Robot.GetChatIdAndMsgIdAndUserID()
+		if !*conf.BaseConfInfo.WechatActive {
+			logger.Warn("only wechat_active is true can generate video")
+			w.Robot.SendMsg(chatId, "only wechat_active is true can generate video", msgId, tgbotapi.ModeMarkdown, nil)
+			return
+		}
 		
 		prompt := strings.TrimSpace(w.Prompt)
 		if prompt == "" {
@@ -494,45 +508,19 @@ func (w *WechatRobot) executeLLM() {
 	
 }
 
-func (w *WechatRobot) GetContent(content string) (string, error) {
+func (w *WechatRobot) getContent(content string) (string, error) {
 	msgType := w.Event.GetMsgType()
 	
 	switch msgType {
 	case models.CALLBACK_MSG_TYPE_IMAGE:
-		msg := serverModel.MessageImage{}
-		err := w.Event.ReadMessage(&msg)
-		if err != nil {
-			logger.Error("read message", "err", err)
-			return "", err
-		}
-		resp, err := w.App.Media.Get(w.Ctx, msg.MediaID)
-		if err != nil {
-			logger.Error("get media fail", "err", err)
-			return "", err
-		}
-		
-		defer resp.Body.Close()
-		data, err := io.ReadAll(resp.Body)
+		data, err := w.getMedia()
 		if err != nil {
 			return "", err
 		}
 		return w.Robot.GetImageContent(data, content)
 	
 	case models.CALLBACK_MSG_TYPE_VOICE:
-		msg := serverModel.MessageVoice{}
-		err := w.Event.ReadMessage(&msg)
-		if err != nil {
-			logger.Error("read message", "err", err)
-			return "", err
-		}
-		resp, err := w.App.Media.Get(w.Ctx, msg.MediaID)
-		if err != nil {
-			logger.Error("get media fail", "err", err)
-			return "", err
-		}
-		
-		defer resp.Body.Close()
-		data, err := io.ReadAll(resp.Body)
+		data, err := w.getMedia()
 		if err != nil {
 			logger.Error("read media fail", "err", err)
 			return "", err
@@ -562,9 +550,9 @@ func (w *WechatRobot) getPrompt() string {
 func (w *WechatRobot) GetLLMContent() interface{} {
 	_, msgId, _ := w.Robot.GetChatIdAndMsgIdAndUserID()
 	for i := 0; i < 15; i++ {
-		if msgInfo, ok := WechatMsgMap.Load(msgId); ok {
-			wechatMsg := msgInfo.(*WechatMessage)
-			if wechatMsg.Status != msgHandling {
+		if msgInfo, ok := TencentMsgMap.Load(msgId); ok {
+			wechatMsg := msgInfo.(*TencentWechatMessage)
+			if wechatMsg.Status != msgHandling && wechatMsg.Status != msgChangePhoto {
 				return wechatMsg.Msg
 			}
 		}
@@ -575,13 +563,83 @@ func (w *WechatRobot) GetLLMContent() interface{} {
 }
 
 func WechatMsgSent(msgId string) {
-	if msgInfo, ok := WechatMsgMap.Load(msgId); ok {
-		wechatMsg := msgInfo.(*WechatMessage)
+	if msgInfo, ok := TencentMsgMap.Load(msgId); ok {
+		wechatMsg := msgInfo.(*TencentWechatMessage)
 		wechatMsg.Status = msgSent
-		WechatMsgMap.Store(msgId, wechatMsg)
+		TencentMsgMap.Store(msgId, wechatMsg)
 	}
 }
 
-func (w *WechatRobot) GetPerMsgLen() int {
+func (w *WechatRobot) getPerMsgLen() int {
 	return 1800
+}
+
+func (w *WechatRobot) passiveExecCmd() {
+	w.Robot.TalkingPreCheck(func() {
+		chatId, msgId, userId := w.Robot.GetChatIdAndMsgIdAndUserID()
+		if !*conf.BaseConfInfo.WechatActive {
+			logger.Warn("only wechat_active is true can generate image")
+			w.Robot.SendMsg(chatId, "only wechat_active is true can generate image", msgId, tgbotapi.ModeMarkdown, nil)
+			return
+		}
+		
+		if w.TextMsg != nil {
+			status := msgChangePhoto
+			switch w.Command {
+			case "/change_photo", "change_photo":
+				status = msgChangePhoto
+			case "/rec_photo", "rec_photo":
+				status = msgRecognizePhoto
+			}
+			TencentMsgMap.Store(userId, &TencentWechatMessage{
+				Msg:       w.Prompt,
+				Status:    status,
+				StartTime: time.Now(),
+			})
+			w.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "set_pre_prompt_success", nil),
+				msgId, tgbotapi.ModeMarkdown, nil)
+			return
+		}
+		
+		if w.ImageMsg != nil {
+			if msgInfoInter, ok := TencentMsgMap.Load(userId); ok {
+				if msgInfo, ok := msgInfoInter.(*TencentWechatMessage); ok {
+					switch msgInfo.Status {
+					case msgChangePhoto:
+						data, err := w.getMedia()
+						if err != nil {
+							logger.Error("read media fail", "err", err)
+							w.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
+							return
+						}
+						w.Prompt = msgInfo.Msg
+						w.ImageContent = data
+						w.sendImg()
+					case msgRecognizePhoto:
+						w.Prompt = msgInfo.Msg
+						w.executeLLM()
+					}
+					
+					TencentMsgMap.Delete(userId)
+				}
+			}
+		}
+	})
+}
+
+func (w *WechatRobot) getMedia() ([]byte, error) {
+	resp, err := w.App.Media.Get(w.Ctx, w.ImageMsg.MediaID)
+	if err != nil {
+		logger.Error("get media fail", "err", err)
+		return nil, err
+	}
+	
+	defer resp.Body.Close()
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		logger.Error("read media fail", "err", err)
+		return nil, err
+	}
+	
+	return data, nil
 }

@@ -504,7 +504,7 @@ func (l *LarkRobot) executeLLM() {
 	
 }
 
-func (l *LarkRobot) GetContent(content string) (string, error) {
+func (l *LarkRobot) getContent(content string) (string, error) {
 	var err error
 	msgType := larkcore.StringValue(l.Message.Event.Message.MessageType)
 	_, msgId, _ := l.Robot.GetChatIdAndMsgIdAndUserID()
@@ -702,6 +702,6 @@ func (l *LarkRobot) getPrompt() string {
 	return l.Prompt
 }
 
-func (l *LarkRobot) GetPerMsgLen() int {
+func (l *LarkRobot) getPerMsgLen() int {
 	return 1800
 }

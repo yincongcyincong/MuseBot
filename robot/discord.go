@@ -197,7 +197,7 @@ func (d *DiscordRobot) handleUpdate(messageChan *MsgChan) {
 	}
 }
 
-func (d *DiscordRobot) GetContent(defaultText string) (string, error) {
+func (d *DiscordRobot) getContent(defaultText string) (string, error) {
 	var content string
 	var attachments []*discordgo.MessageAttachment
 	
@@ -654,6 +654,6 @@ func (d *DiscordRobot) getPrompt() string {
 	return d.Prompt
 }
 
-func (d *DiscordRobot) GetPerMsgLen() int {
+func (d *DiscordRobot) getPerMsgLen() int {
 	return 1800
 }
