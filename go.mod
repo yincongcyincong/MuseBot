@@ -38,7 +38,7 @@ require (
 	go.etcd.io/etcd/client/v3 v3.5.0
 	golang.org/x/oauth2 v0.25.0
 	golang.org/x/text v0.27.0
-	google.golang.org/genai v1.7.0
+	google.golang.org/genai v1.21.0
 	gopkg.in/fsnotify.v1 v1.4.7
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 )

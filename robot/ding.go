@@ -457,11 +457,12 @@ func (d *DingRobot) handleUpdate(messageChan *MsgChan) {
 	}
 	
 	if msg == nil || len(msg.Content) == 0 {
-		msg = new(param.MsgInfo)
 		return
 	}
 	
-	d.Robot.SendMsg(chatId, msg.Content, messageId, "", nil)
+	if !msg.Finished {
+		d.Robot.SendMsg(chatId, msg.Content, messageId, "", nil)
+	}
 }
 
 //func (d *DingRobot) handleUpdate(messageChan chan *param.MsgInfo) {
@@ -536,7 +537,7 @@ func (d *DingRobot) executeLLM() {
 	
 }
 
-func (d *DingRobot) GetContent(content string) (string, error) {
+func (d *DingRobot) getContent(content string) (string, error) {
 	msgType := d.Message.Msgtype
 	switch msgType {
 	case "picture":
@@ -848,6 +849,6 @@ func (d *DingRobot) GetImageContent(accessToken string, c map[string]interface{}
 	return nil, errors.New("download code not exist")
 }
 
-func (d *DingRobot) GetPerMsgLen() int {
+func (d *DingRobot) getPerMsgLen() int {
 	return 1800
 }

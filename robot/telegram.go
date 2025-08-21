@@ -374,9 +374,9 @@ func (t *TelegramRobot) sendChatMessage() {
 		if messageText == "" {
 			messageText = t.Update.Message.Caption
 		}
-		messageText, err = t.GetContent(messageText)
+		messageText, err = t.getContent(messageText)
 		if err != nil {
-			logger.Warn("GetContent error", "err", err)
+			logger.Warn("getContent error", "err", err)
 			return
 		}
 	} else {
@@ -772,7 +772,7 @@ func (t *TelegramRobot) ExecuteForceReply() {
 	}
 }
 
-func (t *TelegramRobot) GetContent(content string) (string, error) {
+func (t *TelegramRobot) getContent(content string) (string, error) {
 	var err error
 	if content == "" && t.Update.Message.Voice != nil && *conf.AudioConfInfo.AudioAppID != "" {
 		audioContent := t.GetAudioContent()
@@ -884,6 +884,6 @@ func (t *TelegramRobot) sendForceReply(agentType string) func() {
 	}
 }
 
-func (t *TelegramRobot) GetPerMsgLen() int {
+func (t *TelegramRobot) getPerMsgLen() int {
 	return 3896
 }

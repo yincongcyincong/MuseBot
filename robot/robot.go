@@ -9,6 +9,7 @@ import (
 	"runtime/debug"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 	
 	"github.com/ArtisanCloud/PowerWeChat/v3/src/kernel/messages"
@@ -42,12 +43,20 @@ type RobotController struct {
 }
 
 type RobotInfo struct {
-	Robot Robot
+	Robot        Robot
+	TencentRobot TencentRobot
 }
 
 var (
 	robotController = new(RobotController)
+	TencentMsgMap   sync.Map
 )
+
+type TencentWechatMessage struct {
+	Msg       string
+	Status    int
+	StartTime time.Time
+}
 
 type Robot interface {
 	checkValid() bool
@@ -70,9 +79,13 @@ type Robot interface {
 	
 	getPrompt() string
 	
-	GetContent(content string) (string, error)
+	getContent(content string) (string, error)
 	
-	GetPerMsgLen() int
+	getPerMsgLen() int
+}
+
+type TencentRobot interface {
+	passiveExecCmd()
 }
 
 type botOption func(r *RobotInfo)
@@ -394,10 +407,10 @@ func (r *RobotInfo) SendMsg(chatId string, msgContent string, replyToMessageID s
 			}
 		} else {
 			_, msgId, _ := w.Robot.GetChatIdAndMsgIdAndUserID()
-			_, ok := WechatMsgMap.Load(msgId)
+			_, ok := TencentMsgMap.Load(msgId)
 			if msgId != "" && !ok {
 				msgContent = strings.ReplaceAll(strings.ReplaceAll(msgContent, "http", ""), "https", "")
-				WechatMsgMap.Store(msgId, &WechatMessage{
+				TencentMsgMap.Store(msgId, &TencentWechatMessage{
 					Msg:       msgContent,
 					Status:    msgFinished,
 					StartTime: time.Now(),
@@ -413,6 +426,12 @@ func (r *RobotInfo) SendMsg(chatId string, msgContent string, replyToMessageID s
 func WithRobot(robot Robot) func(*RobotInfo) {
 	return func(r *RobotInfo) {
 		r.Robot = robot
+	}
+}
+
+func WithTencentRobot(robot TencentRobot) func(*RobotInfo) {
+	return func(r *RobotInfo) {
+		r.TencentRobot = robot
 	}
 }
 
@@ -698,6 +717,12 @@ func (r *RobotInfo) ExecCmd(cmd string, defaultFunc func()) {
 		r.Robot.sendVideo()
 	case "help", "/help":
 		r.Robot.sendHelpConfigurationOptions()
+	case "change_photo", "/change_photo", "rec_photo", "/rec_photo":
+		if r.TencentRobot != nil {
+			r.TencentRobot.passiveExecCmd()
+		} else {
+			defaultFunc()
+		}
 	case "task", "/task":
 		var emptyPromptFunc func()
 		if t, ok := r.Robot.(*TelegramRobot); ok {
@@ -728,7 +753,7 @@ func (r *RobotInfo) ExecChain(msgContent string, msgChan *MsgChan) {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 		defer cancel()
 		
-		content, err := r.Robot.GetContent(strings.TrimSpace(msgContent))
+		content, err := r.Robot.getContent(strings.TrimSpace(msgContent))
 		if err != nil {
 			logger.Error("get content fail", "err", err)
 			r.SendMsg(chatId, err.Error(), msgId, "", nil)
@@ -768,7 +793,7 @@ func (r *RobotInfo) ExecLLM(msgContent string, msgChan *MsgChan) {
 	
 	chatId, msgId, userId := r.GetChatIdAndMsgIdAndUserID()
 	
-	content, err := r.Robot.GetContent(strings.TrimSpace(msgContent))
+	content, err := r.Robot.getContent(strings.TrimSpace(msgContent))
 	if err != nil {
 		logger.Error("get content fail", "err", err)
 		r.SendMsg(chatId, err.Error(), msgId, "", nil)
@@ -782,7 +807,7 @@ func (r *RobotInfo) ExecLLM(msgContent string, msgChan *MsgChan) {
 		llm.WithMessageChan(msgChan.NormalMessageChan),
 		llm.WithHTTPMsgChan(msgChan.StrMessageChan),
 		llm.WithContent(content),
-		llm.WithPerMsgLen(r.Robot.GetPerMsgLen()),
+		llm.WithPerMsgLen(r.Robot.getPerMsgLen()),
 	)
 	
 	err = llmClient.CallLLM()

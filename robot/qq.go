@@ -54,6 +54,7 @@ type QQRobot struct {
 	Prompt       string
 	BotName      string
 	OriginPrompt string
+	ImageContent []byte
 }
 
 func StartQQRobot(ctx context.Context) {
@@ -157,6 +158,19 @@ func (q *QQRobot) checkValid() bool {
 	}
 	if q.GroupAtMessage != nil {
 		q.Command, q.Prompt = ParseCommand(q.GroupAtMessage.Content)
+	}
+	
+	if q.GetAttachment() != nil && strings.Contains(q.GetAttachment().ContentType, "image") {
+		_, msgId, userId := q.Robot.GetChatIdAndMsgIdAndUserID()
+		if msgInfoInter, ok := TencentMsgMap.Load(userId); ok {
+			if msgInfo, ok := msgInfoInter.(*TencentWechatMessage); ok {
+				if msgInfo.Status == msgChangePhoto || msgInfo.Status == msgRecognizePhoto {
+					logger.Info("ComWechatRobot handle photo msg", "msgId", msgId, "userId", userId)
+					q.passiveExecCmd()
+					return false
+				}
+			}
+		}
 	}
 	
 	return true
@@ -516,7 +530,7 @@ func (q *QQRobot) executeLLM() {
 	
 }
 
-func (q *QQRobot) GetContent(content string) (string, error) {
+func (q *QQRobot) getContent(content string) (string, error) {
 	attachment := q.GetAttachment()
 	if attachment == nil {
 		return "", errors.New("no attachments found")
@@ -737,6 +751,61 @@ func (q *QQRobot) PostStreamMessage(state, idx int32, id, content string) (strin
 	
 }
 
-func (q *QQRobot) GetPerMsgLen() int {
+func (q *QQRobot) getPerMsgLen() int {
 	return 1800
+}
+
+func (q *QQRobot) passiveExecCmd() {
+	q.Robot.TalkingPreCheck(func() {
+		chatId, msgId, userId := q.Robot.GetChatIdAndMsgIdAndUserID()
+		if !*conf.BaseConfInfo.WechatActive {
+			logger.Warn("only wechat_active is true can generate image")
+			q.Robot.SendMsg(chatId, "only wechat_active is true can generate image", msgId, tgbotapi.ModeMarkdown, nil)
+			return
+		}
+		
+		attachment := q.GetAttachment()
+		
+		if attachment == nil && q.Prompt != "" {
+			status := msgChangePhoto
+			switch q.Command {
+			case "/change_photo", "change_photo":
+				status = msgChangePhoto
+			case "/rec_photo", "rec_photo":
+				status = msgRecognizePhoto
+			}
+			TencentMsgMap.Store(userId, &TencentWechatMessage{
+				Msg:       q.Prompt,
+				Status:    status,
+				StartTime: time.Now(),
+			})
+			q.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "set_pre_prompt_success", nil),
+				msgId, tgbotapi.ModeMarkdown, nil)
+			return
+		}
+		
+		if strings.Contains(attachment.ContentType, "image") {
+			if msgInfoInter, ok := TencentMsgMap.Load(userId); ok {
+				if msgInfo, ok := msgInfoInter.(*TencentWechatMessage); ok {
+					switch msgInfo.Status {
+					case msgChangePhoto:
+						data, err := utils.DownloadFile(attachment.URL)
+						if err != nil {
+							logger.Error("get image content fail", "err", err)
+							q.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
+							return
+						}
+						q.Prompt = msgInfo.Msg
+						q.ImageContent = data
+						q.sendImg()
+					case msgRecognizePhoto:
+						q.Prompt = msgInfo.Msg
+						q.executeLLM()
+					}
+					
+					TencentMsgMap.Delete(userId)
+				}
+			}
+		}
+	})
 }

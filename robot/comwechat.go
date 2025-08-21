@@ -41,6 +41,7 @@ type ComWechatRobot struct {
 	Command      string
 	Prompt       string
 	OriginPrompt string
+	ImageContent []byte
 	TextMsg      *serverModel.MessageText
 	VoiceMsg     *serverModel.MessageVoice
 	ImageMsg     *serverModel.MessageImage
@@ -118,6 +119,19 @@ func (c *ComWechatRobot) checkValid() bool {
 		c.OriginPrompt = c.TextMsg.Content
 		c.Command, c.Prompt = ParseCommand(c.TextMsg.Content)
 		logger.Info("ComWechatRobot msg", "Command", c.Command, "Prompt", c.Prompt)
+	}
+	
+	if c.Event.GetMsgType() == models.CALLBACK_MSG_TYPE_IMAGE {
+		_, msgId, userId := c.Robot.GetChatIdAndMsgIdAndUserID()
+		if msgInfoInter, ok := TencentMsgMap.Load(userId); ok {
+			if msgInfo, ok := msgInfoInter.(*TencentWechatMessage); ok {
+				if msgInfo.Status == msgChangePhoto || msgInfo.Status == msgRecognizePhoto {
+					logger.Info("ComWechatRobot handle photo msg", "msgId", msgId, "userId", userId)
+					c.passiveExecCmd()
+					return false
+				}
+			}
+		}
 	}
 	
 	return true
@@ -457,35 +471,20 @@ func (c *ComWechatRobot) executeLLM() {
 	
 }
 
-func (c *ComWechatRobot) GetContent(content string) (string, error) {
+func (c *ComWechatRobot) getContent(content string) (string, error) {
 	
 	msgType := c.Event.GetMsgType()
 	
 	switch msgType {
 	case models.CALLBACK_MSG_TYPE_IMAGE:
-		
-		resp, err := c.App.Media.Get(c.Ctx, c.ImageMsg.MediaID)
-		if err != nil {
-			logger.Error("get media fail", "err", err)
-			return "", err
-		}
-		
-		defer resp.Body.Close()
-		data, err := io.ReadAll(resp.Body)
+		data, err := c.getMedia()
 		if err != nil {
 			return "", err
 		}
 		return c.Robot.GetImageContent(data, content)
 	
 	case models.CALLBACK_MSG_TYPE_VOICE:
-		resp, err := c.App.Media.Get(c.Ctx, c.VoiceMsg.MediaID)
-		if err != nil {
-			logger.Error("get media fail", "err", err)
-			return "", err
-		}
-		
-		defer resp.Body.Close()
-		data, err := io.ReadAll(resp.Body)
+		data, err := c.getMedia()
 		if err != nil {
 			logger.Error("read media fail", "err", err)
 			return "", err
@@ -512,6 +511,76 @@ func (c *ComWechatRobot) getPrompt() string {
 	return c.Prompt
 }
 
-func (c *ComWechatRobot) GetPerMsgLen() int {
+func (c *ComWechatRobot) getPerMsgLen() int {
 	return 1800
+}
+
+func (c *ComWechatRobot) passiveExecCmd() {
+	c.Robot.TalkingPreCheck(func() {
+		chatId, msgId, userId := c.Robot.GetChatIdAndMsgIdAndUserID()
+		if !*conf.BaseConfInfo.WechatActive {
+			logger.Warn("only wechat_active is true can generate image")
+			c.Robot.SendMsg(chatId, "only wechat_active is true can generate image", msgId, tgbotapi.ModeMarkdown, nil)
+			return
+		}
+		
+		if c.TextMsg != nil {
+			status := msgChangePhoto
+			switch c.Command {
+			case "/change_photo", "change_photo":
+				status = msgChangePhoto
+			case "/rec_photo", "rec_photo":
+				status = msgRecognizePhoto
+			}
+			TencentMsgMap.Store(userId, &TencentWechatMessage{
+				Msg:       c.Prompt,
+				Status:    status,
+				StartTime: time.Now(),
+			})
+			c.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "set_pre_prompt_success", nil),
+				msgId, tgbotapi.ModeMarkdown, nil)
+			return
+		}
+		
+		if c.ImageMsg != nil {
+			if msgInfoInter, ok := TencentMsgMap.Load(userId); ok {
+				if msgInfo, ok := msgInfoInter.(*TencentWechatMessage); ok {
+					switch msgInfo.Status {
+					case msgChangePhoto:
+						c.Prompt = msgInfo.Msg
+						data, err := c.getMedia()
+						if err != nil {
+							logger.Error("get media fail", "err", err)
+							c.Robot.SendMsg(chatId, "get media fail", msgId, tgbotapi.ModeMarkdown, nil)
+							return
+						}
+						c.ImageContent = data
+						c.sendImg()
+					case msgRecognizePhoto:
+						c.Prompt = msgInfo.Msg
+						c.executeLLM()
+					}
+					
+					TencentMsgMap.Delete(userId)
+				}
+			}
+		}
+	})
+}
+
+func (c *ComWechatRobot) getMedia() ([]byte, error) {
+	resp, err := c.App.Media.Get(c.Ctx, c.ImageMsg.MediaID)
+	if err != nil {
+		logger.Error("get media fail", "err", err)
+		return nil, err
+	}
+	
+	defer resp.Body.Close()
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		logger.Error("read media fail", "err", err)
+		return nil, err
+	}
+	
+	return data, nil
 }

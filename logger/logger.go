@@ -43,7 +43,7 @@ var QQLogger = new(QQLoggerInfo)
 // InitLogger init logger
 func InitLogger() {
 	fileWriter := &lumberjack.Logger{
-		Filename:   "./log/telegram_deepseek.log",
+		Filename:   "./log/muse_bot.log",
 		MaxSize:    100,
 		MaxBackups: 10,
 		MaxAge:     30,
