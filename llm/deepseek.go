@@ -140,7 +140,7 @@ func (d *DeepseekReq) Send(ctx context.Context, l *LLM) error {
 		}
 		if err != nil {
 			logger.Warn("Stream error", "updateMsgID", l.MsgId, "err", err)
-			break
+			return err
 		}
 		for _, choice := range response.Choices {
 			if len(choice.Delta.ToolCalls) > 0 {

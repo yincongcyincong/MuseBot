@@ -109,7 +109,7 @@ func (h *GeminiReq) Send(ctx context.Context, l *LLM) error {
 		}
 		if err != nil {
 			logger.Error("stream error:", "updateMsgID", l.MsgId, "err", err)
-			break
+			return err
 		}
 		
 		toolCalls := response.FunctionCalls()

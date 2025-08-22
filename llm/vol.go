@@ -152,7 +152,7 @@ func (h *VolReq) Send(ctx context.Context, l *LLM) error {
 		}
 		if err != nil {
 			logger.Error("stream error:", "updateMsgID", l.MsgId, "err", err)
-			break
+			return err
 		}
 		for _, choice := range response.Choices {
 			
