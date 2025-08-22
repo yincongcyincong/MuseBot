@@ -118,7 +118,7 @@ func InitConf() {
 	BaseConfInfo.Lang = flag.String("lang", "en", "lang")
 	BaseConfInfo.TokenPerUser = flag.Int("token_per_user", 10000, "token per user")
 	BaseConfInfo.MaxUserChat = flag.Int("max_user_chat", 2, "max chat per user")
-	BaseConfInfo.HTTPHost = flag.String("http_host", "127.0.0.1:36060", "http server port")
+	BaseConfInfo.HTTPHost = flag.String("http_host", ":36060", "http server port")
 	BaseConfInfo.UseTools = flag.Bool("use_tools", false, "use tools")
 	
 	BaseConfInfo.CrtFile = flag.String("crt_file", "", "public key file")

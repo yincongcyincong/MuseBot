@@ -20,7 +20,7 @@ const (
 	OneMsgLen       = 3896
 	FirstSendLen    = 30
 	NonFirstSendLen = 500
-	MostLoop        = 10
+	MostLoop        = 15
 )
 
 var (

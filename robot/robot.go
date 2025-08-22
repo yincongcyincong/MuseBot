@@ -471,7 +471,7 @@ func StartRobot() {
 	
 	if *conf.BaseConfInfo.ComWechatSecret != "" && *conf.BaseConfInfo.ComWechatAgentID != "" && *conf.BaseConfInfo.ComWechatEncodingAESKey != "" {
 		go func() {
-			StartComWechatRobot()
+			StartComWechatRobot(ctx)
 		}()
 	}
 	

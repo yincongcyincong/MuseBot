@@ -47,7 +47,7 @@ type ComWechatRobot struct {
 	ImageMsg     *serverModel.MessageImage
 }
 
-func StartComWechatRobot() {
+func StartComWechatRobot(ctx context.Context) {
 	var err error
 	ComWechatApp, err = work.NewWork(&work.UserConfig{
 		CorpID:    *conf.BaseConfInfo.ComWechatCorpID,
@@ -66,7 +66,7 @@ func StartComWechatRobot() {
 		return
 	}
 	
-	resp, err := ComWechatApp.Agent.Get(context.Background(), utils.ParseInt(*conf.BaseConfInfo.ComWechatAgentID))
+	resp, err := ComWechatApp.Agent.Get(ctx, utils.ParseInt(*conf.BaseConfInfo.ComWechatAgentID))
 	if err != nil {
 		logger.Error("ComWechatApp get agent error: ", err)
 		return

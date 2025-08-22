@@ -569,6 +569,14 @@ func (l *LarkRobot) getContent(content string) (string, error) {
 			logger.Warn("generate text from audio failed", "err", err)
 			return "", err
 		}
+	case larkim.MsgTypePost:
+		if len(l.ImageContent) != 0 {
+			content, err = l.Robot.GetImageContent(l.ImageContent, content)
+			if err != nil {
+				logger.Warn("generate text from audio failed", "err", err)
+				return "", err
+			}
+		}
 	}
 	
 	if content == "" {

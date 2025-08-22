@@ -15,6 +15,10 @@ var MCPConf = &param.McpClientGoConfig{
 				"-y", "@modelcontextprotocol/server-filesystem", "/path/to/your/directory",
 			},
 		},
+		"chrome-mcp-server": {
+			Description: "Operate Chrome to perform different interactive operations.",
+			Url:         "http://127.0.0.1:12306/mcp",
+		},
 		"mcp-server-commands": {
 			Description: " execute local system commands through a backend service.",
 			Command:     "npx",
