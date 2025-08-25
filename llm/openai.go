@@ -51,8 +51,8 @@ func (d *OpenAIReq) GetMessages(userId string, prompt string) {
 	msgRecords := db.GetMsgRecord(userId)
 	if msgRecords != nil {
 		aqs := msgRecords.AQs
-		if len(aqs) > db.MaxQAPair {
-			aqs = aqs[len(aqs)-db.MaxQAPair:]
+		if len(aqs) > *conf.BaseConfInfo.MaxQAPair {
+			aqs = aqs[len(aqs)-*conf.BaseConfInfo.MaxQAPair:]
 		}
 		
 		for i, record := range aqs {

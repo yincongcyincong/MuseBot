@@ -221,12 +221,13 @@ docker run -d -v /home/user/data:/app/data -e TELEGRAM_BOT_TOKEN="你的Telegram
 
 <img width="400" src="https://github.com/user-attachments/assets/869e0207-388b-49ca-b26a-378f71d58818"  alt=""/>
 
-## 管理员命令
+### /change_photo
+对腾讯系的app起作用：qq，微信 ，企业微信
+输入一段prompt用户修改图片
 
-### /addtoken
-
-给用户增加token.
-<img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/12d98272-0718-4c9b-bc5c-e0a92e6c8664" />
+### /rec_photo
+对腾讯系的app起作用：qq，微信 ，企业微信
+输入一段prompt用户识别图片
 
 ---
 

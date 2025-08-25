@@ -59,6 +59,7 @@ type BaseConf struct {
 	MaxUserChat  *int    `json:"max_user_chat"`
 	HTTPHost     *string `json:"http_host"`
 	UseTools     *bool   `json:"use_tools"`
+	MaxQAPair    *int    `json:"max_qa_pari"`
 	
 	CrtFile *string `json:"crt_file"`
 	KeyFile *string `json:"key_file"`
@@ -120,6 +121,7 @@ func InitConf() {
 	BaseConfInfo.MaxUserChat = flag.Int("max_user_chat", 2, "max chat per user")
 	BaseConfInfo.HTTPHost = flag.String("http_host", ":36060", "http server port")
 	BaseConfInfo.UseTools = flag.Bool("use_tools", false, "use tools")
+	BaseConfInfo.MaxQAPair = flag.Int("max_qa_pari", 10, "max qa pair")
 	
 	BaseConfInfo.CrtFile = flag.String("crt_file", "", "public key file")
 	BaseConfInfo.KeyFile = flag.String("key_file", "", "secret key file")
@@ -322,6 +324,10 @@ func InitConf() {
 		*BaseConfInfo.OpenRouterToken = os.Getenv("OPEN_ROUTER_TOKEN")
 	}
 	
+	if os.Getenv("MAX_QAPAIR") != "" {
+		*BaseConfInfo.MaxQAPair, _ = strconv.Atoi(os.Getenv("MAX_QAPAIR"))
+	}
+	
 	if os.Getenv("CRT_FILE") != "" {
 		*BaseConfInfo.CrtFile = os.Getenv("CRT_FILE")
 	}
@@ -404,6 +410,7 @@ func InitConf() {
 	logger.Info("CONF", "CaFile", *BaseConfInfo.CaFile)
 	logger.Info("CONF", "MediaType", *BaseConfInfo.MediaType)
 	logger.Info("CONF", "BotName", *BaseConfInfo.BotName)
+	logger.Info("CONF", "MaxQAPair", *BaseConfInfo.MaxQAPair)
 	
 	EnvAudioConf()
 	EnvRagConf()
