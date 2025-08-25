@@ -111,7 +111,11 @@ func NewDingRobot(ctx context.Context, message *chatbot.BotCallbackDataModel) *D
 
 func (d *DingRobot) checkValid() bool {
 	chatId, msgId, _ := d.Robot.GetChatIdAndMsgIdAndUserID()
-	d.GetAccessToken()
+	_, err := d.GetAccessToken()
+	if err != nil {
+		logger.Error("get access token error", "err", err)
+		return false
+	}
 	
 	// group need to at bot
 	atBot, err := d.GetMessageContent()
@@ -850,5 +854,5 @@ func (d *DingRobot) GetImageContent(accessToken string, c map[string]interface{}
 }
 
 func (d *DingRobot) getPerMsgLen() int {
-	return 1800
+	return 4500
 }

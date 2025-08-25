@@ -765,6 +765,7 @@ func (r *RobotInfo) ExecChain(msgContent string, msgChan *MsgChan) {
 			llm.WithContent(content),
 			llm.WithChatId(chatId),
 			llm.WithUserId(userId),
+			llm.WithPerMsgLen(r.Robot.getPerMsgLen()),
 		)
 		qaChain := chains.NewRetrievalQAFromLLM(
 			dpLLM,
@@ -928,10 +929,11 @@ func (r *RobotInfo) sendMultiAgent(agentType string, emptyPromptFunc func()) {
 		}
 		
 		dpReq := &llm.LLMTaskReq{
-			Content: prompt,
-			UserId:  userId,
-			ChatId:  chatId,
-			MsgId:   msgId,
+			Content:   prompt,
+			UserId:    userId,
+			ChatId:    chatId,
+			MsgId:     msgId,
+			PerMsgLen: r.Robot.getPerMsgLen(),
 		}
 		
 		if _, ok := r.Robot.(*QQRobot); ok {

@@ -86,6 +86,6 @@ func TestRequestToolsCall_InvalidJSON(t *testing.T) {
 		},
 	}
 	
-	err := req.RequestToolsCall(context.Background(), streamChoice)
+	err := req.RequestToolsCall(context.Background(), streamChoice, nil)
 	assert.Equal(t, ToolsJsonErr, err)
 }

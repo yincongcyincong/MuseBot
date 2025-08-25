@@ -260,20 +260,12 @@ func (s *SlackRobot) handleUpdate(messageChan *MsgChan) {
 	
 	chatId, messageId, _ := s.Robot.GetChatIdAndMsgIdAndUserID()
 	
-	// 先发送一个提示消息，告诉用户机器人在处理
-	originalMsgID := s.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "thinking", nil),
-		messageId, "", nil)
-	
 	for msg := range messageChan.NormalMessageChan {
 		if msg.Content == "" {
 			msg.Content = "get nothing from llm!"
 		}
 		
-		if originalMsgID != "" {
-			msg.MsgId = originalMsgID
-		}
-		
-		if msg.MsgId == "" && originalMsgID == "" {
+		if msg.MsgId == "" {
 			newMsgTimestamp, _, err := s.Client.PostMessage(
 				chatId,
 				slack.MsgOptionText(msg.Content, false),
@@ -295,7 +287,6 @@ func (s *SlackRobot) handleUpdate(messageChan *MsgChan) {
 				logger.Error("update message failed", "err", err)
 				continue
 			}
-			originalMsgID = ""
 		}
 	}
 }

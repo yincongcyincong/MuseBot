@@ -512,7 +512,7 @@ func (c *ComWechatRobot) getPrompt() string {
 }
 
 func (c *ComWechatRobot) getPerMsgLen() int {
-	return 1800
+	return 3500
 }
 
 func (c *ComWechatRobot) passiveExecCmd() {
