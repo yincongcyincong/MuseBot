@@ -39,7 +39,8 @@ func (d *LLMTaskReq) ExecuteMcp() error {
 	
 	// get mcp request
 	llm := NewLLM(WithChatId(d.ChatId), WithMsgId(d.MsgId), WithUserId(d.UserId),
-		WithMessageChan(d.MessageChan), WithContent(d.Content), WithHTTPMsgChan(d.HTTPMsgChan))
+		WithMessageChan(d.MessageChan), WithContent(d.Content), WithHTTPMsgChan(d.HTTPMsgChan),
+		WithPerMsgLen(d.PerMsgLen))
 	
 	prompt := i18n.GetMessage(*conf.BaseConfInfo.Lang, "mcp_prompt", taskParam)
 	llm.LLMClient.GetUserMessage(prompt)
@@ -59,6 +60,8 @@ func (d *LLMTaskReq) ExecuteMcp() error {
 		}
 	}
 	
+	logger.Info("mcp plan", "plan", mcpResult)
+	
 	// execute mcp request
 	var taskTool *conf.AgentInfo
 	taskToolInter, ok := conf.TaskTools.Load(mcpResult.Agent)
@@ -66,7 +69,8 @@ func (d *LLMTaskReq) ExecuteMcp() error {
 		taskTool = taskToolInter.(*conf.AgentInfo)
 	}
 	mcpLLM := NewLLM(WithChatId(d.ChatId), WithMsgId(d.MsgId), WithUserId(d.UserId),
-		WithMessageChan(d.MessageChan), WithContent(d.Content), WithTaskTools(taskTool))
+		WithMessageChan(d.MessageChan), WithContent(d.Content), WithTaskTools(taskTool),
+		WithPerMsgLen(d.PerMsgLen))
 	mcpLLM.Token += llm.Token
 	mcpLLM.Content = d.Content
 	mcpLLM.LLMClient.GetUserMessage(d.Content)

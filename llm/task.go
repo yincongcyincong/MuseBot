@@ -23,6 +23,7 @@ type LLMTaskReq struct {
 	Content     string
 	Model       string
 	Token       int
+	PerMsgLen   int
 	
 	UserId string
 	ChatId string
@@ -63,7 +64,8 @@ func (d *LLMTaskReq) ExecuteTask() error {
 	
 	prompt := i18n.GetMessage(*conf.BaseConfInfo.Lang, "assign_task_prompt", taskParam)
 	llm := NewLLM(WithUserId(d.UserId), WithChatId(d.ChatId), WithMsgId(d.MsgId),
-		WithMessageChan(d.MessageChan), WithContent(prompt), WithHTTPMsgChan(d.HTTPMsgChan))
+		WithMessageChan(d.MessageChan), WithContent(prompt), WithHTTPMsgChan(d.HTTPMsgChan),
+		WithPerMsgLen(d.PerMsgLen))
 	llm.LLMClient.GetUserMessage(prompt)
 	llm.LLMClient.GetModel(llm)
 	c, err := llm.LLMClient.SyncSend(ctx, llm)
@@ -83,11 +85,14 @@ func (d *LLMTaskReq) ExecuteTask() error {
 		}
 	}
 	
+	logger.Info("task plan", "plan", plans)
+	
 	if len(plans.Plan) == 0 {
 		logger.Info("no plan created!")
 		
 		finalLLM := NewLLM(WithUserId(d.UserId), WithChatId(d.ChatId), WithMsgId(d.MsgId),
-			WithMessageChan(d.MessageChan), WithContent(d.Content))
+			WithMessageChan(d.MessageChan), WithContent(d.Content), WithHTTPMsgChan(d.HTTPMsgChan),
+			WithPerMsgLen(d.PerMsgLen))
 		finalLLM.LLMClient.GetUserMessage(c)
 		finalLLM.LLMClient.GetModel(finalLLM)
 		err = finalLLM.LLMClient.Send(ctx, finalLLM)
@@ -126,7 +131,7 @@ func (d *LLMTaskReq) loopTask(ctx context.Context, plans *TaskInfo, lastPlan str
 	
 	completeTasks := map[string]bool{}
 	taskLLM := NewLLM(WithUserId(d.UserId), WithChatId(d.ChatId), WithMsgId(d.MsgId),
-		WithMessageChan(d.MessageChan))
+		WithMessageChan(d.MessageChan), WithHTTPMsgChan(d.HTTPMsgChan), WithPerMsgLen(d.PerMsgLen))
 	for _, plan := range plans.Plan {
 		toolInter, ok := conf.TaskTools.Load(plan.Name)
 		var tool *conf.AgentInfo

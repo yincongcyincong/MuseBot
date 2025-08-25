@@ -223,23 +223,13 @@ func (t *TelegramRobot) handleUpdate(messageChan *MsgChan) {
 	chatId := int64(utils.ParseInt(chatIdStr))
 	parseMode := tgbotapi.ModeMarkdown
 	
-	tgMsgInfo := tgbotapi.NewMessage(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "thinking", nil))
-	tgMsgInfo.ReplyToMessageID = msgId
-	firstSendInfo, err := t.Bot.Send(tgMsgInfo)
-	if err != nil {
-		logger.Warn("Sending first message fail", "err", err)
-	}
-	
 	for msg = range messageChan.NormalMessageChan {
 		if len(msg.Content) == 0 {
 			msg.Content = "get nothing from llm!"
 		}
-		if firstSendInfo.MessageID != 0 {
-			msg.MsgId = strconv.Itoa(firstSendInfo.MessageID)
-		}
 		
-		if msg.MsgId == "" && firstSendInfo.MessageID == 0 {
-			tgMsgInfo = tgbotapi.NewMessage(chatId, msg.Content)
+		if msg.MsgId == "" {
+			tgMsgInfo := tgbotapi.NewMessage(chatId, msg.Content)
 			tgMsgInfo.ReplyToMessageID = msgId
 			tgMsgInfo.ParseMode = parseMode
 			sendInfo, err := t.Bot.Send(tgMsgInfo)
@@ -261,7 +251,7 @@ func (t *TelegramRobot) handleUpdate(messageChan *MsgChan) {
 		} else {
 			updateMsg := tgbotapi.NewEditMessageText(chatId, utils.ParseInt(msg.MsgId), msg.Content)
 			updateMsg.ParseMode = parseMode
-			_, err = t.Bot.Send(updateMsg)
+			_, err := t.Bot.Send(updateMsg)
 			if err != nil {
 				// try again
 				if sleepUtilNoLimit(msgId, err) {
@@ -276,7 +266,6 @@ func (t *TelegramRobot) handleUpdate(messageChan *MsgChan) {
 					logger.Warn("Error editing message", "msgID", msgId, "err", err)
 				}
 			}
-			firstSendInfo.MessageID = 0
 		}
 		
 	}

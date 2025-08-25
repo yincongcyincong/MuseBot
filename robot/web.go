@@ -311,6 +311,7 @@ func (web *Web) sendMultiAgent(agentType string) {
 		ChatId:      web.RealUserId,
 		MsgId:       web.RealUserId,
 		HTTPMsgChan: messageChan,
+		PerMsgLen:   10000000,
 	}
 	
 	go func() {
@@ -534,6 +535,7 @@ func (web *Web) sendChatMessage() {
 			llm.WithMsgId(web.RealUserId),
 			llm.WithHTTPMsgChan(messageChan),
 			llm.WithContent(prompt),
+			llm.WithPerMsgLen(1000000),
 		)
 		go func() {
 			defer close(messageChan)

@@ -150,7 +150,7 @@ func (d *OpenAIReq) Send(ctx context.Context, l *LLM) error {
 		for _, choice := range response.Choices {
 			if len(choice.Delta.ToolCalls) > 0 {
 				hasTools = true
-				err = d.RequestToolsCall(ctx, choice)
+				err = d.RequestToolsCall(ctx, choice, l)
 				if err != nil {
 					if errors.Is(err, ToolsJsonErr) {
 						continue
@@ -280,13 +280,13 @@ func (d *OpenAIReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 	if len(response.Choices[0].Message.ToolCalls) > 0 {
 		d.GetAssistantMessage("")
 		d.OpenAIMsgs[len(d.OpenAIMsgs)-1].ToolCalls = response.Choices[0].Message.ToolCalls
-		d.requestOneToolsCall(ctx, response.Choices[0].Message.ToolCalls)
+		d.requestOneToolsCall(ctx, response.Choices[0].Message.ToolCalls, l)
 	}
 	
 	return response.Choices[0].Message.Content, nil
 }
 
-func (d *OpenAIReq) requestOneToolsCall(ctx context.Context, toolsCall []openai.ToolCall) {
+func (d *OpenAIReq) requestOneToolsCall(ctx context.Context, toolsCall []openai.ToolCall, l *LLM) {
 	for _, tool := range toolsCall {
 		property := make(map[string]interface{})
 		err := json.Unmarshal([]byte(tool.Function.Arguments), &property)
@@ -312,10 +312,16 @@ func (d *OpenAIReq) requestOneToolsCall(ctx context.Context, toolsCall []openai.
 			ToolCallID: tool.ID,
 		})
 		logger.Info("exec tool", "name", tool.Function.Name, "toolsData", toolsData)
+		
+		l.DirectSendMsg(i18n.GetMessage(*conf.BaseConfInfo.Lang, "send_mcp_info", map[string]interface{}{
+			"function_name": tool.Function.Name,
+			"request_args":  property,
+			"response":      toolsData,
+		}))
 	}
 }
 
-func (d *OpenAIReq) RequestToolsCall(ctx context.Context, choice openai.ChatCompletionStreamChoice) error {
+func (d *OpenAIReq) RequestToolsCall(ctx context.Context, choice openai.ChatCompletionStreamChoice, l *LLM) error {
 	for _, toolCall := range choice.Delta.ToolCalls {
 		property := make(map[string]interface{})
 		
@@ -341,28 +347,36 @@ func (d *OpenAIReq) RequestToolsCall(ctx context.Context, choice openai.ChatComp
 			return ToolsJsonErr
 		}
 		
-		mc, err := clients.GetMCPClientByToolName(d.ToolCall[len(d.ToolCall)-1].Function.Name)
+		tool := d.ToolCall[len(d.ToolCall)-1]
+		
+		mc, err := clients.GetMCPClientByToolName(tool.Function.Name)
 		if err != nil {
-			logger.Warn("get mcp fail", "err", err, "function", d.ToolCall[len(d.ToolCall)-1].Function.Name,
-				"toolCall", d.ToolCall[len(d.ToolCall)-1].ID, "argument", d.ToolCall[len(d.ToolCall)-1].Function.Arguments)
+			logger.Warn("get mcp fail", "err", err, "function", tool.Function.Name,
+				"toolCall", tool.ID, "argument", tool.Function.Arguments)
 			return err
 		}
 		
-		toolsData, err := mc.ExecTools(ctx, d.ToolCall[len(d.ToolCall)-1].Function.Name, property)
+		toolsData, err := mc.ExecTools(ctx, tool.Function.Name, property)
 		if err != nil {
-			logger.Warn("exec tools fail", "err", err, "function", d.ToolCall[len(d.ToolCall)-1].Function.Name,
-				"toolCall", d.ToolCall[len(d.ToolCall)-1].ID, "argument", d.ToolCall[len(d.ToolCall)-1].Function.Arguments)
+			logger.Warn("exec tools fail", "err", err, "function", tool.Function.Name,
+				"toolCall", tool.ID, "argument", tool.Function.Arguments)
 			return err
 		}
 		d.CurrentToolMessage = append(d.CurrentToolMessage, openai.ChatCompletionMessage{
 			Role:       constants.ChatMessageRoleTool,
 			Content:    toolsData,
-			ToolCallID: d.ToolCall[len(d.ToolCall)-1].ID,
+			ToolCallID: tool.ID,
 		})
 		
-		logger.Info("send tool request", "function", d.ToolCall[len(d.ToolCall)-1].Function.Name,
-			"toolCall", d.ToolCall[len(d.ToolCall)-1].ID, "argument", d.ToolCall[len(d.ToolCall)-1].Function.Arguments,
+		logger.Info("send tool request", "function", tool.Function.Name,
+			"toolCall", tool.ID, "argument", tool.Function.Arguments,
 			"res", toolsData)
+		
+		l.DirectSendMsg(i18n.GetMessage(*conf.BaseConfInfo.Lang, "send_mcp_info", map[string]interface{}{
+			"function_name": tool.Function.Name,
+			"request_args":  property,
+			"response":      toolsData,
+		}))
 	}
 	
 	return nil

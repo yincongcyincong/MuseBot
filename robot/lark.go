@@ -124,6 +124,8 @@ func (l *LarkRobot) checkValid() bool {
 		}
 	}
 	
+	logger.Info("lark exec cmd", "cmd", l.Command, "prompt", l.Prompt)
+	
 	return true
 }
 
@@ -450,20 +452,13 @@ func (l *LarkRobot) handleUpdate(messageChan *MsgChan) {
 	
 	var msg *param.MsgInfo
 	
-	chatId, messageId, _ := l.Robot.GetChatIdAndMsgIdAndUserID()
-	
-	originalMsgID := l.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "thinking", nil),
-		messageId, "", nil)
-	
+	_, messageId, _ := l.Robot.GetChatIdAndMsgIdAndUserID()
 	for msg = range messageChan.NormalMessageChan {
 		if len(msg.Content) == 0 {
 			msg.Content = "get nothing from llm!"
 		}
-		if originalMsgID != "" {
-			msg.MsgId = originalMsgID
-		}
 		
-		if msg.MsgId == "" && originalMsgID == "" {
+		if msg.MsgId == "" {
 			resp, err := l.Client.Im.Message.Reply(l.Ctx, larkim.NewReplyMessageReqBuilder().
 				MessageId(messageId).
 				Body(larkim.NewReplyMessageReqBodyBuilder().
@@ -489,7 +484,6 @@ func (l *LarkRobot) handleUpdate(messageChan *MsgChan) {
 				logger.Warn("send message fail", "err", err, "resp", resp)
 				continue
 			}
-			originalMsgID = ""
 		}
 	}
 }
@@ -711,5 +705,5 @@ func (l *LarkRobot) getPrompt() string {
 }
 
 func (l *LarkRobot) getPerMsgLen() int {
-	return 1800
+	return 4500
 }

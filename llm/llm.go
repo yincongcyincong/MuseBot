@@ -135,6 +135,23 @@ func NewLLM(opts ...Option) *LLM {
 	return l
 }
 
+func (l *LLM) DirectSendMsg(content string) {
+	if len([]byte(content)) > l.PerMsgLen {
+		content = string([]byte(content)[:l.PerMsgLen])
+	}
+	
+	if l.MessageChan != nil {
+		l.MessageChan <- &param.MsgInfo{
+			Content:  content,
+			Finished: true,
+		}
+	}
+	
+	if l.HTTPMsgChan != nil {
+		l.HTTPMsgChan <- content
+	}
+}
+
 func (l *LLM) SendMsg(msgInfoContent *param.MsgInfo, content string) *param.MsgInfo {
 	if l.MessageChan != nil {
 		if l.PerMsgLen == 0 {

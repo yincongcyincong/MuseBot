@@ -128,6 +128,6 @@ func TestAIRouterReq_requestToolsCall_JSONError(t *testing.T) {
 		},
 	}
 	r := &AIRouterReq{}
-	err := r.requestToolsCall(context.Background(), call)
+	err := r.requestToolsCall(context.Background(), call, nil)
 	assert.True(t, errors.Is(err, ToolsJsonErr))
 }

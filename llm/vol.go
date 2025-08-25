@@ -158,7 +158,7 @@ func (h *VolReq) Send(ctx context.Context, l *LLM) error {
 			
 			if len(choice.Delta.ToolCalls) > 0 {
 				hasTools = true
-				err = h.requestToolsCall(ctx, choice)
+				err = h.requestToolsCall(ctx, choice, l)
 				if err != nil {
 					if errors.Is(err, ToolsJsonErr) {
 						continue
@@ -215,7 +215,7 @@ func (h *VolReq) Send(ctx context.Context, l *LLM) error {
 	return nil
 }
 
-func (h *VolReq) requestToolsCall(ctx context.Context, choice *model.ChatCompletionStreamChoice) error {
+func (h *VolReq) requestToolsCall(ctx context.Context, choice *model.ChatCompletionStreamChoice, l *LLM) error {
 	for _, toolCall := range choice.Delta.ToolCalls {
 		property := make(map[string]interface{})
 		
@@ -241,17 +241,18 @@ func (h *VolReq) requestToolsCall(ctx context.Context, choice *model.ChatComplet
 			return ToolsJsonErr
 		}
 		
-		mc, err := clients.GetMCPClientByToolName(h.ToolCall[len(h.ToolCall)-1].Function.Name)
+		tool := h.ToolCall[len(h.ToolCall)-1]
+		mc, err := clients.GetMCPClientByToolName(tool.Function.Name)
 		if err != nil {
-			logger.Warn("get mcp fail", "err", err, "function", h.ToolCall[len(h.ToolCall)-1].Function.Name,
-				"toolCall", h.ToolCall[len(h.ToolCall)-1].ID, "argument", h.ToolCall[len(h.ToolCall)-1].Function.Arguments)
+			logger.Warn("get mcp fail", "err", err, "function", tool.Function.Name,
+				"toolCall", tool.ID, "argument", tool.Function.Arguments)
 			return err
 		}
 		
-		toolsData, err := mc.ExecTools(ctx, h.ToolCall[len(h.ToolCall)-1].Function.Name, property)
+		toolsData, err := mc.ExecTools(ctx, tool.Function.Name, property)
 		if err != nil {
-			logger.Warn("exec tools fail", "err", err, "function", h.ToolCall[len(h.ToolCall)-1].Function.Name,
-				"toolCall", h.ToolCall[len(h.ToolCall)-1].ID, "argument", h.ToolCall[len(h.ToolCall)-1].Function.Arguments)
+			logger.Warn("exec tools fail", "err", err, "function", tool.Function.Name,
+				"toolCall", tool.ID, "argument", tool.Function.Arguments)
 			return err
 		}
 		h.CurrentToolMessage = append(h.CurrentToolMessage, &model.ChatCompletionMessage{
@@ -259,12 +260,17 @@ func (h *VolReq) requestToolsCall(ctx context.Context, choice *model.ChatComplet
 			Content: &model.ChatCompletionMessageContent{
 				StringValue: &toolsData,
 			},
-			ToolCallID: h.ToolCall[len(h.ToolCall)-1].ID,
+			ToolCallID: tool.ID,
 		})
 		
-		logger.Info("send tool request", "function", h.ToolCall[len(h.ToolCall)-1].Function.Name,
-			"toolCall", h.ToolCall[len(h.ToolCall)-1].ID, "argument", h.ToolCall[len(h.ToolCall)-1].Function.Arguments,
+		logger.Info("send tool request", "function", tool.Function.Name,
+			"toolCall", tool.ID, "argument", tool.Function.Arguments,
 			"res", toolsData)
+		l.DirectSendMsg(i18n.GetMessage(*conf.BaseConfInfo.Lang, "send_mcp_info", map[string]interface{}{
+			"function_name": tool.Function.Name,
+			"request_args":  property,
+			"response":      toolsData,
+		}))
 	}
 	
 	return nil
@@ -350,13 +356,13 @@ func (h *VolReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 	if len(response.Choices[0].Message.ToolCalls) > 0 {
 		h.GetAssistantMessage("")
 		h.VolMsgs[len(h.VolMsgs)-1].ToolCalls = response.Choices[0].Message.ToolCalls
-		h.requestOneToolsCall(ctx, response.Choices[0].Message.ToolCalls)
+		h.requestOneToolsCall(ctx, response.Choices[0].Message.ToolCalls, l)
 	}
 	
 	return *response.Choices[0].Message.Content.StringValue, nil
 }
 
-func (h *VolReq) requestOneToolsCall(ctx context.Context, toolsCall []*model.ToolCall) {
+func (h *VolReq) requestOneToolsCall(ctx context.Context, toolsCall []*model.ToolCall, l *LLM) {
 	for _, tool := range toolsCall {
 		property := make(map[string]interface{})
 		err := json.Unmarshal([]byte(tool.Function.Arguments), &property)
@@ -384,6 +390,11 @@ func (h *VolReq) requestOneToolsCall(ctx context.Context, toolsCall []*model.Too
 			ToolCallID: tool.ID,
 		})
 		logger.Info("exec tool", "name", tool.Function.Name, "toolsData", toolsData)
+		l.DirectSendMsg(i18n.GetMessage(*conf.BaseConfInfo.Lang, "send_mcp_info", map[string]interface{}{
+			"function_name": tool.Function.Name,
+			"request_args":  property,
+			"response":      toolsData,
+		}))
 	}
 }
 

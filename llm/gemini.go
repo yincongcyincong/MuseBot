@@ -115,7 +115,7 @@ func (h *GeminiReq) Send(ctx context.Context, l *LLM) error {
 		toolCalls := response.FunctionCalls()
 		if len(toolCalls) > 0 {
 			hasTools = true
-			err = h.RequestToolsCall(ctx, response)
+			err = h.RequestToolsCall(ctx, response, l)
 			if err != nil {
 				if errors.Is(err, ToolsJsonErr) {
 					continue
@@ -238,13 +238,13 @@ func (h *GeminiReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 	
 	l.Token += int(response.UsageMetadata.TotalTokenCount)
 	if len(response.FunctionCalls()) > 0 {
-		h.requestOneToolsCall(ctx, response.FunctionCalls())
+		h.requestOneToolsCall(ctx, response.FunctionCalls(), l)
 	}
 	
 	return response.Text(), nil
 }
 
-func (h *GeminiReq) requestOneToolsCall(ctx context.Context, toolsCall []*genai.FunctionCall) {
+func (h *GeminiReq) requestOneToolsCall(ctx context.Context, toolsCall []*genai.FunctionCall, l *LLM) {
 	for _, tool := range toolsCall {
 		
 		mc, err := clients.GetMCPClientByToolName(tool.Name)
@@ -282,10 +282,15 @@ func (h *GeminiReq) requestOneToolsCall(ctx context.Context, toolsCall []*genai.
 		})
 		
 		logger.Info("exec tool", "name", tool.Name, "args", tool.Args, "toolsData", toolsData)
+		l.DirectSendMsg(i18n.GetMessage(*conf.BaseConfInfo.Lang, "send_mcp_info", map[string]interface{}{
+			"function_name": tool.Name,
+			"request_args":  tool.Args,
+			"response":      toolsData,
+		}))
 	}
 }
 
-func (h *GeminiReq) RequestToolsCall(ctx context.Context, response *genai.GenerateContentResponse) error {
+func (h *GeminiReq) RequestToolsCall(ctx context.Context, response *genai.GenerateContentResponse, l *LLM) error {
 	
 	for _, toolCall := range response.FunctionCalls() {
 		
@@ -336,6 +341,12 @@ func (h *GeminiReq) RequestToolsCall(ctx context.Context, response *genai.Genera
 		})
 		logger.Info("send tool request", "function", toolCall.Name,
 			"toolCall", toolCall.ID, "argument", toolCall.Args, "toolsData", toolsData)
+		
+		l.DirectSendMsg(i18n.GetMessage(*conf.BaseConfInfo.Lang, "send_mcp_info", map[string]interface{}{
+			"function_name": toolCall.Name,
+			"request_args":  toolCall.Args,
+			"response":      toolsData,
+		}))
 	}
 	
 	return nil

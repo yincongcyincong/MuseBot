@@ -109,7 +109,7 @@ func TestRequestToolsCall_JSONError(t *testing.T) {
 		},
 	}
 	
-	err := d.RequestToolsCall(context.TODO(), choice)
+	err := d.RequestToolsCall(context.TODO(), choice, nil)
 	assert.Equal(t, ToolsJsonErr, err)
 }
 
