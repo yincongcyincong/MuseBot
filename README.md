@@ -208,7 +208,7 @@ using volcengine photo model create photo, deepseek don't support to create phot
 necessary.[doc](https://www.volcengine.com/docs/6444/1340578)    
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/b05fcadc-800e-40fb-b9a1-8aea44851550" />
 
-/edit_photo will update you photo base on your description.
+/edit_photo will update you photo base on your description.    
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/b26c123a-8a61-4329-ba31-9b371bd9251c" />
 
 ### /video
@@ -218,13 +218,11 @@ now. [doc](https://www.volcengine.com/docs/82379/1399008#b00dee71)
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/884eeb48-76c4-4329-9446-5cd3822a5d16" />
 
 ### /chat
-
 allows the bot to chat through /chat command in groups,
 without the bot being set as admin of the group.        
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/00a0faf3-6037-4d84-9a33-9aa6c320e44d" />
 
 ### /help
-
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/869e0207-388b-49ca-b26a-378f71d58818" />
 
 ### /task
@@ -232,14 +230,16 @@ without the bot being set as admin of the group.
 multi agent communicate with each other!
 
 ### /change_photo
+only for tencent app (wechat, qq, work wechat)          
+change photo base on your prompt.    
+<img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/81e1eb85-ddb6-4a2b-b6bd-73da0d276036" />
 
-only for tencent app (wechat, qq, work wechat)      
-change photo base on your prompt.
 
 ### /rec_photo
+only for tencent app (wechat, qq, work wechat)    
+recognize photo base on your prompt.    
+<img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/b67a2be2-cc5e-4985-90f3-d72c7a9bf4c1" />
 
-only for tencent app (wechat, qq, work wechat)
-recognize photo base on your prompt.
 
 ## Deployment
 
