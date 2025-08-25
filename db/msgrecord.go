@@ -14,8 +14,6 @@ import (
 	"github.com/yincongcyincong/MuseBot/param"
 )
 
-const MaxQAPair = 15
-
 type MsgRecordInfo struct {
 	AQs        []*AQ
 	updateTime int64
@@ -56,7 +54,7 @@ func InsertMsgRecord(userId string, aq *AQ, insertDB bool) {
 	} else {
 		msgRecord = msgRecordInter.(*MsgRecordInfo)
 		msgRecord.AQs = append(msgRecord.AQs, aq)
-		if len(msgRecord.AQs) > MaxQAPair {
+		if len(msgRecord.AQs) > *conf.BaseConfInfo.MaxQAPair {
 			msgRecord.AQs = msgRecord.AQs[1:]
 		}
 		msgRecord.updateTime = time.Now().Unix()
@@ -125,7 +123,7 @@ func getRecordsByUserId(userId string) ([]Record, error) {
 		"and is_deleted = 0 and record_type = 0 order by create_time desc limit ?")
 	
 	// execute query
-	rows, err := DB.Query(query, userId, MaxQAPair)
+	rows, err := DB.Query(query, userId, *conf.BaseConfInfo.MaxQAPair)
 	if err != nil {
 		return nil, err
 	}

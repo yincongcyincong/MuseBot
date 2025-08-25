@@ -33,14 +33,15 @@ func (h *GeminiReq) GetMessages(userId string, prompt string) {
 	msgRecords := db.GetMsgRecord(userId)
 	if msgRecords != nil {
 		aqs := msgRecords.AQs
-		if len(aqs) > db.MaxQAPair {
-			aqs = aqs[len(aqs)-db.MaxQAPair:]
+		if len(aqs) > *conf.BaseConfInfo.MaxQAPair {
+			aqs = aqs[len(aqs)-*conf.BaseConfInfo.MaxQAPair:]
 		}
 		for i, record := range aqs {
-			if record.Answer != "" && record.Question != "" {
-				logger.Info("context content", "dialog", i, "question:", record.Question,
-					"toolContent", record.Content, "answer:", record.Answer)
-				
+			
+			logger.Info("context content", "dialog", i, "question:", record.Question,
+				"toolContent", record.Content, "answer:", record.Answer)
+			
+			if record.Question != "" {
 				messages = append(messages, &genai.Content{
 					Role: genai.RoleUser,
 					Parts: []*genai.Part{
@@ -49,7 +50,9 @@ func (h *GeminiReq) GetMessages(userId string, prompt string) {
 						},
 					},
 				})
-				
+			}
+			
+			if record.Answer != "" {
 				messages = append(messages, &genai.Content{
 					Role: genai.RoleModel,
 					Parts: []*genai.Part{
@@ -58,7 +61,6 @@ func (h *GeminiReq) GetMessages(userId string, prompt string) {
 						},
 					},
 				})
-				
 			}
 		}
 	}

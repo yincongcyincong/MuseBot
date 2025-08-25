@@ -13,9 +13,10 @@ more natural and dynamic.
 [中文文档](https://github.com/yincongcyincong/MuseBot/blob/main/README_ZH.md)
 
 ## Usage Video
+
 deepseek: https://www.youtube.com/watch?v=kPtNdLjKVn0   
 gemini: https://www.youtube.com/watch?v=7mV9RYvdE6I    
-chatgpt: https://www.youtube.com/watch?v=G_DZYMvd5Ug    
+chatgpt: https://www.youtube.com/watch?v=G_DZYMvd5Ug
 
 ## 🚀 Features
 
@@ -144,6 +145,7 @@ You can configure the bot via environment variables:
 | CRT_FILE	                      | http server crt file                                                                                                  | -                         |
 | KEY_FILE	                      | http server key file                                                                                                  | -                         |
 | MEDIA_TYPE	                    | openai/gemini/vol  create photo or video                                                                              | vol                       |
+| MAX_QAPAIR	                    | question and answer pairs  as context                                                                                 | 15                        |
 
 ### CUSTOM_URL
 
@@ -229,12 +231,15 @@ without the bot being set as admin of the group.
 
 multi agent communicate with each other!
 
-## Admin Command
+### /change_photo
 
-### /addtoken
+only for tencent app (wechat, qq, work wechat)      
+change photo base on your prompt.
 
-add token for user.    
-<img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/12d98272-0718-4c9b-bc5c-e0a92e6c8664" />
+### /rec_photo
+
+only for tencent app (wechat, qq, work wechat)
+recognize photo base on your prompt.
 
 ## Deployment
 
