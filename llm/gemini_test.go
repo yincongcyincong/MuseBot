@@ -86,7 +86,7 @@ func TestGenerateGeminiVideo_InvalidPrompt(t *testing.T) {
 
 func TestRequestToolsCall_NilFunctionCall(t *testing.T) {
 	req := &GeminiReq{}
-	err := req.RequestToolsCall(context.Background(), &genai.GenerateContentResponse{})
+	err := req.RequestToolsCall(context.Background(), &genai.GenerateContentResponse{}, nil)
 	assert.NoError(t, err) // should be a no-op
 }
 

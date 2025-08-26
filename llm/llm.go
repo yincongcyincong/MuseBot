@@ -71,7 +71,7 @@ func (l *LLM) CallLLM() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 	
-	l.LLMClient.GetMessages(l.UserId, l.Content)
+	l.LLMClient.GetMessages(l.UserId, l.GetContent(l.Content))
 	
 	logger.Info("msg receive", "userID", l.UserId, "prompt", l.Content)
 	
@@ -84,6 +84,14 @@ func (l *LLM) CallLLM() error {
 	}
 	
 	return nil
+}
+
+func (l *LLM) GetContent(content string) string {
+	if *conf.BaseConfInfo.Character != "" {
+		content = *conf.BaseConfInfo.Character + "\n\n" + content
+	}
+	
+	return content
 }
 
 func NewLLM(opts ...Option) *LLM {

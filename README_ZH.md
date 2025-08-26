@@ -14,12 +14,12 @@ QQ群：1031411708
 ---
 
 ## 🌞 视频
+
 deepseek： https://www.bilibili.com/video/BV1CB8kzHEJi/    
 gemini： https://www.bilibili.com/video/BV1D4htz4Ekv/    
 chatgpt: https://www.bilibili.com/video/BV1RutxzJEGY/    
 豆包：https://www.bilibili.com/video/BV1QDbEzwE43/    
 怎么使用mcp: https://www.bilibili.com/video/BV1JbtJzVEJd/
-
 
 ## 🚀 功能特性
 
@@ -50,9 +50,8 @@ chatgpt: https://www.bilibili.com/video/BV1RutxzJEGY/
 | 🟣 **Lark（飞书）**    |  ✅   | 支持 Lark 长连接与消息处理（基于 larksuite SDK，支持图片/音频下载与消息更新）               | [文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/lark_ZH.md)       |
 | 🆙 **钉钉**          |  ✅   | 支持钉钉长链接服务                                                       | [文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/dingding_ZH.md)   |
 | ⚡️ **Work WeChat** |  ✅   | 支持企业微信触发大模型                                                     | [文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/com_wechat_ZH.md) |
-| ⚡️ **QQ** |  ✅   | 支持QQ触发大模型                                                     | [文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/qq_ZH.md) |
-| ⚡️ **WeChat** |  ✅   | 支持微信触发大模型                                                     | [文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/wechat_ZH.md) |
-
+| ⚡️ **QQ**          |  ✅   | 支持QQ触发大模型                                                       | [文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/qq_ZH.md)         |
+| ⚡️ **WeChat**      |  ✅   | 支持微信触发大模型                                                       | [文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/wechat_ZH.md)     |
 
 ## 支持大模型
 
@@ -150,6 +149,12 @@ docker run -d -v /home/user/data:/app/data -e TELEGRAM_BOT_TOKEN="你的Telegram
 | **VIDEO_TOKEN**             | 火山引擎视频模型 API 密钥 [文档](https://www.volcengine.com/docs/82379/1399008#b00dee71)                                  | -                         |
 | **HTTP_PORT**               | HTTP 服务器端口                                                                                                    | 36060                     |
 | **USE_TOOLS**               | 普通对话是否使用函数调用工具                                                                                                | false                     |
+| **CA_FILE**		               | http 服务的 ca文件                                                                                                 | -                         |
+| **CRT_FILE**		              | http 服务的 crt 文件                                                                                               | -                         |
+| **KEY_FILE**		              | http 服务的 key 文件                                                                                               | -                         |
+| **MEDIA_TYPE**		            | openai/gemini/vol   图片或视频生成模型                                                                                 | vol                       |
+| **MAX_QA_PAIR**	            | 用多少问题对作为上下文                                                                                                   | 15                        |
+| **CHARACTER**	              | 角色背景                                                                                                          | -                         |
 
 ### 其他配置
 
@@ -201,7 +206,6 @@ docker run -d -v /home/user/data:/app/data -e TELEGRAM_BOT_TOKEN="你的Telegram
 /edit_photo 支持编辑图片。
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/b26c123a-8a61-4329-ba31-9b371bd9251c" />
 
-
 ### `/video`
 
 生成视频，需要使用火山引擎 API 密钥（`DEEPSEEK_TOKEN`），DeepSeek 暂不支持视频生成。
@@ -222,12 +226,16 @@ docker run -d -v /home/user/data:/app/data -e TELEGRAM_BOT_TOKEN="你的Telegram
 <img width="400" src="https://github.com/user-attachments/assets/869e0207-388b-49ca-b26a-378f71d58818"  alt=""/>
 
 ### /change_photo
-对腾讯系的app起作用：qq，微信 ，企业微信
-输入一段prompt用户修改图片
+
+对腾讯系的app起作用：qq，微信 ，企业微信     
+输入一段prompt用户修改图片        
+<img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/81e1eb85-ddb6-4a2b-b6bd-73da0d276036" />
 
 ### /rec_photo
-对腾讯系的app起作用：qq，微信 ，企业微信
-输入一段prompt用户识别图片
+
+对腾讯系的app起作用：qq，微信 ，企业微信     
+输入一段prompt用户识别图片        
+<img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/b67a2be2-cc5e-4985-90f3-d72c7a9bf4c1" />
 
 ---
 

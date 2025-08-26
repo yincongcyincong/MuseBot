@@ -104,7 +104,7 @@ func (h *GeminiReq) Send(ctx context.Context, l *LLM) error {
 	}
 	
 	hasTools := false
-	for response, err := range chat.SendMessageStream(ctx, *genai.NewPartFromText(l.Content)) {
+	for response, err := range chat.SendMessageStream(ctx, *genai.NewPartFromText(l.GetContent(l.Content))) {
 		if errors.Is(err, io.EOF) {
 			logger.Info("stream finished", "updateMsgID", l.MsgId)
 			break
@@ -127,7 +127,7 @@ func (h *GeminiReq) Send(ctx context.Context, l *LLM) error {
 			}
 		}
 		
-		if len(response.Text()) > 0 {
+		if !hasTools {
 			msgInfoContent = l.SendMsg(msgInfoContent, response.Text())
 		}
 		

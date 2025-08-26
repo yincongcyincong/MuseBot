@@ -145,7 +145,8 @@ You can configure the bot via environment variables:
 | CRT_FILE	                      | http server crt file                                                                                                  | -                         |
 | KEY_FILE	                      | http server key file                                                                                                  | -                         |
 | MEDIA_TYPE	                    | openai/gemini/vol  create photo or video                                                                              | vol                       |
-| MAX_QAPAIR	                    | question and answer pairs  as context                                                                                 | 15                        |
+| MAX_QA_PAIR	                   | how many question and answer pairs as context                                                                         | 15                        |
+| CHARACTER	                     | background character                                                                                                  | -                         |
 
 ### CUSTOM_URL
 
@@ -218,11 +219,13 @@ now. [doc](https://www.volcengine.com/docs/82379/1399008#b00dee71)
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/884eeb48-76c4-4329-9446-5cd3822a5d16" />
 
 ### /chat
+
 allows the bot to chat through /chat command in groups,
 without the bot being set as admin of the group.        
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/00a0faf3-6037-4d84-9a33-9aa6c320e44d" />
 
 ### /help
+
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/869e0207-388b-49ca-b26a-378f71d58818" />
 
 ### /task
@@ -230,16 +233,16 @@ without the bot being set as admin of the group.
 multi agent communicate with each other!
 
 ### /change_photo
+
 only for tencent app (wechat, qq, work wechat)          
 change photo base on your prompt.    
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/81e1eb85-ddb6-4a2b-b6bd-73da0d276036" />
 
-
 ### /rec_photo
+
 only for tencent app (wechat, qq, work wechat)    
 recognize photo base on your prompt.    
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/b67a2be2-cc5e-4985-90f3-d72c7a9bf4c1" />
-
 
 ## Deployment
 
