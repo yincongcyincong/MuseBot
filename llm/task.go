@@ -102,6 +102,8 @@ func (d *LLMTaskReq) ExecuteTask() error {
 		return err
 	}
 	
+	llm.DirectSendMsg(c)
+	
 	llm.LLMClient.GetAssistantMessage(c)
 	err = d.loopTask(ctx, plans, c, llm, 0)
 	if err != nil {
@@ -142,7 +144,7 @@ func (d *LLMTaskReq) loopTask(ctx context.Context, plans *TaskInfo, lastPlan str
 		taskLLM.LLMClient.GetUserMessage(plan.Description)
 		taskLLM.Content = plan.Description
 		
-		logger.Info("execute task", "task", plan.Name)
+		logger.Info("execute task", "task", plan.Name, "task desc", plan.Description)
 		err := d.requestTask(ctx, taskLLM, plan)
 		if err != nil {
 			return err
@@ -201,9 +203,7 @@ func (d *LLMTaskReq) requestTask(ctx context.Context, llm *LLM, plan *Task) erro
 	}
 	
 	// llm response merge into msg
-	if c == "" {
-		c = plan.Name + " is completed"
-	}
+	c += "\n\n" + plan.Name + " is completed"
 	llm.LLMClient.GetAssistantMessage(c)
 	
 	return nil

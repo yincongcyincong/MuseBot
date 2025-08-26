@@ -160,7 +160,7 @@ func (d *OpenAIReq) Send(ctx context.Context, l *LLM) error {
 				}
 			}
 			
-			if len(choice.Delta.Content) > 0 {
+			if !hasTools {
 				msgInfoContent = l.SendMsg(msgInfoContent, choice.Delta.Content)
 			}
 		}

@@ -60,6 +60,7 @@ type BaseConf struct {
 	HTTPHost     *string `json:"http_host"`
 	UseTools     *bool   `json:"use_tools"`
 	MaxQAPair    *int    `json:"max_qa_pari"`
+	Character    *string `json:"background"`
 	
 	CrtFile *string `json:"crt_file"`
 	KeyFile *string `json:"key_file"`
@@ -120,8 +121,9 @@ func InitConf() {
 	BaseConfInfo.TokenPerUser = flag.Int("token_per_user", 10000, "token per user")
 	BaseConfInfo.MaxUserChat = flag.Int("max_user_chat", 2, "max chat per user")
 	BaseConfInfo.HTTPHost = flag.String("http_host", ":36060", "http server port")
-	BaseConfInfo.UseTools = flag.Bool("use_tools", false, "use tools")
+	BaseConfInfo.UseTools = flag.Bool("use_tools", false, "use function tools")
 	BaseConfInfo.MaxQAPair = flag.Int("max_qa_pari", 10, "max qa pair")
+	BaseConfInfo.Character = flag.String("character", "", "ai's character")
 	
 	BaseConfInfo.CrtFile = flag.String("crt_file", "", "public key file")
 	BaseConfInfo.KeyFile = flag.String("key_file", "", "secret key file")
@@ -324,8 +326,12 @@ func InitConf() {
 		*BaseConfInfo.OpenRouterToken = os.Getenv("OPEN_ROUTER_TOKEN")
 	}
 	
-	if os.Getenv("MAX_QAPAIR") != "" {
-		*BaseConfInfo.MaxQAPair, _ = strconv.Atoi(os.Getenv("MAX_QAPAIR"))
+	if os.Getenv("MAX_QA_PAIR") != "" {
+		*BaseConfInfo.MaxQAPair, _ = strconv.Atoi(os.Getenv("MAX_QA_PAIR"))
+	}
+	
+	if os.Getenv("CHARACTER") != "" {
+		*BaseConfInfo.Character = os.Getenv("CHARACTER")
 	}
 	
 	if os.Getenv("CRT_FILE") != "" {

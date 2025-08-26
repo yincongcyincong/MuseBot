@@ -159,7 +159,7 @@ func (d *DeepseekReq) Send(ctx context.Context, l *LLM) error {
 				}
 			}
 			
-			if len(choice.Delta.Content) > 0 {
+			if !hasTools {
 				msgInfoContent = l.SendMsg(msgInfoContent, choice.Delta.Content)
 			}
 		}
@@ -283,6 +283,7 @@ func (d *DeepseekReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 		d.GetAssistantMessage("")
 		d.DeepseekMsgs[len(d.DeepseekMsgs)-1].ToolCalls = response.Choices[0].Message.ToolCalls
 		d.requestOneToolsCall(ctx, response.Choices[0].Message.ToolCalls, l)
+		return d.SyncSend(ctx, l)
 	}
 	
 	return response.Choices[0].Message.Content, nil

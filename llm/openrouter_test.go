@@ -111,7 +111,7 @@ func TestAIRouterReq_requestOneToolsCall_JSONError(t *testing.T) {
 		},
 	}}
 	// should not panic
-	r.requestOneToolsCall(context.Background(), calls)
+	r.requestOneToolsCall(context.Background(), calls, nil)
 	assert.Len(t, r.OpenRouterMsgs, 0)
 }
 
