@@ -45,6 +45,8 @@ type RobotController struct {
 type RobotInfo struct {
 	Robot        Robot
 	TencentRobot TencentRobot
+	
+	Token int
 }
 
 var (
@@ -554,33 +556,45 @@ func (r *RobotInfo) checkAdminUser(userId string) bool {
 }
 
 func (r *RobotInfo) GetAudioContent(audioContent []byte) (string, error) {
-	switch *conf.BaseConfInfo.MediaType {
-	case param.Vol:
-		return utils.FileRecognize(audioContent)
-	case param.OpenAi:
-		return llm.GenerateOpenAIText(audioContent)
-	case param.Gemini:
-		return llm.GenerateGeminiText(audioContent)
-	}
-	
-	return "", nil
-}
-
-func (r *RobotInfo) GetImageContent(imageContent []byte, content string) (string, error) {
 	var answer string
 	var err error
+	var token int
 	switch *conf.BaseConfInfo.MediaType {
 	case param.Vol:
-		answer, _, err = llm.GetVolImageContent(imageContent, content)
-	case param.Gemini:
-		answer, _, err = llm.GetGeminiImageContent(imageContent, content)
+		answer, err = utils.FileRecognize(audioContent)
 	case param.OpenAi:
-		answer, _, err = llm.GetOpenAIImageContent(imageContent, content)
+		answer, err = llm.GenerateOpenAIText(audioContent)
+	case param.Gemini:
+		answer, token, err = llm.GenerateGeminiText(audioContent)
 	}
 	
 	if err != nil {
 		return "", err
 	}
+	
+	r.Token += token
+	
+	return answer, err
+}
+
+func (r *RobotInfo) GetImageContent(imageContent []byte, content string) (string, error) {
+	var answer string
+	var err error
+	var token int
+	switch *conf.BaseConfInfo.MediaType {
+	case param.Vol:
+		answer, token, err = llm.GetVolImageContent(imageContent, content)
+	case param.Gemini:
+		answer, token, err = llm.GetGeminiImageContent(imageContent, content)
+	case param.OpenAi:
+		answer, token, err = llm.GetOpenAIImageContent(imageContent, content)
+	}
+	
+	if err != nil {
+		return "", err
+	}
+	
+	r.Token += token
 	
 	if content == "" {
 		return answer, nil
@@ -622,7 +636,6 @@ func (r *RobotInfo) GetLastImageContent() ([]byte, error) {
 		return imageContent, nil
 	}
 	
-	// 不是 base64 data URI，尝试下载文件
 	imageContent, err := utils.DownloadFile(answer)
 	if err != nil {
 		logger.Warn("download image fail", "err", err)
@@ -766,6 +779,7 @@ func (r *RobotInfo) ExecChain(msgContent string, msgChan *MsgChan) {
 			llm.WithChatId(chatId),
 			llm.WithUserId(userId),
 			llm.WithPerMsgLen(r.Robot.getPerMsgLen()),
+			llm.WithToken(r.Token),
 		)
 		qaChain := chains.NewRetrievalQAFromLLM(
 			dpLLM,
@@ -809,6 +823,7 @@ func (r *RobotInfo) ExecLLM(msgContent string, msgChan *MsgChan) {
 		llm.WithHTTPMsgChan(msgChan.StrMessageChan),
 		llm.WithContent(content),
 		llm.WithPerMsgLen(r.Robot.getPerMsgLen()),
+		llm.WithToken(r.Token),
 	)
 	
 	err = llmClient.CallLLM()

@@ -248,6 +248,12 @@ func WithMsgId(msgId string) Option {
 	}
 }
 
+func WithToken(token int) Option {
+	return func(p *LLM) {
+		p.Token = token
+	}
+}
+
 func WithTaskTools(taskTool *conf.AgentInfo) Option {
 	return func(p *LLM) {
 		if taskTool == nil {
