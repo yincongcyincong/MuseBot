@@ -485,7 +485,7 @@ func GenerateGeminiVideo(prompt string, image []byte) ([]byte, int, error) {
 	return operation.Response.GeneratedVideos[0].Video.VideoBytes, totalToken, nil
 }
 
-func GenerateGeminiText(audioContent []byte) (string, error) {
+func GenerateGeminiText(audioContent []byte) (string, int, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 	
@@ -496,7 +496,7 @@ func GenerateGeminiText(audioContent []byte) (string, error) {
 	})
 	if err != nil {
 		logger.Error("create client fail", "err", err)
-		return "", err
+		return "", 0, err
 	}
 	
 	parts := []*genai.Part{
@@ -521,10 +521,10 @@ func GenerateGeminiText(audioContent []byte) (string, error) {
 	
 	if err != nil || result == nil {
 		logger.Error("generate text fail", "err", err)
-		return "", err
+		return "", 0, err
 	}
 	
-	return result.Text(), nil
+	return result.Text(), int(result.UsageMetadata.TotalTokenCount), nil
 }
 
 func GetGeminiImageContent(imageContent []byte, content string) (string, int, error) {
