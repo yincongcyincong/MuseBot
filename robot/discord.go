@@ -307,7 +307,9 @@ func registerSlashCommands(s *discordgo.Session) {
 		{Name: "chat", Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.chat.description", nil), Options: []*discordgo.ApplicationCommandOption{
 			{Type: discordgo.ApplicationCommandOptionString, Name: "prompt", Description: "Prompt", Required: true},
 		}},
-		{Name: "mode", Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.mode.description", nil)},
+		{Name: "mode", Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.mode.description", nil), Options: []*discordgo.ApplicationCommandOption{
+			{Type: discordgo.ApplicationCommandOptionString, Name: "mode", Description: "Mode", Required: false},
+		}},
 		{Name: "balance", Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.balance.description", nil)},
 		{Name: "state", Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.state.description", nil)},
 		{Name: "clear", Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.clear.description", nil)},
@@ -353,6 +355,10 @@ func onInteractionCreate(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		cmd = i.ApplicationCommandData().Name
 	case discordgo.InteractionMessageComponent:
 		d.changeMode(i.MessageComponentData().CustomID)
+	}
+	
+	if d.Inter != nil && d.Inter.Type == discordgo.InteractionApplicationCommand && len(d.Inter.ApplicationCommandData().Options) > 0 {
+		d.Prompt = d.Inter.ApplicationCommandData().Options[0].StringValue()
 	}
 	
 	d.Command = cmd
@@ -407,6 +413,8 @@ func (d *DiscordRobot) sendChatMessage() {
 }
 
 func (d *DiscordRobot) sendModeConfigurationOptions() {
+	chatId, msgId, _ := d.Robot.GetChatIdAndMsgIdAndUserID()
+	
 	var buttons []discordgo.MessageComponent
 	switch *conf.BaseConfInfo.Type {
 	case param.DeepSeek:
@@ -436,10 +444,25 @@ func (d *DiscordRobot) sendModeConfigurationOptions() {
 		}
 	case param.LLAVA:
 		buttons = append(buttons, discordgo.Button{Label: "llama2", Style: discordgo.PrimaryButton, CustomID: param.LLAVA})
-	case param.OpenRouter:
-		for k := range param.OpenRouterModelTypes {
-			buttons = append(buttons, discordgo.Button{Label: k, Style: discordgo.PrimaryButton, CustomID: k})
+	case param.OpenRouter, param.AI302:
+		if d.Prompt != "" {
+			d.Robot.handleModeUpdate(d.Prompt)
+			return
 		}
+		switch *conf.BaseConfInfo.MediaType {
+		case param.AI302:
+			d.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
+				"link": "https://302.ai/",
+			}),
+				msgId, tgbotapi.ModeMarkdown, nil)
+		case param.OpenRouter:
+			d.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
+				"link": "https://openrouter.ai/",
+			}),
+				msgId, tgbotapi.ModeMarkdown, nil)
+		}
+		
+		return
 	case param.Vol:
 		for k := range param.VolModels {
 			buttons = append(buttons, discordgo.Button{Label: k, Style: discordgo.PrimaryButton, CustomID: k})

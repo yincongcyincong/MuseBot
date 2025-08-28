@@ -79,7 +79,7 @@ func (l *LLM) CallLLM() error {
 	
 	err := l.LLMClient.Send(ctx, l)
 	if err != nil {
-		logger.Error("Error calling DeepSeek API", "err", err)
+		logger.Error("Error calling LLM API", "err", err)
 		return err
 	}
 	

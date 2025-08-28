@@ -42,5 +42,7 @@
   "photo_handle_prompt": "Extract all the text from the image and return only the text.",
   "photo_export_prompt": "I have a question about the image:\n\n {{.question}} \n\n This is the recognized content of the image: {{.answer}}\n\n please provide a summary",
   "set_pre_prompt_success": "\uD83D\uDE80 Successfully set prompt, please upload photo in 5 min.",
-  "send_mcp_info": "request mcp server, function name is {{.function_name}} \n\n request args is {{.request_args}}\n\n response is {{.response}}"
+  "send_mcp_info": "request mcp server, function name is {{.function_name}} \n\n request args is {{.request_args}}\n\n response is {{.response}}",
+  "mix_mode_choose": "Please go to {{.link}} to choose a model. Use /mode xxx, for example /mode gpt-5-chat-latest, to select a model."
+
 }

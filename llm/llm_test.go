@@ -31,9 +31,9 @@ func TestSendMsg_WithHTTPMsgChan(t *testing.T) {
 }
 
 func TestOverLoop(t *testing.T) {
-	l := &LLM{LoopNum: 9}
+	l := &LLM{LoopNum: 14}
 	assert.False(t, l.OverLoop())
-	assert.Equal(t, 10, l.LoopNum)
+	assert.Equal(t, 15, l.LoopNum)
 	assert.True(t, l.OverLoop())
 }
 

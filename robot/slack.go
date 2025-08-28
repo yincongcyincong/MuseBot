@@ -359,7 +359,7 @@ func (s *SlackRobot) downloadSlackFile(url string) ([]byte, error) {
 }
 
 func (s *SlackRobot) sendModeConfigurationOptions() {
-	channelId, _, _ := s.Robot.GetChatIdAndMsgIdAndUserID()
+	channelId, msgId, _ := s.Robot.GetChatIdAndMsgIdAndUserID()
 	var blocks []slack.Block
 	
 	switch *conf.BaseConfInfo.Type {
@@ -418,14 +418,25 @@ func (s *SlackRobot) sendModeConfigurationOptions() {
 		btn.Value = param.LLAVA
 		actionBlock := slack.NewActionBlock("select_model"+param.LLAVA, btn)
 		blocks = append(blocks, actionBlock)
-	case param.OpenRouter:
-		for k := range param.OpenRouterModelTypes {
-			btnText := slack.NewTextBlockObject("plain_text", k, false, false)
-			btn := slack.NewButtonBlockElement(k, k, btnText)
-			btn.Value = k
-			actionBlock := slack.NewActionBlock("select_model"+k, btn)
-			blocks = append(blocks, actionBlock)
+	case param.OpenRouter, param.AI302:
+		if s.Prompt != "" {
+			s.Robot.handleModeUpdate(s.Prompt)
+			return
 		}
+		switch *conf.BaseConfInfo.MediaType {
+		case param.AI302:
+			s.Robot.SendMsg(channelId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
+				"link": "https://302.ai/",
+			}),
+				msgId, tgbotapi.ModeMarkdown, nil)
+		case param.OpenRouter:
+			s.Robot.SendMsg(channelId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
+				"link": "https://openrouter.ai/",
+			}),
+				msgId, tgbotapi.ModeMarkdown, nil)
+		}
+		
+		return
 	case param.Vol:
 		for k := range param.VolModels {
 			btnText := slack.NewTextBlockObject("plain_text", k, false, false)
@@ -436,7 +447,6 @@ func (s *SlackRobot) sendModeConfigurationOptions() {
 		}
 	}
 	
-	// 发送或更新消息，包含按钮
 	_, _, err := s.Client.PostMessage(
 		channelId,
 		slack.MsgOptionBlocks(blocks...),

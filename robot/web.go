@@ -149,10 +149,22 @@ func (web *Web) sendModeConfigurationOptions() {
 		}
 	case param.LLAVA:
 		modelList = []string{"llama2"}
-	case param.OpenRouter:
-		for k := range param.OpenRouterModels {
-			modelList = append(modelList, k)
+	case param.OpenRouter, param.AI302:
+		if web.Prompt != "" {
+			web.Robot.handleModeUpdate(web.Prompt)
+			return
 		}
+		switch *conf.BaseConfInfo.MediaType {
+		case param.AI302:
+			modelList = append(modelList, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
+				"link": "https://302.ai/",
+			}))
+		case param.OpenRouter:
+			modelList = append(modelList, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
+				"link": "https://openrouter.ai/",
+			}))
+		}
+	
 	case param.Vol:
 		for k := range param.VolModels {
 			modelList = append(modelList, k)
