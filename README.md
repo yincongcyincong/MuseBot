@@ -52,13 +52,14 @@ chatgpt: https://www.youtube.com/watch?v=G_DZYMvd5Ug
 
 ## Supported Large Language Models
 
-| Model             | Provider   | Text Generation | Image Generation | Video Generation |
-|-------------------|------------|-----------------|:----------------:|:----------------:|
-| 🌟 **Gemini**     | Google     | ✅               |        ✅         |        ✅         |
-| 💬 **ChatGPT**    | OpenAI     | ✅               |        ✅         |        ❌         |
-| 🐦 **Doubao**     | ByteDance  | ✅               |        ✅         |        ✅         |
-| 🧠 **DeepSeek**   | DeepSeek   | ✅               |        ❌         |        ❌         |
-| 🌐 **OpenRouter** | OpenRouter | ✅               |        ✅         |        ✅         |
+| Model             | Provider   | Text Generation | Image Generation | Video Generation | Link                                 |
+|-------------------|------------|-----------------|:----------------:|:----------------:|--------------------------------------|
+| 🌟 **Gemini**     | Google     | ✅               |        ✅         |        ✅         | [doc](https://gemini.google.com/app) |
+| 💬 **ChatGPT**    | OpenAI     | ✅               |        ✅         |        ❌         | [doc](https://chat.openai.com)       |
+| 🐦 **Doubao**     | ByteDance  | ✅               |        ✅         |        ✅         | [doc](https://www.volcengine.com/)   |
+| ⚙️ **302-AI**     | OpenRouter | ✅               |        ✅         |        ❌         | [doc](https://302.ai/)               |
+| 🧠 **DeepSeek**   | DeepSeek   | ✅               |        ❌         |        ❌         | [doc](https://www.deepseek.com/)     |
+| 🌐 **OpenRouter** | OpenRouter | ✅               |        ✅         |        ❌         | [doc](https://openrouter.ai/)        |
 
 ## 🤖 Text Example
 

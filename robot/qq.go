@@ -235,10 +235,25 @@ func (q *QQRobot) sendModeConfigurationOptions() {
 		}
 	case param.LLAVA:
 		modelList = []string{"llama2"}
-	case param.OpenRouter:
-		for k := range param.OpenRouterModels {
-			modelList = append(modelList, k)
+	case param.OpenRouter, param.AI302:
+		if q.Prompt != "" {
+			q.Robot.handleModeUpdate(q.Prompt)
+			return
 		}
+		switch *conf.BaseConfInfo.MediaType {
+		case param.AI302:
+			q.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
+				"link": "https://302.ai/",
+			}),
+				msgId, tgbotapi.ModeMarkdown, nil)
+		case param.OpenRouter:
+			q.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
+				"link": "https://openrouter.ai/",
+			}),
+				msgId, tgbotapi.ModeMarkdown, nil)
+		}
+		
+		return
 	case param.Vol:
 		for k := range param.VolModels {
 			modelList = append(modelList, k)

@@ -67,7 +67,7 @@ func TestAppendMessages(t *testing.T) {
 }
 
 func TestGenerateGeminiText_EmptyAudio(t *testing.T) {
-	text, err := GenerateGeminiText([]byte{})
+	text, _, err := GenerateGeminiText([]byte{})
 	assert.Error(t, err)
 	assert.Empty(t, text)
 }

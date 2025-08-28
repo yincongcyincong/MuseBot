@@ -76,9 +76,14 @@ func (h *GeminiReq) Send(ctx context.Context, l *LLM) error {
 	start := time.Now()
 	
 	httpClient := utils.GetLLMProxyClient()
+	httpOption := genai.HTTPOptions{}
+	if *conf.BaseConfInfo.CustomUrl != "" {
+		httpOption.BaseURL = *conf.BaseConfInfo.CustomUrl
+	}
 	client, err := genai.NewClient(ctx, &genai.ClientConfig{
-		HTTPClient: httpClient,
-		APIKey:     *conf.BaseConfInfo.GeminiToken,
+		HTTPClient:  httpClient,
+		APIKey:      *conf.BaseConfInfo.GeminiToken,
+		HTTPOptions: httpOption,
 	})
 	if err != nil {
 		logger.Error("init gemini client fail", "err", err)
@@ -209,9 +214,14 @@ func (h *GeminiReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 	h.GetModel(l)
 	
 	httpClient := utils.GetLLMProxyClient()
+	httpOption := genai.HTTPOptions{}
+	if *conf.BaseConfInfo.CustomUrl != "" {
+		httpOption.BaseURL = *conf.BaseConfInfo.CustomUrl
+	}
 	client, err := genai.NewClient(ctx, &genai.ClientConfig{
-		HTTPClient: httpClient,
-		APIKey:     *conf.BaseConfInfo.GeminiToken,
+		HTTPClient:  httpClient,
+		APIKey:      *conf.BaseConfInfo.GeminiToken,
+		HTTPOptions: httpOption,
 	})
 	if err != nil {
 		logger.Error("init gemini client fail", "err", err)
@@ -371,9 +381,14 @@ func GenerateGeminiImg(prompt string, imageContent []byte) ([]byte, int, error) 
 	defer cancel()
 	
 	httpClient := utils.GetLLMProxyClient()
+	httpOption := genai.HTTPOptions{}
+	if *conf.BaseConfInfo.CustomUrl != "" {
+		httpOption.BaseURL = *conf.BaseConfInfo.CustomUrl
+	}
 	client, err := genai.NewClient(ctx, &genai.ClientConfig{
-		HTTPClient: httpClient,
-		APIKey:     *conf.BaseConfInfo.GeminiToken,
+		HTTPClient:  httpClient,
+		APIKey:      *conf.BaseConfInfo.GeminiToken,
+		HTTPOptions: httpOption,
 	})
 	if err != nil {
 		logger.Error("create client fail", "err", err)
@@ -424,9 +439,14 @@ func GenerateGeminiVideo(prompt string, image []byte) ([]byte, int, error) {
 	defer cancel()
 	
 	httpClient := utils.GetLLMProxyClient()
+	httpOption := genai.HTTPOptions{}
+	if *conf.BaseConfInfo.CustomUrl != "" {
+		httpOption.BaseURL = *conf.BaseConfInfo.CustomUrl
+	}
 	client, err := genai.NewClient(ctx, &genai.ClientConfig{
-		HTTPClient: httpClient,
-		APIKey:     *conf.BaseConfInfo.GeminiToken,
+		HTTPClient:  httpClient,
+		APIKey:      *conf.BaseConfInfo.GeminiToken,
+		HTTPOptions: httpOption,
 	})
 	if err != nil {
 		logger.Error("create client fail", "err", err)
@@ -490,9 +510,14 @@ func GenerateGeminiText(audioContent []byte) (string, int, error) {
 	defer cancel()
 	
 	httpClient := utils.GetLLMProxyClient()
+	httpOption := genai.HTTPOptions{}
+	if *conf.BaseConfInfo.CustomUrl != "" {
+		httpOption.BaseURL = *conf.BaseConfInfo.CustomUrl
+	}
 	client, err := genai.NewClient(ctx, &genai.ClientConfig{
-		HTTPClient: httpClient,
-		APIKey:     *conf.BaseConfInfo.GeminiToken,
+		HTTPClient:  httpClient,
+		APIKey:      *conf.BaseConfInfo.GeminiToken,
+		HTTPOptions: httpOption,
 	})
 	if err != nil {
 		logger.Error("create client fail", "err", err)
@@ -532,9 +557,14 @@ func GetGeminiImageContent(imageContent []byte, content string) (string, int, er
 	defer cancel()
 	
 	httpClient := utils.GetLLMProxyClient()
+	httpOption := genai.HTTPOptions{}
+	if *conf.BaseConfInfo.CustomUrl != "" {
+		httpOption.BaseURL = *conf.BaseConfInfo.CustomUrl
+	}
 	client, err := genai.NewClient(ctx, &genai.ClientConfig{
-		HTTPClient: httpClient,
-		APIKey:     *conf.BaseConfInfo.GeminiToken,
+		HTTPClient:  httpClient,
+		APIKey:      *conf.BaseConfInfo.GeminiToken,
+		HTTPOptions: httpOption,
 	})
 	if err != nil {
 		logger.Error("create client fail", "err", err)

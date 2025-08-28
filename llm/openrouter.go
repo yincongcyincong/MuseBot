@@ -2,15 +2,18 @@ package llm
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"io"
+	"regexp"
 	"strings"
 	"time"
 	"unicode"
 	
 	"github.com/cohesion-org/deepseek-go/constants"
 	openrouter "github.com/revrost/go-openrouter"
+	"github.com/sashabaranov/go-openai"
 	"github.com/yincongcyincong/MuseBot/conf"
 	"github.com/yincongcyincong/MuseBot/db"
 	"github.com/yincongcyincong/MuseBot/i18n"
@@ -19,6 +22,7 @@ import (
 	"github.com/yincongcyincong/MuseBot/param"
 	"github.com/yincongcyincong/MuseBot/utils"
 	"github.com/yincongcyincong/mcp-client-go/clients"
+	"google.golang.org/genai"
 )
 
 type AIRouterReq struct {
@@ -29,16 +33,31 @@ type AIRouterReq struct {
 	OpenRouterMsgs []openrouter.ChatCompletionMessage
 }
 
+var (
+	pngFetch = regexp.MustCompile(`https?://[^\s)]+\.png[^\s)]*`)
+)
+
 func (d *AIRouterReq) GetModel(l *LLM) {
-	l.Model = param.DeepseekDeepseekR1_0528Free
 	userInfo, err := db.GetUserByID(l.UserId)
 	if err != nil {
 		logger.Error("Error getting user info", "err", err)
 	}
-	if userInfo != nil && userInfo.Mode != "" && param.OpenRouterModels[userInfo.Mode] {
-		logger.Info("User info", "userID", userInfo.UserId, "mode", userInfo.Mode)
-		l.Model = userInfo.Mode
+	
+	switch *conf.BaseConfInfo.MediaType {
+	case param.AI302:
+		l.Model = openai.GPT3Dot5Turbo0125
+		if userInfo != nil && userInfo.Mode != "" {
+			logger.Info("User info", "userID", userInfo.UserId, "mode", userInfo.Mode)
+			l.Model = userInfo.Mode
+		}
+	case param.OpenRouter:
+		l.Model = param.DeepseekDeepseekR1_0528Free
+		if userInfo != nil && userInfo.Mode != "" && param.OpenRouterModels[userInfo.Mode] {
+			logger.Info("User info", "userID", userInfo.UserId, "mode", userInfo.Mode)
+			l.Model = userInfo.Mode
+		}
 	}
+	
 }
 
 func (d *AIRouterReq) GetMessages(userId string, prompt string) {
@@ -119,6 +138,9 @@ func (d *AIRouterReq) Send(ctx context.Context, l *LLM) error {
 	// set deepseek proxy
 	config := openrouter.DefaultConfig(*conf.BaseConfInfo.OpenRouterToken)
 	config.HTTPClient = utils.GetLLMProxyClient()
+	if *conf.BaseConfInfo.CustomUrl != "" {
+		config.BaseURL = *conf.BaseConfInfo.CustomUrl
+	}
 	client := openrouter.NewClientWithConfig(*config)
 	
 	request := openrouter.ChatCompletionRequest{
@@ -271,6 +293,9 @@ func (d *AIRouterReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 	d.GetModel(l)
 	config := openrouter.DefaultConfig(*conf.BaseConfInfo.OpenRouterToken)
 	config.HTTPClient = utils.GetLLMProxyClient()
+	if *conf.BaseConfInfo.CustomUrl != "" {
+		config.BaseURL = *conf.BaseConfInfo.CustomUrl
+	}
 	client := openrouter.NewClientWithConfig(*config)
 	
 	request := openrouter.ChatCompletionRequest{
@@ -406,4 +431,141 @@ func (d *AIRouterReq) requestToolsCall(ctx context.Context, choice openrouter.Ch
 	}
 	
 	return nil
+}
+
+func GenerateMixImg(prompt string, imageContent []byte) (string, int, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+	
+	messages := openrouter.ChatCompletionMessage{
+		Role: constants.ChatMessageRoleUser,
+		Content: openrouter.Content{
+			Multi: []openrouter.ChatMessagePart{
+				{
+					Type: openrouter.ChatMessagePartTypeText,
+					Text: prompt,
+				},
+			},
+		},
+	}
+	
+	if len(imageContent) != 0 {
+		messages.Content.Multi = append(messages.Content.Multi, openrouter.ChatMessagePart{
+			Type: openrouter.ChatMessagePartTypeImageURL,
+			ImageURL: &openrouter.ChatMessageImageURL{
+				URL: "data:image/" + utils.DetectImageFormat(imageContent) + ";base64," + base64.StdEncoding.EncodeToString(imageContent),
+			},
+		})
+	}
+	
+	config := openrouter.DefaultConfig(*conf.BaseConfInfo.OpenRouterToken)
+	config.HTTPClient = utils.GetLLMProxyClient()
+	if *conf.BaseConfInfo.CustomUrl != "" {
+		config.BaseURL = *conf.BaseConfInfo.CustomUrl
+	}
+	client := openrouter.NewClientWithConfig(*config)
+	
+	request := openrouter.ChatCompletionRequest{
+		Model:            *conf.PhotoConfInfo.OpenAIImageModel,
+		MaxTokens:        *conf.LLMConfInfo.MaxTokens,
+		TopP:             float32(*conf.LLMConfInfo.TopP),
+		FrequencyPenalty: float32(*conf.LLMConfInfo.FrequencyPenalty),
+		TopLogProbs:      *conf.LLMConfInfo.TopLogProbs,
+		LogProbs:         *conf.LLMConfInfo.LogProbs,
+		Stop:             conf.LLMConfInfo.Stop,
+		PresencePenalty:  float32(*conf.LLMConfInfo.PresencePenalty),
+		Temperature:      float32(*conf.LLMConfInfo.Temperature),
+		Messages:         []openrouter.ChatCompletionMessage{messages},
+	}
+	
+	// assign task
+	response, err := client.CreateChatCompletion(ctx, request)
+	if err != nil {
+		logger.Error("create chat completion fail", "err", err)
+		return "", 0, err
+	}
+	
+	if len(response.Choices) != 0 {
+		if *conf.BaseConfInfo.MediaType == param.AI302 {
+			pngs := pngFetch.FindAllString(response.Choices[0].Message.Content.Text, -1)
+			return pngs[len(pngs)-1], response.Usage.TotalTokens, nil
+		} else if *conf.BaseConfInfo.MediaType == param.OpenRouter {
+			if len(response.Choices[0].Message.Content.Multi) != 0 {
+				return response.Choices[0].Message.Content.Multi[0].ImageURL.URL, response.Usage.TotalTokens, nil
+			}
+		}
+	}
+	
+	return "", 0, errors.New("image is empty")
+}
+
+func GenerateMixVideo(prompt string, image []byte) ([]byte, int, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+	
+	httpClient := utils.GetLLMProxyClient()
+	httpOption := genai.HTTPOptions{}
+	if *conf.BaseConfInfo.CustomUrl != "" {
+		httpOption.BaseURL = *conf.BaseConfInfo.CustomUrl
+	}
+	client, err := genai.NewClient(ctx, &genai.ClientConfig{
+		HTTPClient:  httpClient,
+		APIKey:      *conf.BaseConfInfo.GeminiToken,
+		HTTPOptions: httpOption,
+	})
+	if err != nil {
+		logger.Error("create client fail", "err", err)
+		return nil, 0, err
+	}
+	
+	var geminiImage *genai.Image
+	if len(image) > 0 {
+		geminiImage = &genai.Image{
+			ImageBytes: image,
+			MIMEType:   "image/" + utils.DetectImageFormat(image),
+		}
+	}
+	
+	operation, err := client.Models.GenerateVideos(ctx,
+		*conf.VideoConfInfo.GeminiVideoModel, prompt,
+		geminiImage,
+		&genai.GenerateVideosConfig{
+			AspectRatio:      *conf.VideoConfInfo.GeminiVideoAspectRatio,
+			PersonGeneration: *conf.VideoConfInfo.GeminiVideoPersonGeneration,
+			DurationSeconds:  &conf.VideoConfInfo.GeminiVideoDurationSeconds,
+		})
+	if err != nil {
+		logger.Error("generate video fail", "err", err)
+		return nil, 0, err
+	}
+	
+	for !operation.Done {
+		logger.Info("video is createing...")
+		time.Sleep(5 * time.Second)
+		operation, err = client.Operations.GetVideosOperation(ctx, operation, nil)
+		if err != nil {
+			logger.Error("get video operation fail", "err", err)
+			return nil, 0, err
+		}
+	}
+	
+	if len(operation.Response.GeneratedVideos) == 0 {
+		logger.Error("generate video fail", "err", "video is empty", "resp", operation.Response)
+		return nil, 0, errors.New("video is empty")
+	}
+	
+	var totalToken int
+	if operation.Metadata != nil {
+		if usageRaw, ok := operation.Metadata["usageMetadata"]; ok {
+			if usage, ok := usageRaw.(map[string]interface{}); ok {
+				if tokenValue, ok := usage["totalTokenCount"]; ok {
+					if tokenFloat, ok := tokenValue.(float64); ok {
+						totalToken = int(tokenFloat)
+					}
+				}
+			}
+		}
+	}
+	
+	return operation.Response.GeneratedVideos[0].Video.VideoBytes, totalToken, nil
 }

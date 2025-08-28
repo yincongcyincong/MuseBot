@@ -166,6 +166,10 @@ func (t *TelegramRobot) checkValid() bool {
 
 func (t *TelegramRobot) getMsgContent() string {
 	content := t.getMessage().Text
+	if t.Update.CallbackQuery != nil {
+		return ""
+	}
+	
 	if content == "" {
 		content = t.getMessage().Caption
 	}
@@ -446,12 +450,25 @@ func (t *TelegramRobot) sendModeConfigurationOptions() {
 		inlineKeyboard = tgbotapi.NewInlineKeyboardMarkup(tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("llama2", param.LLAVA),
 		))
-	case param.OpenRouter:
-		for k := range param.OpenRouterModelTypes {
-			inlineButton = append(inlineButton, tgbotapi.NewInlineKeyboardRow(
-				tgbotapi.NewInlineKeyboardButtonData(k, k),
-			))
+	case param.OpenRouter, param.AI302:
+		if t.Prompt != "" {
+			t.Robot.handleModeUpdate(t.Prompt)
+			return
 		}
+		switch *conf.BaseConfInfo.MediaType {
+		case param.AI302:
+			t.Robot.SendMsg(chatID, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
+				"link": "https://302.ai/",
+			}),
+				msgId, tgbotapi.ModeMarkdown, nil)
+		case param.OpenRouter:
+			t.Robot.SendMsg(chatID, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
+				"link": "https://openrouter.ai/",
+			}),
+				msgId, tgbotapi.ModeMarkdown, nil)
+		}
+		
+		return
 	case param.Vol:
 		// create inline button
 		for k := range param.VolModels {
@@ -666,6 +683,8 @@ func (t *TelegramRobot) sendImg() {
 			imageContent, totalToken, err = llm.GenerateOpenAIImg(prompt, lastImageContent)
 		case param.Gemini:
 			imageContent, totalToken, err = llm.GenerateGeminiImg(prompt, lastImageContent)
+		case param.AI302, param.OpenRouter:
+			imageUrl, totalToken, err = llm.GenerateMixImg(prompt, lastImageContent)
 		default:
 			err = fmt.Errorf("unsupported media type: %s", *conf.BaseConfInfo.MediaType)
 		}

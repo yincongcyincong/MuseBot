@@ -9,7 +9,8 @@ const (
 	DeepSeek      = "deepseek"
 	DeepSeekLlava = "deepseek-ollama"
 	
-	Vol = "vol"
+	Vol   = "vol"
+	AI302 = "302-ai"
 	
 	Gemini                        = "gemini"
 	ModelGemini25Pro       string = "gemini-2.5-pro"
