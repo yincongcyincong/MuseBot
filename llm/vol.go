@@ -556,7 +556,7 @@ func GetVolImageContent(imageContent []byte, content string) (string, int, error
 	}
 	
 	req := model.ChatCompletionRequest{
-		Model: *conf.PhotoConfInfo.VolImageModel,
+		Model: *conf.PhotoConfInfo.VolRecModel,
 		Messages: []*model.ChatCompletionMessage{
 			{
 				Role: model.ChatMessageRoleUser,

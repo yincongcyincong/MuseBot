@@ -52,14 +52,14 @@ chatgpt: https://www.youtube.com/watch?v=G_DZYMvd5Ug
 
 ## Supported Large Language Models
 
-| Model             | Provider   | Text Generation | Image Generation | Video Generation | Link                                 |
-|-------------------|------------|-----------------|:----------------:|:----------------:|--------------------------------------|
-| 🌟 **Gemini**     | Google     | ✅               |        ✅         |        ✅         | [doc](https://gemini.google.com/app) |
-| 💬 **ChatGPT**    | OpenAI     | ✅               |        ✅         |        ❌         | [doc](https://chat.openai.com)       |
-| 🐦 **Doubao**     | ByteDance  | ✅               |        ✅         |        ✅         | [doc](https://www.volcengine.com/)   |
-| ⚙️ **302-AI**     | OpenRouter | ✅               |        ✅         |        ❌         | [doc](https://302.ai/)               |
-| 🧠 **DeepSeek**   | DeepSeek   | ✅               |        ❌         |        ❌         | [doc](https://www.deepseek.com/)     |
-| 🌐 **OpenRouter** | OpenRouter | ✅               |        ✅         |        ❌         | [doc](https://openrouter.ai/)        |
+| Model             | Provider   | Text Generation | Image Generation | Video Generation | Recognize Photo | Link                                 |
+|-------------------|------------|-----------------|:----------------:|:----------------:|----------------:|--------------------------------------|
+| 🌟 **Gemini**     | Google     | ✅               |        ✅         |        ✅         |               ✅ | [doc](https://gemini.google.com/app) |
+| 💬 **ChatGPT**    | OpenAI     | ✅               |        ✅         |        ❌         |               ✅ | [doc](https://chat.openai.com)       |
+| 🐦 **Doubao**     | ByteDance  | ✅               |        ✅         |        ✅         |               ✅ | [doc](https://www.volcengine.com/)   |
+| ⚙️ **302-AI**     | OpenRouter | ✅               |        ✅         |        ❌         |               ✅ | [doc](https://302.ai/)               |
+| 🧠 **DeepSeek**   | DeepSeek   | ✅               |        ❌         |        ❌         |               ❌ | [doc](https://www.deepseek.com/)     |
+| 🌐 **OpenRouter** | OpenRouter | ✅               |        ✅         |        ❌         |               ✅ | [doc](https://openrouter.ai/)        |
 
 ## 🤖 Text Example
 
@@ -120,10 +120,10 @@ You can configure the bot via environment variables:
 | DEEPSEEK_TOKEN	  (required)    | DeepSeek Api Key                                                                                                      | -                         |
 | OPENAI_TOKEN	                  | Open AI Token                                                                                                         | -                         |
 | GEMINI_TOKEN	                  | Gemini Token                                                                                                          | -                         |
-| OPEN_ROUTER_TOKEN	             | OpenRouter Token  [doc](https://openrouter.ai/docs/quickstart)                                                        | -                         |
+| MIX_TOKEN	                     | OpenRouter Token  [doc](https://openrouter.ai/docs/quickstart)    or 302-AI token [doc](https://302.ai/)              | -                         |
 | VOL_TOKEN	                     | Vol Token  [doc](https://www.volcengine.com/docs/82379/1399008#b00dee71)                                              | -                         |
 | CUSTOM_URL	                    | custom deepseek url                                                                                                   | https://api.deepseek.com/ |
-| TYPE	                          | deepseek/openai/gemini/openrouter/vol                                                                                 | deepseek                  |
+| TYPE	                          | deepseek/openai/gemini/openrouter/vol/302-ai                                                                          | deepseek                  |
 | VOLC_AK	                       | volcengine photo model ak     [doc](https://www.volcengine.com/docs/6444/1340578)                                     | -                         |
 | VOLC_SK	                       | volcengine photo model sk      [doc](https://www.volcengine.com/docs/6444/1340578)                                    | -                         |
 | Ernie_AK	                      | ernie ak     [doc](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Sly8bm96d)                                            | -                         |
@@ -145,7 +145,7 @@ You can configure the bot via environment variables:
 | CA_FILE	                       | http server ca file                                                                                                   | -                         |
 | CRT_FILE	                      | http server crt file                                                                                                  | -                         |
 | KEY_FILE	                      | http server key file                                                                                                  | -                         |
-| MEDIA_TYPE	                    | openai/gemini/vol  create photo or video                                                                              | vol                       |
+| MEDIA_TYPE	                    | openai/gemini/vol/openrouter/302-ai   create photo or video                                                           | vol                       |
 | MAX_QA_PAIR	                   | how many question and answer pairs as context                                                                         | 15                        |
 | CHARACTER	                     | background character                                                                                                  | -                         |
 

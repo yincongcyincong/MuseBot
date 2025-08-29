@@ -1,6 +1,6 @@
 ### Parameter List
 
-Documentation: [https://www.volcengine.com/docs/6791/1366783](https://www.volcengine.com/docs/6791/1366783)
+Vol Documentation: [https://www.volcengine.com/docs/6791/1366783](https://www.volcengine.com/docs/6791/1366783)
 
 ---
 
@@ -26,7 +26,11 @@ Documentation: [https://www.volcengine.com/docs/6791/1366783](https://www.volcen
 | `GEMINI_IMAGE_MODEL` | `String` | Optional          | gemini create photo model                                                                                                                                                                                          |
 | `GEMINI_REC_MODEL`   | `String` | Optional          | gemini recognize photo model                                                                                                                                                                                       |
 | `OPENAI_IMAGE_MODEL` | `String` | Optional          | openai create photo model                                                                                                                                                                                          |
-| `OPENAI_REC_MODEL`   | `String` | Optional          | openai create photo model                                                                                                                                                                                          |
+| `OPENAI_REC_MODEL`   | `String` | Optional          | openai recognize photo model                                                                                                                                                                                       |
 | `OPENAI_IMAGE_SIZE`  | `String` | Optional          | openai image size                                                                                                                                                                                                  |
 | `OPENAI_IMAGE_STYLE` | `String` | Optional          | openai image style                                                                                                                                                                                                 |
+| `VOL_IMAGE_MODEL`    | `String` | Optional          | vol/doubao photo model                                                                                                                                                                                             |
+| `VOL_REC_MODEL`      | `String` | Optional          | vol/doubao  recognize model                                                                                                                                                                                        |
+| `MIX_IMAGE_MODEL`    | `String` | Optional          | openrouter/302ai photo model                                                                                                                                                                                       |
+| `MIX_REC_MODEL`      | `String` | Optional          | openrouter/302ai  recognize model                                                                                                                                                                                  |
 

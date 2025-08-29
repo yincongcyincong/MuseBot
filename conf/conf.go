@@ -36,13 +36,13 @@ type BaseConf struct {
 	QQAppID                 *string `json:"qq_app_id"`
 	QQAppSecret             *string `json:"qq_app_secret"`
 	
-	DeepseekToken   *string `json:"deepseek_token"`
-	OpenAIToken     *string `json:"openai_token"`
-	GeminiToken     *string `json:"gemini_token"`
-	OpenRouterToken *string `json:"openrouter_token"`
-	VolToken        *string `json:"vol_token"`
-	ErnieAK         *string `json:"ernie_ak"`
-	ErnieSK         *string `json:"ernie_sk"`
+	DeepseekToken *string `json:"deepseek_token"`
+	OpenAIToken   *string `json:"openai_token"`
+	GeminiToken   *string `json:"gemini_token"`
+	MixToken      *string `json:"mix_token"`
+	VolToken      *string `json:"vol_token"`
+	ErnieAK       *string `json:"ernie_ak"`
+	ErnieSK       *string `json:"ernie_sk"`
 	
 	BotName      *string `json:"bot_name"`
 	Type         *string `json:"type"`
@@ -102,7 +102,7 @@ func InitConf() {
 	BaseConfInfo.DeepseekToken = flag.String("deepseek_token", "", "deepseek auth token")
 	BaseConfInfo.OpenAIToken = flag.String("openai_token", "", "openai auth token")
 	BaseConfInfo.GeminiToken = flag.String("gemini_token", "", "gemini auth token")
-	BaseConfInfo.OpenRouterToken = flag.String("openrouter_token", "", "openrouter.ai auth token")
+	BaseConfInfo.MixToken = flag.String("mix_token", "", "openrouter/302ai auth token")
 	BaseConfInfo.VolToken = flag.String("vol_token", "", "vol auth token")
 	BaseConfInfo.ErnieAK = flag.String("ernie_ak", "", "ernie ak")
 	BaseConfInfo.ErnieSK = flag.String("ernie_sk", "", "ernie sk")
@@ -322,8 +322,8 @@ func InitConf() {
 		*BaseConfInfo.ErnieSK = os.Getenv("ERNIE_SK")
 	}
 	
-	if os.Getenv("OPEN_ROUTER_TOKEN") != "" {
-		*BaseConfInfo.OpenRouterToken = os.Getenv("OPEN_ROUTER_TOKEN")
+	if os.Getenv("MIX_TOKEN") != "" {
+		*BaseConfInfo.MixToken = os.Getenv("MIX_TOKEN")
 	}
 	
 	if os.Getenv("MAX_QA_PAIR") != "" {
@@ -407,7 +407,7 @@ func InitConf() {
 	logger.Info("CONF", "HTTPPort", *BaseConfInfo.HTTPHost)
 	logger.Info("CONF", "OpenAIToken", *BaseConfInfo.OpenAIToken)
 	logger.Info("CONF", "GeminiToken", *BaseConfInfo.GeminiToken)
-	logger.Info("CONF", "OpenRouterToken", *BaseConfInfo.OpenRouterToken)
+	logger.Info("CONF", "OpenRouterToken", *BaseConfInfo.MixToken)
 	logger.Info("CONF", "ErnieAK", *BaseConfInfo.ErnieAK)
 	logger.Info("CONF", "ErnieSK", *BaseConfInfo.ErnieSK)
 	logger.Info("CONF", "VolToken", *BaseConfInfo.VolToken)
