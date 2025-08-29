@@ -43,9 +43,9 @@ func (d *AIRouterReq) GetModel(l *LLM) {
 		logger.Error("Error getting user info", "err", err)
 	}
 	
-	switch *conf.BaseConfInfo.MediaType {
+	switch *conf.BaseConfInfo.Type {
 	case param.AI302:
-		l.Model = openai.GPT3Dot5Turbo0125
+		l.Model = openai.GPT3Dot5Turbo
 		if userInfo != nil && userInfo.Mode != "" {
 			logger.Info("User info", "userID", userInfo.UserId, "mode", userInfo.Mode)
 			l.Model = userInfo.Mode
@@ -133,10 +133,8 @@ func (d *AIRouterReq) Send(ctx context.Context, l *LLM) error {
 	}
 	
 	start := time.Now()
-	d.GetModel(l)
 	
-	// set deepseek proxy
-	config := openrouter.DefaultConfig(*conf.BaseConfInfo.OpenRouterToken)
+	config := openrouter.DefaultConfig(*conf.BaseConfInfo.MixToken)
 	config.HTTPClient = utils.GetLLMProxyClient()
 	if *conf.BaseConfInfo.CustomUrl != "" {
 		config.BaseURL = *conf.BaseConfInfo.CustomUrl
@@ -291,7 +289,7 @@ func (d *AIRouterReq) GetMessage(role, msg string) {
 
 func (d *AIRouterReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 	d.GetModel(l)
-	config := openrouter.DefaultConfig(*conf.BaseConfInfo.OpenRouterToken)
+	config := openrouter.DefaultConfig(*conf.BaseConfInfo.MixToken)
 	config.HTTPClient = utils.GetLLMProxyClient()
 	if *conf.BaseConfInfo.CustomUrl != "" {
 		config.BaseURL = *conf.BaseConfInfo.CustomUrl
@@ -458,7 +456,7 @@ func GenerateMixImg(prompt string, imageContent []byte) (string, int, error) {
 		})
 	}
 	
-	config := openrouter.DefaultConfig(*conf.BaseConfInfo.OpenRouterToken)
+	config := openrouter.DefaultConfig(*conf.BaseConfInfo.MixToken)
 	config.HTTPClient = utils.GetLLMProxyClient()
 	if *conf.BaseConfInfo.CustomUrl != "" {
 		config.BaseURL = *conf.BaseConfInfo.CustomUrl
@@ -466,16 +464,8 @@ func GenerateMixImg(prompt string, imageContent []byte) (string, int, error) {
 	client := openrouter.NewClientWithConfig(*config)
 	
 	request := openrouter.ChatCompletionRequest{
-		Model:            *conf.PhotoConfInfo.OpenAIImageModel,
-		MaxTokens:        *conf.LLMConfInfo.MaxTokens,
-		TopP:             float32(*conf.LLMConfInfo.TopP),
-		FrequencyPenalty: float32(*conf.LLMConfInfo.FrequencyPenalty),
-		TopLogProbs:      *conf.LLMConfInfo.TopLogProbs,
-		LogProbs:         *conf.LLMConfInfo.LogProbs,
-		Stop:             conf.LLMConfInfo.Stop,
-		PresencePenalty:  float32(*conf.LLMConfInfo.PresencePenalty),
-		Temperature:      float32(*conf.LLMConfInfo.Temperature),
-		Messages:         []openrouter.ChatCompletionMessage{messages},
+		Model:    *conf.PhotoConfInfo.MixImageModel,
+		Messages: []openrouter.ChatCompletionMessage{messages},
 	}
 	
 	// assign task
@@ -568,4 +558,58 @@ func GenerateMixVideo(prompt string, image []byte) ([]byte, int, error) {
 	}
 	
 	return operation.Response.GeneratedVideos[0].Video.VideoBytes, totalToken, nil
+}
+
+func GetMixImageContent(imageContent []byte, content string) (string, int, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+	
+	contentPrompt := content
+	if content == "" {
+		contentPrompt = i18n.GetMessage(*conf.BaseConfInfo.Lang, "photo_handle_prompt", nil)
+	}
+	
+	messages := openrouter.ChatCompletionMessage{
+		Role: constants.ChatMessageRoleUser,
+		Content: openrouter.Content{
+			Multi: []openrouter.ChatMessagePart{
+				{
+					Type: openrouter.ChatMessagePartTypeText,
+					Text: contentPrompt,
+				},
+				{
+					Type: openrouter.ChatMessagePartTypeImageURL,
+					ImageURL: &openrouter.ChatMessageImageURL{
+						URL: "data:image/" + utils.DetectImageFormat(imageContent) + ";base64," + base64.StdEncoding.EncodeToString(imageContent),
+					},
+				},
+			},
+		},
+	}
+	
+	config := openrouter.DefaultConfig(*conf.BaseConfInfo.MixToken)
+	config.HTTPClient = utils.GetLLMProxyClient()
+	if *conf.BaseConfInfo.CustomUrl != "" {
+		config.BaseURL = *conf.BaseConfInfo.CustomUrl
+	}
+	client := openrouter.NewClientWithConfig(*config)
+	
+	request := openrouter.ChatCompletionRequest{
+		Model:    *conf.PhotoConfInfo.MixRecModel,
+		Messages: []openrouter.ChatCompletionMessage{messages},
+	}
+	
+	// assign task
+	response, err := client.CreateChatCompletion(ctx, request)
+	if err != nil {
+		logger.Error("create chat completion fail", "err", err)
+		return "", 0, err
+	}
+	
+	if len(response.Choices) == 0 {
+		logger.Error("response is emtpy", "response", response)
+		return "", 0, errors.New("response is empty")
+	}
+	
+	return response.Choices[0].Message.Content.Text, response.Usage.TotalTokens, nil
 }

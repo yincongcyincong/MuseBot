@@ -126,7 +126,7 @@ func NewLLM(opts ...Option) *LLM {
 			ToolMessage:        []openai.ChatCompletionMessage{},
 			CurrentToolMessage: []openai.ChatCompletionMessage{},
 		}
-	case param.OpenRouter:
+	case param.OpenRouter, param.AI302:
 		l.LLMClient = &AIRouterReq{
 			ToolCall:           []openrouter.ToolCall{},
 			ToolMessage:        []openrouter.ChatCompletionMessage{},

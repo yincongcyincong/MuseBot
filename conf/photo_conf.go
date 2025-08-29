@@ -28,6 +28,7 @@ type PhotoConf struct {
 	LogoTextContent *string  `json:"logo_text_content"`
 	
 	VolImageModel *string `json:"vol_image_model"`
+	VolRecModel   *string `json:"vol_rec_model"`
 	
 	GeminiImageModel *string `json:"gemini_image_model"`
 	GeminiRecModel   *string `json:"gemini_rec_model"`
@@ -36,6 +37,9 @@ type PhotoConf struct {
 	OpenAIRecModel   *string `json:"openai_rec_model"`
 	OpenAIImageSize  *string `json:"openai_image_size"`
 	OpenAIImageStyle *string `json:"openai_image_style"`
+	
+	MixImageModel *string `json:"mix_image_model"`
+	MixRecModel   *string `json:"mix_rec_model"`
 }
 
 var PhotoConfInfo = new(PhotoConf)
@@ -67,6 +71,10 @@ func InitPhotoConf() {
 	PhotoConfInfo.OpenAIImageStyle = flag.String("openai_image_style", "", "openai image style")
 	
 	PhotoConfInfo.VolImageModel = flag.String("vol_image_model", "doubao-seed-1-6-250615", "vol image model")
+	PhotoConfInfo.VolRecModel = flag.String("vol_rec_model", "doubao-seed-1-6-250615", "vol recognize photo model")
+	
+	PhotoConfInfo.MixImageModel = flag.String("mix_image_model", "gpt-image-1", "ai302/openrouter image model")
+	PhotoConfInfo.MixRecModel = flag.String("mix_rec_model", "chatgpt-4o-latest", "ai302/openrouter recognize photo model")
 }
 
 func EnvPhotoConf() {
@@ -162,6 +170,18 @@ func EnvPhotoConf() {
 		*PhotoConfInfo.VolImageModel = os.Getenv("VOL_IMAGE_MODEL")
 	}
 	
+	if os.Getenv("VOL_REC_MODEL") != "" {
+		*PhotoConfInfo.VolRecModel = os.Getenv("VOL_REC_MODEL")
+	}
+	
+	if os.Getenv("MIX_IMAGE_MODEL") != "" {
+		*PhotoConfInfo.MixImageModel = os.Getenv("MIX_IMAGE_MODEL")
+	}
+	
+	if os.Getenv("MIX_REC_MODEL") != "" {
+		*PhotoConfInfo.MixRecModel = os.Getenv("MIX_REC_MODEL")
+	}
+	
 	logger.Info("PHOTO_CONF", "ReqKey", *PhotoConfInfo.ReqKey)
 	logger.Info("PHOTO_CONF", "ModelVersion", *PhotoConfInfo.ModelVersion)
 	logger.Info("PHOTO_CONF", "ReqScheduleConf", *PhotoConfInfo.ReqScheduleConf)
@@ -186,4 +206,7 @@ func EnvPhotoConf() {
 	logger.Info("PHOTO_CONF", "OpenAIImageSize", *PhotoConfInfo.OpenAIImageSize)
 	logger.Info("PHOTO_CONF", "OpenAIRecModel", *PhotoConfInfo.OpenAIRecModel)
 	logger.Info("PHOTO_CONF", "VolImageModel", *PhotoConfInfo.VolImageModel)
+	logger.Info("PHOTO_CONF", "VolRecModel", *PhotoConfInfo.VolRecModel)
+	logger.Info("PHOTO_CONF", "AI302ImageModel", *PhotoConfInfo.MixRecModel)
+	logger.Info("PHOTO_CONF", "AI302RecModel", *PhotoConfInfo.MixRecModel)
 }
