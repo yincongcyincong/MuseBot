@@ -21,7 +21,6 @@ import (
 	"github.com/yincongcyincong/MuseBot/conf"
 	"github.com/yincongcyincong/MuseBot/db"
 	"github.com/yincongcyincong/MuseBot/i18n"
-	"github.com/yincongcyincong/MuseBot/llm"
 	"github.com/yincongcyincong/MuseBot/logger"
 	"github.com/yincongcyincong/MuseBot/param"
 	"github.com/yincongcyincong/MuseBot/utils"
@@ -258,37 +257,13 @@ func (c *ComWechatRobot) sendImg() {
 			}
 		}
 		
-		var imageUrl string
-		var imageContent []byte
-		var totalToken int
-		mode := *conf.BaseConfInfo.MediaType
-		switch *conf.BaseConfInfo.MediaType {
-		case param.Vol:
-			imageUrl, totalToken, err = llm.GenerateVolImg(prompt, lastImageContent)
-		case param.OpenAi:
-			imageContent, totalToken, err = llm.GenerateOpenAIImg(prompt, lastImageContent)
-		case param.Gemini:
-			imageContent, totalToken, err = llm.GenerateGeminiImg(prompt, lastImageContent)
-		default:
-			err = fmt.Errorf("unsupported media type: %s", *conf.BaseConfInfo.MediaType)
-		}
-		
+		imageContent, totalToken, err := c.Robot.CreatePhoto(prompt, lastImageContent)
 		if err != nil {
 			logger.Warn("generate image fail", "err", err)
 			c.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
 		
-		if len(imageUrl) > 0 && len(imageContent) == 0 {
-			imageContent, err = utils.DownloadFile(imageUrl)
-			if err != nil {
-				logger.Warn("download image fail", "err", err)
-				c.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
-				return
-			}
-		}
-		
-		// 构建 base64 图片
 		base64Content := base64.StdEncoding.EncodeToString(imageContent)
 		format := utils.DetectImageFormat(imageContent)
 		dataURI := fmt.Sprintf("data:image/%s;base64,%s", format, base64Content)
@@ -330,7 +305,7 @@ func (c *ComWechatRobot) sendImg() {
 			Token:      totalToken,
 			IsDeleted:  0,
 			RecordType: param.ImageRecordType,
-			Mode:       mode,
+			Mode:       *conf.BaseConfInfo.MediaType,
 		})
 	})
 }
@@ -347,40 +322,9 @@ func (c *ComWechatRobot) sendVideo() {
 			return
 		}
 		
-		var (
-			videoUrl     string
-			videoContent []byte
-			err          error
-		)
-		
-		mode := *conf.BaseConfInfo.MediaType
-		var totalToken int
-		switch *conf.BaseConfInfo.MediaType {
-		case param.Vol:
-			videoUrl, totalToken, err = llm.GenerateVolVideo(prompt, nil)
-		case param.Gemini:
-			videoContent, totalToken, err = llm.GenerateGeminiVideo(prompt, nil)
-		default:
-			err = fmt.Errorf("unsupported type: %s", *conf.BaseConfInfo.MediaType)
-		}
-		
+		videoContent, totalToken, err := c.Robot.CreateVideo(prompt, c.ImageContent)
 		if err != nil {
 			logger.Warn("generate video fail", "err", err)
-			c.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
-			return
-		}
-		
-		// 下载视频内容如果是 URL 模式
-		if len(videoUrl) != 0 && len(videoContent) == 0 {
-			videoContent, err = utils.DownloadFile(videoUrl)
-			if err != nil {
-				logger.Warn("download video fail", "err", err)
-				c.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
-				return
-			}
-		}
-		
-		if len(videoContent) == 0 {
 			c.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
@@ -424,7 +368,7 @@ func (c *ComWechatRobot) sendVideo() {
 			Token:      totalToken,
 			IsDeleted:  0,
 			RecordType: param.VideoRecordType,
-			Mode:       mode,
+			Mode:       *conf.BaseConfInfo.MediaType,
 		})
 	})
 	

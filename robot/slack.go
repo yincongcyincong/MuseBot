@@ -20,7 +20,6 @@ import (
 	"github.com/yincongcyincong/MuseBot/conf"
 	"github.com/yincongcyincong/MuseBot/db"
 	"github.com/yincongcyincong/MuseBot/i18n"
-	"github.com/yincongcyincong/MuseBot/llm"
 	"github.com/yincongcyincong/MuseBot/logger"
 	"github.com/yincongcyincong/MuseBot/param"
 	"github.com/yincongcyincong/MuseBot/utils"
@@ -489,33 +488,11 @@ func (s *SlackRobot) sendImg() {
 			}
 		}
 		
-		var imageUrl string
-		var imageContent []byte
-		var totalToken int
-		mode := *conf.BaseConfInfo.MediaType
-		switch mode {
-		case param.Vol:
-			imageUrl, totalToken, err = llm.GenerateVolImg(prompt, lastImageContent)
-		case param.OpenAi:
-			imageContent, totalToken, err = llm.GenerateOpenAIImg(prompt, lastImageContent)
-		case param.Gemini:
-			imageContent, totalToken, err = llm.GenerateGeminiImg(prompt, lastImageContent)
-		default:
-			err = fmt.Errorf("unsupported media type: %s", mode)
-		}
-		
+		imageContent, totalToken, err := s.Robot.CreatePhoto(prompt, lastImageContent)
 		if err != nil {
 			logger.Warn("generate image fail", "err", err)
-			s.Client.PostMessage(chatId, slack.MsgOptionText("生成图片失败: "+err.Error(), false))
+			s.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
 			return
-		}
-		
-		if len(imageContent) == 0 && strings.Contains(s.Command, "edit_photo") {
-			imageContent, err = utils.DownloadFile(imageUrl)
-			if err != nil {
-				logger.Warn("download image fail", "err", err)
-				return
-			}
 		}
 		
 		uploadParams := slack.UploadFileV2Parameters{
@@ -549,7 +526,7 @@ func (s *SlackRobot) sendImg() {
 			Token:      totalToken,
 			IsDeleted:  0,
 			RecordType: param.ImageRecordType,
-			Mode:       mode,
+			Mode:       *conf.BaseConfInfo.MediaType,
 		})
 	})
 }
@@ -579,35 +556,11 @@ func (s *SlackRobot) sendVideo() {
 			}
 		}
 		
-		var videoURL string
-		var videoContent []byte
-		var totalToken int
-		mode := *conf.BaseConfInfo.MediaType
-		
-		// 调用对应服务生成视频
-		switch *conf.BaseConfInfo.MediaType {
-		case param.Vol:
-			videoURL, totalToken, err = llm.GenerateVolVideo(prompt, lastImageContent)
-		case param.Gemini:
-			videoContent, totalToken, err = llm.GenerateGeminiVideo(prompt, lastImageContent)
-		default:
-			err = fmt.Errorf("unsupported media type: %s", *conf.BaseConfInfo.MediaType)
-		}
-		
+		videoContent, totalToken, err := s.Robot.CreateVideo(prompt, lastImageContent)
 		if err != nil {
 			logger.Warn("generate video failed", "err", err)
 			s.Robot.SendMsg(chatId, err.Error(), replyToMessageID, tgbotapi.ModeMarkdown, nil)
 			return
-		}
-		
-		// 发送视频文件消息
-		if len(videoURL) != 0 {
-			// 通过文件上传接口上传视频URL（下载后上传）
-			videoContent, err = utils.DownloadFile(videoURL)
-			if err != nil {
-				logger.Warn("download video failed", "err", err)
-				return
-			}
 		}
 		
 		uploadParams := slack.UploadFileV2Parameters{
@@ -643,7 +596,7 @@ func (s *SlackRobot) sendVideo() {
 			Token:      totalToken,
 			IsDeleted:  0,
 			RecordType: param.VideoRecordType,
-			Mode:       mode,
+			Mode:       *conf.BaseConfInfo.MediaType,
 		})
 	})
 }

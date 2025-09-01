@@ -80,7 +80,7 @@ func TestInitConf_AllEnvVars(t *testing.T) {
 	
 	os.Setenv("TELEGRAM_BOT_TOKEN", "test_bot_token")
 	os.Setenv("DEEPSEEK_TOKEN", "test_deepseek_token")
-	os.Setenv("VIDEO_MODEL", "model-v1")
+	os.Setenv("VOL_VIDEO_MODEL", "model-v1")
 	os.Setenv("RADIO", "radio-123")
 	os.Setenv("DURATION", "120")
 	os.Setenv("FPS", "30")
@@ -150,7 +150,7 @@ func TestInitConf_AllEnvVars(t *testing.T) {
 	
 	assertEqual(t, *McpConfPath, "./conf/mcp/mcp.json", "MCP_CONF_PATH")
 	
-	assertEqual(t, *VideoConfInfo.VideoModel, "model-v1", "VIDEO_MODEL")
+	assertEqual(t, *VideoConfInfo.VolVideoModel, "model-v1", "VIDEO_MODEL")
 	assertEqual(t, *VideoConfInfo.Radio, "radio-123", "RADIO")
 	assertInt(t, *VideoConfInfo.Duration, 120, "DURATION")
 	assertInt(t, *VideoConfInfo.FPS, 30, "FPS")
