@@ -3,6 +3,7 @@ import Toast from "../components/Toast";
 import Modal from "../components/Modal";
 import BotSelector from "../components/BotSelector";
 import ConfirmModal from "../components/ConfirmModal.jsx";
+import Editor from "@monaco-editor/react";
 
 function BotMcpListPage() {
     const [botId, setBotId] = useState(null);
@@ -250,18 +251,50 @@ function BotMcpListPage() {
                 </table>
             </div>
 
-            <Modal visible={showEditModal} title="Edit MCP Service" onClose={() => setShowEditModal(false)}>
+            <Modal
+                visible={showEditModal}
+                title="Edit MCP Service"
+                onClose={() => setShowEditModal(false)}
+            >
                 <div className="space-y-4">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700">Service Name</label>
-                        <input type="text" value={editingService || ""} readOnly className="w-full px-3 py-2 border border-gray-300 rounded bg-gray-100 text-gray-700" />
+                        <label className="block text-sm font-medium text-gray-700">
+                            Service Name
+                        </label>
+                        <input
+                            type="text"
+                            value={editingService || ""}
+                            readOnly
+                            className="w-full px-3 py-2 border border-gray-300 rounded bg-gray-100 text-gray-700"
+                        />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700">Config JSON</label>
-                        <textarea value={editJson} onChange={(e) => setEditJson(e.target.value)} rows={10} className="w-full px-3 py-2 border border-gray-300 rounded font-mono" />
+                        <label className="block text-sm font-medium text-gray-700">
+                            Config JSON
+                        </label>
+                        <div className="border rounded">
+                            <Editor
+                                height="300px"
+                                defaultLanguage="json"
+                                value={editJson}
+                                onChange={(value) => setEditJson(value ?? "")}
+                                options={{
+                                    minimap: { enabled: false },
+                                    fontSize: 14,
+                                    automaticLayout: true,
+                                    formatOnPaste: true,
+                                    formatOnType: true,
+                                }}
+                            />
+                        </div>
                     </div>
                     <div className="text-right">
-                        <button onClick={handleUpdateService} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Update</button>
+                        <button
+                            onClick={handleUpdateService}
+                            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                        >
+                            Update
+                        </button>
                     </div>
                 </div>
             </Modal>
@@ -311,14 +344,40 @@ function BotMcpListPage() {
                         <div className="space-y-4">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700">Service Name</label>
-                                <input type="text" value={selectedPreparedService || ""} onChange={(e) => setSelectedPreparedService(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded bg-white text-gray-700" />
+                                <input
+                                    type="text"
+                                    value={selectedPreparedService || ""}
+                                    onChange={(e) => setSelectedPreparedService(e.target.value)}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded bg-white text-gray-700"
+                                />
                             </div>
+
                             <div>
                                 <label className="block text-sm font-medium text-gray-700">Config JSON</label>
-                                <textarea value={prepareEditJson} onChange={(e) => setPrepareEditJson(e.target.value)} rows={10} className="w-full px-3 py-2 border border-gray-300 rounded font-mono" />
+                                <div className="border rounded">
+                                    <Editor
+                                        height="300px"
+                                        defaultLanguage="json"
+                                        value={prepareEditJson}
+                                        onChange={(value) => setPrepareEditJson(value ?? "")}
+                                        options={{
+                                            minimap: { enabled: false },
+                                            fontSize: 14,
+                                            automaticLayout: true,
+                                            formatOnPaste: true,
+                                            formatOnType: true,
+                                        }}
+                                    />
+                                </div>
                             </div>
+
                             <div className="text-right">
-                                <button onClick={handleSubmitPreparedService} className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">Submit</button>
+                                <button
+                                    onClick={handleSubmitPreparedService}
+                                    className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded"
+                                >
+                                    Submit
+                                </button>
                             </div>
                         </div>
                     )}

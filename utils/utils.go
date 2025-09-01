@@ -286,7 +286,7 @@ func DownloadFile(url string) ([]byte, error) {
 		return nil, errors.New("url is empty")
 	}
 	
-	client := GetLLMProxyClient()
+	client := GetRobotProxyClient()
 	
 	resp, err := client.Get(url)
 	if err != nil {

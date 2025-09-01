@@ -55,6 +55,7 @@ func StartSlackRobot(ctx context.Context) {
 		slack.OptionDebug(false),
 		slack.OptionAppLevelToken(*conf.BaseConfInfo.SlackAppToken),
 		slack.OptionLog(logger.Logger),
+		slack.OptionHTTPClient(utils.GetRobotProxyClient()),
 	)
 	socketClient = socketmode.New(slackClient)
 	

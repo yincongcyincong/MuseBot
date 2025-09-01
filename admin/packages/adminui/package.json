@@ -10,6 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@monaco-editor/react": "^4.7.0",
     "@tailwindcss/cli": "^4.1.11",
     "chart.js": "^4.5.0",
     "dompurify": "^3.2.6",

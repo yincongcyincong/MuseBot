@@ -9,7 +9,7 @@ import (
 )
 
 type VideoConf struct {
-	VolVideoModel    *string `json:"video_model"`
+	VolVideoModel    *string `json:"vol_video_model"`
 	GeminiVideoModel *string `json:"gemini_video_model"`
 	AI302VideoModel  *string `json:"ai_302_video_model"`
 	
@@ -34,7 +34,7 @@ func InitVideoConf() {
 	
 	VideoConfInfo.GeminiVideoModel = flag.String("gemini_video_model", "veo-2.0-generate-001", "create video model")
 	
-	VideoConfInfo.AI302VideoModel = flag.String("302_ai_video_model", "luma_video", "create video model")
+	VideoConfInfo.AI302VideoModel = flag.String("ai_302_video_model", "luma_video", "create video model")
 }
 
 func EnvVideoConf() {

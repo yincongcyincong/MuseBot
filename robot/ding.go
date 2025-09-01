@@ -68,6 +68,7 @@ func StartDingRobot(ctx context.Context) {
 	dingBotClient = client.NewStreamClient(
 		client.WithAppCredential(client.NewAppCredentialConfig(*conf.BaseConfInfo.DingClientId, *conf.BaseConfInfo.DingClientSecret)),
 		client.WithUserAgent(client.NewDingtalkGoSDKUserAgent()),
+		client.WithProxy(*conf.BaseConfInfo.RobotProxy),
 		client.WithSubscription(dingUtils.SubscriptionTypeKCallback, "/v1.0/im/bot/messages/get",
 			chatbot.NewDefaultChatBotFrameHandler(OnChatReceive).OnEventReceived),
 	)
