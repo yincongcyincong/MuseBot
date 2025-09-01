@@ -23,7 +23,6 @@ import (
 	"github.com/yincongcyincong/MuseBot/conf"
 	"github.com/yincongcyincong/MuseBot/db"
 	"github.com/yincongcyincong/MuseBot/i18n"
-	"github.com/yincongcyincong/MuseBot/llm"
 	"github.com/yincongcyincong/MuseBot/logger"
 	"github.com/yincongcyincong/MuseBot/param"
 	"github.com/yincongcyincong/MuseBot/utils"
@@ -245,37 +244,13 @@ func (l *LarkRobot) sendImg() {
 			}
 		}
 		
-		var imageUrl string
-		var imageContent []byte
-		var totalToken int
-		mode := *conf.BaseConfInfo.MediaType
-		switch *conf.BaseConfInfo.MediaType {
-		case param.Vol:
-			imageUrl, totalToken, err = llm.GenerateVolImg(prompt, lastImageContent)
-		case param.OpenAi:
-			imageContent, totalToken, err = llm.GenerateOpenAIImg(prompt, lastImageContent)
-		case param.Gemini:
-			imageContent, totalToken, err = llm.GenerateGeminiImg(prompt, lastImageContent)
-		default:
-			err = fmt.Errorf("unsupported media type: %s", *conf.BaseConfInfo.MediaType)
-		}
-		
+		imageContent, totalToken, err := l.Robot.CreatePhoto(prompt, lastImageContent)
 		if err != nil {
 			logger.Warn("generate image fail", "err", err)
 			l.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
 		
-		if len(imageUrl) > 0 && len(imageContent) == 0 {
-			imageContent, err = utils.DownloadFile(imageUrl)
-			if err != nil {
-				logger.Warn("download image fail", "err", err)
-				l.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
-				return
-			}
-		}
-		
-		// 构建 base64 图片
 		base64Content := base64.StdEncoding.EncodeToString(imageContent)
 		format := utils.DetectImageFormat(imageContent)
 		dataURI := fmt.Sprintf("data:image/%s;base64,%s", format, base64Content)
@@ -329,7 +304,7 @@ func (l *LarkRobot) sendImg() {
 			Token:      totalToken,
 			IsDeleted:  0,
 			RecordType: param.ImageRecordType,
-			Mode:       mode,
+			Mode:       *conf.BaseConfInfo.MediaType,
 		})
 	})
 }
@@ -349,40 +324,9 @@ func (l *LarkRobot) sendVideo() {
 		originalMsgID := l.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "thinking", nil),
 			msgId, "", nil)
 		
-		var (
-			videoUrl     string
-			videoContent []byte
-			err          error
-		)
-		
-		mode := *conf.BaseConfInfo.MediaType
-		var totalToken int
-		switch *conf.BaseConfInfo.MediaType {
-		case param.Vol:
-			videoUrl, totalToken, err = llm.GenerateVolVideo(prompt, l.ImageContent)
-		case param.Gemini:
-			videoContent, totalToken, err = llm.GenerateGeminiVideo(prompt, l.ImageContent)
-		default:
-			err = fmt.Errorf("unsupported type: %s", *conf.BaseConfInfo.MediaType)
-		}
-		
+		videoContent, totalToken, err := l.Robot.CreateVideo(prompt, l.ImageContent)
 		if err != nil {
 			logger.Warn("generate video fail", "err", err)
-			l.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
-			return
-		}
-		
-		// 下载视频内容如果是 URL 模式
-		if len(videoUrl) != 0 && len(videoContent) == 0 {
-			videoContent, err = utils.DownloadFile(videoUrl)
-			if err != nil {
-				logger.Warn("download video fail", "err", err)
-				l.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
-				return
-			}
-		}
-		
-		if len(videoContent) == 0 {
 			l.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
@@ -431,7 +375,7 @@ func (l *LarkRobot) sendVideo() {
 			Token:      totalToken,
 			IsDeleted:  0,
 			RecordType: param.VideoRecordType,
-			Mode:       mode,
+			Mode:       *conf.BaseConfInfo.MediaType,
 		})
 	})
 	

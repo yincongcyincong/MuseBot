@@ -24,7 +24,6 @@ import (
 	"github.com/yincongcyincong/MuseBot/conf"
 	"github.com/yincongcyincong/MuseBot/db"
 	"github.com/yincongcyincong/MuseBot/i18n"
-	"github.com/yincongcyincong/MuseBot/llm"
 	"github.com/yincongcyincong/MuseBot/logger"
 	"github.com/yincongcyincong/MuseBot/param"
 	"github.com/yincongcyincong/MuseBot/utils"
@@ -299,34 +298,11 @@ func (q *QQRobot) sendImg() {
 			}
 		}
 		
-		var imageUrl string
-		var imageContent []byte
-		var totalToken int
-		mode := *conf.BaseConfInfo.MediaType
-		switch *conf.BaseConfInfo.MediaType {
-		case param.Vol:
-			imageUrl, totalToken, err = llm.GenerateVolImg(prompt, lastImageContent)
-		case param.OpenAi:
-			imageContent, totalToken, err = llm.GenerateOpenAIImg(prompt, lastImageContent)
-		case param.Gemini:
-			imageContent, totalToken, err = llm.GenerateGeminiImg(prompt, lastImageContent)
-		default:
-			err = fmt.Errorf("unsupported media type: %s", *conf.BaseConfInfo.MediaType)
-		}
-		
+		imageContent, totalToken, err := q.Robot.CreatePhoto(prompt, lastImageContent)
 		if err != nil {
 			logger.Warn("generate image fail", "err", err)
 			q.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
 			return
-		}
-		
-		if len(imageUrl) > 0 && len(imageContent) == 0 {
-			imageContent, err = utils.DownloadFile(imageUrl)
-			if err != nil {
-				logger.Warn("download image fail", "err", err)
-				q.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
-				return
-			}
 		}
 		
 		format := utils.DetectImageFormat(imageContent)
@@ -363,7 +339,7 @@ func (q *QQRobot) sendImg() {
 			Token:      totalToken,
 			IsDeleted:  0,
 			RecordType: param.ImageRecordType,
-			Mode:       mode,
+			Mode:       *conf.BaseConfInfo.MediaType,
 		})
 	})
 }
@@ -392,38 +368,9 @@ func (q *QQRobot) sendVideo() {
 			}
 		}
 		
-		var (
-			videoUrl     string
-			videoContent []byte
-		)
-		
-		mode := *conf.BaseConfInfo.MediaType
-		var totalToken int
-		switch *conf.BaseConfInfo.MediaType {
-		case param.Vol:
-			videoUrl, totalToken, err = llm.GenerateVolVideo(prompt, imageContent)
-		case param.Gemini:
-			videoContent, totalToken, err = llm.GenerateGeminiVideo(prompt, imageContent)
-		default:
-			err = fmt.Errorf("unsupported type: %s", *conf.BaseConfInfo.MediaType)
-		}
-		
+		videoContent, totalToken, err := q.Robot.CreateVideo(prompt, imageContent)
 		if err != nil {
 			logger.Warn("generate video fail", "err", err)
-			q.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
-			return
-		}
-		
-		if len(videoUrl) != 0 && len(videoContent) == 0 {
-			videoContent, err = utils.DownloadFile(videoUrl)
-			if err != nil {
-				logger.Warn("download video fail", "err", err)
-				q.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
-				return
-			}
-		}
-		
-		if len(videoContent) == 0 {
 			q.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
@@ -453,7 +400,7 @@ func (q *QQRobot) sendVideo() {
 			Token:      totalToken,
 			IsDeleted:  0,
 			RecordType: param.VideoRecordType,
-			Mode:       mode,
+			Mode:       *conf.BaseConfInfo.MediaType,
 		})
 	})
 	

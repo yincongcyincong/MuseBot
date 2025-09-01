@@ -381,34 +381,11 @@ func (web *Web) sendImg() {
 			}
 		}
 		
-		var imageUrl string
-		var imageContent []byte
-		var totalToken int
-		mode := *conf.BaseConfInfo.MediaType
-		switch *conf.BaseConfInfo.MediaType {
-		case param.Vol:
-			imageUrl, totalToken, err = llm.GenerateVolImg(prompt, lastImageContent)
-		case param.OpenAi:
-			imageContent, totalToken, err = llm.GenerateOpenAIImg(prompt, lastImageContent)
-		case param.Gemini:
-			imageContent, totalToken, err = llm.GenerateGeminiImg(prompt, lastImageContent)
-		default:
-			err = fmt.Errorf("unsupported media type: %s", *conf.BaseConfInfo.MediaType)
-		}
-		
+		imageContent, totalToken, err := web.Robot.CreatePhoto(prompt, lastImageContent)
 		if err != nil {
 			logger.Warn("generate image fail", "err", err)
 			web.SendMsg(err.Error())
 			return
-		}
-		
-		if len(imageUrl) > 0 && len(imageContent) == 0 {
-			imageContent, err = utils.DownloadFile(imageUrl)
-			if err != nil {
-				logger.Warn("download image fail", "err", err)
-				web.SendMsg(err.Error())
-				return
-			}
 		}
 		
 		// 构建 base64 图片
@@ -436,7 +413,7 @@ func (web *Web) sendImg() {
 			Token:      0,
 			IsDeleted:  0,
 			RecordType: param.WEBRecordType,
-			Mode:       mode,
+			Mode:       *conf.BaseConfInfo.MediaType,
 		})
 		
 		// save data record
@@ -448,7 +425,7 @@ func (web *Web) sendImg() {
 			Token:      totalToken,
 			IsDeleted:  0,
 			RecordType: param.ImageRecordType,
-			Mode:       mode,
+			Mode:       *conf.BaseConfInfo.MediaType,
 		})
 	})
 }
@@ -463,40 +440,10 @@ func (web *Web) sendVideo() {
 			web.SendMsg(i18n.GetMessage(*conf.BaseConfInfo.Lang, "video_empty_content", nil))
 			return
 		}
-		var (
-			videoUrl     string
-			videoContent []byte
-			err          error
-		)
 		
-		mode := *conf.BaseConfInfo.MediaType
-		var totalToken int
-		switch *conf.BaseConfInfo.MediaType {
-		case param.Vol:
-			videoUrl, totalToken, err = llm.GenerateVolVideo(prompt, web.BodyData)
-		case param.Gemini:
-			videoContent, totalToken, err = llm.GenerateGeminiVideo(prompt, web.BodyData)
-		default:
-			err = fmt.Errorf("unsupported type: %s", *conf.BaseConfInfo.MediaType)
-		}
-		
+		videoContent, totalToken, err := web.Robot.CreateVideo(prompt, web.BodyData)
 		if err != nil {
 			logger.Warn("generate video fail", "err", err)
-			web.SendMsg(err.Error())
-			return
-		}
-		
-		// 下载视频内容如果是 URL 模式
-		if len(videoUrl) != 0 && len(videoContent) == 0 {
-			videoContent, err = utils.DownloadFile(videoUrl)
-			if err != nil {
-				logger.Warn("download video fail", "err", err)
-				web.SendMsg(err.Error())
-				return
-			}
-		}
-		
-		if len(videoContent) == 0 {
 			web.SendMsg(err.Error())
 			return
 		}
@@ -514,7 +461,7 @@ func (web *Web) sendVideo() {
 			Token:      0,
 			IsDeleted:  0,
 			RecordType: param.WEBRecordType,
-			Mode:       mode,
+			Mode:       *conf.BaseConfInfo.MediaType,
 		})
 		
 		db.InsertRecordInfo(&db.Record{
@@ -524,7 +471,7 @@ func (web *Web) sendVideo() {
 			Token:      totalToken,
 			IsDeleted:  0,
 			RecordType: param.VideoRecordType,
-			Mode:       mode,
+			Mode:       *conf.BaseConfInfo.MediaType,
 		})
 	})
 	
