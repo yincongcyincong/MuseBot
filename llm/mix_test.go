@@ -3,35 +3,13 @@ package llm
 import (
 	"context"
 	"errors"
-	"fmt"
 	"testing"
 	
 	openrouter "github.com/revrost/go-openrouter"
 	"github.com/stretchr/testify/assert"
-	"github.com/yincongcyincong/MuseBot/conf"
 	"github.com/yincongcyincong/MuseBot/db"
 	"github.com/yincongcyincong/MuseBot/param"
 )
-
-func TestOpenRouterSend(t *testing.T) {
-	messageChan := make(chan *param.MsgInfo)
-	
-	go func() {
-		for m := range messageChan {
-			fmt.Println(m)
-		}
-	}()
-	
-	*conf.BaseConfInfo.Type = param.OpenRouter
-	
-	callLLM := NewLLM(WithChatId("1"), WithMsgId("2"), WithUserId("6"),
-		WithMessageChan(messageChan), WithContent("hi"))
-	callLLM.LLMClient.GetModel(callLLM)
-	callLLM.LLMClient.GetMessages("6", "hi")
-	err := callLLM.LLMClient.Send(context.Background(), callLLM)
-	assert.Equal(t, nil, err)
-	
-}
 
 func TestAIRouterReq_GetModel_Default(t *testing.T) {
 	mock := &AIRouterReq{}

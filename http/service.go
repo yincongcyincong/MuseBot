@@ -2,6 +2,9 @@ package http
 
 import (
 	"net/http"
+	"os"
+	"strings"
+	"syscall"
 	
 	"github.com/yincongcyincong/MuseBot/conf"
 	"github.com/yincongcyincong/MuseBot/db"
@@ -52,4 +55,36 @@ func DashboardHandler(w http.ResponseWriter, r *http.Request) {
 		"start_time":       conf.BaseConfInfo.StartTime,
 	})
 	
+}
+
+func Restart(w http.ResponseWriter, r *http.Request) {
+	params := r.URL.Query().Get("params")
+	if params == "" {
+		logger.Error("get param error", "param", params)
+		utils.Failure(w, param.CodeDBQueryFail, param.MsgDBQueryFail, "")
+		return
+	}
+	
+	lines := strings.Split(params, "\n")
+	
+	execPath, _ := os.Executable()
+	
+	args := []string{execPath}
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line != "" {
+			args = append(args, line)
+		}
+	}
+	
+	env := os.Environ()
+	
+	go func() {
+		if err := syscall.Exec(execPath, args, env); err != nil {
+			logger.Error("restart fail", "err", err)
+			return
+		}
+	}()
+	
+	utils.Success(w, "")
 }

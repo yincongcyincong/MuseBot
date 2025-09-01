@@ -3,6 +3,7 @@ import Modal from "../components/Modal";
 import Pagination from "../components/Pagination";
 import Toast from "../components/Toast";
 import ConfirmModal from "../components/ConfirmModal";
+import Editor from "@monaco-editor/react";
 
 function Bots() {
     const [bots, setBots] = useState([]);
@@ -29,6 +30,7 @@ function Bots() {
     const [toast, setToast] = useState({show: false, message: "", type: "error"});
     const [confirmVisible, setConfirmVisible] = useState(false);
     const [botToDelete, setBotToDelete] = useState(null);
+    const [botToRestart, setBotToRestart] = useState(null);
 
     const showToast = (message, type = "error") => {
         setToast({show: true, message, type});
@@ -55,6 +57,25 @@ function Bots() {
             showToast("Request error: " + err.message);
         }
     };
+
+    const handleRestart = async () => {
+        try {
+            const res = await fetch(
+                `/bot/restart?id=${botToRestart}&params=${encodeURIComponent(rawConfigText)}`,
+                { method: "GET" }
+            );
+            const data = await res.json();
+            if (data.code !== 0) {
+                showToast("Request error: " + data.message || "Restart failed");
+                return;
+            }
+            showToast("restart Bot", "success");
+            setRawConfigVisible(false)
+        } catch (err) {
+            showToast("Request error: " + err.message);
+        }
+    };
+
 
     const handleSearch = () => {
         setPage(1);
@@ -138,6 +159,7 @@ function Bots() {
             }
             setRawConfigText(data.data);
             setRawConfigVisible(true);
+            setBotToRestart(botId);
         } catch (err) {
             showToast("Request error: " + err.message);
         }
@@ -322,9 +344,35 @@ function Bots() {
                 title="Command"
                 onClose={() => setRawConfigVisible(false)}
             >
-        <pre className="max-h-[500px] overflow-y-auto text-sm text-gray-700 whitespace-pre-wrap break-words">
-          {rawConfigText.split(/\s+/).filter(Boolean).join("\n")}
-        </pre>
+                <div className="mb-4">
+                    <Editor
+                        height="300px"
+                        defaultLanguage="json"
+                        value={rawConfigText}
+                        onChange={(value) => setRawConfigText(value ?? "")}
+                        options={{
+                            minimap: { enabled: false },
+                            fontSize: 14,
+                            automaticLayout: true,
+                            formatOnPaste: true,
+                            formatOnType: true,
+                        }}
+                    />
+                </div>
+                <div className="flex justify-end space-x-2">
+                    <button
+                        onClick={() => setRawConfigVisible(false)}
+                        className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        onClick={handleRestart}
+                        className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                    >
+                        Restart
+                    </button>
+                </div>
             </Modal>
 
             <ConfirmModal

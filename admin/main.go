@@ -32,6 +32,7 @@ func main() {
 	http.HandleFunc("/bot/dashboard", controller.RequireLogin(controller.Dashboard))
 	http.HandleFunc("/bot/create", controller.RequireLogin(controller.CreateBot))
 	http.HandleFunc("/bot/get", controller.RequireLogin(controller.GetBot))
+	http.HandleFunc("/bot/restart", controller.RequireLogin(controller.RestartBot))
 	http.HandleFunc("/bot/update", controller.RequireLogin(controller.UpdateBotAddress))
 	http.HandleFunc("/bot/delete", controller.RequireLogin(controller.SoftDeleteBot))
 	http.HandleFunc("/bot/list", controller.RequireLogin(controller.ListBots))

@@ -60,7 +60,7 @@ type BaseConf struct {
 	HTTPHost     *string `json:"http_host"`
 	UseTools     *bool   `json:"use_tools"`
 	MaxQAPair    *int    `json:"max_qa_pari"`
-	Character    *string `json:"background"`
+	Character    *string `json:"character"`
 	
 	CrtFile *string `json:"crt_file"`
 	KeyFile *string `json:"key_file"`

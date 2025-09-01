@@ -1057,7 +1057,3 @@ func (r *RobotInfo) CreateVideo(prompt string, lastImageContent []byte) ([]byte,
 	
 	return videoContent, totalToken, nil
 }
-
-func StopAllRobot() {
-	robotController.Cancel()
-}
