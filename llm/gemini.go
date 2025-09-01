@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"io"
+	"net/http"
 	"strings"
 	"time"
 	"unicode"
@@ -79,6 +80,9 @@ func (h *GeminiReq) Send(ctx context.Context, l *LLM) error {
 	httpOption := genai.HTTPOptions{}
 	if *conf.BaseConfInfo.CustomUrl != "" {
 		httpOption.BaseURL = *conf.BaseConfInfo.CustomUrl
+		httpOption.Headers = http.Header{
+			"Authorization": []string{"Bearer " + *conf.BaseConfInfo.GeminiToken},
+		}
 	}
 	client, err := genai.NewClient(ctx, &genai.ClientConfig{
 		HTTPClient:  httpClient,
@@ -217,6 +221,9 @@ func (h *GeminiReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 	httpOption := genai.HTTPOptions{}
 	if *conf.BaseConfInfo.CustomUrl != "" {
 		httpOption.BaseURL = *conf.BaseConfInfo.CustomUrl
+		httpOption.Headers = http.Header{
+			"Authorization": []string{"Bearer " + *conf.BaseConfInfo.GeminiToken},
+		}
 	}
 	client, err := genai.NewClient(ctx, &genai.ClientConfig{
 		HTTPClient:  httpClient,
@@ -384,6 +391,9 @@ func GenerateGeminiImg(prompt string, imageContent []byte) ([]byte, int, error) 
 	httpOption := genai.HTTPOptions{}
 	if *conf.BaseConfInfo.CustomUrl != "" {
 		httpOption.BaseURL = *conf.BaseConfInfo.CustomUrl
+		httpOption.Headers = http.Header{
+			"Authorization": []string{"Bearer " + *conf.BaseConfInfo.GeminiToken},
+		}
 	}
 	client, err := genai.NewClient(ctx, &genai.ClientConfig{
 		HTTPClient:  httpClient,
@@ -442,6 +452,10 @@ func GenerateGeminiVideo(prompt string, image []byte) ([]byte, int, error) {
 	httpOption := genai.HTTPOptions{}
 	if *conf.BaseConfInfo.CustomUrl != "" {
 		httpOption.BaseURL = *conf.BaseConfInfo.CustomUrl
+		httpOption.Headers = http.Header{
+			"Authorization": []string{"Bearer " + *conf.BaseConfInfo.GeminiToken},
+			"Content-Type":  []string{"application/json"},
+		}
 	}
 	client, err := genai.NewClient(ctx, &genai.ClientConfig{
 		HTTPClient:  httpClient,
@@ -461,13 +475,13 @@ func GenerateGeminiVideo(prompt string, image []byte) ([]byte, int, error) {
 		}
 	}
 	
+	duration := int32(*conf.VideoConfInfo.Duration)
 	operation, err := client.Models.GenerateVideos(ctx,
 		*conf.VideoConfInfo.GeminiVideoModel, prompt,
 		geminiImage,
 		&genai.GenerateVideosConfig{
-			AspectRatio:      *conf.VideoConfInfo.GeminiVideoAspectRatio,
-			PersonGeneration: *conf.VideoConfInfo.GeminiVideoPersonGeneration,
-			DurationSeconds:  &conf.VideoConfInfo.GeminiVideoDurationSeconds,
+			AspectRatio:     *conf.VideoConfInfo.Radio,
+			DurationSeconds: &duration,
 		})
 	if err != nil {
 		logger.Error("generate video fail", "err", err)
@@ -513,6 +527,9 @@ func GenerateGeminiText(audioContent []byte) (string, int, error) {
 	httpOption := genai.HTTPOptions{}
 	if *conf.BaseConfInfo.CustomUrl != "" {
 		httpOption.BaseURL = *conf.BaseConfInfo.CustomUrl
+		httpOption.Headers = http.Header{
+			"Authorization": []string{"Bearer " + *conf.BaseConfInfo.GeminiToken},
+		}
 	}
 	client, err := genai.NewClient(ctx, &genai.ClientConfig{
 		HTTPClient:  httpClient,
@@ -560,6 +577,9 @@ func GetGeminiImageContent(imageContent []byte, content string) (string, int, er
 	httpOption := genai.HTTPOptions{}
 	if *conf.BaseConfInfo.CustomUrl != "" {
 		httpOption.BaseURL = *conf.BaseConfInfo.CustomUrl
+		httpOption.Headers = http.Header{
+			"Authorization": []string{"Bearer " + *conf.BaseConfInfo.GeminiToken},
+		}
 	}
 	client, err := genai.NewClient(ctx, &genai.ClientConfig{
 		HTTPClient:  httpClient,

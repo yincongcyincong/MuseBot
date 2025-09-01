@@ -992,6 +992,72 @@ func (r *RobotInfo) sendMultiAgent(agentType string, emptyPromptFunc func()) {
 	})
 }
 
+func (r *RobotInfo) CreatePhoto(prompt string, lastImageContent []byte) ([]byte, int, error) {
+	
+	var imageUrl string
+	var imageContent []byte
+	var totalToken int
+	var err error
+	switch *conf.BaseConfInfo.MediaType {
+	case param.Vol:
+		imageUrl, totalToken, err = llm.GenerateVolImg(prompt, lastImageContent)
+	case param.OpenAi:
+		imageContent, totalToken, err = llm.GenerateOpenAIImg(prompt, lastImageContent)
+	case param.Gemini:
+		imageContent, totalToken, err = llm.GenerateGeminiImg(prompt, lastImageContent)
+	case param.AI302, param.OpenRouter:
+		imageUrl, totalToken, err = llm.GenerateMixImg(prompt, lastImageContent)
+	default:
+		err = fmt.Errorf("unsupported media type: %s", *conf.BaseConfInfo.MediaType)
+	}
+	
+	if err != nil {
+		logger.Warn("generate image fail", "err", err)
+		return nil, 0, err
+	}
+	
+	if len(imageContent) == 0 {
+		imageContent, err = utils.DownloadFile(imageUrl)
+		if err != nil {
+			logger.Warn("download image fail", "err", err)
+			return nil, 0, err
+		}
+	}
+	
+	return imageContent, totalToken, nil
+}
+
+func (r *RobotInfo) CreateVideo(prompt string, lastImageContent []byte) ([]byte, int, error) {
+	var videoUrl string
+	var videoContent []byte
+	var err error
+	var totalToken int
+	switch *conf.BaseConfInfo.MediaType {
+	case param.Vol:
+		videoUrl, totalToken, err = llm.GenerateVolVideo(prompt, lastImageContent)
+	case param.Gemini:
+		videoContent, totalToken, err = llm.GenerateGeminiVideo(prompt, lastImageContent)
+	case param.AI302:
+		videoUrl, totalToken, err = llm.Generate302AIVideo(prompt, lastImageContent)
+	default:
+		err = fmt.Errorf("unsupported type: %s", *conf.BaseConfInfo.MediaType)
+	}
+	if err != nil {
+		logger.Warn("generate video fail", "err", err)
+		return nil, 0, err
+	}
+	
+	if len(videoContent) == 0 {
+		videoContent, err = utils.DownloadFile(videoUrl)
+		if err != nil {
+			logger.Warn("download video fail", "err", err)
+			return nil, 0, err
+		}
+	}
+	
+	return videoContent, totalToken, nil
+}
+
 func StopAllRobot() {
 	robotController.Cancel()
 }

@@ -501,7 +501,7 @@ func GenerateVolVideo(prompt string, imageContent []byte) (string, int, error) {
 	}
 	
 	resp, err := client.CreateContentGenerationTask(ctx, model.CreateContentGenerationTaskRequest{
-		Model:   *conf.VideoConfInfo.VideoModel,
+		Model:   *conf.VideoConfInfo.VolVideoModel,
 		Content: contents,
 	})
 	if err != nil {

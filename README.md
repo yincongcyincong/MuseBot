@@ -57,7 +57,7 @@ chatgpt: https://www.youtube.com/watch?v=G_DZYMvd5Ug
 | 🌟 **Gemini**     | Google     | ✅               |        ✅         |        ✅         |               ✅ | [doc](https://gemini.google.com/app) |
 | 💬 **ChatGPT**    | OpenAI     | ✅               |        ✅         |        ❌         |               ✅ | [doc](https://chat.openai.com)       |
 | 🐦 **Doubao**     | ByteDance  | ✅               |        ✅         |        ✅         |               ✅ | [doc](https://www.volcengine.com/)   |
-| ⚙️ **302-AI**     | OpenRouter | ✅               |        ✅         |        ❌         |               ✅ | [doc](https://302.ai/)               |
+| ⚙️ **302-AI**     | 302-AI     | ✅               |        ✅         |        ✅         |               ✅ | [doc](https://302.ai/)               |
 | 🧠 **DeepSeek**   | DeepSeek   | ✅               |        ❌         |        ❌         |               ❌ | [doc](https://www.deepseek.com/)     |
 | 🌐 **OpenRouter** | OpenRouter | ✅               |        ✅         |        ❌         |               ✅ | [doc](https://openrouter.ai/)        |
 

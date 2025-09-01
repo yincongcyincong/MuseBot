@@ -9,17 +9,15 @@ import (
 )
 
 type VideoConf struct {
-	VideoModel *string `json:"video_model"`
+	VolVideoModel    *string `json:"video_model"`
+	GeminiVideoModel *string `json:"gemini_video_model"`
+	AI302VideoModel  *string `json:"ai_302_video_model"`
+	
 	Radio      *string `json:"radio"`
 	Duration   *int    `json:"duration"`
 	FPS        *int    `json:"fps"`
 	Resolution *string `json:"resolution"`
 	Watermark  *bool   `json:"watermark"`
-	
-	GeminiVideoModel            *string `json:"gemini_video_model"`
-	GeminiVideoAspectRatio      *string `json:"gemini_video_aspect_ratio"`
-	GeminiVideoDurationSeconds  int32   `json:"gemini_video_duration_seconds"`
-	GeminiVideoPersonGeneration *string `json:"gemini_video_person_generation"`
 }
 
 var (
@@ -27,7 +25,7 @@ var (
 )
 
 func InitVideoConf() {
-	VideoConfInfo.VideoModel = flag.String("video_model", "doubao-seedance-1-0-pro-250528", "video model")
+	VideoConfInfo.VolVideoModel = flag.String("vol_video_model", "doubao-seedance-1-0-pro-250528", "video model")
 	VideoConfInfo.Radio = flag.String("radio", "1:1", "the width to height ratio")
 	VideoConfInfo.Duration = flag.Int("duration", 5, "the duration in seconds, only support 5s / 10s")
 	VideoConfInfo.FPS = flag.Int("fps", 24, "the frame per second")
@@ -35,15 +33,13 @@ func InitVideoConf() {
 	VideoConfInfo.Watermark = flag.Bool("watermark", false, "include watermark")
 	
 	VideoConfInfo.GeminiVideoModel = flag.String("gemini_video_model", "veo-2.0-generate-001", "create video model")
-	VideoConfInfo.GeminiVideoAspectRatio = flag.String("gemini_video_aspect_ratio", "16:9", "gemini video ratio")
-	VideoConfInfo.GeminiVideoDurationSeconds = int32(*flag.Int("gemini_video_duration_seconds", 0, "gemini video duration"))
-	VideoConfInfo.GeminiVideoPersonGeneration = flag.String("gemini_video_person_generation", "allow_all", "gemini video can generate person or not: allow_all or ")
 	
+	VideoConfInfo.AI302VideoModel = flag.String("302_ai_video_model", "luma_video", "create video model")
 }
 
 func EnvVideoConf() {
-	if os.Getenv("VIDEO_MODEL") != "" {
-		*VideoConfInfo.VideoModel = os.Getenv("VIDEO_MODEL")
+	if os.Getenv("VOL_VIDEO_MODEL") != "" {
+		*VideoConfInfo.VolVideoModel = os.Getenv("VIDEO_MODEL")
 	}
 	
 	if os.Getenv("RADIO") != "" {
@@ -69,25 +65,17 @@ func EnvVideoConf() {
 	if os.Getenv("GEMINI_VIDEO_MODEL") != "" {
 		*VideoConfInfo.GeminiVideoModel = os.Getenv("GEMINI_VIDEO_MODEL")
 	}
-	if os.Getenv("GEMINI_VIDEO_PERSON_GENERATION") != "" {
-		*VideoConfInfo.GeminiVideoPersonGeneration = os.Getenv("GEMINI_VIDEO_PERSON_GENERATION")
-	}
-	if os.Getenv("GEMINI_VIDEO_ASPECT_RATIO") != "" {
-		*VideoConfInfo.GeminiVideoAspectRatio = os.Getenv("GEMINI_VIDEO_ASPECT_RATIO")
-	}
-	if os.Getenv("GEMINI_VIDEO_DURATION_SECONDS") != "" {
-		tmp, _ := strconv.Atoi(os.Getenv("GEMINI_VIDEO_DURATION_SECONDS"))
-		VideoConfInfo.GeminiVideoDurationSeconds = int32(tmp)
+	
+	if os.Getenv("302_AI_VIDEO_MODEL") != "" {
+		*VideoConfInfo.AI302VideoModel = os.Getenv("302_AI_VIDEO_MODEL")
 	}
 	
-	logger.Info("VIDEO_CONF", "VIDEO_MODEL", *VideoConfInfo.VideoModel)
+	logger.Info("VIDEO_CONF", "VOL_VIDEO_MODEL", *VideoConfInfo.VolVideoModel)
 	logger.Info("VIDEO_CONF", "RADIO", *VideoConfInfo.Radio)
 	logger.Info("VIDEO_CONF", "DURATION", *VideoConfInfo.Duration)
 	logger.Info("VIDEO_CONF", "FPS", *VideoConfInfo.FPS)
 	logger.Info("VIDEO_CONF", "RESOLUTION", *VideoConfInfo.Resolution)
 	logger.Info("VIDEO_CONF", "WATERMARK", *VideoConfInfo.Watermark)
 	logger.Info("AUDIO_CONF", "GeminiVideoModel", *VideoConfInfo.GeminiVideoModel)
-	logger.Info("AUDIO_CONF", "GeminiVideoPersonGeneration", *VideoConfInfo.GeminiVideoPersonGeneration)
-	logger.Info("AUDIO_CONF", "GeminiVideoAspectRatio", *VideoConfInfo.GeminiVideoAspectRatio)
-	logger.Info("AUDIO_CONF", "GeminiVideoDurationSeconds", VideoConfInfo.GeminiVideoDurationSeconds)
+	logger.Info("AUDIO_CONF", "AI302VideoModel", *VideoConfInfo.AI302VideoModel)
 }
