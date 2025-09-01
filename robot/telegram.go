@@ -18,7 +18,6 @@ import (
 	"github.com/yincongcyincong/MuseBot/conf"
 	"github.com/yincongcyincong/MuseBot/db"
 	"github.com/yincongcyincong/MuseBot/i18n"
-	"github.com/yincongcyincong/MuseBot/llm"
 	"github.com/yincongcyincong/MuseBot/logger"
 	"github.com/yincongcyincong/MuseBot/param"
 	"github.com/yincongcyincong/MuseBot/utils"
@@ -165,12 +164,16 @@ func (t *TelegramRobot) checkValid() bool {
 }
 
 func (t *TelegramRobot) getMsgContent() string {
-	content := t.getMessage().Text
+	content := ""
+	if t.getMessage() != nil {
+		content = t.getMessage().Text
+	}
+	
 	if t.Update.CallbackQuery != nil {
 		return ""
 	}
 	
-	if content == "" {
+	if content == "" && t.getMessage() != nil {
 		content = t.getMessage().Caption
 	}
 	return content
@@ -570,34 +573,12 @@ func (t *TelegramRobot) sendVideo() {
 		thinkingMsgId := t.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "thinking", nil),
 			replyToMessageID, tgbotapi.ModeMarkdown, nil)
 		
-		var videoUrl string
-		var videoContent []byte
-		var err error
-		var totalToken int
-		mode := *conf.BaseConfInfo.MediaType
-		switch *conf.BaseConfInfo.MediaType {
-		case param.Vol:
-			videoUrl, totalToken, err = llm.GenerateVolVideo(prompt, lastImageContent)
-		case param.Gemini:
-			videoContent, totalToken, err = llm.GenerateGeminiVideo(prompt, lastImageContent)
-		default:
-			err = fmt.Errorf("unsupported type: %s", *conf.BaseConfInfo.MediaType)
-		}
-		if err != nil {
-			logger.Warn("generate video fail", "err", err)
-			t.Robot.SendMsg(chatId, err.Error(), replyToMessageID, "", nil)
-			return
-		}
+		videoContent, totalToken, err := t.Robot.CreateVideo(prompt, lastImageContent)
 		
-		var video tgbotapi.InputMediaVideo
-		if len(videoUrl) != 0 {
-			video = tgbotapi.NewInputMediaVideo(tgbotapi.FileURL(videoUrl))
-		} else if len(videoContent) != 0 {
-			video = tgbotapi.NewInputMediaVideo(tgbotapi.FileBytes{
-				Name:  "video.mp4",
-				Bytes: videoContent,
-			})
-		}
+		video := tgbotapi.NewInputMediaVideo(tgbotapi.FileBytes{
+			Name:  "video." + utils.DetectVideoMimeType(videoContent),
+			Bytes: videoContent,
+		})
 		
 		edit := tgbotapi.EditMessageMediaConfig{
 			BaseEdit: tgbotapi.BaseEdit{
@@ -614,14 +595,6 @@ func (t *TelegramRobot) sendVideo() {
 			return
 		}
 		
-		if len(videoContent) == 0 {
-			videoContent, err = utils.DownloadFile(videoUrl)
-			if err != nil {
-				logger.Warn("download video fail", "err", err)
-				return
-			}
-		}
-		
 		base64Content := base64.StdEncoding.EncodeToString(videoContent)
 		dataURI := fmt.Sprintf("data:video/%s;base64,%s", utils.DetectVideoMimeType(videoContent), base64Content)
 		
@@ -632,7 +605,7 @@ func (t *TelegramRobot) sendVideo() {
 			Token:      totalToken,
 			IsDeleted:  0,
 			RecordType: param.VideoRecordType,
-			Mode:       mode,
+			Mode:       *conf.BaseConfInfo.MediaType,
 		})
 	})
 }
@@ -672,36 +645,12 @@ func (t *TelegramRobot) sendImg() {
 		thinkingMsgId := t.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "thinking", nil),
 			replyToMessageID, tgbotapi.ModeMarkdown, nil)
 		
-		var imageUrl string
-		var imageContent []byte
-		var totalToken int
-		mode := *conf.BaseConfInfo.MediaType
-		switch *conf.BaseConfInfo.MediaType {
-		case param.Vol:
-			imageUrl, totalToken, err = llm.GenerateVolImg(prompt, lastImageContent)
-		case param.OpenAi:
-			imageContent, totalToken, err = llm.GenerateOpenAIImg(prompt, lastImageContent)
-		case param.Gemini:
-			imageContent, totalToken, err = llm.GenerateGeminiImg(prompt, lastImageContent)
-		case param.AI302, param.OpenRouter:
-			imageUrl, totalToken, err = llm.GenerateMixImg(prompt, lastImageContent)
-		default:
-			err = fmt.Errorf("unsupported media type: %s", *conf.BaseConfInfo.MediaType)
-		}
-		
+		var photo tgbotapi.InputMediaPhoto
+		imageContent, totalToken, err := t.Robot.CreatePhoto(prompt, lastImageContent)
 		if err != nil {
 			logger.Warn("generate image fail", "err", err)
 			t.Robot.SendMsg(chatId, err.Error(), replyToMessageID, "", nil)
 			return
-		}
-		
-		var photo tgbotapi.InputMediaPhoto
-		if len(imageContent) == 0 {
-			imageContent, err = utils.DownloadFile(imageUrl)
-			if err != nil {
-				logger.Warn("download image fail", "err", err)
-				return
-			}
 		}
 		
 		img, _, err := image.Decode(bytes.NewReader(imageContent))
@@ -750,7 +699,7 @@ func (t *TelegramRobot) sendImg() {
 			Token:      totalToken,
 			IsDeleted:  0,
 			RecordType: param.ImageRecordType,
-			Mode:       mode,
+			Mode:       *conf.BaseConfInfo.MediaType,
 		})
 	})
 }

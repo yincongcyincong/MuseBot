@@ -36,7 +36,7 @@ chatgpt: https://www.bilibili.com/video/BV1RutxzJEGY/
   以填充上下文，详见[文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/rag.md)。
 - 🌞 **管理平台（AdminPlatform）**：使用管理平台来管理
   MuseBot，详见[文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/admin_ZH.md)。
-
+- 🌛 **注册中心**：支持服务注册，机器人实例可自动注册，详见 [文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/register_ZH.md)
 ---
 
 ## 支持平台
@@ -53,15 +53,16 @@ chatgpt: https://www.bilibili.com/video/BV1RutxzJEGY/
 | ⚡️ **QQ**          |  ✅   | 支持QQ触发大模型                                                       | [文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/qq_ZH.md)         |
 | ⚡️ **WeChat**      |  ✅   | 支持微信触发大模型                                                       | [文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/wechat_ZH.md)     |
 
-## 支持大模型
+## 支持的大型语言模型
 
-| Model             | Provider   | 文本 | 图片 | 视频 |
-|-------------------|------------|----|:--:|:--:|
-| 🌟 **Gemini**     | Google     | ✅  | ✅  | ✅  |
-| 💬 **ChatGPT**    | OpenAI     | ✅  | ✅  | ❌  |
-| 🐦 **Doubao**     | ByteDance  | ✅  | ✅  | ✅  |
-| 🧠 **DeepSeek**   | DeepSeek   | ✅  | ❌  | ❌  |
-| 🌐 **OpenRouter** | OpenRouter | ✅  | ✅  | ✅  |
+| 模型                | 提供方        | 文本生成 | 图片生成 | 视频生成 | 识别照片 | 链接                                  |
+|-------------------|------------|------|:----:|:----:|:----:|-------------------------------------|
+| 🌟 **Gemini**     | 谷歌         | ✅    |  ✅   |  ✅   |  ✅   | [文档](https://gemini.google.com/app) |
+| 💬 **ChatGPT**    | OpenAI     | ✅    |  ✅   |  ❌   |  ✅   | [文档](https://chat.openai.com)       |
+| 🐦 **Doubao**     | 字节跳动       | ✅    |  ✅   |  ✅   |  ✅   | [文档](https://www.volcengine.com/)   |
+| ⚙️ **302-AI**     | 302-AI     | ✅    |  ✅   |  ✅   |  ✅   | [文档](https://302.ai/)               |
+| 🧠 **DeepSeek**   | DeepSeek   | ✅    |  ❌   |  ❌   |  ❌   | [文档](https://www.deepseek.com/)     |
+| 🌐 **OpenRouter** | OpenRouter | ✅    |  ✅   |  ❌   |  ✅   | [文档](https://openrouter.ai/)        |
 
 ## 🤖 文本示例
 
@@ -198,12 +199,12 @@ docker run -d -v /home/user/data:/app/data -e TELEGRAM_BOT_TOKEN="你的Telegram
 
 ### `/photo` `/edit_photo`
 
-使用火山引擎图片模型生成图片，DeepSeek 暂不支持图片生成。
+使用火山引擎图片模型生成图片，DeepSeek 暂不支持图片生成。       
 需要配置 `VOLC_AK` 和 `VOLC_SK`。[文档](https://www.volcengine.com/docs/6444/1340578)
 
-<img width="400" src="https://github.com/user-attachments/assets/c8072d7d-74e6-4270-8496-1b4e7532134b"  alt=""/>
+<img width="400" src="https://github.com/user-attachments/assets/c8072d7d-74e6-4270-8496-1b4e7532134b"  alt=""/>        
 
-/edit_photo 支持编辑图片。
+/edit_photo 支持编辑图片。     
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/b26c123a-8a61-4329-ba31-9b371bd9251c" />
 
 ### `/video`

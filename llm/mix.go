@@ -5,7 +5,9 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
+	"net/http"
 	"regexp"
 	"strings"
 	"time"
@@ -22,7 +24,6 @@ import (
 	"github.com/yincongcyincong/MuseBot/param"
 	"github.com/yincongcyincong/MuseBot/utils"
 	"github.com/yincongcyincong/mcp-client-go/clients"
-	"google.golang.org/genai"
 )
 
 type AIRouterReq struct {
@@ -36,6 +37,32 @@ type AIRouterReq struct {
 var (
 	pngFetch = regexp.MustCompile(`https?://[^\s)]+\.png[^\s)]*`)
 )
+
+// AI302FetchResp fetch response
+type AI302FetchResp struct {
+	TaskID         string           `json:"task_id"`
+	UpstreamTaskID string           `json:"upstream_task_id"`
+	Status         string           `json:"status"`
+	VideoURL       string           `json:"video_url"`
+	RawResponse    AI302RawResponse `json:"raw_response"`
+	Model          string           `json:"model"`
+	ExecutionTime  int              `json:"execution_time"`
+	CreatedAt      *string          `json:"created_at"`
+	CompletedAt    string           `json:"completed_at"`
+}
+
+type AI302RawResponse struct {
+	CreatedAt string `json:"created_at"`
+	ID        string `json:"id"`
+	Prompt    string `json:"prompt"`
+	State     string `json:"state"`
+	Video     string `json:"video"`
+}
+
+// Create video response
+type CreateResp struct {
+	TaskID string `json:"task_id"`
+}
 
 func (d *AIRouterReq) GetModel(l *LLM) {
 	userInfo, err := db.GetUserByID(l.UserId)
@@ -489,75 +516,91 @@ func GenerateMixImg(prompt string, imageContent []byte) (string, int, error) {
 	return "", 0, errors.New("image is empty")
 }
 
-func GenerateMixVideo(prompt string, image []byte) ([]byte, int, error) {
+func Generate302AIVideo(prompt string, image []byte) (string, int, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 	
 	httpClient := utils.GetLLMProxyClient()
-	httpOption := genai.HTTPOptions{}
-	if *conf.BaseConfInfo.CustomUrl != "" {
-		httpOption.BaseURL = *conf.BaseConfInfo.CustomUrl
-	}
-	client, err := genai.NewClient(ctx, &genai.ClientConfig{
-		HTTPClient:  httpClient,
-		APIKey:      *conf.BaseConfInfo.GeminiToken,
-		HTTPOptions: httpOption,
-	})
-	if err != nil {
-		logger.Error("create client fail", "err", err)
-		return nil, 0, err
+	
+	// Step 1: prepare payload using map -> json
+	payloadMap := map[string]interface{}{
+		"model":      *conf.VideoConfInfo.AI302VideoModel,
+		"prompt":     prompt,
+		"duration":   *conf.VideoConfInfo.Duration,
+		"resolution": *conf.VideoConfInfo.Resolution,
+		"fps":        *conf.VideoConfInfo.FPS,
 	}
 	
-	var geminiImage *genai.Image
-	if len(image) > 0 {
-		geminiImage = &genai.Image{
-			ImageBytes: image,
-			MIMEType:   "image/" + utils.DetectImageFormat(image),
+	payloadBytes, err := json.Marshal(payloadMap)
+	if err != nil {
+		return "", 0, fmt.Errorf("failed to marshal payload: %w", err)
+	}
+	payload := strings.NewReader(string(payloadBytes))
+	
+	req, err := http.NewRequestWithContext(ctx, "POST", "https://api.302.ai/302/v2/video/create", payload)
+	if err != nil {
+		return "", 0, fmt.Errorf("failed to create request: %w", err)
+	}
+	req.Header.Add("Authorization", "Bearer "+*conf.BaseConfInfo.MixToken)
+	req.Header.Add("Content-Type", "application/json")
+	
+	res, err := httpClient.Do(req)
+	if err != nil {
+		return "", 0, fmt.Errorf("failed to call create API: %w", err)
+	}
+	defer res.Body.Close()
+	
+	body, _ := io.ReadAll(res.Body)
+	
+	var createResp CreateResp
+	if err := json.Unmarshal(body, &createResp); err != nil {
+		return "", 0, fmt.Errorf("failed to parse create response: %w, body=%s", err, string(body))
+	}
+	if createResp.TaskID == "" {
+		return "", 0, fmt.Errorf("no task_id returned from create API, body=%s", string(body))
+	}
+	
+	// Step 2: Poll fetch API (保持原逻辑)
+	fetchURL := "https://api.302.ai/302/v2/video/fetch/" + createResp.TaskID
+	for {
+		select {
+		case <-ctx.Done():
+			return "", 0, fmt.Errorf("context canceled or timeout: %w", ctx.Err())
+		default:
 		}
-	}
-	
-	operation, err := client.Models.GenerateVideos(ctx,
-		*conf.VideoConfInfo.GeminiVideoModel, prompt,
-		geminiImage,
-		&genai.GenerateVideosConfig{
-			AspectRatio:      *conf.VideoConfInfo.GeminiVideoAspectRatio,
-			PersonGeneration: *conf.VideoConfInfo.GeminiVideoPersonGeneration,
-			DurationSeconds:  &conf.VideoConfInfo.GeminiVideoDurationSeconds,
-		})
-	if err != nil {
-		logger.Error("generate video fail", "err", err)
-		return nil, 0, err
-	}
-	
-	for !operation.Done {
-		logger.Info("video is createing...")
-		time.Sleep(5 * time.Second)
-		operation, err = client.Operations.GetVideosOperation(ctx, operation, nil)
+		
+		req, _ := http.NewRequestWithContext(ctx, "GET", fetchURL, nil)
+		req.Header.Add("Authorization", "Bearer "+*conf.BaseConfInfo.MixToken)
+		
+		res, err := httpClient.Do(req)
 		if err != nil {
-			logger.Error("get video operation fail", "err", err)
-			return nil, 0, err
+			logger.Error("failed to fetch result:", "err", err)
+			time.Sleep(5 * time.Second)
+			continue
 		}
-	}
-	
-	if len(operation.Response.GeneratedVideos) == 0 {
-		logger.Error("generate video fail", "err", "video is empty", "resp", operation.Response)
-		return nil, 0, errors.New("video is empty")
-	}
-	
-	var totalToken int
-	if operation.Metadata != nil {
-		if usageRaw, ok := operation.Metadata["usageMetadata"]; ok {
-			if usage, ok := usageRaw.(map[string]interface{}); ok {
-				if tokenValue, ok := usage["totalTokenCount"]; ok {
-					if tokenFloat, ok := tokenValue.(float64); ok {
-						totalToken = int(tokenFloat)
-					}
-				}
+		body, _ := io.ReadAll(res.Body)
+		res.Body.Close()
+		
+		var fetchResp AI302FetchResp
+		if err := json.Unmarshal(body, &fetchResp); err != nil {
+			logger.Error("failed to parse fetch response:", "err", err, "body", string(body))
+			time.Sleep(5 * time.Second)
+			continue
+		}
+		
+		if fetchResp.Status == "completed" {
+			if fetchResp.VideoURL != "" {
+				return fetchResp.VideoURL, 0, nil
 			}
+			return "", 0, fmt.Errorf("task completed but no video url found, body=%s", string(body))
+		} else if fetchResp.Status == "failed" {
+			return "", 0, fmt.Errorf("video generation failed: body=%s", string(body))
+		} else {
+			logger.Info("task is still running, polling again...")
 		}
+		
+		time.Sleep(5 * time.Second)
 	}
-	
-	return operation.Response.GeneratedVideos[0].Video.VideoBytes, totalToken, nil
 }
 
 func GetMixImageContent(imageContent []byte, content string) (string, int, error) {
