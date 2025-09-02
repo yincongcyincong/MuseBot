@@ -21,7 +21,6 @@ import (
 	dingtalkrobot "github.com/alibabacloud-go/dingtalk/robot_1_0"
 	teaUtil "github.com/alibabacloud-go/tea-utils/v2/service"
 	"github.com/alibabacloud-go/tea/tea"
-	godeepseek "github.com/cohesion-org/deepseek-go"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/open-dingtalk/dingtalk-stream-sdk-go/chatbot"
 	"github.com/open-dingtalk/dingtalk-stream-sdk-go/client"
@@ -171,17 +170,6 @@ func (d *DingRobot) sendModeConfigurationOptions() {
 			for k := range param.DeepseekModels {
 				modelList = append(modelList, k)
 			}
-		} else {
-			modelList = []string{
-				godeepseek.AzureDeepSeekR1,
-				godeepseek.OpenRouterDeepSeekR1,
-				godeepseek.OpenRouterDeepSeekR1DistillLlama70B,
-				godeepseek.OpenRouterDeepSeekR1DistillLlama8B,
-				godeepseek.OpenRouterDeepSeekR1DistillQwen14B,
-				godeepseek.OpenRouterDeepSeekR1DistillQwen1_5B,
-				godeepseek.OpenRouterDeepSeekR1DistillQwen32B,
-				"llama2", // maps to LLAVA
-			}
 		}
 	case param.Gemini:
 		for k := range param.GeminiModels {
@@ -191,14 +179,12 @@ func (d *DingRobot) sendModeConfigurationOptions() {
 		for k := range param.OpenAIModels {
 			modelList = append(modelList, k)
 		}
-	case param.LLAVA:
-		modelList = []string{"llama2"}
-	case param.OpenRouter, param.AI302:
+	case param.OpenRouter, param.AI302, param.Ollama:
 		if d.Prompt != "" {
 			d.Robot.handleModeUpdate(d.Prompt)
 			return
 		}
-		switch *conf.BaseConfInfo.MediaType {
+		switch *conf.BaseConfInfo.Type {
 		case param.AI302:
 			d.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
 				"link": "https://302.ai/",
@@ -207,6 +193,11 @@ func (d *DingRobot) sendModeConfigurationOptions() {
 		case param.OpenRouter:
 			d.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
 				"link": "https://openrouter.ai/",
+			}),
+				msgId, tgbotapi.ModeMarkdown, nil)
+		case param.Ollama:
+			d.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
+				"link": "https://ollama.com/",
 			}),
 				msgId, tgbotapi.ModeMarkdown, nil)
 		}

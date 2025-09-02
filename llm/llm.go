@@ -108,7 +108,7 @@ func NewLLM(opts ...Option) *LLM {
 			ToolMessage:        []godeepseek.ChatCompletionMessage{},
 			CurrentToolMessage: []godeepseek.ChatCompletionMessage{},
 		}
-	case param.DeepSeekLlava:
+	case param.Ollama:
 		l.LLMClient = &OllamaDeepseekReq{
 			ToolCall:           []godeepseek.ToolCall{},
 			ToolMessage:        []godeepseek.ChatCompletionMessage{},

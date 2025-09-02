@@ -12,7 +12,6 @@ import (
 	"strings"
 	"time"
 	
-	godeepseek "github.com/cohesion-org/deepseek-go"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/slack-go/slack"
 	"github.com/slack-go/slack/slackevents"
@@ -372,29 +371,6 @@ func (s *SlackRobot) sendModeConfigurationOptions() {
 				actionBlock := slack.NewActionBlock("select_model"+k, btn)
 				blocks = append(blocks, actionBlock)
 			}
-		} else {
-			// 直接写死 Deepseek 的几个按钮
-			models := []string{
-				godeepseek.AzureDeepSeekR1,
-				godeepseek.OpenRouterDeepSeekR1,
-				godeepseek.OpenRouterDeepSeekR1DistillLlama70B,
-				godeepseek.OpenRouterDeepSeekR1DistillLlama8B,
-				godeepseek.OpenRouterDeepSeekR1DistillQwen14B,
-				godeepseek.OpenRouterDeepSeekR1DistillQwen1_5B,
-				godeepseek.OpenRouterDeepSeekR1DistillQwen32B,
-				"llama2",
-			}
-			for _, m := range models {
-				val := m
-				if m == "llama2" {
-					val = param.LLAVA
-				}
-				btnText := slack.NewTextBlockObject("plain_text", m, false, false)
-				btn := slack.NewButtonBlockElement(m, val, btnText)
-				btn.Value = val
-				actionBlock := slack.NewActionBlock("select_model"+m, btn)
-				blocks = append(blocks, actionBlock)
-			}
 		}
 	case param.Gemini:
 		for k := range param.GeminiModels {
@@ -412,18 +388,12 @@ func (s *SlackRobot) sendModeConfigurationOptions() {
 			actionBlock := slack.NewActionBlock("select_model"+k, btn)
 			blocks = append(blocks, actionBlock)
 		}
-	case param.LLAVA:
-		btnText := slack.NewTextBlockObject("plain_text", "llama2", false, false)
-		btn := slack.NewButtonBlockElement(param.LLAVA, param.LLAVA, btnText)
-		btn.Value = param.LLAVA
-		actionBlock := slack.NewActionBlock("select_model"+param.LLAVA, btn)
-		blocks = append(blocks, actionBlock)
-	case param.OpenRouter, param.AI302:
+	case param.OpenRouter, param.AI302, param.Ollama:
 		if s.Prompt != "" {
 			s.Robot.handleModeUpdate(s.Prompt)
 			return
 		}
-		switch *conf.BaseConfInfo.MediaType {
+		switch *conf.BaseConfInfo.Type {
 		case param.AI302:
 			s.Robot.SendMsg(channelId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
 				"link": "https://302.ai/",
@@ -432,6 +402,11 @@ func (s *SlackRobot) sendModeConfigurationOptions() {
 		case param.OpenRouter:
 			s.Robot.SendMsg(channelId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
 				"link": "https://openrouter.ai/",
+			}),
+				msgId, tgbotapi.ModeMarkdown, nil)
+		case param.Ollama:
+			s.Robot.SendMsg(channelId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
+				"link": "https://ollama.com/",
 			}),
 				msgId, tgbotapi.ModeMarkdown, nil)
 		}

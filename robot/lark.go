@@ -12,7 +12,6 @@ import (
 	"strings"
 	"time"
 	
-	godeepseek "github.com/cohesion-org/deepseek-go"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	lark "github.com/larksuite/oapi-sdk-go/v3"
 	larkcore "github.com/larksuite/oapi-sdk-go/v3/core"
@@ -165,17 +164,6 @@ func (l *LarkRobot) sendModeConfigurationOptions() {
 			for k := range param.DeepseekModels {
 				modelList = append(modelList, k)
 			}
-		} else {
-			modelList = []string{
-				godeepseek.AzureDeepSeekR1,
-				godeepseek.OpenRouterDeepSeekR1,
-				godeepseek.OpenRouterDeepSeekR1DistillLlama70B,
-				godeepseek.OpenRouterDeepSeekR1DistillLlama8B,
-				godeepseek.OpenRouterDeepSeekR1DistillQwen14B,
-				godeepseek.OpenRouterDeepSeekR1DistillQwen1_5B,
-				godeepseek.OpenRouterDeepSeekR1DistillQwen32B,
-				"llama2", // maps to LLAVA
-			}
 		}
 	case param.Gemini:
 		for k := range param.GeminiModels {
@@ -185,14 +173,12 @@ func (l *LarkRobot) sendModeConfigurationOptions() {
 		for k := range param.OpenAIModels {
 			modelList = append(modelList, k)
 		}
-	case param.LLAVA:
-		modelList = []string{"llama2"}
-	case param.OpenRouter, param.AI302:
+	case param.OpenRouter, param.AI302, param.Ollama:
 		if l.Prompt != "" {
 			l.Robot.handleModeUpdate(l.Prompt)
 			return
 		}
-		switch *conf.BaseConfInfo.MediaType {
+		switch *conf.BaseConfInfo.Type {
 		case param.AI302:
 			l.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
 				"link": "https://302.ai/",
@@ -201,6 +187,11 @@ func (l *LarkRobot) sendModeConfigurationOptions() {
 		case param.OpenRouter:
 			l.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
 				"link": "https://openrouter.ai/",
+			}),
+				msgId, tgbotapi.ModeMarkdown, nil)
+		case param.Ollama:
+			l.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
+				"link": "https://ollama.com/",
 			}),
 				msgId, tgbotapi.ModeMarkdown, nil)
 		}
