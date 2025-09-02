@@ -6,8 +6,8 @@ import (
 )
 
 const (
-	DeepSeek      = "deepseek"
-	DeepSeekLlava = "deepseek-ollama"
+	DeepSeek = "deepseek"
+	Ollama   = "ollama"
 	
 	Vol   = "vol"
 	AI302 = "302-ai"

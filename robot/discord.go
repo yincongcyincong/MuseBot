@@ -10,7 +10,6 @@ import (
 	"strings"
 	
 	"github.com/bwmarrin/discordgo"
-	godeepseek "github.com/cohesion-org/deepseek-go"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/yincongcyincong/MuseBot/conf"
 	"github.com/yincongcyincong/MuseBot/db"
@@ -317,6 +316,9 @@ func registerSlashCommands(s *discordgo.Session) {
 			{Type: discordgo.ApplicationCommandOptionString, Name: "prompt", Description: "Prompt", Required: true},
 			{Type: discordgo.ApplicationCommandOptionAttachment, Name: "image", Description: "upload a image", Required: false},
 		}},
+		{Name: "edit_photo", Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.photo.description", nil), Options: []*discordgo.ApplicationCommandOption{
+			{Type: discordgo.ApplicationCommandOptionString, Name: "prompt", Description: "Prompt", Required: true},
+		}},
 		{Name: "video", Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.video.description", nil), Options: []*discordgo.ApplicationCommandOption{
 			{Type: discordgo.ApplicationCommandOptionString, Name: "prompt", Description: "Prompt", Required: true},
 		}},
@@ -421,17 +423,6 @@ func (d *DiscordRobot) sendModeConfigurationOptions() {
 			for k := range param.DeepseekModels {
 				buttons = append(buttons, discordgo.Button{Label: k, Style: discordgo.PrimaryButton, CustomID: k})
 			}
-		} else {
-			buttons = append(buttons,
-				discordgo.Button{Label: godeepseek.AzureDeepSeekR1, CustomID: godeepseek.AzureDeepSeekR1, Style: discordgo.SecondaryButton},
-				discordgo.Button{Label: godeepseek.OpenRouterDeepSeekR1, CustomID: godeepseek.OpenRouterDeepSeekR1, Style: discordgo.SecondaryButton},
-				discordgo.Button{Label: godeepseek.OpenRouterDeepSeekR1DistillLlama70B, CustomID: godeepseek.OpenRouterDeepSeekR1DistillLlama70B, Style: discordgo.SecondaryButton},
-				discordgo.Button{Label: godeepseek.OpenRouterDeepSeekR1DistillLlama8B, CustomID: godeepseek.OpenRouterDeepSeekR1DistillLlama8B, Style: discordgo.SecondaryButton},
-				discordgo.Button{Label: godeepseek.OpenRouterDeepSeekR1DistillQwen14B, CustomID: godeepseek.OpenRouterDeepSeekR1DistillQwen14B, Style: discordgo.SecondaryButton},
-				discordgo.Button{Label: godeepseek.OpenRouterDeepSeekR1DistillQwen1_5B, CustomID: godeepseek.OpenRouterDeepSeekR1DistillQwen1_5B, Style: discordgo.SecondaryButton},
-				discordgo.Button{Label: godeepseek.OpenRouterDeepSeekR1DistillQwen32B, CustomID: godeepseek.OpenRouterDeepSeekR1DistillQwen32B, Style: discordgo.SecondaryButton},
-				discordgo.Button{Label: "llama2", CustomID: param.LLAVA, Style: discordgo.SecondaryButton},
-			)
 		}
 	case param.Gemini:
 		for k := range param.GeminiModels {
@@ -441,14 +432,12 @@ func (d *DiscordRobot) sendModeConfigurationOptions() {
 		for k := range param.OpenAIModels {
 			buttons = append(buttons, discordgo.Button{Label: k, Style: discordgo.PrimaryButton, CustomID: k})
 		}
-	case param.LLAVA:
-		buttons = append(buttons, discordgo.Button{Label: "llama2", Style: discordgo.PrimaryButton, CustomID: param.LLAVA})
-	case param.OpenRouter, param.AI302:
+	case param.OpenRouter, param.AI302, param.Ollama:
 		if d.Prompt != "" {
 			d.Robot.handleModeUpdate(d.Prompt)
 			return
 		}
-		switch *conf.BaseConfInfo.MediaType {
+		switch *conf.BaseConfInfo.Type {
 		case param.AI302:
 			d.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
 				"link": "https://302.ai/",
@@ -457,6 +446,11 @@ func (d *DiscordRobot) sendModeConfigurationOptions() {
 		case param.OpenRouter:
 			d.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
 				"link": "https://openrouter.ai/",
+			}),
+				msgId, tgbotapi.ModeMarkdown, nil)
+		case param.Ollama:
+			d.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
+				"link": "https://ollama.com/",
 			}),
 				msgId, tgbotapi.ModeMarkdown, nil)
 		}

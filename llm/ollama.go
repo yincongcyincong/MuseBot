@@ -17,7 +17,6 @@ import (
 	"github.com/yincongcyincong/MuseBot/logger"
 	"github.com/yincongcyincong/MuseBot/metrics"
 	"github.com/yincongcyincong/MuseBot/param"
-	"github.com/yincongcyincong/MuseBot/utils"
 	"github.com/yincongcyincong/mcp-client-go/clients"
 )
 
@@ -30,7 +29,15 @@ type OllamaDeepseekReq struct {
 }
 
 func (d *OllamaDeepseekReq) GetModel(l *LLM) {
-	l.Model = "llava:latest"
+	l.Model = "deepseek-r1"
+	userInfo, err := db.GetUserByID(l.UserId)
+	if err != nil {
+		logger.Error("Error getting user info", "err", err)
+	}
+	if userInfo != nil && userInfo.Mode != "" {
+		logger.Info("User info", "userID", userInfo.UserId, "mode", userInfo.Mode)
+		l.Model = userInfo.Mode
+	}
 }
 
 func (d *OllamaDeepseekReq) GetMessages(userId string, prompt string) {
@@ -88,7 +95,7 @@ func (d *OllamaDeepseekReq) Send(ctx context.Context, l *LLM) error {
 	start := time.Now()
 	
 	request := &deepseek.StreamChatCompletionRequest{
-		Model:  "llava:latest",
+		Model:  l.Model,
 		Stream: true,
 		StreamOptions: deepseek.StreamOptions{
 			IncludeUsage: true,
@@ -216,15 +223,7 @@ func (d *OllamaDeepseekReq) GetMessage(role, msg string) {
 	})
 }
 func (d *OllamaDeepseekReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
-	
-	httpClient := utils.GetLLMProxyClient()
-	
-	client, err := deepseek.NewClientWithOptions(*conf.BaseConfInfo.DeepseekToken,
-		deepseek.WithBaseURL(*conf.BaseConfInfo.CustomUrl), deepseek.WithHTTPClient(httpClient))
-	if err != nil {
-		logger.Error("Error creating deepseek client", "err", err)
-		return "", err
-	}
+	d.GetModel(l)
 	
 	request := &deepseek.ChatCompletionRequest{
 		Model:            l.Model,
@@ -241,7 +240,7 @@ func (d *OllamaDeepseekReq) SyncSend(ctx context.Context, l *LLM) (string, error
 	}
 	
 	// assign task
-	response, err := client.CreateChatCompletion(ctx, request)
+	response, err := deepseek.CreateOllamaChatCompletion(request)
 	if err != nil {
 		logger.Error("ChatCompletionStream error", "updateMsgID", l.MsgId, "err", err)
 		return "", err
