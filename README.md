@@ -248,6 +248,7 @@ recognize photo base on your prompt.
 ### /save_voice
 only for tencent app (wechat, qq, work wechat)
 save your voice to pc.
+<img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/74499d85-4405-43d3-836e-2977de08cb31" />
 
 ## Deployment
 
