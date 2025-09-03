@@ -34,7 +34,11 @@ func GetCommand(w http.ResponseWriter, r *http.Request) {
 	res += CompareFlagsWithStructTags(conf.PhotoConfInfo)
 	res += CompareFlagsWithStructTags(conf.RagConfInfo)
 	res += CompareFlagsWithStructTags(conf.VideoConfInfo)
-	res += fmt.Sprintf("-mcp_conf_path=%s", *conf.McpConfPath)
+	
+	flagValue := flag.Lookup("mcp_conf_path")
+	if flagValue.DefValue != *conf.McpConfPath {
+		res += fmt.Sprintf("-mcp_conf_path=%s", *conf.McpConfPath)
+	}
 	utils.Success(w, res)
 }
 

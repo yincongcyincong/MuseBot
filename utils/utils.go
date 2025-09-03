@@ -21,10 +21,8 @@ import (
 	"time"
 	"unicode/utf16"
 	
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/wdvxdr1123/go-silk"
 	"github.com/yincongcyincong/MuseBot/conf"
-	"github.com/yincongcyincong/MuseBot/i18n"
 	"github.com/yincongcyincong/MuseBot/logger"
 )
 
@@ -47,17 +45,6 @@ func ReplaceCommand(content string, command string, botName string) string {
 	prompt := strings.TrimSpace(content)
 	
 	return prompt
-}
-
-func ForceReply(chatId int64, msgId int, i18MsgId string, bot *tgbotapi.BotAPI) error {
-	msg := tgbotapi.NewMessage(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, i18MsgId, nil))
-	msg.ReplyMarkup = tgbotapi.ForceReply{
-		ForceReply: true,
-		Selective:  true,
-	}
-	msg.ReplyToMessageID = msgId
-	_, err := bot.Send(msg)
-	return err
 }
 
 func MD5(input string) string {
@@ -445,6 +432,36 @@ func SilkToWav(silkBytes []byte) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+func SilkToMp3(silkBytes []byte) ([]byte, error) {
+	pcm, err := silk.DecodeSilkBuffToPcm(silkBytes, 16000)
+	if err != nil {
+		return nil, err
+	}
+	
+	cmd := exec.Command("ffmpeg",
+		"-f", "s16le",
+		"-ar", "16000",
+		"-ac", "1",
+		"-i", "pipe:0",
+		"-codec:a", "libmp3lame",
+		"-b:a", "192k",
+		"-f", "mp3",
+		"pipe:1",
+	)
+	cmd.Stdin = bytes.NewReader(pcm)
+	
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	
+	if err := cmd.Run(); err != nil {
+		return nil, fmt.Errorf("ffmpeg error: %v, details: %s", err, stderr.String())
+	}
+	
+	return out.Bytes(), nil
+}
+
 func AmrToOgg(amrData []byte) ([]byte, error) {
 	cmd := exec.Command("ffmpeg",
 		"-f", "amr",
@@ -452,6 +469,33 @@ func AmrToOgg(amrData []byte) ([]byte, error) {
 		"-ar", "16000",
 		"-c:a", "libopus",
 		"-f", "ogg",
+		"pipe:1",
+	)
+	
+	cmd.Stdin = bytes.NewReader(amrData)
+	
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	
+	if err := cmd.Run(); err != nil {
+		return nil, fmt.Errorf("ffmpeg error: %v, details: %s", err, stderr.String())
+	}
+	
+	return out.Bytes(), nil
+}
+
+func AmrToMp3(amrData []byte) ([]byte, error) {
+	cmd := exec.Command("ffmpeg",
+		"-f", "amr",
+		"-i", "pipe:0",
+		"-ar", "16000",
+		"-ac", "2",
+		"-c:a", "libmp3lame",
+		"-b:a", "192k",
+		"-f", "mp3",
 		"pipe:1",
 	)
 	

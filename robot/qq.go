@@ -10,6 +10,7 @@ import (
 	"hash/crc32"
 	"io"
 	"net/http"
+	"os"
 	"runtime/debug"
 	"strings"
 	"time"
@@ -85,7 +86,7 @@ func StartQQRobot(ctx context.Context) {
 
 func C2CMessageEventHandler(event *dto.WSPayload, message *dto.WSC2CMessageData) error {
 	d := NewQQRobot(event, message, nil, nil)
-	d.Robot = NewRobot(WithRobot(d))
+	d.Robot = NewRobot(WithRobot(d), WithTencentRobot(d))
 	go func() {
 		defer func() {
 			if err := recover(); err != nil {
@@ -100,7 +101,7 @@ func C2CMessageEventHandler(event *dto.WSPayload, message *dto.WSC2CMessageData)
 
 func QQGroupATMessageEventHandler(event *dto.WSPayload, atMessage *dto.WSGroupATMessageData) error {
 	d := NewQQRobot(event, nil, atMessage, nil)
-	d.Robot = NewRobot(WithRobot(d))
+	d.Robot = NewRobot(WithRobot(d), WithTencentRobot(d))
 	go func() {
 		defer func() {
 			if err := recover(); err != nil {
@@ -116,7 +117,7 @@ func QQGroupATMessageEventHandler(event *dto.WSPayload, atMessage *dto.WSGroupAT
 
 func QQATMessageEventHandler(event *dto.WSPayload, atMessage *dto.WSATMessageData) error {
 	d := NewQQRobot(event, nil, nil, atMessage)
-	d.Robot = NewRobot(WithRobot(d))
+	d.Robot = NewRobot(WithRobot(d), WithTencentRobot(d))
 	go func() {
 		defer func() {
 			if err := recover(); err != nil {
@@ -164,6 +165,19 @@ func (q *QQRobot) checkValid() bool {
 			if msgInfo, ok := msgInfoInter.(*TencentWechatMessage); ok {
 				if msgInfo.Status == msgChangePhoto || msgInfo.Status == msgRecognizePhoto {
 					logger.Info("ComWechatRobot handle photo msg", "msgId", msgId, "userId", userId)
+					q.passiveExecCmd()
+					return false
+				}
+			}
+		}
+	}
+	
+	if q.GetAttachment() != nil && strings.Contains(q.GetAttachment().ContentType, "voice") {
+		_, msgId, userId := q.Robot.GetChatIdAndMsgIdAndUserID()
+		if msgInfoInter, ok := TencentMsgMap.Load(userId); ok {
+			if msgInfo, ok := msgInfoInter.(*TencentWechatMessage); ok {
+				if msgInfo.Status == msgSaveVoice {
+					logger.Info("ComWechatRobot handle voice msg", "msgId", msgId, "userId", userId)
 					q.passiveExecCmd()
 					return false
 				}
@@ -486,7 +500,7 @@ func (q *QQRobot) executeLLM() {
 func (q *QQRobot) getContent(content string) (string, error) {
 	attachment := q.GetAttachment()
 	if attachment == nil {
-		return "", errors.New("no attachments found")
+		return content, nil
 	}
 	
 	switch {
@@ -719,13 +733,15 @@ func (q *QQRobot) passiveExecCmd() {
 		
 		attachment := q.GetAttachment()
 		
-		if attachment == nil && q.Prompt != "" {
+		if attachment == nil {
 			status := msgChangePhoto
 			switch q.Command {
 			case "/change_photo", "change_photo":
 				status = msgChangePhoto
 			case "/rec_photo", "rec_photo":
 				status = msgRecognizePhoto
+			case "/save_voice", "save_voice":
+				status = msgSaveVoice
 			}
 			TencentMsgMap.Store(userId, &TencentWechatMessage{
 				Msg:       q.Prompt,
@@ -754,6 +770,43 @@ func (q *QQRobot) passiveExecCmd() {
 					case msgRecognizePhoto:
 						q.Prompt = msgInfo.Msg
 						q.executeLLM()
+					}
+					
+					TencentMsgMap.Delete(userId)
+				}
+			}
+		}
+		
+		if strings.Contains(attachment.ContentType, "voice") {
+			if msgInfoInter, ok := TencentMsgMap.Load(userId); ok {
+				if msgInfo, ok := msgInfoInter.(*TencentWechatMessage); ok {
+					switch msgInfo.Status {
+					case msgSaveVoice:
+						data, err := utils.DownloadFile(attachment.URL)
+						if err != nil {
+							logger.Error("get image content fail", "err", err)
+							q.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
+							return
+						}
+						
+						data, err = utils.SilkToMp3(data)
+						if err != nil {
+							logger.Error("silk to wav fail", "err", err)
+							q.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
+							return
+						}
+						
+						fileName := utils.GetAbsPath("data/" + utils.RandomFilename(utils.DetectAudioFormat(data)))
+						err = os.WriteFile(fileName, data, 0666)
+						if err != nil {
+							logger.Error("save image fail", "err", err)
+							q.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
+							return
+						}
+						
+						q.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "save_audio_success", map[string]interface{}{
+							"filename": fileName,
+						}), msgId, tgbotapi.ModeMarkdown, nil)
 					}
 					
 					TencentMsgMap.Delete(userId)

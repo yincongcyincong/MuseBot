@@ -278,6 +278,7 @@ func (d *DingRobot) sendImg() {
 		if err != nil {
 			logger.Warn("send image fail", "err", err)
 			d.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
+			return
 		}
 		
 		// 构建 base64 图片

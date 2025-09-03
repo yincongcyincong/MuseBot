@@ -732,7 +732,7 @@ func (r *RobotInfo) ExecCmd(cmd string, defaultFunc func()) {
 		r.Robot.sendVideo()
 	case "help", "/help":
 		r.Robot.sendHelpConfigurationOptions()
-	case "change_photo", "/change_photo", "rec_photo", "/rec_photo":
+	case "change_photo", "/change_photo", "rec_photo", "/rec_photo", "save_voice", "/save_voice":
 		if r.TencentRobot != nil {
 			r.TencentRobot.passiveExecCmd()
 		} else {

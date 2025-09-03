@@ -5,6 +5,7 @@ import (
 	
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"github.com/yincongcyincong/MuseBot/logger"
+	botUtils "github.com/yincongcyincong/MuseBot/utils"
 	"golang.org/x/text/language"
 )
 
@@ -29,16 +30,16 @@ func InitI18n() {
 	
 	// 3. Load translation files
 	// Russian translations
-	if _, err := bundle.LoadMessageFile("./conf/i18n/i18n.ru.json"); err != nil {
-		logger.Fatal("Failed to load Russian translation file", "err", err)
+	if _, err := bundle.LoadMessageFile(botUtils.GetAbsPath("conf/i18n/i18n.ru.json")); err != nil {
+		logger.Error("Failed to load Russian translation file", "err", err)
 	}
 	// English translations
-	if _, err := bundle.LoadMessageFile("./conf/i18n/i18n.en.json"); err != nil {
-		logger.Fatal("Failed to load English translation file", "err", err)
+	if _, err := bundle.LoadMessageFile(botUtils.GetAbsPath("conf/i18n/i18n.en.json")); err != nil {
+		logger.Error("Failed to load English translation file", "err", err)
 	}
 	// Chinese translations
-	if _, err := bundle.LoadMessageFile("./conf/i18n/i18n.zh.json"); err != nil {
-		logger.Fatal("Failed to load Chinese translation file", "err", err)
+	if _, err := bundle.LoadMessageFile(botUtils.GetAbsPath("conf/i18n/i18n.zh.json")); err != nil {
+		logger.Error("Failed to load Chinese translation file", "err", err)
 	}
 	
 	// 4. Create localizers for each language

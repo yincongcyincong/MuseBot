@@ -10,3 +10,4 @@ release
 build
 *.db
 data
+go_build_*
