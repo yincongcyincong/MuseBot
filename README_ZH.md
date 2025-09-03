@@ -7,7 +7,7 @@ QQ群：1031411708
 
 # MuseBot
 
-本仓库提供了一个基于 **Golang** 构建的 **Telegram, Discord 机器人**，集成了 **LLM API**，实现 AI 驱动的回复。
+本仓库提供了一个基于 **Golang** 构建的 **机器人**，集成了 **LLM API**，实现 AI 驱动的回复。
 该机器人支持 **openai** **deepseek** **gemini** **Doubao** **openrouter**等大模型，让对话体验更加自然和流畅。
 [English Doc](https://github.com/yincongcyincong/MuseBot/blob/main/Readme.md)
 
@@ -242,6 +242,7 @@ docker run -d -v /home/user/data:/app/data -e TELEGRAM_BOT_TOKEN="你的Telegram
 ### /save_voice
 仅适用于腾讯应用（微信、QQ、企业微信）
 将你的语音保存到电脑。
+<img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/74499d85-4405-43d3-836e-2977de08cb31" />
 
 
 ---
