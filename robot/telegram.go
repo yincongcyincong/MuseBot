@@ -383,7 +383,7 @@ func (t *TelegramRobot) sendChatMessage() {
 	t.Update.Message.Text = content
 	
 	if len(content) == 0 {
-		err := utils.ForceReply(int64(utils.ParseInt(chatId)), utils.ParseInt(msgID), "chat_empty_content", t.Bot)
+		err := ForceReply(int64(utils.ParseInt(chatId)), utils.ParseInt(msgID), "chat_empty_content", t.Bot)
 		if err != nil {
 			logger.Warn("force reply fail", "err", err)
 		}
@@ -534,7 +534,7 @@ func (t *TelegramRobot) sendVideo() {
 		
 		prompt := t.Prompt
 		if len(prompt) == 0 {
-			err := utils.ForceReply(int64(utils.ParseInt(chatId)), utils.ParseInt(replyToMessageID), "video_empty_content", t.Bot)
+			err := ForceReply(int64(utils.ParseInt(chatId)), utils.ParseInt(replyToMessageID), "video_empty_content", t.Bot)
 			if err != nil {
 				logger.Warn("force reply fail", "err", err)
 			}
@@ -596,9 +596,9 @@ func (t *TelegramRobot) sendImg() {
 		var err error
 		if len(prompt) == 0 {
 			if strings.Contains(t.Cmd, "edit_photo") {
-				err = utils.ForceReply(int64(utils.ParseInt(chatId)), utils.ParseInt(replyToMessageID), "edit_photo_empty_content", t.Bot)
+				err = ForceReply(int64(utils.ParseInt(chatId)), utils.ParseInt(replyToMessageID), "edit_photo_empty_content", t.Bot)
 			} else {
-				err = utils.ForceReply(int64(utils.ParseInt(chatId)), utils.ParseInt(replyToMessageID), "photo_empty_content", t.Bot)
+				err = ForceReply(int64(utils.ParseInt(chatId)), utils.ParseInt(replyToMessageID), "photo_empty_content", t.Bot)
 			}
 			
 			if err != nil {
@@ -807,7 +807,7 @@ func (t *TelegramRobot) getPrompt() string {
 func (t *TelegramRobot) sendForceReply(agentType string) func() {
 	return func() {
 		chatId, msgId, _ := t.Robot.GetChatIdAndMsgIdAndUserID()
-		err := utils.ForceReply(int64(utils.ParseInt(chatId)), utils.ParseInt(msgId), agentType, t.Bot)
+		err := ForceReply(int64(utils.ParseInt(chatId)), utils.ParseInt(msgId), agentType, t.Bot)
 		if err != nil {
 			logger.Warn("force reply fail", "err", err)
 		}
@@ -816,4 +816,15 @@ func (t *TelegramRobot) sendForceReply(agentType string) func() {
 
 func (t *TelegramRobot) getPerMsgLen() int {
 	return 3896
+}
+
+func ForceReply(chatId int64, msgId int, i18MsgId string, bot *tgbotapi.BotAPI) error {
+	msg := tgbotapi.NewMessage(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, i18MsgId, nil))
+	msg.ReplyMarkup = tgbotapi.ForceReply{
+		ForceReply: true,
+		Selective:  true,
+	}
+	msg.ReplyToMessageID = msgId
+	_, err := bot.Send(msg)
+	return err
 }

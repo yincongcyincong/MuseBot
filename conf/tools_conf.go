@@ -11,9 +11,9 @@ import (
 	"github.com/revrost/go-openrouter"
 	"github.com/sashabaranov/go-openai"
 	"github.com/volcengine/volcengine-go-sdk/service/arkruntime/model"
+	"github.com/yincongcyincong/MuseBot/logger"
 	"github.com/yincongcyincong/mcp-client-go/clients"
 	"github.com/yincongcyincong/mcp-client-go/utils"
-	"github.com/yincongcyincong/MuseBot/logger"
 	"google.golang.org/genai"
 )
 
@@ -40,7 +40,7 @@ var (
 )
 
 func InitToolsConf() {
-	McpConfPath = flag.String("mcp_conf_path", "./conf/mcp/mcp.json", "mcp conf path")
+	McpConfPath = flag.String("mcp_conf_path", GetAbsPath("conf/mcp/mcp.json"), "mcp conf path")
 }
 
 func EnvToolsConf() {

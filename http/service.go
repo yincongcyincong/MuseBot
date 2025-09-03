@@ -3,8 +3,12 @@ package http
 import (
 	"net/http"
 	"os"
+	"os/exec"
+	"path/filepath"
+	"runtime"
 	"strings"
 	"syscall"
+	"time"
 	
 	"github.com/yincongcyincong/MuseBot/conf"
 	"github.com/yincongcyincong/MuseBot/db"
@@ -69,7 +73,7 @@ func Restart(w http.ResponseWriter, r *http.Request) {
 	
 	execPath, _ := os.Executable()
 	
-	args := []string{execPath}
+	args := []string{}
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
 		if line != "" {
@@ -80,9 +84,25 @@ func Restart(w http.ResponseWriter, r *http.Request) {
 	env := os.Environ()
 	
 	go func() {
-		if err := syscall.Exec(execPath, args, env); err != nil {
-			logger.Error("restart fail", "err", err)
-			return
+		if runtime.GOOS == "windows" {
+			cmd := exec.Command(execPath, append([]string{execPath}, args...)...)
+			cmd.Stdout = os.Stdout
+			cmd.Stderr = os.Stderr
+			cmd.Stdin = os.Stdin
+			cmd.Env = env
+			cmd.Dir = filepath.Dir(execPath)
+			
+			if err := cmd.Start(); err != nil {
+				logger.Error("restart fail", "err", err)
+				return
+			}
+			time.Sleep(500 * time.Millisecond)
+			os.Exit(0)
+		} else {
+			if err := syscall.Exec(execPath, append([]string{execPath}, args...), env); err != nil {
+				logger.Error("restart fail", "err", err)
+				return
+			}
 		}
 	}()
 	

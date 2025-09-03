@@ -4,6 +4,7 @@ import (
 	"flag"
 	"math/rand/v2"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -114,7 +115,7 @@ func InitConf() {
 	BaseConfInfo.Type = flag.String("type", "deepseek", "llm type: deepseek gemini openai openrouter vol")
 	BaseConfInfo.MediaType = flag.String("media_type", "vol", "media type: vol gemini openai openrouter")
 	BaseConfInfo.DBType = flag.String("db_type", "sqlite3", "db type")
-	BaseConfInfo.DBConf = flag.String("db_conf", "./data/telegram_bot.db", "db conf")
+	BaseConfInfo.DBConf = flag.String("db_conf", GetAbsPath("data/telegram_bot.db"), "db conf")
 	BaseConfInfo.LLMProxy = flag.String("llm_proxy", "", "llm proxy: http://127.0.0.1:7890")
 	BaseConfInfo.RobotProxy = flag.String("robot_proxy", "", "robot proxy: http://127.0.0.1:7890")
 	BaseConfInfo.Lang = flag.String("lang", "en", "lang")
@@ -426,4 +427,14 @@ func InitConf() {
 	EnvVideoConf()
 	EnvRegisterConf()
 	
+}
+
+func GetAbsPath(relPath string) string {
+	exe, err := os.Executable()
+	if err != nil {
+		logger.Error("Failed to get executable path", "err", err)
+		return ""
+	}
+	dir := filepath.Dir(exe)
+	return filepath.Join(dir, relPath)
 }

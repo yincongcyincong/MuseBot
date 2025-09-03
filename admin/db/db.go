@@ -10,6 +10,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/yincongcyincong/MuseBot/admin/conf"
 	"github.com/yincongcyincong/MuseBot/logger"
+	botUtils "github.com/yincongcyincong/MuseBot/utils"
 )
 
 const (
@@ -63,9 +64,9 @@ var (
 
 func InitTable() {
 	var err error
-	if _, err = os.Stat("./data"); os.IsNotExist(err) {
+	if _, err = os.Stat(botUtils.GetAbsPath("data")); os.IsNotExist(err) {
 		// if dir don't exist, create it.
-		err := os.MkdirAll("./data", 0755)
+		err := os.MkdirAll(botUtils.GetAbsPath("data"), 0755)
 		if err != nil {
 			logger.Fatal("create direction fail:", "err", err)
 			return

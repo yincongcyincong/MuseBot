@@ -41,7 +41,8 @@
   "help_text": "可用命令：\n\n/chat - 开始一个常规聊天会话\n\n/mode - 设置大语言模型模式\n\n/balance - 查看您当前的余额（代币或积分）\n\n/state - 查看您当前的会话状态和设置\n\n/clear - 清除所有对话历史记录\n\n/retry - 重新尝试您的上一个问题\n\n/photo - 根据您的提示或图片创建一张图像\n\n/edit_photo - 修改发送的图片或者上一张机器人生成的图片\n\n/video - 根据您的提示生成一段视频\n\n/task - 让多个代理协作完成一个任务\n\n/mcp - 使用多代理控制面板进行复杂的任务规划\n\n/help - 显示此帮助信息",
   "photo_handle_prompt": "给我找出图片里面的全部文字，仅返回文字。",
   "photo_export_prompt": "我对这张图片有一个疑问：\n\n {{.question}} \n\n 这是识别后的图片内容：{{.answer}}\n\n 请进行总结",
-  "set_pre_prompt_success": "🚀 已成功设置提示，请在5分钟内上传图片。",
+  "set_pre_prompt_success": "🚀 已成功设置命令，请在5分钟内上传图片/语音。",
   "send_mcp_info": "请求 MCP 服务，函数名为 {{.function_name}} \n\n 请求参数为 {{.request_args}} \n\n 响应为 {{.response}}",
-  "mix_mode_choose": "请到 {{.link}} 选择一个模型，使用/mode xxx ,例如 /mode gpt-5-chat-latest 选择模型"
+  "mix_mode_choose": "请到 {{.link}} 选择一个模型，使用/mode xxx ,例如 /mode gpt-5-chat-latest 选择模型",
+  "save_audio_success": "保存语音成功，语音文件地址:{{.filename}}"
 }
