@@ -238,6 +238,12 @@ docker run -d -v /home/user/data:/app/data -e TELEGRAM_BOT_TOKEN="你的Telegram
 输入一段prompt用户识别图片        
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/b67a2be2-cc5e-4985-90f3-d72c7a9bf4c1" />
 
+
+### /save_voice
+仅适用于腾讯应用（微信、QQ、企业微信）
+将你的语音保存到电脑。
+
+
 ---
 
 ## 🚀 Docker 部署

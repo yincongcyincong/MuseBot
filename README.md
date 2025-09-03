@@ -245,6 +245,10 @@ only for tencent app (wechat, qq, work wechat)
 recognize photo base on your prompt.    
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/b67a2be2-cc5e-4985-90f3-d72c7a9bf4c1" />
 
+### /save_voice
+only for tencent app (wechat, qq, work wechat)
+save your voice to pc.
+
 ## Deployment
 
 ### Deploy with Docker
