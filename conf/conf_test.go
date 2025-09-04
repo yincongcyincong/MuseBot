@@ -32,9 +32,9 @@ func TestInitConf_AllEnvVars(t *testing.T) {
 	os.Setenv("ERNIE_AK", "ernie-ak")
 	os.Setenv("ERNIE_SK", "ernie-sk")
 	
-	os.Setenv("AUDIO_APP_ID", "test-audio-app-id")
-	os.Setenv("AUDIO_TOKEN", "test-audio-token")
-	os.Setenv("AUDIO_CLUSTER", "test-cluster")
+	os.Setenv("VOL_AUDIO_APP_ID", "test-audio-app-id")
+	os.Setenv("VOL_AUDIO_TOKEN", "test-audio-token")
+	os.Setenv("VOL_AUDIO_REC_CLUSTER", "test-cluster")
 	
 	os.Setenv("TELEGRAM_BOT_TOKEN", "test_bot_token")
 	os.Setenv("DEEPSEEK_TOKEN", "test_deepseek_token")
@@ -111,9 +111,9 @@ func TestInitConf_AllEnvVars(t *testing.T) {
 	assertEqual(t, *BaseConfInfo.ErnieAK, "ernie-ak", "ErnieAK")
 	assertEqual(t, *BaseConfInfo.ErnieSK, "ernie-sk", "ErnieSK")
 	
-	assertEqual(t, *AudioConfInfo.AudioAppID, "test-audio-app-id", "AudioAppID")
-	assertEqual(t, *AudioConfInfo.AudioToken, "test-audio-token", "AudioToken")
-	assertEqual(t, *AudioConfInfo.AudioCluster, "test-cluster", "AudioCluster")
+	assertEqual(t, *AudioConfInfo.VolAudioAppID, "test-audio-app-id", "AudioAppID")
+	assertEqual(t, *AudioConfInfo.VolAudioToken, "test-audio-token", "AudioToken")
+	assertEqual(t, *AudioConfInfo.VolAudioRecCluster, "test-cluster", "AudioCluster")
 	
 	assertFloatEqual(t, *LLMConfInfo.FrequencyPenalty, 0.5, "FrequencyPenalty")
 	assertInt(t, *LLMConfInfo.MaxTokens, 2048, "MaxTokens")

@@ -2,10 +2,7 @@ package db
 
 import (
 	"database/sql"
-	"encoding/json"
 	"fmt"
-	"io"
-	"os"
 	"strings"
 	"sync"
 	"time"
@@ -15,7 +12,6 @@ import (
 	"github.com/yincongcyincong/MuseBot/logger"
 	"github.com/yincongcyincong/MuseBot/metrics"
 	"github.com/yincongcyincong/MuseBot/param"
-	"github.com/yincongcyincong/MuseBot/utils"
 )
 
 type MsgRecordInfo struct {
@@ -26,11 +22,6 @@ type MsgRecordInfo struct {
 type QA struct {
 	Q string `json:"q"`
 	A string `json:"a"`
-}
-
-type ChatHistory struct {
-	UserID string `json:"user_id"`
-	QAs    []QA   `json:"qas"`
 }
 
 type AQ struct {
@@ -102,49 +93,6 @@ func DeleteMsgRecord(userId string) {
 	if err != nil {
 		logger.Error("Error deleting record", "err", err)
 	}
-}
-
-func InsertHistory() {
-	file, err := os.Open(utils.GetAbsPath("conf/chat/history.json"))
-	if err != nil {
-		logger.Error("open file error", "err", err)
-		return
-	}
-	defer file.Close()
-	
-	data, err := io.ReadAll(file)
-	if err != nil {
-		logger.Error("read file error", "err", err)
-		return
-	}
-	
-	var histories []ChatHistory
-	if err := json.Unmarshal(data, &histories); err != nil {
-		logger.Error("json unmarshal error", "err", err)
-		return
-	}
-	
-	for _, history := range histories {
-		userId := history.UserID
-		if userId == "" {
-			return
-		}
-		
-		for _, aq := range history.QAs {
-			if aq.Q == "" && aq.A == "" {
-				continue
-			}
-			
-			record := &Record{
-				UserId:     userId,
-				Question:   aq.Q,
-				Answer:     aq.A,
-				RecordType: param.TextRecordType,
-			}
-			InsertRecordInfo(record)
-		}
-	}
-	
 }
 
 func InsertRecord() {

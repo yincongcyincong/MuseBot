@@ -1057,3 +1057,18 @@ func (r *RobotInfo) CreateVideo(prompt string, lastImageContent []byte) ([]byte,
 	
 	return videoContent, totalToken, nil
 }
+
+func (r *RobotInfo) GetVoiceBaseTTS(content, encoding string) ([]byte, error) {
+	_, _, userId := r.GetChatIdAndMsgIdAndUserID()
+	var ttsContent []byte
+	var err error
+	
+	switch *conf.AudioConfInfo.TTSType {
+	case param.Vol:
+		ttsContent, _, err = llm.VolTTS(content, userId, encoding)
+	case param.Gemini:
+		ttsContent, _, err = llm.GeminiTTS(content)
+	}
+	
+	return ttsContent, err
+}

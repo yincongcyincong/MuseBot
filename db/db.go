@@ -138,7 +138,6 @@ func InitTable() {
 		}
 	}
 	
-	InsertHistory()
 	InsertRecord()
 	
 	logger.Info("db initialize successfully")

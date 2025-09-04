@@ -44,5 +44,6 @@
   "set_pre_prompt_success": "\uD83D\uDE80 Successfully set command, please upload photo/voice in 5 min.",
   "send_mcp_info": "request mcp server, function name is {{.function_name}} \n\n request args is {{.request_args}}\n\n response is {{.response}}",
   "mix_mode_choose": "Please go to {{.link}} to choose a model. Use /mode xxx, for example /mode gpt-5-chat-latest, to select a model.",
-  "save_audio_success": "Voice saved successfully. File path: {{.filename}}"
+  "save_audio_success": "Voice saved successfully. File path: {{.filename}}",
+  "audio_create_prompt": "Please say the following content: {{.content}}"
 }

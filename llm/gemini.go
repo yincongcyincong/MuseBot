@@ -76,21 +76,9 @@ func (h *GeminiReq) Send(ctx context.Context, l *LLM) error {
 	
 	start := time.Now()
 	
-	httpClient := utils.GetLLMProxyClient()
-	httpOption := genai.HTTPOptions{}
-	if *conf.BaseConfInfo.CustomUrl != "" {
-		httpOption.BaseURL = *conf.BaseConfInfo.CustomUrl
-		httpOption.Headers = http.Header{
-			"Authorization": []string{"Bearer " + *conf.BaseConfInfo.GeminiToken},
-		}
-	}
-	client, err := genai.NewClient(ctx, &genai.ClientConfig{
-		HTTPClient:  httpClient,
-		APIKey:      *conf.BaseConfInfo.GeminiToken,
-		HTTPOptions: httpOption,
-	})
+	client, err := GetGeminiClient(ctx)
 	if err != nil {
-		logger.Error("init gemini client fail", "err", err)
+		logger.Error("create client fail", "err", err)
 		return err
 	}
 	
@@ -217,21 +205,9 @@ func (h *GeminiReq) GetMessage(role, msg string) {
 func (h *GeminiReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 	h.GetModel(l)
 	
-	httpClient := utils.GetLLMProxyClient()
-	httpOption := genai.HTTPOptions{}
-	if *conf.BaseConfInfo.CustomUrl != "" {
-		httpOption.BaseURL = *conf.BaseConfInfo.CustomUrl
-		httpOption.Headers = http.Header{
-			"Authorization": []string{"Bearer " + *conf.BaseConfInfo.GeminiToken},
-		}
-	}
-	client, err := genai.NewClient(ctx, &genai.ClientConfig{
-		HTTPClient:  httpClient,
-		APIKey:      *conf.BaseConfInfo.GeminiToken,
-		HTTPOptions: httpOption,
-	})
+	client, err := GetGeminiClient(ctx)
 	if err != nil {
-		logger.Error("init gemini client fail", "err", err)
+		logger.Error("create client fail", "err", err)
 		return "", err
 	}
 	
@@ -387,19 +363,7 @@ func GenerateGeminiImg(prompt string, imageContent []byte) ([]byte, int, error) 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 	
-	httpClient := utils.GetLLMProxyClient()
-	httpOption := genai.HTTPOptions{}
-	if *conf.BaseConfInfo.CustomUrl != "" {
-		httpOption.BaseURL = *conf.BaseConfInfo.CustomUrl
-		httpOption.Headers = http.Header{
-			"Authorization": []string{"Bearer " + *conf.BaseConfInfo.GeminiToken},
-		}
-	}
-	client, err := genai.NewClient(ctx, &genai.ClientConfig{
-		HTTPClient:  httpClient,
-		APIKey:      *conf.BaseConfInfo.GeminiToken,
-		HTTPOptions: httpOption,
-	})
+	client, err := GetGeminiClient(ctx)
 	if err != nil {
 		logger.Error("create client fail", "err", err)
 		return nil, 0, err
@@ -448,20 +412,7 @@ func GenerateGeminiVideo(prompt string, image []byte) ([]byte, int, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 	
-	httpClient := utils.GetLLMProxyClient()
-	httpOption := genai.HTTPOptions{}
-	if *conf.BaseConfInfo.CustomUrl != "" {
-		httpOption.BaseURL = *conf.BaseConfInfo.CustomUrl
-		httpOption.Headers = http.Header{
-			"Authorization": []string{"Bearer " + *conf.BaseConfInfo.GeminiToken},
-			"Content-Type":  []string{"application/json"},
-		}
-	}
-	client, err := genai.NewClient(ctx, &genai.ClientConfig{
-		HTTPClient:  httpClient,
-		APIKey:      *conf.BaseConfInfo.GeminiToken,
-		HTTPOptions: httpOption,
-	})
+	client, err := GetGeminiClient(ctx)
 	if err != nil {
 		logger.Error("create client fail", "err", err)
 		return nil, 0, err
@@ -523,19 +474,7 @@ func GenerateGeminiText(audioContent []byte) (string, int, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 	
-	httpClient := utils.GetLLMProxyClient()
-	httpOption := genai.HTTPOptions{}
-	if *conf.BaseConfInfo.CustomUrl != "" {
-		httpOption.BaseURL = *conf.BaseConfInfo.CustomUrl
-		httpOption.Headers = http.Header{
-			"Authorization": []string{"Bearer " + *conf.BaseConfInfo.GeminiToken},
-		}
-	}
-	client, err := genai.NewClient(ctx, &genai.ClientConfig{
-		HTTPClient:  httpClient,
-		APIKey:      *conf.BaseConfInfo.GeminiToken,
-		HTTPOptions: httpOption,
-	})
+	client, err := GetGeminiClient(ctx)
 	if err != nil {
 		logger.Error("create client fail", "err", err)
 		return "", 0, err
@@ -573,19 +512,7 @@ func GetGeminiImageContent(imageContent []byte, content string) (string, int, er
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 	
-	httpClient := utils.GetLLMProxyClient()
-	httpOption := genai.HTTPOptions{}
-	if *conf.BaseConfInfo.CustomUrl != "" {
-		httpOption.BaseURL = *conf.BaseConfInfo.CustomUrl
-		httpOption.Headers = http.Header{
-			"Authorization": []string{"Bearer " + *conf.BaseConfInfo.GeminiToken},
-		}
-	}
-	client, err := genai.NewClient(ctx, &genai.ClientConfig{
-		HTTPClient:  httpClient,
-		APIKey:      *conf.BaseConfInfo.GeminiToken,
-		HTTPOptions: httpOption,
-	})
+	client, err := GetGeminiClient(ctx)
 	if err != nil {
 		logger.Error("create client fail", "err", err)
 		return "", 0, err
@@ -619,4 +546,78 @@ func GetGeminiImageContent(imageContent []byte, content string) (string, int, er
 	
 	return result.Text(), int(result.UsageMetadata.TotalTokenCount), nil
 	
+}
+
+func GeminiTTS(content string) ([]byte, int, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+	
+	client, err := GetGeminiClient(ctx)
+	if err != nil {
+		logger.Error("create client fail", "err", err)
+		return nil, 0, err
+	}
+	
+	parts := []*genai.Part{
+		genai.NewPartFromText(i18n.GetMessage(*conf.BaseConfInfo.Lang, "audio_create_prompt", map[string]interface{}{
+			"content": content,
+		})),
+	}
+	
+	contents := []*genai.Content{
+		genai.NewContentFromParts(parts, genai.RoleUser),
+	}
+	
+	response, err := client.Models.GenerateContent(
+		ctx,
+		*conf.AudioConfInfo.GeminiAudioModel,
+		contents,
+		&genai.GenerateContentConfig{
+			ResponseModalities: []string{
+				"AUDIO",
+			},
+			SpeechConfig: &genai.SpeechConfig{
+				VoiceConfig: &genai.VoiceConfig{
+					PrebuiltVoiceConfig: &genai.PrebuiltVoiceConfig{
+						VoiceName: *conf.AudioConfInfo.GeminiVoiceName,
+					},
+				},
+			},
+		},
+	)
+	
+	if err != nil {
+		logger.Error("generate audio fail", "err", err)
+		return nil, 0, err
+	}
+	
+	if len(response.Candidates) > 0 {
+		for _, part := range response.Candidates[0].Content.Parts {
+			if part.InlineData != nil {
+				data, err := utils.PCMToAMR(part.InlineData.Data, 24000, 1)
+				if err != nil {
+					logger.Error("convert audio fail", "err", err)
+				}
+				return data, int(response.UsageMetadata.TotalTokenCount), nil
+			}
+		}
+	}
+	
+	return nil, 0, errors.New("audio is empty")
+}
+
+func GetGeminiClient(ctx context.Context) (*genai.Client, error) {
+	httpClient := utils.GetLLMProxyClient()
+	httpOption := genai.HTTPOptions{}
+	if *conf.BaseConfInfo.CustomUrl != "" {
+		httpOption.BaseURL = *conf.BaseConfInfo.CustomUrl
+		httpOption.Headers = http.Header{
+			"Authorization": []string{"Bearer " + *conf.BaseConfInfo.GeminiToken},
+		}
+	}
+	return genai.NewClient(ctx, &genai.ClientConfig{
+		HTTPClient:  httpClient,
+		APIKey:      *conf.BaseConfInfo.GeminiToken,
+		HTTPOptions: httpOption,
+	})
 }

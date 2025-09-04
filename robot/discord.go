@@ -214,7 +214,7 @@ func (d *DiscordRobot) getContent(defaultText string) (string, error) {
 		content = strings.TrimSpace(defaultText)
 	}
 	
-	if content == "" && len(attachments) > 0 && *conf.AudioConfInfo.AudioAppID != "" {
+	if content == "" && len(attachments) > 0 {
 		for _, att := range attachments {
 			if strings.HasPrefix(att.ContentType, "audio/") {
 				audioContent, err := utils.DownloadFile(att.URL)

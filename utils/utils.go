@@ -92,9 +92,9 @@ func GetLLMProxyClient() *http.Client {
 func FileRecognize(audioContent []byte) (string, error) {
 	
 	client := BuildAsrClient()
-	client.Appid = *conf.AudioConfInfo.AudioAppID
-	client.Token = *conf.AudioConfInfo.AudioToken
-	client.Cluster = *conf.AudioConfInfo.AudioCluster
+	client.Appid = *conf.AudioConfInfo.VolAudioAppID
+	client.Token = *conf.AudioConfInfo.VolAudioToken
+	client.Cluster = *conf.AudioConfInfo.VolAudioRecCluster
 	
 	asrResponse, err := client.RequestAsr(audioContent)
 	if err != nil {
@@ -482,6 +482,32 @@ func AmrToOgg(amrData []byte) ([]byte, error) {
 	
 	if err := cmd.Run(); err != nil {
 		return nil, fmt.Errorf("ffmpeg error: %v, details: %s", err, stderr.String())
+	}
+	
+	return out.Bytes(), nil
+}
+
+func PCMToAMR(pcmData []byte, sampleRate int, channels int) ([]byte, error) {
+	cmd := exec.Command("ffmpeg",
+		"-f", "s16le",
+		"-ar", fmt.Sprintf("%d", sampleRate),
+		"-ac", fmt.Sprintf("%d", channels),
+		"-i", "pipe:0",
+		"-ar", "8000",
+		"-ac", "1",
+		"-ab", "12.2k",
+		"-f", "amr",
+		"pipe:1",
+	)
+	
+	cmd.Stdin = bytes.NewReader(pcmData)
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	
+	if err := cmd.Run(); err != nil {
+		return nil, fmt.Errorf("ffmpeg error: %v, %s", err, stderr.String())
 	}
 	
 	return out.Bytes(), nil

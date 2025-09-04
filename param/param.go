@@ -38,6 +38,7 @@ const (
 	DiscordEditMode = "edit"
 	
 	ImageTokenUsage = 3000
+	AudioTokenUsage = 500
 	VideoTokenUsage = 5000
 )
 
