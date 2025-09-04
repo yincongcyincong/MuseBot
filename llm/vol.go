@@ -1,18 +1,21 @@
 package llm
 
 import (
+	"bytes"
 	"context"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"net/http"
 	"strings"
 	"time"
 	"unicode"
 	
 	"github.com/cohesion-org/deepseek-go"
 	"github.com/cohesion-org/deepseek-go/constants"
+	"github.com/google/uuid"
 	"github.com/volcengine/volc-sdk-golang/service/visual"
 	"github.com/volcengine/volcengine-go-sdk/service/arkruntime"
 	"github.com/volcengine/volcengine-go-sdk/service/arkruntime/model"
@@ -590,4 +593,80 @@ func GetVolImageContent(imageContent []byte, content string) (string, int, error
 	}
 	
 	return *response.Choices[0].Message.Content.StringValue, response.Usage.TotalTokens, nil
+}
+
+type TTSServResponse struct {
+	ReqID     string `json:"reqid"`
+	Code      int    `json:"code"`
+	Message   string `json:"Message"`
+	Operation string `json:"operation"`
+	Sequence  int    `json:"sequence"`
+	Data      string `json:"data"`
+}
+
+func VolTTS(text, userId, encoding string) ([]byte, int, error) {
+	reqID := uuid.NewString()
+	params := make(map[string]map[string]interface{})
+	params["app"] = make(map[string]interface{})
+	
+	params["app"]["appid"] = *conf.AudioConfInfo.VolAudioAppID
+	params["app"]["token"] = *conf.AudioConfInfo.VolAudioToken
+	params["app"]["cluster"] = *conf.AudioConfInfo.VolAudioTTSCluster
+	params["user"] = make(map[string]interface{})
+	
+	params["user"]["uid"] = userId
+	params["audio"] = make(map[string]interface{})
+	
+	params["audio"]["voice_type"] = *conf.AudioConfInfo.VolAudioVoiceType
+	params["audio"]["encoding"] = encoding
+	params["audio"]["speed_ratio"] = 1.0
+	params["audio"]["volume_ratio"] = 1.0
+	params["audio"]["pitch_ratio"] = 1.0
+	params["request"] = make(map[string]interface{})
+	params["request"]["reqid"] = reqID
+	params["request"]["text"] = text
+	params["request"]["text_type"] = "plain"
+	params["request"]["operation"] = "query"
+	
+	headers := make(map[string]string)
+	headers["Content-Type"] = "application/json"
+	headers["Authorization"] = fmt.Sprintf("Bearer;%s", *conf.AudioConfInfo.VolAudioToken)
+	
+	url := "https://openspeech.bytedance.com/api/v1/tts"
+	bodyStr, _ := json.Marshal(params)
+	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(bodyStr))
+	if err != nil {
+		logger.Error("NewRequest error", "err", err)
+		return nil, 0, err
+	}
+	for key, value := range headers {
+		req.Header.Set(key, value)
+	}
+	
+	httpClient := utils.GetLLMProxyClient()
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		logger.Error("httpClient.Do error", "err", err)
+		return nil, 0, err
+	}
+	
+	synResp, err := io.ReadAll(resp.Body)
+	if err != nil {
+		logger.Error("io.ReadAll error", "err", err)
+		return nil, 0, err
+	}
+	
+	var respJSON TTSServResponse
+	err = json.Unmarshal(synResp, &respJSON)
+	if err != nil {
+		return nil, 0, err
+	}
+	code := respJSON.Code
+	if code != 3000 {
+		logger.Error("resp code fail", "code", code)
+		return nil, 0, errors.New("resp code fail")
+	}
+	
+	audio, _ := base64.StdEncoding.DecodeString(respJSON.Data)
+	return audio, param.AudioTokenUsage, nil
 }

@@ -704,7 +704,7 @@ func (t *TelegramRobot) ExecuteForceReply() {
 
 func (t *TelegramRobot) getContent(content string) (string, error) {
 	var err error
-	if content == "" && t.Update.Message.Voice != nil && *conf.AudioConfInfo.AudioAppID != "" {
+	if content == "" && t.Update.Message.Voice != nil {
 		audioContent := t.GetAudioContent()
 		if audioContent == nil {
 			logger.Warn("audio url empty")

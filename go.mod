@@ -3,6 +3,7 @@ module github.com/yincongcyincong/MuseBot
 go 1.24.0
 
 require (
+	cloud.google.com/go/texttospeech v1.8.1
 	github.com/ArtisanCloud/PowerWeChat/v3 v3.4.22
 	github.com/alibabacloud-go/darabonba-openapi/v2 v2.0.11
 	github.com/alibabacloud-go/dingtalk v1.6.88
@@ -13,6 +14,7 @@ require (
 	github.com/disintegration/imaging v1.6.2
 	github.com/go-sql-driver/mysql v1.9.0
 	github.com/go-telegram-bot-api/telegram-bot-api/v5 v5.5.1
+	github.com/google/uuid v1.6.0
 	github.com/gorilla/sessions v1.2.1
 	github.com/gorilla/websocket v1.5.3
 	github.com/larksuite/oapi-sdk-go/v3 v3.4.22
@@ -106,7 +108,6 @@ require (
 	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/s2a-go v0.1.9 // indirect
-	github.com/google/uuid v1.6.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.4 // indirect
 	github.com/googleapis/gax-go/v2 v2.14.1 // indirect
 	github.com/goph/emperror v0.17.2 // indirect
