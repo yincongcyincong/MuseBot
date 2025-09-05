@@ -599,7 +599,7 @@ func GeminiTTS(content, encoding string) ([]byte, int, int, error) {
 				switch encoding {
 				case "amr":
 					data, err = utils.PCMToAMR(part.InlineData.Data, 24000, 1)
-				case "ogg":
+				case "ogg_opus":
 					data, err = utils.PCMToOGG(part.InlineData.Data, 24000)
 				case "mp3":
 					data, err = utils.PCMToMP3(part.InlineData.Data, 24000, 1)

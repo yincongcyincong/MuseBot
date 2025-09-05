@@ -19,6 +19,7 @@ import (
 	"github.com/volcengine/volc-sdk-golang/service/visual"
 	"github.com/volcengine/volcengine-go-sdk/service/arkruntime"
 	"github.com/volcengine/volcengine-go-sdk/service/arkruntime/model"
+	"github.com/wdvxdr1123/go-silk"
 	"github.com/yincongcyincong/MuseBot/conf"
 	"github.com/yincongcyincong/MuseBot/db"
 	"github.com/yincongcyincong/MuseBot/i18n"
@@ -608,6 +609,11 @@ type TTSServResponse struct {
 }
 
 func VolTTS(text, userId, encoding string) ([]byte, int, int, error) {
+	formatEncoding := encoding
+	if encoding != "mp3" && encoding != "wav" && encoding != "ogg_opus" && encoding != "pcm" {
+		formatEncoding = "pcm"
+	}
+	
 	reqID := uuid.NewString()
 	params := make(map[string]map[string]interface{})
 	params["app"] = make(map[string]interface{})
@@ -621,7 +627,7 @@ func VolTTS(text, userId, encoding string) ([]byte, int, int, error) {
 	params["audio"] = make(map[string]interface{})
 	
 	params["audio"]["voice_type"] = *conf.AudioConfInfo.VolAudioVoiceType
-	params["audio"]["encoding"] = encoding
+	params["audio"]["encoding"] = formatEncoding
 	params["audio"]["speed_ratio"] = 1.0
 	params["audio"]["volume_ratio"] = 1.0
 	params["audio"]["pitch_ratio"] = 1.0
@@ -666,10 +672,23 @@ func VolTTS(text, userId, encoding string) ([]byte, int, int, error) {
 	}
 	code := respJSON.Code
 	if code != 3000 {
-		logger.Error("resp code fail", "code", code)
+		logger.Error("resp code fail", "code", code, "message", respJSON.Message)
 		return nil, 0, 0, errors.New("resp code fail")
 	}
 	
 	audio, _ := base64.StdEncoding.DecodeString(respJSON.Data)
-	return audio, param.AudioTokenUsage, utils.ParseInt(respJSON.Addition.Duration) / 1000, nil
+	switch encoding {
+	case "amr":
+		audio, err = utils.PCMToAMR(audio, 24000, 1)
+	case "silk":
+		audio, err = silk.EncodePcmBuffToSilk(audio, 24000, 1, true)
+	case "opus":
+		audio, err = utils.PCMToOpus(audio, 24000, 1)
+	}
+	if err != nil {
+		logger.Error("EncodePcmBuffToSilk error", "err", err)
+		return nil, 0, 0, err
+	}
+	
+	return audio, param.AudioTokenUsage, utils.ParseInt(respJSON.Addition.Duration), nil
 }

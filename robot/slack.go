@@ -652,8 +652,9 @@ func (s *SlackRobot) sendText(messageChan *MsgChan) {
 
 func (s *SlackRobot) sendVoiceContent(voiceContent []byte, duration int) error {
 	chatId, _, _ := s.Robot.GetChatIdAndMsgIdAndUserID()
+	format := utils.DetectAudioFormat(voiceContent)
 	uploadParams := slack.UploadFileV2Parameters{
-		Filename: "voice." + utils.DetectVideoMimeType(voiceContent),
+		Filename: "voice." + format,
 		Reader:   bytes.NewReader(voiceContent),
 		Title:    "voice",
 		FileSize: len(voiceContent),

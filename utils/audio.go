@@ -405,6 +405,35 @@ func PCMToAMR(pcmData []byte, sampleRate int, channels int) ([]byte, error) {
 	return out.Bytes(), nil
 }
 
+func PCMToOpus(pcmData []byte, sampleRate int, channels int) ([]byte, error) {
+	cmd := exec.Command(
+		"ffmpeg",
+		"-f", "s16le",
+		"-ar", fmt.Sprintf("%d", sampleRate),
+		"-ac", fmt.Sprintf("%d", channels),
+		"-i", "pipe:0",
+		"-acodec", "libopus",
+		"-ac", "1",
+		"-ar", "16000",
+		"-f", "opus",
+		"pipe:1",
+	)
+	
+	cmd.Stdin = bytes.NewReader(pcmData)
+	
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	
+	if err := cmd.Run(); err != nil {
+		return nil, fmt.Errorf("ffmpeg error: %v, %s", err, stderr.String())
+	}
+	
+	return out.Bytes(), nil
+}
+
 func PCMToOGG(pcmBytes []byte, sampleRate int) ([]byte, error) {
 	cmd := exec.Command("ffmpeg",
 		"-f", "s16le",
