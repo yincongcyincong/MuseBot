@@ -33,6 +33,10 @@ import (
 	"github.com/yincongcyincong/langchaingo/vectorstores"
 )
 
+const (
+	AudioMsgLen = 600
+)
+
 type MsgChan struct {
 	NormalMessageChan chan *param.MsgInfo
 	StrMessageChan    chan string
@@ -77,13 +81,15 @@ type Robot interface {
 	
 	sendHelpConfigurationOptions()
 	
-	handleUpdate(msgChan *MsgChan)
-	
 	getPrompt() string
 	
 	getContent(content string) (string, error)
 	
 	getPerMsgLen() int
+	
+	sendVoiceContent(voiceContent []byte, duration int) error
+	
+	sendText(msgChan *MsgChan)
 }
 
 type TencentRobot interface {
@@ -774,13 +780,19 @@ func (r *RobotInfo) ExecChain(msgContent string, msgChan *MsgChan) {
 			r.SendMsg(chatId, err.Error(), msgId, "", nil)
 			return
 		}
+		
+		perMsgLen := r.Robot.getPerMsgLen()
+		if *conf.AudioConfInfo.TTSType != "" {
+			perMsgLen = AudioMsgLen
+		}
+		
 		dpLLM := rag.NewRag(
 			llm.WithMessageChan(msgChan.NormalMessageChan),
 			llm.WithHTTPMsgChan(msgChan.StrMessageChan),
 			llm.WithContent(content),
 			llm.WithChatId(chatId),
 			llm.WithUserId(userId),
-			llm.WithPerMsgLen(r.Robot.getPerMsgLen()),
+			llm.WithPerMsgLen(perMsgLen),
 			llm.WithToken(r.Token),
 		)
 		qaChain := chains.NewRetrievalQAFromLLM(
@@ -817,6 +829,11 @@ func (r *RobotInfo) ExecLLM(msgContent string, msgChan *MsgChan) {
 		return
 	}
 	
+	perMsgLen := r.Robot.getPerMsgLen()
+	if *conf.AudioConfInfo.TTSType != "" {
+		perMsgLen = AudioMsgLen
+	}
+	
 	llmClient := llm.NewLLM(
 		llm.WithChatId(chatId),
 		llm.WithUserId(userId),
@@ -824,7 +841,7 @@ func (r *RobotInfo) ExecLLM(msgContent string, msgChan *MsgChan) {
 		llm.WithMessageChan(msgChan.NormalMessageChan),
 		llm.WithHTTPMsgChan(msgChan.StrMessageChan),
 		llm.WithContent(content),
-		llm.WithPerMsgLen(r.Robot.getPerMsgLen()),
+		llm.WithPerMsgLen(perMsgLen),
 		llm.WithToken(r.Token),
 	)
 	
@@ -985,10 +1002,10 @@ func (r *RobotInfo) sendMultiAgent(agentType string, emptyPromptFunc func()) {
 			}
 		}()
 		
-		go r.Robot.handleUpdate(&MsgChan{
+		go r.handleUpdate(&MsgChan{
 			NormalMessageChan: dpReq.MessageChan,
 			StrMessageChan:    dpReq.HTTPMsgChan,
-		})
+		}, "")
 	})
 }
 
@@ -1058,17 +1075,71 @@ func (r *RobotInfo) CreateVideo(prompt string, lastImageContent []byte) ([]byte,
 	return videoContent, totalToken, nil
 }
 
-func (r *RobotInfo) GetVoiceBaseTTS(content, encoding string) ([]byte, error) {
+func (r *RobotInfo) GetVoiceBaseTTS(content, encoding string) ([]byte, int, error) {
 	_, _, userId := r.GetChatIdAndMsgIdAndUserID()
 	var ttsContent []byte
 	var err error
-	
+	var duration int
 	switch *conf.AudioConfInfo.TTSType {
 	case param.Vol:
-		ttsContent, _, err = llm.VolTTS(content, userId, encoding)
+		ttsContent, _, duration, err = llm.VolTTS(content, userId, encoding)
 	case param.Gemini:
-		ttsContent, _, err = llm.GeminiTTS(content)
+		ttsContent, _, duration, err = llm.GeminiTTS(content, encoding)
 	}
 	
-	return ttsContent, err
+	return ttsContent, duration, err
+}
+
+func (r *RobotInfo) sendVoice(messageChan *MsgChan, encoding string) {
+	chatId, messageId, _ := r.GetChatIdAndMsgIdAndUserID()
+	var msg *param.MsgInfo
+	for msg = range messageChan.NormalMessageChan {
+		if msg.Finished {
+			voiceContent, duration, err := r.GetVoiceBaseTTS(msg.Content, encoding)
+			if err != nil {
+				logger.Error("tts fail", "err", err)
+				r.SendMsg(chatId, err.Error(), messageId, "", nil)
+				continue
+			}
+			err = r.Robot.sendVoiceContent(voiceContent, duration)
+			if err != nil {
+				logger.Error("sendVoice fail", "err", err)
+				r.SendMsg(chatId, err.Error(), messageId, "", nil)
+				continue
+			}
+		}
+	}
+	
+	if msg == nil || len(msg.Content) == 0 {
+		msg = new(param.MsgInfo)
+		return
+	}
+	
+	voiceContent, duration, err := r.GetVoiceBaseTTS(msg.Content, encoding)
+	if err != nil {
+		logger.Error("tts fail", "err", err)
+		r.SendMsg(chatId, err.Error(), messageId, "", nil)
+		return
+	}
+	err = r.Robot.sendVoiceContent(voiceContent, duration)
+	if err != nil {
+		logger.Error("sendVoice fail", "err", err)
+		r.SendMsg(chatId, err.Error(), messageId, "", nil)
+		return
+	}
+}
+
+func (r *RobotInfo) handleUpdate(messageChan *MsgChan, encoding string) {
+	defer func() {
+		if err := recover(); err != nil {
+			logger.Error("handleUpdate panic err", "err", err, "stack", string(debug.Stack()))
+		}
+	}()
+	
+	if *conf.AudioConfInfo.TTSType != "" && encoding != "" {
+		r.sendVoice(messageChan, encoding)
+	} else {
+		r.Robot.sendText(messageChan)
+	}
+	
 }

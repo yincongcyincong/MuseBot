@@ -198,7 +198,7 @@ func (t *TelegramRobot) executeChain(content string) {
 	go t.Robot.ExecChain(content, messageChan)
 	
 	// send response message
-	go t.handleUpdate(messageChan)
+	go t.Robot.handleUpdate(messageChan, "ogg")
 	
 }
 
@@ -210,71 +210,8 @@ func (t *TelegramRobot) executeLLM(content string) {
 	go t.Robot.ExecLLM(content, messageChan)
 	
 	// send response message
-	go t.handleUpdate(messageChan)
+	go t.Robot.handleUpdate(messageChan, "ogg")
 	
-}
-
-// handleUpdate handle robot msg sending
-func (t *TelegramRobot) handleUpdate(messageChan *MsgChan) {
-	defer func() {
-		if err := recover(); err != nil {
-			logger.Error("handleUpdate panic err", "err", err, "stack", string(debug.Stack()))
-		}
-	}()
-	
-	var msg *param.MsgInfo
-	
-	chatIdStr, msgIdStr, _ := t.Robot.GetChatIdAndMsgIdAndUserID()
-	msgId := utils.ParseInt(msgIdStr)
-	chatId := int64(utils.ParseInt(chatIdStr))
-	parseMode := tgbotapi.ModeMarkdown
-	
-	for msg = range messageChan.NormalMessageChan {
-		if len(msg.Content) == 0 {
-			msg.Content = "get nothing from llm!"
-		}
-		
-		if msg.MsgId == "" {
-			tgMsgInfo := tgbotapi.NewMessage(chatId, msg.Content)
-			tgMsgInfo.ReplyToMessageID = msgId
-			tgMsgInfo.ParseMode = parseMode
-			sendInfo, err := t.Bot.Send(tgMsgInfo)
-			if err != nil {
-				if sleepUtilNoLimit(msgId, err) {
-					sendInfo, err = t.Bot.Send(tgMsgInfo)
-				} else if strings.Contains(err.Error(), "can't parse entities") {
-					tgMsgInfo.ParseMode = ""
-					sendInfo, err = t.Bot.Send(tgMsgInfo)
-				} else {
-					_, err = t.Bot.Send(tgMsgInfo)
-				}
-				if err != nil {
-					logger.Warn("Error sending message:", "msgID", msgId, "err", err)
-					continue
-				}
-			}
-			msg.MsgId = strconv.Itoa(sendInfo.MessageID)
-		} else {
-			updateMsg := tgbotapi.NewEditMessageText(chatId, utils.ParseInt(msg.MsgId), msg.Content)
-			updateMsg.ParseMode = parseMode
-			_, err := t.Bot.Send(updateMsg)
-			if err != nil {
-				// try again
-				if sleepUtilNoLimit(msgId, err) {
-					_, err = t.Bot.Send(updateMsg)
-				} else if strings.Contains(err.Error(), "can't parse entities") {
-					updateMsg.ParseMode = ""
-					_, err = t.Bot.Send(updateMsg)
-				} else {
-					_, err = t.Bot.Send(updateMsg)
-				}
-				if err != nil {
-					logger.Warn("Error editing message", "msgID", msgId, "err", err)
-				}
-			}
-		}
-		
-	}
 }
 
 // sleepUtilNoLimit handle "Too Many Requests" error
@@ -827,4 +764,75 @@ func ForceReply(chatId int64, msgId int, i18MsgId string, bot *tgbotapi.BotAPI) 
 	msg.ReplyToMessageID = msgId
 	_, err := bot.Send(msg)
 	return err
+}
+
+func (t *TelegramRobot) sendText(messageChan *MsgChan) {
+	var msg *param.MsgInfo
+	chatIdStr, msgIdStr, _ := t.Robot.GetChatIdAndMsgIdAndUserID()
+	msgId := utils.ParseInt(msgIdStr)
+	chatId := int64(utils.ParseInt(chatIdStr))
+	parseMode := tgbotapi.ModeMarkdown
+	
+	for msg = range messageChan.NormalMessageChan {
+		if len(msg.Content) == 0 {
+			msg.Content = "get nothing from llm!"
+		}
+		
+		if msg.MsgId == "" {
+			tgMsgInfo := tgbotapi.NewMessage(chatId, msg.Content)
+			tgMsgInfo.ReplyToMessageID = msgId
+			tgMsgInfo.ParseMode = parseMode
+			sendInfo, err := t.Bot.Send(tgMsgInfo)
+			if err != nil {
+				if sleepUtilNoLimit(msgId, err) {
+					sendInfo, err = t.Bot.Send(tgMsgInfo)
+				} else if strings.Contains(err.Error(), "can't parse entities") {
+					tgMsgInfo.ParseMode = ""
+					sendInfo, err = t.Bot.Send(tgMsgInfo)
+				} else {
+					_, err = t.Bot.Send(tgMsgInfo)
+				}
+				if err != nil {
+					logger.Warn("Error sending message:", "msgID", msgId, "err", err)
+					continue
+				}
+			}
+			msg.MsgId = strconv.Itoa(sendInfo.MessageID)
+		} else {
+			updateMsg := tgbotapi.NewEditMessageText(chatId, utils.ParseInt(msg.MsgId), msg.Content)
+			updateMsg.ParseMode = parseMode
+			_, err := t.Bot.Send(updateMsg)
+			if err != nil {
+				// try again
+				if sleepUtilNoLimit(msgId, err) {
+					_, err = t.Bot.Send(updateMsg)
+				} else if strings.Contains(err.Error(), "can't parse entities") {
+					updateMsg.ParseMode = ""
+					_, err = t.Bot.Send(updateMsg)
+				} else {
+					_, err = t.Bot.Send(updateMsg)
+				}
+				if err != nil {
+					logger.Warn("Error editing message", "msgID", msgId, "err", err)
+				}
+			}
+		}
+		
+	}
+}
+
+func (t *TelegramRobot) sendVoiceContent(voiceContent []byte, duration int) error {
+	chatIdStr, _, _ := t.Robot.GetChatIdAndMsgIdAndUserID()
+	chatId := int64(utils.ParseInt(chatIdStr))
+	
+	_, err := t.Bot.Send(tgbotapi.NewVoice(chatId, tgbotapi.FileBytes{
+		Name:  "voice." + utils.DetectAudioFormat(voiceContent),
+		Bytes: voiceContent,
+	}))
+	if err != nil {
+		logger.Warn("send voice fail", "err", err)
+		return err
+	}
+	
+	return nil
 }

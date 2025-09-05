@@ -7,11 +7,13 @@ import (
 	
 	openrouter "github.com/revrost/go-openrouter"
 	"github.com/stretchr/testify/assert"
+	"github.com/yincongcyincong/MuseBot/conf"
 	"github.com/yincongcyincong/MuseBot/db"
 	"github.com/yincongcyincong/MuseBot/param"
 )
 
 func TestAIRouterReq_GetModel_Default(t *testing.T) {
+	*conf.BaseConfInfo.Type = param.OpenRouter
 	mock := &AIRouterReq{}
 	l := &LLM{UserId: "non-exist"}
 	
@@ -21,6 +23,7 @@ func TestAIRouterReq_GetModel_Default(t *testing.T) {
 
 func TestAIRouterReq_GetModel_UserMode(t *testing.T) {
 	
+	*conf.BaseConfInfo.Type = param.OpenRouter
 	mock := &AIRouterReq{}
 	l := &LLM{UserId: "1"}
 	mock.GetModel(l)

@@ -9,9 +9,11 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os/exec"
 	
 	"github.com/gorilla/websocket"
 	"github.com/satori/go.uuid"
+	"github.com/wdvxdr1123/go-silk"
 	"github.com/yincongcyincong/MuseBot/logger"
 )
 
@@ -296,4 +298,207 @@ func (client *AsrClient) parseResponse(msg []byte) (AsrResponse, error) {
 		}
 	}
 	return asrResponse, nil
+}
+
+func SilkToWav(silkBytes []byte) ([]byte, error) {
+	pcm, err := silk.DecodeSilkBuffToPcm(silkBytes, 16000)
+	if err != nil {
+		return nil, err
+	}
+	var buf bytes.Buffer
+	dataLen := uint32(len(pcm))
+	var chunkSize = 36 + dataLen
+	binary.Write(&buf, binary.LittleEndian, []byte("RIFF"))
+	binary.Write(&buf, binary.LittleEndian, chunkSize)
+	binary.Write(&buf, binary.LittleEndian, []byte("WAVEfmt "))
+	binary.Write(&buf, binary.LittleEndian, uint32(16)) // fmt chunk size
+	binary.Write(&buf, binary.LittleEndian, uint16(1))  // PCM
+	binary.Write(&buf, binary.LittleEndian, uint16(1))  // channels
+	binary.Write(&buf, binary.LittleEndian, uint32(16000))
+	binary.Write(&buf, binary.LittleEndian, uint32(16000*2))
+	binary.Write(&buf, binary.LittleEndian, uint16(2))
+	binary.Write(&buf, binary.LittleEndian, uint16(16))
+	binary.Write(&buf, binary.LittleEndian, []byte("data"))
+	binary.Write(&buf, binary.LittleEndian, dataLen)
+	buf.Write(pcm)
+	return buf.Bytes(), nil
+}
+
+func SilkToMp3(silkBytes []byte) ([]byte, error) {
+	pcm, err := silk.DecodeSilkBuffToPcm(silkBytes, 16000)
+	if err != nil {
+		return nil, err
+	}
+	
+	cmd := exec.Command("ffmpeg",
+		"-f", "s16le",
+		"-ar", "16000",
+		"-ac", "1",
+		"-i", "pipe:0",
+		"-codec:a", "libmp3lame",
+		"-b:a", "192k",
+		"-f", "mp3",
+		"pipe:1",
+	)
+	cmd.Stdin = bytes.NewReader(pcm)
+	
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	
+	if err := cmd.Run(); err != nil {
+		return nil, fmt.Errorf("ffmpeg error: %v, details: %s", err, stderr.String())
+	}
+	
+	return out.Bytes(), nil
+}
+
+func AmrToOgg(amrData []byte) ([]byte, error) {
+	cmd := exec.Command("ffmpeg",
+		"-f", "amr",
+		"-i", "pipe:0",
+		"-ar", "16000",
+		"-c:a", "libopus",
+		"-f", "ogg",
+		"pipe:1",
+	)
+	
+	cmd.Stdin = bytes.NewReader(amrData)
+	
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	
+	if err := cmd.Run(); err != nil {
+		return nil, fmt.Errorf("ffmpeg error: %v, details: %s", err, stderr.String())
+	}
+	
+	return out.Bytes(), nil
+}
+
+func PCMToAMR(pcmData []byte, sampleRate int, channels int) ([]byte, error) {
+	cmd := exec.Command("ffmpeg",
+		"-f", "s16le",
+		"-ar", fmt.Sprintf("%d", sampleRate),
+		"-ac", fmt.Sprintf("%d", channels),
+		"-i", "pipe:0",
+		"-ar", "8000",
+		"-ac", "1",
+		"-ab", "12.2k",
+		"-f", "amr",
+		"pipe:1",
+	)
+	
+	cmd.Stdin = bytes.NewReader(pcmData)
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	
+	if err := cmd.Run(); err != nil {
+		return nil, fmt.Errorf("ffmpeg error: %v, %s", err, stderr.String())
+	}
+	
+	return out.Bytes(), nil
+}
+
+func PCMToOGG(pcmBytes []byte, sampleRate int) ([]byte, error) {
+	cmd := exec.Command("ffmpeg",
+		"-f", "s16le",
+		"-ar", fmt.Sprintf("%d", sampleRate),
+		"-ac", "1",
+		"-i", "-",
+		"-c:a", "libopus",
+		"-f", "ogg",
+		"-",
+	)
+	
+	cmd.Stdin = bytes.NewReader(pcmBytes)
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	
+	err := cmd.Run()
+	if err != nil {
+		return nil, fmt.Errorf("ffmpeg error: %v, %s", err, stderr.String())
+	}
+	
+	return out.Bytes(), nil
+}
+
+func PCMToMP3(pcmBytes []byte, sampleRate int, channels int) ([]byte, error) {
+	cmd := exec.Command("ffmpeg",
+		"-f", "s16le",
+		"-ar", fmt.Sprintf("%d", sampleRate),
+		"-ac", fmt.Sprintf("%d", channels),
+		"-i", "-",
+		"-f", "mp3",
+		"-",
+	)
+	
+	cmd.Stdin = bytes.NewReader(pcmBytes)
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	
+	if err := cmd.Run(); err != nil {
+		return nil, fmt.Errorf("ffmpeg error: %v, %s", err, stderr.String())
+	}
+	
+	return out.Bytes(), nil
+}
+
+func AmrToMp3(amrData []byte) ([]byte, error) {
+	cmd := exec.Command("ffmpeg",
+		"-f", "amr",
+		"-i", "pipe:0",
+		"-ar", "16000",
+		"-ac", "2",
+		"-c:a", "libmp3lame",
+		"-b:a", "192k",
+		"-f", "mp3",
+		"pipe:1",
+	)
+	
+	cmd.Stdin = bytes.NewReader(amrData)
+	
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	
+	if err := cmd.Run(); err != nil {
+		return nil, fmt.Errorf("ffmpeg error: %v, details: %s", err, stderr.String())
+	}
+	
+	return out.Bytes(), nil
+}
+
+func TruncateText(text string, maxBytes int) string {
+	data := []byte(text)
+	if len(data) <= maxBytes {
+		return text
+	}
+	
+	end := maxBytes
+	for end > 0 && (data[end]&0xC0) == 0x80 {
+		end--
+	}
+	if end == 0 {
+		end = maxBytes
+	}
+	
+	return string(data[:end])
+}
+
+func PCMDuration(fileSize, sampleRate, channels, bitDepth int) int {
+	bytesPerSample := bitDepth / 8
+	durationSeconds := float64(fileSize) / float64(sampleRate*channels*bytesPerSample)
+	return int(durationSeconds * 1000)
 }

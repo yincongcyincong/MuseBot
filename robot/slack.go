@@ -238,7 +238,7 @@ func (s *SlackRobot) executeChain(content string) {
 	}
 	go s.Robot.ExecChain(content, messageChan)
 	
-	go s.handleUpdate(messageChan)
+	go s.Robot.handleUpdate(messageChan, "mp3")
 }
 
 func (s *SlackRobot) executeLLM(content string) {
@@ -247,47 +247,7 @@ func (s *SlackRobot) executeLLM(content string) {
 	}
 	go s.Robot.ExecLLM(content, messageChan)
 	
-	go s.handleUpdate(messageChan)
-}
-
-func (s *SlackRobot) handleUpdate(messageChan *MsgChan) {
-	defer func() {
-		if err := recover(); err != nil {
-			logger.Error("handleUpdate panic err", "err", err, "stack", string(debug.Stack()))
-		}
-	}()
-	
-	chatId, messageId, _ := s.Robot.GetChatIdAndMsgIdAndUserID()
-	
-	for msg := range messageChan.NormalMessageChan {
-		if msg.Content == "" {
-			msg.Content = "get nothing from llm!"
-		}
-		
-		if msg.MsgId == "" {
-			newMsgTimestamp, _, err := s.Client.PostMessage(
-				chatId,
-				slack.MsgOptionText(msg.Content, false),
-				slack.MsgOptionTS(messageId),
-			)
-			if err != nil {
-				logger.Error("send new message failed", "err", err)
-				continue
-			}
-			msg.MsgId = newMsgTimestamp
-		} else {
-			_, _, _, err := s.Client.UpdateMessage(
-				chatId,
-				msg.MsgId,
-				slack.MsgOptionText(msg.Content, false),
-				slack.MsgOptionTS(messageId),
-			)
-			if err != nil {
-				logger.Error("update message failed", "err", err)
-				continue
-			}
-		}
-	}
+	go s.Robot.handleUpdate(messageChan, "mp3")
 }
 
 func (s *SlackRobot) getContent(content string) (string, error) {
@@ -654,4 +614,57 @@ func (s *SlackRobot) getPrompt() string {
 
 func (s *SlackRobot) getPerMsgLen() int {
 	return 1800
+}
+
+func (s *SlackRobot) sendText(messageChan *MsgChan) {
+	chatId, messageId, _ := s.Robot.GetChatIdAndMsgIdAndUserID()
+	
+	for msg := range messageChan.NormalMessageChan {
+		if msg.Content == "" {
+			msg.Content = "get nothing from llm!"
+		}
+		
+		if msg.MsgId == "" {
+			newMsgTimestamp, _, err := s.Client.PostMessage(
+				chatId,
+				slack.MsgOptionText(msg.Content, false),
+				slack.MsgOptionTS(messageId),
+			)
+			if err != nil {
+				logger.Error("send new message failed", "err", err)
+				continue
+			}
+			msg.MsgId = newMsgTimestamp
+		} else {
+			_, _, _, err := s.Client.UpdateMessage(
+				chatId,
+				msg.MsgId,
+				slack.MsgOptionText(msg.Content, false),
+				slack.MsgOptionTS(messageId),
+			)
+			if err != nil {
+				logger.Error("update message failed", "err", err)
+				continue
+			}
+		}
+	}
+}
+
+func (s *SlackRobot) sendVoiceContent(voiceContent []byte, duration int) error {
+	chatId, _, _ := s.Robot.GetChatIdAndMsgIdAndUserID()
+	uploadParams := slack.UploadFileV2Parameters{
+		Filename: "voice." + utils.DetectVideoMimeType(voiceContent),
+		Reader:   bytes.NewReader(voiceContent),
+		Title:    "voice",
+		FileSize: len(voiceContent),
+		Channel:  chatId,
+	}
+	
+	_, err := s.Client.UploadFileV2(uploadParams)
+	if err != nil {
+		logger.Warn("upload voice to slack fail", "err", err)
+		return err
+	}
+	
+	return nil
 }

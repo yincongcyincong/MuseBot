@@ -100,8 +100,8 @@ func (d *DiscordRobot) executeChain(content string) {
 	}
 	
 	go d.Robot.ExecChain(content, messageChan)
-	// send response message
-	go d.handleUpdate(messageChan)
+	
+	go d.Robot.handleUpdate(messageChan, "mp3")
 }
 
 func (d *DiscordRobot) executeLLM(content string) {
@@ -109,19 +109,12 @@ func (d *DiscordRobot) executeLLM(content string) {
 		NormalMessageChan: make(chan *param.MsgInfo),
 	}
 	
-	// request DeepSeek API
 	go d.Robot.ExecLLM(content, messageChan)
 	
-	// send response message
-	go d.handleUpdate(messageChan)
+	go d.Robot.handleUpdate(messageChan, "mp3")
 }
 
-func (d *DiscordRobot) handleUpdate(messageChan *MsgChan) {
-	defer func() {
-		if err := recover(); err != nil {
-			logger.Error("handleUpdateDiscord panic", "err", err, "stack", string(debug.Stack()))
-		}
-	}()
+func (d *DiscordRobot) sendText(messageChan *MsgChan) {
 	
 	var originalMsgID string
 	var channelID string
@@ -630,4 +623,23 @@ func (d *DiscordRobot) getPrompt() string {
 
 func (d *DiscordRobot) getPerMsgLen() int {
 	return 1800
+}
+
+func (d *DiscordRobot) sendVoiceContent(voiceContent []byte, duration int) error {
+	var err error
+	if d.Msg != nil {
+		_, err = d.Session.ChannelFileSend(d.Msg.ChannelID, "voice."+utils.DetectImageFormat(voiceContent), bytes.NewReader(voiceContent))
+		
+	} else if d.Inter != nil {
+		_, err = d.Session.InteractionResponseEdit(d.Inter.Interaction, &discordgo.WebhookEdit{
+			Files: []*discordgo.File{
+				{
+					Name:   "voice." + utils.DetectImageFormat(voiceContent),
+					Reader: bytes.NewReader(voiceContent),
+				},
+			},
+		})
+	}
+	
+	return err
 }
