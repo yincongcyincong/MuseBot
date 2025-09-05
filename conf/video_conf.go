@@ -39,7 +39,7 @@ func InitVideoConf() {
 
 func EnvVideoConf() {
 	if os.Getenv("VOL_VIDEO_MODEL") != "" {
-		*VideoConfInfo.VolVideoModel = os.Getenv("VIDEO_MODEL")
+		*VideoConfInfo.VolVideoModel = os.Getenv("VOL_VIDEO_MODEL")
 	}
 	
 	if os.Getenv("RADIO") != "" {

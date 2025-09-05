@@ -433,30 +433,14 @@ func (w *WechatRobot) executeChain() {
 	}
 	go w.Robot.ExecChain(w.Prompt, messageChan)
 	
-	// send response message
-	go w.handleUpdate(messageChan)
-}
-
-func (w *WechatRobot) handleUpdate(messageChan *MsgChan) {
-	defer func() {
-		if err := recover(); err != nil {
-			logger.Error("handleUpdate panic err", "err", err, "stack", string(debug.Stack()))
-		}
-	}()
-	
-	if *conf.AudioConfInfo.TTSType != "" {
-		w.sendVoice(messageChan)
-	} else {
-		w.sendText(messageChan)
-	}
-	
+	go w.Robot.handleUpdate(messageChan, "amr")
 }
 
 func (w *WechatRobot) executeLLM() {
 	messageChan := &MsgChan{
 		NormalMessageChan: make(chan *param.MsgInfo),
 	}
-	go w.handleUpdate(messageChan)
+	go w.Robot.handleUpdate(messageChan, "amr")
 	
 	go w.Robot.ExecLLM(w.Prompt, messageChan)
 	
@@ -663,63 +647,23 @@ func (w *WechatRobot) sendText(messageChan *MsgChan) {
 	w.Robot.SendMsg(chatId, msg.Content, messageId, "", nil)
 }
 
-func (w *WechatRobot) sendVoice(messageChan *MsgChan) {
-	chatId, messageId, _ := w.Robot.GetChatIdAndMsgIdAndUserID()
-	var msg *param.MsgInfo
-	for msg = range messageChan.NormalMessageChan {
-		if msg.Finished {
-			voiceContent, err := w.Robot.GetVoiceBaseTTS(msg.Content, "mp3")
-			if err != nil {
-				logger.Error("tts fail", "err", err)
-				w.Robot.SendMsg(chatId, err.Error(), messageId, "", nil)
-				continue
-			}
-			err = w.sendVoiceContent(voiceContent)
-			if err != nil {
-				logger.Error("sendVoice fail", "err", err)
-				w.Robot.SendMsg(chatId, err.Error(), messageId, "", nil)
-				continue
-			}
-			
-		}
-	}
-	
-	if msg == nil || len(msg.Content) == 0 {
-		msg = new(param.MsgInfo)
-		return
-	}
-	
-	voiceContent, err := w.Robot.GetVoiceBaseTTS(msg.Content, "mp3")
-	if err != nil {
-		logger.Error("tts fail", "err", err)
-		w.Robot.SendMsg(chatId, err.Error(), messageId, "", nil)
-		return
-	}
-	err = w.sendVoiceContent(voiceContent)
-	if err != nil {
-		logger.Error("sendVoice fail", "err", err)
-		w.Robot.SendMsg(chatId, err.Error(), messageId, "", nil)
-		return
-	}
-}
-
-func (w *WechatRobot) sendVoiceContent(voiceContent []byte) error {
+func (w *WechatRobot) sendVoiceContent(voiceContent []byte, duration int) error {
 	fileName := utils.GetAbsPath("data/" + utils.RandomFilename(utils.DetectAudioFormat(voiceContent)))
 	err := os.WriteFile(fileName, voiceContent, 0666)
 	if err != nil {
-		logger.Error("save image fail", "err", err)
+		logger.Error("save voice fail", "err", err)
 		return err
 	}
 	
 	mediaResp, err := w.App.Media.UploadVoice(w.Ctx, fileName)
 	if err != nil {
-		logger.Error("upload image fail", "err", err)
+		logger.Error("upload voice fail", "err", err)
 		return err
 	}
 	resp, err := w.App.CustomerService.Message(w.Ctx, messages.NewMedia(mediaResp.MediaID, "voice", nil)).
 		SetTo(w.Event.GetFromUserName()).SetBy(w.Event.GetToUserName()).Send(w.Ctx)
 	if err != nil {
-		logger.Error("send image fail", "err", err, "resp", resp)
+		logger.Error("send voice fail", "err", err, "resp", resp)
 		return err
 	}
 	

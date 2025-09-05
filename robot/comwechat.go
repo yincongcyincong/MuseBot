@@ -398,16 +398,10 @@ func (c *ComWechatRobot) executeChain() {
 	go c.Robot.ExecChain(c.Prompt, messageChan)
 	
 	// send response message
-	go c.handleUpdate(messageChan)
+	go c.Robot.handleUpdate(messageChan, "amr")
 }
 
-func (c *ComWechatRobot) handleUpdate(messageChan *MsgChan) {
-	defer func() {
-		if err := recover(); err != nil {
-			logger.Error("handleUpdate panic err", "err", err, "stack", string(debug.Stack()))
-		}
-	}()
-	
+func (c *ComWechatRobot) sendText(messageChan *MsgChan) {
 	var msg *param.MsgInfo
 	
 	chatId, messageId, _ := c.Robot.GetChatIdAndMsgIdAndUserID()
@@ -430,7 +424,7 @@ func (c *ComWechatRobot) executeLLM() {
 	messageChan := &MsgChan{
 		NormalMessageChan: make(chan *param.MsgInfo),
 	}
-	go c.handleUpdate(messageChan)
+	go c.Robot.handleUpdate(messageChan, "amr")
 	
 	go c.Robot.ExecLLM(c.Prompt, messageChan)
 	
@@ -595,4 +589,38 @@ func (c *ComWechatRobot) getMedia() ([]byte, error) {
 	}
 	
 	return data, nil
+}
+
+func (c *ComWechatRobot) sendVoiceContent(voiceContent []byte, duration int) error {
+	_, _, userId := c.Robot.GetChatIdAndMsgIdAndUserID()
+	
+	fileName := utils.GetAbsPath("data/" + utils.RandomFilename(utils.DetectAudioFormat(voiceContent)))
+	err := os.WriteFile(fileName, voiceContent, 0666)
+	if err != nil {
+		logger.Error("save voice fail", "err", err)
+		return err
+	}
+	
+	mediaResp, err := c.App.Media.UploadTempVoice(c.Ctx, fileName, nil)
+	if err != nil {
+		logger.Error("upload voice fail", "err", err)
+		return err
+	}
+	resp, err := c.App.Message.SendVoice(c.Ctx, &request.RequestMessageSendVoice{
+		RequestMessageSend: request.RequestMessageSend{
+			ToUser:                 userId,
+			MsgType:                "voice",
+			AgentID:                utils.ParseInt(*conf.BaseConfInfo.ComWechatAgentID),
+			DuplicateCheckInterval: 1800,
+		},
+		Voice: &request.RequestVoice{
+			MediaID: mediaResp.MediaID,
+		},
+	})
+	if err != nil {
+		logger.Error("send image fail", "err", err, "resp", resp)
+		return err
+	}
+	
+	return nil
 }

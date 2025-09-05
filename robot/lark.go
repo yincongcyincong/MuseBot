@@ -389,19 +389,11 @@ func (l *LarkRobot) executeChain() {
 	}
 	go l.Robot.ExecChain(l.Prompt, messageChan)
 	
-	// send response message
-	go l.handleUpdate(messageChan)
+	go l.Robot.handleUpdate(messageChan, "amr")
 }
 
-func (l *LarkRobot) handleUpdate(messageChan *MsgChan) {
-	defer func() {
-		if err := recover(); err != nil {
-			logger.Error("handleUpdate panic err", "err", err, "stack", string(debug.Stack()))
-		}
-	}()
-	
+func (l *LarkRobot) sendText(messageChan *MsgChan) {
 	var msg *param.MsgInfo
-	
 	_, messageId, _ := l.Robot.GetChatIdAndMsgIdAndUserID()
 	for msg = range messageChan.NormalMessageChan {
 		if len(msg.Content) == 0 {
@@ -442,7 +434,7 @@ func (l *LarkRobot) executeLLM() {
 	messageChan := &MsgChan{
 		NormalMessageChan: make(chan *param.MsgInfo),
 	}
-	go l.handleUpdate(messageChan)
+	go l.Robot.handleUpdate(messageChan, "amr")
 	
 	go l.Robot.ExecLLM(l.Prompt, messageChan)
 	
@@ -656,4 +648,43 @@ func (l *LarkRobot) getPrompt() string {
 
 func (l *LarkRobot) getPerMsgLen() int {
 	return 4500
+}
+
+func (l *LarkRobot) sendVoiceContent(voiceContent []byte, duration int) error {
+	_, messageId, _ := l.Robot.GetChatIdAndMsgIdAndUserID()
+	
+	format := utils.DetectAudioFormat(voiceContent)
+	resp, err := l.Client.Im.V1.File.Create(l.Ctx, larkim.NewCreateFileReqBuilder().
+		Body(larkim.NewCreateFileReqBodyBuilder().
+			FileType(format).
+			FileName(utils.RandomFilename(format)).
+			Duration(duration).
+			File(bytes.NewReader(voiceContent)).
+			Build()).
+		Build())
+	if err != nil || !resp.Success() {
+		logger.Warn("create voice fail", "err", err, "resp", resp)
+		return err
+	}
+	
+	msgContent, _ := larkim.NewMessagePost().ZhCn(larkim.NewMessagePostContent().AppendContent(
+		[]larkim.MessagePostElement{
+			&larkim.MessagePostMedia{
+				FileKey: larkcore.StringValue(resp.Data.FileKey),
+			},
+		}).Build()).Build()
+	
+	updateRes, err := l.Client.Im.Message.Reply(l.Ctx, larkim.NewReplyMessageReqBuilder().
+		MessageId(messageId).
+		Body(larkim.NewReplyMessageReqBodyBuilder().
+			MsgType(larkim.MsgTypeAudio).
+			Content(GetMarkdownContent(msgContent)).
+			Build()).
+		Build())
+	if err != nil || !updateRes.Success() {
+		logger.Warn("send message fail", "err", err, "resp", resp)
+		return err
+	}
+	
+	return err
 }

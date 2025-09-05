@@ -9,6 +9,7 @@ import (
 	"time"
 	"unicode"
 	
+	"github.com/wdvxdr1123/go-silk"
 	"github.com/yincongcyincong/MuseBot/conf"
 	"github.com/yincongcyincong/MuseBot/db"
 	"github.com/yincongcyincong/MuseBot/i18n"
@@ -548,14 +549,14 @@ func GetGeminiImageContent(imageContent []byte, content string) (string, int, er
 	
 }
 
-func GeminiTTS(content string) ([]byte, int, error) {
+func GeminiTTS(content, encoding string) ([]byte, int, int, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 	
 	client, err := GetGeminiClient(ctx)
 	if err != nil {
 		logger.Error("create client fail", "err", err)
-		return nil, 0, err
+		return nil, 0, 0, err
 	}
 	
 	parts := []*genai.Part{
@@ -588,22 +589,32 @@ func GeminiTTS(content string) ([]byte, int, error) {
 	
 	if err != nil {
 		logger.Error("generate audio fail", "err", err)
-		return nil, 0, err
+		return nil, 0, 0, err
 	}
 	
 	if len(response.Candidates) > 0 {
 		for _, part := range response.Candidates[0].Content.Parts {
 			if part.InlineData != nil {
-				data, err := utils.PCMToAMR(part.InlineData.Data, 24000, 1)
+				var data []byte
+				switch encoding {
+				case "amr":
+					data, err = utils.PCMToAMR(part.InlineData.Data, 24000, 1)
+				case "ogg":
+					data, err = utils.PCMToOGG(part.InlineData.Data, 24000)
+				case "mp3":
+					data, err = utils.PCMToMP3(part.InlineData.Data, 24000, 1)
+				case "silk":
+					data, err = silk.EncodePcmBuffToSilk(part.InlineData.Data, 24000, 1, true)
+				}
 				if err != nil {
 					logger.Error("convert audio fail", "err", err)
 				}
-				return data, int(response.UsageMetadata.TotalTokenCount), nil
+				return data, int(response.UsageMetadata.TotalTokenCount), utils.PCMDuration(len(data), 24000, 1, 16), nil
 			}
 		}
 	}
 	
-	return nil, 0, errors.New("audio is empty")
+	return nil, 0, 0, errors.New("audio is empty")
 }
 
 func GetGeminiClient(ctx context.Context) (*genai.Client, error) {

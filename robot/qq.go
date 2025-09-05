@@ -436,52 +436,12 @@ func (q *QQRobot) executeChain() {
 	go q.Robot.ExecChain(q.Prompt, msgChan)
 	
 	// send response message
-	go q.handleUpdate(msgChan)
-}
-
-func (q *QQRobot) handleUpdate(messageChan *MsgChan) {
-	defer func() {
-		if err := recover(); err != nil {
-			logger.Error("handleUpdate panic err", "err", err, "stack", string(debug.Stack()))
-		}
-	}()
-	
-	chatId, msgId, _ := q.Robot.GetChatIdAndMsgIdAndUserID()
-	if messageChan.NormalMessageChan != nil {
-		var msg *param.MsgInfo
-		for msg = range messageChan.NormalMessageChan {
-			if msg.Finished {
-				q.Robot.SendMsg(chatId, msg.Content, msgId, "", nil)
-			}
-		}
-		
-		if msg != nil {
-			q.Robot.SendMsg(chatId, msg.Content, msgId, "", nil)
-		}
-	} else {
-		var id string
-		var err error
-		idx := int32(0)
-		
-		for msg := range messageChan.StrMessageChan {
-			id, err = q.PostStreamMessage(1, idx, id, msg)
-			if err != nil {
-				logger.Warn("send stream msg fail", "err", err)
-			}
-			idx++
-		}
-		
-		_, err = q.PostStreamMessage(10, idx, id, " ")
-		if err != nil {
-			logger.Warn("send stream msg fail", "err", err)
-		}
-	}
-	
+	go q.Robot.handleUpdate(msgChan, "silk")
 }
 
 func (q *QQRobot) executeLLM() {
 	var msgChan *MsgChan
-	if q.C2CMessage != nil {
+	if q.C2CMessage != nil && *conf.AudioConfInfo.TTSType == "" {
 		msgChan = &MsgChan{
 			StrMessageChan: make(chan string),
 		}
@@ -491,7 +451,7 @@ func (q *QQRobot) executeLLM() {
 		}
 	}
 	
-	go q.handleUpdate(msgChan)
+	go q.Robot.handleUpdate(msgChan, "silk")
 	
 	go q.Robot.ExecLLM(q.Prompt, msgChan)
 	
@@ -814,4 +774,48 @@ func (q *QQRobot) passiveExecCmd() {
 			}
 		}
 	})
+}
+
+func (q *QQRobot) sendText(messageChan *MsgChan) {
+	chatId, msgId, _ := q.Robot.GetChatIdAndMsgIdAndUserID()
+	if messageChan.NormalMessageChan != nil {
+		var msg *param.MsgInfo
+		for msg = range messageChan.NormalMessageChan {
+			if msg.Finished {
+				q.Robot.SendMsg(chatId, msg.Content, msgId, "", nil)
+			}
+		}
+		
+		if msg != nil {
+			q.Robot.SendMsg(chatId, msg.Content, msgId, "", nil)
+		}
+	} else {
+		var id string
+		var err error
+		idx := int32(0)
+		
+		for msg := range messageChan.StrMessageChan {
+			id, err = q.PostStreamMessage(1, idx, id, msg)
+			if err != nil {
+				logger.Warn("send stream msg fail", "err", err)
+			}
+			idx++
+		}
+		
+		_, err = q.PostStreamMessage(10, idx, id, " ")
+		if err != nil {
+			logger.Warn("send stream msg fail", "err", err)
+		}
+	}
+}
+
+func (q *QQRobot) sendVoiceContent(voiceContent []byte, duration int) error {
+	base64Content := base64.StdEncoding.EncodeToString(voiceContent)
+	data, err := q.UploadFile(base64Content, 3)
+	if err != nil {
+		logger.Warn("upload file fail", "err", err)
+		return err
+	}
+	
+	return q.PostRichMediaMessage(data)
 }

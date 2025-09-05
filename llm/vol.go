@@ -602,9 +602,12 @@ type TTSServResponse struct {
 	Operation string `json:"operation"`
 	Sequence  int    `json:"sequence"`
 	Data      string `json:"data"`
+	Addition  struct {
+		Duration string `json:"duration"`
+	} `json:"addition"`
 }
 
-func VolTTS(text, userId, encoding string) ([]byte, int, error) {
+func VolTTS(text, userId, encoding string) ([]byte, int, int, error) {
 	reqID := uuid.NewString()
 	params := make(map[string]map[string]interface{})
 	params["app"] = make(map[string]interface{})
@@ -637,7 +640,7 @@ func VolTTS(text, userId, encoding string) ([]byte, int, error) {
 	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(bodyStr))
 	if err != nil {
 		logger.Error("NewRequest error", "err", err)
-		return nil, 0, err
+		return nil, 0, 0, err
 	}
 	for key, value := range headers {
 		req.Header.Set(key, value)
@@ -647,26 +650,26 @@ func VolTTS(text, userId, encoding string) ([]byte, int, error) {
 	resp, err := httpClient.Do(req)
 	if err != nil {
 		logger.Error("httpClient.Do error", "err", err)
-		return nil, 0, err
+		return nil, 0, 0, err
 	}
 	
 	synResp, err := io.ReadAll(resp.Body)
 	if err != nil {
 		logger.Error("io.ReadAll error", "err", err)
-		return nil, 0, err
+		return nil, 0, 0, err
 	}
 	
 	var respJSON TTSServResponse
 	err = json.Unmarshal(synResp, &respJSON)
 	if err != nil {
-		return nil, 0, err
+		return nil, 0, 0, err
 	}
 	code := respJSON.Code
 	if code != 3000 {
 		logger.Error("resp code fail", "code", code)
-		return nil, 0, errors.New("resp code fail")
+		return nil, 0, 0, errors.New("resp code fail")
 	}
 	
 	audio, _ := base64.StdEncoding.DecodeString(respJSON.Data)
-	return audio, param.AudioTokenUsage, nil
+	return audio, param.AudioTokenUsage, utils.ParseInt(respJSON.Addition.Duration) / 1000, nil
 }

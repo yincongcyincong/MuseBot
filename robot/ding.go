@@ -397,10 +397,10 @@ func (d *DingRobot) executeChain() {
 	go d.Robot.ExecChain(d.Prompt, messageChan)
 	
 	// send response message
-	go d.handleUpdate(messageChan)
+	go d.Robot.handleUpdate(messageChan, "amr")
 }
 
-func (d *DingRobot) handleUpdate(messageChan *MsgChan) {
+func (d *DingRobot) sendText(messageChan *MsgChan) {
 	defer func() {
 		if err := recover(); err != nil {
 			logger.Error("handleUpdate panic err", "err", err, "stack", string(debug.Stack()))
@@ -490,7 +490,7 @@ func (d *DingRobot) executeLLM() {
 	messageChan := &MsgChan{
 		NormalMessageChan: make(chan *param.MsgInfo),
 	}
-	go d.handleUpdate(messageChan)
+	go d.Robot.handleUpdate(messageChan, "amr")
 	
 	go d.Robot.ExecLLM(d.Prompt, messageChan)
 	
@@ -603,6 +603,17 @@ func (d *DingRobot) VideoReplyMarkdown(ctx context.Context, mediaId, format stri
 			"videoMediaId": mediaId,
 			"videoType":    format,
 			"picMediaId":   "muse-bot",
+		},
+	}
+	return d.ReplyMessage(ctx, requestBody)
+}
+
+func (d *DingRobot) VoiceReplyMarkdown(ctx context.Context, mediaId string, duration int) (*DingResp, error) {
+	requestBody := map[string]interface{}{
+		"msgtype": "audio",
+		"audio": map[string]interface{}{
+			"duration": duration,
+			"mediaId":  mediaId,
 		},
 	}
 	return d.ReplyMessage(ctx, requestBody)
@@ -810,4 +821,28 @@ func (d *DingRobot) GetImageContent(accessToken string, c map[string]interface{}
 
 func (d *DingRobot) getPerMsgLen() int {
 	return 4500
+}
+
+func (d *DingRobot) sendVoiceContent(voiceContent []byte, duration int) error {
+	format := utils.DetectAudioFormat(voiceContent)
+	
+	accessToken, err := d.GetAccessToken()
+	if err != nil {
+		logger.Warn("get access token fail", "err", err)
+		return err
+	}
+	
+	mediaId, err := d.UploadFileWithType(accessToken, "voice", "voice."+format, voiceContent)
+	if err != nil {
+		logger.Error("upload file fail", "err", err)
+		return err
+	}
+	
+	_, err = d.VoiceReplyMarkdown(d.Ctx, mediaId, duration)
+	if err != nil {
+		logger.Error("send voice fail", "err", err)
+		return err
+	}
+	
+	return nil
 }

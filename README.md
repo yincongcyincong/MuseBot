@@ -52,14 +52,14 @@ chatgpt: https://www.youtube.com/watch?v=G_DZYMvd5Ug
 
 ## Supported Large Language Models
 
-| Model             | Provider   | Text Generation | Image Generation | Video Generation | Recognize Photo | Link                                 |
-|-------------------|------------|-----------------|:----------------:|:----------------:|----------------:|--------------------------------------|
-| 🌟 **Gemini**     | Google     | ✅               |        ✅         |        ✅         |               ✅ | [doc](https://gemini.google.com/app) |
-| 💬 **ChatGPT**    | OpenAI     | ✅               |        ✅         |        ❌         |               ✅ | [doc](https://chat.openai.com)       |
-| 🐦 **Doubao**     | ByteDance  | ✅               |        ✅         |        ✅         |               ✅ | [doc](https://www.volcengine.com/)   |
-| ⚙️ **302-AI**     | 302-AI     | ✅               |        ✅         |        ✅         |               ✅ | [doc](https://302.ai/)               |
-| 🧠 **DeepSeek**   | DeepSeek   | ✅               |        ❌         |        ❌         |               ❌ | [doc](https://www.deepseek.com/)     |
-| 🌐 **OpenRouter** | OpenRouter | ✅               |        ✅         |        ❌         |               ✅ | [doc](https://openrouter.ai/)        |
+| Model             | Provider   | Text Generation | Image Generation | Video Generation | Recognize Photo | TTS | Link                                 |
+|-------------------|------------|-----------------|:----------------:|:----------------:|----------------:|----:|--------------------------------------|
+| 🌟 **Gemini**     | Google     | ✅               |        ✅         |        ✅         |               ✅ |   ✅ | [doc](https://gemini.google.com/app) |
+| 💬 **ChatGPT**    | OpenAI     | ✅               |        ✅         |        ❌         |               ✅ |   ❌ | [doc](https://chat.openai.com)       |
+| 🐦 **Doubao**     | ByteDance  | ✅               |        ✅         |        ✅         |               ✅ |   ✅ | [doc](https://www.volcengine.com/)   |
+| ⚙️ **302-AI**     | 302-AI     | ✅               |        ✅         |        ✅         |               ✅ |   ❌ | [doc](https://302.ai/)               |
+| 🧠 **DeepSeek**   | DeepSeek   | ✅               |        ❌         |        ❌         |               ❌ |   ❌ | [doc](https://www.deepseek.com/)     |
+| 🌐 **OpenRouter** | OpenRouter | ✅               |        ✅         |        ❌         |               ✅ |   ❌ | [doc](https://openrouter.ai/)        |
 
 ## 🤖 Text Example
 
@@ -246,6 +246,7 @@ recognize photo base on your prompt.
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/b67a2be2-cc5e-4985-90f3-d72c7a9bf4c1" />
 
 ### /save_voice
+
 only for tencent app (wechat, qq, work wechat)
 save your voice to pc.
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/74499d85-4405-43d3-836e-2977de08cb31" />

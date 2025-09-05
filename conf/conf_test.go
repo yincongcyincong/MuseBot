@@ -150,7 +150,7 @@ func TestInitConf_AllEnvVars(t *testing.T) {
 	
 	assertEqual(t, *McpConfPath, "./conf/mcp/mcp.json", "MCP_CONF_PATH")
 	
-	assertEqual(t, *VideoConfInfo.VolVideoModel, "model-v1", "VIDEO_MODEL")
+	assertEqual(t, *VideoConfInfo.VolVideoModel, "model-v1", "VOL_VIDEO_MODEL")
 	assertEqual(t, *VideoConfInfo.Radio, "radio-123", "RADIO")
 	assertInt(t, *VideoConfInfo.Duration, 120, "DURATION")
 	assertInt(t, *VideoConfInfo.FPS, 30, "FPS")
