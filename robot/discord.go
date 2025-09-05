@@ -628,13 +628,13 @@ func (d *DiscordRobot) getPerMsgLen() int {
 func (d *DiscordRobot) sendVoiceContent(voiceContent []byte, duration int) error {
 	var err error
 	if d.Msg != nil {
-		_, err = d.Session.ChannelFileSend(d.Msg.ChannelID, "voice."+utils.DetectImageFormat(voiceContent), bytes.NewReader(voiceContent))
+		_, err = d.Session.ChannelFileSend(d.Msg.ChannelID, "voice."+utils.DetectAudioFormat(voiceContent), bytes.NewReader(voiceContent))
 		
 	} else if d.Inter != nil {
 		_, err = d.Session.InteractionResponseEdit(d.Inter.Interaction, &discordgo.WebhookEdit{
 			Files: []*discordgo.File{
 				{
-					Name:   "voice." + utils.DetectImageFormat(voiceContent),
+					Name:   "voice." + utils.DetectAudioFormat(voiceContent),
 					Reader: bytes.NewReader(voiceContent),
 				},
 			},

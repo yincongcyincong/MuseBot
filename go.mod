@@ -3,7 +3,6 @@ module github.com/yincongcyincong/MuseBot
 go 1.24.0
 
 require (
-	cloud.google.com/go/texttospeech v1.8.1
 	github.com/ArtisanCloud/PowerWeChat/v3 v3.4.22
 	github.com/alibabacloud-go/darabonba-openapi/v2 v2.0.11
 	github.com/alibabacloud-go/dingtalk v1.6.88

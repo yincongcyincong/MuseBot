@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"runtime/debug"
 	"strings"
 	"time"
@@ -139,6 +140,9 @@ func (l *LarkRobot) requestLLMAndResp(content string) {
 }
 
 func (l *LarkRobot) sendHelpConfigurationOptions() {
+	data, _ := os.ReadFile("./data/117eb9b01d9f163db88.aud.mp3")
+	fmt.Println(l.sendVoiceContent(data, 10))
+	
 	chatId, msgId, _ := l.Robot.GetChatIdAndMsgIdAndUserID()
 	l.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "help_text", nil), msgId, tgbotapi.ModeMarkdown, nil)
 }
@@ -322,10 +326,11 @@ func (l *LarkRobot) sendVideo() {
 			return
 		}
 		
+		format := utils.DetectVideoMimeType(videoContent)
 		resp, err := l.Client.Im.V1.File.Create(l.Ctx, larkim.NewCreateFileReqBuilder().
 			Body(larkim.NewCreateFileReqBodyBuilder().
-				FileType(utils.DetectVideoMimeType(videoContent)).
-				FileName(fmt.Sprintf("%s.%s", prompt, utils.DetectVideoMimeType(videoContent))).
+				FileType(format).
+				FileName(utils.RandomFilename(format)).
 				Duration(*conf.VideoConfInfo.Duration).
 				File(bytes.NewReader(videoContent)).
 				Build()).
@@ -389,7 +394,7 @@ func (l *LarkRobot) executeChain() {
 	}
 	go l.Robot.ExecChain(l.Prompt, messageChan)
 	
-	go l.Robot.handleUpdate(messageChan, "amr")
+	go l.Robot.handleUpdate(messageChan, "opus")
 }
 
 func (l *LarkRobot) sendText(messageChan *MsgChan) {
@@ -434,7 +439,7 @@ func (l *LarkRobot) executeLLM() {
 	messageChan := &MsgChan{
 		NormalMessageChan: make(chan *param.MsgInfo),
 	}
-	go l.Robot.handleUpdate(messageChan, "amr")
+	go l.Robot.handleUpdate(messageChan, "opus")
 	
 	go l.Robot.ExecLLM(l.Prompt, messageChan)
 	
@@ -653,37 +658,34 @@ func (l *LarkRobot) getPerMsgLen() int {
 func (l *LarkRobot) sendVoiceContent(voiceContent []byte, duration int) error {
 	_, messageId, _ := l.Robot.GetChatIdAndMsgIdAndUserID()
 	
-	format := utils.DetectAudioFormat(voiceContent)
 	resp, err := l.Client.Im.V1.File.Create(l.Ctx, larkim.NewCreateFileReqBuilder().
 		Body(larkim.NewCreateFileReqBodyBuilder().
-			FileType(format).
-			FileName(utils.RandomFilename(format)).
+			FileType("opus").
+			FileName(utils.RandomFilename(".ogg")).
 			Duration(duration).
 			File(bytes.NewReader(voiceContent)).
 			Build()).
 		Build())
 	if err != nil || !resp.Success() {
 		logger.Warn("create voice fail", "err", err, "resp", resp)
-		return err
+		return errors.New("request upload file fail")
 	}
 	
-	msgContent, _ := larkim.NewMessagePost().ZhCn(larkim.NewMessagePostContent().AppendContent(
-		[]larkim.MessagePostElement{
-			&larkim.MessagePostMedia{
-				FileKey: larkcore.StringValue(resp.Data.FileKey),
-			},
-		}).Build()).Build()
+	audio := larkim.MessageAudio{
+		FileKey: *resp.Data.FileKey,
+	}
+	msgContent, _ := audio.String()
 	
 	updateRes, err := l.Client.Im.Message.Reply(l.Ctx, larkim.NewReplyMessageReqBuilder().
 		MessageId(messageId).
 		Body(larkim.NewReplyMessageReqBodyBuilder().
 			MsgType(larkim.MsgTypeAudio).
-			Content(GetMarkdownContent(msgContent)).
+			Content(msgContent).
 			Build()).
 		Build())
 	if err != nil || !updateRes.Success() {
-		logger.Warn("send message fail", "err", err, "resp", resp)
-		return err
+		logger.Warn("send message fail", "err", err, "resp", updateRes)
+		return errors.New("send voice fail")
 	}
 	
 	return err

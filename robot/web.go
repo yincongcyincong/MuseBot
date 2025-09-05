@@ -526,8 +526,7 @@ func (web *Web) sendChatMessage() {
 func (web *Web) GetContent(content string) (string, error) {
 	var err error
 	if len(web.BodyData) == 0 {
-		logger.Warn("BodyData is empty")
-		return "", errors.New("BodyData is empty")
+		return content, nil
 	}
 	
 	if utils.DetectAudioFormat(web.BodyData) != "unknown" {
