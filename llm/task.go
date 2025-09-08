@@ -120,8 +120,13 @@ func (d *LLMTaskReq) ExecuteTask() error {
 	err = llm.LLMClient.Send(ctx, llm)
 	if err != nil {
 		logger.Error("request summary fail", "err", err)
+		return err
 	}
 	
+	err = llm.InsertOrUpdate()
+	if err != nil {
+		logger.Error("insertOrUpdate fail", "err", err)
+	}
 	return err
 }
 

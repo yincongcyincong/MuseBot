@@ -50,7 +50,8 @@ type RobotInfo struct {
 	Robot        Robot
 	TencentRobot TencentRobot
 	
-	Token int
+	Token    int
+	RecordID int64
 }
 
 var (
@@ -578,7 +579,10 @@ func (r *RobotInfo) GetAudioContent(audioContent []byte) (string, error) {
 		return "", err
 	}
 	
-	r.Token += token
+	err = db.AddRecordToken(r.RecordID, token)
+	if err != nil {
+		logger.Warn("addRecordToken err", "err", err)
+	}
 	
 	return answer, err
 }
@@ -602,7 +606,10 @@ func (r *RobotInfo) GetImageContent(imageContent []byte, content string) (string
 		return "", err
 	}
 	
-	r.Token += token
+	err = db.AddRecordToken(r.RecordID, token)
+	if err != nil {
+		logger.Warn("addRecordToken err", "err", err)
+	}
 	
 	if content == "" {
 		return answer, nil
@@ -774,6 +781,8 @@ func (r *RobotInfo) ExecChain(msgContent string, msgChan *MsgChan) {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 		defer cancel()
 		
+		r.InsertRecord()
+		
 		content, err := r.Robot.getContent(strings.TrimSpace(msgContent))
 		if err != nil {
 			logger.Error("get content fail", "err", err)
@@ -793,7 +802,7 @@ func (r *RobotInfo) ExecChain(msgContent string, msgChan *MsgChan) {
 			llm.WithChatId(chatId),
 			llm.WithUserId(userId),
 			llm.WithPerMsgLen(perMsgLen),
-			llm.WithToken(r.Token),
+			llm.WithRecordId(r.RecordID),
 		)
 		qaChain := chains.NewRetrievalQAFromLLM(
 			dpLLM,
@@ -821,7 +830,7 @@ func (r *RobotInfo) ExecLLM(msgContent string, msgChan *MsgChan) {
 	}()
 	
 	chatId, msgId, userId := r.GetChatIdAndMsgIdAndUserID()
-	
+	r.InsertRecord()
 	content, err := r.Robot.getContent(strings.TrimSpace(msgContent))
 	if err != nil {
 		logger.Error("get content fail", "err", err)
@@ -842,7 +851,7 @@ func (r *RobotInfo) ExecLLM(msgContent string, msgChan *MsgChan) {
 		llm.WithHTTPMsgChan(msgChan.StrMessageChan),
 		llm.WithContent(content),
 		llm.WithPerMsgLen(perMsgLen),
-		llm.WithToken(r.Token),
+		llm.WithRecordId(r.RecordID),
 	)
 	
 	err = llmClient.CallLLM()
@@ -1080,11 +1089,17 @@ func (r *RobotInfo) GetVoiceBaseTTS(content, encoding string) ([]byte, int, erro
 	var ttsContent []byte
 	var err error
 	var duration int
+	var token int
 	switch *conf.AudioConfInfo.TTSType {
 	case param.Vol:
-		ttsContent, _, duration, err = llm.VolTTS(content, userId, encoding)
+		ttsContent, token, duration, err = llm.VolTTS(content, userId, encoding)
 	case param.Gemini:
-		ttsContent, _, duration, err = llm.GeminiTTS(content, encoding)
+		ttsContent, token, duration, err = llm.GeminiTTS(content, encoding)
+	}
+	
+	err = db.AddRecordToken(r.RecordID, token)
+	if err != nil {
+		logger.Warn("addRecordToken err", "err", err)
 	}
 	
 	return ttsContent, duration, err
@@ -1142,4 +1157,20 @@ func (r *RobotInfo) handleUpdate(messageChan *MsgChan, encoding string) {
 		r.Robot.sendText(messageChan)
 	}
 	
+}
+
+func (r *RobotInfo) InsertRecord() {
+	_, _, userId := r.GetChatIdAndMsgIdAndUserID()
+	
+	id, err := db.InsertRecordInfo(&db.Record{
+		UserId:     userId,
+		Question:   r.Robot.getPrompt(),
+		RecordType: param.TextRecordType,
+	})
+	if err != nil {
+		logger.Error("insert record fail", "err", err)
+		return
+	}
+	
+	r.RecordID = id
 }

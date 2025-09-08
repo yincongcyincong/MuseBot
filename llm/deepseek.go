@@ -174,14 +174,7 @@ func (d *DeepseekReq) Send(ctx context.Context, l *LLM) error {
 		l.MessageChan <- msgInfoContent
 	}
 	
-	if !hasTools || len(d.CurrentToolMessage) == 0 {
-		db.InsertMsgRecord(l.UserId, &db.AQ{
-			Question: l.Content,
-			Answer:   l.WholeContent,
-			Token:    l.Token,
-			Mode:     param.DeepSeek,
-		}, true)
-	} else {
+	if hasTools && len(d.CurrentToolMessage) != 0 {
 		d.CurrentToolMessage = append([]deepseek.ChatCompletionMessage{
 			{
 				Role:      deepseek.ChatMessageRoleAssistant,

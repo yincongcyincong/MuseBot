@@ -78,6 +78,12 @@ func (d *LLMTaskReq) ExecuteMcp() error {
 	err = mcpLLM.LLMClient.Send(ctx, mcpLLM)
 	if err != nil {
 		logger.Error("execute conversation fail", "err", err)
+		return err
+	}
+	
+	err = llm.InsertOrUpdate()
+	if err != nil {
+		logger.Error("insertOrUpdate fail", "err", err)
 	}
 	
 	return err
