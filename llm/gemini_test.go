@@ -25,7 +25,7 @@ func TestGeminiSend(t *testing.T) {
 	callLLM := NewLLM(WithChatId("1"), WithMsgId("2"), WithUserId("4"),
 		WithMessageChan(messageChan), WithContent("hi"))
 	callLLM.LLMClient.GetModel(callLLM)
-	callLLM.LLMClient.GetMessages("4", "hi")
+	callLLM.GetMessages("4", "hi")
 	err := callLLM.LLMClient.Send(context.Background(), callLLM)
 	assert.Equal(t, nil, err)
 	

@@ -53,8 +53,6 @@ type LLM struct {
 }
 
 type LLMClient interface {
-	GetMessages(userId string, prompt string)
-	
 	Send(ctx context.Context, l *LLM) error
 	
 	GetUserMessage(msg string)
@@ -72,7 +70,7 @@ func (l *LLM) CallLLM() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 	
-	l.LLMClient.GetMessages(l.UserId, l.GetContent(l.Content))
+	l.GetMessages(l.UserId, l.GetContent(l.Content))
 	
 	logger.Info("msg receive", "userID", l.UserId, "prompt", l.Content)
 	
@@ -232,6 +230,33 @@ func (l *LLM) InsertOrUpdate() error {
 	}
 	
 	return nil
+}
+
+func (l *LLM) GetMessages(userId string, prompt string) {
+	msgRecords := db.GetMsgRecord(userId)
+	if msgRecords != nil {
+		aqs := msgRecords.AQs
+		if len(aqs) > *conf.BaseConfInfo.MaxQAPair {
+			aqs = aqs[len(aqs)-*conf.BaseConfInfo.MaxQAPair:]
+		}
+		
+		for i, record := range aqs {
+			
+			logger.Info("context content", "dialog", i, "question:", record.Question,
+				"toolContent", record.Content, "answer:", record.Answer)
+			if record.Question != "" {
+				l.LLMClient.GetUserMessage(record.Question)
+			}
+			
+			if record.Answer != "" {
+				l.LLMClient.GetAssistantMessage(record.Question)
+			}
+		}
+	}
+	
+	if *conf.BaseConfInfo.Type != "gemini" {
+		l.LLMClient.GetUserMessage(prompt)
+	}
 }
 
 type Option func(p *LLM)

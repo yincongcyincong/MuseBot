@@ -22,7 +22,8 @@ const (
 				update_time int(10) NOT NULL DEFAULT '0',
 				token int(20) NOT NULL DEFAULT '0',
 				avail_token int(20) NOT NULL DEFAULT 0,
-				create_time int(10) NOT NULL DEFAULT '0'
+				create_time int(10) NOT NULL DEFAULT '0',
+				from_bot VARCHAR(255) NOT NULL DEFAULT ''
 			);
 			CREATE TABLE records (
 				id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -35,7 +36,8 @@ const (
 				is_deleted int(10) NOT NULL DEFAULT '0',
 				token int(10) NOT NULL DEFAULT 0,
 				mode VARCHAR(100) NOT NULL DEFAULT '',
-				record_type tinyint(1) NOT NULL DEFAULT 0
+				record_type tinyint(1) NOT NULL DEFAULT 0,
+				from_bot VARCHAR(255) NOT NULL DEFAULT ''
 			);
 			CREATE TABLE rag_files (
 				id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -44,7 +46,8 @@ const (
 				vector_id TEXT NOT NULL DEFAULT '',
 				create_time int(10) NOT NULL DEFAULT '0',
 				update_time int(10) NOT NULL DEFAULT '0',
-				is_deleted int(10) NOT NULL DEFAULT '0'
+				is_deleted int(10) NOT NULL DEFAULT '0',
+				from_bot VARCHAR(255) NOT NULL DEFAULT ''
 			);
 			CREATE INDEX idx_users_user_id ON users(user_id);
 			CREATE INDEX idx_records_user_id ON records(user_id);
@@ -58,7 +61,8 @@ const (
 				update_time INT(10) NOT NULL DEFAULT 0,
 				token int(20) NOT NULL DEFAULT 0,
 				avail_token int(20) NOT NULL DEFAULT 0,
-			    create_time int(10) NOT NULL DEFAULT '0'
+			    create_time int(10) NOT NULL DEFAULT '0',
+			    from_bot VARCHAR(255) NOT NULL DEFAULT ''
 			);`
 	
 	mysqlCreateRecordsSQL = `
@@ -73,7 +77,8 @@ const (
 				is_deleted int(10) NOT NULL DEFAULT '0',
 				token int(10) NOT NULL DEFAULT 0,
 			    mode VARCHAR(100) NOT NULL DEFAULT '',
-			    record_type tinyint(1) NOT NULL DEFAULT 0 COMMENT '0:text, 1:image 2:video 3: web'
+			    record_type tinyint(1) NOT NULL DEFAULT 0 COMMENT '0:text, 1:image 2:video 3: web',
+			    from_bot VARCHAR(255) NOT NULL DEFAULT ''
 			);`
 	
 	mysqlCreateRagFileSQL = `CREATE TABLE IF NOT EXISTS rag_files (
@@ -83,7 +88,8 @@ const (
     			vector_id TEXT NOT NULL,
 				create_time int(10) NOT NULL DEFAULT '0',
 				update_time int(10) NOT NULL DEFAULT '0',
-				is_deleted int(10) NOT NULL DEFAULT '0'
+				is_deleted int(10) NOT NULL DEFAULT '0',
+    			from_bot VARCHAR(255) NOT NULL DEFAULT ''
 			);`
 	mysqlCreateUserIndexSQL = `CREATE INDEX idx_users_user_id ON users(user_id);`
 	mysqlCreateIndexSQL     = `CREATE INDEX idx_records_user_id ON records(user_id);`

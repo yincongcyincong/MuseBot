@@ -50,59 +50,6 @@ func (h *VolReq) GetModel(l *LLM) {
 	}
 }
 
-func (h *VolReq) GetMessages(userId string, prompt string) {
-	messages := make([]*model.ChatCompletionMessage, 0)
-	
-	msgRecords := db.GetMsgRecord(userId)
-	if msgRecords != nil {
-		aqs := msgRecords.AQs
-		if len(aqs) > *conf.BaseConfInfo.MaxQAPair {
-			aqs = aqs[len(aqs)-*conf.BaseConfInfo.MaxQAPair:]
-		}
-		for i, record := range aqs {
-			
-			logger.Info("context content", "dialog", i, "question:", record.Question,
-				"toolContent", record.Content, "answer:", record.Answer)
-			
-			if record.Question != "" {
-				messages = append(messages, &model.ChatCompletionMessage{
-					Role: constants.ChatMessageRoleUser,
-					Content: &model.ChatCompletionMessageContent{
-						StringValue: &record.Question,
-					},
-				})
-			}
-			
-			if record.Content != "" {
-				toolsMsgs := make([]*model.ChatCompletionMessage, 0)
-				err := json.Unmarshal([]byte(record.Content), &toolsMsgs)
-				if err != nil {
-					logger.Error("Error unmarshalling tools json", "err", err)
-				} else {
-					messages = append(messages, toolsMsgs...)
-				}
-			}
-			
-			if record.Answer != "" {
-				messages = append(messages, &model.ChatCompletionMessage{
-					Role: constants.ChatMessageRoleAssistant,
-					Content: &model.ChatCompletionMessageContent{
-						StringValue: &record.Answer,
-					},
-				})
-			}
-		}
-	}
-	messages = append(messages, &model.ChatCompletionMessage{
-		Role: constants.ChatMessageRoleUser,
-		Content: &model.ChatCompletionMessageContent{
-			StringValue: &prompt,
-		},
-	})
-	
-	h.VolMsgs = messages
-}
-
 func (h *VolReq) Send(ctx context.Context, l *LLM) error {
 	if l.OverLoop() {
 		return errors.New("too many loops")

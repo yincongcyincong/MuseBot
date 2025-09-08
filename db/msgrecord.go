@@ -144,8 +144,8 @@ func getRecordsByUserId(userId string) ([]Record, error) {
 
 // InsertRecordInfo insert record
 func InsertRecordInfo(record *Record) (int64, error) {
-	query := `INSERT INTO records (user_id, question, answer, content, token, create_time, is_deleted, record_type, mode) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
-	result, err := DB.Exec(query, record.UserId, record.Question, record.Answer, record.Content, record.Token, time.Now().Unix(), record.IsDeleted, record.RecordType, record.Mode)
+	query := `INSERT INTO records (user_id, question, answer, content, token, create_time, is_deleted, record_type, mode, from_bot) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+	result, err := DB.Exec(query, record.UserId, record.Question, record.Answer, record.Content, record.Token, time.Now().Unix(), record.IsDeleted, record.RecordType, record.Mode, *conf.BaseConfInfo.BotName)
 	metrics.TotalRecords.Inc()
 	if err != nil {
 		logger.Error("insertRecord err", "err", err)

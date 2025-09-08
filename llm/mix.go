@@ -87,73 +87,6 @@ func (d *AIRouterReq) GetModel(l *LLM) {
 	
 }
 
-func (d *AIRouterReq) GetMessages(userId string, prompt string) {
-	messages := make([]openrouter.ChatCompletionMessage, 0)
-	
-	msgRecords := db.GetMsgRecord(userId)
-	if msgRecords != nil {
-		aqs := msgRecords.AQs
-		if len(aqs) > *conf.BaseConfInfo.MaxQAPair {
-			aqs = aqs[len(aqs)-*conf.BaseConfInfo.MaxQAPair:]
-		}
-		
-		for i, record := range aqs {
-			logger.Info("context content", "dialog", i, "question:", record.Question,
-				"toolContent", record.Content, "answer:", record.Answer)
-			if record.Question != "" {
-				messages = append(messages, openrouter.ChatCompletionMessage{
-					Role: constants.ChatMessageRoleUser,
-					Content: openrouter.Content{
-						Multi: []openrouter.ChatMessagePart{
-							{
-								Type: openrouter.ChatMessagePartTypeText,
-								Text: record.Question,
-							},
-						},
-					},
-				})
-			}
-			
-			if record.Content != "" {
-				toolsMsgs := make([]openrouter.ChatCompletionMessage, 0)
-				err := json.Unmarshal([]byte(record.Content), &toolsMsgs)
-				if err != nil {
-					logger.Error("Error unmarshalling tools json", "err", err)
-				} else {
-					messages = append(messages, toolsMsgs...)
-				}
-			}
-			
-			if record.Answer != "" {
-				messages = append(messages, openrouter.ChatCompletionMessage{
-					Role: constants.ChatMessageRoleAssistant,
-					Content: openrouter.Content{
-						Multi: []openrouter.ChatMessagePart{
-							{
-								Type: openrouter.ChatMessagePartTypeText,
-								Text: record.Answer,
-							},
-						},
-					},
-				})
-			}
-		}
-	}
-	messages = append(messages, openrouter.ChatCompletionMessage{
-		Role: constants.ChatMessageRoleUser,
-		Content: openrouter.Content{
-			Multi: []openrouter.ChatMessagePart{
-				{
-					Type: openrouter.ChatMessagePartTypeText,
-					Text: prompt,
-				},
-			},
-		},
-	})
-	
-	d.OpenRouterMsgs = messages
-}
-
 func (d *AIRouterReq) Send(ctx context.Context, l *LLM) error {
 	if l.OverLoop() {
 		return errors.New("too many loops")
@@ -282,12 +215,13 @@ func (d *AIRouterReq) GetMessage(role, msg string) {
 			{
 				Role: role,
 				Content: openrouter.Content{
-					Multi: []openrouter.ChatMessagePart{
-						{
-							Type: openrouter.ChatMessagePartTypeText,
-							Text: msg,
-						},
-					},
+					Text: msg,
+					//Multi: []openrouter.ChatMessagePart{
+					//	{
+					//		Type: openrouter.ChatMessagePartTypeText,
+					//		Text: msg,
+					//	},
+					//},
 				},
 			},
 		}
@@ -297,12 +231,13 @@ func (d *AIRouterReq) GetMessage(role, msg string) {
 	d.OpenRouterMsgs = append(d.OpenRouterMsgs, openrouter.ChatCompletionMessage{
 		Role: role,
 		Content: openrouter.Content{
-			Multi: []openrouter.ChatMessagePart{
-				{
-					Type: openrouter.ChatMessagePartTypeText,
-					Text: msg,
-				},
-			},
+			Text: msg,
+			//Multi: []openrouter.ChatMessagePart{
+			//	{
+			//		Type: openrouter.ChatMessagePartTypeText,
+			//		Text: msg,
+			//	},
+			//},
 		},
 	})
 }

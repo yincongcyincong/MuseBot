@@ -27,7 +27,7 @@ func TestOpenAISend(t *testing.T) {
 	callLLM := NewLLM(WithChatId("1"), WithMsgId("2"), WithUserId("5"),
 		WithMessageChan(messageChan), WithContent("hi"))
 	callLLM.LLMClient.GetModel(callLLM)
-	callLLM.LLMClient.GetMessages("5", "hi")
+	callLLM.GetMessages("5", "hi")
 	err := callLLM.LLMClient.Send(context.Background(), callLLM)
 	assert.Equal(t, nil, err)
 	

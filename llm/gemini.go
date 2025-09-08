@@ -29,47 +29,6 @@ type GeminiReq struct {
 	GeminiMsgs []*genai.Content
 }
 
-func (h *GeminiReq) GetMessages(userId string, prompt string) {
-	messages := make([]*genai.Content, 0)
-	
-	msgRecords := db.GetMsgRecord(userId)
-	if msgRecords != nil {
-		aqs := msgRecords.AQs
-		if len(aqs) > *conf.BaseConfInfo.MaxQAPair {
-			aqs = aqs[len(aqs)-*conf.BaseConfInfo.MaxQAPair:]
-		}
-		for i, record := range aqs {
-			
-			logger.Info("context content", "dialog", i, "question:", record.Question,
-				"toolContent", record.Content, "answer:", record.Answer)
-			
-			if record.Question != "" {
-				messages = append(messages, &genai.Content{
-					Role: genai.RoleUser,
-					Parts: []*genai.Part{
-						{
-							Text: record.Question,
-						},
-					},
-				})
-			}
-			
-			if record.Answer != "" {
-				messages = append(messages, &genai.Content{
-					Role: genai.RoleModel,
-					Parts: []*genai.Part{
-						{
-							Text: record.Answer,
-						},
-					},
-				})
-			}
-		}
-	}
-	
-	h.GeminiMsgs = messages
-}
-
 func (h *GeminiReq) Send(ctx context.Context, l *LLM) error {
 	if l.OverLoop() {
 		return errors.New("too many loops")
