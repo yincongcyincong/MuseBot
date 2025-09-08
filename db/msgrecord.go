@@ -19,11 +19,6 @@ type MsgRecordInfo struct {
 	updateTime int64
 }
 
-type QA struct {
-	Q string `json:"q"`
-	A string `json:"a"`
-}
-
 type AQ struct {
 	Question string
 	Answer   string
@@ -33,7 +28,7 @@ type AQ struct {
 }
 
 type Record struct {
-	ID         int    `json:"id"`
+	ID         int64  `json:"id"`
 	UserId     string `json:"user_id"`
 	Question   string `json:"question"`
 	Answer     string `json:"answer"`
@@ -148,12 +143,13 @@ func getRecordsByUserId(userId string) ([]Record, error) {
 }
 
 // InsertRecordInfo insert record
-func InsertRecordInfo(record *Record) {
+func InsertRecordInfo(record *Record) (int64, error) {
 	query := `INSERT INTO records (user_id, question, answer, content, token, create_time, is_deleted, record_type, mode) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
-	_, err := DB.Exec(query, record.UserId, record.Question, record.Answer, record.Content, record.Token, time.Now().Unix(), record.IsDeleted, record.RecordType, record.Mode)
+	result, err := DB.Exec(query, record.UserId, record.Question, record.Answer, record.Content, record.Token, time.Now().Unix(), record.IsDeleted, record.RecordType, record.Mode)
 	metrics.TotalRecords.Inc()
 	if err != nil {
 		logger.Error("insertRecord err", "err", err)
+		return 0, err
 	}
 	
 	user, err := GetUserByID(record.UserId)
@@ -172,6 +168,8 @@ func InsertRecordInfo(record *Record) {
 	if err != nil {
 		logger.Error("Error update token by user", "err", err)
 	}
+	
+	return result.LastInsertId()
 }
 
 // DeleteRecord delete record
@@ -383,4 +381,39 @@ func GetDailyNewRecords(days int) ([]DailyStat, error) {
 	}
 	
 	return stats, nil
+}
+
+func UpdateRecordInfo(record *Record) error {
+	query := `UPDATE records
+			  SET answer = ?, content = ?, token = token + ?, mode = ?, update_time = ?
+			  WHERE id = ?`
+	
+	_, err := DB.Exec(query,
+		record.Answer,
+		record.Content,
+		record.Token,
+		record.Mode,
+		time.Now().Unix(),
+		record.ID,
+	)
+	if err != nil {
+		logger.Error("updateRecord err", "err", err)
+		return err
+	}
+	
+	return nil
+}
+
+func AddRecordToken(recordID int64, delta int) error {
+	query := `UPDATE records
+			  SET token = token + ?, update_time = ?
+			  WHERE id = ?`
+	
+	_, err := DB.Exec(query, delta, time.Now().Unix(), recordID)
+	if err != nil {
+		logger.Error("addRecordToken err", "err", err)
+		return err
+	}
+	
+	return nil
 }

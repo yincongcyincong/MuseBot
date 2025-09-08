@@ -141,14 +141,7 @@ func (h *GeminiReq) Send(ctx context.Context, l *LLM) error {
 	}
 	
 	logger.Info("Stream finished", "updateMsgID", l.MsgId)
-	if !hasTools || len(h.CurrentToolMessage) == 0 {
-		db.InsertMsgRecord(l.UserId, &db.AQ{
-			Question: l.Content,
-			Answer:   l.WholeContent,
-			Token:    l.Token,
-			Mode:     param.Gemini,
-		}, true)
-	} else {
+	if hasTools && len(h.CurrentToolMessage) != 0 {
 		h.ToolMessage = append(h.ToolMessage, h.CurrentToolMessage...)
 		h.GeminiMsgs = append(h.GeminiMsgs, h.CurrentToolMessage...)
 		h.CurrentToolMessage = make([]*genai.Content, 0)

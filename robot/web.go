@@ -25,6 +25,7 @@ type Web struct {
 	RealUserId string
 	Prompt     string
 	BodyData   []byte
+	RecordId   int64
 	
 	OriginalPrompt string
 	
@@ -61,6 +62,7 @@ func (web *Web) Exec() {
 	logger.Info("web exec", "command", web.Command, "userId", web.UserId, "prompt", web.Prompt)
 	switch web.Command {
 	case "/chat":
+		web.InsertRecord()
 		web.sendChatMessage()
 	case "/mode":
 		web.sendModeConfigurationOptions()
@@ -83,6 +85,7 @@ func (web *Web) Exec() {
 	case "/mcp":
 		web.sendMultiAgent("mcp_empty_content")
 	default:
+		web.InsertRecord()
 		web.sendChatMessage()
 	}
 }
@@ -100,7 +103,6 @@ func (web *Web) sendHelpConfigurationOptions() {
 }
 
 func (web *Web) sendModeConfigurationOptions() {
-	
 	prompt := strings.TrimSpace(web.Prompt)
 	if prompt != "" {
 		if param.GeminiModels[prompt] || param.OpenAIModels[prompt] ||
@@ -486,6 +488,7 @@ func (web *Web) sendChatMessage() {
 			llm.WithHTTPMsgChan(messageChan),
 			llm.WithContent(prompt),
 			llm.WithPerMsgLen(1000000),
+			llm.WithRecordId(web.RecordId),
 		)
 		go func() {
 			defer close(messageChan)
@@ -559,4 +562,18 @@ func (web *Web) SendMsg(msgContent string) {
 		logger.Warn("send message fail", "err", err)
 	}
 	web.Flusher.Flush()
+}
+
+func (web *Web) InsertRecord() {
+	id, err := db.InsertRecordInfo(&db.Record{
+		UserId:     web.RealUserId,
+		Question:   web.Prompt,
+		RecordType: param.TextRecordType,
+	})
+	if err != nil {
+		logger.Error("insert record fail", "err", err)
+		return
+	}
+	
+	web.RecordId = id
 }

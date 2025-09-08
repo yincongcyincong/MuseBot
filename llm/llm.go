@@ -33,6 +33,7 @@ type LLM struct {
 	Content     string // question from user
 	Model       string
 	Token       int
+	RecordId    int64
 	
 	ChatId    string
 	UserId    string
@@ -80,6 +81,12 @@ func (l *LLM) CallLLM() error {
 	err := l.LLMClient.Send(ctx, l)
 	if err != nil {
 		logger.Error("Error calling LLM API", "err", err)
+		return err
+	}
+	
+	err = l.InsertOrUpdate()
+	if err != nil {
+		logger.Error("insert or update record", "err", err)
 		return err
 	}
 	
@@ -198,6 +205,35 @@ func (l *LLM) OverLoop() bool {
 	return false
 }
 
+func (l *LLM) InsertOrUpdate() error {
+	if l.RecordId == 0 {
+		db.InsertMsgRecord(l.UserId, &db.AQ{
+			Question: l.Content,
+			Answer:   l.WholeContent,
+			Token:    l.Token,
+			Mode:     *conf.BaseConfInfo.Type,
+		}, true)
+		return nil
+	}
+	
+	db.InsertMsgRecord(l.UserId, &db.AQ{
+		Question: l.Content,
+		Answer:   l.WholeContent,
+	}, false)
+	err := db.UpdateRecordInfo(&db.Record{
+		ID:     l.RecordId,
+		Answer: l.WholeContent,
+		Token:  l.Token,
+		Mode:   *conf.BaseConfInfo.Type,
+	})
+	if err != nil {
+		logger.Error("update record fail", "err", err)
+		return err
+	}
+	
+	return nil
+}
+
 type Option func(p *LLM)
 
 func WithModel(model string) Option {
@@ -248,9 +284,9 @@ func WithMsgId(msgId string) Option {
 	}
 }
 
-func WithToken(token int) Option {
+func WithRecordId(recordId int64) Option {
 	return func(p *LLM) {
-		p.Token = token
+		p.RecordId = recordId
 	}
 }
 
@@ -270,42 +306,4 @@ func WithTaskTools(taskTool *conf.AgentInfo) Option {
 		p.GeminiTools = taskTool.GeminiTools
 		p.OpenRouterTools = taskTool.OpenRouterTools
 	}
-}
-
-func estimateTokens(text string) int {
-	count := 0
-	for _, r := range text {
-		if r <= 127 {
-			count += 1
-		} else {
-			count += 1
-		}
-	}
-	englishApprox := count / 4
-	if englishApprox == 0 {
-		englishApprox = 1
-	}
-	return englishApprox
-}
-
-func TruncateAQsByToken(aqs []*db.AQ, maxToken int) []*db.AQ {
-	if len(aqs) == 0 {
-		return []*db.AQ{}
-	}
-	
-	totalToken := 0
-	var truncated []*db.AQ
-	
-	// 从最新消息开始向前遍历
-	for i := len(aqs) - 1; i >= 0; i-- {
-		a := aqs[i]
-		token := estimateTokens(a.Question) + estimateTokens(a.Answer)
-		if totalToken+token > maxToken {
-			break
-		}
-		totalToken += token
-		truncated = append([]*db.AQ{a}, truncated...)
-	}
-	
-	return truncated
 }

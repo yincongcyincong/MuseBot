@@ -174,14 +174,7 @@ func (d *OpenAIReq) Send(ctx context.Context, l *LLM) error {
 	if l.MessageChan != nil && len(strings.TrimRightFunc(msgInfoContent.Content, unicode.IsSpace)) > 0 {
 		l.MessageChan <- msgInfoContent
 	}
-	if !hasTools || len(d.CurrentToolMessage) == 0 {
-		db.InsertMsgRecord(l.UserId, &db.AQ{
-			Question: l.Content,
-			Answer:   l.WholeContent,
-			Token:    l.Token,
-			Mode:     param.OpenAi,
-		}, true)
-	} else {
+	if hasTools && len(d.CurrentToolMessage) != 0 {
 		d.CurrentToolMessage = append([]openai.ChatCompletionMessage{
 			{
 				Role:      deepseek.ChatMessageRoleAssistant,
