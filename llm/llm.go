@@ -235,15 +235,10 @@ func (l *LLM) InsertOrUpdate() error {
 func (l *LLM) GetMessages(userId string, prompt string) {
 	msgRecords := db.GetMsgRecord(userId)
 	if msgRecords != nil {
-		aqs := msgRecords.AQs
-		if len(aqs) > *conf.BaseConfInfo.MaxQAPair {
-			aqs = aqs[len(aqs)-*conf.BaseConfInfo.MaxQAPair:]
-		}
-		
+		aqs := db.FilterByMaxContextFromLatest(msgRecords.AQs, param.DefaultContextToken)
 		for i, record := range aqs {
 			
-			logger.Info("context content", "dialog", i, "question:", record.Question,
-				"toolContent", record.Content, "answer:", record.Answer)
+			logger.Info("context content", "dialog", i, "question:", record.Question, "answer:", record.Answer)
 			if record.Question != "" {
 				l.LLMClient.GetUserMessage(record.Question)
 			}

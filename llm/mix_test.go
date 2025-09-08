@@ -33,7 +33,7 @@ func TestAIRouterReq_GetUserMessage(t *testing.T) {
 	mock := &AIRouterReq{}
 	mock.GetUserMessage("Hello")
 	assert.Equal(t, "user", mock.OpenRouterMsgs[0].Role)
-	assert.Equal(t, "Hello", mock.OpenRouterMsgs[0].Content.Multi[0].Text)
+	assert.Equal(t, "Hello", mock.OpenRouterMsgs[0].Content.Text)
 }
 
 func TestAIRouterReq_GetAssistantMessage(t *testing.T) {
