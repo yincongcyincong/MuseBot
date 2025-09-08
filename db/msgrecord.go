@@ -6,6 +6,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"unicode"
 	
 	"github.com/cohesion-org/deepseek-go"
 	"github.com/yincongcyincong/MuseBot/conf"
@@ -416,4 +417,49 @@ func AddRecordToken(recordID int64, delta int) error {
 	}
 	
 	return nil
+}
+
+// EstimateTokens calculate token
+func EstimateTokens(text string) int {
+	count := 0
+	for _, r := range text {
+		if unicode.Is(unicode.Han, r) || unicode.Is(unicode.Hiragana, r) || unicode.Is(unicode.Katakana, r) || unicode.IsLetter(r) || unicode.IsDigit(r) {
+			count++
+		} else if unicode.IsSpace(r) {
+			continue
+		} else {
+			count++
+		}
+	}
+	return count
+}
+
+func FilterByMaxContextFromLatest(aqs []*AQ, maxContext int) []*AQ {
+	n := len(aqs)
+	if n == 0 {
+		return nil
+	}
+	
+	var result []*AQ
+	cumulative := 0
+	
+	for i := n - 1; i >= 0; i-- {
+		totalText := aqs[i].Question + " " + aqs[i].Answer
+		tokens := EstimateTokens(totalText)
+		
+		if cumulative+tokens > maxContext {
+			break
+		}
+		
+		aq := aqs[i]
+		aq.Token = tokens
+		result = append(result, aq)
+		cumulative += tokens
+	}
+	
+	for i, j := 0, len(result)-1; i < j; i, j = i+1, j-1 {
+		result[i], result[j] = result[j], result[i]
+	}
+	
+	return result
 }

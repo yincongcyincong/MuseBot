@@ -123,7 +123,7 @@ func InitConf() {
 	BaseConfInfo.MaxUserChat = flag.Int("max_user_chat", 2, "max chat per user")
 	BaseConfInfo.HTTPHost = flag.String("http_host", ":36060", "http server port")
 	BaseConfInfo.UseTools = flag.Bool("use_tools", false, "use function tools")
-	BaseConfInfo.MaxQAPair = flag.Int("max_qa_pari", 10, "max qa pair")
+	BaseConfInfo.MaxQAPair = flag.Int("max_qa_pari", 100, "max qa pair")
 	BaseConfInfo.Character = flag.String("character", "", "ai's character")
 	
 	BaseConfInfo.CrtFile = flag.String("crt_file", "", "public key file")

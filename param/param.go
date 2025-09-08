@@ -70,6 +70,8 @@ const (
 	ImageRecordType = 1
 	VideoRecordType = 2
 	WEBRecordType   = 3
+	
+	DefaultContextToken = 128000
 )
 
 var (
