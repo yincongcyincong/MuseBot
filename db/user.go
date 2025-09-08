@@ -30,8 +30,8 @@ func InsertUser(userId string, mode string) (int64, error) {
 	}
 	
 	// insert data
-	insertSQL := `INSERT INTO users (user_id, mode, update_time, create_time, avail_token) VALUES (?, ?, ?, ?, ?)`
-	result, err := DB.Exec(insertSQL, userId, mode, time.Now().Unix(), time.Now().Unix(), *conf.BaseConfInfo.TokenPerUser)
+	insertSQL := `INSERT INTO users (user_id, mode, update_time, create_time, avail_token, from_bot) VALUES (?, ?, ?, ?, ?, ?)`
+	result, err := DB.Exec(insertSQL, userId, mode, time.Now().Unix(), time.Now().Unix(), *conf.BaseConfInfo.TokenPerUser, *conf.BaseConfInfo.BotName)
 	if err != nil {
 		return 0, err
 	}

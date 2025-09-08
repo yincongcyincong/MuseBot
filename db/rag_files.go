@@ -3,6 +3,7 @@ package db
 import (
 	"time"
 	
+	"github.com/yincongcyincong/MuseBot/conf"
 	"github.com/yincongcyincong/MuseBot/metrics"
 )
 
@@ -18,8 +19,8 @@ type RagFiles struct {
 
 func InsertRagFile(fileName, fileMd5 string) (int64, error) {
 	// insert data
-	insertSQL := `INSERT INTO rag_files (file_name, file_md5, create_time, update_time, vector_id) VALUES (?, ?, ?, ?, ?)`
-	result, err := DB.Exec(insertSQL, fileName, fileMd5, time.Now().Unix(), time.Now().Unix(), "")
+	insertSQL := `INSERT INTO rag_files (file_name, file_md5, create_time, update_time, vector_id, from_bot) VALUES (?, ?, ?, ?, ?, ?)`
+	result, err := DB.Exec(insertSQL, fileName, fileMd5, time.Now().Unix(), time.Now().Unix(), "", *conf.BaseConfInfo.BotName)
 	if err != nil {
 		return 0, err
 	}
@@ -34,8 +35,8 @@ func InsertRagFile(fileName, fileMd5 string) (int64, error) {
 }
 
 func GetRagFileByFileMd5(fileMd5 string) ([]*RagFiles, error) {
-	querySQL := `SELECT id, file_name, file_md5, update_time, create_time FROM rag_files WHERE file_md5 = ? and is_deleted = 0`
-	rows, err := DB.Query(querySQL, fileMd5)
+	querySQL := `SELECT id, file_name, file_md5, update_time, create_time FROM rag_files WHERE file_md5 = ? and is_deleted = 0 and from_bot = ?`
+	rows, err := DB.Query(querySQL, fileMd5, *conf.BaseConfInfo.BotName)
 	
 	if err != nil {
 		return nil, err
@@ -59,8 +60,8 @@ func GetRagFileByFileMd5(fileMd5 string) ([]*RagFiles, error) {
 }
 
 func GetRagFileByFileName(fileName string) ([]*RagFiles, error) {
-	querySQL := `SELECT id, file_name, file_md5, update_time, create_time, vector_id FROM rag_files WHERE file_name = ? and is_deleted = 0`
-	rows, err := DB.Query(querySQL, fileName)
+	querySQL := `SELECT id, file_name, file_md5, update_time, create_time, vector_id FROM rag_files WHERE file_name = ? and is_deleted = 0 and from_bot = ?`
+	rows, err := DB.Query(querySQL, fileName, *conf.BaseConfInfo.BotName)
 	
 	if err != nil {
 		return nil, err
@@ -84,19 +85,19 @@ func GetRagFileByFileName(fileName string) ([]*RagFiles, error) {
 }
 
 func DeleteRagFileByFileName(fileName string) error {
-	query := `UPDATE rag_files set is_deleted = 1 WHERE file_name = ?`
-	_, err := DB.Exec(query, fileName)
+	query := `UPDATE rag_files set is_deleted = 1 WHERE file_name = ? and from_bot = ?`
+	_, err := DB.Exec(query, fileName, *conf.BaseConfInfo.BotName)
 	return err
 }
 
 func DeleteRagFileByVectorId(fileName string) error {
-	query := `UPDATE rag_files set is_deleted = 1 WHERE vector_id = ?`
-	_, err := DB.Exec(query, fileName)
+	query := `UPDATE rag_files set is_deleted = 1 WHERE vector_id = ? and from_bot = ?`
+	_, err := DB.Exec(query, fileName, *conf.BaseConfInfo.BotName)
 	return err
 }
 
 func UpdateVectorIdByFileMd5(fileMd5, vectorId string) error {
-	query := `UPDATE rag_files set vector_id = ? WHERE file_md5 = ?`
-	_, err := DB.Exec(query, vectorId, fileMd5)
+	query := `UPDATE rag_files set vector_id = ? WHERE file_md5 = ? and from_bot = ?`
+	_, err := DB.Exec(query, vectorId, fileMd5, *conf.BaseConfInfo.BotName)
 	return err
 }

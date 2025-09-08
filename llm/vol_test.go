@@ -24,7 +24,7 @@ func TestVolSend(t *testing.T) {
 	callLLM := NewLLM(WithChatId("1"), WithMsgId("2"), WithUserId("7"),
 		WithMessageChan(messageChan), WithContent("hi"))
 	callLLM.LLMClient.GetModel(callLLM)
-	callLLM.LLMClient.GetMessages("7", "hi")
+	callLLM.GetMessages("7", "hi")
 	err := callLLM.LLMClient.Send(context.Background(), callLLM)
 	assert.Equal(t, nil, err)
 }
@@ -35,12 +35,4 @@ func TestGetModel(t *testing.T) {
 	h.GetModel(l)
 	
 	assert.Equal(t, param.ModelDeepSeekR1_528, l.Model)
-}
-
-func TestGetMessages_NoHistory(t *testing.T) {
-	
-	h := &VolReq{}
-	h.GetMessages("no-history-user", "hello")
-	assert.Len(t, h.VolMsgs, 1)
-	assert.Equal(t, "hello", *h.VolMsgs[0].Content.StringValue)
 }

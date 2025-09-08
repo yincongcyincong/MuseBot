@@ -41,51 +41,6 @@ func (d *DeepseekReq) GetModel(l *LLM) {
 	}
 }
 
-func (d *DeepseekReq) GetMessages(userId string, prompt string) {
-	messages := make([]deepseek.ChatCompletionMessage, 0)
-	
-	msgRecords := db.GetMsgRecord(userId)
-	if msgRecords != nil {
-		aqs := msgRecords.AQs
-		if len(aqs) > *conf.BaseConfInfo.MaxQAPair {
-			aqs = aqs[len(aqs)-*conf.BaseConfInfo.MaxQAPair:]
-		}
-		
-		for i, record := range aqs {
-			
-			logger.Info("context content", "dialog", i, "question:", record.Question,
-				"toolContent", record.Content, "answer:", record.Answer)
-			if record.Question != "" {
-				messages = append(messages, deepseek.ChatCompletionMessage{
-					Role:    constants.ChatMessageRoleUser,
-					Content: record.Question,
-				})
-			}
-			if record.Content != "" {
-				toolsMsgs := make([]deepseek.ChatCompletionMessage, 0)
-				err := json.Unmarshal([]byte(record.Content), &toolsMsgs)
-				if err != nil {
-					logger.Error("Error unmarshalling tools json", "err", err)
-				} else {
-					messages = append(messages, toolsMsgs...)
-				}
-			}
-			if record.Answer != "" {
-				messages = append(messages, deepseek.ChatCompletionMessage{
-					Role:    constants.ChatMessageRoleAssistant,
-					Content: record.Answer,
-				})
-			}
-		}
-	}
-	messages = append(messages, deepseek.ChatCompletionMessage{
-		Role:    constants.ChatMessageRoleUser,
-		Content: prompt,
-	})
-	
-	d.DeepseekMsgs = messages
-}
-
 func (d *DeepseekReq) Send(ctx context.Context, l *LLM) error {
 	if l.OverLoop() {
 		return errors.New("too many loops")

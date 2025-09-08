@@ -8,7 +8,6 @@ import (
 	openrouter "github.com/revrost/go-openrouter"
 	"github.com/stretchr/testify/assert"
 	"github.com/yincongcyincong/MuseBot/conf"
-	"github.com/yincongcyincong/MuseBot/db"
 	"github.com/yincongcyincong/MuseBot/param"
 )
 
@@ -28,22 +27,6 @@ func TestAIRouterReq_GetModel_UserMode(t *testing.T) {
 	l := &LLM{UserId: "1"}
 	mock.GetModel(l)
 	assert.Equal(t, param.DeepseekDeepseekR1_0528Free, l.Model)
-}
-
-func TestAIRouterReq_GetMessages(t *testing.T) {
-	userId := "user123"
-	db.InsertMsgRecord(userId, &db.AQ{
-		Question: "What is AI?",
-		Answer:   "Artificial Intelligence",
-		Content:  `[{"role":"tool","content":{"text":"Tool result"}}]`,
-	}, true)
-	
-	r := &AIRouterReq{}
-	r.GetMessages(userId, "Tell me more")
-	assert.True(t, len(r.OpenRouterMsgs) >= 3)
-	assert.Equal(t, "user", r.OpenRouterMsgs[0].Role)
-	assert.Equal(t, "assistant", r.OpenRouterMsgs[2].Role)
-	assert.Equal(t, "Tell me more", r.OpenRouterMsgs[len(r.OpenRouterMsgs)-1].Content.Multi[0].Text)
 }
 
 func TestAIRouterReq_GetUserMessage(t *testing.T) {

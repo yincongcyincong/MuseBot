@@ -45,49 +45,6 @@ func (d *OpenAIReq) GetModel(l *LLM) {
 	}
 }
 
-func (d *OpenAIReq) GetMessages(userId string, prompt string) {
-	messages := make([]openai.ChatCompletionMessage, 0)
-	
-	msgRecords := db.GetMsgRecord(userId)
-	if msgRecords != nil {
-		aqs := msgRecords.AQs
-		if len(aqs) > *conf.BaseConfInfo.MaxQAPair {
-			aqs = aqs[len(aqs)-*conf.BaseConfInfo.MaxQAPair:]
-		}
-		
-		for i, record := range aqs {
-			if record.Answer != "" && record.Question != "" {
-				logger.Info("context content", "dialog", i, "question:", record.Question,
-					"toolContent", record.Content, "answer:", record.Answer)
-				messages = append(messages, openai.ChatCompletionMessage{
-					Role:    constants.ChatMessageRoleUser,
-					Content: record.Question,
-				})
-				if record.Content != "" {
-					toolsMsgs := make([]openai.ChatCompletionMessage, 0)
-					err := json.Unmarshal([]byte(record.Content), &toolsMsgs)
-					if err != nil {
-						logger.Error("Error unmarshalling tools json", "err", err)
-					} else {
-						messages = append(messages, toolsMsgs...)
-					}
-				}
-				messages = append(messages, openai.ChatCompletionMessage{
-					Role:    constants.ChatMessageRoleAssistant,
-					Content: record.Answer,
-				})
-			}
-		}
-	}
-	
-	messages = append(messages, openai.ChatCompletionMessage{
-		Role:    constants.ChatMessageRoleUser,
-		Content: prompt,
-	})
-	
-	d.OpenAIMsgs = messages
-}
-
 func (d *OpenAIReq) Send(ctx context.Context, l *LLM) error {
 	if l.OverLoop() {
 		return errors.New("too many loops")
