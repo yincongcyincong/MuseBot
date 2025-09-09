@@ -394,7 +394,7 @@ func (l *LarkRobot) executeChain() {
 	}
 	go l.Robot.ExecChain(l.Prompt, messageChan)
 	
-	go l.Robot.handleUpdate(messageChan, "opus")
+	go l.Robot.HandleUpdate(messageChan, "opus")
 }
 
 func (l *LarkRobot) sendText(messageChan *MsgChan) {
@@ -439,7 +439,7 @@ func (l *LarkRobot) executeLLM() {
 	messageChan := &MsgChan{
 		NormalMessageChan: make(chan *param.MsgInfo),
 	}
-	go l.Robot.handleUpdate(messageChan, "opus")
+	go l.Robot.HandleUpdate(messageChan, "opus")
 	
 	go l.Robot.ExecLLM(l.Prompt, messageChan)
 	

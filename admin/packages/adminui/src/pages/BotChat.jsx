@@ -2,6 +2,9 @@ import React, { useEffect, useState } from "react";
 import Pagination from "../components/Pagination";
 import BotSelector from "../components/BotSelector";
 import ReactMarkdown from 'react-markdown';
+import Modal from "../components/Modal";
+import Editor from "@monaco-editor/react";
+import Toast from "../components/Toast.jsx";
 
 function BotRecordsPage() {
     const [botId, setBotId] = useState(null);
@@ -10,6 +13,20 @@ function BotRecordsPage() {
     const [page, setPage] = useState(1);
     const [pageSize] = useState(10);
     const [total, setTotal] = useState(0);
+
+    const [toast, setToast] = useState({show: false, message: "", type: "error"});
+    const showToast = (message, type = "error") => {
+        setToast({show: true, message, type});
+    };
+
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [rawConfigText, setRawConfigText] = useState(
+        JSON.stringify(
+            { user_id: "", records: [{ question: "", answer: "" }] },
+            null,
+            2
+        )
+    );
 
     useEffect(() => {
         if (botId !== null) {
@@ -32,7 +49,28 @@ function BotRecordsPage() {
             setRecords(data.data.list || []);
             setTotal(data.data.total || 0);
         } catch (err) {
-            console.error("Failed to fetch bot records:", err);
+            showToast("Failed to fetch bot records: " + err.message);
+        }
+    };
+
+    const insertRecords = async () => {
+        try {
+            const res = await fetch(`/bot/user/insert/records?id=${botId}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: rawConfigText,
+            });
+            if (!res.ok) throw new Error("Failed to insert records");
+            const data = await res.json();
+            setIsModalOpen(false);
+            if (data.code === 0) {
+                showToast("Records inserted successfully", "success");
+            } else {
+                showToast(data.message);
+            }
+            await fetchBotRecords();
+        } catch (err) {
+            showToast("Failed to insert records: " + err.message);
         }
     };
 
@@ -51,20 +89,16 @@ function BotRecordsPage() {
         }
 
         if (answer.startsWith('data:video/')) {
-            // 视频 base64
             return (
                 <video
                     controls
                     className="max-w-[300px] w-full rounded shadow"
                     src={answer}
-                >
-                    Your browser does not support the video tag.
-                </video>
+                />
             );
         }
 
         if (answer.startsWith('data:image/')) {
-            // 图片 base64
             return (
                 <img
                     src={answer}
@@ -74,7 +108,6 @@ function BotRecordsPage() {
             );
         }
 
-        // 其他内容用 markdown 渲染
         return (
             <ReactMarkdown
                 components={{
@@ -88,10 +121,24 @@ function BotRecordsPage() {
         );
     }
 
-
     return (
-        <div className="p-6 bg-gray-100 min-h-screen">
-            <h2 className="text-2xl font-bold text-gray-800 mb-6">Bot Record History</h2>
+        <div className="p-6 bg-gray-100 min-h-screen relative">
+            {toast.show && (
+                <Toast
+                    message={toast.message}
+                    type={toast.type}
+                    onClose={() => setToast({...toast, show: false})}
+                />
+            )}
+            <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-gray-800">Bot Record History</h2>
+                <button
+                    onClick={() => setIsModalOpen(true)}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700"
+                >
+                    Insert Record
+                </button>
+            </div>
 
             <div className="flex space-x-4 mb-6 max-w-4xl flex-wrap items-end">
                 <div className="flex-1 min-w-[200px]">
@@ -165,6 +212,38 @@ function BotRecordsPage() {
             </div>
 
             <Pagination page={page} pageSize={pageSize} total={total} onPageChange={handlePageChange} />
+
+            <Modal visible={isModalOpen} onClose={() => setIsModalOpen(false)} title={"Insert Record"}>
+                <div className="mb-4">
+                    <Editor
+                        height="300px"
+                        defaultLanguage="json"
+                        value={rawConfigText}
+                        onChange={(value) => setRawConfigText(value ?? "")}
+                        options={{
+                            minimap: { enabled: false },
+                            fontSize: 14,
+                            automaticLayout: true,
+                            formatOnPaste: true,
+                            formatOnType: true,
+                        }}
+                    />
+                </div>
+                <div className="flex justify-end space-x-2">
+                    <button
+                        onClick={() => setIsModalOpen(false)}
+                        className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        onClick={insertRecords}
+                        className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                    >
+                        Insert
+                    </button>
+                </div>
+            </Modal>
         </div>
     );
 }

@@ -433,14 +433,14 @@ func (w *WechatRobot) executeChain() {
 	}
 	go w.Robot.ExecChain(w.Prompt, messageChan)
 	
-	go w.Robot.handleUpdate(messageChan, "amr")
+	go w.Robot.HandleUpdate(messageChan, "amr")
 }
 
 func (w *WechatRobot) executeLLM() {
 	messageChan := &MsgChan{
 		NormalMessageChan: make(chan *param.MsgInfo),
 	}
-	go w.Robot.handleUpdate(messageChan, "amr")
+	go w.Robot.HandleUpdate(messageChan, "amr")
 	
 	go w.Robot.ExecLLM(w.Prompt, messageChan)
 	

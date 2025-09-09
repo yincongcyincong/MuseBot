@@ -52,12 +52,12 @@ func ManualCheckPoint() {
 		}
 	}()
 	ScheduleBotChecks()
-	ticker := time.NewTicker(60 * time.Second)
+	ticker := time.NewTicker(time.Duration(*conf.BaseConfInfo.CheckBotSec) * time.Second)
 	defer ticker.Stop()
 	
 	for {
 		select {
-		case <-ticker.C: // 每 60 秒触发一次
+		case <-ticker.C:
 			go ScheduleBotChecks()
 		}
 	}
@@ -94,7 +94,7 @@ func ScheduleBotChecks() {
 		return
 	}
 	
-	batchCount := 60
+	batchCount := *conf.BaseConfInfo.CheckBotSec
 	batchSize := (len(bots) + batchCount - 1) / batchCount
 	
 	var wg sync.WaitGroup

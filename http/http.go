@@ -53,6 +53,7 @@ func (p *HTTPServer) Start() {
 		
 		http.HandleFunc("/user/list", GetUsers)
 		http.HandleFunc("/user/update/mode", UpdateMode)
+		http.HandleFunc("/user/insert/record", InsertUserRecords)
 		http.HandleFunc("/record/list", GetRecords)
 		
 		http.HandleFunc("/pong", PongHandler)

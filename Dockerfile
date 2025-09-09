@@ -15,6 +15,7 @@ COPY . .
 # Build the Go application
 RUN go build -ldflags="-s -w" -o MuseBot main.go
 
+
 # ----------------------
 # FFmpeg download stage
 # ----------------------
@@ -45,18 +46,20 @@ WORKDIR /app
 
 # Install certificates
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends ca-certificates && \
+    apt-get install -y --no-install-recommends ca-certificates curl && \
+    curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
+    apt-get install -y --no-install-recommends nodejs && \
     rm -rf /var/lib/apt/lists/*
 
 # Create required directories
 RUN mkdir -p ./conf/i18n ./conf/mcp
 
-# Copy compiled Go application and configuration files
+# Copy compiled Go application
 COPY --from=builder /app/MuseBot .
 COPY --from=builder /app/conf/i18n/ ./conf/i18n/
 COPY --from=builder /app/conf/mcp/ ./conf/mcp/
 
-# Copy FFmpeg binaries from ffmpeg-builder
+# Copy FFmpeg binaries
 COPY --from=ffmpeg-builder /usr/local/bin/ffmpeg /usr/local/bin/ffmpeg
 COPY --from=ffmpeg-builder /usr/local/bin/ffprobe /usr/local/bin/ffprobe
 

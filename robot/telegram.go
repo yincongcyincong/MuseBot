@@ -198,7 +198,7 @@ func (t *TelegramRobot) executeChain(content string) {
 	go t.Robot.ExecChain(content, messageChan)
 	
 	// send response message
-	go t.Robot.handleUpdate(messageChan, "ogg_opus")
+	go t.Robot.HandleUpdate(messageChan, "ogg_opus")
 	
 }
 
@@ -210,7 +210,7 @@ func (t *TelegramRobot) executeLLM(content string) {
 	go t.Robot.ExecLLM(content, messageChan)
 	
 	// send response message
-	go t.Robot.handleUpdate(messageChan, "ogg_opus")
+	go t.Robot.HandleUpdate(messageChan, "ogg_opus")
 	
 }
 

@@ -436,7 +436,7 @@ func (q *QQRobot) executeChain() {
 	go q.Robot.ExecChain(q.Prompt, msgChan)
 	
 	// send response message
-	go q.Robot.handleUpdate(msgChan, "silk")
+	go q.Robot.HandleUpdate(msgChan, "silk")
 }
 
 func (q *QQRobot) executeLLM() {
@@ -451,7 +451,7 @@ func (q *QQRobot) executeLLM() {
 		}
 	}
 	
-	go q.Robot.handleUpdate(msgChan, "silk")
+	go q.Robot.HandleUpdate(msgChan, "silk")
 	
 	go q.Robot.ExecLLM(q.Prompt, msgChan)
 	

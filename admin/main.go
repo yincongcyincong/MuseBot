@@ -42,6 +42,7 @@ func main() {
 	http.HandleFunc("/bot/record/list", controller.RequireLogin(controller.GetBotUserRecord))
 	http.HandleFunc("/bot/user/list", controller.RequireLogin(controller.GetBotUser))
 	http.HandleFunc("/bot/user/mode/update", controller.RequireLogin(controller.UpdateUserMode))
+	http.HandleFunc("/bot/user/insert/records", controller.RequireLogin(controller.InsertUserRecord))
 	http.HandleFunc("/bot/add/token", controller.RequireLogin(controller.AddUserToken))
 	http.HandleFunc("/bot/online", controller.RequireLogin(controller.GetAllOnlineBot))
 	http.HandleFunc("/bot/mcp/get", controller.RequireLogin(controller.GetBotMCPConf))
