@@ -101,7 +101,7 @@ func (d *DiscordRobot) executeChain(content string) {
 	
 	go d.Robot.ExecChain(content, messageChan)
 	
-	go d.Robot.handleUpdate(messageChan, "mp3")
+	go d.Robot.HandleUpdate(messageChan, "mp3")
 }
 
 func (d *DiscordRobot) executeLLM(content string) {
@@ -111,7 +111,7 @@ func (d *DiscordRobot) executeLLM(content string) {
 	
 	go d.Robot.ExecLLM(content, messageChan)
 	
-	go d.Robot.handleUpdate(messageChan, "mp3")
+	go d.Robot.HandleUpdate(messageChan, "mp3")
 }
 
 func (d *DiscordRobot) sendText(messageChan *MsgChan) {

@@ -397,7 +397,7 @@ func (d *DingRobot) executeChain() {
 	go d.Robot.ExecChain(d.Prompt, messageChan)
 	
 	// send response message
-	go d.Robot.handleUpdate(messageChan, "amr")
+	go d.Robot.HandleUpdate(messageChan, "amr")
 }
 
 func (d *DingRobot) sendText(messageChan *MsgChan) {
@@ -490,7 +490,7 @@ func (d *DingRobot) executeLLM() {
 	messageChan := &MsgChan{
 		NormalMessageChan: make(chan *param.MsgInfo),
 	}
-	go d.Robot.handleUpdate(messageChan, "amr")
+	go d.Robot.HandleUpdate(messageChan, "amr")
 	
 	go d.Robot.ExecLLM(d.Prompt, messageChan)
 	

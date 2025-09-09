@@ -398,7 +398,7 @@ func (c *ComWechatRobot) executeChain() {
 	go c.Robot.ExecChain(c.Prompt, messageChan)
 	
 	// send response message
-	go c.Robot.handleUpdate(messageChan, "amr")
+	go c.Robot.HandleUpdate(messageChan, "amr")
 }
 
 func (c *ComWechatRobot) sendText(messageChan *MsgChan) {
@@ -424,7 +424,7 @@ func (c *ComWechatRobot) executeLLM() {
 	messageChan := &MsgChan{
 		NormalMessageChan: make(chan *param.MsgInfo),
 	}
-	go c.Robot.handleUpdate(messageChan, "amr")
+	go c.Robot.HandleUpdate(messageChan, "amr")
 	
 	go c.Robot.ExecLLM(c.Prompt, messageChan)
 	

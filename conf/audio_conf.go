@@ -10,14 +10,14 @@ import (
 type AudioConf struct {
 	VolAudioAppID      *string `json:"vol_audio_app_id"`
 	VolAudioToken      *string `json:"vol_audio_token"`
-	VolAudioRecCluster *string `json:"vol_audio_cluster"`
+	VolAudioRecCluster *string `json:"vol_audio_rec_cluster"`
 	VolAudioVoiceType  *string `json:"vol_audio_voice_type"`
 	VolAudioTTSCluster *string `json:"vol_audio_tts_cluster"`
 	
 	GeminiAudioModel *string `json:"gemini_audio_model"`
 	GeminiVoiceName  *string `json:"gemini_voice_name"`
 	
-	TTSType *string `json:"vol_tts_type"`
+	TTSType *string `json:"tts_type"`
 }
 
 var (

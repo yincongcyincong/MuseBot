@@ -1011,7 +1011,7 @@ func (r *RobotInfo) sendMultiAgent(agentType string, emptyPromptFunc func()) {
 			}
 		}()
 		
-		go r.handleUpdate(&MsgChan{
+		go r.HandleUpdate(&MsgChan{
 			NormalMessageChan: dpReq.MessageChan,
 			StrMessageChan:    dpReq.HTTPMsgChan,
 		}, "")
@@ -1144,7 +1144,7 @@ func (r *RobotInfo) sendVoice(messageChan *MsgChan, encoding string) {
 	}
 }
 
-func (r *RobotInfo) handleUpdate(messageChan *MsgChan, encoding string) {
+func (r *RobotInfo) HandleUpdate(messageChan *MsgChan, encoding string) {
 	defer func() {
 		if err := recover(); err != nil {
 			logger.Error("handleUpdate panic err", "err", err, "stack", string(debug.Stack()))

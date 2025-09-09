@@ -238,7 +238,7 @@ func (s *SlackRobot) executeChain(content string) {
 	}
 	go s.Robot.ExecChain(content, messageChan)
 	
-	go s.Robot.handleUpdate(messageChan, "mp3")
+	go s.Robot.HandleUpdate(messageChan, "mp3")
 }
 
 func (s *SlackRobot) executeLLM(content string) {
@@ -247,7 +247,7 @@ func (s *SlackRobot) executeLLM(content string) {
 	}
 	go s.Robot.ExecLLM(content, messageChan)
 	
-	go s.Robot.handleUpdate(messageChan, "mp3")
+	go s.Robot.HandleUpdate(messageChan, "mp3")
 }
 
 func (s *SlackRobot) getContent(content string) (string, error) {

@@ -131,3 +131,27 @@ func GetRecords(w http.ResponseWriter, r *http.Request) {
 	
 	utils.Success(w, result)
 }
+
+func InsertUserRecords(w http.ResponseWriter, r *http.Request) {
+	userRecords := &db.UserRecords{}
+	err := utils.HandleJsonBody(r, userRecords)
+	if err != nil {
+		logger.Error("parse json body error", "err", err)
+		utils.Failure(w, param.CodeParamError, param.MsgParamError, err)
+		return
+	}
+	
+	err = db.InsertUserRecords(userRecords)
+	if err != nil {
+		logger.Error("change user mode error", "err", err)
+		utils.Failure(w, param.CodeDBWriteFail, param.MsgDBWriteFail, err)
+		return
+	}
+	
+	for _, aq := range userRecords.Records {
+		db.InsertMsgRecord(userRecords.UserId, aq, false)
+	}
+	
+	utils.Success(w, "success")
+	
+}

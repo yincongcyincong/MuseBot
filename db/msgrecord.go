@@ -20,12 +20,17 @@ type MsgRecordInfo struct {
 	updateTime int64
 }
 
+type UserRecords struct {
+	UserId  string `json:"user_id"`
+	Records []*AQ  `json:"records"`
+}
+
 type AQ struct {
-	Question string
-	Answer   string
-	Content  string
-	Token    int
-	Mode     string
+	Question string `json:"question"`
+	Answer   string `json:"answer"`
+	Content  string `json:"content"`
+	Token    int    `json:"token"`
+	Mode     string `json:"mode"`
 }
 
 type Record struct {
@@ -462,4 +467,33 @@ func FilterByMaxContextFromLatest(aqs []*AQ, maxContext int) []*AQ {
 	}
 	
 	return result
+}
+
+func InsertUserRecords(ur *UserRecords) error {
+	query := `
+		INSERT INTO records (
+			user_id, question, answer, content, token, create_time, is_deleted, record_type, mode, from_bot
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	`
+	
+	now := time.Now().Unix()
+	
+	for _, r := range ur.Records {
+		_, err := DB.Exec(query,
+			ur.UserId,
+			r.Question,
+			r.Answer,
+			"",
+			0,
+			now,
+			0,
+			param.TextRecordType,
+			"manual",
+			"",
+		)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

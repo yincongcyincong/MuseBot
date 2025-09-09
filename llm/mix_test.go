@@ -40,7 +40,7 @@ func TestAIRouterReq_GetAssistantMessage(t *testing.T) {
 	mock := &AIRouterReq{}
 	mock.GetAssistantMessage("Hi!")
 	assert.Equal(t, "assistant", mock.OpenRouterMsgs[0].Role)
-	assert.Equal(t, "Hi!", mock.OpenRouterMsgs[0].Content.Multi[0].Text)
+	assert.Equal(t, "Hi!", mock.OpenRouterMsgs[0].Content.Text)
 }
 
 func TestAIRouterReq_AppendMessages(t *testing.T) {
@@ -59,10 +59,10 @@ func TestAIRouterReq_AppendMessages(t *testing.T) {
 func TestAIRouterReq_GetMessage(t *testing.T) {
 	mock := &AIRouterReq{}
 	mock.GetMessage("user", "test")
-	assert.Equal(t, "test", mock.OpenRouterMsgs[0].Content.Multi[0].Text)
+	assert.Equal(t, "test", mock.OpenRouterMsgs[0].Content.Text)
 	
 	mock.GetMessage("assistant", "answer")
-	assert.Equal(t, "answer", mock.OpenRouterMsgs[1].Content.Multi[0].Text)
+	assert.Equal(t, "answer", mock.OpenRouterMsgs[1].Content.Text)
 }
 
 func TestAIRouterReq_requestOneToolsCall_JSONError(t *testing.T) {
