@@ -177,12 +177,6 @@ docker run -d -v /home/user/data:/app/data -e TELEGRAM_BOT_TOKEN="你的Telegram
 
 ### `/mode`
 
-选择 DeepSeek 模式，包括：
-
-- `chat`: 对话模式（DeepSeek-V3）
-- `coder`: 编程模式（DeepSeek-V3）
-- `reasoner`: 推理模式（DeepSeek-R1）
-
 <img width="400" src="https://github.com/user-attachments/assets/55ac3101-92d2-490d-8ee0-31a5b297e56e"  alt=""/>
 
 ### `/balance`
