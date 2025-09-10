@@ -23,12 +23,12 @@ chatgpt: https://www.bilibili.com/video/BV1RutxzJEGY/
 
 ## 🚀 功能特性
 
-- 🤖 **AI 回复**：使用 DeepSeek API 提供聊天机器人回复。
+- 🤖 **AI 回复**：使用 大模型 API 提供聊天机器人回复。
 - ⏳ **流式输出**：实时发送回复，提升用户体验。
 - 🏗 **轻松部署**：可本地运行或部署到云服务器。
-- 👀 **图像识别**：使用图片与 DeepSeek
+- 👀 **图像识别**：使用图片与 大模型
   进行交流，详见[文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/imageconf.md)。
-- 🎺 **支持语音**：使用语音与 DeepSeek
+- 🎺 **支持语音**：使用语音与 大模型
   进行交流，详见[文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/audioconf.md)。
 - 🐂 **函数调用**：将 MCP
   协议转换为函数调用，详见[文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/functioncall.md)。
@@ -176,12 +176,6 @@ docker run -d -v /home/user/data:/app/data -e TELEGRAM_BOT_TOKEN="你的Telegram
 重试上一次问题。
 
 ### `/mode`
-
-选择 DeepSeek 模式，包括：
-
-- `chat`: 对话模式（DeepSeek-V3）
-- `coder`: 编程模式（DeepSeek-V3）
-- `reasoner`: 推理模式（DeepSeek-R1）
 
 <img width="400" src="https://github.com/user-attachments/assets/55ac3101-92d2-490d-8ee0-31a5b297e56e"  alt=""/>
 
