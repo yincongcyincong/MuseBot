@@ -9,7 +9,9 @@
 | `VOL_AUDIO_TTS_CLUSTER` | `string` | Optional          | Volcengine TTS cluster (default: `volcano_tts`) , include:  [volcano_tts](https://www.volcengine.com/docs/6561/1257584) / [volcano_icl](https://www.volcengine.com/docs/6561/1305191) |
 | `GEMINI_AUDIO_MODEL`    | `string` | Optional          | Gemini audio model (default: `gemini-2.5-flash-preview-tts`)                                                                                                                          |
 | `GEMINI_VOICE_NAME`     | `string` | Optional          | Gemini voice name (default: `Kore`)                                                                                                                                                   |
-| `TTS_TYPE`              | `string` | Optional          | TTS type: `vol` (Volcengine) or `gemini` (Gemini)                                                                                                                                     |
+| `OPENAI_AUDIO_MODEL`    | `string` | Optional          | Openai audio model (default: `tts-1`)                                                                                                                                                 |
+| `OPENAI_VOICE_NAME`     | `string` | Optional          | Openai voice name (default: `alloy`)                                                                                                                                                  |
+| `TTS_TYPE`              | `string` | Optional          | TTS type: vol/gemini/openai                                                                                                                                                           |
 
 enter vol engine console.
 ![image](https://github.com/user-attachments/assets/6261ee3c-2632-427d-a95e-85e55d85d971)

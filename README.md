@@ -1,6 +1,6 @@
 ## group
 
-telegram-group: https://t.me/+WtaMcDpaMOlhZTE1 , or you can have a try robot `GWSbot`.
+telegram-group: https://t.me/+WtaMcDpaMOlhZTE1 , or you can have a try robot `Musebot`.
 every body have **10000** token to try this bot, please give me a star!
 
 QQ群：1031411708
@@ -56,8 +56,8 @@ chatgpt: https://www.youtube.com/watch?v=G_DZYMvd5Ug
 |-------------------|------------|-----------------|:----------------:|:----------------:|----------------:|----:|--------------------------------------|
 | 🌟 **Gemini**     | Google     | ✅               |        ✅         |        ✅         |               ✅ |   ✅ | [doc](https://gemini.google.com/app) |
 | 💬 **ChatGPT**    | OpenAI     | ✅               |        ✅         |        ❌         |               ✅ |   ✅ | [doc](https://chat.openai.com)       |
+| ⚙️ **302.AI**     | 302.AI     | ✅               |        ✅         |        ✅         |               ✅ |   ❌ | [doc](https://302.ai/)               |
 | 🐦 **Doubao**     | ByteDance  | ✅               |        ✅         |        ✅         |               ✅ |   ✅ | [doc](https://www.volcengine.com/)   |
-| ⚙️ **302-AI**     | 302-AI     | ✅               |        ✅         |        ✅         |               ✅ |   ❌ | [doc](https://302.ai/)               |
 | 🧠 **DeepSeek**   | DeepSeek   | ✅               |        ❌         |        ❌         |               ❌ |   ❌ | [doc](https://www.deepseek.com/)     |
 | 🌐 **OpenRouter** | OpenRouter | ✅               |        ✅         |        ❌         |               ✅ |   ❌ | [doc](https://openrouter.ai/)        |
 
