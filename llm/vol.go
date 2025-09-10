@@ -19,7 +19,6 @@ import (
 	"github.com/volcengine/volc-sdk-golang/service/visual"
 	"github.com/volcengine/volcengine-go-sdk/service/arkruntime"
 	"github.com/volcengine/volcengine-go-sdk/service/arkruntime/model"
-	"github.com/wdvxdr1123/go-silk"
 	"github.com/yincongcyincong/MuseBot/conf"
 	"github.com/yincongcyincong/MuseBot/db"
 	"github.com/yincongcyincong/MuseBot/i18n"
@@ -617,17 +616,12 @@ func VolTTS(text, userId, encoding string) ([]byte, int, int, error) {
 	}
 	
 	audio, _ := base64.StdEncoding.DecodeString(respJSON.Data)
-	switch encoding {
-	case "amr":
-		audio, err = utils.PCMToAMR(audio, 24000, 1)
-	case "silk":
-		audio, err = silk.EncodePcmBuffToSilk(audio, 24000, 1, true)
-	case "opus":
-		audio, err = utils.PCMToOpus(audio, 24000, 1)
-	}
-	if err != nil {
-		logger.Error("EncodePcmBuffToSilk error", "err", err)
-		return nil, 0, 0, err
+	if formatEncoding == "pcm" {
+		audio, err = utils.GetAudioData(encoding, audio)
+		if err != nil {
+			logger.Error("EncodePcmBuffToSilk error", "err", err)
+			return nil, 0, 0, err
+		}
 	}
 	
 	return audio, param.AudioTokenUsage, utils.ParseInt(respJSON.Addition.Duration), nil

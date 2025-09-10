@@ -17,6 +17,9 @@ type AudioConf struct {
 	GeminiAudioModel *string `json:"gemini_audio_model"`
 	GeminiVoiceName  *string `json:"gemini_voice_name"`
 	
+	OpenAIAudioModel *string `json:"openai_audio_model"`
+	OpenAIVoiceName  *string `json:"openai_voice_name"`
+	
 	TTSType *string `json:"tts_type"`
 }
 
@@ -33,6 +36,9 @@ func InitAudioConf() {
 	
 	AudioConfInfo.GeminiAudioModel = flag.String("gemini_audio_model", "gemini-2.5-flash-preview-tts", "gemini audio model")
 	AudioConfInfo.GeminiVoiceName = flag.String("gemini_voice_name", "Kore", "gemini voice name")
+	
+	AudioConfInfo.OpenAIAudioModel = flag.String("openai_audio_model", "tts-1", "openai audio model")
+	AudioConfInfo.OpenAIVoiceName = flag.String("openai_voice_name", "alloy", "openai voice name")
 	
 	AudioConfInfo.TTSType = flag.String("tts_type", "", "vol tts type: 1. vol 2. gemini")
 }
@@ -63,6 +69,14 @@ func EnvAudioConf() {
 		*AudioConfInfo.GeminiVoiceName = os.Getenv("GEMINI_VOICE_NAME")
 	}
 	
+	if os.Getenv("OPENAI_AUDIO_MODEL") != "" {
+		*AudioConfInfo.OpenAIAudioModel = os.Getenv("OPENAI_AUDIO_MODEL")
+	}
+	
+	if os.Getenv("OPENAI_VOICE_NAME") != "" {
+		*AudioConfInfo.OpenAIVoiceName = os.Getenv("OPENAI_VOICE_NAME")
+	}
+	
 	if os.Getenv("TTS_TYPE") != "" {
 		*AudioConfInfo.TTSType = os.Getenv("TTS_TYPE")
 	}
@@ -74,5 +88,7 @@ func EnvAudioConf() {
 	logger.Info("AUDIO_CONF", "AudioTTSCluster", *AudioConfInfo.VolAudioTTSCluster)
 	logger.Info("AUDIO_CONF", "GeminiAudioModel", *AudioConfInfo.GeminiAudioModel)
 	logger.Info("AUDIO_CONF", "GeminiVoiceName", *AudioConfInfo.GeminiVoiceName)
+	logger.Info("AUDIO_CONF", "OpenAIAudioModel", *AudioConfInfo.OpenAIAudioModel)
+	logger.Info("AUDIO_CONF", "OpenAIVoiceName", *AudioConfInfo.OpenAIVoiceName)
 	logger.Info("AUDIO_CONF", "TTSType", *AudioConfInfo.TTSType)
 }

@@ -9,7 +9,6 @@ import (
 	"time"
 	"unicode"
 	
-	"github.com/wdvxdr1123/go-silk"
 	"github.com/yincongcyincong/MuseBot/conf"
 	"github.com/yincongcyincong/MuseBot/db"
 	"github.com/yincongcyincong/MuseBot/i18n"
@@ -547,17 +546,8 @@ func GeminiTTS(content, encoding string) ([]byte, int, int, error) {
 	if len(response.Candidates) > 0 {
 		for _, part := range response.Candidates[0].Content.Parts {
 			if part.InlineData != nil {
-				var data []byte
-				switch encoding {
-				case "amr":
-					data, err = utils.PCMToAMR(part.InlineData.Data, 24000, 1)
-				case "ogg_opus":
-					data, err = utils.PCMToOGG(part.InlineData.Data, 24000)
-				case "mp3":
-					data, err = utils.PCMToMP3(part.InlineData.Data, 24000, 1)
-				case "silk":
-					data, err = silk.EncodePcmBuffToSilk(part.InlineData.Data, 24000, 1, true)
-				}
+				var data = part.InlineData.Data
+				data, err = utils.GetAudioData(encoding, part.InlineData.Data)
 				if err != nil {
 					logger.Error("convert audio fail", "err", err)
 				}

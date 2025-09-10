@@ -55,7 +55,7 @@ chatgpt: https://www.youtube.com/watch?v=G_DZYMvd5Ug
 | Model             | Provider   | Text Generation | Image Generation | Video Generation | Recognize Photo | TTS | Link                                 |
 |-------------------|------------|-----------------|:----------------:|:----------------:|----------------:|----:|--------------------------------------|
 | 🌟 **Gemini**     | Google     | ✅               |        ✅         |        ✅         |               ✅ |   ✅ | [doc](https://gemini.google.com/app) |
-| 💬 **ChatGPT**    | OpenAI     | ✅               |        ✅         |        ❌         |               ✅ |   ❌ | [doc](https://chat.openai.com)       |
+| 💬 **ChatGPT**    | OpenAI     | ✅               |        ✅         |        ❌         |               ✅ |   ✅ | [doc](https://chat.openai.com)       |
 | 🐦 **Doubao**     | ByteDance  | ✅               |        ✅         |        ✅         |               ✅ |   ✅ | [doc](https://www.volcengine.com/)   |
 | ⚙️ **302-AI**     | 302-AI     | ✅               |        ✅         |        ✅         |               ✅ |   ❌ | [doc](https://302.ai/)               |
 | 🧠 **DeepSeek**   | DeepSeek   | ✅               |        ❌         |        ❌         |               ❌ |   ❌ | [doc](https://www.deepseek.com/)     |
