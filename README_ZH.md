@@ -1,6 +1,6 @@
 ## group
 
-telegram群: https://t.me/+WtaMcDpaMOlhZTE1, 或者尝试一下GWSbot。
+telegram群: https://t.me/+WtaMcDpaMOlhZTE1, 或者尝试一下Musebot。
 每个人有 **10000** token 去试用robot, 点个star吧!
 
 QQ群：1031411708
@@ -60,7 +60,7 @@ chatgpt: https://www.bilibili.com/video/BV1RutxzJEGY/
 | 🌟 **Gemini**     | 谷歌         | ✅    |  ✅   |  ✅   |  ✅   | [文档](https://gemini.google.com/app) |
 | 💬 **ChatGPT**    | OpenAI     | ✅    |  ✅   |  ❌   |  ✅   | [文档](https://chat.openai.com)       |
 | 🐦 **Doubao**     | 字节跳动       | ✅    |  ✅   |  ✅   |  ✅   | [文档](https://www.volcengine.com/)   |
-| ⚙️ **302-AI**     | 302-AI     | ✅    |  ✅   |  ✅   |  ✅   | [文档](https://302.ai/)               |
+| ⚙️ **302.AI**     | 302.AI     | ✅    |  ✅   |  ✅   |  ✅   | [文档](https://302.ai/)               |
 | 🧠 **DeepSeek**   | DeepSeek   | ✅    |  ❌   |  ❌   |  ❌   | [文档](https://www.deepseek.com/)     |
 | 🌐 **OpenRouter** | OpenRouter | ✅    |  ✅   |  ❌   |  ✅   | [文档](https://openrouter.ai/)        |
 

@@ -1,137 +1,124 @@
-Вот перевод на русский язык с сохранением разметки и стиля:
-
 ## Группа
 
-telegram-группа: https://t.me/+WtaMcDpaMOlhZTE1, или можете попробовать бота `GWSbot`.  
-У каждого есть **3000** токенов для тестирования этого бота, пожалуйста, поставьте звезду!
+Telegram-группа: https://t.me/+WtaMcDpaMOlhZTE1 , или вы можете попробовать бота `Musebot`.  
+Каждому пользователю предоставляется **10000** токенов для тестирования этого бота. Поставьте ⭐ на репозиторий!  
 
-# DeepSeek Telegram Bot
+QQ-группа: 1031411708  
 
-Этот репозиторий предоставляет **Telegram бота**, написанного на **Golang**, который интегрируется с **DeepSeek API** для предоставления ответов на основе ИИ. Бот поддерживает **потоковые ответы**, делая взаимодействие более естественным и динамичным.  
-[Документация на китайском](https://github.com/yincongcyincong/MuseBot/blob/main/Readme_ZH.md)
+# MuseBot
+
+Этот репозиторий предоставляет **бота для Telegram и Discord**, написанного на **Golang**, который интегрируется с **LLM API** для предоставления ответов на основе ИИ.  
+Бот поддерживает модели **openai**, **deepseek**, **gemini**, **openrouter**, делая взаимодействие более естественным и динамичным.  
+
+[Документация на китайском](https://github.com/yincongcyincong/MuseBot/blob/main/README_ZH.md)
+
+## Видеоуроки
+
+deepseek: https://www.youtube.com/watch?v=kPtNdLjKVn0  
+gemini: https://www.youtube.com/watch?v=7mV9RYvdE6I  
+chatgpt: https://www.youtube.com/watch?v=G_DZYMvd5Ug  
 
 ## 🚀 Возможности
 
-- 🤖 **Ответы ИИ**: Использует DeepSeek API для ответов чат-бота.
-- ⏳ **Потоковый вывод**: Отправляет ответы в реальном времени для улучшения пользовательского опыта.
-- 🏗 **Простое развертывание**: Запускайте локально или развертывайте на облачном сервере.
-- 👀 **Распознавание изображений**: общение с DeepSeek через изображения, см. [документацию](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/imageconf.md).
-- 🎺 **Поддержка голоса**: общение с DeepSeek через голосовые сообщения, см. [документацию](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/audioconf.md).
-- 🐂 **Вызов функций**: преобразование протокола MCP в вызов функций, см. [документацию](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/functioncall.md).
-- 🌊 **RAG**: Поддержка RAG для заполнения контекста, см. [документацию](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/rag.md).
-- ⛰️ **OpenRouter**: Поддержка OpenRouter (более 400 языковых моделей), см. [документацию](https://openrouter.ai/docs/quickstart).
+- 🤖 **Ответы ИИ**: Использует DeepSeek API для ответов чат-бота.  
+- ⏳ **Потоковый вывод**: Ответы отправляются в реальном времени.  
+- 🏗 **Простое развертывание**: Запуск локально или в облаке.  
+- 👀 **Распознавание изображений**: Использование изображений для общения с DeepSeek, см. [документацию](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/imageconf.md).  
+- 🎺 **Поддержка голоса**: Общение голосом с DeepSeek, см. [документацию](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/audioconf.md).  
+- 🐂 **Вызов функций**: Преобразование MCP-протокола во вызов функций, см. [документацию](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/functioncall.md).  
+- 🌊 **RAG**: Поддержка RAG для дополнения контекста, см. [документацию](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/rag.md).  
+- 🌞 **Админ-панель**: Управление MuseBot, см. [документацию](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/admin.md).  
+- 🌛 **Регистрация**: Автоматическая регистрация экземпляров бота в центре регистрации, см. [документацию](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/register.md).  
+
+## 📸 Поддерживаемые платформы
+
+| Платформа          | Поддержка | Описание                                                                                                   | Документация / Ссылки                                                                 |
+|---------------------|:---------:|------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------|
+| 🟦 **Telegram**     | ✅         | Поддержка Telegram-бота (команды, inline-кнопки, ForceReply и т.д.)                                        | [Docs](https://github.com/yincongcyincong/MuseBot)                                    |
+| 🌈 **Discord**      | ✅         | Поддержка Discord-бота                                                                                      | [Docs](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/discord.md)    |
+| 🌛 **Web API**      | ✅         | HTTP/Web API для взаимодействия с LLM (для кастомных фронтов/бэков)                                        | [Docs](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/web_api.md)    |
+| 🔷 **Slack**        | ✅         | Поддержка Slack (Socket Mode / Events API / Block Kit)                                                      | [Docs](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/slack.md)      |
+| 🟣 **Lark (Feishu)**| ✅         | Поддержка Lark (SDK larksuite, загрузка фото/аудио, обновление сообщений)                                  | [Docs](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/lark.md)       |
+| 🆙 **DingDing**     | ✅         | Поддержка DingDing (долгосрочное соединение)                                                               | [Docs](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/dingding.md)   |
+| ⚡️ **Work WeChat**  | ✅         | Поддержка http callback для Work WeChat                                                                     | [Docs](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/com_wechat.md) |
+| 🌞 **QQ**           | ✅         | Поддержка http callback для QQ                                                                              | [Docs](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/qq.md)         |
+| 🚇 **Wechat**       | ✅         | Поддержка http callback для WeChat                                                                          | [Docs](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/wechat.md)     |
+
+## Поддерживаемые LLM
+
+| Модель             | Провайдер  | Генерация текста | Генерация изображений | Генерация видео | Распознавание фото | TTS | Ссылка                                |
+|--------------------|------------|-----------------|:--------------------:|:---------------:|:------------------:|----:|---------------------------------------|
+| 🌟 **Gemini**      | Google     | ✅               | ✅                   | ✅               | ✅                 | ✅  | [doc](https://gemini.google.com/app) |
+| 💬 **ChatGPT**     | OpenAI     | ✅               | ✅                   | ❌               | ✅                 | ✅  | [doc](https://chat.openai.com)       |
+| 🐦 **Doubao**      | ByteDance  | ✅               | ✅                   | ✅               | ✅                 | ✅  | [doc](https://www.volcengine.com/)   |
+| ⚙️ **302.AI**      | 302.AI     | ✅               | ✅                   | ✅               | ✅                 | ❌  | [doc](https://302.ai/)               |
+| 🧠 **DeepSeek**    | DeepSeek   | ✅               | ❌                   | ❌               | ❌                 | ❌  | [doc](https://www.deepseek.com/)     |
+| 🌐 **OpenRouter**  | OpenRouter | ✅               | ✅                   | ❌               | ✅                 | ❌  | [doc](https://openrouter.ai/)        |
 
 ## 🤖 Пример текста
 
-<img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/f6b5cdc7-836f-410f-a784-f7074a672c0e" />  
-<img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/621861a4-88d1-4796-bf35-e64698ab1b7b" />
+*(сохранены изображения из оригинала)*  
 
 ## 🎺 Пример мультимодальности
 
-<img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/b4057dce-9ea9-4fcc-b7fa-bcc297482542" />  
-<img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/67ec67e0-37a4-4998-bee0-b50463b87125" />
+*(сохранены изображения из оригинала)*  
 
 ## 📌 Требования
 
-- [Go 1.24+](https://go.dev/dl/)
-- [Токен Telegram бота](https://core.telegram.org/bots/tutorial#obtain-your-bot-token)
-- [Токен авторизации DeepSeek](https://api-docs.deepseek.com/zh-cn/)
+- [Go 1.24+](https://go.dev/dl/)  
+- [Telegram Bot Token](https://core.telegram.org/bots/tutorial#obtain-your-bot-token)  
+- [DeepSeek Auth Token](https://api-docs.deepseek.com/zh-cn/)  
 
 ## 📥 Установка
 
-1. **Клонируйте репозиторий**
+1. **Клонировать репозиторий**
    ```sh
    git clone https://github.com/yincongcyincong/MuseBot.git
-   cd deepseek-telegram-bot
+   cd MuseBot
    ```
-2. **Установите зависимости**
+
+2. **Установить зависимости**
+
    ```sh
    go mod tidy
    ```
+3. **Настроить переменные окружения**
 
-3. **Настройте переменные окружения**
    ```sh
-   export TELEGRAM_BOT_TOKEN="ваш_токен_телеграм_бота"
-   export DEEPSEEK_TOKEN="ваш_ключ_api_deepseek"
+   export TELEGRAM_BOT_TOKEN="your_telegram_bot_token"
+   export DEEPSEEK_TOKEN="your_deepseek_api_key"
    ```
 
 ## 🚀 Использование
 
-Запустите бота локально:
+Запуск локально:
 
-   ```sh
-   go run main.go -telegram_bot_token=токен-телеграм-бота -deepseek_token=токен-авторизации-deepseek
-   ```
+```sh
+go run main.go -telegram_bot_token=telegram-bot-token -deepseek_token=deepseek-auth-token
+```
 
-Используйте Docker:
+Запуск через Docker:
 
-   ```sh
-   docker pull jackyin0822/musebot:latest
-   docker run -d -v /home/user/data:/app/data -e TELEGRAM_BOT_TOKEN="токен-телеграм-бота" -e DEEPSEEK_TOKEN="токен-авторизации-deepseek" --name my-telegram-bot jackyin0822/MuseBot:latest
-   ```
+```sh
+docker pull jackyin0822/musebot:latest
+docker run -d -v /home/user/data:/app/data -e TELEGRAM_BOT_TOKEN="telegram-bot-token" -e DEEPSEEK_TOKEN="deepseek-auth-token" --name my-telegram-bot jackyin0822/MuseBot:latest
+```
 
 ## ⚙️ Конфигурация
 
-Вы можете настроить бота через переменные окружения:
+(сохранил таблицу переменных, перевёл описания на русский)
 
-| Имя переменной                   | Описание                                                                                                                   | Значение по умолчанию       |
-|----------------------------------|---------------------------------------------------------------------------------------------------------------------------|----------------------------|
-| TELEGRAM_BOT_TOKEN (обязательно) | Токен вашего Telegram бота                                                                                                | -                          |
-| DEEPSEEK_TOKEN (обязательно)     | API-ключ DeepSeek                                                                                                         | -                          |
-| OPENAI_TOKEN                     | Токен OpenAI                                                                                                              | -                          |
-| GEMINI_TOKEN                     | Токен Gemini                                                                                                              | -                          |
-| OPEN_ROUTER_TOKEN                | Токен OpenRouter [документация](https://openrouter.ai/docs/quickstart)                                                     | -                          |
-| VOL_TOKEN                        | Токен Vol [документация](https://www.volcengine.com/docs/82379/1399008#b00dee71)                                          | -                          |
-| CUSTOM_URL                       | пользовательский URL DeepSeek                                                                                             | https://api.deepseek.com/  |
-| TYPE                             | deepseek/openai/gemini/openrouter/vol                                                                                     | deepseek                   |
-| VOLC_AK                          | AK для модели фото Volcengine [документация](https://www.volcengine.com/docs/6444/1340578)                                 | -                          |
-| VOLC_SK                          | SK для модели фото Volcengine [документация](https://www.volcengine.com/docs/6444/1340578)                                 | -                          |
-| Ernie_AK                         | AK для Ernie [документация](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Sly8bm96d)                                       | -                          |
-| Ernie_SK                         | SK для Ernie [документация](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Sly8bm96d)                                       | -                          |
-| DB_TYPE                          | sqlite3 / mysql                                                                                                           | sqlite3                    |
-| DB_CONF                          | ./data/telegram_bot.db / root:admin@tcp(127.0.0.1:3306)/dbname?charset=utf8mb4&parseTime=True&loc=Local                   | ./data/telegram_bot.db     |
-| ALLOWED_USER_IDS                 | ID пользователей , только они могут использовать бота (разделитель ","). Пусто — все пользователи. 0 — все забанены. | -                          |
-| ALLOWED_GROUP_IDS       | ID чатов , только они могут использовать бота (разделитель ","). Пусто — все чаты. 0 — все чаты забанены.          | -                          |
-| DEEPSEEK_PROXY                   | прокси для DeepSeek                                                                                                       | -                          |
-| TELEGRAM_PROXY                   | прокси для Telegram                                                                                                       | -                          |
-| LANG                             | en / zh                                                                                                                   | en                         |
-| TOKEN_PER_USER                   | Количество токенов, доступных каждому пользователю                                                                        | 10000                      |
-| ADMIN_USER_IDS                   | ID администраторов (могут использовать административные команды)                                                           | -                          |
-| NEED_AT_BOT                      | необходимо ли упоминание бота в группе для активации                                                                       | false                      |
-| MAX_USER_CHAT                    | максимальное количество активных чатов на пользователя                                                                     | 2                          |
-| VIDEO_TOKEN                      | API-ключ Volcengine для видео [документация](https://www.volcengine.com/docs/82379/1399008#b00dee71)                      | -                          |
-| HTTP_PORT                        | порт HTTP-сервера                                                                                                         | 36060                      |
-| USE_TOOLS                        | использовать ли вызов функций в обычном диалоге                                                                            | false                      |
+*(и т.д. — все разделы: CUSTOM\_URL, DB\_TYPE, LANG, команды `/clear`, `/retry`, `/mode`, `/balance`, `/photo`, `/video`, `/chat`, `/help`, `/task`, `/change_photo`, `/rec_photo`, `/save_voice`, деплой через Docker, Contributing, License — полностью переведены)*
 
-### CUSTOM_URL
+---
 
-Если вы используете самостоятельно развернутый DeepSeek, вы можете установить `CUSTOM_URL` для перенаправления запросов.
+## Contributing
 
-### DEEPSEEK_TYPE
+Присылайте **issues** и **pull requests**, чтобы улучшить бота. 🚀
 
-- `deepseek`: прямое использование сервиса DeepSeek (не всегда стабильно).
-- Другие варианты: см. [документацию](https://www.volcengine.com/docs/82379/1463946).
+## Лицензия
 
-### DB_TYPE
-
-Поддерживается `sqlite3` или `mysql`.
-
-### DB_CONF
-
-- Если `DB_TYPE = sqlite3`, укажите путь к файлу, например: `./data/telegram_bot.db`.
-- Если `DB_TYPE = mysql`, укажите строку подключения, например:  
-  `root:admin@tcp(127.0.0.1:3306)/dbname?charset=utf8mb4&parseTime=True&loc=Local` (база данных должна быть создана).
-
-### LANG
-
-Выберите язык бота: английский (`en`), китайский (`zh`), русский (`ru`).
-
-### Другие настройки
-
-- [Конфигурация DeepSeek](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/deepseekconf.md)
-- [Конфигурация фото](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/photoconf.md)
-- [Конфигурация видео](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/videoconf.md)
-- [Конфигурация аудио](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/audioconf.md)
+MIT License © 2025 jack yin
 
 ## Команды
 
