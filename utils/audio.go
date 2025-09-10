@@ -531,3 +531,20 @@ func PCMDuration(fileSize, sampleRate, channels, bitDepth int) int {
 	durationSeconds := float64(fileSize) / float64(sampleRate*channels*bytesPerSample)
 	return int(durationSeconds * 1000)
 }
+
+func GetAudioData(encoding string, data []byte) ([]byte, error) {
+	switch encoding {
+	case "amr":
+		return PCMToAMR(data, 24000, 1)
+	case "ogg_opus":
+		return PCMToOGG(data, 24000)
+	case "opus":
+		return PCMToOpus(data, 24000, 1)
+	case "mp3":
+		return PCMToMP3(data, 24000, 1)
+	case "silk":
+		return silk.EncodePcmBuffToSilk(data, 24000, 1, true)
+	}
+	
+	return data, nil
+}

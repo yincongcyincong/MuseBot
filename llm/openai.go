@@ -53,16 +53,7 @@ func (d *OpenAIReq) Send(ctx context.Context, l *LLM) error {
 	start := time.Now()
 	d.GetModel(l)
 	
-	// set deepseek proxy
-	httpClient := utils.GetLLMProxyClient()
-	openaiConfig := openai.DefaultConfig(*conf.BaseConfInfo.OpenAIToken)
-	if *conf.BaseConfInfo.CustomUrl != "" {
-		openaiConfig.BaseURL = *conf.BaseConfInfo.CustomUrl
-	}
-	
-	//openaiConfig.BaseURL = "https://api.chatanywhere.org"
-	openaiConfig.HTTPClient = httpClient
-	client := openai.NewClientWithConfig(openaiConfig)
+	client := GetOpenAIClient()
 	
 	request := openai.ChatCompletionRequest{
 		Model:  l.Model,
@@ -187,18 +178,8 @@ func (d *OpenAIReq) GetMessage(role, msg string) {
 }
 
 func (d *OpenAIReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
-	// set deepseek proxy
 	d.GetModel(l)
-	httpClient := utils.GetLLMProxyClient()
-	
-	openaiConfig := openai.DefaultConfig(*conf.BaseConfInfo.OpenAIToken)
-	if *conf.BaseConfInfo.CustomUrl != "" {
-		openaiConfig.BaseURL = *conf.BaseConfInfo.CustomUrl
-	}
-	
-	//openaiConfig.BaseURL = "https://api.chatanywhere.org"
-	openaiConfig.HTTPClient = httpClient
-	client := openai.NewClientWithConfig(openaiConfig)
+	client := GetOpenAIClient()
 	
 	request := openai.ChatCompletionRequest{
 		Model:            l.Model,
@@ -338,15 +319,7 @@ func GenerateOpenAIImg(prompt string, imageContent []byte) ([]byte, int, error) 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 	
-	httpClient := utils.GetLLMProxyClient()
-	openaiConfig := openai.DefaultConfig(*conf.BaseConfInfo.OpenAIToken)
-	if *conf.BaseConfInfo.CustomUrl != "" {
-		openaiConfig.BaseURL = *conf.BaseConfInfo.CustomUrl
-	}
-	
-	//openaiConfig.BaseURL = "https://api.chatanywhere.org"
-	openaiConfig.HTTPClient = httpClient
-	client := openai.NewClientWithConfig(openaiConfig)
+	client := GetOpenAIClient()
 	
 	var respUrl openai.ImageResponse
 	var err error
@@ -402,15 +375,7 @@ func GenerateOpenAIText(audioContent []byte) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 	
-	httpClient := utils.GetLLMProxyClient()
-	openaiConfig := openai.DefaultConfig(*conf.BaseConfInfo.OpenAIToken)
-	if *conf.BaseConfInfo.CustomUrl != "" {
-		openaiConfig.BaseURL = *conf.BaseConfInfo.CustomUrl
-	}
-	
-	//openaiConfig.BaseURL = "https://api.chatanywhere.org"
-	openaiConfig.HTTPClient = httpClient
-	client := openai.NewClientWithConfig(openaiConfig)
+	client := GetOpenAIClient()
 	
 	req := openai.AudioRequest{
 		Model:    openai.Whisper1,
@@ -432,15 +397,7 @@ func GetOpenAIImageContent(imageContent []byte, content string) (string, int, er
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 	
-	httpClient := utils.GetLLMProxyClient()
-	openaiConfig := openai.DefaultConfig(*conf.BaseConfInfo.OpenAIToken)
-	if *conf.BaseConfInfo.CustomUrl != "" {
-		openaiConfig.BaseURL = *conf.BaseConfInfo.CustomUrl
-	}
-	
-	//openaiConfig.BaseURL = "https://api.chatanywhere.org"
-	openaiConfig.HTTPClient = httpClient
-	client := openai.NewClientWithConfig(openaiConfig)
+	client := GetOpenAIClient()
 	
 	contentPrompt := content
 	if content == "" {
@@ -478,4 +435,56 @@ func GetOpenAIImageContent(imageContent []byte, content string) (string, int, er
 	}
 	
 	return resp.Choices[0].Message.Content, resp.Usage.TotalTokens, nil
+}
+
+func OpenAITTS(content, encoding string) ([]byte, int, int, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+	
+	formatEncoding := encoding
+	if encoding != string(openai.SpeechResponseFormatOpus) && encoding != string(openai.SpeechResponseFormatAac) && encoding != string(openai.SpeechResponseFormatFlac) &&
+		encoding != string(openai.SpeechResponseFormatWav) && encoding != string(openai.SpeechResponseFormatPcm) {
+		formatEncoding = string(openai.SpeechResponseFormatPcm)
+	}
+	
+	client := GetOpenAIClient()
+	
+	resp, err := client.CreateSpeech(ctx, openai.CreateSpeechRequest{
+		Model:          openai.SpeechModel(*conf.AudioConfInfo.OpenAIAudioModel),
+		Input:          content,
+		Voice:          openai.SpeechVoice(*conf.AudioConfInfo.OpenAIVoiceName),
+		ResponseFormat: openai.SpeechResponseFormat(formatEncoding),
+		Speed:          1.0,
+	})
+	if err != nil {
+		logger.Error("decode image error", "err", err)
+		return nil, 0, 0, err
+	}
+	data, err := io.ReadAll(resp.ReadCloser)
+	if err != nil {
+		logger.Error("read response error", "err", err)
+		return nil, 0, 0, err
+	}
+	
+	if formatEncoding == string(openai.SpeechResponseFormatPcm) {
+		data, err = utils.GetAudioData(encoding, data)
+		if err != nil {
+			logger.Error("GetAudioData error", "err", err)
+			return nil, 0, 0, err
+		}
+	}
+	
+	return data, db.EstimateTokens(content), utils.PCMDuration(len(data), 24000, 1, 16), nil
+}
+
+func GetOpenAIClient() *openai.Client {
+	httpClient := utils.GetLLMProxyClient()
+	openaiConfig := openai.DefaultConfig(*conf.BaseConfInfo.OpenAIToken)
+	if *conf.BaseConfInfo.CustomUrl != "" {
+		openaiConfig.BaseURL = *conf.BaseConfInfo.CustomUrl
+	}
+	
+	//openaiConfig.BaseURL = "https://api.chatanywhere.tech/v1/"
+	openaiConfig.HTTPClient = httpClient
+	return openai.NewClientWithConfig(openaiConfig)
 }

@@ -1095,6 +1095,8 @@ func (r *RobotInfo) GetVoiceBaseTTS(content, encoding string) ([]byte, int, erro
 		ttsContent, token, duration, err = llm.VolTTS(content, userId, encoding)
 	case param.Gemini:
 		ttsContent, token, duration, err = llm.GeminiTTS(content, encoding)
+	case param.OpenAi:
+		ttsContent, token, duration, err = llm.OpenAITTS(content, encoding)
 	}
 	
 	err = db.AddRecordToken(r.RecordID, token)
@@ -1113,13 +1115,13 @@ func (r *RobotInfo) sendVoice(messageChan *MsgChan, encoding string) {
 			voiceContent, duration, err := r.GetVoiceBaseTTS(msg.Content, encoding)
 			if err != nil {
 				logger.Error("tts fail", "err", err)
-				r.SendMsg(chatId, err.Error(), messageId, "", nil)
+				r.SendMsg(chatId, msg.Content, messageId, "", nil)
 				continue
 			}
 			err = r.Robot.sendVoiceContent(voiceContent, duration)
 			if err != nil {
 				logger.Error("sendVoice fail", "err", err)
-				r.SendMsg(chatId, err.Error(), messageId, "", nil)
+				r.SendMsg(chatId, msg.Content, messageId, "", nil)
 				continue
 			}
 		}
