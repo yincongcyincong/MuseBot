@@ -1,6 +1,6 @@
 ## group
 
-telegram-group: https://t.me/+WtaMcDpaMOlhZTE1 , or you can have a try robot `Musebot`.
+telegram-group: https://t.me/+WtaMcDpaMOlhZTE1 , or you can have a try robot `Guanwushan_bot`.
 every body have **10000** token to try this bot, please give me a star!
 
 QQ群：1031411708
@@ -70,12 +70,6 @@ chatgpt: https://www.youtube.com/watch?v=G_DZYMvd5Ug
 
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/b4057dce-9ea9-4fcc-b7fa-bcc297482542" />
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/67ec67e0-37a4-4998-bee0-b50463b87125" />
-
-## 📌 Requirements
-
-- [Go 1.24+](https://go.dev/dl/)
-- [Telegram Bot Token](https://core.telegram.org/bots/tutorial#obtain-your-bot-token)
-- [DeepSeek Auth Token](https://api-docs.deepseek.com/zh-cn/)
 
 ## 📥 Installation
 
