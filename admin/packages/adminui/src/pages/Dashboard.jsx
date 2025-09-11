@@ -12,6 +12,7 @@ import {
 } from "chart.js";
 import {Line} from "react-chartjs-2";
 import {Bot, ClipboardList, Users} from "lucide-react";
+import { useTranslation } from 'react-i18next';
 
 ChartJS.register(
     CategoryScale,
@@ -22,6 +23,7 @@ ChartJS.register(
     Tooltip,
     Legend
 );
+
 
 function formatHourMinute(timestamp) {
     const date = new Date(parseInt(timestamp, 10) * 1000);
@@ -38,6 +40,8 @@ export default function DashboardPage() {
     const [dayRange, setDayRange] = useState(7);
     const [dashboardData, setDashboardData] = useState(null);
     const [loading, setLoading] = useState(false);
+
+    const { t } = useTranslation();
 
     useEffect(() => {
         if (selectedBot) {
@@ -126,7 +130,7 @@ export default function DashboardPage() {
         <div className="p-6 bg-gray-100 min-h-screen">
 
 
-            <h2 className="text-2xl font-bold text-gray-800 mb-6">Bot Dashboard</h2>
+            <h2 className="text-2xl font-bold text-gray-800 mb-6">{t('dashboard_name')}</h2>
 
             <div className="flex space-x-4 mb-6 flex-wrap items-end">
                 <div className="flex-1 min-w-[240px] max-w-[400px]">
