@@ -1,11 +1,14 @@
 import React, { useEffect, useState } from "react";
 import Toast from "../components/Toast";
+import {useTranslation} from "react-i18next";
 
 function ConfigForm({ botId }) {
     const [configData, setConfigData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [saveStatusMap, setSaveStatusMap] = useState({});
     const [toast, setToast] = useState({ show: false, message: "", type: "error" });
+
+    const { t } = useTranslation();
 
     const showToast = (message, type = "error") => {
         setToast({ show: true, message, type });
@@ -117,7 +120,7 @@ function ConfigForm({ botId }) {
                                         onClick={() => handleSaveSingle(sectionName, key)}
                                         className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm transition"
                                     >
-                                        Save
+                                        {t("save")}
                                     </button>
 
                                     <span className="text-gray-500 text-sm select-none">{statusText}</span>

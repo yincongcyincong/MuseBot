@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import {useTranslation} from "react-i18next";
 
 function BotSelector({ value, onChange }) {
     const [bots, setBots] = useState([]);
@@ -6,6 +7,8 @@ function BotSelector({ value, onChange }) {
     const [searchText, setSearchText] = useState("");
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const wrapperRef = useRef(null);
+
+    const { t } = useTranslation();
 
     useEffect(() => {
         fetchBots();
@@ -53,7 +56,7 @@ function BotSelector({ value, onChange }) {
 
     return (
         <div className="relative" ref={wrapperRef}>
-            <label className="block font-medium text-gray-700 mb-1">Select Bot:</label>
+            <label className="block font-medium text-gray-700 mb-1">{t("bot_choose")}:</label>
             <input
                 type="text"
                 value={searchText}

@@ -4,6 +4,7 @@ import Modal from "../components/Modal";
 import BotSelector from "../components/BotSelector";
 import ConfirmModal from "../components/ConfirmModal.jsx";
 import Editor from "@monaco-editor/react";
+import {useTranslation} from "react-i18next";
 
 function BotMcpListPage() {
     const [botId, setBotId] = useState(null);
@@ -22,6 +23,8 @@ function BotMcpListPage() {
     const [toast, setToast] = useState({ show: false, message: "", type: "error" });
 
     const [confirmSyncVisible, setConfirmSyncVisible] = useState(false);
+
+    const { t } = useTranslation();
 
     const handleSyncClick = () => {
         setConfirmSyncVisible(true); // 显示弹窗
@@ -186,25 +189,25 @@ function BotMcpListPage() {
     };
 
     return (
-        <div className="p-6 bg-gray-100 min-h-screen relative">
+        <div className="p-6 bg-gray-100 min-h-screen">
             {toast.show && (
                 <Toast message={toast.message} type={toast.type} onClose={() => setToast({ ...toast, show: false })} />
             )}
 
             <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-gray-800">MCP Services</h2>
+                <h2 className="text-2xl font-bold text-gray-800">{t("mcp_manage")}</h2>
                 <div className="flex gap-2">
                     <button
                         onClick={handlePrepareClick}
                         className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
                     >
-                        + ADD MCP
+                        + {t("add_mcp")}
                     </button>
                     <button
                         onClick={handleSyncClick}
                         className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
                     >
-                        SYNC MCP
+                        {t("sync_mcp")}
                     </button>
                 </div>
             </div>
@@ -224,10 +227,10 @@ function BotMcpListPage() {
                 <table className="min-w-full bg-white divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                     <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t("name")}</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t("description")}</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t("status")}</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t("action")}</th>
                     </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
@@ -235,15 +238,15 @@ function BotMcpListPage() {
                         <tr key={svc.name} className="hover:bg-gray-50">
                             <td className="px-6 py-4 text-sm text-gray-800">{svc.name}</td>
                             <td className="px-6 py-4 text-sm text-gray-800 whitespace-pre-line">{svc.config.description}</td>
-                            <td className="px-6 py-4 text-sm text-gray-800">{svc.config.disabled ? "Disabled" : "Enabled"}</td>
+                            <td className="px-6 py-4 text-sm text-gray-800">{svc.config.disabled ? t("disable") : t("enable")}</td>
                             <td className="px-6 py-4 text-sm space-x-3">
-                                <button onClick={() => openEditModal(svc)} className="text-blue-600 hover:underline">Edit</button>
+                                <button onClick={() => openEditModal(svc)} className="text-blue-600 hover:underline">{t("edit")}</button>
                                 {svc.config.disabled ? (
-                                    <button onClick={() => toggleDisableService(svc.name, false)} className="text-green-600 hover:underline">Enable</button>
+                                    <button onClick={() => toggleDisableService(svc.name, false)} className="text-green-600 hover:underline">{t("enable")}</button>
                                 ) : (
-                                    <button onClick={() => toggleDisableService(svc.name, true)} className="text-yellow-600 hover:underline">Disable</button>
+                                    <button onClick={() => toggleDisableService(svc.name, true)} className="text-yellow-600 hover:underline">{t("disable")}</button>
                                 )}
-                                <button onClick={() => handleDeleteClick(svc.name)} className="text-red-600 hover:underline">Delete</button>
+                                <button onClick={() => handleDeleteClick(svc.name)} className="text-red-600 hover:underline">{t("delete")}</button>
                             </td>
                         </tr>
                     ))}
@@ -293,7 +296,7 @@ function BotMcpListPage() {
                             onClick={handleUpdateService}
                             className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
                         >
-                            Update
+                            {t("update")}
                         </button>
                     </div>
                 </div>
@@ -331,7 +334,7 @@ function BotMcpListPage() {
                                         <td className="px-6 py-4 text-sm text-gray-800">{svc.name}</td>
                                         <td className="px-6 py-4 text-sm text-gray-800 whitespace-pre-line">{svc.config.description}</td>
                                         <td className="px-6 py-4 text-sm">
-                                            <button onClick={() => handleAddPreparedService(svc.name, svc.config)} className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded">Add</button>
+                                            <button onClick={() => handleAddPreparedService(svc.name, svc.config)} className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded">{t("add")}</button>
                                         </td>
                                     </tr>
                                 ))}
@@ -376,7 +379,7 @@ function BotMcpListPage() {
                                     onClick={handleSubmitPreparedService}
                                     className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded"
                                 >
-                                    Submit
+                                    {t("submit")}
                                 </button>
                             </div>
                         </div>

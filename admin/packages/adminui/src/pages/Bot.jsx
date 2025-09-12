@@ -4,6 +4,7 @@ import Pagination from "../components/Pagination";
 import Toast from "../components/Toast";
 import ConfirmModal from "../components/ConfirmModal";
 import Editor from "@monaco-editor/react";
+import {useTranslation} from "react-i18next";
 
 function Bots() {
     const [bots, setBots] = useState([]);
@@ -18,6 +19,8 @@ function Bots() {
         key_file: "",
         ca_file: "",
     });
+
+    const { t } = useTranslation();
 
     const [rawConfigVisible, setRawConfigVisible] = useState(false);
     const [rawConfigText, setRawConfigText] = useState("");
@@ -180,13 +183,13 @@ function Bots() {
             )}
 
             <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-gray-800">Bot Management</h2>
+                <h2 className="text-2xl font-bold text-gray-800">{t("bot_manage")}</h2>
                 {!isRegister && (
                     <button
                         onClick={handleAddClick}
                         className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow"
                     >
-                        + Add Bot
+                        + {t("add_bot")}
                     </button>
                 )}
             </div>
@@ -203,7 +206,7 @@ function Bots() {
                     onClick={handleSearch}
                     className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
                 >
-                    Search
+                    {t("search")}
                 </button>
             </div>
 
@@ -212,12 +215,12 @@ function Bots() {
                     <thead className="bg-gray-50">
                     <tr>
                         {[
-                            "Name",
-                            "Address",
-                            "Status",
-                            "Create Time",
-                            "Update Time",
-                            "Actions",
+                            t("name"),
+                            t("address"),
+                            t("status"),
+                            t("create_time"),
+                            t("update_time"),
+                            t("action"),
                         ].map((title) => (
                             <th
                                 key={title}
@@ -247,13 +250,13 @@ function Bots() {
                                             onClick={() => handleEditClick(bot)}
                                             className="text-blue-600 hover:underline"
                                         >
-                                            Edit
+                                            {t("edit")}
                                         </button>
                                         <button
                                             onClick={() => handleDeleteClick(bot.id)}
                                             className="text-red-600 hover:underline"
                                         >
-                                            Delete
+                                            {t("delete")}
                                         </button>
                                     </>
                                 )}
@@ -261,7 +264,7 @@ function Bots() {
                                     onClick={() => handleShowRawConfig(bot.id)}
                                     className="text-purple-600 hover:underline"
                                 >
-                                    Command
+                                    {t("command")}
                                 </button>
                             </td>
                         </tr>
@@ -328,13 +331,13 @@ function Bots() {
                         onClick={() => setModalVisible(false)}
                         className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded"
                     >
-                        Cancel
+                        {t("cancel")}
                     </button>
                     <button
                         onClick={handleSave}
                         className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
                     >
-                        Save
+                        {t("save")}
                     </button>
                 </div>
             </Modal>
@@ -364,13 +367,13 @@ function Bots() {
                         onClick={() => setRawConfigVisible(false)}
                         className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded"
                     >
-                        Cancel
+                        {t("cancel")}
                     </button>
                     <button
                         onClick={handleRestart}
                         className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
                     >
-                        Restart
+                        {t("restart")}
                     </button>
                 </div>
             </Modal>
