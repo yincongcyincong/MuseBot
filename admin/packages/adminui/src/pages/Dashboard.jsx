@@ -147,7 +147,7 @@ export default function DashboardPage() {
                         <div className="flex-1 bg-white rounded shadow p-4 text-center flex flex-col items-center">
                             <div className="text-gray-500 mb-2 flex items-center justify-center space-x-2">
                                 <ClipboardList className="text-blue-600 w-6 h-6"/>
-                                <span>Message Number</span>
+                                <span>{t("message_num")}</span>
                             </div>
                             <div className="text-3xl font-semibold text-blue-700">
                                 {loading ? "Loading..." : dashboardData?.record_count ?? "-"}
@@ -157,7 +157,7 @@ export default function DashboardPage() {
                         <div className="flex-1 bg-white rounded shadow p-4 text-center flex flex-col items-center">
                             <div className="text-gray-500 mb-2 flex items-center justify-center space-x-2">
                                 <Users className="text-green-600 w-6 h-6"/>
-                                <span>User Number</span>
+                                <span>{t("user_num")}</span>
                             </div>
                             <div className="text-3xl font-semibold text-green-700">
                                 {loading ? "Loading..." : dashboardData?.user_count ?? "-"}
@@ -167,7 +167,7 @@ export default function DashboardPage() {
                         <div className="flex-1 bg-white rounded shadow p-4 text-center flex flex-col items-center">
                             <div className="text-gray-500 mb-2 flex items-center justify-center space-x-2">
                                 <Bot className="text-black-600 w-6 h-6"/>
-                                <span>Running time</span>
+                                <span>{t("running_time")}</span>
                             </div>
                             <div className="text-3xl font-semibold text-black-700">
                                 {loading ? "Loading..." : formatDurationFromTimestamp(dashboardData?.start_time)}
@@ -176,7 +176,7 @@ export default function DashboardPage() {
                     </div>
 
                     <div className="mb-6">
-                        <span className="mr-4 font-medium text-gray-700">Select Date Range:</span>
+                        <span className="mr-4 font-medium text-gray-700">{t("date_range")}:</span>
                         {[1, 3, 7, 30].map((d) => (
                             <button
                                 key={d}
@@ -187,14 +187,14 @@ export default function DashboardPage() {
                                         : "bg-gray-200 text-gray-700 hover:bg-gray-300"
                                 }`}
                             >
-                                {d} Day{d > 1 ? "s" : ""}
+                                {d} {t("day")}
                             </button>
                         ))}
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="bg-white rounded shadow p-4">
-                            <h3 className="text-center font-semibold mb-2 text-gray-800">Message New Number</h3>
+                            <h3 className="text-center font-semibold mb-2 text-gray-800">{t("message_new_num")}</h3>
                             {loading || !dashboardData ? (
                                 <div className="text-center text-gray-500 py-16">Loading chart...</div>
                             ) : (
@@ -206,7 +206,7 @@ export default function DashboardPage() {
                         </div>
 
                         <div className="bg-white rounded shadow p-4">
-                            <h3 className="text-center font-semibold mb-2 text-gray-800">User New Number</h3>
+                            <h3 className="text-center font-semibold mb-2 text-gray-800">{t("user_new_num")}</h3>
                             {loading || !dashboardData ? (
                                 <div className="text-center text-gray-500 py-16">Loading chart...</div>
                             ) : (

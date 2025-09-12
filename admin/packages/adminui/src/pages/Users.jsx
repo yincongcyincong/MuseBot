@@ -3,6 +3,7 @@ import Modal from "../components/Modal";
 import Pagination from "../components/Pagination";
 import Toast from "../components/Toast";
 import ConfirmModal from "../components/ConfirmModal";
+import {useTranslation} from "react-i18next";
 
 function Users() {
     const [users, setUsers] = useState([]);
@@ -17,9 +18,10 @@ function Users() {
 
     const [toast, setToast] = useState({ show: false, message: "", type: "error" });
 
-    // 确认删除相关状态
     const [confirmVisible, setConfirmVisible] = useState(false);
     const [userToDelete, setUserToDelete] = useState(null);
+
+    const { t } = useTranslation();
 
     const showToast = (message, type = "error") => {
         setToast({ show: true, message, type });
@@ -126,7 +128,7 @@ function Users() {
     };
 
     return (
-        <div className="p-6 bg-gray-100 min-h-screen relative">
+        <div className="p-6 bg-gray-100 min-h-screen">
             {toast.show && (
                 <Toast
                     message={toast.message}
@@ -136,12 +138,12 @@ function Users() {
             )}
 
             <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-gray-800">User Management</h2>
+                <h2 className="text-2xl font-bold text-gray-800">{t("user_manage")}</h2>
                 <button
                     onClick={handleAddClick}
                     className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow"
                 >
-                    + Add User
+                    + {t("add_user")}
                 </button>
             </div>
 
@@ -157,7 +159,7 @@ function Users() {
                     onClick={handleSearch}
                     className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
                 >
-                    Search
+                    {t("search")}
                 </button>
             </div>
 
@@ -165,7 +167,7 @@ function Users() {
                 <table className="min-w-full bg-white divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                     <tr>
-                        {["ID", "Username", "Create Time", "Update Time", "Actions"].map((title) => (
+                        {[t("id"), t("username"), t("create_time"), t("update_time"), t("action")].map((title) => (
                             <th
                                 key={title}
                                 className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
@@ -191,13 +193,13 @@ function Users() {
                                     onClick={() => handleEditClick(user)}
                                     className="text-blue-600 hover:underline text-sm"
                                 >
-                                    Edit
+                                    {t("edit")}
                                 </button>
                                 <button
                                     onClick={() => handleDeleteClick(user.id)}
                                     className="text-red-600 hover:underline text-sm"
                                 >
-                                    Delete
+                                    {t("delete")}
                                 </button>
                             </td>
                         </tr>
@@ -241,13 +243,13 @@ function Users() {
                         onClick={() => setModalVisible(false)}
                         className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded"
                     >
-                        Cancel
+                        {t("cancel")}
                     </button>
                     <button
                         onClick={handleSave}
                         className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
                     >
-                        Save
+                        {t("save")}
                     </button>
                 </div>
             </Modal>

@@ -37,7 +37,7 @@ export default function Header({ username = "USER", avatarUrl = "" }) {
     }, []);
 
     return (
-        <header className="flex justify-between items-center px-6 py-4 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 shadow-lg">
+        <header className="flex justify-between items-center px-6 py-4 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 shadow-lg z-1000">
             {/* 左侧标题 */}
             <div className="text-xl font-bold text-white drop-shadow-md">
                 <a

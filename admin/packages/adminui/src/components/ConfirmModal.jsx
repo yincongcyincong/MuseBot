@@ -1,7 +1,10 @@
 import React, { useState } from "react";
+import {useTranslation} from "react-i18next";
 
 function ConfirmModal({ visible, title = "Confirm", message, onCancel, onConfirm }) {
     const [loading, setLoading] = useState(false);
+
+    const { t } = useTranslation();
 
     if (!visible) return null;
 
@@ -25,7 +28,7 @@ function ConfirmModal({ visible, title = "Confirm", message, onCancel, onConfirm
                         disabled={loading}
                         className="px-4 py-2 text-gray-600 hover:text-gray-800 disabled:opacity-50"
                     >
-                        Cancel
+                        {t("cancel")}
                     </button>
                     <button
                         onClick={handleConfirm}
@@ -57,7 +60,7 @@ function ConfirmModal({ visible, title = "Confirm", message, onCancel, onConfirm
                                 <span>Loading</span>
                             </div>
                         ) : (
-                            "Do It!"
+                            t("save")
                         )}
                     </button>
                 </div>

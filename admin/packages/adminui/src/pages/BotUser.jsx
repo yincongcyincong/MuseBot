@@ -3,6 +3,7 @@ import Pagination from "../components/Pagination";
 import Modal from "../components/Modal";
 import Toast from "../components/Toast";
 import BotSelector from "../components/BotSelector";
+import {useTranslation} from "react-i18next";
 
 function BotUserListPage() {
     const [botId, setBotId] = useState(null);
@@ -20,6 +21,8 @@ function BotUserListPage() {
     const showToast = (message, type = "error") => {
         setToast({ show: true, message, type });
     };
+
+    const { t } = useTranslation();
 
     useEffect(() => {
         if (botId !== null) {
@@ -78,7 +81,7 @@ function BotUserListPage() {
     };
 
     return (
-        <div className="p-6 bg-gray-100 min-h-screen relative">
+        <div className="p-6 bg-gray-100 min-h-screen">
             {toast.show && (
                 <Toast
                     message={toast.message}
@@ -88,12 +91,12 @@ function BotUserListPage() {
             )}
 
             <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-gray-800">Bot User List</h2>
+                <h2 className="text-2xl font-bold text-gray-800">{t("bot_user_manage")}</h2>
                 <button
                     onClick={() => setShowModal(true)}
                     className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
                 >
-                    + Add Token
+                    + {t("add_token")}
                 </button>
             </div>
 
@@ -110,7 +113,7 @@ function BotUserListPage() {
                 </div>
 
                 <div className="flex-1 min-w-[200px]">
-                    <label className="block font-medium text-gray-700 mb-1">Search User ID:</label>
+                    <label className="block font-medium text-gray-700 mb-1">{t("search_user_id")}:</label>
                     <input
                         type="text"
                         value={userIdSearch}
@@ -125,7 +128,7 @@ function BotUserListPage() {
                 <table className="min-w-full bg-white divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                     <tr>
-                        {["ID", "User ID", "Mode", "Token", "Available Token", "Created", "Updated"].map((title) => (
+                        {[t("id"), t("user_id"), t("mode"), t("token"), t("available_token"), t("create_time"), t("update_time")].map((title) => (
                             <th
                                 key={title}
                                 className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
@@ -190,7 +193,7 @@ function BotUserListPage() {
                             onClick={handleSubmitNewToken}
                             className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
                         >
-                            Submit
+                            {t("submit")}
                         </button>
                     </div>
                 </div>
