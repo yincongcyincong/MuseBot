@@ -9,7 +9,8 @@
       "env": {
         "AMAP_MAPS_API_KEY": "12345"
       },
-      "description": "get geo info from amap service"
+      "description": "get geo info from amap service",
+      "disabled": true
     },
     "filesystem": {
       "command": "npx",

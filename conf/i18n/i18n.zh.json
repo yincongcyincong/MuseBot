@@ -4,6 +4,7 @@
   "commands.retry.description": "重试上一个问题。",
   "commands.mode.description": "选择 llm 模式，包括聊天模式、编程模式、推理模式。",
   "commands.balance.description": "显示 DeepSeek 余额。",
+  "commands.balance.talk": "与机器人聊天。",
   "commands.state.description": "计算单个用户的 Token 使用情况。",
   "commands.photo.description": "使用图片模型生成图片。",
   "commands.edit_photo.description": "使用图片模型修改图片。",

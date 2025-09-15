@@ -1,13 +1,18 @@
 package robot
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/base64"
+	"encoding/binary"
 	"errors"
 	"fmt"
+	"io"
+	"os/exec"
 	"runtime/debug"
 	"strings"
+	"time"
 	
 	"github.com/bwmarrin/discordgo"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -17,12 +22,14 @@ import (
 	"github.com/yincongcyincong/MuseBot/logger"
 	"github.com/yincongcyincong/MuseBot/param"
 	"github.com/yincongcyincong/MuseBot/utils"
+	"layeh.com/gopus"
 )
 
 type DiscordRobot struct {
 	Session *discordgo.Session
 	Msg     *discordgo.MessageCreate
 	Inter   *discordgo.InteractionCreate
+	Voice   *discordgo.VoiceConnection
 	
 	Robot   *RobotInfo
 	Prompt  string
@@ -39,6 +46,11 @@ func StartDiscordRobot(ctx context.Context) {
 	// 添加消息处理函数
 	dg.AddHandler(messageCreate)
 	dg.AddHandler(onInteractionCreate)
+	// 监听语音状态更新事件
+	dg.AddHandler(voiceStateUpdate)
+	
+	// 监听语音说话更新事件
+	dg.AddHandler(voiceSpeakingUpdate)
 	
 	// 打开连接
 	err = dg.Open()
@@ -302,6 +314,7 @@ func registerSlashCommands(s *discordgo.Session) {
 			{Type: discordgo.ApplicationCommandOptionString, Name: "mode", Description: "Mode", Required: false},
 		}},
 		{Name: "balance", Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.balance.description", nil)},
+		{Name: "talk", Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.balance.talk", nil)},
 		{Name: "state", Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.state.description", nil)},
 		{Name: "clear", Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.clear.description", nil)},
 		{Name: "retry", Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.retry.description", nil)},
@@ -356,6 +369,12 @@ func onInteractionCreate(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	}
 	
 	d.Command = cmd
+	switch d.Command {
+	case "talk":
+		d.Talk()
+		return
+	}
+	
 	d.Robot.ExecCmd(cmd, d.sendChatMessage)
 }
 
@@ -642,4 +661,141 @@ func (d *DiscordRobot) sendVoiceContent(voiceContent []byte, duration int) error
 	}
 	
 	return err
+}
+
+func (d *DiscordRobot) Talk() {
+	gid := d.Inter.GuildID
+	cid, replyToMessageID, _ := d.Robot.GetChatIdAndMsgIdAndUserID()
+	
+	if gid == "" || cid == "" {
+		d.Robot.SendMsg(cid, i18n.GetMessage(*conf.BaseConfInfo.Lang, "help_text", nil),
+			replyToMessageID, tgbotapi.ModeMarkdown, nil)
+		return
+	}
+	
+	vc, err := d.Session.ChannelVoiceJoin(gid, cid, false, false)
+	if err != nil {
+		logger.Error("join voice fail", "err", err)
+		return
+	}
+	
+	go PlayAudioToDiscord(vc, "./data/117eb9b01d9f163db88.aud.mp3")
+	
+	go receiveVoice(vc)
+	
+}
+
+func PlayAudioToDiscord(vc *discordgo.VoiceConnection, fileName string) {
+	
+	cmd := exec.Command("ffmpeg", "-i", fileName, "-f", "s16le", "-ar", "48000", "-ac", "2", "pipe:1")
+	ffout, err := cmd.StdoutPipe()
+	if err != nil {
+		logger.Error("exec fail", "err", err)
+		return
+	}
+	if err := cmd.Start(); err != nil {
+		logger.Warn("start fail", "err", err)
+		return
+	}
+	
+	// gopus 编码器
+	encoder, err := gopus.NewEncoder(48000, 2, gopus.Audio)
+	if err != nil {
+		logger.Warn("encoder fail", "err", err)
+		return
+	}
+	// 可选：设置比特率
+	encoder.SetBitrate(64000)
+	
+	reader := bufio.NewReader(ffout)
+	
+	// 每帧 20ms 的样本数：48000 * 20 / 1000 = 960 samples per channel
+	const samplesPerFrame = 960
+	const bytesPerSample = 2 // int16
+	const channels = 2
+	frameSizeBytes := samplesPerFrame * bytesPerSample * channels // 960 * 2 * 2 = 3840
+	
+	pcmBuf := make([]byte, frameSizeBytes)
+	
+	for {
+		n, err := io.ReadFull(reader, pcmBuf)
+		if err == io.EOF || err == io.ErrUnexpectedEOF {
+			break
+		}
+		if err != nil {
+			logger.Error("读取 PCM 数据出错: %v", "err", err)
+			break
+		}
+		if n != frameSizeBytes {
+			logger.Error("读取到非完整帧: %d bytes", "err", n)
+			break
+		}
+		
+		samples := make([]int16, samplesPerFrame*channels)
+		for i := 0; i < len(samples); i++ {
+			samples[i] = int16(binary.LittleEndian.Uint16(pcmBuf[i*2 : i*2+2]))
+		}
+		
+		opus, err := encoder.Encode(samples, samplesPerFrame, 4000)
+		if err != nil {
+			logger.Error("gopus 编码失败: %v", "err", err)
+			break
+		}
+		
+		vc.OpusSend <- opus
+		
+		time.Sleep(20 * time.Millisecond)
+	}
+	
+	if err := cmd.Wait(); err != nil {
+		logger.Error("ffmpeg 退出时错误: %v", "err", err)
+	}
+}
+func receiveVoice(vc *discordgo.VoiceConnection) {
+	for range vc.OpusRecv {
+	
+	}
+}
+
+func voiceStateUpdate(s *discordgo.Session, v *discordgo.VoiceStateUpdate) {
+	// 1. Get the bot's own voice state.
+	// s.State.User.ID is your bot's ID.
+	botVoiceState, err := s.State.VoiceState(v.GuildID, s.State.User.ID)
+	if err != nil || botVoiceState == nil || botVoiceState.ChannelID == "" {
+		// If the bot isn't in a voice channel, there's no need to handle voice state updates.
+		return
+	}
+	
+	// 2. Check if the event is relevant to the bot's channel.
+	// We need to check both v.ChannelID and v.BeforeUpdate.ChannelID for user joins and leaves.
+	isRelevant := false
+	if v.ChannelID != "" && v.ChannelID == botVoiceState.ChannelID {
+		// The event occurred in the bot's channel (user joined).
+		isRelevant = true
+	} else if v.BeforeUpdate != nil && v.BeforeUpdate.ChannelID == botVoiceState.ChannelID {
+		// The event occurred in the bot's channel (user left).
+		isRelevant = true
+	}
+	
+	// If the event is not relevant to the bot's channel, return early.
+	if !isRelevant {
+		return
+	}
+	
+	if len(s.State.Guilds) == 0 {
+		vc, err := s.ChannelVoiceJoin(v.GuildID, v.ChannelID, false, false)
+		if err == nil {
+			vc.Disconnect()
+		} else {
+			logger.Error("join voice fail", "err", err)
+		}
+	}
+}
+
+// voiceSpeakingUpdate 处理器：核心逻辑，用来判断用户是否在说话
+func voiceSpeakingUpdate(s *discordgo.Session, v *discordgo.VoiceSpeakingUpdate) {
+	// bot stop talking
+	if v.Speaking {
+	
+	}
 }

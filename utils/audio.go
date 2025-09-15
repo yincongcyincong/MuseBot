@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"os/exec"
@@ -544,6 +545,38 @@ func GetAudioData(encoding string, data []byte) ([]byte, error) {
 		return PCMToMP3(data, 24000, 1)
 	case "silk":
 		return silk.EncodePcmBuffToSilk(data, 24000, 1, true)
+	}
+	
+	return data, nil
+}
+
+func MP3ToOpus(mp3Path string) ([]byte, error) {
+	cmd := exec.Command("ffmpeg",
+		"-i", mp3Path,
+		"-c:a", "libopus",
+		"-ar", "48000",
+		"-ac", "2",
+		"-f", "opus",
+		"pipe:1")
+	
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get stdout: %w", err)
+	}
+	
+	cmd.Stderr = nil
+	
+	if err := cmd.Start(); err != nil {
+		return nil, fmt.Errorf("failed to start ffmpeg: %w", err)
+	}
+	
+	data, err := io.ReadAll(stdout)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read opus data: %w", err)
+	}
+	
+	if err := cmd.Wait(); err != nil {
+		return nil, fmt.Errorf("ffmpeg exited with error: %w", err)
 	}
 	
 	return data, nil
