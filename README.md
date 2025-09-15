@@ -11,6 +11,7 @@ This repository provides a **Telegram, Disccord bot** built with **Golang** that
 AI-powered responses. The bot supports **openai** **deepseek** **gemini** **openrouter** LLMs, making interactions feel
 more natural and dynamic.
 [中文文档](https://github.com/yincongcyincong/MuseBot/blob/main/README_ZH.md)
+[Китайская документация](https://github.com/yincongcyincong/MuseBot/blob/main/README_RU.md)
 
 ## Usage Video
 

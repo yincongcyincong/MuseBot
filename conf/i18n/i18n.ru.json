@@ -3,6 +3,7 @@
   "commands.clear.description": "Очистить всю историю общения с llm.",
   "commands.retry.description": "Повторить последний вопрос.",
   "commands.mode.description": "Выбор режима llm",
+  "commands.balance.talk": "поговорить с роботом.",
   "commands.balance.description": "Показать баланс Deepseek.",
   "commands.state.description": "Рассчитать использование токенов пользователем.",
   "commands.photo.description": "Использование модели для создания фото.",

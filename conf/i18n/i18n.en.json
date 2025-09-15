@@ -4,6 +4,7 @@
   "commands.retry.description": "retry last question.",
   "commands.mode.description": "chose llm mode",
   "commands.balance.description": "show deepseek balance.",
+  "commands.balance.talk": "talk to robot.",
   "commands.state.description": "calculate one user token usage.",
   "commands.photo.description": "using photo model create photo.",
   "commands.edit_photo.description": "using photo model edit photo.",
