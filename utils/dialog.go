@@ -2,6 +2,7 @@ package utils
 
 import (
 	"bytes"
+	"context"
 	"encoding/binary"
 	"encoding/json"
 	"errors"
@@ -746,6 +747,50 @@ func SendAudio(c *websocket.Conn, sessionID string, data []byte) error {
 	}
 	if err := sendRequest(c, frame); err != nil {
 		return fmt.Errorf("send request: %w", err)
+	}
+	
+	time.Sleep(20 * time.Millisecond)
+	return nil
+}
+
+func SendAudioFromWav(ctx context.Context, c *websocket.Conn, sessionID string, content []byte) error {
+	
+	protocol.SetSerialization(SerializationRaw)
+	
+	// 16000Hz, 16bit, 1 channel
+	sleepDuration := 20 * time.Millisecond
+	bufferSize := 640
+	curPos := 0
+	for curPos < len(content) {
+		if curPos+bufferSize >= len(content) {
+			bufferSize = len(content) - curPos
+		}
+		msg, err := NewMessage(MsgTypeAudioOnlyClient, MsgTypeFlagWithEvent)
+		if err != nil {
+			return fmt.Errorf("create Task request message: %w", err)
+		}
+		msg.Event = 200
+		msg.SessionID = sessionID
+		msg.Payload = content[curPos : curPos+bufferSize]
+		
+		frame, err := protocol.Marshal(msg)
+		if err != nil {
+			return fmt.Errorf("marshal TaskRequest message: %w", err)
+		}
+		if err = sendRequest(c, frame); err != nil {
+			return fmt.Errorf("send TaskRequest request: %w", err)
+		}
+		
+		curPos += bufferSize
+		// 非最后一片时，休眠对应时长（模拟实时输入）
+		if curPos < len(content) {
+			// 休眠期间也监听上下文取消（避免长时间阻塞）
+			select {
+			case <-ctx.Done():
+				return fmt.Errorf("context canceled during sleep: %w", ctx.Err())
+			case <-time.After(sleepDuration):
+			}
+		}
 	}
 	return nil
 }
