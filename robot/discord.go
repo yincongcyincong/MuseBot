@@ -1,7 +1,6 @@
 package robot
 
 import (
-	"bufio"
 	"bytes"
 	"context"
 	"encoding/base64"
@@ -11,7 +10,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"os/exec"
 	"runtime/debug"
 	"strings"
 	"time"
@@ -66,9 +64,6 @@ func StartDiscordRobot(ctx context.Context) {
 	dg.AddHandler(onInteractionCreate)
 	// 监听语音状态更新事件
 	dg.AddHandler(voiceStateUpdate)
-	
-	// 监听语音说话更新事件
-	dg.AddHandler(voiceSpeakingUpdate)
 	
 	// 打开连接
 	err = dg.Open()
@@ -731,7 +726,7 @@ func (d *DiscordRobot) Talk() {
 			Speaker: "zh_female_vv_jupiter_bigtts",
 			AudioConfig: utils.AudioConfig{
 				Channel:    1,
-				Format:     "pcm",
+				Format:     "pcm_s16le",
 				SampleRate: 16000,
 			},
 		},
@@ -745,6 +740,7 @@ func (d *DiscordRobot) Talk() {
 			Extra: map[string]interface{}{
 				"strict_audit":   false,
 				"audit_response": "抱歉这个问题我无法回答，你可以换个其他话题，我会尽力为你提供帮助。",
+				"input_mod":      "audio_file",
 			},
 		},
 	})
@@ -754,8 +750,6 @@ func (d *DiscordRobot) Talk() {
 	}
 	
 	volDialog.Ctx, volDialog.Cancel = context.WithCancel(context.Background())
-	
-	//go d.checkTalk()
 	
 	go d.PlayAudioToDiscord(vc)
 	
@@ -784,175 +778,147 @@ func (d *DiscordRobot) checkTalk() {
 
 func (d *DiscordRobot) PlayAudioToDiscord(vc *discordgo.VoiceConnection) {
 	for {
-		msg, err := utils.ReceiveMessage(volDialog.VolWsConn)
-		if err != nil {
-			logger.Error("receive message", "err", err)
-			return
-		}
-		
-		logger.Info("get msg", "type", msg.Type)
-		
-		switch msg.Type {
-		case utils.MsgTypeFullServer:
-			// session finished event
-			if msg.Event == 152 || msg.Event == 153 {
-				return
-			}
-			if msg.Event == 350 {
-				logger.Info("start event", "type", msg.TypeFlag())
-				
-			}
-			if msg.Event == 351 || msg.Event == 359 {
-				utils.HandleIncomingAudio(msg.Payload)
-				volDialog.Audio = append(volDialog.Audio, msg.Payload...)
-				d.sendAudioToDiscord(vc, volDialog.Audio)
-				volDialog.Audio = volDialog.Audio[:0]
-			}
-			
-			if msg.Event == 352 {
-				utils.HandleIncomingAudio(msg.Payload)
-				volDialog.Audio = append(volDialog.Audio, msg.Payload...)
-			}
-		
-		case utils.MsgTypeAudioOnlyServer:
-			utils.HandleIncomingAudio(msg.Payload)
-			volDialog.Audio = append(volDialog.Audio, msg.Payload...)
-		case utils.MsgTypeError:
-			logger.Error("Receive Error message", "code", msg.ErrorCode, "payload", string(msg.Payload))
+		select {
+		case <-volDialog.Ctx.Done():
 			return
 		default:
-			logger.Error("Received unexpected message type", "type", msg.Type)
-			return
+			msg, err := utils.ReceiveMessage(volDialog.VolWsConn)
+			if err != nil {
+				logger.Error("receive message", "err", err)
+				return
+			}
+			
+			switch msg.Type {
+			case utils.MsgTypeFullServer:
+				switch msg.Event {
+				case 152, 153:
+					logger.Warn("session finished")
+					return
+				case 350, 451:
+					logger.Info("start event", "event", msg.Event, "type", msg.TypeFlag(), "payload", string(msg.Payload))
+				case 352:
+					utils.HandleIncomingAudio(msg.Payload)
+					volDialog.Audio = append(volDialog.Audio, msg.Payload...)
+				case 351, 359:
+					utils.HandleIncomingAudio(msg.Payload)
+					volDialog.Audio = append(volDialog.Audio, msg.Payload...)
+					d.sendAudioToDiscord(vc, volDialog.Audio)
+					volDialog.Audio = volDialog.Audio[:0]
+				}
+			case utils.MsgTypeAudioOnlyServer:
+				logger.Info("audio only server", "event", msg.Event, "event", msg.Event)
+				utils.HandleIncomingAudio(msg.Payload)
+				volDialog.Audio = append(volDialog.Audio, msg.Payload...)
+			case utils.MsgTypeError:
+				logger.Error("Receive Error message", "code", msg.ErrorCode, "payload", string(msg.Payload))
+				return
+			default:
+				logger.Error("Received unexpected message type", "type", msg.Type)
+				return
+			}
 		}
 	}
-	
 }
 
 func (d *DiscordRobot) sendAudioToDiscord(vc *discordgo.VoiceConnection, audioContent []byte) {
-	cmd := exec.Command("ffmpeg",
-		"-i", "pipe:0", // 从 stdin 读输入
-		"-f", "s16le",
-		"-ar", "48000",
-		"-ac", "2",
-		"pipe:1",
-	)
+	mono16k := bytesToInt16LE(audioContent)
 	
-	// ffmpeg stdin、stdout
-	ffin, err := cmd.StdinPipe()
-	if err != nil {
-		logger.Error("stdin pipe fail", "err", err)
-		return
-	}
-	ffout, err := cmd.StdoutPipe()
-	if err != nil {
-		logger.Error("stdout pipe fail", "err", err)
-		return
-	}
-	
-	if err := cmd.Start(); err != nil {
-		logger.Warn("ffmpeg start fail", "err", err)
-		return
-	}
-	
-	// 把 audioContent 写入 ffmpeg stdin
-	go func() {
-		defer ffin.Close()
-		_, _ = ffin.Write(audioContent)
-	}()
-	
-	// 初始化 gopus encoder
 	encoder, err := gopus.NewEncoder(48000, 2, gopus.Audio)
 	if err != nil {
-		logger.Warn("encoder fail", "err", err)
+		logger.Error("gopus encoder fail", "err", err)
 		return
 	}
 	encoder.SetBitrate(64000)
 	
-	reader := bufio.NewReader(ffout)
+	const samplesPerFrame = 960 // 20ms @48kHz
+	const monoFrameSize = 320   // 20ms @16kHz
 	
-	const samplesPerFrame = 960
-	const bytesPerSample = 2 // int16
-	const channels = 2
-	frameSizeBytes := samplesPerFrame * bytesPerSample * channels
-	
-	pcmBuf := make([]byte, frameSizeBytes)
-	
-	for {
-		n, err := io.ReadFull(reader, pcmBuf)
-		if err == io.EOF || err == io.ErrUnexpectedEOF {
-			break
-		}
-		if err != nil {
-			logger.Error("read pcm data fail", "err", err)
-			break
-		}
-		if n != frameSizeBytes {
-			logger.Error("read frame fail", "size", n)
-			break
+	for i := 0; i < len(mono16k); i += monoFrameSize {
+		end := i + monoFrameSize
+		if end > len(mono16k) {
+			end = len(mono16k)
 		}
 		
-		// PCM -> int16
-		samples := make([]int16, samplesPerFrame*channels)
-		for i := 0; i < len(samples); i++ {
-			samples[i] = int16(binary.LittleEndian.Uint16(pcmBuf[i*2 : i*2+2]))
-		}
+		monoFrame := mono16k[i:end]
 		
-		// 编码成 opus
-		opus, err := encoder.Encode(samples, samplesPerFrame, 4000)
+		stereo48k := upsampleAndStereoLinear(monoFrame)
+		
+		opus, err := encoder.Encode(stereo48k, samplesPerFrame, 4000)
 		if err != nil {
 			logger.Error("gopus encode fail", "err", err)
 			break
 		}
 		
-		// 发送到 Discord
 		vc.OpusSend <- opus
 		
-		// Discord 语音包 20ms 间隔
 		time.Sleep(20 * time.Millisecond)
-	}
-	
-	if err := cmd.Wait(); err != nil {
-		logger.Error("ffmpeg error", "err", err)
 	}
 }
 
-func (d *DiscordRobot) receiveVoice(vc *discordgo.VoiceConnection) {
-	_, _, userId := d.Robot.GetChatIdAndMsgIdAndUserID()
+func upsampleAndStereoLinear(mono16k []int16) []int16 {
+	inLen := len(mono16k)
+	outLen := inLen * 3            // 16kHz -> 48kHz
+	out := make([]int16, outLen*2) // *2 for stereo
 	
-	// 创建一个Opus解码器，Discord通常使用48000Hz和双声道
-	// 你需要根据你的实际情况来确认这个参数
-	decoder, err := gopus.NewDecoder(48000, 2)
+	for i := 0; i < outLen; i++ {
+		// 线性插值
+		pos := float64(i) / 3.0
+		idx := int(pos)
+		if idx >= inLen-1 {
+			idx = inLen - 2
+		}
+		frac := pos - float64(idx)
+		sample := int16((1-frac)*float64(mono16k[idx]) + frac*float64(mono16k[idx+1]))
+		
+		out[2*i] = sample   // left
+		out[2*i+1] = sample // right
+	}
+	return out
+}
+
+// PCM16 byte -> int16 slice (little endian)
+func bytesToInt16LE(data []byte) []int16 {
+	out := make([]int16, len(data)/2)
+	for i := 0; i < len(out); i++ {
+		out[i] = int16(binary.LittleEndian.Uint16(data[i*2 : i*2+2]))
+	}
+	return out
+}
+
+func (d *DiscordRobot) receiveVoice(vc *discordgo.VoiceConnection) {
+	decoder, err := gopus.NewDecoder(16000, 1)
 	if err != nil {
-		logger.Error("Failed to create Opus decoder", "err", err)
+		logger.Error("Failed to create opus decoder", "err", err)
 		return
 	}
 	
-	for op := range vc.OpusRecv {
-		// 忽略没有音频数据的帧
-		if op == nil || len(op.Opus) == 0 {
-			continue
-		}
-		
-		// 第一步：将Opus数据解码为PCM
-		// 注意：这里解码出的PCM格式是 int16 数组
-		pcmData, err := decoder.Decode(op.Opus, 960, false) // 960是常用的帧大小
-		if err != nil {
-			logger.Error("Failed to decode Opus data", "err", err)
-			continue
-		}
-		
-		// 第二步：将 int16 PCM 数据转换为 []byte
-		// 并发送到你的WebSocket连接
-		audioBytes := make([]byte, len(pcmData)*2)
-		for i, sample := range pcmData {
-			audioBytes[i*2] = byte(sample & 0xff)
-			audioBytes[i*2+1] = byte((sample >> 8) & 0xff)
-		}
-		
-		// 调用你的发送函数
-		err = utils.SendAudio(volDialog.VolWsConn, userId, audioBytes)
-		if err != nil {
-			logger.Error("Failed to send audio data", "err", err)
+	_, _, userId := d.Robot.GetChatIdAndMsgIdAndUserID()
+	
+	for {
+		select {
+		case <-volDialog.Ctx.Done():
+			logger.Warn("voice connection closed")
+			return
+		case packet := <-vc.OpusRecv:
+			pcm, err := decoder.Decode(packet.Opus, 960, false)
+			if err != nil && !errors.Is(err, io.EOF) {
+				logger.Error("Failed to decode opus packet", "err", err)
+				continue
+			}
+			
+			if len(pcm) > 0 {
+				buf := make([]byte, len(pcm)*2)
+				for i, v := range pcm {
+					buf[2*i] = byte(v)
+					buf[2*i+1] = byte(v >> 8)
+				}
+				
+				err = utils.SendAudio(volDialog.VolWsConn, userId, buf)
+				if err != nil {
+					logger.Error("Failed to send PCM data", "err", err)
+					return
+				}
+			}
 		}
 	}
 }
@@ -1011,9 +977,4 @@ func voiceStateUpdate(s *discordgo.Session, v *discordgo.VoiceStateUpdate) {
 		}
 	}
 	
-}
-
-// voiceSpeakingUpdate 处理器：核心逻辑，用来判断用户是否在说话
-func voiceSpeakingUpdate(s *discordgo.Session, v *discordgo.VoiceSpeakingUpdate) {
-	volDialog.Speaking = v.Speaking
 }
