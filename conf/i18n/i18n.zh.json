@@ -46,5 +46,7 @@
   "send_mcp_info": "请求 MCP 服务，函数名为 {{.function_name}} \n\n 请求参数为 {{.request_args}} \n\n 响应为 {{.response}}",
   "mix_mode_choose": "请到 {{.link}} 选择一个模型，使用/mode xxx ,例如 /mode gpt-5-chat-latest 选择模型",
   "save_audio_success": "保存语音成功，语音文件地址:{{.filename}}",
-  "audio_create_prompt": "请说下面的内容: {{.content}}"
+  "audio_create_prompt": "请说下面的内容: {{.content}}",
+  "talk_param_error": "交谈参数不全",
+  "bot_talking": "机器人正在交谈中"
 }

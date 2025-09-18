@@ -46,6 +46,10 @@ require (
 	layeh.com/gopus v0.0.0-20210501142526-1ee02d434e32
 )
 
+replace (
+	github.com/yincongcyincong/mcp-client-go => ../mcp-client-go
+)
+
 require (
 	cloud.google.com/go v0.116.0 // indirect
 	cloud.google.com/go/ai v0.8.0 // indirect

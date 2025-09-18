@@ -81,7 +81,7 @@ func (d *LLMTaskReq) ExecuteMcp() error {
 		return err
 	}
 	
-	err = llm.InsertOrUpdate()
+	err = mcpLLM.InsertOrUpdate()
 	if err != nil {
 		logger.Error("insertOrUpdate fail", "err", err)
 	}
