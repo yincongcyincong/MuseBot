@@ -6,6 +6,12 @@ set -e
 rm -rf ./output ./release
 mkdir -p ./output ./release
 
+# Check if xgo is installed
+if ! command -v xgo &> /dev/null; then
+    echo "Installing xgo..."
+    go install src.techknowlogick.com/xgo@latest
+fi
+
 # Build the admin binary (locally for the specified platform)
 build_admin_local() {
     local os=$1
@@ -13,32 +19,38 @@ build_admin_local() {
     local ext=""
     [[ "$os" == "windows" ]] && ext=".exe"
 
-    local output_name="admin-${os}-${arch}${ext}"
+    local admin_output="admin-${os}-${arch}${ext}"
+
     echo "=============================="
     echo "Building admin [$os/$arch] using go build..."
     echo "=============================="
-
-    GOOS=$os GOARCH=$arch CGO_ENABLED=1 go build -o "./output/${output_name}" ./admin
+    xgo -out "$admin_output" -targets="$os/$arch" --hooksdir=./admin/shell ./
 }
 
 # Build main binary + package everything
-compile_and_package_local() {
+compile_and_package() {
     local os=$1
     local arch=$2
     local ext=""
     [[ "$os" == "windows" ]] && ext=".exe"
 
     echo "=============================="
-    echo "Building MuseBot [$os/$arch] using go build..."
+    echo "Building MuseBot [$os/$arch] using xgo..."
     echo "=============================="
 
-    local bot_output="MuseBot-${os}-${arch}${ext}"
-
-    # Build main bot binary
-    GOOS=$os GOARCH=$arch CGO_ENABLED=1 go build -o "./output/${bot_output}" ./
+    # Build the main bot binary
+    xgo -out MuseBot -targets="$os/$arch" .
 
     # Build admin binary
     build_admin_local $os $arch
+
+    local bot_binary="MuseBot-${os}-${arch}${ext}"
+    local admin_binary="MuseBot-admin-${os}-${arch}${ext}"
+    local release_name="MuseBot-${os}-${arch}.tar.gz"
+
+    # Move compiled binaries to output
+    mv ./MuseBot-${os}* ./output/${bot_binary}
+    mv ./admin-${os}* ./output/${admin_binary}
 
     # Copy config files
     mkdir -p ./output/conf/
@@ -51,17 +63,17 @@ compile_and_package_local() {
     cp -r ./admin/adminui/* ./output/adminui/
 
     # Package everything into a tarball
-    local release_name="MuseBot-${os}-${arch}.tar.gz"
-    tar zcf "./release/${release_name}" -C ./output .
+    tar zcf "release/${release_name}" -C ./output .
 
-    echo "✅ Packaged ${release_name}"
+    # Clean up intermediate files
+    rm -rf ./output/* ./github.com/*
 }
 
-# Platforms to compile
-#compile_and_package linux amd64
-#compile_and_package darwin amd64
-#compile_and_package windows amd64
-compile_and_package_local darwin arm64
+# Platforms to compile (uncomment Windows if needed)
+compile_and_package linux amd64
+compile_and_package darwin amd64
+compile_and_package windows amd64
+compile_and_package darwin arm64
 
 # Final cleanup
 rm -rf ./output

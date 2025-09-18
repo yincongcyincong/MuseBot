@@ -1,9 +1,15 @@
 # ----------------------
 # Build stage: compile Go application
 # ----------------------
-FROM golang:1.24 as builder
+FROM golang:1.24 AS builder
 
 WORKDIR /app
+
+# 安装构建依赖 (libopus 开发包 + pkg-config)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    pkg-config \
+    libopus-dev \
+ && rm -rf /var/lib/apt/lists/*
 
 # Copy dependency files first for better caching
 COPY go.mod go.sum ./
@@ -19,7 +25,7 @@ RUN go build -ldflags="-s -w" -o MuseBot main.go
 # ----------------------
 # FFmpeg download stage
 # ----------------------
-FROM debian:stable-slim as ffmpeg-builder
+FROM debian:stable-slim AS ffmpeg-builder
 
 WORKDIR /tmp
 
@@ -44,9 +50,9 @@ FROM debian:stable-slim
 
 WORKDIR /app
 
-# Install certificates
+# 安装运行时依赖 (证书 + nodejs + opus 运行库)
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends ca-certificates curl && \
+    apt-get install -y --no-install-recommends ca-certificates curl libopus0 && \
     curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
     apt-get install -y --no-install-recommends nodejs && \
     rm -rf /var/lib/apt/lists/*
