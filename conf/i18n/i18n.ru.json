@@ -47,6 +47,8 @@
   "send_mcp_info": "Запрос к серверу MCP, имя функции — {{.function_name}} \n\n аргументы запроса — {{.request_args}} \n\n ответ — {{.response}}",
   "mix_mode_choose": "Пожалуйста, перейдите по ссылке {{.link}}, чтобы выбрать модель. Используйте /mode xxx, например /mode gpt-5-chat-latest, чтобы выбрать модель.",
   "save_audio_success": "Голос успешно сохранён. Файл: {{.filename}}",
-  "audio_create_prompt": "Пожалуйста, прочитайте следующее: {{.content}}"
+  "audio_create_prompt": "Пожалуйста, прочитайте следующее: {{.content}}",
+  "talk_param_error": "Отсутствуют параметры разговора",
+  "bot_talking": "Бот сейчас разговаривает"
 
 }

@@ -59,8 +59,8 @@ const (
 				user_id varchar(100) NOT NULL DEFAULT 0,
 				mode VARCHAR(100) NOT NULL DEFAULT '',
 				update_time INT(10) NOT NULL DEFAULT 0,
-				token int(20) NOT NULL DEFAULT 0,
-				avail_token int(20) NOT NULL DEFAULT 0,
+				token BIGINT NOT NULL DEFAULT 0,
+				avail_token BIGINT NOT NULL DEFAULT 0,
 			    create_time int(10) NOT NULL DEFAULT '0',
 			    from_bot VARCHAR(255) NOT NULL DEFAULT ''
 			);`

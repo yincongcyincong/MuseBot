@@ -13,6 +13,11 @@ type AudioConf struct {
 	VolAudioRecCluster *string `json:"vol_audio_rec_cluster"`
 	VolAudioVoiceType  *string `json:"vol_audio_voice_type"`
 	VolAudioTTSCluster *string `json:"vol_audio_tts_cluster"`
+	VolEndSmoothWindow *int    `json:"vol_end_smooth_window"`
+	VolTTSSpeaker      *string `json:"vol_tts_speaker"`
+	VolBotName         *string `json:"vol_bot_name"`
+	VolSystemRole      *string `json:"vol_system_role"`
+	VolSpeakingStyle   *string `json:"vol_speaking_style"`
 	
 	GeminiAudioModel *string `json:"gemini_audio_model"`
 	GeminiVoiceName  *string `json:"gemini_voice_name"`
@@ -33,6 +38,11 @@ func InitAudioConf() {
 	AudioConfInfo.VolAudioRecCluster = flag.String("vol_audio_rec_cluster", "volcengine_input_common", "vol audio cluster")
 	AudioConfInfo.VolAudioVoiceType = flag.String("vol_audio_voice_type", "", "vol audio voice type")
 	AudioConfInfo.VolAudioTTSCluster = flag.String("vol_audio_tts_cluster", "volcano_tts", "vol audio tts cluster")
+	AudioConfInfo.VolEndSmoothWindow = flag.Int("vol_end_smooth_window", 1500, "vol end smooth window")
+	AudioConfInfo.VolTTSSpeaker = flag.String("vol_tts_speaker", "zh_female_vv_jupiter_bigtts", "vol tts speaker")
+	AudioConfInfo.VolBotName = flag.String("vol_bot_name", "豆包", "vol bot name")
+	AudioConfInfo.VolSystemRole = flag.String("vol_system_role", "你使用活泼灵动的女声，性格开朗，热爱生活。", "vol system role")
+	AudioConfInfo.VolSpeakingStyle = flag.String("vol_speaking_style", "你的说话风格简洁明了，语速适中，语调自然。", "vol speaking style")
 	
 	AudioConfInfo.GeminiAudioModel = flag.String("gemini_audio_model", "gemini-2.5-flash-preview-tts", "gemini audio model")
 	AudioConfInfo.GeminiVoiceName = flag.String("gemini_voice_name", "Kore", "gemini voice name")

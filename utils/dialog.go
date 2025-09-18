@@ -13,6 +13,7 @@ import (
 	"time"
 	
 	"github.com/gorilla/websocket"
+	"github.com/yincongcyincong/MuseBot/logger"
 )
 
 var (
@@ -641,6 +642,19 @@ type ChatTextQueryPayload struct {
 	Content string `json:"content"`
 }
 
+type UsageResponse struct {
+	Usage *Usage `json:"usage"`
+}
+
+type Usage struct {
+	InputTextTokens   int `json:"input_text_tokens"`
+	InputAudioTokens  int `json:"input_audio_tokens"`
+	CachedTextTokens  int `json:"cached_text_tokens"`
+	CachedAudioTokens int `json:"cached_audio_tokens"`
+	OutputTextTokens  int `json:"output_text_tokens"`
+	OutputAudioTokens int `json:"output_audio_tokens"`
+}
+
 func StartConnection(conn *websocket.Conn) error {
 	msg, err := NewMessage(MsgTypeFullClient, MsgTypeFlagWithEvent)
 	if err != nil {
@@ -891,4 +905,15 @@ func sendRequest(conn *websocket.Conn, frame []byte) error {
 		return fmt.Errorf("send SayHello request: %w", err)
 	}
 	return nil
+}
+
+func GetDialogUsage(data []byte) *UsageResponse {
+	usage := &UsageResponse{}
+	err := json.Unmarshal(data, &usage)
+	if err != nil {
+		logger.Error("unmarshal usage response fail", "err", err)
+		return nil
+	}
+	
+	return usage
 }

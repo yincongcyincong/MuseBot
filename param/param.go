@@ -70,6 +70,7 @@ const (
 	ImageRecordType = 1
 	VideoRecordType = 2
 	WEBRecordType   = 3
+	TalkRecordType  = 4
 	
 	DefaultContextToken = 128000
 )

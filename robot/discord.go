@@ -31,9 +31,10 @@ type VolDialog struct {
 	VolWsConn *websocket.Conn
 	Audio     []byte
 	
-	Speaking bool
-	Ctx      context.Context
-	Cancel   context.CancelFunc
+	CallUserId string
+	Token      int
+	Ctx        context.Context
+	Cancel     context.CancelFunc
 }
 
 var (
@@ -677,106 +678,99 @@ func (d *DiscordRobot) sendVoiceContent(voiceContent []byte, duration int) error
 }
 
 func (d *DiscordRobot) Talk() {
-	gid := d.Inter.GuildID
-	cid, replyToMessageID, userId := d.Robot.GetChatIdAndMsgIdAndUserID()
-	
-	if gid == "" || cid == "" {
-		d.Robot.SendMsg(cid, i18n.GetMessage(*conf.BaseConfInfo.Lang, "help_text", nil),
-			replyToMessageID, tgbotapi.ModeMarkdown, nil)
-		return
-	}
-	
-	if len(d.Session.VoiceConnections) != 0 {
-		d.Robot.SendMsg(cid, "bot is talking",
-			replyToMessageID, tgbotapi.ModeMarkdown, nil)
-		return
-	}
-	
-	vc, err := d.Session.ChannelVoiceJoin(gid, cid, false, false)
-	if err != nil {
-		logger.Error("join voice fail", "err", err)
-		return
-	}
-	
-	wsURL := url.URL{Scheme: "wss", Host: "openspeech.bytedance.com", Path: "/api/v3/realtime/dialogue"}
-	volDialog.VolWsConn, _, err = websocket.DefaultDialer.DialContext(context.Background(), wsURL.String(), http.Header{
-		"X-Api-Resource-Id": []string{"volc.speech.dialog"},
-		"X-Api-Access-Key":  []string{*conf.AudioConfInfo.VolAudioToken},
-		"X-Api-App-Key":     []string{"PlgvMymc7f3tQnJ6"},
-		"X-Api-App-ID":      []string{*conf.AudioConfInfo.VolAudioAppID},
-		"X-Api-Connect-Id":  []string{uuid.New().String()},
-	})
-	if err != nil {
-		logger.Error("connect vol fail", "err", err)
-		return
-	}
-	
-	err = utils.StartConnection(volDialog.VolWsConn)
-	if err != nil {
-		logger.Error("start connect fail", "err", err)
-		return
-	}
-	err = utils.StartSession(volDialog.VolWsConn, userId, &utils.StartSessionPayload{
-		ASR: utils.ASRPayload{
-			Extra: map[string]interface{}{
-				"end_smooth_window_ms": 1500,
-			},
-		},
-		TTS: utils.TTSPayload{
-			Speaker: "zh_female_vv_jupiter_bigtts",
-			AudioConfig: utils.AudioConfig{
-				Channel:    1,
-				Format:     "pcm_s16le",
-				SampleRate: 16000,
-			},
-		},
-		Dialog: utils.DialogPayload{
-			BotName:       "豆包",
-			SystemRole:    "你使用活泼灵动的女声，性格开朗，热爱生活。",
-			SpeakingStyle: "你的说话风格简洁明了，语速适中，语调自然。",
-			Location: &utils.LocationInfo{
-				City: "北京",
-			},
-			Extra: map[string]interface{}{
-				"strict_audit":   false,
-				"audit_response": "抱歉这个问题我无法回答，你可以换个其他话题，我会尽力为你提供帮助。",
-				"input_mod":      "audio_file",
-			},
-		},
-	})
-	if err != nil {
-		logger.Error("start session fail", "err", err)
-		return
-	}
-	
-	volDialog.Ctx, volDialog.Cancel = context.WithCancel(context.Background())
-	
-	go d.PlayAudioToDiscord(vc)
-	
-	go d.receiveVoice(vc)
-	
-}
-
-func (d *DiscordRobot) checkTalk() {
-	_, _, userId := d.Robot.GetChatIdAndMsgIdAndUserID()
-	
-	for {
-		select {
-		case <-volDialog.Ctx.Done():
+	d.Robot.TalkingPreCheck(func() {
+		gid := d.Inter.GuildID
+		cid, replyToMessageID, userId := d.Robot.GetChatIdAndMsgIdAndUserID()
+		
+		if gid == "" || cid == "" {
+			d.Robot.SendMsg(cid, i18n.GetMessage(*conf.BaseConfInfo.Lang, "talk_param_error", nil),
+				replyToMessageID, tgbotapi.ModeMarkdown, nil)
 			return
-		default:
-			if volDialog.Speaking {
-				err := utils.SendSilenceAudio(volDialog.VolWsConn, userId)
-				if err != nil {
-					logger.Error("send silence audio fail", "err", err)
-				}
-			}
-			time.Sleep(10 * time.Millisecond)
 		}
-	}
+		
+		if len(d.Session.VoiceConnections) != 0 {
+			d.Robot.SendMsg(cid, i18n.GetMessage(*conf.BaseConfInfo.Lang, "bot_talking", nil),
+				replyToMessageID, tgbotapi.ModeMarkdown, nil)
+			return
+		}
+		
+		go func() {
+			defer func() {
+				if err := recover(); err != nil {
+					logger.Error("recover panic", "err", err, "stack", string(debug.Stack()))
+				}
+			}()
+			
+			vc, err := d.Session.ChannelVoiceJoin(gid, cid, false, false)
+			if err != nil {
+				logger.Error("join voice fail", "err", err)
+				return
+			}
+			
+			wsURL := url.URL{Scheme: "wss", Host: "openspeech.bytedance.com", Path: "/api/v3/realtime/dialogue"}
+			volDialog.VolWsConn, _, err = websocket.DefaultDialer.DialContext(context.Background(), wsURL.String(), http.Header{
+				"X-Api-Resource-Id": []string{"volc.speech.dialog"},
+				"X-Api-Access-Key":  []string{*conf.AudioConfInfo.VolAudioToken},
+				"X-Api-App-Key":     []string{"PlgvMymc7f3tQnJ6"},
+				"X-Api-App-ID":      []string{*conf.AudioConfInfo.VolAudioAppID},
+				"X-Api-Connect-Id":  []string{uuid.New().String()},
+			})
+			if err != nil {
+				logger.Error("connect vol fail", "err", err)
+				return
+			}
+			
+			err = utils.StartConnection(volDialog.VolWsConn)
+			if err != nil {
+				logger.Error("start connect fail", "err", err)
+				return
+			}
+			err = utils.StartSession(volDialog.VolWsConn, userId, &utils.StartSessionPayload{
+				ASR: utils.ASRPayload{
+					Extra: map[string]interface{}{
+						"end_smooth_window_ms": *conf.AudioConfInfo.VolEndSmoothWindow,
+					},
+				},
+				TTS: utils.TTSPayload{
+					Speaker: *conf.AudioConfInfo.VolTTSSpeaker,
+					AudioConfig: utils.AudioConfig{
+						Channel:    1,
+						Format:     "pcm_s16le",
+						SampleRate: 16000,
+					},
+				},
+				Dialog: utils.DialogPayload{
+					BotName:       *conf.AudioConfInfo.VolBotName,
+					SystemRole:    *conf.AudioConfInfo.VolSystemRole,
+					SpeakingStyle: *conf.AudioConfInfo.VolSpeakingStyle,
+					Extra: map[string]interface{}{
+						"strict_audit":   false,
+						"audit_response": "抱歉这个问题我无法回答，你可以换个其他话题，我会尽力为你提供帮助。",
+						"input_mod":      "audio_file",
+					},
+				},
+			})
+			if err != nil {
+				logger.Error("start session fail", "err", err)
+				return
+			}
+			
+			volDialog.Ctx, volDialog.Cancel = context.WithCancel(context.Background())
+			volDialog.CallUserId = userId
+			
+			go d.PlayAudioToDiscord(vc)
+			
+			go d.receiveVoice(vc)
+		}()
+	})
+	
 }
 
 func (d *DiscordRobot) PlayAudioToDiscord(vc *discordgo.VoiceConnection) {
+	defer func() {
+		CloseTalk(vc)
+	}()
+	
 	for {
 		select {
 		case <-volDialog.Ctx.Done():
@@ -794,6 +788,13 @@ func (d *DiscordRobot) PlayAudioToDiscord(vc *discordgo.VoiceConnection) {
 				case 152, 153:
 					logger.Warn("session finished")
 					return
+				case 154:
+					usage := utils.GetDialogUsage(msg.Payload)
+					if usage.Usage != nil {
+						volDialog.Token += usage.Usage.CachedAudioTokens + usage.Usage.OutputAudioTokens + usage.Usage.InputAudioTokens +
+							usage.Usage.CachedTextTokens + usage.Usage.OutputTextTokens + usage.Usage.InputTextTokens
+					}
+				
 				case 350, 451:
 					logger.Info("start event", "event", msg.Event, "type", msg.TypeFlag(), "payload", string(msg.Payload))
 				case 352:
@@ -806,15 +807,12 @@ func (d *DiscordRobot) PlayAudioToDiscord(vc *discordgo.VoiceConnection) {
 					volDialog.Audio = volDialog.Audio[:0]
 				}
 			case utils.MsgTypeAudioOnlyServer:
-				logger.Info("audio only server", "event", msg.Event, "event", msg.Event)
 				utils.HandleIncomingAudio(msg.Payload)
 				volDialog.Audio = append(volDialog.Audio, msg.Payload...)
 			case utils.MsgTypeError:
 				logger.Error("Receive Error message", "code", msg.ErrorCode, "payload", string(msg.Payload))
-				return
 			default:
 				logger.Error("Received unexpected message type", "type", msg.Type)
-				return
 			}
 		}
 	}
@@ -830,8 +828,8 @@ func (d *DiscordRobot) sendAudioToDiscord(vc *discordgo.VoiceConnection, audioCo
 	}
 	encoder.SetBitrate(64000)
 	
-	const samplesPerFrame = 960 // 20ms @48kHz
-	const monoFrameSize = 320   // 20ms @16kHz
+	const samplesPerFrame = 960
+	const monoFrameSize = 320
 	
 	for i := 0; i < len(mono16k); i += monoFrameSize {
 		end := i + monoFrameSize
@@ -886,6 +884,10 @@ func bytesToInt16LE(data []byte) []int16 {
 }
 
 func (d *DiscordRobot) receiveVoice(vc *discordgo.VoiceConnection) {
+	defer func() {
+		CloseTalk(vc)
+	}()
+	
 	decoder, err := gopus.NewDecoder(16000, 1)
 	if err != nil {
 		logger.Error("Failed to create opus decoder", "err", err)
@@ -897,7 +899,6 @@ func (d *DiscordRobot) receiveVoice(vc *discordgo.VoiceConnection) {
 	for {
 		select {
 		case <-volDialog.Ctx.Done():
-			logger.Warn("voice connection closed")
 			return
 		case packet := <-vc.OpusRecv:
 			pcm, err := decoder.Decode(packet.Opus, 960, false)
@@ -916,7 +917,6 @@ func (d *DiscordRobot) receiveVoice(vc *discordgo.VoiceConnection) {
 				err = utils.SendAudio(volDialog.VolWsConn, userId, buf)
 				if err != nil {
 					logger.Error("Failed to send PCM data", "err", err)
-					return
 				}
 			}
 		}
@@ -963,18 +963,28 @@ func voiceStateUpdate(s *discordgo.Session, v *discordgo.VoiceStateUpdate) {
 	
 	if count <= 1 {
 		if s.VoiceConnections[v.GuildID] != nil {
-			err = s.VoiceConnections[v.GuildID].Disconnect()
-			if err != nil {
-				logger.Error("disconnect fail", "err", err)
-			}
-			err = volDialog.VolWsConn.Close()
-			if err != nil {
-				logger.Error("close vol ws fail", "err", err)
-			}
-			volDialog.Cancel()
+			CloseTalk(s.VoiceConnections[v.GuildID])
 		} else {
 			logger.Error("join voice fail", "err", err)
 		}
 	}
 	
+}
+
+func CloseTalk(vc *discordgo.VoiceConnection) {
+	err := volDialog.VolWsConn.Close()
+	if err == nil {
+		vc.Disconnect()
+		volDialog.Cancel()
+		db.InsertRecordInfo(&db.Record{
+			UserId:     volDialog.CallUserId,
+			Question:   "discord talk",
+			Answer:     "",
+			Token:      volDialog.Token,
+			IsDeleted:  0,
+			RecordType: param.TalkRecordType,
+			Mode:       "vol",
+		})
+		volDialog.Token = 0
+	}
 }
