@@ -14,7 +14,6 @@ require (
 	github.com/go-sql-driver/mysql v1.9.0
 	github.com/go-telegram-bot-api/telegram-bot-api/v5 v5.5.1
 	github.com/google/uuid v1.6.0
-	github.com/gordonklaus/portaudio v0.0.0-20250206071425-98a94950218b
 	github.com/gorilla/sessions v1.2.1
 	github.com/gorilla/websocket v1.5.3
 	github.com/larksuite/oapi-sdk-go/v3 v3.4.22
@@ -44,10 +43,6 @@ require (
 	gopkg.in/fsnotify.v1 v1.4.7
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 	layeh.com/gopus v0.0.0-20210501142526-1ee02d434e32
-)
-
-replace (
-	github.com/yincongcyincong/mcp-client-go => ../mcp-client-go
 )
 
 require (
