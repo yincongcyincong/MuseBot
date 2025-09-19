@@ -734,9 +734,9 @@ func (d *DiscordRobot) Talk() {
 				TTS: utils.TTSPayload{
 					Speaker: *conf.AudioConfInfo.VolTTSSpeaker,
 					AudioConfig: utils.AudioConfig{
-						Channel:    1,
+						Channel:    2,
 						Format:     "pcm_s16le",
-						SampleRate: 16000,
+						SampleRate: 48000,
 					},
 				},
 				Dialog: utils.DialogPayload{
