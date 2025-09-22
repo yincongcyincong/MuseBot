@@ -796,6 +796,46 @@ func Communicate(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func Log(w http.ResponseWriter, r *http.Request) {
+	botInfo, err := getBot(r)
+	if err != nil {
+		logger.Error("get bot conf error", "err", err)
+		utils.Failure(w, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
+		return
+	}
+	// 设置 SSE 响应头
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+	flusher, ok := w.(http.Flusher)
+	if !ok {
+		http.Error(w, "Streaming unsupported!", http.StatusInternalServerError)
+		return
+	}
+	
+	resp, err := adminUtils.GetCrtClient(botInfo).Get(strings.TrimSuffix(botInfo.Address, "/") + "/log")
+	if err != nil {
+		logger.Error("get bot conf error", "err", err)
+		utils.Failure(w, param.CodeServerFail, param.MsgServerFail, err)
+		return
+	}
+	defer resp.Body.Close()
+	
+	reader := bufio.NewReader(resp.Body)
+	
+	for {
+		line, err := reader.ReadString('\n')
+		fmt.Fprint(w, line)
+		flusher.Flush()
+		if err != nil {
+			if err != io.EOF {
+				log.Println("Error reading SSE:", err)
+			}
+			break
+		}
+	}
+}
+
 func getBot(r *http.Request) (*db.Bot, error) {
 	idStr := r.URL.Query().Get("id")
 	if idStr == "" {

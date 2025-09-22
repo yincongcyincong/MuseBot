@@ -5,7 +5,6 @@ import (
 	"crypto/x509"
 	"net/http"
 	"strings"
-	"time"
 	
 	"github.com/yincongcyincong/MuseBot/admin/db"
 	"github.com/yincongcyincong/MuseBot/logger"
@@ -18,7 +17,6 @@ func GetCrtClient(bot *db.Bot) *http.Client {
 	
 	client := &http.Client{
 		Transport: transport,
-		Timeout:   180 * time.Second,
 	}
 	
 	if bot.KeyFile != "" && bot.CrtFile != "" && bot.CaFile != "" {
