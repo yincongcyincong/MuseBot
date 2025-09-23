@@ -10,6 +10,7 @@ import TestPage from "../pages/TestPage.jsx";
 import BotUser from "../pages/BotUser.jsx";
 import BotChat from "../pages/BotChat.jsx";
 import MCP from "../pages/MCP.jsx";
+import Log from "../pages/Log.jsx";
 import Communicate from "../pages/Communicate.jsx";
 
 export default function Router() {
@@ -41,6 +42,7 @@ export default function Router() {
                     <Route path="chats" element={<BotChat />} />
                     <Route path="mcp" element={<MCP />} />
                     <Route path="communicate" element={<Communicate />} />
+                    <Route path="log" element={<Log />} />
                     <Route path="test" element={<TestPage />} />
                     {/* 从根路径 / 跳转到看板页 */}
                     <Route index element={<Navigate to="/dashboard" />} />
