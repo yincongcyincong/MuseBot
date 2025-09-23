@@ -10,6 +10,7 @@ import {
     MessageSquare,
     ChevronFirst,
     ChevronLast,
+    ScrollText,
 } from "lucide-react";
 
 export default function Sidebar() {
@@ -23,7 +24,8 @@ export default function Sidebar() {
         { path: "/mcp", label: "MCP", icon: Database },
         { path: "/users", label: "BotUsers", icon: UserCircle },
         { path: "/chats", label: "BotChats", icon: MessageCircle },
-        { path: "/communicate", label: "Chat", icon: MessageSquare }, // 改了图标
+        { path: "/communicate", label: "Chat", icon: MessageSquare },
+        { path: "/log", label: "Log", icon: ScrollText },
     ];
 
     return (

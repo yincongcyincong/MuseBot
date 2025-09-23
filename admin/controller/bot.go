@@ -825,8 +825,11 @@ func Log(w http.ResponseWriter, r *http.Request) {
 	
 	for {
 		line, err := reader.ReadString('\n')
-		fmt.Fprint(w, line)
-		flusher.Flush()
+		if len(line) > 0 {
+			// 每条日志前加 data:，后面要两个换行
+			fmt.Fprintf(w, "data: %s\n\n", strings.TrimRight(line, "\n"))
+			flusher.Flush()
+		}
 		if err != nil {
 			if err != io.EOF {
 				log.Println("Error reading SSE:", err)
