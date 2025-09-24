@@ -226,6 +226,11 @@ func (d *DiscordRobot) getContent(defaultText string) (string, error) {
 			if len(d.Inter.ApplicationCommandData().Options) > 0 {
 				content = strings.TrimSpace(d.Inter.ApplicationCommandData().Options[0].StringValue())
 			}
+			if d.Inter.ApplicationCommandData().GetOption("image") != nil {
+				if imageId, ok := d.Inter.ApplicationCommandData().GetOption("image").Value.(string); ok {
+					attachments = append(attachments, d.Inter.ApplicationCommandData().Resolved.Attachments[imageId])
+				}
+			}
 		}
 	}
 	
@@ -323,6 +328,7 @@ func registerSlashCommands(s *discordgo.Session) {
 	commands := []*discordgo.ApplicationCommand{
 		{Name: "chat", Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.chat.description", nil), Options: []*discordgo.ApplicationCommandOption{
 			{Type: discordgo.ApplicationCommandOptionString, Name: "prompt", Description: "Prompt", Required: true},
+			{Type: discordgo.ApplicationCommandOptionAttachment, Name: "image", Description: "upload a image", Required: false},
 		}},
 		{Name: "mode", Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.mode.description", nil), Options: []*discordgo.ApplicationCommandOption{
 			{Type: discordgo.ApplicationCommandOptionString, Name: "mode", Description: "Mode", Required: false},

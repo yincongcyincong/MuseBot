@@ -50,6 +50,8 @@
 * `/clear`：清除当前聊天上下文（重置对话）
 <img width="400" alt="image" src="https://github.com/user-attachments/assets/ebba556f-267a-4052-a3a3-3eab019eb4f4" />
 
+* `/talk` 直接与火山大模型实时对话 (文档)[https://www.volcengine.com/docs/6561/1594356]
+
 ### 群聊模式
 
 在群聊中，通过 `@你的机器人` 的方式与机器人对话，或者直接使用命令，例如：

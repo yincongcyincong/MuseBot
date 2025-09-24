@@ -1,10 +1,11 @@
 import React, { useEffect, useRef, useState } from "react";
-import {useTranslation} from "react-i18next";
+import { useTranslation } from "react-i18next";
 
 function BotSelector({ value, onChange }) {
     const [bots, setBots] = useState([]);
     const [filteredBots, setFilteredBots] = useState([]);
     const [searchText, setSearchText] = useState("");
+    const [selectedBot, setSelectedBot] = useState(null);
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const wrapperRef = useRef(null);
 
@@ -16,9 +17,17 @@ function BotSelector({ value, onChange }) {
 
     useEffect(() => {
         const lower = searchText.toLowerCase();
-        setFilteredBots(bots.filter(bot => {
-            return bot.name.toLowerCase().includes(lower) || bot.address.toLowerCase().includes(lower)
-        }));
+        if (lower === "") {
+            setFilteredBots(bots); // 空搜索显示全部
+        } else {
+            setFilteredBots(
+                bots.filter(
+                    (bot) =>
+                        bot.name.toLowerCase().includes(lower) ||
+                        bot.address.toLowerCase().includes(lower)
+                )
+            );
+        }
     }, [searchText, bots]);
 
     useEffect(() => {
@@ -27,7 +36,6 @@ function BotSelector({ value, onChange }) {
                 setDropdownOpen(false);
             }
         }
-
         document.addEventListener("mousedown", handleClickOutside);
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
@@ -40,8 +48,9 @@ function BotSelector({ value, onChange }) {
                 setBots(data.data);
                 setFilteredBots(data.data);
                 const defaultBot = data.data[0];
-                setSearchText(defaultBot.name || defaultBot.address);
-                onChange(defaultBot); // 选中第一个 bot
+                setSelectedBot(defaultBot);
+                setSearchText(""); // 👈 不把默认值当作搜索条件
+                onChange(defaultBot);
             }
         } catch (err) {
             console.error("Failed to fetch bots:", err);
@@ -49,7 +58,8 @@ function BotSelector({ value, onChange }) {
     };
 
     const handleSelectBot = (bot) => {
-        setSearchText(bot.name || bot.address);
+        setSelectedBot(bot);
+        setSearchText(""); // 👈 选中后清空搜索
         setDropdownOpen(false);
         onChange(bot);
     };
@@ -59,8 +69,8 @@ function BotSelector({ value, onChange }) {
             <label className="block font-medium text-gray-700 mb-1">{t("bot_choose")}:</label>
             <input
                 type="text"
-                value={searchText}
-                onChange={e => {
+                value={searchText || (selectedBot?.name || selectedBot?.address || "")}
+                onChange={(e) => {
                     setSearchText(e.target.value);
                     setDropdownOpen(true);
                 }}
@@ -71,7 +81,7 @@ function BotSelector({ value, onChange }) {
             {dropdownOpen && (
                 <ul className="absolute z-10 mt-1 w-full max-h-48 overflow-auto bg-white border border-gray-300 rounded shadow-lg">
                     {filteredBots.length > 0 ? (
-                        filteredBots.map(bot => (
+                        filteredBots.map((bot) => (
                             <li
                                 key={bot.id}
                                 onClick={() => handleSelectBot(bot)}

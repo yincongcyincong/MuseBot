@@ -104,6 +104,10 @@ Use docker
      docker pull jackyin0822/musebot:latest
      docker run -d -v /home/user/data:/app/data -e TELEGRAM_BOT_TOKEN="telegram-bot-token" -e DEEPSEEK_TOKEN="deepseek-auth-token" --name my-telegram-bot  jackyin0822/MuseBot:latest
    ```
+   ```sh
+    ALIYUN:
+    docker pull crpi-i1dsvpjijxpgjgbv.cn-hangzhou.personal.cr.aliyuncs.com/jackyin0822/musebot
+   ```
 
 ## ⚙️ Configuration
 

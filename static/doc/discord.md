@@ -52,8 +52,8 @@ Supported commands:
    
 * `/clear`: Clear the current conversation context
 <img width="400" alt="image" src="https://github.com/user-attachments/assets/ebba556f-267a-4052-a3a3-3eab019eb4f4" />
-
   
+* `/talk` Direct talk with vol llm see (doc)[https://www.volcengine.com/docs/6561/1594356]
 
 ### Group Chat Mode
 

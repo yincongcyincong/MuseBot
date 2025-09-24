@@ -112,6 +112,11 @@ docker pull jackyin0822/musebot:latest
 docker run -d -v /home/user/data:/app/data -e TELEGRAM_BOT_TOKEN="你的Telegram Bot Token" -e DEEPSEEK_TOKEN="你的DeepSeek API密钥" --name my-telegram-bot jackyin0822/MuseBot:latest
 ```
 
+```sh
+阿里云:
+docker pull crpi-i1dsvpjijxpgjgbv.cn-hangzhou.personal.cr.aliyuncs.com/jackyin0822/musebot
+```
+
 ---
 
 ## ⚙️ 配置项
