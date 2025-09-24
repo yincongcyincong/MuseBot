@@ -72,7 +72,6 @@ function BotLogPage() {
                 </div>
             );
         } catch {
-            // 如果不是 JSON，就普通显示
             return (
                 <div key={index} className="font-mono text-white">
                     {line}
@@ -82,7 +81,8 @@ function BotLogPage() {
     };
 
     return (
-        <div className="p-6 bg-gray-900 min-h-screen text-white">
+        <div className="p-6 bg-gray-100 min-h-screen">
+            {/* Toast */}
             {toast.show && (
                 <Toast
                     message={toast.message}
@@ -91,23 +91,26 @@ function BotLogPage() {
                 />
             )}
 
+            {/* 标题 */}
             <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-white">Log</h2>
+                <h2 className="text-2xl font-bold text-gray-800">Log</h2>
             </div>
 
+            {/* BotSelector */}
             <div className="mb-6 max-w-4xl">
                 <BotSelector
                     value={botId}
                     onChange={(bot) => {
                         setBotId(bot.id);
-                        setLogs([]); // 切换 bot 时清空日志
+                        setLogs([]);
                     }}
                 />
             </div>
 
+            {/* 日志展示部分，黑色背景 */}
             <div
                 ref={logRef}
-                className="rounded-lg shadow border border-gray-700 overflow-y-auto h-[70vh] p-2 bg-gray-800"
+                className="rounded-lg shadow border border-gray-700 overflow-y-auto h-[70vh] p-2 bg-gray-900"
             >
                 {logs.map(renderLogLine)}
             </div>
