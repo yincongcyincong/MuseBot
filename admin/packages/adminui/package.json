@@ -22,7 +22,8 @@
     "react-dom": "^19.1.0",
     "react-i18next": "^15.7.3",
     "react-markdown": "^10.1.0",
-    "react-router-dom": "^7.6.3"
+    "react-router-dom": "^7.6.3",
+    "react-syntax-highlighter": "^15.6.6"
   },
   "devDependencies": {
     "@eslint/js": "^9.29.0",
