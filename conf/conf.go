@@ -42,6 +42,7 @@ type BaseConf struct {
 	GeminiToken   *string `json:"gemini_token"`
 	MixToken      *string `json:"mix_token"`
 	VolToken      *string `json:"vol_token"`
+	AliyunToken   *string `json:"aliyun_token"`
 	ErnieAK       *string `json:"ernie_ak"`
 	ErnieSK       *string `json:"ernie_sk"`
 	
@@ -105,6 +106,7 @@ func InitConf() {
 	BaseConfInfo.GeminiToken = flag.String("gemini_token", "", "gemini auth token")
 	BaseConfInfo.MixToken = flag.String("mix_token", "", "openrouter/302ai auth token")
 	BaseConfInfo.VolToken = flag.String("vol_token", "", "vol auth token")
+	BaseConfInfo.AliyunToken = flag.String("aliyun_token", "", "aliyun auth token")
 	BaseConfInfo.ErnieAK = flag.String("ernie_ak", "", "ernie ak")
 	BaseConfInfo.ErnieSK = flag.String("ernie_sk", "", "ernie sk")
 	BaseConfInfo.VolcAK = flag.String("volc_ak", "", "volc ak")
@@ -315,6 +317,10 @@ func InitConf() {
 		*BaseConfInfo.VolToken = os.Getenv("VOL_TOKEN")
 	}
 	
+	if os.Getenv("ALIYUN_TOKEN") != "" {
+		*BaseConfInfo.AliyunToken = os.Getenv("ALIYUN_TOKEN")
+	}
+	
 	if os.Getenv("ERNIE_AK") != "" {
 		*BaseConfInfo.ErnieAK = os.Getenv("ERNIE_AK")
 	}
@@ -395,6 +401,7 @@ func InitConf() {
 	logger.Info("CONF", "Type", *BaseConfInfo.Type)
 	logger.Info("CONF", "VolcAK", *BaseConfInfo.VolcAK)
 	logger.Info("CONF", "VolcSK", *BaseConfInfo.VolcSK)
+	logger.Info("CONF", "AliyunToken", *BaseConfInfo.AliyunToken)
 	logger.Info("CONF", "DBType", *BaseConfInfo.DBType)
 	logger.Info("CONF", "DBConf", *BaseConfInfo.DBConf)
 	logger.Info("CONF", "AllowedTelegramUserIds", *allowedUserIds)

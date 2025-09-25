@@ -2,6 +2,7 @@ package param
 
 import (
 	"github.com/cohesion-org/deepseek-go"
+	"github.com/devinyf/dashscopego/qwen"
 	"github.com/sashabaranov/go-openai"
 )
 
@@ -56,10 +57,15 @@ const (
 	ModelDoubao15VisionPro328    = "doubao-1.5-vision-pro-250328"
 	
 	// DeepSeek R1
+	ModelDeepSeekR1        = "deepseek-r1"
 	ModelDeepSeekR1_528    = "deepseek-r1-250528"
 	ModelDeepSeekR1_120    = "deepseek-r1-250120"
 	ModelDeepSeekR1Qwen32b = "deepseek-r1-distill-qwen-32b-250120"
 	ModelDeepSeekR1Qwen7b  = "deepseek-r1-distill-qwen-7b-250120"
+	
+	ModelDeepseekV3         = "deepseek-v3.1"
+	ModelDeepSeekR1Qwen32bQ = "deepseek-r1-distill-qwen-32b"
+	ModelDeepSeekR1Qwen7bQ  = "deepseek-r1-distill-qwen-7b"
 	
 	// doubao-1.5
 	ModelDoubao15VisionPro32k = "doubao-1.5-vision-pro-32k-250115"
@@ -166,6 +172,24 @@ var (
 		// doubao-1.5
 		ModelDoubao15VisionPro32k: true,
 		ModelDoubao15VisionLite:   true,
+	}
+	
+	AliyunModel = map[string]bool{
+		qwen.QwenLong:           true,
+		qwen.QwenTurbo:          true,
+		qwen.QwenPlus:           true,
+		qwen.QwenMax:            true,
+		qwen.QwenMax1201:        true,
+		qwen.QwenMaxLongContext: true,
+		
+		// multi-modal model.
+		qwen.QwenVLPlus:     true,
+		qwen.QwenVLMax:      true,
+		qwen.QwenAudioTurbo: true,
+		
+		ModelDeepSeekR1_528: true,
+		ModelDeepSeekR1:     true,
+		ModelDeepseekV3:     true,
 	}
 )
 
