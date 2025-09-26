@@ -74,16 +74,16 @@ func (d *AIRouterReq) GetModel(l *LLM) {
 	case param.AI302:
 		l.Model = openai.GPT3Dot5Turbo
 		if userInfo != nil && userInfo.Mode != "" {
-			logger.Info("User info", "userID", userInfo.UserId, "mode", userInfo.Mode)
 			l.Model = userInfo.Mode
 		}
 	case param.OpenRouter:
 		l.Model = param.DeepseekDeepseekR1_0528Free
 		if userInfo != nil && userInfo.Mode != "" && param.OpenRouterModels[userInfo.Mode] {
-			logger.Info("User info", "userID", userInfo.UserId, "mode", userInfo.Mode)
 			l.Model = userInfo.Mode
 		}
 	}
+	
+	logger.Info("User info", "userID", userInfo.UserId, "mode", l.Model)
 	
 }
 
@@ -243,7 +243,6 @@ func (d *AIRouterReq) GetMessage(role, msg string) {
 }
 
 func (d *AIRouterReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
-	d.GetModel(l)
 	config := openrouter.DefaultConfig(*conf.BaseConfInfo.MixToken)
 	config.HTTPClient = utils.GetLLMProxyClient()
 	if *conf.BaseConfInfo.CustomUrl != "" {

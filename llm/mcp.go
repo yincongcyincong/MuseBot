@@ -45,6 +45,7 @@ func (d *LLMTaskReq) ExecuteMcp() error {
 	prompt := i18n.GetMessage(*conf.BaseConfInfo.Lang, "mcp_prompt", taskParam)
 	llm.LLMClient.GetUserMessage(prompt)
 	llm.Content = prompt
+	llm.LLMClient.GetModel(llm)
 	c, err := llm.LLMClient.SyncSend(ctx, llm)
 	if err != nil {
 		logger.Error("get message fail", "err", err)

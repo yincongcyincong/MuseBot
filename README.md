@@ -53,14 +53,15 @@ chatgpt: https://www.youtube.com/watch?v=G_DZYMvd5Ug
 
 ## Supported Large Language Models
 
-| Model             | Provider   | Text Generation | Image Generation | Video Generation | Recognize Photo | TTS | Link                                 |
-|-------------------|------------|-----------------|:----------------:|:----------------:|----------------:|----:|--------------------------------------|
-| 🌟 **Gemini**     | Google     | ✅               |        ✅         |        ✅         |               ✅ |   ✅ | [doc](https://gemini.google.com/app) |
-| 💬 **ChatGPT**    | OpenAI     | ✅               |        ✅         |        ❌         |               ✅ |   ✅ | [doc](https://chat.openai.com)       |
-| ⚙️ **302.AI**     | 302.AI     | ✅               |        ✅         |        ✅         |               ✅ |   ❌ | [doc](https://302.ai/)               |
-| 🐦 **Doubao**     | ByteDance  | ✅               |        ✅         |        ✅         |               ✅ |   ✅ | [doc](https://www.volcengine.com/)   |
-| 🧠 **DeepSeek**   | DeepSeek   | ✅               |        ❌         |        ❌         |               ❌ |   ❌ | [doc](https://www.deepseek.com/)     |
-| 🌐 **OpenRouter** | OpenRouter | ✅               |        ✅         |        ❌         |               ✅ |   ❌ | [doc](https://openrouter.ai/)        |
+| Model             | Provider   | Text Generation | Image Generation | Video Generation | Recognize Photo | TTS | Link                                                                                                          |
+|-------------------|------------|-----------------|:----------------:|:----------------:|----------------:|----:|---------------------------------------------------------------------------------------------------------------|
+| 🌟 **Gemini**     | Google     | ✅               |        ✅         |        ✅         |               ✅ |   ✅ | [doc](https://gemini.google.com/app)                                                                          |
+| 💬 **ChatGPT**    | OpenAI     | ✅               |        ✅         |        ❌         |               ✅ |   ✅ | [doc](https://chat.openai.com)                                                                                |
+| 🐦 **Doubao**     | ByteDance  | ✅               |        ✅         |        ✅         |               ✅ |   ✅ | [doc](https://www.volcengine.com/)                                                                            |
+| 🐦 **Qwen**       | Aliyun     | ✅               |        ❌         |        ❌         |               ❌ |   ❌ | [doc](https://bailian.console.aliyun.com/?spm=5176.12818093_47.overview_recent.1.663b2cc9wXXcVC&tab=api#/api) |
+| 🧠 **DeepSeek**   | DeepSeek   | ✅               |        ❌         |        ❌         |               ❌ |   ❌ | [doc](https://www.deepseek.com/)                                                                              |
+| ⚙️ **302.AI**     | 302.AI     | ✅               |        ✅         |        ✅         |               ✅ |   ❌ | [doc](https://302.ai/)                                                                                        |
+| 🌐 **OpenRouter** | OpenRouter | ✅               |        ✅         |        ❌         |               ✅ |   ❌ | [doc](https://openrouter.ai/)                                                                                 |
 
 ## 🤖 Text Example
 
@@ -104,6 +105,7 @@ Use docker
      docker pull jackyin0822/musebot:latest
      docker run -d -v /home/user/data:/app/data -e TELEGRAM_BOT_TOKEN="telegram-bot-token" -e DEEPSEEK_TOKEN="deepseek-auth-token" --name my-telegram-bot  jackyin0822/MuseBot:latest
    ```
+
    ```sh
     ALIYUN:
     docker pull crpi-i1dsvpjijxpgjgbv.cn-hangzhou.personal.cr.aliyuncs.com/jackyin0822/musebot

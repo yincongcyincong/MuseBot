@@ -185,11 +185,7 @@ func (d *DeepseekReq) GetMessage(role, msg string) {
 }
 
 func (d *DeepseekReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
-	
-	d.GetModel(l)
-	
 	httpClient := utils.GetLLMProxyClient()
-	
 	client, err := deepseek.NewClientWithOptions(*conf.BaseConfInfo.DeepseekToken, deepseek.WithHTTPClient(httpClient))
 	if err != nil {
 		logger.Error("Error creating deepseek client", "err", err)

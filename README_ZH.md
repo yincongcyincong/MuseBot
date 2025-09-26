@@ -36,7 +36,9 @@ chatgpt: https://www.bilibili.com/video/BV1RutxzJEGY/
   以填充上下文，详见[文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/rag.md)。
 - 🌞 **管理平台（AdminPlatform）**：使用管理平台来管理
   MuseBot，详见[文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/admin_ZH.md)。
-- 🌛 **注册中心**：支持服务注册，机器人实例可自动注册，详见 [文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/register_ZH.md)
+- 🌛 **注册中心**
+  ：支持服务注册，机器人实例可自动注册，详见 [文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/register_ZH.md)
+
 ---
 
 ## 支持平台
@@ -55,14 +57,15 @@ chatgpt: https://www.bilibili.com/video/BV1RutxzJEGY/
 
 ## 支持的大型语言模型
 
-| 模型                | 提供方        | 文本生成 | 图片生成 | 视频生成 | 识别照片 | 链接                                  |
-|-------------------|------------|------|:----:|:----:|:----:|-------------------------------------|
-| 🌟 **Gemini**     | 谷歌         | ✅    |  ✅   |  ✅   |  ✅   | [文档](https://gemini.google.com/app) |
-| 💬 **ChatGPT**    | OpenAI     | ✅    |  ✅   |  ❌   |  ✅   | [文档](https://chat.openai.com)       |
-| 🐦 **Doubao**     | 字节跳动       | ✅    |  ✅   |  ✅   |  ✅   | [文档](https://www.volcengine.com/)   |
-| ⚙️ **302.AI**     | 302.AI     | ✅    |  ✅   |  ✅   |  ✅   | [文档](https://302.ai/)               |
-| 🧠 **DeepSeek**   | DeepSeek   | ✅    |  ❌   |  ❌   |  ❌   | [文档](https://www.deepseek.com/)     |
-| 🌐 **OpenRouter** | OpenRouter | ✅    |  ✅   |  ❌   |  ✅   | [文档](https://openrouter.ai/)        |
+| 模型                | 提供方        | 文本生成 | 图片生成 | 视频生成 | 识别照片 | 链接                                                                                                           |
+|-------------------|------------|------|:----:|:----:|:----:|--------------------------------------------------------------------------------------------------------------|
+| 🌟 **Gemini**     | 谷歌         | ✅    |  ✅   |  ✅   |  ✅   | [文档](https://gemini.google.com/app)                                                                          |
+| 💬 **ChatGPT**    | OpenAI     | ✅    |  ✅   |  ❌   |  ✅   | [文档](https://chat.openai.com)                                                                                |
+| 🐦 **Doubao**     | 字节跳动       | ✅    |  ✅   |  ✅   |  ✅   | [文档](https://www.volcengine.com/)                                                                            |
+| 🐦 **Qwen**       | 阿里云        | ✅    |  ❌   |  ❌   |  ❌   | [文档](https://bailian.console.aliyun.com/?spm=5176.12818093_47.overview_recent.1.663b2cc9wXXcVC&tab=api#/api) |
+| ⚙️ **302.AI**     | 302.AI     | ✅    |  ✅   |  ✅   |  ✅   | [文档](https://302.ai/)                                                                                        |
+| 🧠 **DeepSeek**   | DeepSeek   | ✅    |  ❌   |  ❌   |  ❌   | [文档](https://www.deepseek.com/)                                                                              |
+| 🌐 **OpenRouter** | OpenRouter | ✅    |  ✅   |  ❌   |  ✅   | [文档](https://openrouter.ai/)                                                                                 |
 
 ## 🤖 文本示例
 
@@ -231,8 +234,8 @@ docker pull crpi-i1dsvpjijxpgjgbv.cn-hangzhou.personal.cr.aliyuncs.com/jackyin08
 输入一段prompt用户识别图片        
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/b67a2be2-cc5e-4985-90f3-d72c7a9bf4c1" />
 
-
 ### /save_voice
+
 仅适用于腾讯应用（微信、QQ、企业微信）
 将你的语音保存到电脑。
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/74499d85-4405-43d3-836e-2977de08cb31" />

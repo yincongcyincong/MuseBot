@@ -155,8 +155,6 @@ func (h *GeminiReq) GetMessage(role, msg string) {
 }
 
 func (h *GeminiReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
-	h.GetModel(l)
-	
 	client, err := GetGeminiClient(ctx)
 	if err != nil {
 		logger.Error("create client fail", "err", err)

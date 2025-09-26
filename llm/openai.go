@@ -14,6 +14,7 @@ import (
 	
 	"github.com/cohesion-org/deepseek-go"
 	"github.com/cohesion-org/deepseek-go/constants"
+	"github.com/devinyf/dashscopego/qwen"
 	"github.com/sashabaranov/go-openai"
 	"github.com/yincongcyincong/MuseBot/conf"
 	"github.com/yincongcyincong/MuseBot/db"
@@ -34,15 +35,27 @@ type OpenAIReq struct {
 }
 
 func (d *OpenAIReq) GetModel(l *LLM) {
-	l.Model = openai.GPT3Dot5Turbo0125
 	userInfo, err := db.GetUserByID(l.UserId)
 	if err != nil {
 		logger.Error("Error getting user info", "err", err)
+		return
 	}
-	if userInfo != nil && userInfo.Mode != "" && param.OpenAIModels[userInfo.Mode] {
-		logger.Info("User info", "userID", userInfo.UserId, "mode", userInfo.Mode)
-		l.Model = userInfo.Mode
+	
+	switch *conf.BaseConfInfo.Type {
+	case param.OpenAi:
+		l.Model = openai.GPT3Dot5Turbo0125
+		if userInfo != nil && userInfo.Mode != "" && param.OpenAIModels[userInfo.Mode] {
+			l.Model = userInfo.Mode
+		}
+	case param.Aliyun:
+		l.Model = qwen.QwenMax
+		if userInfo != nil && userInfo.Mode != "" && param.AliyunModel[userInfo.Mode] {
+			l.Model = userInfo.Mode
+		}
 	}
+	
+	logger.Info("User info", "userID", userInfo.UserId, "mode", l.Model)
+	
 }
 
 func (d *OpenAIReq) Send(ctx context.Context, l *LLM) error {
@@ -51,10 +64,8 @@ func (d *OpenAIReq) Send(ctx context.Context, l *LLM) error {
 	}
 	
 	start := time.Now()
-	d.GetModel(l)
 	
 	client := GetOpenAIClient()
-	
 	request := openai.ChatCompletionRequest{
 		Model:  l.Model,
 		Stream: true,
@@ -178,7 +189,6 @@ func (d *OpenAIReq) GetMessage(role, msg string) {
 }
 
 func (d *OpenAIReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
-	d.GetModel(l)
 	client := GetOpenAIClient()
 	
 	request := openai.ChatCompletionRequest{
@@ -479,12 +489,18 @@ func OpenAITTS(content, encoding string) ([]byte, int, int, error) {
 
 func GetOpenAIClient() *openai.Client {
 	httpClient := utils.GetLLMProxyClient()
-	openaiConfig := openai.DefaultConfig(*conf.BaseConfInfo.OpenAIToken)
+	var token string
+	switch *conf.BaseConfInfo.Type {
+	case param.OpenAi:
+		token = *conf.BaseConfInfo.OpenAIToken
+	case param.Aliyun:
+		token = *conf.BaseConfInfo.AliyunToken
+	}
+	openaiConfig := openai.DefaultConfig(token)
 	if *conf.BaseConfInfo.CustomUrl != "" {
 		openaiConfig.BaseURL = *conf.BaseConfInfo.CustomUrl
 	}
 	
-	//openaiConfig.BaseURL = "https://api.chatanywhere.tech/v1/"
 	openaiConfig.HTTPClient = httpClient
 	return openai.NewClientWithConfig(openaiConfig)
 }
