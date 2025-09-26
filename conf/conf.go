@@ -10,6 +10,7 @@ import (
 	"time"
 	
 	"github.com/yincongcyincong/MuseBot/logger"
+	"github.com/yincongcyincong/MuseBot/param"
 )
 
 type BaseConf struct {
@@ -115,7 +116,7 @@ func InitConf() {
 	BaseConfInfo.BotName = flag.String("bot_name", "MuseBot"+strconv.Itoa(rand.Int()), "bot name")
 	BaseConfInfo.CustomUrl = flag.String("custom_url", "", "deepseek custom url")
 	BaseConfInfo.Type = flag.String("type", "deepseek", "llm type: deepseek gemini openai openrouter vol")
-	BaseConfInfo.MediaType = flag.String("media_type", "vol", "media type: vol gemini openai openrouter")
+	BaseConfInfo.MediaType = flag.String("media_type", "vol", "media type: vol gemini openai aliyun 302-ai openrouter")
 	BaseConfInfo.DBType = flag.String("db_type", "sqlite3", "db type")
 	BaseConfInfo.DBConf = flag.String("db_conf", GetAbsPath("data/telegram_bot.db"), "db conf")
 	BaseConfInfo.LLMProxy = flag.String("llm_proxy", "", "llm proxy: http://127.0.0.1:7890")
@@ -433,6 +434,13 @@ func InitConf() {
 	EnvToolsConf()
 	EnvVideoConf()
 	EnvRegisterConf()
+	
+	switch *BaseConfInfo.Type {
+	case param.AI302:
+		*BaseConfInfo.CustomUrl = "https://api.302.ai/"
+	case param.Aliyun:
+		*BaseConfInfo.CustomUrl = "https://dashscope.aliyuncs.com/compatible-mode/v1"
+	}
 	
 }
 

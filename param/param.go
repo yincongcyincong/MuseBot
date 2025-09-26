@@ -10,8 +10,9 @@ const (
 	DeepSeek = "deepseek"
 	Ollama   = "ollama"
 	
-	Vol   = "vol"
-	AI302 = "302-ai"
+	Vol    = "vol"
+	AI302  = "302-ai"
+	Aliyun = "aliyun"
 	
 	Gemini                        = "gemini"
 	ModelGemini25Pro       string = "gemini-2.5-pro"

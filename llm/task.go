@@ -103,7 +103,6 @@ func (d *LLMTaskReq) ExecuteTask() error {
 	}
 	
 	llm.DirectSendMsg(c)
-	
 	llm.LLMClient.GetAssistantMessage(c)
 	err = d.loopTask(ctx, plans, c, llm, 0)
 	if err != nil {
@@ -148,7 +147,7 @@ func (d *LLMTaskReq) loopTask(ctx context.Context, plans *TaskInfo, lastPlan str
 		WithTaskTools(tool)(taskLLM)
 		taskLLM.LLMClient.GetUserMessage(plan.Description)
 		taskLLM.Content = plan.Description
-		
+		taskLLM.LLMClient.GetModel(taskLLM)
 		logger.Info("execute task", "task", plan.Name, "task desc", plan.Description)
 		err := d.requestTask(ctx, taskLLM, plan)
 		if err != nil {
@@ -167,6 +166,7 @@ func (d *LLMTaskReq) loopTask(ctx context.Context, plans *TaskInfo, lastPlan str
 	}
 	
 	llm.LLMClient.GetUserMessage(i18n.GetMessage(*conf.BaseConfInfo.Lang, "loop_task_prompt", taskParam))
+	llm.LLMClient.GetModel(llm)
 	c, err := llm.LLMClient.SyncSend(ctx, llm)
 	if err != nil {
 		logger.Error("ChatCompletionStream error", "err", err)
@@ -200,7 +200,6 @@ func (d *LLMTaskReq) loopTask(ctx context.Context, plans *TaskInfo, lastPlan str
 
 // requestTask request task
 func (d *LLMTaskReq) requestTask(ctx context.Context, llm *LLM, plan *Task) error {
-	
 	c, err := llm.LLMClient.SyncSend(ctx, llm)
 	if err != nil {
 		logger.Error("ChatCompletionStream error", "err", err)

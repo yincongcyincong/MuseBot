@@ -55,7 +55,6 @@ func (h *VolReq) Send(ctx context.Context, l *LLM) error {
 	}
 	
 	start := time.Now()
-	h.GetModel(l)
 	
 	// set deepseek proxy
 	httpClient := utils.GetLLMProxyClient()
@@ -259,8 +258,6 @@ func (h *VolReq) GetMessage(role, msg string) {
 }
 
 func (h *VolReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
-	h.GetModel(l)
-	
 	httpClient := utils.GetLLMProxyClient()
 	
 	client := arkruntime.NewClientWithApiKey(

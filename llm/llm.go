@@ -69,13 +69,10 @@ type LLMClient interface {
 func (l *LLM) CallLLM() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
-	
-	l.GetMessages(l.UserId, l.GetContent(l.Content))
-	
 	logger.Info("msg receive", "userID", l.UserId, "prompt", l.Content)
 	
+	l.GetMessages(l.UserId, l.GetContent(l.Content))
 	l.LLMClient.GetModel(l)
-	
 	err := l.LLMClient.Send(ctx, l)
 	if err != nil {
 		logger.Error("Error calling LLM API", "err", err)
@@ -125,7 +122,7 @@ func NewLLM(opts ...Option) *LLM {
 			ToolMessage:        []*genai.Content{},
 			CurrentToolMessage: []*genai.Content{},
 		}
-	case param.OpenAi:
+	case param.OpenAi, param.Aliyun:
 		l.LLMClient = &OpenAIReq{
 			ToolCall:           []openai.ToolCall{},
 			ToolMessage:        []openai.ChatCompletionMessage{},
