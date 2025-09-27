@@ -68,6 +68,7 @@ func (d *AIRouterReq) GetModel(l *LLM) {
 	userInfo, err := db.GetUserByID(l.UserId)
 	if err != nil {
 		logger.Error("Error getting user info", "err", err)
+		return
 	}
 	
 	switch *conf.BaseConfInfo.Type {
@@ -94,12 +95,7 @@ func (d *AIRouterReq) Send(ctx context.Context, l *LLM) error {
 	
 	start := time.Now()
 	
-	config := openrouter.DefaultConfig(*conf.BaseConfInfo.MixToken)
-	config.HTTPClient = utils.GetLLMProxyClient()
-	if *conf.BaseConfInfo.CustomUrl != "" {
-		config.BaseURL = *conf.BaseConfInfo.CustomUrl
-	}
-	client := openrouter.NewClientWithConfig(*config)
+	client := GetMixClient()
 	
 	request := openrouter.ChatCompletionRequest{
 		Model:  l.Model,
@@ -243,12 +239,7 @@ func (d *AIRouterReq) GetMessage(role, msg string) {
 }
 
 func (d *AIRouterReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
-	config := openrouter.DefaultConfig(*conf.BaseConfInfo.MixToken)
-	config.HTTPClient = utils.GetLLMProxyClient()
-	if *conf.BaseConfInfo.CustomUrl != "" {
-		config.BaseURL = *conf.BaseConfInfo.CustomUrl
-	}
-	client := openrouter.NewClientWithConfig(*config)
+	client := GetMixClient()
 	
 	request := openrouter.ChatCompletionRequest{
 		Model:            l.Model,
@@ -410,13 +401,7 @@ func GenerateMixImg(prompt string, imageContent []byte) (string, int, error) {
 		})
 	}
 	
-	config := openrouter.DefaultConfig(*conf.BaseConfInfo.MixToken)
-	config.HTTPClient = utils.GetLLMProxyClient()
-	if *conf.BaseConfInfo.CustomUrl != "" {
-		config.BaseURL = *conf.BaseConfInfo.CustomUrl
-	}
-	client := openrouter.NewClientWithConfig(*config)
-	
+	client := GetMixClient()
 	request := openrouter.ChatCompletionRequest{
 		Model:    *conf.PhotoConfInfo.MixImageModel,
 		Messages: []openrouter.ChatCompletionMessage{messages},
@@ -441,6 +426,18 @@ func GenerateMixImg(prompt string, imageContent []byte) (string, int, error) {
 	}
 	
 	return "", 0, errors.New("image is empty")
+}
+
+func GetMixClient() *openrouter.Client {
+	config := openrouter.DefaultConfig(*conf.BaseConfInfo.MixToken)
+	config.HTTPClient = utils.GetLLMProxyClient()
+	if conf.BaseConfInfo.SpecialLLMUrl != "" {
+		config.BaseURL = conf.BaseConfInfo.SpecialLLMUrl
+	}
+	if *conf.BaseConfInfo.CustomUrl != "" {
+		config.BaseURL = *conf.BaseConfInfo.CustomUrl
+	}
+	return openrouter.NewClientWithConfig(*config)
 }
 
 func Generate302AIVideo(prompt string, image []byte) (string, int, error) {
@@ -557,12 +554,7 @@ func GetMixImageContent(imageContent []byte, content string) (string, int, error
 		},
 	}
 	
-	config := openrouter.DefaultConfig(*conf.BaseConfInfo.MixToken)
-	config.HTTPClient = utils.GetLLMProxyClient()
-	if *conf.BaseConfInfo.CustomUrl != "" {
-		config.BaseURL = *conf.BaseConfInfo.CustomUrl
-	}
-	client := openrouter.NewClientWithConfig(*config)
+	client := GetMixClient()
 	
 	request := openrouter.ChatCompletionRequest{
 		Model:    *conf.PhotoConfInfo.MixRecModel,

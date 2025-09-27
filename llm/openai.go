@@ -65,7 +65,7 @@ func (d *OpenAIReq) Send(ctx context.Context, l *LLM) error {
 	
 	start := time.Now()
 	
-	client := GetOpenAIClient()
+	client := GetOpenAIClient(false)
 	request := openai.ChatCompletionRequest{
 		Model:  l.Model,
 		Stream: true,
@@ -189,7 +189,7 @@ func (d *OpenAIReq) GetMessage(role, msg string) {
 }
 
 func (d *OpenAIReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
-	client := GetOpenAIClient()
+	client := GetOpenAIClient(false)
 	
 	request := openai.ChatCompletionRequest{
 		Model:            l.Model,
@@ -329,7 +329,7 @@ func GenerateOpenAIImg(prompt string, imageContent []byte) ([]byte, int, error) 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 	
-	client := GetOpenAIClient()
+	client := GetOpenAIClient(true)
 	
 	var respUrl openai.ImageResponse
 	var err error
@@ -385,7 +385,7 @@ func GenerateOpenAIText(audioContent []byte) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 	
-	client := GetOpenAIClient()
+	client := GetOpenAIClient(true)
 	
 	req := openai.AudioRequest{
 		Model:    openai.Whisper1,
@@ -407,16 +407,21 @@ func GetOpenAIImageContent(imageContent []byte, content string) (string, int, er
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 	
-	client := GetOpenAIClient()
+	client := GetOpenAIClient(true)
 	
 	contentPrompt := content
 	if content == "" {
 		contentPrompt = i18n.GetMessage(*conf.BaseConfInfo.Lang, "photo_handle_prompt", nil)
 	}
 	
+	model := *conf.PhotoConfInfo.OpenAIRecModel
+	if *conf.BaseConfInfo.MediaType == param.Aliyun {
+		model = "qwen-vl-max-latest"
+	}
+	
 	imageDataURL := "data:image/png;base64," + base64.StdEncoding.EncodeToString(imageContent)
 	req := openai.ChatCompletionRequest{
-		Model: *conf.PhotoConfInfo.OpenAIRecModel,
+		Model: model,
 		Messages: []openai.ChatCompletionMessage{
 			{
 				Role: "user",
@@ -457,8 +462,7 @@ func OpenAITTS(content, encoding string) ([]byte, int, int, error) {
 		formatEncoding = string(openai.SpeechResponseFormatPcm)
 	}
 	
-	client := GetOpenAIClient()
-	
+	client := GetOpenAIClient(true)
 	resp, err := client.CreateSpeech(ctx, openai.CreateSpeechRequest{
 		Model:          openai.SpeechModel(*conf.AudioConfInfo.OpenAIAudioModel),
 		Input:          content,
@@ -487,20 +491,28 @@ func OpenAITTS(content, encoding string) ([]byte, int, int, error) {
 	return data, db.EstimateTokens(content), utils.PCMDuration(len(data), 24000, 1, 16), nil
 }
 
-func GetOpenAIClient() *openai.Client {
+func GetOpenAIClient(isMedia bool) *openai.Client {
 	httpClient := utils.GetLLMProxyClient()
+	t := *conf.BaseConfInfo.Type
+	if isMedia {
+		t = *conf.BaseConfInfo.MediaType
+	}
+	
 	var token string
-	switch *conf.BaseConfInfo.Type {
+	switch t {
 	case param.OpenAi:
 		token = *conf.BaseConfInfo.OpenAIToken
 	case param.Aliyun:
 		token = *conf.BaseConfInfo.AliyunToken
 	}
+	
 	openaiConfig := openai.DefaultConfig(token)
+	if conf.BaseConfInfo.SpecialLLMUrl != "" {
+		openaiConfig.BaseURL = conf.BaseConfInfo.SpecialLLMUrl
+	}
 	if *conf.BaseConfInfo.CustomUrl != "" {
 		openaiConfig.BaseURL = *conf.BaseConfInfo.CustomUrl
 	}
-	
 	openaiConfig.HTTPClient = httpClient
 	return openai.NewClientWithConfig(openaiConfig)
 }

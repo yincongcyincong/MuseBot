@@ -146,7 +146,7 @@ You can configure the bot via environment variables:
 | CA_FILE	                       | http server ca file                                                                                                   | -                         |
 | CRT_FILE	                      | http server crt file                                                                                                  | -                         |
 | KEY_FILE	                      | http server key file                                                                                                  | -                         |
-| MEDIA_TYPE	                    | openai/gemini/vol/openrouter/302-ai   create photo or video                                                           | vol                       |
+| MEDIA_TYPE	                    | openai/gemini/vol/openrouter/aliyun/302-ai   create photo or video                                                    | vol                       |
 | MAX_QA_PAIR	                   | how many question and answer pairs as context                                                                         | 15                        |
 | CHARACTER	                     | background character                                                                                                  | -                         |
 

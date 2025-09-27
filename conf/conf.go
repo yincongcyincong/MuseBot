@@ -14,7 +14,8 @@ import (
 )
 
 type BaseConf struct {
-	StartTime int64 `json:"-"`
+	StartTime     int64  `json:"-"`
+	SpecialLLMUrl string `json:"-"`
 	
 	TelegramBotToken        *string `json:"telegram_bot_token"`
 	DiscordBotToken         *string `json:"discord_bot_token"`
@@ -148,6 +149,8 @@ func InitConf() {
 	InitToolsConf()
 	InitRagConf()
 	InitRegisterConf()
+	
+	flag.CommandLine.Init(os.Args[0], flag.ContinueOnError)
 	flag.Parse()
 	
 	if os.Getenv("TELEGRAM_BOT_TOKEN") != "" {
@@ -437,9 +440,9 @@ func InitConf() {
 	
 	switch *BaseConfInfo.Type {
 	case param.AI302:
-		*BaseConfInfo.CustomUrl = "https://api.302.ai/"
+		BaseConfInfo.SpecialLLMUrl = "https://api.302.ai/"
 	case param.Aliyun:
-		*BaseConfInfo.CustomUrl = "https://dashscope.aliyuncs.com/compatible-mode/v1"
+		BaseConfInfo.SpecialLLMUrl = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 	}
 	
 }
