@@ -9,7 +9,6 @@ import (
 	"runtime"
 	"strings"
 	"syscall"
-	"time"
 	
 	"github.com/hpcloud/tail"
 	"github.com/yincongcyincong/MuseBot/conf"
@@ -87,7 +86,7 @@ func Restart(w http.ResponseWriter, r *http.Request) {
 	
 	go func() {
 		if runtime.GOOS == "windows" {
-			cmd := exec.Command(execPath, append([]string{execPath}, args...)...)
+			cmd := exec.Command(execPath, args...)
 			cmd.Stdout = os.Stdout
 			cmd.Stderr = os.Stderr
 			cmd.Stdin = os.Stdin
@@ -98,7 +97,6 @@ func Restart(w http.ResponseWriter, r *http.Request) {
 				logger.Error("restart fail", "err", err)
 				return
 			}
-			time.Sleep(500 * time.Millisecond)
 			os.Exit(0)
 		} else {
 			if err := syscall.Exec(execPath, append([]string{execPath}, args...), env); err != nil {

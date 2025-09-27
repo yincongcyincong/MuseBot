@@ -596,7 +596,7 @@ func (r *RobotInfo) GetImageContent(imageContent []byte, content string) (string
 		answer, token, err = llm.GetVolImageContent(imageContent, content)
 	case param.Gemini:
 		answer, token, err = llm.GetGeminiImageContent(imageContent, content)
-	case param.OpenAi:
+	case param.OpenAi, param.Aliyun:
 		answer, token, err = llm.GetOpenAIImageContent(imageContent, content)
 	case param.AI302, param.OpenRouter:
 		answer, token, err = llm.GetMixImageContent(imageContent, content)
