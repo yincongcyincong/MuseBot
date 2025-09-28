@@ -17,13 +17,13 @@ type User struct {
 
 func CreateUser(username, password string) error {
 	now := time.Now().Unix()
-	_, err := DB.Exec(`INSERT INTO users (username, password, create_time, update_time) VALUES (?, ?, ?, ?)`,
+	_, err := DB.Exec(`INSERT INTO admin_users (username, password, create_time, update_time) VALUES (?, ?, ?, ?)`,
 		username, utils.MD5(password), now, now)
 	return err
 }
 
 func GetUserByID(id int) (*User, error) {
-	row := DB.QueryRow(`SELECT id, username, create_time, update_time FROM users WHERE id = ?`, id)
+	row := DB.QueryRow(`SELECT id, username, create_time, update_time FROM admin_users WHERE id = ?`, id)
 	u := &User{}
 	err := row.Scan(&u.ID, &u.Username, &u.CreateTime, &u.UpdateTime)
 	if err != nil {
@@ -33,7 +33,7 @@ func GetUserByID(id int) (*User, error) {
 }
 
 func GetUserByUsername(username string) (*User, error) {
-	row := DB.QueryRow(`SELECT id, username, password, create_time, update_time FROM users WHERE username = ?`, username)
+	row := DB.QueryRow(`SELECT id, username, password, create_time, update_time FROM admin_users WHERE username = ?`, username)
 	u := &User{}
 	err := row.Scan(&u.ID, &u.Username, &u.Password, &u.CreateTime, &u.UpdateTime)
 	if err != nil {
@@ -44,12 +44,12 @@ func GetUserByUsername(username string) (*User, error) {
 
 func UpdateUserPassword(id int, newPassword string) error {
 	now := time.Now().Unix()
-	_, err := DB.Exec(`UPDATE users SET password = ?, update_time = ? WHERE id = ?`, utils.MD5(newPassword), now, id)
+	_, err := DB.Exec(`UPDATE admin_users SET password = ?, update_time = ? WHERE id = ?`, utils.MD5(newPassword), now, id)
 	return err
 }
 
 func DeleteUser(id int) error {
-	_, err := DB.Exec(`DELETE FROM users WHERE id = ?`, id)
+	_, err := DB.Exec(`DELETE FROM admin_users WHERE id = ?`, id)
 	return err
 }
 
@@ -65,10 +65,10 @@ func ListUsers(offset, limit int, username string) ([]User, int, error) {
 	
 	// 构建查询 SQL
 	if username != "" {
-		query = `SELECT id, username, password, create_time, update_time FROM users WHERE username LIKE ? LIMIT ? OFFSET ?`
+		query = `SELECT id, username, password, create_time, update_time FROM admin_users WHERE username LIKE ? LIMIT ? OFFSET ?`
 		args = append(args, "%"+username+"%", limit, offset)
 	} else {
-		query = `SELECT id, username, password, create_time, update_time FROM users LIMIT ? OFFSET ?`
+		query = `SELECT id, username, password, create_time, update_time FROM admin_users LIMIT ? OFFSET ?`
 		args = append(args, limit, offset)
 	}
 	
@@ -92,10 +92,10 @@ func ListUsers(offset, limit int, username string) ([]User, int, error) {
 	var countArgs []interface{}
 	
 	if username != "" {
-		countQuery = `SELECT COUNT(*) FROM users WHERE username LIKE ?`
+		countQuery = `SELECT COUNT(*) FROM admin_users WHERE username LIKE ?`
 		countArgs = append(countArgs, "%"+username+"%")
 	} else {
-		countQuery = `SELECT COUNT(*) FROM users`
+		countQuery = `SELECT COUNT(*) FROM admin_users`
 	}
 	
 	var total int

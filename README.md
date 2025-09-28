@@ -121,7 +121,8 @@ You can configure the bot via environment variables:
 | DEEPSEEK_TOKEN	  (required)    | DeepSeek Api Key                                                                                                      | -                         |
 | OPENAI_TOKEN	                  | Open AI Token                                                                                                         | -                         |
 | GEMINI_TOKEN	                  | Gemini Token                                                                                                          | -                         |
-| MIX_TOKEN	                     | OpenRouter Token  [doc](https://openrouter.ai/docs/quickstart)    or 302-AI token [doc](https://302.ai/)              | -                         |
+| OPEN_ROUTER_TOKEN	             | OpenRouter Token  [doc](https://openrouter.ai/docs/quickstart)                                                        | -                         |
+| AI_302_TOKEN	                  | 302-AI token [doc](https://302.ai/)                                                                                   | -                         |
 | VOL_TOKEN	                     | Vol Token  [doc](https://www.volcengine.com/docs/82379/1399008#b00dee71)                                              | -                         |
 | CUSTOM_URL	                    | custom deepseek url                                                                                                   | https://api.deepseek.com/ |
 | TYPE	                          | deepseek/openai/gemini/openrouter/vol/302-ai                                                                          | deepseek                  |

@@ -10,9 +10,11 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"os/exec"
 	"reflect"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 	
 	"github.com/yincongcyincong/MuseBot/admin/checkpoint"
@@ -33,6 +35,8 @@ type Bot struct {
 	CrtFile string `json:"crt_file"`
 	KeyFile string `json:"key_file"`
 	CaFile  string `json:"ca_file"`
+	Command string `json:"command"`
+	IsStart bool   `json:"is_start"`
 }
 
 type RegisterBot struct {
@@ -101,7 +105,7 @@ func CreateBot(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	err = db.CreateBot(b.Address, b.Name, b.CrtFile, b.KeyFile, b.CaFile)
+	err = db.CreateBot(b.Address, b.Name, b.CrtFile, b.KeyFile, b.CaFile, b.Command)
 	if err != nil {
 		logger.Error("create bot error", "reason", "db fail", "err", err)
 		utils.Failure(w, param.CodeDBWriteFail, param.MsgDBWriteFail, err)
@@ -109,6 +113,15 @@ func CreateBot(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	go checkpoint.ScheduleBotChecks()
+	
+	if b.IsStart {
+		err = StartDetachedProcess(b.Command)
+		if err != nil {
+			logger.Error("start bot error", "err", err)
+			utils.Failure(w, param.CodeServerFail, param.MsgServerFail, err)
+			return
+		}
+	}
 	
 	utils.Success(w, "bot created")
 }
@@ -125,6 +138,30 @@ func RestartBot(w http.ResponseWriter, r *http.Request) {
 	resp, err := adminUtils.GetCrtClient(botInfo).Get(strings.TrimSuffix(botInfo.Address, "/") + "/restart?params=" + url.QueryEscape(params))
 	if err != nil {
 		logger.Error("get bot conf error", "err", err)
+		utils.Failure(w, param.CodeServerFail, param.MsgServerFail, err)
+		return
+	}
+	
+	defer resp.Body.Close()
+	_, err = io.Copy(w, resp.Body)
+	if err != nil {
+		logger.Error("copy response body error", "err", err)
+		utils.Failure(w, param.CodeServerFail, param.MsgServerFail, err)
+		return
+	}
+}
+
+func StopBot(w http.ResponseWriter, r *http.Request) {
+	botInfo, err := getBot(r)
+	if err != nil {
+		logger.Error("get bot conf error", "err", err)
+		utils.Failure(w, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
+		return
+	}
+	
+	resp, err := adminUtils.GetCrtClient(botInfo).Get(strings.TrimSuffix(botInfo.Address, "/") + "/stop")
+	if err != nil {
+		logger.Error("stop bot error", "err", err)
 		utils.Failure(w, param.CodeServerFail, param.MsgServerFail, err)
 		return
 	}
@@ -160,7 +197,7 @@ func UpdateBotAddress(w http.ResponseWriter, r *http.Request) {
 	var b Bot
 	err := utils.HandleJsonBody(r, &b)
 	if err != nil {
-		logger.Error("update bot error", "bot", b)
+		logger.Error("update bot error", "bot", b, "err", err)
 		utils.Failure(w, param.CodeParamError, param.MsgParamError, err)
 		return
 	}
@@ -170,7 +207,14 @@ func UpdateBotAddress(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	err = db.UpdateBotAddress(b.ID, b.Address, b.Name, b.CrtFile, b.KeyFile, b.CaFile)
+	botInfo, err := db.GetBotByID(strconv.Itoa(b.ID))
+	if err != nil {
+		logger.Error("update bot address error", "reason", "not found", "id", b.ID, "err", err)
+		utils.Failure(w, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
+		return
+	}
+	
+	err = db.UpdateBotAddress(b.ID, b.Address, b.Name, b.CrtFile, b.KeyFile, b.CaFile, b.Command)
 	if err != nil {
 		logger.Error("update bot address error", "reason", "db fail", "err", err)
 		utils.Failure(w, param.CodeDBWriteFail, param.MsgDBWriteFail, err)
@@ -178,6 +222,22 @@ func UpdateBotAddress(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	go checkpoint.ScheduleBotChecks()
+	
+	if b.IsStart {
+		_, err = adminUtils.GetCrtClient(botInfo).Get(strings.TrimSuffix(botInfo.Address, "/") + "/stop")
+		if err != nil {
+			logger.Error("stop bot error", "err", err)
+			utils.Failure(w, param.CodeServerFail, param.MsgServerFail, err)
+			return
+		}
+		
+		err = StartDetachedProcess(b.Command)
+		if err != nil {
+			logger.Error("start bot error", "err", err)
+			utils.Failure(w, param.CodeServerFail, param.MsgServerFail, err)
+			return
+		}
+	}
 	
 	utils.Success(w, "bot address updated")
 }
@@ -940,4 +1000,23 @@ func InsertUserRecord(w http.ResponseWriter, r *http.Request) {
 		utils.Failure(w, param.CodeServerFail, param.MsgServerFail, err)
 		return
 	}
+}
+
+func StartDetachedProcess(argsStr string) error {
+	args := append([]string{utils.GetAbsPath("/") + "MuseBot"}, strings.Split(argsStr, "\n")...)
+	
+	cmd := exec.Command(args[0], args[1:]...)
+	cmd.SysProcAttr = &syscall.SysProcAttr{
+		Setpgid: true,
+	}
+	
+	// 不继承标准 IO
+	cmd.Stdin = nil
+	cmd.Stdout = nil
+	cmd.Stderr = nil
+	
+	if err := cmd.Start(); err != nil {
+		return err
+	}
+	return nil
 }

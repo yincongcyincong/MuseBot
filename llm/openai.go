@@ -54,7 +54,7 @@ func (d *OpenAIReq) GetModel(l *LLM) {
 		}
 	}
 	
-	logger.Info("User info", "userID", userInfo.UserId, "mode", l.Model)
+	logger.Info("User info", "userID", l.UserId, "mode", l.Model)
 	
 }
 

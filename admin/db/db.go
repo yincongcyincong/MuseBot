@@ -15,7 +15,7 @@ import (
 
 const (
 	sqlite3CreateTableSQL = `
-			CREATE TABLE users (
+			CREATE TABLE admin_users (
 				id INTEGER PRIMARY KEY AUTOINCREMENT,
 				username VARCHAR(255) NOT NULL DEFAULT '',
 				password VARCHAR(100) NOT NULL DEFAULT '',
@@ -29,6 +29,7 @@ const (
 				key_file TEXT NOT NULL,
 				crt_file TEXT NOT NULL,
 				ca_file TEXT NOT NULL,
+				command TEXT NOT NULL,
 				create_time int(10) NOT NULL DEFAULT '0',
 				update_time int(10) NOT NULL DEFAULT '0',
 				is_deleted int(10) NOT NULL DEFAULT '0'
@@ -36,7 +37,7 @@ const (
 			insert into users values(1, 'admin', '21232f297a57a5a743894a0e4a801fc3', strftime('%s','now'), strftime('%s','now'))`
 	
 	mysqlCreateUsersSQL = `
-			CREATE TABLE IF NOT EXISTS users (
+			CREATE TABLE IF NOT EXISTS admin_users (
 				id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
 				username VARCHAR(255) NOT NULL DEFAULT '',
 				password VARCHAR(100) NOT NULL DEFAULT '',
@@ -49,8 +50,10 @@ const (
 				id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
 				address VARCHAR(255) NOT NULL DEFAULT '',
 			    name VARCHAR(255) NOT NULL DEFAULT '',
+			    key_file TEXT NOT NULL,
 				crt_file TEXT NOT NULL,
-			    secret_file TEXT NOT NULL,
+			    ca_file TEXT NOT NULL,
+			    command TEXT NOT NULL,
 				create_time int(10) NOT NULL DEFAULT '0',
 				update_time int(10) NOT NULL DEFAULT '0',
 				is_deleted int(10) NOT NULL DEFAULT '0'
@@ -82,13 +85,13 @@ func InitTable() {
 	// init table
 	switch *conf.BaseConfInfo.DBType {
 	case "sqlite3":
-		err = initializeSqlite3Table(DB, "users")
+		err = initializeSqlite3Table(DB, "admin_users")
 		if err != nil {
 			logger.Fatal("create sqlite table fail", "err", err)
 		}
 	case "mysql":
 		// 检查并创建表
-		if err := initializeMysqlTable(DB, "users", mysqlCreateUsersSQL); err != nil {
+		if err := initializeMysqlTable(DB, "admin_users", mysqlCreateUsersSQL); err != nil {
 			logger.Fatal("create mysql table fail", "err", err)
 		}
 		
