@@ -66,7 +66,7 @@ i18n
                     save: "Save",
                     add: "Add",
                     command: "Command",
-                    restart: "Restart"
+                    start: "Start"
                 }
             },
             zh: {
@@ -128,7 +128,7 @@ i18n
                     save: "保存",
                     add: "添加",
                     command: "命令",
-                    restart: "重启"
+                    start: "启动"
                 }
             }
         },
