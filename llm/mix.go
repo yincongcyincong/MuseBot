@@ -84,7 +84,7 @@ func (d *AIRouterReq) GetModel(l *LLM) {
 		}
 	}
 	
-	logger.Info("User info", "userID", userInfo.UserId, "mode", l.Model)
+	logger.Info("User info", "userID", l.UserId, "mode", l.Model)
 	
 }
 
@@ -95,7 +95,7 @@ func (d *AIRouterReq) Send(ctx context.Context, l *LLM) error {
 	
 	start := time.Now()
 	
-	client := GetMixClient()
+	client := GetMixClient(false)
 	
 	request := openrouter.ChatCompletionRequest{
 		Model:  l.Model,
@@ -239,7 +239,7 @@ func (d *AIRouterReq) GetMessage(role, msg string) {
 }
 
 func (d *AIRouterReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
-	client := GetMixClient()
+	client := GetMixClient(false)
 	
 	request := openrouter.ChatCompletionRequest{
 		Model:            l.Model,
@@ -401,7 +401,7 @@ func GenerateMixImg(prompt string, imageContent []byte) (string, int, error) {
 		})
 	}
 	
-	client := GetMixClient()
+	client := GetMixClient(true)
 	request := openrouter.ChatCompletionRequest{
 		Model:    *conf.PhotoConfInfo.MixImageModel,
 		Messages: []openrouter.ChatCompletionMessage{messages},
@@ -428,8 +428,21 @@ func GenerateMixImg(prompt string, imageContent []byte) (string, int, error) {
 	return "", 0, errors.New("image is empty")
 }
 
-func GetMixClient() *openrouter.Client {
-	config := openrouter.DefaultConfig(*conf.BaseConfInfo.MixToken)
+func GetMixClient(isMedia bool) *openrouter.Client {
+	t := *conf.BaseConfInfo.Type
+	if isMedia {
+		t = *conf.BaseConfInfo.MediaType
+	}
+	
+	token := ""
+	switch t {
+	case param.OpenRouter:
+		token = *conf.BaseConfInfo.OpenRouterToken
+	case param.AI302:
+		token = *conf.BaseConfInfo.AI302Token
+	}
+	
+	config := openrouter.DefaultConfig(token)
 	config.HTTPClient = utils.GetLLMProxyClient()
 	if conf.BaseConfInfo.SpecialLLMUrl != "" {
 		config.BaseURL = conf.BaseConfInfo.SpecialLLMUrl
@@ -465,7 +478,7 @@ func Generate302AIVideo(prompt string, image []byte) (string, int, error) {
 	if err != nil {
 		return "", 0, fmt.Errorf("failed to create request: %w", err)
 	}
-	req.Header.Add("Authorization", "Bearer "+*conf.BaseConfInfo.MixToken)
+	req.Header.Add("Authorization", "Bearer "+*conf.BaseConfInfo.AI302Token)
 	req.Header.Add("Content-Type", "application/json")
 	
 	res, err := httpClient.Do(req)
@@ -494,7 +507,7 @@ func Generate302AIVideo(prompt string, image []byte) (string, int, error) {
 		}
 		
 		req, _ := http.NewRequestWithContext(ctx, "GET", fetchURL, nil)
-		req.Header.Add("Authorization", "Bearer "+*conf.BaseConfInfo.MixToken)
+		req.Header.Add("Authorization", "Bearer "+*conf.BaseConfInfo.AI302Token)
 		
 		res, err := httpClient.Do(req)
 		if err != nil {
@@ -554,7 +567,7 @@ func GetMixImageContent(imageContent []byte, content string) (string, int, error
 		},
 	}
 	
-	client := GetMixClient()
+	client := GetMixClient(true)
 	
 	request := openrouter.ChatCompletionRequest{
 		Model:    *conf.PhotoConfInfo.MixRecModel,

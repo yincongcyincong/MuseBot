@@ -24,8 +24,8 @@ var BaseConfInfo = new(BaseConfig)
 
 func InitConfig() {
 	BaseConfInfo.DBType = flag.String("db_type", "sqlite3", "db type")
-	BaseConfInfo.DBConf = flag.String("db_conf", botUtils.GetAbsPath("data/telegram_admin_bot.db"), "db conf")
-	BaseConfInfo.SessionKey = flag.String("session_key", "telegram_bot_session_key", "session key")
+	BaseConfInfo.DBConf = flag.String("db_conf", botUtils.GetAbsPath("data/muse_bot_admin_bot.db"), "db conf")
+	BaseConfInfo.SessionKey = flag.String("session_key", "muse_bot_session_key", "session key")
 	BaseConfInfo.AdminPort = flag.String("admin_port", "18080", "admin port")
 	BaseConfInfo.CheckBotSec = flag.Int("check_bot_sec", 10, "check bot interval")
 	

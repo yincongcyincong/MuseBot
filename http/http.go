@@ -44,6 +44,7 @@ func (p *HTTPServer) Start() {
 		http.HandleFunc("/conf/get", GetConf)
 		http.HandleFunc("/command/get", GetCommand)
 		http.HandleFunc("/restart", Restart)
+		http.HandleFunc("/stop", Stop)
 		http.HandleFunc("/log", Log)
 		
 		http.HandleFunc("/mcp/get", GetMCPConf)

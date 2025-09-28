@@ -9,6 +9,7 @@ import (
 	"runtime"
 	"strings"
 	"syscall"
+	"time"
 	
 	"github.com/hpcloud/tail"
 	"github.com/yincongcyincong/MuseBot/conf"
@@ -143,4 +144,10 @@ func Log(w http.ResponseWriter, r *http.Request) {
 			flusher.Flush()
 		}
 	}
+}
+
+func Stop(w http.ResponseWriter, r *http.Request) {
+	utils.Success(w, "")
+	time.Sleep(100 * time.Millisecond)
+	os.Exit(0)
 }

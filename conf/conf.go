@@ -39,14 +39,15 @@ type BaseConf struct {
 	QQAppID                 *string `json:"qq_app_id"`
 	QQAppSecret             *string `json:"qq_app_secret"`
 	
-	DeepseekToken *string `json:"deepseek_token"`
-	OpenAIToken   *string `json:"openai_token"`
-	GeminiToken   *string `json:"gemini_token"`
-	MixToken      *string `json:"mix_token"`
-	VolToken      *string `json:"vol_token"`
-	AliyunToken   *string `json:"aliyun_token"`
-	ErnieAK       *string `json:"ernie_ak"`
-	ErnieSK       *string `json:"ernie_sk"`
+	DeepseekToken   *string `json:"deepseek_token"`
+	OpenAIToken     *string `json:"openai_token"`
+	GeminiToken     *string `json:"gemini_token"`
+	OpenRouterToken *string `json:"open_router_token"`
+	AI302Token      *string `json:"ai_302_token"`
+	VolToken        *string `json:"vol_token"`
+	AliyunToken     *string `json:"aliyun_token"`
+	ErnieAK         *string `json:"ernie_ak"`
+	ErnieSK         *string `json:"ernie_sk"`
 	
 	BotName      *string `json:"bot_name"`
 	Type         *string `json:"type"`
@@ -106,7 +107,8 @@ func InitConf() {
 	BaseConfInfo.DeepseekToken = flag.String("deepseek_token", "", "deepseek auth token")
 	BaseConfInfo.OpenAIToken = flag.String("openai_token", "", "openai auth token")
 	BaseConfInfo.GeminiToken = flag.String("gemini_token", "", "gemini auth token")
-	BaseConfInfo.MixToken = flag.String("mix_token", "", "openrouter/302ai auth token")
+	BaseConfInfo.OpenRouterToken = flag.String("open_router_token", "", "openrouter auth token")
+	BaseConfInfo.AI302Token = flag.String("ai_302_token", "", "302.ai token")
 	BaseConfInfo.VolToken = flag.String("vol_token", "", "vol auth token")
 	BaseConfInfo.AliyunToken = flag.String("aliyun_token", "", "aliyun auth token")
 	BaseConfInfo.ErnieAK = flag.String("ernie_ak", "", "ernie ak")
@@ -119,7 +121,7 @@ func InitConf() {
 	BaseConfInfo.Type = flag.String("type", "deepseek", "llm type: deepseek gemini openai openrouter vol")
 	BaseConfInfo.MediaType = flag.String("media_type", "vol", "media type: vol gemini openai aliyun 302-ai openrouter")
 	BaseConfInfo.DBType = flag.String("db_type", "sqlite3", "db type")
-	BaseConfInfo.DBConf = flag.String("db_conf", GetAbsPath("data/telegram_bot.db"), "db conf")
+	BaseConfInfo.DBConf = flag.String("db_conf", GetAbsPath("data/muse_bot.db"), "db conf")
 	BaseConfInfo.LLMProxy = flag.String("llm_proxy", "", "llm proxy: http://127.0.0.1:7890")
 	BaseConfInfo.RobotProxy = flag.String("robot_proxy", "", "robot proxy: http://127.0.0.1:7890")
 	BaseConfInfo.Lang = flag.String("lang", "en", "lang")
@@ -333,8 +335,12 @@ func InitConf() {
 		*BaseConfInfo.ErnieSK = os.Getenv("ERNIE_SK")
 	}
 	
-	if os.Getenv("MIX_TOKEN") != "" {
-		*BaseConfInfo.MixToken = os.Getenv("MIX_TOKEN")
+	if os.Getenv("OPEN_ROUTER_TOKEN") != "" {
+		*BaseConfInfo.OpenRouterToken = os.Getenv("OPEN_ROUTER_TOKEN")
+	}
+	
+	if os.Getenv("AI_302_TOKEN") != "" {
+		*BaseConfInfo.AI302Token = os.Getenv("AI_302_TOKEN")
 	}
 	
 	if os.Getenv("MAX_QA_PAIR") != "" {
@@ -419,7 +425,8 @@ func InitConf() {
 	logger.Info("CONF", "HTTPPort", *BaseConfInfo.HTTPHost)
 	logger.Info("CONF", "OpenAIToken", *BaseConfInfo.OpenAIToken)
 	logger.Info("CONF", "GeminiToken", *BaseConfInfo.GeminiToken)
-	logger.Info("CONF", "OpenRouterToken", *BaseConfInfo.MixToken)
+	logger.Info("CONF", "OpenRouterToken", *BaseConfInfo.OpenRouterToken)
+	logger.Info("CONF", "AI302Token", *BaseConfInfo.AI302Token)
 	logger.Info("CONF", "ErnieAK", *BaseConfInfo.ErnieAK)
 	logger.Info("CONF", "ErnieSK", *BaseConfInfo.ErnieSK)
 	logger.Info("CONF", "VolToken", *BaseConfInfo.VolToken)
