@@ -1,10 +1,10 @@
-import React, {useEffect, useState} from "react";
+import React, { useEffect, useState } from "react";
 import Modal from "../components/Modal";
 import Pagination from "../components/Pagination";
 import Toast from "../components/Toast";
 import ConfirmModal from "../components/ConfirmModal";
 import Editor from "@monaco-editor/react";
-import {useTranslation} from "react-i18next";
+import { useTranslation } from "react-i18next";
 
 function Bots() {
     const [bots, setBots] = useState([]);
@@ -18,6 +18,8 @@ function Bots() {
         crt_file: "",
         key_file: "",
         ca_file: "",
+        command: "",
+        is_start: false,
     });
 
     const { t } = useTranslation();
@@ -30,13 +32,19 @@ function Bots() {
     const [total, setTotal] = useState(0);
     const [isRegister, setIsRegister] = useState(false);
 
-    const [toast, setToast] = useState({show: false, message: "", type: "error"});
+    const [toast, setToast] = useState({ show: false, message: "", type: "error" });
     const [confirmVisible, setConfirmVisible] = useState(false);
     const [botToDelete, setBotToDelete] = useState(null);
     const [botToRestart, setBotToRestart] = useState(null);
 
+    const [httpsExpanded, setHttpsExpanded] = useState(false);
+
+    const toggleHttps = () => {
+        setHttpsExpanded(!httpsExpanded);
+    };
+
     const showToast = (message, type = "error") => {
-        setToast({show: true, message, type});
+        setToast({ show: true, message, type });
     };
 
     useEffect(() => {
@@ -69,16 +77,15 @@ function Bots() {
             );
             const data = await res.json();
             if (data.code !== 0) {
-                showToast("Request error: " + data.message || "Restart failed");
+                showToast("Request error: " + (data.message || "Restart failed"));
                 return;
             }
             showToast("restart Bot", "success");
-            setRawConfigVisible(false)
+            setRawConfigVisible(false);
         } catch (err) {
             showToast("Request error: " + err.message);
         }
     };
-
 
     const handleSearch = () => {
         setPage(1);
@@ -86,7 +93,16 @@ function Bots() {
     };
 
     const handleAddClick = () => {
-        setForm({id: 0, address: "", crt_file: "", key_file: "", ca_file: ""});
+        setForm({
+            id: 0,
+            address: "",
+            name: "",
+            crt_file: "",
+            key_file: "",
+            ca_file: "",
+            command: "",
+            is_start: false,
+        });
         setEditingBot(null);
         setModalVisible(true);
     };
@@ -99,6 +115,8 @@ function Bots() {
             crt_file: bot.crt_file,
             key_file: bot.key_file,
             ca_file: bot.ca_file,
+            command: bot.command || "",
+            is_start: bot.is_start || false,
         });
         setEditingBot(bot);
         setModalVisible(true);
@@ -117,7 +135,7 @@ function Bots() {
     const confirmDelete = async () => {
         if (!botToDelete) return;
         try {
-            const res = await fetch(`/bot/delete?id=${botToDelete}`, {method: "DELETE"});
+            const res = await fetch(`/bot/delete?id=${botToDelete}`, { method: "DELETE" });
             const data = await res.json();
             if (data.code !== 0) {
                 showToast(data.message || "Failed to delete bot");
@@ -137,7 +155,7 @@ function Bots() {
             const url = editingBot ? "/bot/update" : "/bot/create";
             const res = await fetch(url, {
                 method: "POST",
-                headers: {"Content-Type": "application/json"},
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(form),
             });
             const data = await res.json();
@@ -178,7 +196,7 @@ function Bots() {
                 <Toast
                     message={toast.message}
                     type={toast.type}
-                    onClose={() => setToast({...toast, show: false})}
+                    onClose={() => setToast({ ...toast, show: false })}
                 />
             )}
 
@@ -214,21 +232,16 @@ function Bots() {
                 <table className="min-w-full bg-white divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                     <tr>
-                        {[
-                            t("name"),
-                            t("address"),
-                            t("status"),
-                            t("create_time"),
-                            t("update_time"),
-                            t("action"),
-                        ].map((title) => (
-                            <th
-                                key={title}
-                                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                            >
-                                {title}
-                            </th>
-                        ))}
+                        {[t("name"), t("address"), t("status"), t("create_time"), t("update_time"), t("action")].map(
+                            (title) => (
+                                <th
+                                    key={title}
+                                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                                >
+                                    {title}
+                                </th>
+                            )
+                        )}
                     </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
@@ -273,59 +286,108 @@ function Bots() {
                 </table>
             </div>
 
-            <Pagination page={page} pageSize={pageSize} total={total} onPageChange={handlePageChange}/>
+            <Pagination page={page} pageSize={pageSize} total={total} onPageChange={handlePageChange} />
 
             <Modal
                 visible={modalVisible}
                 title={editingBot ? "Edit Bot" : "Add Bot"}
                 onClose={() => setModalVisible(false)}
             >
-                <input type="hidden" value={form.id}/>
+                <input type="hidden" value={form.id} />
                 <div className="mb-4">
                     <input
                         type="text"
                         placeholder="Address"
                         value={form.address}
-                        onChange={(e) => setForm({...form, address: e.target.value})}
+                        onChange={(e) => setForm({ ...form, address: e.target.value })}
                         className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring focus:border-blue-400"
                     />
                 </div>
                 <div className="mb-4">
                     <input
                         type="text"
-                        placeholder="name"
+                        placeholder="Name"
                         value={form.name}
-                        onChange={(e) => setForm({...form, name: e.target.value})}
+                        onChange={(e) => setForm({ ...form, name: e.target.value })}
                         className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring focus:border-blue-400"
                     />
                 </div>
+
+                {/* Command Editor */}
                 <div className="mb-4">
-                  <textarea
-                      placeholder="CA File"
-                      value={form.ca_file}
-                      onChange={(e) => setForm({...form, ca_file: e.target.value})}
-                      className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring focus:border-blue-400"
-                      rows={5}
-                  />
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Command</label>
+                    <Editor
+                        height="200px"
+                        defaultLanguage="json"
+                        value={form.command}
+                        onChange={(value) => setForm({ ...form, command: value ?? "" })}
+                        options={{
+                            minimap: { enabled: false },
+                            fontSize: 14,
+                            automaticLayout: true,
+                        }}
+                    />
                 </div>
-                <div className="mb-4">
-          <textarea
-              placeholder="KEY File"
-              value={form.key_file}
-              onChange={(e) => setForm({...form, key_file: e.target.value})}
-              className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring focus:border-blue-400"
-              rows={5}
-          />
+
+                {/* Is Start 单选改为勾选方框，和标签在同一行 */}
+                <div className="mb-4 flex items-center space-x-2">
+                    <label className="text-sm font-medium text-gray-700">Start:</label>
+                    <div
+                        onClick={() => setForm({ ...form, is_start: !form.is_start })}
+                        className={`w-6 h-6 border rounded flex items-center justify-center cursor-pointer 
+            ${form.is_start ? "bg-blue-600 border-blue-600" : "bg-white border-gray-400"}`}
+                    >
+                        {form.is_start && (
+                            <svg
+                                className="w-4 h-4 text-white"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                viewBox="0 0 24 24"
+                            >
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                        )}
+                    </div>
                 </div>
-                <div className="mb-4">
-          <textarea
-              placeholder="CRT File"
-              value={form.crt_file}
-              onChange={(e) => setForm({...form, crt_file: e.target.value})}
-              className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring focus:border-blue-400"
-              rows={5}
-          />
+
+
+                {/* HTTPS Config 折叠 */}
+                <div className="mb-4 border rounded">
+                    <div
+                        onClick={toggleHttps}
+                        className="cursor-pointer bg-gray-100 px-4 py-2 flex justify-between items-center"
+                    >
+                        <span>HTTPS Config</span>
+                        <span>{httpsExpanded ? "▲" : "▼"}</span>
+                    </div>
+                    {httpsExpanded && (
+                        <div className="px-4 py-2 space-y-2">
+                            <textarea
+                                placeholder="CA File"
+                                value={form.ca_file}
+                                onChange={(e) => setForm({ ...form, ca_file: e.target.value })}
+                                className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring focus:border-blue-400"
+                                rows={3}
+                            />
+                            <textarea
+                                placeholder="KEY File"
+                                value={form.key_file}
+                                onChange={(e) => setForm({ ...form, key_file: e.target.value })}
+                                className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring focus:border-blue-400"
+                                rows={3}
+                            />
+                            <textarea
+                                placeholder="CRT File"
+                                value={form.crt_file}
+                                onChange={(e) => setForm({ ...form, crt_file: e.target.value })}
+                                className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring focus:border-blue-400"
+                                rows={3}
+                            />
+                        </div>
+                    )}
                 </div>
+
                 <div className="flex justify-end space-x-2">
                     <button
                         onClick={() => setModalVisible(false)}
@@ -342,11 +404,7 @@ function Bots() {
                 </div>
             </Modal>
 
-            <Modal
-                visible={rawConfigVisible}
-                title="Command"
-                onClose={() => setRawConfigVisible(false)}
-            >
+            <Modal visible={rawConfigVisible} title="Command" onClose={() => setRawConfigVisible(false)}>
                 <div className="mb-4">
                     <Editor
                         height="300px"
@@ -373,7 +431,7 @@ function Bots() {
                         onClick={handleRestart}
                         className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
                     >
-                        {t("restart")}
+                        {t("start")}
                     </button>
                 </div>
             </Modal>
