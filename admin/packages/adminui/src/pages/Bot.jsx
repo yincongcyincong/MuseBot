@@ -100,7 +100,7 @@ function Bots() {
             crt_file: "",
             key_file: "",
             ca_file: "",
-            command: "",
+            command: "-bot_name=MuseBot\n-http_host=127.0.0.1:36060",
             is_start: false,
         });
         setEditingBot(null);
@@ -115,7 +115,7 @@ function Bots() {
             crt_file: bot.crt_file,
             key_file: bot.key_file,
             ca_file: bot.ca_file,
-            command: bot.command || "",
+            command: bot.command || "-bot_name=MuseBot\n-http_host=127.0.0.1:36060",
             is_start: bot.is_start || false,
         });
         setEditingBot(bot);
@@ -294,31 +294,11 @@ function Bots() {
                 onClose={() => setModalVisible(false)}
             >
                 <input type="hidden" value={form.id} />
-                <div className="mb-4">
-                    <input
-                        type="text"
-                        placeholder="Address"
-                        value={form.address}
-                        onChange={(e) => setForm({ ...form, address: e.target.value })}
-                        className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring focus:border-blue-400"
-                    />
-                </div>
-                <div className="mb-4">
-                    <input
-                        type="text"
-                        placeholder="Name"
-                        value={form.name}
-                        onChange={(e) => setForm({ ...form, name: e.target.value })}
-                        className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring focus:border-blue-400"
-                    />
-                </div>
-
                 {/* Command Editor */}
                 <div className="mb-4">
                     <label className="block text-sm font-medium text-gray-700 mb-1">Command</label>
                     <Editor
                         height="200px"
-                        defaultLanguage="json"
                         value={form.command}
                         onChange={(value) => setForm({ ...form, command: value ?? "" })}
                         options={{

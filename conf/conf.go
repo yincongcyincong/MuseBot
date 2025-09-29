@@ -422,7 +422,7 @@ func InitConf() {
 	logger.Info("CONF", "TokenPerUser", *BaseConfInfo.TokenPerUser)
 	logger.Info("CONF", "AdminUserIds", *adminUserIds)
 	logger.Info("CONF", "MaxUserChat", *BaseConfInfo.MaxUserChat)
-	logger.Info("CONF", "HTTPPort", *BaseConfInfo.HTTPHost)
+	logger.Info("CONF", "HTTPHost", *BaseConfInfo.HTTPHost)
 	logger.Info("CONF", "OpenAIToken", *BaseConfInfo.OpenAIToken)
 	logger.Info("CONF", "GeminiToken", *BaseConfInfo.GeminiToken)
 	logger.Info("CONF", "OpenRouterToken", *BaseConfInfo.OpenRouterToken)
