@@ -95,16 +95,37 @@ func CreateBot(w http.ResponseWriter, r *http.Request) {
 	var b Bot
 	err := utils.HandleJsonBody(r, &b)
 	if err != nil {
-		logger.Error("update bot error", "bot", b)
+		logger.Error("create bot error", "bot", b)
 		utils.Failure(w, param.CodeParamError, param.MsgParamError, err)
 		return
 	}
-	if b.Address == "" {
-		logger.Error("create bot error", "reason", "empty address or crt_file")
-		utils.Failure(w, param.CodeParamError, param.MsgParamError, nil)
+	
+	if b.Command == "" {
+		resp, err := adminUtils.GetCrtClient(&db.Bot{
+			CaFile:  b.CaFile,
+			CrtFile: b.CrtFile,
+			KeyFile: b.KeyFile,
+		}).Get(strings.TrimSuffix(b.Address, "/") + "/command/get")
+		if err == nil {
+			defer resp.Body.Close()
+			bodyByte, err := io.ReadAll(resp.Body)
+			httpRes := new(utils.Response)
+			err = json.Unmarshal(bodyByte, httpRes)
+			if err == nil {
+				b.Command, _ = httpRes.Data.(string)
+			}
+		}
+	}
+	
+	commands := adminUtils.ParseCommand(b.Command)
+	if len(commands) == 0 || commands["bot_name"] == "" || commands["http_host"] == "" {
+		logger.Error("create bot error", "commands", commands)
+		utils.Failure(w, param.CodeParamError, param.MsgParamError, errors.New("command is empty"))
 		return
 	}
 	
+	b.Address = adminUtils.NormalizeHTTP(commands["http_host"])
+	b.Name = commands["bot_name"]
 	err = db.CreateBot(b.Address, b.Name, b.CrtFile, b.KeyFile, b.CaFile, b.Command)
 	if err != nil {
 		logger.Error("create bot error", "reason", "db fail", "err", err)
@@ -201,9 +222,28 @@ func UpdateBotAddress(w http.ResponseWriter, r *http.Request) {
 		utils.Failure(w, param.CodeParamError, param.MsgParamError, err)
 		return
 	}
-	if b.ID <= 0 || b.Address == "" {
-		logger.Error("update bot address error", "reason", "invalid id or address", "id", b.ID)
-		utils.Failure(w, param.CodeParamError, param.MsgParamError, nil)
+	
+	if b.Command == "" {
+		resp, err := adminUtils.GetCrtClient(&db.Bot{
+			CaFile:  b.CaFile,
+			CrtFile: b.CrtFile,
+			KeyFile: b.KeyFile,
+		}).Get(strings.TrimSuffix(b.Address, "/") + "/command/get")
+		if err == nil {
+			defer resp.Body.Close()
+			bodyByte, err := io.ReadAll(resp.Body)
+			httpRes := new(utils.Response)
+			err = json.Unmarshal(bodyByte, httpRes)
+			if err == nil {
+				b.Command, _ = httpRes.Data.(string)
+			}
+		}
+	}
+	
+	commands := adminUtils.ParseCommand(b.Command)
+	if len(commands) == 0 || commands["bot_name"] == "" || commands["http_host"] == "" {
+		logger.Error("create bot error", "commands", commands)
+		utils.Failure(w, param.CodeParamError, param.MsgParamError, errors.New("command is empty"))
 		return
 	}
 	
@@ -214,6 +254,8 @@ func UpdateBotAddress(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
+	b.Address = adminUtils.NormalizeHTTP(commands["http_host"])
+	b.Name = commands["bot_name"]
 	err = db.UpdateBotAddress(b.ID, b.Address, b.Name, b.CrtFile, b.KeyFile, b.CaFile, b.Command)
 	if err != nil {
 		logger.Error("update bot address error", "reason", "db fail", "err", err)
@@ -222,15 +264,11 @@ func UpdateBotAddress(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	go checkpoint.ScheduleBotChecks()
+	if botInfo.Address != b.Address {
+		adminUtils.GetCrtClient(botInfo).Get(strings.TrimSuffix(botInfo.Address, "/") + "/stop")
+	}
 	
 	if b.IsStart {
-		_, err = adminUtils.GetCrtClient(botInfo).Get(strings.TrimSuffix(botInfo.Address, "/") + "/stop")
-		if err != nil {
-			logger.Error("stop bot error", "err", err)
-			utils.Failure(w, param.CodeServerFail, param.MsgServerFail, err)
-			return
-		}
-		
 		err = StartDetachedProcess(b.Command)
 		if err != nil {
 			logger.Error("start bot error", "err", err)
@@ -251,6 +289,13 @@ func SoftDeleteBot(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
+	botInfo, err := db.GetBotByID(idStr)
+	if err != nil {
+		logger.Error("get bot error", "reason", "not found", "id", idStr, "err", err)
+		utils.Failure(w, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
+		return
+	}
+	
 	err = db.SoftDeleteBot(id)
 	if err != nil {
 		logger.Error("soft delete bot error", "reason", "db fail", "id", id, "err", err)
@@ -259,6 +304,7 @@ func SoftDeleteBot(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	go checkpoint.ScheduleBotChecks()
+	adminUtils.GetCrtClient(botInfo).Get(strings.TrimSuffix(botInfo.Address, "/") + "/stop")
 	
 	utils.Success(w, "bot deleted")
 }
@@ -1003,14 +1049,21 @@ func InsertUserRecord(w http.ResponseWriter, r *http.Request) {
 }
 
 func StartDetachedProcess(argsStr string) error {
-	args := append([]string{utils.GetAbsPath("/") + "MuseBot"}, strings.Split(argsStr, "\n")...)
+	lines := strings.Split(argsStr, "\n")
+	var args []string
+	args = append(args, utils.GetAbsPath("")+"/MuseBot")
+	for _, l := range lines {
+		trimmed := strings.TrimSpace(l)
+		if trimmed != "" {
+			args = append(args, trimmed)
+		}
+	}
 	
 	cmd := exec.Command(args[0], args[1:]...)
 	cmd.SysProcAttr = &syscall.SysProcAttr{
 		Setpgid: true,
 	}
 	
-	// 不继承标准 IO
 	cmd.Stdin = nil
 	cmd.Stdout = nil
 	cmd.Stderr = nil

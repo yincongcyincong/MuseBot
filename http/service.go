@@ -148,6 +148,6 @@ func Log(w http.ResponseWriter, r *http.Request) {
 
 func Stop(w http.ResponseWriter, r *http.Request) {
 	utils.Success(w, "")
-	time.Sleep(100 * time.Millisecond)
+	time.Sleep(1 * time.Second)
 	os.Exit(0)
 }

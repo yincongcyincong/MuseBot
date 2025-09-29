@@ -50,3 +50,31 @@ func NormalizeAddress(addr string) string {
 	}
 	return "http://" + addr
 }
+
+func ParseCommand(str string) map[string]string {
+	str = strings.ReplaceAll(str, "\n", " ")
+	
+	parts := strings.Fields(str)
+	m := make(map[string]string)
+	
+	for _, part := range parts {
+		if strings.HasPrefix(part, "-") {
+			kv := strings.SplitN(part[1:], "=", 2) // 去掉前缀 "-"
+			if len(kv) == 2 {
+				m[kv[0]] = kv[1]
+			}
+		}
+	}
+	
+	return m
+}
+
+func NormalizeHTTP(addr string) string {
+	if strings.HasPrefix(addr, ":") {
+		addr = "127.0.0.1" + addr
+	}
+	if !strings.HasPrefix(addr, "http://") {
+		addr = "http://" + addr
+	}
+	return addr
+}
