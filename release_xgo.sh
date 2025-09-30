@@ -19,7 +19,7 @@ build_admin_local() {
     local ext=""
     [[ "$os" == "windows" ]] && ext=".exe"
 
-    local admin_output="admin-${os}-${arch}${ext}"
+    local admin_output="MuseBotAdmin"
 
     echo "=============================="
     echo "Building admin [$os/$arch] using go build..."
@@ -44,13 +44,13 @@ compile_and_package() {
     # Build admin binary
     build_admin_local $os $arch
 
-    local bot_binary="MuseBot-${os}-${arch}${ext}"
-    local admin_binary="MuseBot-admin-${os}-${arch}${ext}"
+    local bot_binary="MuseBot$ext"
+    local admin_binary="MuseBotAdmin$ext"
     local release_name="MuseBot-${os}-${arch}.tar.gz"
 
     # Move compiled binaries to output
     mv ./MuseBot-${os}* ./output/${bot_binary}
-    mv ./admin-${os}* ./output/${admin_binary}
+    mv ./MuseBotAdmin-${os}* ./output/${admin_binary}
 
     # Copy config files
     mkdir -p ./output/conf/
@@ -71,9 +71,9 @@ compile_and_package() {
 
 # Platforms to compile (uncomment Windows if needed)
 compile_and_package linux amd64
-compile_and_package darwin amd64
 compile_and_package windows amd64
-compile_and_package darwin arm64
+#compile_and_package darwin amd64
+#compile_and_package darwin arm64
 
 # Final cleanup
 rm -rf ./output

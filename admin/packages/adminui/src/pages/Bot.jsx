@@ -19,7 +19,7 @@ function Bots() {
         key_file: "",
         ca_file: "",
         command: "",
-        is_start: false,
+        is_start: true,
     });
 
     const { t } = useTranslation();
@@ -34,7 +34,9 @@ function Bots() {
 
     const [toast, setToast] = useState({ show: false, message: "", type: "error" });
     const [confirmVisible, setConfirmVisible] = useState(false);
+    const [confirmStopVisible, setConfirmStopVisible] = useState(false);
     const [botToDelete, setBotToDelete] = useState(null);
+    const [botToStop, setBotToStop] = useState(null);
     const [botToRestart, setBotToRestart] = useState(null);
 
     const [httpsExpanded, setHttpsExpanded] = useState(false);
@@ -101,7 +103,7 @@ function Bots() {
             key_file: "",
             ca_file: "",
             command: "-bot_name=MuseBot\n-http_host=127.0.0.1:36060",
-            is_start: false,
+            is_start: true,
         });
         setEditingBot(null);
         setModalVisible(true);
@@ -116,7 +118,7 @@ function Bots() {
             key_file: bot.key_file,
             ca_file: bot.ca_file,
             command: bot.command || "-bot_name=MuseBot\n-http_host=127.0.0.1:36060",
-            is_start: bot.is_start || false,
+            is_start: true,
         });
         setEditingBot(bot);
         setModalVisible(true);
@@ -144,6 +146,34 @@ function Bots() {
             showToast("Bot deleted", "success");
             setConfirmVisible(false);
             setBotToDelete(null);
+            await fetchBots();
+        } catch (error) {
+            showToast("Request error: " + error.message);
+        }
+    };
+
+    const handleStopClick = (botId) => {
+        setBotToStop(botId);
+        setConfirmStopVisible(true);
+    };
+
+    const cancelStop = () => {
+        setBotToStop(null);
+        setConfirmStopVisible(false);
+    };
+
+    const confirmStop = async () => {
+        if (!botToStop) return;
+        try {
+            const res = await fetch(`/bot/stop?id=${botToStop}`, { method: "DELETE" });
+            const data = await res.json();
+            if (data.code !== 0) {
+                showToast(data.message || "Failed to stop bot");
+                return;
+            }
+            showToast("Bot stoped", "success");
+            setConfirmStopVisible(false);
+            setBotToStop(null);
             await fetchBots();
         } catch (error) {
             showToast("Request error: " + error.message);
@@ -271,6 +301,12 @@ function Bots() {
                                         >
                                             {t("delete")}
                                         </button>
+                                        <button
+                                            onClick={() => handleStopClick(bot.id)}
+                                            className="text-purple-600 hover:underline"
+                                        >
+                                            {t("stop")}
+                                        </button>
                                     </>
                                 )}
                                 <button
@@ -311,7 +347,7 @@ function Bots() {
 
                 {/* Is Start 单选改为勾选方框，和标签在同一行 */}
                 <div className="mb-4 flex items-center space-x-2">
-                    <label className="text-sm font-medium text-gray-700">Start:</label>
+                    <label className="text-sm font-medium text-gray-700">{t('local_start')}:</label>
                     <div
                         onClick={() => setForm({ ...form, is_start: !form.is_start })}
                         className={`w-6 h-6 border rounded flex items-center justify-center cursor-pointer 
@@ -421,6 +457,13 @@ function Bots() {
                 message="Are you sure you want to delete this bot?"
                 onConfirm={confirmDelete}
                 onCancel={cancelDelete}
+            />
+
+            <ConfirmModal
+                visible={confirmStopVisible}
+                message="Are you sure you want to stop this bot?"
+                onConfirm={confirmStop}
+                onCancel={cancelStop}
             />
         </div>
     );

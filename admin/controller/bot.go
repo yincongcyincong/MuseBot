@@ -10,11 +10,9 @@ import (
 	"log"
 	"net/http"
 	"net/url"
-	"os/exec"
 	"reflect"
 	"strconv"
 	"strings"
-	"syscall"
 	"time"
 	
 	"github.com/yincongcyincong/MuseBot/admin/checkpoint"
@@ -136,7 +134,7 @@ func CreateBot(w http.ResponseWriter, r *http.Request) {
 	go checkpoint.ScheduleBotChecks()
 	
 	if b.IsStart {
-		err = StartDetachedProcess(b.Command)
+		err = adminUtils.StartDetachedProcess(b.Command)
 		if err != nil {
 			logger.Error("start bot error", "err", err)
 			utils.Failure(w, param.CodeServerFail, param.MsgServerFail, err)
@@ -180,20 +178,8 @@ func StopBot(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	resp, err := adminUtils.GetCrtClient(botInfo).Get(strings.TrimSuffix(botInfo.Address, "/") + "/stop")
-	if err != nil {
-		logger.Error("stop bot error", "err", err)
-		utils.Failure(w, param.CodeServerFail, param.MsgServerFail, err)
-		return
-	}
-	
-	defer resp.Body.Close()
-	_, err = io.Copy(w, resp.Body)
-	if err != nil {
-		logger.Error("copy response body error", "err", err)
-		utils.Failure(w, param.CodeServerFail, param.MsgServerFail, err)
-		return
-	}
+	adminUtils.GetCrtClient(botInfo).Get(strings.TrimSuffix(botInfo.Address, "/") + "/stop")
+	utils.Success(w, "bot stopped")
 }
 
 func GetBot(w http.ResponseWriter, r *http.Request) {
@@ -264,12 +250,12 @@ func UpdateBotAddress(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	go checkpoint.ScheduleBotChecks()
-	if botInfo.Address != b.Address {
+	if botInfo.Address != b.Address || b.IsStart {
 		adminUtils.GetCrtClient(botInfo).Get(strings.TrimSuffix(botInfo.Address, "/") + "/stop")
 	}
 	
 	if b.IsStart {
-		err = StartDetachedProcess(b.Command)
+		err = adminUtils.StartDetachedProcess(b.Command)
 		if err != nil {
 			logger.Error("start bot error", "err", err)
 			utils.Failure(w, param.CodeServerFail, param.MsgServerFail, err)
@@ -1046,30 +1032,4 @@ func InsertUserRecord(w http.ResponseWriter, r *http.Request) {
 		utils.Failure(w, param.CodeServerFail, param.MsgServerFail, err)
 		return
 	}
-}
-
-func StartDetachedProcess(argsStr string) error {
-	lines := strings.Split(argsStr, "\n")
-	var args []string
-	args = append(args, utils.GetAbsPath("")+"/MuseBot")
-	for _, l := range lines {
-		trimmed := strings.TrimSpace(l)
-		if trimmed != "" {
-			args = append(args, trimmed)
-		}
-	}
-	
-	cmd := exec.Command(args[0], args[1:]...)
-	cmd.SysProcAttr = &syscall.SysProcAttr{
-		Setpgid: true,
-	}
-	
-	cmd.Stdin = nil
-	cmd.Stdout = nil
-	cmd.Stderr = nil
-	
-	if err := cmd.Start(); err != nil {
-		return err
-	}
-	return nil
 }
