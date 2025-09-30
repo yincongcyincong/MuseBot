@@ -66,7 +66,9 @@ i18n
                     save: "Save",
                     add: "Add",
                     command: "Command",
-                    start: "Start"
+                    start: "Start",
+                    stop: "Stop",
+                    local_start: "Local Start"
                 }
             },
             zh: {
@@ -128,7 +130,9 @@ i18n
                     save: "保存",
                     add: "添加",
                     command: "命令",
-                    start: "启动"
+                    start: "启动",
+                    stop: "停止",
+                    local_start: "本地启动"
                 }
             }
         },

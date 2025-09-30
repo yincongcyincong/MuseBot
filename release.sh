@@ -13,7 +13,7 @@ build_admin_local() {
     local ext=""
     [[ "$os" == "windows" ]] && ext=".exe"
 
-    local output_name="admin-${os}-${arch}${ext}"
+    local output_name="MuseBotAdmin"
     echo "=============================="
     echo "Building admin [$os/$arch] using go build..."
     echo "=============================="
@@ -32,7 +32,7 @@ compile_and_package_local() {
     echo "Building MuseBot [$os/$arch] using go build..."
     echo "=============================="
 
-    local bot_output="MuseBot-${os}-${arch}${ext}"
+    local bot_output="MuseBot"
 
     # Build main bot binary
     GOOS=$os GOARCH=$arch CGO_ENABLED=1 go build -o "./output/${bot_output}" ./
@@ -59,8 +59,8 @@ compile_and_package_local() {
 
 # Platforms to compile
 #compile_and_package linux amd64
-#compile_and_package darwin amd64
 #compile_and_package windows amd64
+compile_and_package_local darwin amd64
 compile_and_package_local darwin arm64
 
 # Final cleanup

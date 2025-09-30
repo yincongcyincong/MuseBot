@@ -1,7 +1,7 @@
 .idea
 .gigaide
 *.tar.gz
-MuseBot
+MuseBot*
 MuseBot.db
 .DS_Store
 *.log
@@ -11,3 +11,5 @@ build
 *.db
 data
 go_build_*
+output
+MusebotAdmin*

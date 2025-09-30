@@ -30,11 +30,11 @@ const (
 				crt_file TEXT NOT NULL,
 				ca_file TEXT NOT NULL,
 				command TEXT NOT NULL,
-				create_time int(10) NOT NULL DEFAULT '0',
-				update_time int(10) NOT NULL DEFAULT '0',
+				create_time int(11) NOT NULL DEFAULT '0',
+				update_time int(11) NOT NULL DEFAULT '0',
 				is_deleted int(10) NOT NULL DEFAULT '0'
 			);
-			insert into users values(1, 'admin', '21232f297a57a5a743894a0e4a801fc3', strftime('%s','now'), strftime('%s','now'))`
+			insert into admin_users values(1, 'admin', '21232f297a57a5a743894a0e4a801fc3', strftime('%s','now'), strftime('%s','now'))`
 	
 	mysqlCreateUsersSQL = `
 			CREATE TABLE IF NOT EXISTS admin_users (
@@ -54,11 +54,11 @@ const (
 				crt_file TEXT NOT NULL,
 			    ca_file TEXT NOT NULL,
 			    command TEXT NOT NULL,
-				create_time int(10) NOT NULL DEFAULT '0',
-				update_time int(10) NOT NULL DEFAULT '0',
+				create_time int(11) NOT NULL DEFAULT '0',
+				update_time int(11) NOT NULL DEFAULT '0',
 				is_deleted int(10) NOT NULL DEFAULT '0'
 			);`
-	MysqlInsertAdmin = `insert into users values(1, 'admin', '21232f297a57a5a743894a0e4a801fc3', Now(), Now())`
+	MysqlInsertAdmin = `insert into admin_users values(1, 'admin', '21232f297a57a5a743894a0e4a801fc3', UNIX_TIMESTAMP(), UNIX_TIMESTAMP())`
 )
 
 var (
@@ -117,7 +117,7 @@ func initializeMysqlTable(db *sql.DB, tableName string, createSQL string) error 
 		}
 		logger.Info("Create table success", "tableName", tableName)
 		
-		if tableName == "users" {
+		if tableName == "admin_users" {
 			_, err = db.Exec(MysqlInsertAdmin)
 			if err != nil {
 				logger.Fatal("Create index failed", "err", err)
