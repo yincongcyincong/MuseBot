@@ -58,15 +58,15 @@ chatgpt: https://www.bilibili.com/video/BV1RutxzJEGY/
 
 ## 支持的大型语言模型
 
-| 模型                | 提供方        | 文本生成 | 图片生成 | 视频生成 | 识别照片 | 链接                                                                                                           |
-|-------------------|------------|------|:----:|:----:|:----:|--------------------------------------------------------------------------------------------------------------|
-| 🌟 **Gemini**     | 谷歌         | ✅    |  ✅   |  ✅   |  ✅   | [文档](https://gemini.google.com/app)                                                                          |
-| 💬 **ChatGPT**    | OpenAI     | ✅    |  ✅   |  ❌   |  ✅   | [文档](https://chat.openai.com)                                                                                |
-| 🐦 **Doubao**     | 字节跳动       | ✅    |  ✅   |  ✅   |  ✅   | [文档](https://www.volcengine.com/)                                                                            |
-| 🐦 **Qwen**       | 阿里云        | ✅    |  ❌   |  ❌   |  ❌   | [文档](https://bailian.console.aliyun.com/?spm=5176.12818093_47.overview_recent.1.663b2cc9wXXcVC&tab=api#/api) |
-| ⚙️ **302.AI**     | 302.AI     | ✅    |  ✅   |  ✅   |  ✅   | [文档](https://302.ai/)                                                                                        |
-| 🧠 **DeepSeek**   | DeepSeek   | ✅    |  ❌   |  ❌   |  ❌   | [文档](https://www.deepseek.com/)                                                                              |
-| 🌐 **OpenRouter** | OpenRouter | ✅    |  ✅   |  ❌   |  ✅   | [文档](https://openrouter.ai/)                                                                                 |
+| 模型                | 提供方        | 文本生成 | 图片生成 | 视频生成 | 识别照片 | 返回语音 | 链接                                                                                                           |
+|-------------------|------------|------|:----:|:----:|:----:|-----:|--------------------------------------------------------------------------------------------------------------|
+| 🌟 **Gemini**     | 谷歌         | ✅    |  ✅   |  ✅   |  ✅   |    ✅ | [文档](https://gemini.google.com/app)                                                                          |
+| 💬 **ChatGPT**    | OpenAI     | ✅    |  ✅   |  ❌   |  ✅   |    ✅ | [文档](https://chat.openai.com)                                                                                |
+| 🐦 **Doubao**     | 字节跳动       | ✅    |  ✅   |  ✅   |  ✅   |    ✅ | [文档](https://www.volcengine.com/)                                                                            |
+| 🐦 **Qwen**       | 阿里云        | ✅    |  ❌   |  ❌   |  ❌   |    ❌ | [文档](https://bailian.console.aliyun.com/?spm=5176.12818093_47.overview_recent.1.663b2cc9wXXcVC&tab=api#/api) |
+| ⚙️ **302.AI**     | 302.AI     | ✅    |  ✅   |  ✅   |  ✅   |    ❌ | [文档](https://302.ai/)                                                                                        |
+| 🧠 **DeepSeek**   | DeepSeek   | ✅    |  ❌   |  ❌   |  ❌   |    ❌ | [文档](https://www.deepseek.com/)                                                                              |
+| 🌐 **OpenRouter** | OpenRouter | ✅    |  ✅   |  ❌   |  ✅   |    ❌ | [文档](https://openrouter.ai/)                                                                                 |
 
 ## 🤖 文本示例
 
@@ -121,44 +121,46 @@ docker run -d -v /home/user/data:/app/data -e TELEGRAM_BOT_TOKEN="你的Telegram
 docker pull crpi-i1dsvpjijxpgjgbv.cn-hangzhou.personal.cr.aliyuncs.com/jackyin0822/musebot
 ```
 
+命令介绍: (文档)[https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/param_conf_ZH.md]
+
 ---
 
 ## ⚙️ 配置项
 
-| 变量名                         | 描述                                                                                                                  | 默认值                       |
-|:----------------------------|:--------------------------------------------------------------------------------------------------------------------|:--------------------------|
-| **TELEGRAM_BOT_TOKEN** (必需) | 您的 Telegram 机器人令牌                                                                                                   | -                         |
-| **DEEPSEEK_TOKEN** (必需)     | DeepSeek API 密钥                                                                                                     | -                         |
-| **OPENAI_TOKEN**            | OpenAI 令牌                                                                                                           | -                         |
-| **GEMINI_TOKEN**            | Gemini 令牌                                                                                                           | -                         |
-| **OPEN_ROUTER_TOKEN**       | OpenRouter 令牌 [文档](https://openrouter.ai/docs/quickstart)                                                           | -                         |
-| **VOL_TOKEN**               | 火山引擎 令牌 [文档](https://www.volcengine.com/docs/82379/1399008#b00dee71)                                                | -                         |
-| **CUSTOM_URL**              | 自定义 DeepSeek URL                                                                                                    | https://api.deepseek.com/ |
-| **TYPE**                    | 模型类型：deepseek/openai/gemini/openrouter/vol/aliyun/302-ai                                                            | deepseek                  |
-| **VOLC_AK**                 | 火山引擎图片模型 AK [文档](https://www.volcengine.com/docs/6444/1340578)                                                      | -                         |
-| **VOLC_SK**                 | 火山引擎图片模型 SK [文档](https://www.volcengine.com/docs/6444/1340578)                                                      | -                         |
-| **Ernie_AK**                | 文心一言 AK [文档](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Sly8bm96d)                                                | -                         |
-| **Ernie_SK**                | 文心一言 SK [文档](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Sly8bm96d)                                                | -                         |
-| **DB_TYPE**                 | 数据库类型：sqlite3 / mysql                                                                                               | sqlite3                   |
-| **DB_CONF**                 | 数据库配置：./data/telegram_bot.db 或 root:admin@tcp(127.0.0.1:3306)/dbname?charset=utf8mb4&parseTime=True&loc=Local       | ./data/telegram_bot.db    |
-| **ALLOWED_USER_IDS**        | 允许使用机器人的 Telegram 用户 ID，多个 ID 用逗号分隔。为空表示所有用户可用。为 0 表示禁止所有用户。                                                        | -                         |
-| **ALLOWED_GROUP_IDS**       | 允许使用机器人的 Telegram 群组 ID，多个 ID 用逗号分隔。为空表示所有群组可用。为 0 表示禁止所有群组。                                                        | -                         |
-| **DEEPSEEK_PROXY**          | DeepSeek 代理                                                                                                         | -                         |
-| **TELEGRAM_PROXY**          | Telegram 代理                                                                                                         | -                         |
-| **LANG**                    | 语言：en / zh                                                                                                          | en                        |
-| **TOKEN_PER_USER**          | 每个用户可使用的令牌数                                                                                                         | 10000                     |
-| **ADMIN_USER_IDS**          | 管理员用户 ID，可使用一些管理命令                                                                                                  | -                         |
-| **NEED_AT_BOT**             | 在群组中是否需要 @机器人才能触发                                                                                                   | false                     |
-| **MAX_USER_CHAT**           | 每个用户最大同时存在的聊天数                                                                                                      | 2                         |
-| **VIDEO_TOKEN**             | 火山引擎视频模型 API 密钥 [文档](https://www.volcengine.com/docs/82379/1399008#b00dee71)                                        | -                         |
-| **HTTP_PORT**               | HTTP 服务器端口                                                                                                          | 36060                     |
-| **USE_TOOLS**               | 普通对话是否使用函数调用工具                                                                                                      | false                     |
-| **CA_FILE**		               | http 服务的 ca文件                                                                                                       | -                         |
-| **CRT_FILE**		              | http 服务的 crt 文件                                                                                                     | -                         |
-| **KEY_FILE**		              | http 服务的 key 文件                                                                                                     | -                         |
-| **MEDIA_TYPE**		            | openai/gemini/vol/aliyun/openrouter/302-ai   图片或视频生成模型                                                              | vol                       |
-| **MAX_QA_PAIR**	            | 用多少问题对作为上下文                                                                                                         | 15                        |
-| **CHARACTER**	              | 角色背景                                                                                                                | -                         |
+| 变量名                         | 描述                                                                                                            | 默认值                       |
+|:----------------------------|:--------------------------------------------------------------------------------------------------------------|:--------------------------|
+| **TELEGRAM_BOT_TOKEN** (必需) | 您的 Telegram 机器人令牌                                                                                             | -                         |
+| **DEEPSEEK_TOKEN** (必需)     | DeepSeek API 密钥                                                                                               | -                         |
+| **OPENAI_TOKEN**            | OpenAI 令牌                                                                                                     | -                         |
+| **GEMINI_TOKEN**            | Gemini 令牌                                                                                                     | -                         |
+| **OPEN_ROUTER_TOKEN**       | OpenRouter 令牌 [文档](https://openrouter.ai/docs/quickstart)                                                     | -                         |
+| **VOL_TOKEN**               | 火山引擎 令牌 [文档](https://www.volcengine.com/docs/82379/1399008#b00dee71)                                          | -                         |
+| **CUSTOM_URL**              | 自定义 DeepSeek URL                                                                                              | https://api.deepseek.com/ |
+| **TYPE**                    | 模型类型：deepseek/openai/gemini/openrouter/vol/aliyun/302-ai                                                      | deepseek                  |
+| **VOLC_AK**                 | 火山引擎图片模型 AK [文档](https://www.volcengine.com/docs/6444/1340578)                                                | -                         |
+| **VOLC_SK**                 | 火山引擎图片模型 SK [文档](https://www.volcengine.com/docs/6444/1340578)                                                | -                         |
+| **Ernie_AK**                | 文心一言 AK [文档](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Sly8bm96d)                                          | -                         |
+| **Ernie_SK**                | 文心一言 SK [文档](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Sly8bm96d)                                          | -                         |
+| **DB_TYPE**                 | 数据库类型：sqlite3 / mysql                                                                                         | sqlite3                   |
+| **DB_CONF**                 | 数据库配置：./data/telegram_bot.db 或 root:admin@tcp(127.0.0.1:3306)/dbname?charset=utf8mb4&parseTime=True&loc=Local | ./data/telegram_bot.db    |
+| **ALLOWED_USER_IDS**        | 允许使用机器人的 Telegram 用户 ID，多个 ID 用逗号分隔。为空表示所有用户可用。为 0 表示禁止所有用户。                                                  | -                         |
+| **ALLOWED_GROUP_IDS**       | 允许使用机器人的 Telegram 群组 ID，多个 ID 用逗号分隔。为空表示所有群组可用。为 0 表示禁止所有群组。                                                  | -                         |
+| **DEEPSEEK_PROXY**          | DeepSeek 代理                                                                                                   | -                         |
+| **TELEGRAM_PROXY**          | Telegram 代理                                                                                                   | -                         |
+| **LANG**                    | 语言：en / zh                                                                                                    | en                        |
+| **TOKEN_PER_USER**          | 每个用户可使用的令牌数                                                                                                   | 10000                     |
+| **ADMIN_USER_IDS**          | 管理员用户 ID，可使用一些管理命令                                                                                            | -                         |
+| **NEED_AT_BOT**             | 在群组中是否需要 @机器人才能触发                                                                                             | false                     |
+| **MAX_USER_CHAT**           | 每个用户最大同时存在的聊天数                                                                                                | 2                         |
+| **VIDEO_TOKEN**             | 火山引擎视频模型 API 密钥 [文档](https://www.volcengine.com/docs/82379/1399008#b00dee71)                                  | -                         |
+| **HTTP_PORT**               | HTTP 服务器端口                                                                                                    | 36060                     |
+| **USE_TOOLS**               | 普通对话是否使用函数调用工具                                                                                                | false                     |
+| **CA_FILE**		               | http 服务的 ca文件                                                                                                 | -                         |
+| **CRT_FILE**		              | http 服务的 crt 文件                                                                                               | -                         |
+| **KEY_FILE**		              | http 服务的 key 文件                                                                                               | -                         |
+| **MEDIA_TYPE**		            | openai/gemini/vol/aliyun/openrouter/302-ai   图片或视频生成模型                                                        | vol                       |
+| **MAX_QA_PAIR**	            | 用多少问题对作为上下文                                                                                                   | 15                        |
+| **CHARACTER**	              | 角色背景                                                                                                          | -                         |
 
 ### 其他配置
 
