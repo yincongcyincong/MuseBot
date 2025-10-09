@@ -56,7 +56,8 @@ type DiscordRobot struct {
 func StartDiscordRobot(ctx context.Context) {
 	dg, err := discordgo.New("Bot " + *conf.BaseConfInfo.DiscordBotToken)
 	if err != nil {
-		logger.Fatal("create discord bot", "err", err)
+		logger.ErrorCtx(ctx, "create discord bot", "err", err)
+		return
 	}
 	dg.Client = utils.GetRobotProxyClient()
 	
@@ -69,10 +70,11 @@ func StartDiscordRobot(ctx context.Context) {
 	// 打开连接
 	err = dg.Open()
 	if err != nil {
-		logger.Fatal("connect fail", "err", err)
+		logger.ErrorCtx(ctx, "connect fail", "err", err)
+		return
 	}
 	
-	logger.Info("discordBot Info", "username", dg.State.User.Username)
+	logger.InfoCtx(ctx, "discordBot Info", "username", dg.State.User.Username)
 	
 	registerSlashCommands(dg)
 	
@@ -95,7 +97,7 @@ func (d *DiscordRobot) checkValid() bool {
 	// check whether you have new message
 	if d.Msg != nil {
 		if d.skipThisMsg() {
-			logger.Warn("skip this msg", "msgId", msgId, "chat", chatId, "content", d.Msg.Content)
+			logger.WarnCtx(d.Robot.Ctx, "skip this msg", "msgId", msgId, "chat", chatId, "content", d.Msg.Content)
 			return false
 		}
 		
@@ -151,7 +153,7 @@ func (d *DiscordRobot) sendText(messageChan *MsgChan) {
 		
 		thinkingMsg, err := d.Session.ChannelMessageSend(channelID, i18n.GetMessage(*conf.BaseConfInfo.Lang, "thinking", nil))
 		if err != nil {
-			logger.Warn("Sending thinking message failed", "err", err)
+			logger.WarnCtx(d.Robot.Ctx, "Sending thinking message failed", "err", err)
 		} else {
 			originalMsgID = thinkingMsg.ID
 		}
@@ -163,7 +165,7 @@ func (d *DiscordRobot) sendText(messageChan *MsgChan) {
 			Type: discordgo.InteractionResponseDeferredChannelMessageWithSource,
 		})
 		if err != nil {
-			logger.Warn("Failed to defer interaction response", "err", err)
+			logger.WarnCtx(d.Robot.Ctx, "Failed to defer interaction response", "err", err)
 		}
 	} else {
 		logger.Error("Unknown Discord message type")
@@ -184,12 +186,12 @@ func (d *DiscordRobot) sendText(messageChan *MsgChan) {
 			if msg.MsgId == "" && originalMsgID == "" {
 				_, err = d.Session.ChannelMessageSend(channelID, msg.Content)
 				if err != nil {
-					logger.Warn("Sending message failed", "err", err)
+					logger.WarnCtx(d.Robot.Ctx, "Sending message failed", "err", err)
 				}
 			} else {
 				_, err = d.Session.ChannelMessageEdit(channelID, msg.MsgId, msg.Content)
 				if err != nil {
-					logger.Warn("Editing message failed", "msgID", msg.MsgId, "err", err)
+					logger.WarnCtx(d.Robot.Ctx, "Editing message failed", "msgID", msg.MsgId, "err", err)
 				}
 				originalMsgID = ""
 			}
@@ -199,14 +201,14 @@ func (d *DiscordRobot) sendText(messageChan *MsgChan) {
 					Content: &msg.Content,
 				})
 				if err != nil {
-					logger.Warn("Sending interaction response failed", "err", err)
+					logger.WarnCtx(d.Robot.Ctx, "Sending interaction response failed", "err", err)
 				}
 			} else {
 				_, err = d.Session.FollowupMessageCreate(d.Inter.Interaction, true, &discordgo.WebhookParams{
 					Content: msg.Content,
 				})
 				if err != nil {
-					logger.Warn("Editing followup interaction message failed", "err", err)
+					logger.WarnCtx(d.Robot.Ctx, "Editing followup interaction message failed", "err", err)
 				}
 				originalMsgID = ""
 			}
@@ -243,12 +245,12 @@ func (d *DiscordRobot) getContent(defaultText string) (string, error) {
 			if strings.HasPrefix(att.ContentType, "audio/") {
 				audioContent, err := utils.DownloadFile(att.URL)
 				if audioContent == nil || err != nil {
-					logger.Warn("audio url empty", "url", att.URL, "err", err)
+					logger.WarnCtx(d.Robot.Ctx, "audio url empty", "url", att.URL, "err", err)
 					return "", errors.New("audio url empty")
 				}
 				content, err = d.Robot.GetAudioContent(audioContent)
 				if err != nil {
-					logger.Warn("get audio content err", "err", err)
+					logger.WarnCtx(d.Robot.Ctx, "get audio content err", "err", err)
 					return "", err
 				}
 				break
@@ -261,12 +263,12 @@ func (d *DiscordRobot) getContent(defaultText string) (string, error) {
 			if strings.HasPrefix(att.ContentType, "image/") {
 				image, err := utils.DownloadFile(att.URL)
 				if image == nil || err != nil {
-					logger.Warn("image url empty", "url", att.URL, "err", err)
+					logger.WarnCtx(d.Robot.Ctx, "image url empty", "url", att.URL, "err", err)
 					return "", errors.New("image url empty")
 				}
 				content, err = d.Robot.GetImageContent(image, content)
 				if err != nil {
-					logger.Warn("get image content err", "err", err)
+					logger.WarnCtx(d.Robot.Ctx, "get image content err", "err", err)
 					return "", err
 				}
 				break
@@ -275,7 +277,7 @@ func (d *DiscordRobot) getContent(defaultText string) (string, error) {
 	}
 	
 	if content == "" {
-		logger.Warn("content empty")
+		logger.WarnCtx(d.Robot.Ctx, "content empty")
 		return "", errors.New("content empty")
 	}
 	
@@ -540,7 +542,7 @@ func (d *DiscordRobot) sendImg() {
 			if attachment, ok := d.Inter.ApplicationCommandData().GetOption("image").Value.(string); ok {
 				lastImageContent, err = utils.DownloadFile(d.Inter.ApplicationCommandData().Resolved.Attachments[attachment].URL)
 				if err != nil {
-					logger.Warn("download image fail", "err", err)
+					logger.WarnCtx(d.Robot.Ctx, "download image fail", "err", err)
 				}
 			}
 		}
@@ -548,13 +550,13 @@ func (d *DiscordRobot) sendImg() {
 		if len(lastImageContent) == 0 && strings.Contains(d.Command, "edit_photo") {
 			lastImageContent, err = d.Robot.GetLastImageContent()
 			if err != nil {
-				logger.Warn("get last image record fail", "err", err)
+				logger.WarnCtx(d.Robot.Ctx, "get last image record fail", "err", err)
 			}
 		}
 		
 		imageContent, totalToken, err := d.Robot.CreatePhoto(prompt, lastImageContent)
 		if err != nil {
-			logger.Warn("generate image fail", "err", err)
+			logger.WarnCtx(d.Robot.Ctx, "generate image fail", "err", err)
 			d.Robot.SendMsg(chatId, err.Error(), msgId, param.DiscordEditMode, nil)
 			return
 		}
@@ -568,7 +570,7 @@ func (d *DiscordRobot) sendImg() {
 		})
 		
 		if err != nil {
-			logger.Warn("send image fail", "err", err)
+			logger.WarnCtx(d.Robot.Ctx, "send image fail", "err", err)
 			d.Robot.SendMsg(chatId, err.Error(), msgId, param.DiscordEditMode, nil)
 			return
 		}
@@ -609,14 +611,14 @@ func (d *DiscordRobot) sendVideo() {
 			if attachment, ok := d.Inter.ApplicationCommandData().GetOption("image").Value.(string); ok {
 				imageContent, err = utils.DownloadFile(d.Inter.ApplicationCommandData().Resolved.Attachments[attachment].URL)
 				if err != nil {
-					logger.Warn("download image fail", "err", err)
+					logger.WarnCtx(d.Robot.Ctx, "download image fail", "err", err)
 				}
 			}
 		}
 		
 		videoContent, totalToken, err := d.Robot.CreateVideo(prompt, imageContent)
 		if err != nil {
-			logger.Warn("generate video fail", "err", err)
+			logger.WarnCtx(d.Robot.Ctx, "generate video fail", "err", err)
 			d.Robot.SendMsg(chatId, err.Error(), msgId, param.DiscordEditMode, nil)
 			return
 		}
@@ -631,7 +633,7 @@ func (d *DiscordRobot) sendVideo() {
 		})
 		
 		if err != nil {
-			logger.Warn("send video fail", "err", err)
+			logger.WarnCtx(d.Robot.Ctx, "send video fail", "err", err)
 			d.Robot.SendMsg(chatId, err.Error(), msgId, param.DiscordEditMode, nil)
 			return
 		}
@@ -792,7 +794,7 @@ func (d *DiscordRobot) PlayAudioToDiscord(vc *discordgo.VoiceConnection) {
 			case utils.MsgTypeFullServer:
 				switch msg.Event {
 				case 152, 153:
-					logger.Warn("session finished")
+					logger.WarnCtx(d.Robot.Ctx, "session finished")
 					return
 				case 154:
 					usage := utils.GetDialogUsage(msg.Payload)

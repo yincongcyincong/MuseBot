@@ -67,19 +67,19 @@ func TestAppendMessages(t *testing.T) {
 }
 
 func TestGenerateGeminiText_EmptyAudio(t *testing.T) {
-	text, _, err := GenerateGeminiText([]byte{})
+	text, _, err := GenerateGeminiText(context.Background(), []byte{})
 	assert.Error(t, err)
 	assert.Empty(t, text)
 }
 
 func TestGenerateGeminiImage_EmptyPrompt(t *testing.T) {
-	image, _, err := GenerateGeminiImg("", nil)
+	image, _, err := GenerateGeminiImg(context.Background(), "", nil)
 	assert.Error(t, err)
 	assert.Nil(t, image)
 }
 
 func TestGenerateGeminiVideo_InvalidPrompt(t *testing.T) {
-	video, _, err := GenerateGeminiVideo("", nil)
+	video, _, err := GenerateGeminiVideo(context.Background(), "", nil)
 	assert.Error(t, err)
 	assert.Nil(t, video)
 }

@@ -619,7 +619,7 @@ func (s *SlackRobot) sendText(messageChan *MsgChan) {
 		}
 		
 		if msg.MsgId == "" {
-			newMsgTimestamp, _, err := s.Client.PostMessage(
+			_, newMsgTimestamp, err := s.Client.PostMessage(
 				chatId,
 				slack.MsgOptionText(msg.Content, false),
 				slack.MsgOptionTS(messageId),
