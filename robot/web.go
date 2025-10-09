@@ -218,7 +218,7 @@ func (web *Web) showStateInfo() {
 	userId := web.RealUserId
 	userInfo, err := db.GetUserByID(userId)
 	if err != nil {
-		logger.Warn("get user info fail", "err", err)
+		logger.WarnCtx(web.Robot.Ctx, "get user info fail", "err", err)
 		web.SendMsg(err.Error())
 		return
 	}
@@ -234,21 +234,21 @@ func (web *Web) showStateInfo() {
 	endOfDay := time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 59, 999999999, now.Location())
 	todayTokey, err := db.GetTokenByUserIdAndTime(userId, startOfDay.Unix(), endOfDay.Unix())
 	if err != nil {
-		logger.Warn("get today token fail", "err", err)
+		logger.WarnCtx(web.Robot.Ctx, "get today token fail", "err", err)
 	}
 	
 	// get this week token
 	startOf7DaysAgo := now.AddDate(0, 0, -7).Truncate(24 * time.Hour)
 	weekToken, err := db.GetTokenByUserIdAndTime(userId, startOf7DaysAgo.Unix(), endOfDay.Unix())
 	if err != nil {
-		logger.Warn("get week token fail", "err", err)
+		logger.WarnCtx(web.Robot.Ctx, "get week token fail", "err", err)
 	}
 	
 	// handle balance info msg
 	startOf30DaysAgo := now.AddDate(0, 0, -30).Truncate(24 * time.Hour)
 	monthToken, err := db.GetTokenByUserIdAndTime(userId, startOf30DaysAgo.Unix(), endOfDay.Unix())
 	if err != nil {
-		logger.Warn("get week token fail", "err", err)
+		logger.WarnCtx(web.Robot.Ctx, "get week token fail", "err", err)
 	}
 	
 	template := i18n.GetMessage(*conf.BaseConfInfo.Lang, "state_content", nil)
@@ -303,7 +303,7 @@ func (web *Web) sendMultiAgent(agentType string) {
 	
 	prompt := strings.TrimSpace(web.Prompt)
 	if prompt == "" {
-		logger.Warn("prompt is empty")
+		logger.WarnCtx(web.Robot.Ctx, "prompt is empty")
 		web.SendMsg(i18n.GetMessage(*conf.BaseConfInfo.Lang, "photo_empty_content", nil))
 		return
 	}
@@ -362,7 +362,7 @@ func (web *Web) sendImg() {
 	web.Robot.TalkingPreCheck(func() {
 		prompt := strings.TrimSpace(web.Prompt)
 		if prompt == "" {
-			logger.Warn("prompt is empty")
+			logger.WarnCtx(web.Robot.Ctx, "prompt is empty")
 			web.SendMsg(i18n.GetMessage(*conf.BaseConfInfo.Lang, "photo_empty_content", nil))
 			return
 		}
@@ -372,13 +372,13 @@ func (web *Web) sendImg() {
 		if len(lastImageContent) == 0 && strings.Contains(web.Command, "edit_photo") {
 			lastImageContent, err = web.Robot.GetLastImageContent()
 			if err != nil {
-				logger.Warn("get last image record fail", "err", err)
+				logger.WarnCtx(web.Robot.Ctx, "get last image record fail", "err", err)
 			}
 		}
 		
 		imageContent, totalToken, err := web.Robot.CreatePhoto(prompt, lastImageContent)
 		if err != nil {
-			logger.Warn("generate image fail", "err", err)
+			logger.WarnCtx(web.Robot.Ctx, "generate image fail", "err", err)
 			web.SendMsg(err.Error())
 			return
 		}
@@ -431,14 +431,14 @@ func (web *Web) sendVideo() {
 		
 		prompt := strings.TrimSpace(web.Prompt)
 		if prompt == "" {
-			logger.Warn("prompt is empty")
+			logger.WarnCtx(web.Robot.Ctx, "prompt is empty")
 			web.SendMsg(i18n.GetMessage(*conf.BaseConfInfo.Lang, "video_empty_content", nil))
 			return
 		}
 		
 		videoContent, totalToken, err := web.Robot.CreateVideo(prompt, web.BodyData)
 		if err != nil {
-			logger.Warn("generate video fail", "err", err)
+			logger.WarnCtx(web.Robot.Ctx, "generate video fail", "err", err)
 			web.SendMsg(err.Error())
 			return
 		}
@@ -497,7 +497,7 @@ func (web *Web) sendChatMessage() {
 			defer close(messageChan)
 			err := l.CallLLM()
 			if err != nil {
-				logger.Warn("Error sending message", "err", err)
+				logger.WarnCtx(web.Robot.Ctx, "Error sending message", "err", err)
 				web.SendMsg(err.Error())
 			}
 		}()
@@ -538,7 +538,7 @@ func (web *Web) GetContent(content string) (string, error) {
 	if utils.DetectAudioFormat(web.BodyData) != "unknown" {
 		content, err = web.Robot.GetAudioContent(web.BodyData)
 		if err != nil {
-			logger.Warn("generate text from audio failed", "err", err)
+			logger.WarnCtx(web.Robot.Ctx, "generate text from audio failed", "err", err)
 			return "", err
 		}
 	}
@@ -546,13 +546,13 @@ func (web *Web) GetContent(content string) (string, error) {
 	if utils.DetectImageFormat(web.BodyData) != "unknown" {
 		content, err = web.Robot.GetImageContent(web.BodyData, content)
 		if err != nil {
-			logger.Warn("get content from image failed", "err", err)
+			logger.WarnCtx(web.Robot.Ctx, "get content from image failed", "err", err)
 			return "", err
 		}
 	}
 	
 	if content == "" {
-		logger.Warn("content extraction returned empty")
+		logger.WarnCtx(web.Robot.Ctx, "content extraction returned empty")
 		return "", errors.New("content is empty")
 	}
 	
@@ -562,7 +562,7 @@ func (web *Web) GetContent(content string) (string, error) {
 func (web *Web) SendMsg(msgContent string) {
 	_, err := web.W.Write([]byte(msgContent))
 	if err != nil {
-		logger.Warn("send message fail", "err", err)
+		logger.WarnCtx(web.Robot.Ctx, "send message fail", "err", err)
 	}
 	web.Flusher.Flush()
 }

@@ -194,13 +194,13 @@ func (h *GeminiReq) requestOneToolsCall(ctx context.Context, toolsCall []*genai.
 		
 		mc, err := clients.GetMCPClientByToolName(tool.Name)
 		if err != nil {
-			logger.Warn("get mcp fail", "err", err, "name", tool.Name, "args", tool.Args)
+			logger.WarnCtx(l.Ctx, "get mcp fail", "err", err, "name", tool.Name, "args", tool.Args)
 			return
 		}
 		
 		toolsData, err := mc.ExecTools(ctx, tool.Name, tool.Args)
 		if err != nil {
-			logger.Warn("exec tools fail", "err", err, "name", tool.Name, "args", tool.Args)
+			logger.WarnCtx(l.Ctx, "exec tools fail", "err", err, "name", tool.Name, "args", tool.Args)
 			return
 		}
 		
@@ -254,13 +254,13 @@ func (h *GeminiReq) RequestToolsCall(ctx context.Context, response *genai.Genera
 		
 		mc, err := clients.GetMCPClientByToolName(h.ToolCall[len(h.ToolCall)-1].Name)
 		if err != nil {
-			logger.Warn("get mcp fail", "err", err)
+			logger.WarnCtx(l.Ctx, "get mcp fail", "err", err)
 			return err
 		}
 		
 		toolsData, err := mc.ExecTools(ctx, h.ToolCall[len(h.ToolCall)-1].Name, h.ToolCall[len(h.ToolCall)-1].Args)
 		if err != nil {
-			logger.Warn("exec tools fail", "err", err)
+			logger.WarnCtx(l.Ctx, "exec tools fail", "err", err)
 			return err
 		}
 		h.CurrentToolMessage = append(h.CurrentToolMessage, &genai.Content{
@@ -534,7 +534,7 @@ func GeminiTTS(ctx context.Context, content, encoding string) ([]byte, int, int,
 				if err != nil {
 					logger.ErrorCtx(ctx, "convert audio fail", "err", err)
 				}
-				return data, int(response.UsageMetadata.TotalTokenCount), utils.PCMDuration(len(data), 24000, 1, 16), nil
+				return data, int(response.UsageMetadata.TotalTokenCount), utils.PCMDuration(len(part.InlineData.Data), 24000, 1, 16), nil
 			}
 		}
 	}
