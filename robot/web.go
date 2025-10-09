@@ -8,7 +8,7 @@ import (
 	"runtime/debug"
 	"strings"
 	"time"
-	
+
 	godeepseek "github.com/cohesion-org/deepseek-go"
 	"github.com/yincongcyincong/MuseBot/conf"
 	"github.com/yincongcyincong/MuseBot/db"
@@ -26,12 +26,12 @@ type Web struct {
 	Prompt     string
 	BodyData   []byte
 	RecordId   int64
-	
+
 	OriginalPrompt string
-	
+
 	W       http.ResponseWriter
 	Flusher http.Flusher
-	
+
 	Robot *RobotInfo
 }
 
@@ -120,9 +120,9 @@ func (web *Web) sendModeConfigurationOptions() {
 		}
 		return
 	}
-	
+
 	var modelList []string
-	
+
 	switch *conf.BaseConfInfo.Type {
 	case param.DeepSeek:
 		if *conf.BaseConfInfo.CustomUrl == "" || *conf.BaseConfInfo.CustomUrl == "https://api.deepseek.com/" {
@@ -157,7 +157,7 @@ func (web *Web) sendModeConfigurationOptions() {
 				"link": "https://ollama.com/",
 			}))
 		}
-	
+
 	case param.Vol:
 		for k := range param.VolModels {
 			modelList = append(modelList, k)
@@ -169,9 +169,9 @@ func (web *Web) sendModeConfigurationOptions() {
 
 `, model)
 	}
-	
+
 	web.SendMsg(totalContent)
-	
+
 	db.InsertRecordInfo(&db.Record{
 		UserId:     web.RealUserId,
 		Question:   web.OriginalPrompt,
@@ -183,26 +183,26 @@ func (web *Web) sendModeConfigurationOptions() {
 }
 
 func (web *Web) showBalanceInfo() {
-	
+
 	if *conf.BaseConfInfo.Type != param.DeepSeek {
 		web.SendMsg(i18n.GetMessage(*conf.BaseConfInfo.Lang, "not_deepseek", nil))
 		return
 	}
-	
+
 	balance := llm.GetBalanceInfo(web.Robot.Ctx)
-	
+
 	// handle balance info msg
 	msgContent := fmt.Sprintf(i18n.GetMessage(*conf.BaseConfInfo.Lang, "balance_title", nil), balance.IsAvailable)
-	
+
 	template := i18n.GetMessage(*conf.BaseConfInfo.Lang, "balance_content", nil)
-	
+
 	for _, bInfo := range balance.BalanceInfos {
 		msgContent += fmt.Sprintf(template, bInfo.Currency, bInfo.TotalBalance,
 			bInfo.ToppedUpBalance, bInfo.GrantedBalance)
 	}
-	
+
 	web.SendMsg(msgContent)
-	
+
 	db.InsertRecordInfo(&db.Record{
 		UserId:     web.RealUserId,
 		Question:   web.OriginalPrompt,
@@ -211,7 +211,7 @@ func (web *Web) showBalanceInfo() {
 		IsDeleted:  0,
 		RecordType: param.WEBRecordType,
 	})
-	
+
 }
 
 func (web *Web) showStateInfo() {
@@ -222,12 +222,12 @@ func (web *Web) showStateInfo() {
 		web.SendMsg(err.Error())
 		return
 	}
-	
+
 	if userInfo == nil {
 		db.InsertUser(userId, godeepseek.DeepSeekChat)
 		userInfo, err = db.GetUserByID(userId)
 	}
-	
+
 	// get today token
 	now := time.Now()
 	startOfDay := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
@@ -236,25 +236,25 @@ func (web *Web) showStateInfo() {
 	if err != nil {
 		logger.WarnCtx(web.Robot.Ctx, "get today token fail", "err", err)
 	}
-	
+
 	// get this week token
 	startOf7DaysAgo := now.AddDate(0, 0, -7).Truncate(24 * time.Hour)
 	weekToken, err := db.GetTokenByUserIdAndTime(userId, startOf7DaysAgo.Unix(), endOfDay.Unix())
 	if err != nil {
 		logger.WarnCtx(web.Robot.Ctx, "get week token fail", "err", err)
 	}
-	
+
 	// handle balance info msg
 	startOf30DaysAgo := now.AddDate(0, 0, -30).Truncate(24 * time.Hour)
 	monthToken, err := db.GetTokenByUserIdAndTime(userId, startOf30DaysAgo.Unix(), endOfDay.Unix())
 	if err != nil {
 		logger.WarnCtx(web.Robot.Ctx, "get week token fail", "err", err)
 	}
-	
+
 	template := i18n.GetMessage(*conf.BaseConfInfo.Lang, "state_content", nil)
 	msgContent := fmt.Sprintf(template, userInfo.Token, todayTokey, weekToken, monthToken)
 	web.SendMsg(msgContent)
-	
+
 	db.InsertRecordInfo(&db.Record{
 		UserId:     web.RealUserId,
 		Question:   web.OriginalPrompt,
@@ -263,7 +263,7 @@ func (web *Web) showStateInfo() {
 		IsDeleted:  0,
 		RecordType: param.WEBRecordType,
 	})
-	
+
 }
 
 func (web *Web) clearAllRecord() {
@@ -271,7 +271,7 @@ func (web *Web) clearAllRecord() {
 	db.DeleteMsgRecord(userId)
 	deleteSuccMsg := i18n.GetMessage(*conf.BaseConfInfo.Lang, "delete_succ", nil)
 	web.SendMsg(deleteSuccMsg)
-	
+
 	db.InsertRecordInfo(&db.Record{
 		UserId:     web.RealUserId,
 		Question:   web.OriginalPrompt,
@@ -281,12 +281,12 @@ func (web *Web) clearAllRecord() {
 		RecordType: param.WEBRecordType,
 	})
 	return
-	
+
 }
 
 func (web *Web) retryLastQuestion() {
 	userId := web.RealUserId
-	
+
 	records := db.GetMsgRecord(userId)
 	if records != nil && len(records.AQs) > 0 {
 		web.Prompt = records.AQs[len(records.AQs)-1].Question
@@ -294,22 +294,22 @@ func (web *Web) retryLastQuestion() {
 	} else {
 		web.SendMsg(i18n.GetMessage(*conf.BaseConfInfo.Lang, "last_question_fail", nil))
 	}
-	
+
 	return
-	
+
 }
 
 func (web *Web) sendMultiAgent(agentType string) {
-	
+
 	prompt := strings.TrimSpace(web.Prompt)
 	if prompt == "" {
 		logger.WarnCtx(web.Robot.Ctx, "prompt is empty")
 		web.SendMsg(i18n.GetMessage(*conf.BaseConfInfo.Lang, "photo_empty_content", nil))
 		return
 	}
-	
+
 	messageChan := make(chan string)
-	
+
 	dpReq := &llm.LLMTaskReq{
 		Content:     prompt,
 		UserId:      web.RealUserId,
@@ -317,10 +317,10 @@ func (web *Web) sendMultiAgent(agentType string) {
 		MsgId:       web.RealUserId,
 		HTTPMsgChan: messageChan,
 		PerMsgLen:   10000000,
-		
+
 		Ctx: web.Robot.Ctx,
 	}
-	
+
 	go func() {
 		defer func() {
 			if err := recover(); err != nil {
@@ -328,26 +328,26 @@ func (web *Web) sendMultiAgent(agentType string) {
 			}
 			close(messageChan)
 		}()
-		
+
 		var err error
 		if agentType == "mcp_empty_content" {
 			err = dpReq.ExecuteMcp()
 		} else {
 			err = dpReq.ExecuteTask()
 		}
-		
+
 		if err != nil {
 			http.Error(web.W, err.Error(), http.StatusInternalServerError)
 		}
 	}()
-	
+
 	totalContent := ""
 	for msg := range messageChan {
 		fmt.Fprintf(web.W, "%s", msg)
 		totalContent += msg
 		web.Flusher.Flush()
 	}
-	
+
 	db.InsertRecordInfo(&db.Record{
 		UserId:     web.RealUserId,
 		Question:   web.OriginalPrompt,
@@ -366,7 +366,7 @@ func (web *Web) sendImg() {
 			web.SendMsg(i18n.GetMessage(*conf.BaseConfInfo.Lang, "photo_empty_content", nil))
 			return
 		}
-		
+
 		lastImageContent := web.BodyData
 		var err error
 		if len(lastImageContent) == 0 && strings.Contains(web.Command, "edit_photo") {
@@ -375,30 +375,30 @@ func (web *Web) sendImg() {
 				logger.WarnCtx(web.Robot.Ctx, "get last image record fail", "err", err)
 			}
 		}
-		
+
 		imageContent, totalToken, err := web.Robot.CreatePhoto(prompt, lastImageContent)
 		if err != nil {
 			logger.WarnCtx(web.Robot.Ctx, "generate image fail", "err", err)
 			web.SendMsg(err.Error())
 			return
 		}
-		
+
 		// 构建 base64 图片
 		base64Content := base64.StdEncoding.EncodeToString(imageContent)
 		format := utils.DetectImageFormat(imageContent)
 		dataURI := fmt.Sprintf("data:image/%s;base64,%s", format, base64Content)
-		
+
 		fmt.Fprintf(web.W, "%s", dataURI)
 		web.Flusher.Flush()
-		
+
 		originImageURI := ""
-		
+
 		if len(web.BodyData) > 0 {
 			base64Content = base64.StdEncoding.EncodeToString(web.BodyData)
 			format = utils.DetectImageFormat(web.BodyData)
 			originImageURI = fmt.Sprintf("data:image/%s;base64,%s", format, base64Content)
 		}
-		
+
 		// save message record
 		db.InsertRecordInfo(&db.Record{
 			UserId:     web.RealUserId,
@@ -410,7 +410,7 @@ func (web *Web) sendImg() {
 			RecordType: param.WEBRecordType,
 			Mode:       *conf.BaseConfInfo.MediaType,
 		})
-		
+
 		// save data record
 		db.InsertRecordInfo(&db.Record{
 			UserId:     web.RealUserId,
@@ -428,27 +428,27 @@ func (web *Web) sendImg() {
 func (web *Web) sendVideo() {
 	// 检查 prompt
 	web.Robot.TalkingPreCheck(func() {
-		
+
 		prompt := strings.TrimSpace(web.Prompt)
 		if prompt == "" {
 			logger.WarnCtx(web.Robot.Ctx, "prompt is empty")
 			web.SendMsg(i18n.GetMessage(*conf.BaseConfInfo.Lang, "video_empty_content", nil))
 			return
 		}
-		
+
 		videoContent, totalToken, err := web.Robot.CreateVideo(prompt, web.BodyData)
 		if err != nil {
 			logger.WarnCtx(web.Robot.Ctx, "generate video fail", "err", err)
 			web.SendMsg(err.Error())
 			return
 		}
-		
+
 		base64Content := base64.StdEncoding.EncodeToString(videoContent)
 		dataURI := fmt.Sprintf("data:video/%s;base64,%s", utils.DetectVideoMimeType(videoContent), base64Content)
-		
+
 		fmt.Fprintf(web.W, "%s", dataURI)
 		web.Flusher.Flush()
-		
+
 		db.InsertRecordInfo(&db.Record{
 			UserId:     web.RealUserId,
 			Question:   web.OriginalPrompt,
@@ -458,7 +458,7 @@ func (web *Web) sendVideo() {
 			RecordType: param.WEBRecordType,
 			Mode:       *conf.BaseConfInfo.MediaType,
 		})
-		
+
 		db.InsertRecordInfo(&db.Record{
 			UserId:     web.RealUserId,
 			Question:   web.OriginalPrompt,
@@ -469,19 +469,19 @@ func (web *Web) sendVideo() {
 			Mode:       *conf.BaseConfInfo.MediaType,
 		})
 	})
-	
+
 }
 
 func (web *Web) sendChatMessage() {
 	web.Robot.TalkingPreCheck(func() {
-		
+
 		prompt, err := web.GetContent(strings.TrimSpace(web.Prompt))
 		if err != nil {
 			logger.ErrorCtx(web.Robot.Ctx, "get content fail", "err", err)
 			web.SendMsg(err.Error())
 			return
 		}
-		
+
 		messageChan := make(chan string)
 		l := llm.NewLLM(
 			llm.WithChatId(web.RealUserId),
@@ -501,14 +501,14 @@ func (web *Web) sendChatMessage() {
 				web.SendMsg(err.Error())
 			}
 		}()
-		
+
 		totalContent := ""
 		for msg := range messageChan {
 			fmt.Fprintf(web.W, "%s", msg)
 			totalContent += msg
 			web.Flusher.Flush()
 		}
-		
+
 		originDataURI := ""
 		base64Content := base64.StdEncoding.EncodeToString(web.BodyData)
 		if format := utils.DetectImageFormat(web.BodyData); format != "unknown" {
@@ -516,7 +516,7 @@ func (web *Web) sendChatMessage() {
 		} else if format := utils.DetectAudioFormat(web.BodyData); format != "unknown" {
 			originDataURI = fmt.Sprintf("data:audio/%s;base64,%s", format, base64Content)
 		}
-		
+
 		db.InsertRecordInfo(&db.Record{
 			UserId:     web.RealUserId,
 			Question:   web.OriginalPrompt,
@@ -534,7 +534,7 @@ func (web *Web) GetContent(content string) (string, error) {
 	if len(web.BodyData) == 0 {
 		return content, nil
 	}
-	
+
 	if utils.DetectAudioFormat(web.BodyData) != "unknown" {
 		content, err = web.Robot.GetAudioContent(web.BodyData)
 		if err != nil {
@@ -542,7 +542,7 @@ func (web *Web) GetContent(content string) (string, error) {
 			return "", err
 		}
 	}
-	
+
 	if utils.DetectImageFormat(web.BodyData) != "unknown" {
 		content, err = web.Robot.GetImageContent(web.BodyData, content)
 		if err != nil {
@@ -550,12 +550,12 @@ func (web *Web) GetContent(content string) (string, error) {
 			return "", err
 		}
 	}
-	
+
 	if content == "" {
 		logger.WarnCtx(web.Robot.Ctx, "content extraction returned empty")
 		return "", errors.New("content is empty")
 	}
-	
+
 	return content, nil
 }
 
@@ -577,6 +577,6 @@ func (web *Web) InsertRecord() {
 		logger.ErrorCtx(web.Robot.Ctx, "insert record fail", "err", err)
 		return
 	}
-	
+
 	web.RecordId = id
 }

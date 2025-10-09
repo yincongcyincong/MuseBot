@@ -4,7 +4,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
-	
+
 	"github.com/ArtisanCloud/PowerWeChat/v3/src/kernel"
 	"github.com/ArtisanCloud/PowerWeChat/v3/src/kernel/contract"
 	"github.com/ArtisanCloud/PowerWeChat/v3/src/kernel/messages"
@@ -24,27 +24,27 @@ func Communicate(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Error reading request body", http.StatusInternalServerError)
 		return
 	}
-	
+
 	if prompt == "" && len(fileData) == 0 {
 		http.Error(w, "Missing prompt parameter", http.StatusBadRequest)
 		return
 	}
-	
+
 	realUserId := r.URL.Query().Get("user_id")
 	intUserId, _ := strconv.ParseInt(realUserId, 10, 64)
-	
+
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
-	
+
 	flusher, ok := w.(http.Flusher)
 	if !ok {
 		http.Error(w, "Streaming unsupported!", http.StatusInternalServerError)
 		return
 	}
-	
+
 	command, p := robot.ParseCommand(prompt)
-	
+
 	web := robot.NewWeb(command, intUserId, realUserId, p, prompt, fileData, w, flusher)
 	web.Exec()
 }
@@ -59,7 +59,7 @@ func ComWechatComm(w http.ResponseWriter, r *http.Request) {
 		}
 	} else {
 		rs, err = robot.ComWechatApp.Server.Notify(r, func(event contract.EventInterface) interface{} {
-			
+
 			c := robot.NewComWechatRobot(event)
 			c.Robot = robot.NewRobot(robot.WithRobot(c))
 			c.Robot.Exec()
@@ -69,7 +69,7 @@ func ComWechatComm(w http.ResponseWriter, r *http.Request) {
 			logger.Error("request notify fail", "err", err)
 		}
 	}
-	
+
 	if rs != nil {
 		defer rs.Body.Close()
 		data, err := io.ReadAll(rs.Body)
@@ -82,7 +82,7 @@ func ComWechatComm(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
-	
+
 	w.WriteHeader(http.StatusInternalServerError)
 }
 
@@ -101,7 +101,7 @@ func WechatComm(w http.ResponseWriter, r *http.Request) {
 			if isExec {
 				c.Robot.Exec()
 			}
-			
+
 			if !*conf.BaseConfInfo.WechatActive {
 				_, msgId, _ = c.Robot.GetChatIdAndMsgIdAndUserID()
 				content := c.GetLLMContent()
@@ -111,7 +111,7 @@ func WechatComm(w http.ResponseWriter, r *http.Request) {
 				}
 				return messages.NewText(content.(string))
 			}
-			
+
 			return kernel.SUCCESS_EMPTY_RESPONSE
 		})
 		if err != nil {
@@ -120,7 +120,7 @@ func WechatComm(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	
+
 	if rs != nil {
 		defer rs.Body.Close()
 		data, err := io.ReadAll(rs.Body)
@@ -138,7 +138,7 @@ func WechatComm(w http.ResponseWriter, r *http.Request) {
 		robot.WechatMsgSent(msgId)
 		return
 	}
-	
+
 	w.WriteHeader(http.StatusInternalServerError)
 }
 

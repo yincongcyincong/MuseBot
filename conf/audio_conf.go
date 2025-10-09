@@ -3,7 +3,7 @@ package conf
 import (
 	"flag"
 	"os"
-	
+
 	"github.com/yincongcyincong/MuseBot/logger"
 )
 
@@ -18,13 +18,13 @@ type AudioConf struct {
 	VolBotName         *string `json:"vol_bot_name"`
 	VolSystemRole      *string `json:"vol_system_role"`
 	VolSpeakingStyle   *string `json:"vol_speaking_style"`
-	
+
 	GeminiAudioModel *string `json:"gemini_audio_model"`
 	GeminiVoiceName  *string `json:"gemini_voice_name"`
-	
+
 	OpenAIAudioModel *string `json:"openai_audio_model"`
 	OpenAIVoiceName  *string `json:"openai_voice_name"`
-	
+
 	TTSType *string `json:"tts_type"`
 }
 
@@ -43,13 +43,13 @@ func InitAudioConf() {
 	AudioConfInfo.VolBotName = flag.String("vol_bot_name", "豆包", "vol bot name")
 	AudioConfInfo.VolSystemRole = flag.String("vol_system_role", "你使用活泼灵动的女声，性格开朗，热爱生活。", "vol system role")
 	AudioConfInfo.VolSpeakingStyle = flag.String("vol_speaking_style", "你的说话风格简洁明了，语速适中，语调自然。", "vol speaking style")
-	
+
 	AudioConfInfo.GeminiAudioModel = flag.String("gemini_audio_model", "gemini-2.5-flash-preview-tts", "gemini audio model")
 	AudioConfInfo.GeminiVoiceName = flag.String("gemini_voice_name", "Kore", "gemini voice name")
-	
+
 	AudioConfInfo.OpenAIAudioModel = flag.String("openai_audio_model", "tts-1", "openai audio model")
 	AudioConfInfo.OpenAIVoiceName = flag.String("openai_voice_name", "alloy", "openai voice name")
-	
+
 	AudioConfInfo.TTSType = flag.String("tts_type", "", "vol tts type: 1. vol 2. gemini")
 }
 
@@ -66,31 +66,31 @@ func EnvAudioConf() {
 	if os.Getenv("VOL_AUDIO_VOICE_TYPE") != "" {
 		*AudioConfInfo.VolAudioVoiceType = os.Getenv("VOL_AUDIO_VOICE_TYPE")
 	}
-	
+
 	if os.Getenv("VOL_AUDIO_TTS_CLUSTER") != "" {
 		*AudioConfInfo.VolAudioTTSCluster = os.Getenv("VOL_AUDIO_TTS_CLUSTER")
 	}
-	
+
 	if os.Getenv("GEMINI_AUDIO_MODEL") != "" {
 		*AudioConfInfo.GeminiAudioModel = os.Getenv("GEMINI_AUDIO_MODEL")
 	}
-	
+
 	if os.Getenv("GEMINI_VOICE_NAME") != "" {
 		*AudioConfInfo.GeminiVoiceName = os.Getenv("GEMINI_VOICE_NAME")
 	}
-	
+
 	if os.Getenv("OPENAI_AUDIO_MODEL") != "" {
 		*AudioConfInfo.OpenAIAudioModel = os.Getenv("OPENAI_AUDIO_MODEL")
 	}
-	
+
 	if os.Getenv("OPENAI_VOICE_NAME") != "" {
 		*AudioConfInfo.OpenAIVoiceName = os.Getenv("OPENAI_VOICE_NAME")
 	}
-	
+
 	if os.Getenv("TTS_TYPE") != "" {
 		*AudioConfInfo.TTSType = os.Getenv("TTS_TYPE")
 	}
-	
+
 	logger.Info("AUDIO_CONF", "AudioAppID", *AudioConfInfo.VolAudioAppID)
 	logger.Info("AUDIO_CONF", "AudioToken", *AudioConfInfo.VolAudioToken)
 	logger.Info("AUDIO_CONF", "AudioCluster", *AudioConfInfo.VolAudioRecCluster)

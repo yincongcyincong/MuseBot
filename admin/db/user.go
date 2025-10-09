@@ -3,7 +3,7 @@ package db
 import (
 	"database/sql"
 	"time"
-	
+
 	"github.com/yincongcyincong/MuseBot/utils"
 )
 
@@ -60,9 +60,9 @@ func ListUsers(offset, limit int, username string) ([]User, int, error) {
 		args  []interface{}
 		query string
 	)
-	
+
 	users := make([]User, 0)
-	
+
 	// 构建查询 SQL
 	if username != "" {
 		query = `SELECT id, username, password, create_time, update_time FROM admin_users WHERE username LIKE ? LIMIT ? OFFSET ?`
@@ -71,13 +71,13 @@ func ListUsers(offset, limit int, username string) ([]User, int, error) {
 		query = `SELECT id, username, password, create_time, update_time FROM admin_users LIMIT ? OFFSET ?`
 		args = append(args, limit, offset)
 	}
-	
+
 	rows, err = DB.Query(query, args...)
 	if err != nil {
 		return nil, 0, err
 	}
 	defer rows.Close()
-	
+
 	for rows.Next() {
 		var u User
 		err := rows.Scan(&u.ID, &u.Username, &u.Password, &u.CreateTime, &u.UpdateTime)
@@ -86,23 +86,23 @@ func ListUsers(offset, limit int, username string) ([]User, int, error) {
 		}
 		users = append(users, u)
 	}
-	
+
 	// 统计总数
 	var countQuery string
 	var countArgs []interface{}
-	
+
 	if username != "" {
 		countQuery = `SELECT COUNT(*) FROM admin_users WHERE username LIKE ?`
 		countArgs = append(countArgs, "%"+username+"%")
 	} else {
 		countQuery = `SELECT COUNT(*) FROM admin_users`
 	}
-	
+
 	var total int
 	err = DB.QueryRow(countQuery, countArgs...).Scan(&total)
 	if err != nil {
 		return nil, 0, err
 	}
-	
+
 	return users, total, nil
 }

@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"testing"
-	
+
 	"github.com/stretchr/testify/assert"
 	"github.com/yincongcyincong/MuseBot/conf"
 	"github.com/yincongcyincong/MuseBot/param"
@@ -13,22 +13,22 @@ import (
 
 func TestGeminiSend(t *testing.T) {
 	messageChan := make(chan *param.MsgInfo)
-	
+
 	go func() {
 		for m := range messageChan {
 			fmt.Println(m)
 		}
 	}()
-	
+
 	*conf.BaseConfInfo.Type = param.Gemini
-	
+
 	callLLM := NewLLM(WithChatId("1"), WithMsgId("2"), WithUserId("4"),
 		WithMessageChan(messageChan), WithContent("hi"), WithContext(context.Background()))
 	callLLM.LLMClient.GetModel(callLLM)
 	callLLM.GetMessages("4", "hi")
 	err := callLLM.LLMClient.Send(context.Background(), callLLM)
 	assert.Equal(t, nil, err)
-	
+
 }
 
 func TestGetMessage(t *testing.T) {
@@ -37,7 +37,7 @@ func TestGetMessage(t *testing.T) {
 	assert.Equal(t, 1, len(req.GeminiMsgs))
 	assert.Equal(t, genai.RoleUser, req.GeminiMsgs[0].Role)
 	assert.Equal(t, "hello", req.GeminiMsgs[0].Parts[0].Text)
-	
+
 	req.GetAssistantMessage("hi there")
 	assert.Equal(t, 2, len(req.GeminiMsgs))
 	assert.Equal(t, genai.RoleModel, req.GeminiMsgs[1].Role)

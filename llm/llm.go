@@ -3,7 +3,7 @@ package llm
 import (
 	"context"
 	"errors"
-	
+
 	godeepseek "github.com/cohesion-org/deepseek-go"
 	"github.com/revrost/go-openrouter"
 	"github.com/sashabaranov/go-openai"
@@ -33,43 +33,43 @@ type LLM struct {
 	Model       string
 	Token       int
 	RecordId    int64
-	
+
 	ChatId    string
 	UserId    string
 	MsgId     string
 	PerMsgLen int
-	
+
 	LLMClient LLMClient
-	
+
 	Ctx context.Context
-	
+
 	DeepseekTools   []godeepseek.Tool
 	VolTools        []*model.Tool
 	OpenAITools     []openai.Tool
 	GeminiTools     []*genai.Tool
 	OpenRouterTools []openrouter.Tool
-	
+
 	WholeContent string // whole answer from llm
 	LoopNum      int
 }
 
 type LLMClient interface {
 	Send(ctx context.Context, l *LLM) error
-	
+
 	GetUserMessage(msg string)
-	
+
 	GetAssistantMessage(msg string)
-	
+
 	AppendMessages(client LLMClient)
-	
+
 	SyncSend(ctx context.Context, l *LLM) (string, error)
-	
+
 	GetModel(l *LLM)
 }
 
 func (l *LLM) CallLLM() error {
 	logger.InfoCtx(l.Ctx, "msg receive", "userID", l.UserId, "prompt", l.Content)
-	
+
 	l.GetMessages(l.UserId, l.GetContent(l.Content))
 	l.LLMClient.GetModel(l)
 	err := l.LLMClient.Send(l.Ctx, l)
@@ -77,13 +77,13 @@ func (l *LLM) CallLLM() error {
 		logger.ErrorCtx(l.Ctx, "Error calling LLM API", "err", err)
 		return err
 	}
-	
+
 	err = l.InsertOrUpdate()
 	if err != nil {
 		logger.ErrorCtx(l.Ctx, "insert or update record", "err", err)
 		return err
 	}
-	
+
 	return nil
 }
 
@@ -91,17 +91,17 @@ func (l *LLM) GetContent(content string) string {
 	if *conf.BaseConfInfo.Character != "" {
 		content = *conf.BaseConfInfo.Character + "\n\n" + content
 	}
-	
+
 	return content
 }
 
 func NewLLM(opts ...Option) *LLM {
-	
+
 	l := new(LLM)
 	for _, opt := range opts {
 		opt(l)
 	}
-	
+
 	switch *conf.BaseConfInfo.Type {
 	case param.DeepSeek:
 		l.LLMClient = &DeepseekReq{
@@ -140,7 +140,7 @@ func NewLLM(opts ...Option) *LLM {
 			CurrentToolMessage: []*model.ChatCompletionMessage{},
 		}
 	}
-	
+
 	return l
 }
 
@@ -148,14 +148,14 @@ func (l *LLM) DirectSendMsg(content string) {
 	if len([]byte(content)) > l.PerMsgLen {
 		content = string([]byte(content)[:l.PerMsgLen])
 	}
-	
+
 	if l.MessageChan != nil {
 		l.MessageChan <- &param.MsgInfo{
 			Content:  content,
 			Finished: true,
 		}
 	}
-	
+
 	if l.HTTPMsgChan != nil {
 		l.HTTPMsgChan <- content
 	}
@@ -166,7 +166,7 @@ func (l *LLM) SendMsg(msgInfoContent *param.MsgInfo, content string) *param.MsgI
 		if l.PerMsgLen == 0 {
 			l.PerMsgLen = OneMsgLen
 		}
-		
+
 		// exceed max one message length
 		if len([]byte(msgInfoContent.Content)) > l.PerMsgLen {
 			msgInfoContent.Finished = true
@@ -175,14 +175,14 @@ func (l *LLM) SendMsg(msgInfoContent *param.MsgInfo, content string) *param.MsgI
 				SendLen: NonFirstSendLen,
 			}
 		}
-		
+
 		msgInfoContent.Content += content
 		l.WholeContent += content
 		if len(msgInfoContent.Content) > msgInfoContent.SendLen {
 			l.MessageChan <- msgInfoContent
 			msgInfoContent.SendLen += NonFirstSendLen
 		}
-		
+
 		return msgInfoContent
 	} else {
 		l.WholeContent += content
@@ -209,7 +209,7 @@ func (l *LLM) InsertOrUpdate() error {
 		}, true)
 		return nil
 	}
-	
+
 	db.InsertMsgRecord(l.UserId, &db.AQ{
 		Question: l.Content,
 		Answer:   l.WholeContent,
@@ -224,7 +224,7 @@ func (l *LLM) InsertOrUpdate() error {
 		logger.ErrorCtx(l.Ctx, "update record fail", "err", err)
 		return err
 	}
-	
+
 	return nil
 }
 
@@ -233,18 +233,18 @@ func (l *LLM) GetMessages(userId string, prompt string) {
 	if msgRecords != nil {
 		aqs := db.FilterByMaxContextFromLatest(msgRecords.AQs, param.DefaultContextToken)
 		for i, record := range aqs {
-			
+
 			logger.InfoCtx(l.Ctx, "context content", "dialog", i, "question:", record.Question, "answer:", record.Answer)
 			if record.Question != "" {
 				l.LLMClient.GetUserMessage(record.Question)
 			}
-			
+
 			if record.Answer != "" {
 				l.LLMClient.GetAssistantMessage(record.Question)
 			}
 		}
 	}
-	
+
 	if *conf.BaseConfInfo.Type != "gemini" {
 		l.LLMClient.GetUserMessage(prompt)
 	}

@@ -4,7 +4,7 @@ import (
 	"context"
 	"os"
 	"testing"
-	
+
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/yincongcyincong/MuseBot/conf"
@@ -17,9 +17,9 @@ import (
 
 func TestMain(m *testing.M) {
 	setup()
-	
+
 	code := m.Run()
-	
+
 	os.Exit(code)
 }
 
@@ -31,7 +31,7 @@ func setup() {
 
 func TestSendTelegramMsg(t *testing.T) {
 	messageChan := make(chan *param.MsgInfo)
-	
+
 	go func() {
 		bot := robot.CreateBot(context.Background())
 		t := robot.NewTelegramRobot(tgbotapi.Update{
@@ -50,9 +50,9 @@ func TestSendTelegramMsg(t *testing.T) {
 			NormalMessageChan: messageChan,
 		}, "")
 	}()
-	
+
 	*conf.BaseConfInfo.Type = param.DeepSeek
-	
+
 	callLLM := llm.NewLLM(llm.WithChatId("1"), llm.WithMsgId("2"), llm.WithUserId("3"),
 		llm.WithMessageChan(messageChan), llm.WithContent("hi"))
 	callLLM.LLMClient.GetModel(callLLM)

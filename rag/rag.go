@@ -8,10 +8,15 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
-	
+
 	"github.com/milvus-io/milvus-sdk-go/v2/client"
 	"github.com/milvus-io/milvus-sdk-go/v2/entity"
 	db_weaviate "github.com/weaviate/weaviate-go-client/v4/weaviate"
+	"github.com/yincongcyincong/MuseBot/conf"
+	"github.com/yincongcyincong/MuseBot/db"
+	"github.com/yincongcyincong/MuseBot/llm"
+	"github.com/yincongcyincong/MuseBot/logger"
+	"github.com/yincongcyincong/MuseBot/utils"
 	"github.com/yincongcyincong/langchaingo/documentloaders"
 	"github.com/yincongcyincong/langchaingo/embeddings"
 	"github.com/yincongcyincong/langchaingo/llms"
@@ -22,11 +27,6 @@ import (
 	"github.com/yincongcyincong/langchaingo/textsplitter"
 	"github.com/yincongcyincong/langchaingo/vectorstores/milvus"
 	"github.com/yincongcyincong/langchaingo/vectorstores/weaviate"
-	"github.com/yincongcyincong/MuseBot/conf"
-	"github.com/yincongcyincong/MuseBot/db"
-	"github.com/yincongcyincong/MuseBot/llm"
-	"github.com/yincongcyincong/MuseBot/logger"
-	"github.com/yincongcyincong/MuseBot/utils"
 	"gopkg.in/fsnotify.v1"
 )
 
@@ -42,7 +42,7 @@ func NewRag(options ...llm.Option) *Rag {
 	dp := &Rag{
 		LLM: llm.NewLLM(options...),
 	}
-	
+
 	for _, o := range options {
 		o(dp.LLM)
 	}
@@ -58,7 +58,7 @@ func (l *Rag) GenerateContent(ctx context.Context, messages []llms.MessageConten
 	for _, opt := range options {
 		opt(opts)
 	}
-	
+
 	doc, err := conf.RagConfInfo.Store.SimilaritySearch(ctx, l.LLM.Content, 3)
 	if err != nil {
 		logger.Error("request vector db fail", "err", err)
@@ -72,13 +72,13 @@ func (l *Rag) GenerateContent(ctx context.Context, messages []llms.MessageConten
 		}
 		llm.WithContent(tmpContent)(l.LLM)
 	}
-	
+
 	err = l.LLM.CallLLM()
 	if err != nil {
 		logger.Error("error calling DeepSeek API", "err", err)
 		return nil, errors.New("error calling DeepSeek API")
 	}
-	
+
 	resp := &llms.ContentResponse{
 		Choices: []*llms.ContentChoice{
 			{
@@ -86,7 +86,7 @@ func (l *Rag) GenerateContent(ctx context.Context, messages []llms.MessageConten
 			},
 		},
 	}
-	
+
 	return resp, nil
 }
 
@@ -94,10 +94,10 @@ func InitRag() {
 	if *conf.RagConfInfo.EmbeddingType == "" || *conf.RagConfInfo.VectorDBType == "" {
 		return
 	}
-	
+
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
-	
+
 	var err error
 	switch *conf.RagConfInfo.EmbeddingType {
 	case "openai":
@@ -110,12 +110,12 @@ func InitRag() {
 		logger.Error("embedding type not exist", "embedding type", *conf.RagConfInfo.EmbeddingType)
 		return
 	}
-	
+
 	if err != nil {
 		logger.Error("init embedding fail", "err", err)
 		return
 	}
-	
+
 	switch *conf.RagConfInfo.VectorDBType {
 	//case "chroma":
 	//	conf.RagConfInfo.Store, err = chroma.NewV2(
@@ -144,7 +144,7 @@ func InitRag() {
 			weaviate.WithScheme(*conf.RagConfInfo.WeaviateScheme),
 			weaviate.WithHost(*conf.RagConfInfo.WeaviateURL),
 			weaviate.WithIndexName(weaviateIndexName))
-		
+
 		conf.RagConfInfo.WeaviateClient, _ = db_weaviate.NewClient(db_weaviate.Config{
 			Scheme: *conf.RagConfInfo.WeaviateScheme,
 			Host:   *conf.RagConfInfo.WeaviateURL,
@@ -153,24 +153,24 @@ func InitRag() {
 		logger.Error("vector db not exist", "VectorDBTypee", *conf.RagConfInfo.VectorDBType)
 		return
 	}
-	
+
 	if err != nil {
 		logger.Error("get rag store fail", "err", err)
 		return
 	}
-	
+
 	docs, err := handleKnowledgeBase(ctx)
 	if err != nil {
 		logger.Error("get doc fail", "err", err)
 		return
 	}
-	
+
 	if len(docs) > 0 {
 		insertVectorDb(ctx, docs)
 	}
-	
+
 	go CheckDirChange()
-	
+
 }
 
 func insertVectorDb(ctx context.Context, docs []schema.Document) {
@@ -179,13 +179,13 @@ func insertVectorDb(ctx context.Context, docs []schema.Document) {
 		logger.Error("get save doc fail", "err", err)
 		return
 	}
-	
+
 	fileVectorIds := make(map[string]string)
 	for i := range docs {
 		fileMd5 := docs[i].Metadata["file_md5"].(string)
 		fileVectorIds[fileMd5] += ids[i] + ","
 	}
-	
+
 	for fileMd5, vectorIds := range fileVectorIds {
 		err = db.UpdateVectorIdByFileMd5(fileMd5, strings.TrimRight(vectorIds, ","))
 		if err != nil {
@@ -199,9 +199,9 @@ func handleKnowledgeBase(ctx context.Context) ([]schema.Document, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return handleEntry(ctx, entries)
-	
+
 }
 
 func handleEntry(ctx context.Context, entries []os.DirEntry) ([]schema.Document, error) {
@@ -237,7 +237,7 @@ func handleEntry(ctx context.Context, entries []os.DirEntry) ([]schema.Document,
 			}
 		}
 	}
-	
+
 	return res, nil
 }
 
@@ -245,7 +245,7 @@ func initOpenAIEmbedding() (embeddings.Embedder, error) {
 	llmEmbedder, err := openai.New(
 		openai.WithToken(*conf.BaseConfInfo.OpenAIToken),
 	)
-	
+
 	if err != nil {
 		return nil, err
 	}
@@ -253,7 +253,7 @@ func initOpenAIEmbedding() (embeddings.Embedder, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return embedder, err
 }
 
@@ -262,7 +262,7 @@ func initErnieEmbedding() (embeddings.Embedder, error) {
 		ernie.WithModelName(ernie.ModelNameERNIEBot),
 		ernie.WithAKSK(*conf.BaseConfInfo.ErnieAK, *conf.BaseConfInfo.ErnieSK),
 	)
-	
+
 	if err != nil {
 		return nil, err
 	}
@@ -270,7 +270,7 @@ func initErnieEmbedding() (embeddings.Embedder, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return embedder, err
 }
 
@@ -278,7 +278,7 @@ func initGeminiEmbedding(ctx context.Context) (embeddings.Embedder, error) {
 	llmEmbedder, err := googleai.New(ctx,
 		googleai.WithAPIKey(*conf.BaseConfInfo.GeminiToken),
 	)
-	
+
 	if err != nil {
 		return nil, err
 	}
@@ -286,40 +286,40 @@ func initGeminiEmbedding(ctx context.Context) (embeddings.Embedder, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return embedder, err
 }
 
 func getFileResource(entry os.DirEntry) (*os.File, string, error) {
 	fullPath := filepath.Join(*conf.RagConfInfo.KnowledgePath, entry.Name())
-	
+
 	fileMd5, err := utils.FileToMd5(fullPath)
 	if err != nil {
 		logger.Error("file to md5 fail", "err", err)
 		return nil, "", err
 	}
-	
+
 	fileInfos, err := db.GetRagFileByFileMd5(fileMd5)
 	if err != nil {
 		logger.Error("get file from db fail", "err", err)
 		return nil, "", err
 	}
-	
+
 	if len(fileInfos) > 0 {
 		logger.Info("file exist", "path", fullPath)
 		return nil, "", nil
 	}
-	
+
 	err = db.DeleteRagFileByFileName(entry.Name())
 	if err != nil {
 		logger.Error("delete file from db fail", "err", err)
 	}
-	
+
 	_, err = db.InsertRagFile(entry.Name(), fileMd5)
 	if err != nil {
 		logger.Error("insert rag file fail", "err", err)
 	}
-	
+
 	f, err := os.Open(fullPath)
 	return f, fileMd5, err
 }
@@ -334,7 +334,7 @@ func handleTextDoc(ctx context.Context, entry os.DirEntry) ([]schema.Document, e
 		return nil, nil
 	}
 	defer f.Close()
-	
+
 	loader := documentloaders.NewText(f)
 	return saveDocIntoStore(ctx, loader, fMd5, entry)
 }
@@ -349,7 +349,7 @@ func handlePDFDoc(ctx context.Context, entry os.DirEntry) ([]schema.Document, er
 		return nil, nil
 	}
 	defer f.Close()
-	
+
 	finfo, err := f.Stat()
 	if err != nil {
 		logger.Error("get file stat fail", "err", err)
@@ -369,7 +369,7 @@ func handleCSVDoc(ctx context.Context, entry os.DirEntry) ([]schema.Document, er
 		return nil, nil
 	}
 	defer f.Close()
-	
+
 	loader := documentloaders.NewCSV(f)
 	return saveDocIntoStore(ctx, loader, fMd5, entry)
 }
@@ -384,7 +384,7 @@ func handleHTMLDoc(ctx context.Context, entry os.DirEntry) ([]schema.Document, e
 		return nil, nil
 	}
 	defer f.Close()
-	
+
 	loader := documentloaders.NewHTML(f)
 	return saveDocIntoStore(ctx, loader, fMd5, entry)
 }
@@ -395,18 +395,18 @@ func saveDocIntoStore(ctx context.Context, loader documentloaders.Loader, fMd5 s
 		textsplitter.WithChunkOverlap(*conf.RagConfInfo.ChunkOverlap),
 		textsplitter.WithSeparators(conf.DefaultSpliter),
 	)
-	
+
 	docs, err := loader.LoadAndSplit(ctx, splitter)
 	if err != nil {
 		logger.Error("get rag docs fail: %v", err)
 		return nil, err
 	}
-	
+
 	for _, doc := range docs {
 		doc.Metadata["file_name"] = entry.Name()
 		doc.Metadata["file_md5"] = fMd5
 	}
-	
+
 	return docs, nil
 }
 
@@ -416,21 +416,21 @@ func CheckDirChange() {
 			logger.Error("CheckDirChange panic", "err", err)
 		}
 	}()
-	
+
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		logger.Error("create watcher fail", "err", err)
 		return
 	}
 	defer watcher.Close()
-	
+
 	// 监控当前目录
 	err = watcher.Add(*conf.RagConfInfo.KnowledgePath)
 	if err != nil {
 		logger.Error("add watcher fail", "err", err)
 		return
 	}
-	
+
 	for {
 		select {
 		case event, ok := <-watcher.Events:
@@ -446,7 +446,7 @@ func CheckDirChange() {
 			logger.Error("watcher error", "err", err)
 		}
 	}
-	
+
 }
 
 func insertNewDoc(event fsnotify.Event) {
@@ -464,7 +464,7 @@ func insertNewDoc(event fsnotify.Event) {
 		logger.Info("rag dir changed", "event", event.Name, "op", "remove")
 		DeleteDoc(ctx, event)
 	}
-	
+
 }
 
 func DeleteDoc(ctx context.Context, event fsnotify.Event) {
@@ -514,7 +514,7 @@ func findDirEntry(path string, filename string) (os.DirEntry, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	for _, entry := range entries {
 		if entry.Name() == filename {
 			return entry, nil
@@ -536,13 +536,13 @@ func DeleteStoreData(ctx context.Context, vectorIds string) error {
 				logger.Error("delete store data fail", "err", err)
 			}
 		}
-	
+
 	case "milvus":
 		for _, vectorId := range strings.Split(vectorIds, ",") {
 			expr := fmt.Sprintf(`pk == %s`, vectorId)
 			err = conf.RagConfInfo.MilvusClient.Delete(ctx, *conf.RagConfInfo.Space, "", expr)
 		}
 	}
-	
+
 	return nil
 }

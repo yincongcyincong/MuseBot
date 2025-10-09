@@ -2,7 +2,7 @@ package utils
 
 import (
 	"sync"
-	
+
 	"github.com/yincongcyincong/MuseBot/conf"
 )
 
