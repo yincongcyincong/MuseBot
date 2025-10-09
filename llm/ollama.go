@@ -32,10 +32,10 @@ func (d *OllamaDeepseekReq) GetModel(l *LLM) {
 	l.Model = "deepseek-r1"
 	userInfo, err := db.GetUserByID(l.UserId)
 	if err != nil {
-		logger.Error("Error getting user info", "err", err)
+		logger.ErrorCtx(l.Ctx, "Error getting user info", "err", err)
 	}
 	if userInfo != nil && userInfo.Mode != "" {
-		logger.Info("User info", "userID", userInfo.UserId, "mode", userInfo.Mode)
+		logger.InfoCtx(l.Ctx, "User info", "userID", userInfo.UserId, "mode", userInfo.Mode)
 		l.Model = userInfo.Mode
 	}
 }
@@ -67,7 +67,7 @@ func (d *OllamaDeepseekReq) Send(ctx context.Context, l *LLM) error {
 	
 	stream, err := deepseek.CreateOllamaChatCompletionStream(ctx, request)
 	if err != nil {
-		logger.Error("ChatCompletionStream error", "updateMsgID", l.MsgId, "err", err)
+		logger.ErrorCtx(l.Ctx, "ChatCompletionStream error", "updateMsgID", l.MsgId, "err", err)
 		return err
 	}
 	defer stream.Close()
@@ -79,11 +79,11 @@ func (d *OllamaDeepseekReq) Send(ctx context.Context, l *LLM) error {
 	for {
 		response, err := stream.Recv()
 		if errors.Is(err, io.EOF) {
-			logger.Info("Stream finished", "updateMsgID", l.MsgId)
+			logger.InfoCtx(l.Ctx, "Stream finished", "updateMsgID", l.MsgId)
 			break
 		}
 		if err != nil {
-			logger.Warn("Stream error", "updateMsgID", l.MsgId, "err", err)
+			logger.WarnCtx(l.Ctx, "Stream error", "updateMsgID", l.MsgId, "err", err)
 			return err
 		}
 		for _, choice := range response.Choices {
@@ -94,7 +94,7 @@ func (d *OllamaDeepseekReq) Send(ctx context.Context, l *LLM) error {
 					if errors.Is(err, ToolsJsonErr) {
 						continue
 					} else {
-						logger.Error("requestToolsCall error", "updateMsgID", l.MsgId, "err", err)
+						logger.ErrorCtx(l.Ctx, "requestToolsCall error", "updateMsgID", l.MsgId, "err", err)
 					}
 				}
 			}
@@ -188,12 +188,12 @@ func (d *OllamaDeepseekReq) SyncSend(ctx context.Context, l *LLM) (string, error
 	// assign task
 	response, err := deepseek.CreateOllamaChatCompletion(request)
 	if err != nil {
-		logger.Error("ChatCompletionStream error", "updateMsgID", l.MsgId, "err", err)
+		logger.ErrorCtx(l.Ctx, "ChatCompletionStream error", "updateMsgID", l.MsgId, "err", err)
 		return "", err
 	}
 	
 	if len(response.Choices) == 0 {
-		logger.Error("response is emtpy", "response", response)
+		logger.ErrorCtx(l.Ctx, "response is emtpy", "response", response)
 		return "", errors.New("response is empty")
 	}
 	
@@ -216,13 +216,13 @@ func (d *OllamaDeepseekReq) requestOneToolsCall(ctx context.Context, toolsCall [
 		
 		mc, err := clients.GetMCPClientByToolName(tool.Function.Name)
 		if err != nil {
-			logger.Warn("get mcp fail", "err", err)
+			logger.WarnCtx(l.Ctx, "get mcp fail", "err", err)
 			return
 		}
 		
 		toolsData, err := mc.ExecTools(ctx, tool.Function.Name, property)
 		if err != nil {
-			logger.Warn("exec tools fail", "err", err)
+			logger.WarnCtx(l.Ctx, "exec tools fail", "err", err)
 			return
 		}
 		
@@ -231,7 +231,7 @@ func (d *OllamaDeepseekReq) requestOneToolsCall(ctx context.Context, toolsCall [
 			Content:    toolsData,
 			ToolCallID: tool.ID,
 		})
-		logger.Info("exec tool", "name", tool.Function.Name, "args", property, "toolsData", toolsData)
+		logger.InfoCtx(l.Ctx, "exec tool", "name", tool.Function.Name, "args", property, "toolsData", toolsData)
 		
 		l.DirectSendMsg(i18n.GetMessage(*conf.BaseConfInfo.Lang, "send_mcp_info", map[string]interface{}{
 			"function_name": tool.Function.Name,
@@ -271,14 +271,14 @@ func (d *OllamaDeepseekReq) requestToolsCall(ctx context.Context, choice deepsee
 		tool := d.ToolCall[len(d.ToolCall)-1]
 		mc, err := clients.GetMCPClientByToolName(tool.Function.Name)
 		if err != nil {
-			logger.Warn("get mcp fail", "err", err, "function", tool.Function.Name,
+			logger.WarnCtx(l.Ctx, "get mcp fail", "err", err, "function", tool.Function.Name,
 				"toolCall", tool.ID, "argument", tool.Function.Arguments)
 			return err
 		}
 		
 		toolsData, err := mc.ExecTools(ctx, tool.Function.Name, property)
 		if err != nil {
-			logger.Warn("exec tools fail", "err", err, "function", tool.Function.Name,
+			logger.WarnCtx(l.Ctx, "exec tools fail", "err", err, "function", tool.Function.Name,
 				"toolCall", tool.ID, "argument", tool.Function.Arguments)
 			return err
 		}
@@ -288,7 +288,7 @@ func (d *OllamaDeepseekReq) requestToolsCall(ctx context.Context, choice deepsee
 			ToolCallID: tool.ID,
 		})
 		
-		logger.Info("send tool request", "function", tool.Function.Name,
+		logger.InfoCtx(l.Ctx, "send tool request", "function", tool.Function.Name,
 			"toolCall", tool.ID, "argument", tool.Function.Arguments,
 			"res", toolsData)
 		

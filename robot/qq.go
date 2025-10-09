@@ -47,8 +47,6 @@ type QQRobot struct {
 	GroupAtMessage *dto.WSGroupATMessageData
 	ATMessage      *dto.WSATMessageData
 	
-	Ctx          context.Context
-	Cancel       context.CancelFunc
 	Command      string
 	Prompt       string
 	BotName      string
@@ -133,7 +131,6 @@ func QQATMessageEventHandler(event *dto.WSPayload, atMessage *dto.WSATMessageDat
 
 func NewQQRobot(event *dto.WSPayload, c2cMessage *dto.WSC2CMessageData,
 	atGroupMessage *dto.WSGroupATMessageData, atMessage *dto.WSATMessageData) *QQRobot {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Minute*5)
 	return &QQRobot{
 		QQApi:          QQApi,
 		QQTokenSource:  QQTokenSource,
@@ -142,8 +139,6 @@ func NewQQRobot(event *dto.WSPayload, c2cMessage *dto.WSC2CMessageData,
 		ATMessage:      atMessage,
 		GroupAtMessage: atGroupMessage,
 		event:          event,
-		Ctx:            ctx,
-		Cancel:         cancel,
 		BotName:        BotName,
 	}
 }
@@ -603,7 +598,7 @@ func (q *QQRobot) PostRichMediaMessage(data []byte) error {
 	_, msgId, _ := q.Robot.GetChatIdAndMsgIdAndUserID()
 	var err error
 	if q.C2CMessage != nil {
-		_, err = q.QQApi.PostC2CMessage(q.Ctx, q.C2CMessage.Author.ID, &dto.MessageToCreate{
+		_, err = q.QQApi.PostC2CMessage(q.Robot.Ctx, q.C2CMessage.Author.ID, &dto.MessageToCreate{
 			MsgType: dto.RichMediaMsg,
 			MsgID:   msgId,
 			Media: &dto.MediaInfo{
@@ -613,7 +608,7 @@ func (q *QQRobot) PostRichMediaMessage(data []byte) error {
 	}
 	
 	if q.ATMessage != nil {
-		_, err = q.QQApi.PostMessage(q.Ctx, q.ATMessage.GuildID, &dto.MessageToCreate{
+		_, err = q.QQApi.PostMessage(q.Robot.Ctx, q.ATMessage.GuildID, &dto.MessageToCreate{
 			MsgType: dto.RichMediaMsg,
 			MsgID:   msgId,
 			Media: &dto.MediaInfo{
@@ -623,7 +618,7 @@ func (q *QQRobot) PostRichMediaMessage(data []byte) error {
 	}
 	
 	if q.GroupAtMessage != nil {
-		_, err = q.QQApi.PostGroupMessage(q.Ctx, q.GroupAtMessage.GroupID, &dto.MessageToCreate{
+		_, err = q.QQApi.PostGroupMessage(q.Robot.Ctx, q.GroupAtMessage.GroupID, &dto.MessageToCreate{
 			MsgType: dto.RichMediaMsg,
 			MsgID:   msgId,
 			Media: &dto.MediaInfo{
@@ -651,7 +646,7 @@ func (q *QQRobot) PostStreamMessage(state, idx int32, id, content string) (strin
 	}
 	
 	if q.C2CMessage != nil {
-		resp, err := q.QQApi.PostC2CMessage(q.Ctx, q.C2CMessage.Author.ID, msg)
+		resp, err := q.QQApi.PostC2CMessage(q.Robot.Ctx, q.C2CMessage.Author.ID, msg)
 		if err != nil {
 			return "", err
 		}
@@ -659,7 +654,7 @@ func (q *QQRobot) PostStreamMessage(state, idx int32, id, content string) (strin
 	}
 	
 	if q.GroupAtMessage != nil {
-		resp, err := q.QQApi.PostGroupMessage(q.Ctx, q.GroupAtMessage.GroupID, msg)
+		resp, err := q.QQApi.PostGroupMessage(q.Robot.Ctx, q.GroupAtMessage.GroupID, msg)
 		if err != nil {
 			return "", err
 		}
@@ -667,7 +662,7 @@ func (q *QQRobot) PostStreamMessage(state, idx int32, id, content string) (strin
 	}
 	
 	if q.ATMessage != nil {
-		resp, err := q.QQApi.PostGroupMessage(q.Ctx, q.ATMessage.GuildID, msg)
+		resp, err := q.QQApi.PostGroupMessage(q.Robot.Ctx, q.ATMessage.GuildID, msg)
 		if err != nil {
 			return "", err
 		}

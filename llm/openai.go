@@ -37,7 +37,7 @@ type OpenAIReq struct {
 func (d *OpenAIReq) GetModel(l *LLM) {
 	userInfo, err := db.GetUserByID(l.UserId)
 	if err != nil {
-		logger.Error("Error getting user info", "err", err)
+		logger.ErrorCtx(l.Ctx, "Error getting user info", "err", err)
 		return
 	}
 	
@@ -54,7 +54,7 @@ func (d *OpenAIReq) GetModel(l *LLM) {
 		}
 	}
 	
-	logger.Info("User info", "userID", l.UserId, "mode", l.Model)
+	logger.InfoCtx(l.Ctx, "User info", "userID", l.UserId, "mode", l.Model)
 	
 }
 
@@ -87,7 +87,7 @@ func (d *OpenAIReq) Send(ctx context.Context, l *LLM) error {
 	
 	stream, err := client.CreateChatCompletionStream(ctx, request)
 	if err != nil {
-		logger.Error("ChatCompletionStream error", "updateMsgID", l.MsgId, "err", err)
+		logger.ErrorCtx(l.Ctx, "ChatCompletionStream error", "updateMsgID", l.MsgId, "err", err)
 		return err
 	}
 	defer stream.Close()
@@ -99,11 +99,11 @@ func (d *OpenAIReq) Send(ctx context.Context, l *LLM) error {
 	for {
 		response, err := stream.Recv()
 		if errors.Is(err, io.EOF) {
-			logger.Info("Stream finished", "updateMsgID", l.MsgId)
+			logger.InfoCtx(l.Ctx, "Stream finished", "updateMsgID", l.MsgId)
 			break
 		}
 		if err != nil {
-			logger.Warn("Stream error", "updateMsgID", l.MsgId, "err", err)
+			logger.WarnCtx(l.Ctx, "Stream error", "updateMsgID", l.MsgId, "err", err)
 			return err
 		}
 		for _, choice := range response.Choices {
@@ -114,7 +114,7 @@ func (d *OpenAIReq) Send(ctx context.Context, l *LLM) error {
 					if errors.Is(err, ToolsJsonErr) {
 						continue
 					} else {
-						logger.Error("requestToolsCall error", "updateMsgID", l.MsgId, "err", err)
+						logger.ErrorCtx(l.Ctx, "requestToolsCall error", "updateMsgID", l.MsgId, "err", err)
 					}
 				}
 			}
@@ -208,12 +208,12 @@ func (d *OpenAIReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 	
 	response, err := client.CreateChatCompletion(ctx, request)
 	if err != nil {
-		logger.Error("ChatCompletionStream error", "updateMsgID", l.MsgId, "err", err)
+		logger.ErrorCtx(l.Ctx, "ChatCompletionStream error", "updateMsgID", l.MsgId, "err", err)
 		return "", err
 	}
 	
 	if len(response.Choices) == 0 {
-		logger.Error("response is emtpy", "response", response)
+		logger.ErrorCtx(l.Ctx, "response is emtpy", "response", response)
 		return "", errors.New("response is empty")
 	}
 	
@@ -237,13 +237,13 @@ func (d *OpenAIReq) requestOneToolsCall(ctx context.Context, toolsCall []openai.
 		
 		mc, err := clients.GetMCPClientByToolName(tool.Function.Name)
 		if err != nil {
-			logger.Warn("get mcp fail", "err", err)
+			logger.WarnCtx(l.Ctx, "get mcp fail", "err", err)
 			return
 		}
 		
 		toolsData, err := mc.ExecTools(ctx, tool.Function.Name, property)
 		if err != nil {
-			logger.Warn("exec tools fail", "err", err)
+			logger.WarnCtx(l.Ctx, "exec tools fail", "err", err)
 			return
 		}
 		
@@ -252,7 +252,7 @@ func (d *OpenAIReq) requestOneToolsCall(ctx context.Context, toolsCall []openai.
 			Content:    toolsData,
 			ToolCallID: tool.ID,
 		})
-		logger.Info("exec tool", "name", tool.Function.Name, "toolsData", toolsData)
+		logger.InfoCtx(l.Ctx, "exec tool", "name", tool.Function.Name, "toolsData", toolsData)
 		
 		l.DirectSendMsg(i18n.GetMessage(*conf.BaseConfInfo.Lang, "send_mcp_info", map[string]interface{}{
 			"function_name": tool.Function.Name,
@@ -292,14 +292,14 @@ func (d *OpenAIReq) RequestToolsCall(ctx context.Context, choice openai.ChatComp
 		
 		mc, err := clients.GetMCPClientByToolName(tool.Function.Name)
 		if err != nil {
-			logger.Warn("get mcp fail", "err", err, "function", tool.Function.Name,
+			logger.WarnCtx(l.Ctx, "get mcp fail", "err", err, "function", tool.Function.Name,
 				"toolCall", tool.ID, "argument", tool.Function.Arguments)
 			return err
 		}
 		
 		toolsData, err := mc.ExecTools(ctx, tool.Function.Name, property)
 		if err != nil {
-			logger.Warn("exec tools fail", "err", err, "function", tool.Function.Name,
+			logger.WarnCtx(l.Ctx, "exec tools fail", "err", err, "function", tool.Function.Name,
 				"toolCall", tool.ID, "argument", tool.Function.Arguments)
 			return err
 		}
@@ -309,7 +309,7 @@ func (d *OpenAIReq) RequestToolsCall(ctx context.Context, choice openai.ChatComp
 			ToolCallID: tool.ID,
 		})
 		
-		logger.Info("send tool request", "function", tool.Function.Name,
+		logger.InfoCtx(l.Ctx, "send tool request", "function", tool.Function.Name,
 			"toolCall", tool.ID, "argument", tool.Function.Arguments,
 			"res", toolsData)
 		
@@ -325,10 +325,7 @@ func (d *OpenAIReq) RequestToolsCall(ctx context.Context, choice openai.ChatComp
 }
 
 // GenerateOpenAIImg generate image
-func GenerateOpenAIImg(prompt string, imageContent []byte) ([]byte, int, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
-	defer cancel()
-	
+func GenerateOpenAIImg(ctx context.Context, prompt string, imageContent []byte) ([]byte, int, error) {
 	client := GetOpenAIClient(true)
 	
 	var respUrl openai.ImageResponse
@@ -336,7 +333,7 @@ func GenerateOpenAIImg(prompt string, imageContent []byte) ([]byte, int, error) 
 	if len(imageContent) != 0 {
 		imageFile, err := utils.ConvertToPNGFile(imageContent)
 		if err != nil {
-			logger.Error("failed to create temp file:", err)
+			logger.ErrorCtx(ctx, "failed to create temp file:", err)
 			return nil, 0, err
 		}
 		defer os.Remove(imageFile.Name())
@@ -363,18 +360,18 @@ func GenerateOpenAIImg(prompt string, imageContent []byte) ([]byte, int, error) 
 	}
 	
 	if err != nil {
-		logger.Error("CreateImage error", "err", err)
+		logger.ErrorCtx(ctx, "CreateImage error", "err", err)
 		return nil, 0, err
 	}
 	
 	if len(respUrl.Data) == 0 {
-		logger.Error("response is emtpy", "response", respUrl)
+		logger.ErrorCtx(ctx, "response is emtpy", "response", respUrl)
 		return nil, 0, errors.New("response is empty")
 	}
 	
 	imageContentByte, err := base64.StdEncoding.DecodeString(respUrl.Data[0].B64JSON)
 	if err != nil {
-		logger.Error("decode image error", "err", err)
+		logger.ErrorCtx(ctx, "decode image error", "err", err)
 		return nil, 0, err
 	}
 	
@@ -396,16 +393,14 @@ func GenerateOpenAIText(audioContent []byte) (string, error) {
 	
 	resp, err := client.CreateTranscription(ctx, req)
 	if err != nil {
-		logger.Error("CreateTranscription error", "err", err)
+		logger.ErrorCtx(ctx, "CreateTranscription error", "err", err)
 		return "", err
 	}
 	
 	return resp.Text, nil
 }
 
-func GetOpenAIImageContent(imageContent []byte, content string) (string, int, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
-	defer cancel()
+func GetOpenAIImageContent(ctx context.Context, imageContent []byte, content string) (string, int, error) {
 	
 	client := GetOpenAIClient(true)
 	
@@ -445,17 +440,14 @@ func GetOpenAIImageContent(imageContent []byte, content string) (string, int, er
 	
 	resp, err := client.CreateChatCompletion(ctx, req)
 	if err != nil {
-		logger.Error("CreateChatCompletion error", "err", err)
+		logger.ErrorCtx(ctx, "CreateChatCompletion error", "err", err)
 		return "", 0, err
 	}
 	
 	return resp.Choices[0].Message.Content, resp.Usage.TotalTokens, nil
 }
 
-func OpenAITTS(content, encoding string) ([]byte, int, int, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
-	defer cancel()
-	
+func OpenAITTS(ctx context.Context, content, encoding string) ([]byte, int, int, error) {
 	formatEncoding := encoding
 	if encoding != string(openai.SpeechResponseFormatOpus) && encoding != string(openai.SpeechResponseFormatAac) && encoding != string(openai.SpeechResponseFormatFlac) &&
 		encoding != string(openai.SpeechResponseFormatWav) && encoding != string(openai.SpeechResponseFormatPcm) {
@@ -471,19 +463,19 @@ func OpenAITTS(content, encoding string) ([]byte, int, int, error) {
 		Speed:          1.0,
 	})
 	if err != nil {
-		logger.Error("decode image error", "err", err)
+		logger.ErrorCtx(ctx, "decode image error", "err", err)
 		return nil, 0, 0, err
 	}
 	data, err := io.ReadAll(resp.ReadCloser)
 	if err != nil {
-		logger.Error("read response error", "err", err)
+		logger.ErrorCtx(ctx, "read response error", "err", err)
 		return nil, 0, 0, err
 	}
 	
 	if formatEncoding == string(openai.SpeechResponseFormatPcm) {
 		data, err = utils.GetAudioData(encoding, data)
 		if err != nil {
-			logger.Error("GetAudioData error", "err", err)
+			logger.ErrorCtx(ctx, "GetAudioData error", "err", err)
 			return nil, 0, 0, err
 		}
 	}

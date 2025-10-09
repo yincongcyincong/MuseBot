@@ -67,7 +67,7 @@ type CreateResp struct {
 func (d *AIRouterReq) GetModel(l *LLM) {
 	userInfo, err := db.GetUserByID(l.UserId)
 	if err != nil {
-		logger.Error("Error getting user info", "err", err)
+		logger.ErrorCtx(l.Ctx, "Error getting user info", "err", err)
 		return
 	}
 	
@@ -84,7 +84,7 @@ func (d *AIRouterReq) GetModel(l *LLM) {
 		}
 	}
 	
-	logger.Info("User info", "userID", l.UserId, "mode", l.Model)
+	logger.InfoCtx(l.Ctx, "User info", "userID", l.UserId, "mode", l.Model)
 	
 }
 
@@ -118,7 +118,7 @@ func (d *AIRouterReq) Send(ctx context.Context, l *LLM) error {
 	
 	stream, err := client.CreateChatCompletionStream(ctx, request)
 	if err != nil {
-		logger.Error("ChatCompletionStream error", "updateMsgID", l.MsgId, "err", err)
+		logger.ErrorCtx(l.Ctx, "ChatCompletionStream error", "updateMsgID", l.MsgId, "err", err)
 		return err
 	}
 	defer stream.Close()
@@ -130,11 +130,11 @@ func (d *AIRouterReq) Send(ctx context.Context, l *LLM) error {
 	for {
 		response, err := stream.Recv()
 		if errors.Is(err, io.EOF) {
-			logger.Info("Stream finished", "updateMsgID", l.MsgId)
+			logger.InfoCtx(l.Ctx, "Stream finished", "updateMsgID", l.MsgId)
 			break
 		}
 		if err != nil {
-			logger.Warn("Stream error", "updateMsgID", l.MsgId, "err", err)
+			logger.WarnCtx(l.Ctx, "Stream error", "updateMsgID", l.MsgId, "err", err)
 			return err
 		}
 		for _, choice := range response.Choices {
@@ -145,7 +145,7 @@ func (d *AIRouterReq) Send(ctx context.Context, l *LLM) error {
 					if errors.Is(err, ToolsJsonErr) {
 						continue
 					} else {
-						logger.Error("requestToolsCall error", "updateMsgID", l.MsgId, "err", err)
+						logger.ErrorCtx(l.Ctx, "requestToolsCall error", "updateMsgID", l.MsgId, "err", err)
 					}
 				}
 			}
@@ -258,12 +258,12 @@ func (d *AIRouterReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 	// assign task
 	response, err := client.CreateChatCompletion(ctx, request)
 	if err != nil {
-		logger.Error("CreateChatCompletion error", "updateMsgID", l.MsgId, "err", err)
+		logger.ErrorCtx(l.Ctx, "CreateChatCompletion error", "updateMsgID", l.MsgId, "err", err)
 		return "", err
 	}
 	
 	if len(response.Choices) == 0 {
-		logger.Error("response is emtpy", "response", response)
+		logger.ErrorCtx(l.Ctx, "response is emtpy", "response", response)
 		return "", errors.New("response is empty")
 	}
 	
@@ -287,13 +287,13 @@ func (d *AIRouterReq) requestOneToolsCall(ctx context.Context, toolsCall []openr
 		
 		mc, err := clients.GetMCPClientByToolName(tool.Function.Name)
 		if err != nil {
-			logger.Warn("get mcp fail", "err", err)
+			logger.WarnCtx(l.Ctx, "get mcp fail", "err", err)
 			return
 		}
 		
 		toolsData, err := mc.ExecTools(ctx, tool.Function.Name, property)
 		if err != nil {
-			logger.Warn("exec tools fail", "err", err)
+			logger.WarnCtx(l.Ctx, "exec tools fail", "err", err)
 			return
 		}
 		
@@ -304,7 +304,7 @@ func (d *AIRouterReq) requestOneToolsCall(ctx context.Context, toolsCall []openr
 			},
 			ToolCallID: tool.ID,
 		})
-		logger.Info("exec tool", "name", tool.Function.Name, "toolsData", toolsData)
+		logger.InfoCtx(l.Ctx, "exec tool", "name", tool.Function.Name, "toolsData", toolsData)
 		l.DirectSendMsg(i18n.GetMessage(*conf.BaseConfInfo.Lang, "send_mcp_info", map[string]interface{}{
 			"function_name": tool.Function.Name,
 			"request_args":  property,
@@ -343,14 +343,14 @@ func (d *AIRouterReq) requestToolsCall(ctx context.Context, choice openrouter.Ch
 		tool := d.ToolCall[len(d.ToolCall)-1]
 		mc, err := clients.GetMCPClientByToolName(tool.Function.Name)
 		if err != nil {
-			logger.Warn("get mcp fail", "err", err, "function", tool.Function.Name,
+			logger.WarnCtx(l.Ctx, "get mcp fail", "err", err, "function", tool.Function.Name,
 				"toolCall", tool.ID, "argument", tool.Function.Arguments)
 			return err
 		}
 		
 		toolsData, err := mc.ExecTools(ctx, tool.Function.Name, property)
 		if err != nil {
-			logger.Warn("exec tools fail", "err", err, "function", tool.Function.Name,
+			logger.WarnCtx(l.Ctx, "exec tools fail", "err", err, "function", tool.Function.Name,
 				"toolCall", tool.ID, "argument", tool.Function.Arguments)
 			return err
 		}
@@ -362,7 +362,7 @@ func (d *AIRouterReq) requestToolsCall(ctx context.Context, choice openrouter.Ch
 			ToolCallID: tool.ID,
 		})
 		
-		logger.Info("send tool request", "function", tool.Function.Name,
+		logger.InfoCtx(l.Ctx, "send tool request", "function", tool.Function.Name,
 			"toolCall", tool.ID, "argument", tool.Function.Arguments,
 			"res", toolsData)
 		
@@ -376,10 +376,7 @@ func (d *AIRouterReq) requestToolsCall(ctx context.Context, choice openrouter.Ch
 	return nil
 }
 
-func GenerateMixImg(prompt string, imageContent []byte) (string, int, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
-	defer cancel()
-	
+func GenerateMixImg(ctx context.Context, prompt string, imageContent []byte) (string, int, error) {
 	messages := openrouter.ChatCompletionMessage{
 		Role: constants.ChatMessageRoleUser,
 		Content: openrouter.Content{
@@ -410,7 +407,7 @@ func GenerateMixImg(prompt string, imageContent []byte) (string, int, error) {
 	// assign task
 	response, err := client.CreateChatCompletion(ctx, request)
 	if err != nil {
-		logger.Error("create chat completion fail", "err", err)
+		logger.ErrorCtx(ctx, "create chat completion fail", "err", err)
 		return "", 0, err
 	}
 	
@@ -453,10 +450,7 @@ func GetMixClient(isMedia bool) *openrouter.Client {
 	return openrouter.NewClientWithConfig(*config)
 }
 
-func Generate302AIVideo(prompt string, image []byte) (string, int, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
-	defer cancel()
-	
+func Generate302AIVideo(ctx context.Context, prompt string, image []byte) (string, int, error) {
 	httpClient := utils.GetLLMProxyClient()
 	
 	// Step 1: prepare payload using map -> json
@@ -511,7 +505,7 @@ func Generate302AIVideo(prompt string, image []byte) (string, int, error) {
 		
 		res, err := httpClient.Do(req)
 		if err != nil {
-			logger.Error("failed to fetch result:", "err", err)
+			logger.ErrorCtx(ctx, "failed to fetch result:", "err", err)
 			time.Sleep(5 * time.Second)
 			continue
 		}
@@ -520,7 +514,7 @@ func Generate302AIVideo(prompt string, image []byte) (string, int, error) {
 		
 		var fetchResp AI302FetchResp
 		if err := json.Unmarshal(body, &fetchResp); err != nil {
-			logger.Error("failed to parse fetch response:", "err", err, "body", string(body))
+			logger.ErrorCtx(ctx, "failed to parse fetch response:", "err", err, "body", string(body))
 			time.Sleep(5 * time.Second)
 			continue
 		}
@@ -533,17 +527,14 @@ func Generate302AIVideo(prompt string, image []byte) (string, int, error) {
 		} else if fetchResp.Status == "failed" {
 			return "", 0, fmt.Errorf("video generation failed: body=%s", string(body))
 		} else {
-			logger.Info("task is still running, polling again...")
+			logger.InfoCtx(ctx, "task is still running, polling again...")
 		}
 		
 		time.Sleep(5 * time.Second)
 	}
 }
 
-func GetMixImageContent(imageContent []byte, content string) (string, int, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
-	defer cancel()
-	
+func GetMixImageContent(ctx context.Context, imageContent []byte, content string) (string, int, error) {
 	contentPrompt := content
 	if content == "" {
 		contentPrompt = i18n.GetMessage(*conf.BaseConfInfo.Lang, "photo_handle_prompt", nil)
@@ -577,12 +568,12 @@ func GetMixImageContent(imageContent []byte, content string) (string, int, error
 	// assign task
 	response, err := client.CreateChatCompletion(ctx, request)
 	if err != nil {
-		logger.Error("create chat completion fail", "err", err)
+		logger.ErrorCtx(ctx, "create chat completion fail", "err", err)
 		return "", 0, err
 	}
 	
 	if len(response.Choices) == 0 {
-		logger.Error("response is emtpy", "response", response)
+		logger.ErrorCtx(ctx, "response is emtpy", "response", response)
 		return "", 0, errors.New("response is empty")
 	}
 	

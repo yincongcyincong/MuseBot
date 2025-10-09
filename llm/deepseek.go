@@ -33,10 +33,10 @@ func (d *DeepseekReq) GetModel(l *LLM) {
 	l.Model = deepseek.DeepSeekChat
 	userInfo, err := db.GetUserByID(l.UserId)
 	if err != nil {
-		logger.Error("Error getting user info", "err", err)
+		logger.ErrorCtx(l.Ctx, "Error getting user info", "err", err)
 	}
 	if userInfo != nil && userInfo.Mode != "" && param.DeepseekModels[userInfo.Mode] {
-		logger.Info("User info", "userID", userInfo.UserId, "mode", userInfo.Mode)
+		logger.InfoCtx(l.Ctx, "User info", "userID", userInfo.UserId, "mode", userInfo.Mode)
 		l.Model = userInfo.Mode
 	}
 }
@@ -53,7 +53,7 @@ func (d *DeepseekReq) Send(ctx context.Context, l *LLM) error {
 	
 	client, err := deepseek.NewClientWithOptions(*conf.BaseConfInfo.DeepseekToken, deepseek.WithHTTPClient(httpClient))
 	if err != nil {
-		logger.Error("Error creating deepseek client", "err", err)
+		logger.ErrorCtx(l.Ctx, "Error creating deepseek client", "err", err)
 		return err
 	}
 	
@@ -82,7 +82,7 @@ func (d *DeepseekReq) Send(ctx context.Context, l *LLM) error {
 	
 	stream, err := client.CreateChatCompletionStream(ctx, request)
 	if err != nil {
-		logger.Error("ChatCompletionStream error", "updateMsgID", l.MsgId, "err", err)
+		logger.ErrorCtx(l.Ctx, "ChatCompletionStream error", "updateMsgID", l.MsgId, "err", err)
 		return err
 	}
 	defer stream.Close()
@@ -94,11 +94,11 @@ func (d *DeepseekReq) Send(ctx context.Context, l *LLM) error {
 	for {
 		response, err := stream.Recv()
 		if errors.Is(err, io.EOF) {
-			logger.Info("Stream finished", "updateMsgID", l.MsgId)
+			logger.InfoCtx(l.Ctx, "Stream finished", "updateMsgID", l.MsgId)
 			break
 		}
 		if err != nil {
-			logger.Warn("Stream error", "updateMsgID", l.MsgId, "err", err)
+			logger.WarnCtx(l.Ctx, "Stream error", "updateMsgID", l.MsgId, "err", err)
 			return err
 		}
 		for _, choice := range response.Choices {
@@ -109,7 +109,7 @@ func (d *DeepseekReq) Send(ctx context.Context, l *LLM) error {
 					if errors.Is(err, ToolsJsonErr) {
 						continue
 					} else {
-						logger.Error("requestToolsCall error", "updateMsgID", l.MsgId, "err", err)
+						logger.ErrorCtx(l.Ctx, "requestToolsCall error", "updateMsgID", l.MsgId, "err", err)
 					}
 				}
 			}
@@ -188,7 +188,7 @@ func (d *DeepseekReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 	httpClient := utils.GetLLMProxyClient()
 	client, err := deepseek.NewClientWithOptions(*conf.BaseConfInfo.DeepseekToken, deepseek.WithHTTPClient(httpClient))
 	if err != nil {
-		logger.Error("Error creating deepseek client", "err", err)
+		logger.ErrorCtx(l.Ctx, "Error creating deepseek client", "err", err)
 		return "", err
 	}
 	
@@ -213,12 +213,12 @@ func (d *DeepseekReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 	// assign task
 	response, err := client.CreateChatCompletion(ctx, request)
 	if err != nil {
-		logger.Error("ChatCompletionStream error", "updateMsgID", l.MsgId, "err", err)
+		logger.ErrorCtx(l.Ctx, "ChatCompletionStream error", "updateMsgID", l.MsgId, "err", err)
 		return "", err
 	}
 	
 	if len(response.Choices) == 0 {
-		logger.Error("response is emtpy", "response", response)
+		logger.ErrorCtx(l.Ctx, "response is emtpy", "response", response)
 		return "", errors.New("response is empty")
 	}
 	
@@ -238,19 +238,19 @@ func (d *DeepseekReq) requestOneToolsCall(ctx context.Context, toolsCall []deeps
 		property := make(map[string]interface{})
 		err := json.Unmarshal([]byte(tool.Function.Arguments), &property)
 		if err != nil {
-			logger.Warn("json unmarshal fail", "err", err, "args", tool.Function.Arguments)
+			logger.WarnCtx(l.Ctx, "json unmarshal fail", "err", err, "args", tool.Function.Arguments)
 			return
 		}
 		
 		mc, err := clients.GetMCPClientByToolName(tool.Function.Name)
 		if err != nil {
-			logger.Warn("get mcp fail", "err", err, "name", tool.Function.Name, "args", property)
+			logger.WarnCtx(l.Ctx, "get mcp fail", "err", err, "name", tool.Function.Name, "args", property)
 			return
 		}
 		
 		toolsData, err := mc.ExecTools(ctx, tool.Function.Name, property)
 		if err != nil {
-			logger.Warn("exec tools fail", "err", err, "name", tool.Function.Name, "args", property)
+			logger.WarnCtx(l.Ctx, "exec tools fail", "err", err, "name", tool.Function.Name, "args", property)
 			return
 		}
 		
@@ -259,7 +259,7 @@ func (d *DeepseekReq) requestOneToolsCall(ctx context.Context, toolsCall []deeps
 			Content:    toolsData,
 			ToolCallID: tool.ID,
 		})
-		logger.Info("exec tool", "name", tool.Function.Name, "toolsData", toolsData, "args", property)
+		logger.InfoCtx(l.Ctx, "exec tool", "name", tool.Function.Name, "toolsData", toolsData, "args", property)
 		l.DirectSendMsg(i18n.GetMessage(*conf.BaseConfInfo.Lang, "send_mcp_info", map[string]interface{}{
 			"function_name": tool.Function.Name,
 			"request_args":  property,
@@ -298,14 +298,14 @@ func (d *DeepseekReq) RequestToolsCall(ctx context.Context, choice deepseek.Stre
 		tool := d.ToolCall[len(d.ToolCall)-1]
 		mc, err := clients.GetMCPClientByToolName(tool.Function.Name)
 		if err != nil {
-			logger.Warn("get mcp fail", "err", err, "function", tool.Function.Name,
+			logger.WarnCtx(l.Ctx, "get mcp fail", "err", err, "function", tool.Function.Name,
 				"toolCall", tool.ID, "argument", tool.Function.Arguments)
 			return err
 		}
 		
 		toolsData, err := mc.ExecTools(ctx, tool.Function.Name, property)
 		if err != nil {
-			logger.Warn("exec tools fail", "err", err, "function", tool.Function.Name,
+			logger.WarnCtx(l.Ctx, "exec tools fail", "err", err, "function", tool.Function.Name,
 				"toolCall", tool.ID, "argument", tool.Function.Arguments)
 			return err
 		}
@@ -314,7 +314,7 @@ func (d *DeepseekReq) RequestToolsCall(ctx context.Context, choice deepseek.Stre
 			Content:    toolsData,
 			ToolCallID: tool.ID,
 		})
-		logger.Info("send tool request", "function", tool.Function.Name,
+		logger.InfoCtx(l.Ctx, "send tool request", "function", tool.Function.Name,
 			"toolCall", tool.ID, "argument", tool.Function.Arguments,
 			"res", toolsData)
 		l.DirectSendMsg(i18n.GetMessage(*conf.BaseConfInfo.Lang, "send_mcp_info", map[string]interface{}{
@@ -329,17 +329,17 @@ func (d *DeepseekReq) RequestToolsCall(ctx context.Context, choice deepseek.Stre
 }
 
 // GetBalanceInfo get balance info
-func GetBalanceInfo() *deepseek.BalanceResponse {
+func GetBalanceInfo(ctx context.Context) *deepseek.BalanceResponse {
 	client := deepseek.NewClient(*conf.BaseConfInfo.DeepseekToken)
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
 	defer cancel()
 	balance, err := deepseek.GetBalance(client, ctx)
 	if err != nil {
-		logger.Error("Error getting balance", "err", err)
+		logger.ErrorCtx(ctx, "Error getting balance", "err", err)
 	}
 	
 	if balance == nil || len(balance.BalanceInfos) == 0 {
-		logger.Error("No balance information returned")
+		logger.ErrorCtx(ctx, "No balance information returned")
 	}
 	
 	return balance

@@ -29,12 +29,8 @@ func StartDetachedProcess(argsStr string) error {
 	
 	cmd := exec.Command(args[0], args[1:]...)
 	cmd.SysProcAttr = &syscall.SysProcAttr{
-		CreationFlags: syscall.CREATE_NEW_PROCESS_GROUP,
+		CreationFlags: syscall.CREATE_NEW_CONSOLE | syscall.CREATE_NEW_PROCESS_GROUP,
 	}
-	
-	cmd.Stdin = nil
-	cmd.Stdout = nil
-	cmd.Stderr = nil
 	
 	return cmd.Start()
 }

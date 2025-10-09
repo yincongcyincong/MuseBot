@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"runtime/debug"
 	"strings"
-	"time"
 	
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/slack-go/slack"
@@ -37,8 +36,6 @@ type SlackRobot struct {
 	
 	Robot   *RobotInfo
 	Client  *slack.Client
-	Ctx     context.Context
-	Cancel  context.CancelFunc
 	Command string
 	Prompt  string
 	BotName string
@@ -115,14 +112,11 @@ func StartSlackRobot(ctx context.Context) {
 
 func NewSlackRobot(message *slackevents.MessageEvent, command *slack.SlashCommand,
 	callback *slack.InteractionCallback) *SlackRobot {
-	c, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	return &SlackRobot{
 		Event:    message,
 		CmdEvent: command,
 		Callback: callback,
 		Client:   slackClient,
-		Ctx:      c,
-		Cancel:   cancel,
 	}
 }
 

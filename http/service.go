@@ -16,6 +16,7 @@ import (
 	"github.com/yincongcyincong/MuseBot/db"
 	"github.com/yincongcyincong/MuseBot/logger"
 	"github.com/yincongcyincong/MuseBot/param"
+	"github.com/yincongcyincong/MuseBot/robot"
 	"github.com/yincongcyincong/MuseBot/utils"
 )
 
@@ -147,7 +148,7 @@ func Log(w http.ResponseWriter, r *http.Request) {
 }
 
 func Stop(w http.ResponseWriter, r *http.Request) {
-	utils.Success(w, "")
-	time.Sleep(1 * time.Second)
+	robot.RobotControl.Cancel()
+	time.Sleep(100 * time.Millisecond)
 	os.Exit(0)
 }

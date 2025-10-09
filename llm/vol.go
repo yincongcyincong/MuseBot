@@ -41,10 +41,10 @@ func (h *VolReq) GetModel(l *LLM) {
 	l.Model = param.ModelDeepSeekR1_528
 	userInfo, err := db.GetUserByID(l.UserId)
 	if err != nil {
-		logger.Error("Error getting user info", "err", err)
+		logger.ErrorCtx(l.Ctx, "Error getting user info", "err", err)
 	}
 	if userInfo != nil && userInfo.Mode != "" && param.VolModels[userInfo.Mode] {
-		logger.Info("User info", "userID", userInfo.UserId, "mode", userInfo.Mode)
+		logger.InfoCtx(l.Ctx, "User info", "userID", userInfo.UserId, "mode", userInfo.Mode)
 		l.Model = userInfo.Mode
 	}
 }
@@ -55,15 +55,7 @@ func (h *VolReq) Send(ctx context.Context, l *LLM) error {
 	}
 	
 	start := time.Now()
-	
-	// set deepseek proxy
-	httpClient := utils.GetLLMProxyClient()
-	
-	client := arkruntime.NewClientWithApiKey(
-		*conf.BaseConfInfo.VolToken,
-		arkruntime.WithTimeout(5*time.Minute),
-		arkruntime.WithHTTPClient(httpClient),
-	)
+	client := GetVolClient()
 	
 	req := model.ChatCompletionRequest{
 		Model:    l.Model,
@@ -84,7 +76,7 @@ func (h *VolReq) Send(ctx context.Context, l *LLM) error {
 	
 	stream, err := client.CreateChatCompletionStream(ctx, req)
 	if err != nil {
-		logger.Error("standard chat error", "err", err)
+		logger.ErrorCtx(l.Ctx, "standard chat error", "err", err)
 		return err
 	}
 	defer stream.Close()
@@ -98,11 +90,11 @@ func (h *VolReq) Send(ctx context.Context, l *LLM) error {
 	for {
 		response, err := stream.Recv()
 		if errors.Is(err, io.EOF) {
-			logger.Info("stream finished", "updateMsgID", l.MsgId)
+			logger.InfoCtx(l.Ctx, "stream finished", "updateMsgID", l.MsgId)
 			break
 		}
 		if err != nil {
-			logger.Error("stream error:", "updateMsgID", l.MsgId, "err", err)
+			logger.ErrorCtx(l.Ctx, "stream error:", "updateMsgID", l.MsgId, "err", err)
 			return err
 		}
 		for _, choice := range response.Choices {
@@ -114,7 +106,7 @@ func (h *VolReq) Send(ctx context.Context, l *LLM) error {
 					if errors.Is(err, ToolsJsonErr) {
 						continue
 					} else {
-						logger.Error("requestToolsCall error", "updateMsgID", l.MsgId, "err", err)
+						logger.ErrorCtx(l.Ctx, "requestToolsCall error", "updateMsgID", l.MsgId, "err", err)
 					}
 				}
 			}
@@ -188,14 +180,14 @@ func (h *VolReq) requestToolsCall(ctx context.Context, choice *model.ChatComplet
 		tool := h.ToolCall[len(h.ToolCall)-1]
 		mc, err := clients.GetMCPClientByToolName(tool.Function.Name)
 		if err != nil {
-			logger.Warn("get mcp fail", "err", err, "function", tool.Function.Name,
+			logger.WarnCtx(l.Ctx, "get mcp fail", "err", err, "function", tool.Function.Name,
 				"toolCall", tool.ID, "argument", tool.Function.Arguments)
 			return err
 		}
 		
 		toolsData, err := mc.ExecTools(ctx, tool.Function.Name, property)
 		if err != nil {
-			logger.Warn("exec tools fail", "err", err, "function", tool.Function.Name,
+			logger.WarnCtx(l.Ctx, "exec tools fail", "err", err, "function", tool.Function.Name,
 				"toolCall", tool.ID, "argument", tool.Function.Arguments)
 			return err
 		}
@@ -207,7 +199,7 @@ func (h *VolReq) requestToolsCall(ctx context.Context, choice *model.ChatComplet
 			ToolCallID: tool.ID,
 		})
 		
-		logger.Info("send tool request", "function", tool.Function.Name,
+		logger.InfoCtx(l.Ctx, "send tool request", "function", tool.Function.Name,
 			"toolCall", tool.ID, "argument", tool.Function.Arguments,
 			"res", toolsData)
 		l.DirectSendMsg(i18n.GetMessage(*conf.BaseConfInfo.Lang, "send_mcp_info", map[string]interface{}{
@@ -258,13 +250,7 @@ func (h *VolReq) GetMessage(role, msg string) {
 }
 
 func (h *VolReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
-	httpClient := utils.GetLLMProxyClient()
-	
-	client := arkruntime.NewClientWithApiKey(
-		*conf.BaseConfInfo.VolToken,
-		arkruntime.WithTimeout(5*time.Minute),
-		arkruntime.WithHTTPClient(httpClient),
-	)
+	client := GetVolClient()
 	
 	req := model.ChatCompletionRequest{
 		Model:    l.Model,
@@ -285,12 +271,12 @@ func (h *VolReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 	
 	response, err := client.CreateChatCompletion(ctx, req)
 	if err != nil {
-		logger.Error("CreateChatCompletion error", "updateMsgID", l.MsgId, "err", err)
+		logger.ErrorCtx(l.Ctx, "CreateChatCompletion error", "updateMsgID", l.MsgId, "err", err)
 		return "", err
 	}
 	
 	if len(response.Choices) == 0 {
-		logger.Error("response is emtpy", "response", response)
+		logger.ErrorCtx(l.Ctx, "response is emtpy", "response", response)
 		return "", errors.New("response is empty")
 	}
 	
@@ -314,13 +300,13 @@ func (h *VolReq) requestOneToolsCall(ctx context.Context, toolsCall []*model.Too
 		
 		mc, err := clients.GetMCPClientByToolName(tool.Function.Name)
 		if err != nil {
-			logger.Warn("get mcp fail", "err", err)
+			logger.WarnCtx(l.Ctx, "get mcp fail", "err", err)
 			return
 		}
 		
 		toolsData, err := mc.ExecTools(ctx, tool.Function.Name, property)
 		if err != nil {
-			logger.Warn("exec tools fail", "err", err)
+			logger.WarnCtx(l.Ctx, "exec tools fail", "err", err)
 			return
 		}
 		
@@ -331,7 +317,7 @@ func (h *VolReq) requestOneToolsCall(ctx context.Context, toolsCall []*model.Too
 			},
 			ToolCallID: tool.ID,
 		})
-		logger.Info("exec tool", "name", tool.Function.Name, "toolsData", toolsData)
+		logger.InfoCtx(l.Ctx, "exec tool", "name", tool.Function.Name, "toolsData", toolsData)
 		l.DirectSendMsg(i18n.GetMessage(*conf.BaseConfInfo.Lang, "send_mcp_info", map[string]interface{}{
 			"function_name": tool.Function.Name,
 			"request_args":  property,
@@ -341,7 +327,7 @@ func (h *VolReq) requestOneToolsCall(ctx context.Context, toolsCall []*model.Too
 }
 
 // GenerateVolImg generate image
-func GenerateVolImg(prompt string, imageContent []byte) (string, int, error) {
+func GenerateVolImg(ctx context.Context, prompt string, imageContent []byte) (string, int, error) {
 	start := time.Now()
 	visual.DefaultInstance.Client.SetAccessKey(*conf.BaseConfInfo.VolcAK)
 	visual.DefaultInstance.Client.SetSecretKey(*conf.BaseConfInfo.VolcSK)
@@ -375,7 +361,7 @@ func GenerateVolImg(prompt string, imageContent []byte) (string, int, error) {
 	
 	resp, _, err := visual.DefaultInstance.CVProcess(reqBody)
 	if err != nil {
-		logger.Error("request img api fail", "err", err)
+		logger.ErrorCtx(ctx, "request img api fail", "err", err)
 		return "", 0, err
 	}
 	
@@ -383,18 +369,18 @@ func GenerateVolImg(prompt string, imageContent []byte) (string, int, error) {
 	data := &param.ImgResponse{}
 	err = json.Unmarshal(respByte, data)
 	if err != nil {
-		logger.Error("unmarshal response fail", "err", err)
+		logger.ErrorCtx(ctx, "unmarshal response fail", "err", err)
 		return "", 0, err
 	}
 	
-	logger.Info("image response", "respByte", respByte)
+	logger.InfoCtx(ctx, "image response", "respByte", respByte)
 	
 	// generate image time costing
 	totalDuration := time.Since(start).Seconds()
 	metrics.ImageDuration.Observe(totalDuration)
 	
 	if data.Data == nil || len(data.Data.ImageUrls) == 0 {
-		logger.Warn("no image generated")
+		logger.WarnCtx(ctx, "no image generated")
 		return "", 0, errors.New("no image generated")
 	}
 	
@@ -402,23 +388,13 @@ func GenerateVolImg(prompt string, imageContent []byte) (string, int, error) {
 }
 
 // GenerateVolVideo generate video
-func GenerateVolVideo(prompt string, imageContent []byte) (string, int, error) {
+func GenerateVolVideo(ctx context.Context, prompt string, imageContent []byte) (string, int, error) {
 	if prompt == "" {
-		logger.Warn("prompt is empty", "prompt", prompt)
+		logger.WarnCtx(ctx, "prompt is empty", "prompt", prompt)
 		return "", 0, errors.New("prompt is empty")
 	}
 	
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
-	defer cancel()
-	
-	httpClient := utils.GetLLMProxyClient()
-	
-	client := arkruntime.NewClientWithApiKey(
-		*conf.BaseConfInfo.VolToken,
-		arkruntime.WithTimeout(5*time.Minute),
-		arkruntime.WithHTTPClient(httpClient),
-	)
-	
+	client := GetVolClient()
 	videoParam := fmt.Sprintf(" --ratio %s --fps %d  --dur %d --resolution %s --watermark %t",
 		*conf.VideoConfInfo.Radio, *conf.VideoConfInfo.FPS, *conf.VideoConfInfo.Duration, *conf.VideoConfInfo.Resolution, *conf.VideoConfInfo.Watermark)
 	
@@ -445,7 +421,7 @@ func GenerateVolVideo(prompt string, imageContent []byte) (string, int, error) {
 		Content: contents,
 	})
 	if err != nil {
-		logger.Error("request create video api fail", "err", err)
+		logger.ErrorCtx(ctx, "request create video api fail", "err", err)
 		return "", 0, err
 	}
 	
@@ -455,40 +431,32 @@ func GenerateVolVideo(prompt string, imageContent []byte) (string, int, error) {
 		})
 		
 		if err != nil {
-			logger.Error("request get video api fail", "err", err)
+			logger.ErrorCtx(ctx, "request get video api fail", "err", err)
 			return "", 0, err
 		}
 		
 		if getResp.Status == model.StatusRunning || getResp.Status == model.StatusQueued {
-			logger.Info("video is createing...")
+			logger.InfoCtx(ctx, "video is createing...")
 			time.Sleep(5 * time.Second)
 			continue
 		}
 		
 		if getResp.Error != nil {
-			logger.Error("request get video api fail", "err", getResp.Error)
+			logger.ErrorCtx(ctx, "request get video api fail", "err", getResp.Error)
 			return "", 0, errors.New(getResp.Error.Message)
 		}
 		
 		if getResp.Status == model.StatusSucceeded {
 			return getResp.Content.VideoURL, getResp.Usage.TotalTokens, nil
 		} else {
-			logger.Error("request get video api fail", "status", getResp.Status)
+			logger.ErrorCtx(ctx, "request get video api fail", "status", getResp.Status)
 			return "", 0, errors.New("create video fail")
 		}
 	}
 }
 
-func GetVolImageContent(imageContent []byte, content string) (string, int, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
-	defer cancel()
-	
-	httpClient := utils.GetLLMProxyClient()
-	client := arkruntime.NewClientWithApiKey(
-		*conf.BaseConfInfo.VolToken,
-		arkruntime.WithTimeout(5*time.Minute),
-		arkruntime.WithHTTPClient(httpClient),
-	)
+func GetVolImageContent(ctx context.Context, imageContent []byte, content string) (string, int, error) {
+	client := GetVolClient()
 	
 	contentPrompt := content
 	if content == "" {
@@ -520,12 +488,12 @@ func GetVolImageContent(imageContent []byte, content string) (string, int, error
 	
 	response, err := client.CreateChatCompletion(ctx, req)
 	if err != nil {
-		logger.Error("CreateChatCompletion error", "err", err)
+		logger.ErrorCtx(ctx, "CreateChatCompletion error", "err", err)
 		return "", 0, err
 	}
 	
 	if len(response.Choices) == 0 {
-		logger.Error("response is emtpy", "response", response)
+		logger.ErrorCtx(ctx, "response is emtpy", "response", response)
 		return "", 0, errors.New("response is empty")
 	}
 	
@@ -544,7 +512,7 @@ type TTSServResponse struct {
 	} `json:"addition"`
 }
 
-func VolTTS(text, userId, encoding string) ([]byte, int, int, error) {
+func VolTTS(ctx context.Context, text, userId, encoding string) ([]byte, int, int, error) {
 	formatEncoding := encoding
 	if encoding != "mp3" && encoding != "wav" && encoding != "ogg_opus" && encoding != "pcm" {
 		formatEncoding = "pcm"
@@ -581,7 +549,7 @@ func VolTTS(text, userId, encoding string) ([]byte, int, int, error) {
 	bodyStr, _ := json.Marshal(params)
 	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(bodyStr))
 	if err != nil {
-		logger.Error("NewRequest error", "err", err)
+		logger.ErrorCtx(ctx, "NewRequest error", "err", err)
 		return nil, 0, 0, err
 	}
 	for key, value := range headers {
@@ -591,13 +559,13 @@ func VolTTS(text, userId, encoding string) ([]byte, int, int, error) {
 	httpClient := utils.GetLLMProxyClient()
 	resp, err := httpClient.Do(req)
 	if err != nil {
-		logger.Error("httpClient.Do error", "err", err)
+		logger.ErrorCtx(ctx, "httpClient.Do error", "err", err)
 		return nil, 0, 0, err
 	}
 	
 	synResp, err := io.ReadAll(resp.Body)
 	if err != nil {
-		logger.Error("io.ReadAll error", "err", err)
+		logger.ErrorCtx(ctx, "io.ReadAll error", "err", err)
 		return nil, 0, 0, err
 	}
 	
@@ -608,7 +576,7 @@ func VolTTS(text, userId, encoding string) ([]byte, int, int, error) {
 	}
 	code := respJSON.Code
 	if code != 3000 {
-		logger.Error("resp code fail", "code", code, "message", respJSON.Message)
+		logger.ErrorCtx(ctx, "resp code fail", "code", code, "message", respJSON.Message)
 		return nil, 0, 0, errors.New("resp code fail")
 	}
 	
@@ -616,10 +584,19 @@ func VolTTS(text, userId, encoding string) ([]byte, int, int, error) {
 	if formatEncoding == "pcm" {
 		audio, err = utils.GetAudioData(encoding, audio)
 		if err != nil {
-			logger.Error("EncodePcmBuffToSilk error", "err", err)
+			logger.ErrorCtx(ctx, "EncodePcmBuffToSilk error", "err", err)
 			return nil, 0, 0, err
 		}
 	}
 	
 	return audio, param.AudioTokenUsage, utils.ParseInt(respJSON.Addition.Duration), nil
+}
+
+func GetVolClient() *arkruntime.Client {
+	httpClient := utils.GetLLMProxyClient()
+	return arkruntime.NewClientWithApiKey(
+		*conf.BaseConfInfo.VolToken,
+		arkruntime.WithTimeout(5*time.Minute),
+		arkruntime.WithHTTPClient(httpClient),
+	)
 }

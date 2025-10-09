@@ -34,8 +34,6 @@ type ComWechatRobot struct {
 	Robot *RobotInfo
 	App   *work.Work
 	
-	Ctx          context.Context
-	Cancel       context.CancelFunc
 	Command      string
 	Prompt       string
 	OriginPrompt string
@@ -60,26 +58,22 @@ func StartComWechatRobot(ctx context.Context) {
 		},
 	})
 	if err != nil {
-		logger.Error("ComWechatApp init error: ", err)
+		logger.ErrorCtx(ctx, "ComWechatApp init error: ", err)
 		return
 	}
 	
 	resp, err := ComWechatApp.Agent.Get(ctx, utils.ParseInt(*conf.BaseConfInfo.ComWechatAgentID))
 	if err != nil {
-		logger.Error("ComWechatApp get agent error: ", err)
+		logger.ErrorCtx(ctx, "ComWechatApp get agent error: ", err)
 		return
 	}
-	logger.Info("ComWechatbot", "username", resp.Name)
+	logger.InfoCtx(ctx, "ComWechatbot", "username", resp.Name)
 }
 
 func NewComWechatRobot(event contract.EventInterface) *ComWechatRobot {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Minute*5)
-	
 	c := &ComWechatRobot{
-		Event:  event,
-		App:    ComWechatApp,
-		Ctx:    ctx,
-		Cancel: cancel,
+		Event: event,
+		App:   ComWechatApp,
 	}
 	
 	switch event.GetMsgType() {
@@ -87,7 +81,7 @@ func NewComWechatRobot(event contract.EventInterface) *ComWechatRobot {
 		msg := &serverModel.MessageText{}
 		err := event.ReadMessage(msg)
 		if err != nil {
-			logger.Error("ComWechatRobot", "err", err)
+			logger.ErrorCtx(c.Robot.Ctx, "ComWechatRobot", "err", err)
 			return nil
 		}
 		c.TextMsg = msg
@@ -95,7 +89,7 @@ func NewComWechatRobot(event contract.EventInterface) *ComWechatRobot {
 		msg := &serverModel.MessageImage{}
 		err := event.ReadMessage(msg)
 		if err != nil {
-			logger.Error("ComWechatRobot", "err", err)
+			logger.ErrorCtx(c.Robot.Ctx, "ComWechatRobot", "err", err)
 			return nil
 		}
 		c.ImageMsg = msg
@@ -103,7 +97,7 @@ func NewComWechatRobot(event contract.EventInterface) *ComWechatRobot {
 		msg := &serverModel.MessageVoice{}
 		err := event.ReadMessage(msg)
 		if err != nil {
-			logger.Error("ComWechatRobot", "err", err)
+			logger.ErrorCtx(c.Robot.Ctx, "ComWechatRobot", "err", err)
 			return nil
 		}
 		c.VoiceMsg = msg
@@ -116,7 +110,7 @@ func (c *ComWechatRobot) checkValid() bool {
 	if c.Event.GetMsgType() == models.CALLBACK_MSG_TYPE_TEXT {
 		c.OriginPrompt = c.TextMsg.Content
 		c.Command, c.Prompt = ParseCommand(c.TextMsg.Content)
-		logger.Info("ComWechatRobot msg", "Command", c.Command, "Prompt", c.Prompt)
+		logger.InfoCtx(c.Robot.Ctx, "ComWechatRobot msg", "Command", c.Command, "Prompt", c.Prompt)
 	}
 	
 	if c.Event.GetMsgType() == models.CALLBACK_MSG_TYPE_IMAGE {
@@ -124,7 +118,7 @@ func (c *ComWechatRobot) checkValid() bool {
 		if msgInfoInter, ok := TencentMsgMap.Load(userId); ok {
 			if msgInfo, ok := msgInfoInter.(*TencentWechatMessage); ok {
 				if msgInfo.Status == msgChangePhoto || msgInfo.Status == msgRecognizePhoto {
-					logger.Info("ComWechatRobot handle photo msg", "msgId", msgId, "userId", userId)
+					logger.InfoCtx(c.Robot.Ctx, "ComWechatRobot handle photo msg", "msgId", msgId, "userId", userId)
 					c.passiveExecCmd()
 					return false
 				}
@@ -137,7 +131,7 @@ func (c *ComWechatRobot) checkValid() bool {
 		if msgInfoInter, ok := TencentMsgMap.Load(userId); ok {
 			if msgInfo, ok := msgInfoInter.(*TencentWechatMessage); ok {
 				if msgInfo.Status == msgSaveVoice {
-					logger.Info("WechatRobot handle voice msg", "msgId", msgId, "userId", userId)
+					logger.InfoCtx(c.Robot.Ctx, "WechatRobot handle voice msg", "msgId", msgId, "userId", userId)
 					c.passiveExecCmd()
 					return false
 				}
@@ -156,7 +150,7 @@ func (c *ComWechatRobot) requestLLMAndResp(content string) {
 	go func() {
 		defer func() {
 			if r := recover(); r != nil {
-				logger.Error("ComWechatRobot panic", "err", r, "stack", string(debug.Stack()))
+				logger.ErrorCtx(c.Robot.Ctx, "ComWechatRobot panic", "err", r, "stack", string(debug.Stack()))
 			}
 		}()
 		if !strings.Contains(content, "/") && c.Prompt == "" {
@@ -275,19 +269,19 @@ func (c *ComWechatRobot) sendImg() {
 		fileName := utils.GetAbsPath("data/" + utils.RandomFilename(format))
 		err = os.WriteFile(fileName, imageContent, 0666)
 		if err != nil {
-			logger.Error("save image fail", "err", err)
+			logger.ErrorCtx(c.Robot.Ctx, "save image fail", "err", err)
 			c.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
 		
-		mediaID, err := c.App.Media.UploadTempImage(c.Ctx, fileName, nil)
+		mediaID, err := c.App.Media.UploadTempImage(c.Robot.Ctx, fileName, nil)
 		if err != nil {
-			logger.Error("upload image fail", "err", err)
+			logger.ErrorCtx(c.Robot.Ctx, "upload image fail", "err", err)
 			c.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
 		
-		_, err = c.App.Message.SendImage(c.Ctx, &request.RequestMessageSendImage{
+		_, err = c.App.Message.SendImage(c.Robot.Ctx, &request.RequestMessageSendImage{
 			RequestMessageSend: request.RequestMessageSend{
 				ToUser:                 userId,
 				MsgType:                "image",
@@ -299,7 +293,7 @@ func (c *ComWechatRobot) sendImg() {
 			},
 		})
 		if err != nil {
-			logger.Error("send image fail", "err", err)
+			logger.ErrorCtx(c.Robot.Ctx, "send image fail", "err", err)
 			return
 		}
 		
@@ -342,16 +336,16 @@ func (c *ComWechatRobot) sendVideo() {
 		fileName := utils.GetAbsPath("data/" + utils.RandomFilename(format))
 		err = os.WriteFile(fileName, videoContent, 0666)
 		if err != nil {
-			logger.Error("save image fail", "err", err)
+			logger.ErrorCtx(c.Robot.Ctx, "save image fail", "err", err)
 			return
 		}
-		mediaID, err := c.App.Media.UploadTempVideo(c.Ctx, fileName, nil)
+		mediaID, err := c.App.Media.UploadTempVideo(c.Robot.Ctx, fileName, nil)
 		if err != nil {
-			logger.Error("upload image fail", "err", err)
+			logger.ErrorCtx(c.Robot.Ctx, "upload image fail", "err", err)
 			return
 		}
 		
-		_, err = c.App.Message.SendVideo(c.Ctx, &request.RequestMessageSendVideo{
+		_, err = c.App.Message.SendVideo(c.Robot.Ctx, &request.RequestMessageSendVideo{
 			RequestMessageSend: request.RequestMessageSend{
 				ToUser:                 userId,
 				MsgType:                "video",
@@ -363,7 +357,7 @@ func (c *ComWechatRobot) sendVideo() {
 			},
 		})
 		if err != nil {
-			logger.Error("send image fail", "err", err)
+			logger.ErrorCtx(c.Robot.Ctx, "send image fail", "err", err)
 			return
 		}
 		
@@ -445,13 +439,13 @@ func (c *ComWechatRobot) getContent(content string) (string, error) {
 	case models.CALLBACK_MSG_TYPE_VOICE:
 		data, err := c.getMedia()
 		if err != nil {
-			logger.Error("read media fail", "err", err)
+			logger.ErrorCtx(c.Robot.Ctx, "read media fail", "err", err)
 			return "", err
 		}
 		
 		data, err = utils.AmrToOgg(data)
 		if err != nil {
-			logger.Error("convert amr to wav fail", "err", err)
+			logger.ErrorCtx(c.Robot.Ctx, "convert amr to wav fail", "err", err)
 			return "", err
 		}
 		return c.Robot.GetAudioContent(data)
@@ -511,7 +505,7 @@ func (c *ComWechatRobot) passiveExecCmd() {
 						c.Prompt = msgInfo.Msg
 						data, err := c.getMedia()
 						if err != nil {
-							logger.Error("get media fail", "err", err)
+							logger.ErrorCtx(c.Robot.Ctx, "get media fail", "err", err)
 							c.Robot.SendMsg(chatId, "get media fail", msgId, tgbotapi.ModeMarkdown, nil)
 							return
 						}
@@ -534,13 +528,13 @@ func (c *ComWechatRobot) passiveExecCmd() {
 					case msgSaveVoice:
 						data, err := c.getMedia()
 						if err != nil {
-							logger.Error("read media fail", "err", err)
+							logger.ErrorCtx(c.Robot.Ctx, "read media fail", "err", err)
 							c.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
 							return
 						}
 						data, err = utils.AmrToMp3(data)
 						if err != nil {
-							logger.Error("convert amr to wav fail", "err", err)
+							logger.ErrorCtx(c.Robot.Ctx, "convert amr to wav fail", "err", err)
 							c.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
 							return
 						}
@@ -548,7 +542,7 @@ func (c *ComWechatRobot) passiveExecCmd() {
 						fileName := utils.GetAbsPath("data/" + utils.RandomFilename(utils.DetectAudioFormat(data)))
 						err = os.WriteFile(fileName, data, 0666)
 						if err != nil {
-							logger.Error("save image fail", "err", err)
+							logger.ErrorCtx(c.Robot.Ctx, "save image fail", "err", err)
 							c.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
 							return
 						}
@@ -575,16 +569,16 @@ func (c *ComWechatRobot) getMedia() ([]byte, error) {
 		mediaId = c.VoiceMsg.MediaID
 	}
 	
-	resp, err := c.App.Media.Get(c.Ctx, mediaId)
+	resp, err := c.App.Media.Get(c.Robot.Ctx, mediaId)
 	if err != nil {
-		logger.Error("get media fail", "err", err)
+		logger.ErrorCtx(c.Robot.Ctx, "get media fail", "err", err)
 		return nil, err
 	}
 	
 	defer resp.Body.Close()
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
-		logger.Error("read media fail", "err", err)
+		logger.ErrorCtx(c.Robot.Ctx, "read media fail", "err", err)
 		return nil, err
 	}
 	
@@ -597,16 +591,16 @@ func (c *ComWechatRobot) sendVoiceContent(voiceContent []byte, duration int) err
 	fileName := utils.GetAbsPath("data/" + utils.RandomFilename(utils.DetectAudioFormat(voiceContent)))
 	err := os.WriteFile(fileName, voiceContent, 0666)
 	if err != nil {
-		logger.Error("save voice fail", "err", err)
+		logger.ErrorCtx(c.Robot.Ctx, "save voice fail", "err", err)
 		return err
 	}
 	
-	mediaResp, err := c.App.Media.UploadTempVoice(c.Ctx, fileName, nil)
+	mediaResp, err := c.App.Media.UploadTempVoice(c.Robot.Ctx, fileName, nil)
 	if err != nil {
-		logger.Error("upload voice fail", "err", err)
+		logger.ErrorCtx(c.Robot.Ctx, "upload voice fail", "err", err)
 		return err
 	}
-	resp, err := c.App.Message.SendVoice(c.Ctx, &request.RequestMessageSendVoice{
+	resp, err := c.App.Message.SendVoice(c.Robot.Ctx, &request.RequestMessageSendVoice{
 		RequestMessageSend: request.RequestMessageSend{
 			ToUser:                 userId,
 			MsgType:                "voice",
@@ -618,7 +612,7 @@ func (c *ComWechatRobot) sendVoiceContent(voiceContent []byte, duration int) err
 		},
 	})
 	if err != nil {
-		logger.Error("send image fail", "err", err, "resp", resp)
+		logger.ErrorCtx(c.Robot.Ctx, "send image fail", "err", err, "resp", resp)
 		return err
 	}
 	

@@ -59,7 +59,7 @@ func (web *Web) getMsgContent() string {
 }
 
 func (web *Web) Exec() {
-	logger.Info("web exec", "command", web.Command, "userId", web.UserId, "prompt", web.Prompt)
+	logger.InfoCtx(web.Robot.Ctx, "web exec", "command", web.Command, "userId", web.UserId, "prompt", web.Prompt)
 	switch web.Command {
 	case "/chat":
 		web.InsertRecord()
@@ -189,7 +189,7 @@ func (web *Web) showBalanceInfo() {
 		return
 	}
 	
-	balance := llm.GetBalanceInfo()
+	balance := llm.GetBalanceInfo(web.Robot.Ctx)
 	
 	// handle balance info msg
 	msgContent := fmt.Sprintf(i18n.GetMessage(*conf.BaseConfInfo.Lang, "balance_title", nil), balance.IsAvailable)
@@ -317,12 +317,14 @@ func (web *Web) sendMultiAgent(agentType string) {
 		MsgId:       web.RealUserId,
 		HTTPMsgChan: messageChan,
 		PerMsgLen:   10000000,
+		
+		Ctx: web.Robot.Ctx,
 	}
 	
 	go func() {
 		defer func() {
 			if err := recover(); err != nil {
-				logger.Error("multi agent panic", "err", err, "stack", string(debug.Stack()))
+				logger.ErrorCtx(web.Robot.Ctx, "multi agent panic", "err", err, "stack", string(debug.Stack()))
 			}
 			close(messageChan)
 		}()
@@ -475,7 +477,7 @@ func (web *Web) sendChatMessage() {
 		
 		prompt, err := web.GetContent(strings.TrimSpace(web.Prompt))
 		if err != nil {
-			logger.Error("get content fail", "err", err)
+			logger.ErrorCtx(web.Robot.Ctx, "get content fail", "err", err)
 			web.SendMsg(err.Error())
 			return
 		}
@@ -489,6 +491,7 @@ func (web *Web) sendChatMessage() {
 			llm.WithContent(prompt),
 			llm.WithPerMsgLen(1000000),
 			llm.WithRecordId(web.RecordId),
+			llm.WithContext(web.Robot.Ctx),
 		)
 		go func() {
 			defer close(messageChan)
@@ -571,7 +574,7 @@ func (web *Web) InsertRecord() {
 		RecordType: param.TextRecordType,
 	})
 	if err != nil {
-		logger.Error("insert record fail", "err", err)
+		logger.ErrorCtx(web.Robot.Ctx, "insert record fail", "err", err)
 		return
 	}
 	

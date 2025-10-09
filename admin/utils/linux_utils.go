@@ -4,8 +4,10 @@
 package utils
 
 import (
+	"fmt"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"syscall"
 	
@@ -19,7 +21,6 @@ func StartDetachedProcess(argsStr string) error {
 	exePath := filepath.Join(utils.GetAbsPath(""), execName)
 	
 	var args []string
-	args = append(args, exePath)
 	for _, l := range lines {
 		trimmed := strings.TrimSpace(l)
 		if trimmed != "" {
@@ -27,14 +28,25 @@ func StartDetachedProcess(argsStr string) error {
 		}
 	}
 	
-	cmd := exec.Command(args[0], args[1:]...)
-	cmd.SysProcAttr = &syscall.SysProcAttr{
-		Setpgid: true, // Linux/macOS: 新进程组
+	switch runtime.GOOS {
+	case "darwin":
+		cmdStr := fmt.Sprintf("%s %s", exePath, strings.Join(args, " "))
+		script := fmt.Sprintf(`tell application "Terminal"
+	activate
+	do script "%s"
+end tell`, cmdStr)
+		
+		cmd := exec.Command("osascript", "-e", script)
+		return cmd.Start()
+	
+	default: // Linux 或其他
+		cmd := exec.Command(exePath, args...)
+		cmd.SysProcAttr = &syscall.SysProcAttr{
+			Setpgid: true, // 独立进程组
+		}
+		cmd.Stdin = nil
+		cmd.Stdout = nil
+		cmd.Stderr = nil
+		return cmd.Start()
 	}
-	
-	cmd.Stdin = nil
-	cmd.Stdout = nil
-	cmd.Stderr = nil
-	
-	return cmd.Start()
 }

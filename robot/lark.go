@@ -11,7 +11,6 @@ import (
 	"os"
 	"runtime/debug"
 	"strings"
-	"time"
 	
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	lark "github.com/larksuite/oapi-sdk-go/v3"
@@ -43,8 +42,6 @@ type LarkRobot struct {
 	Robot   *RobotInfo
 	Client  *lark.Client
 	
-	Ctx          context.Context
-	Cancel       context.CancelFunc
 	Command      string
 	Prompt       string
 	BotName      string
@@ -80,20 +77,17 @@ func StartLarkRobot(ctx context.Context) {
 	}
 }
 
-func NewLarkRobot(ctx context.Context, message *larkim.P2MessageReceiveV1) *LarkRobot {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Minute*5)
+func NewLarkRobot(message *larkim.P2MessageReceiveV1) *LarkRobot {
 	return &LarkRobot{
 		Message: message,
 		Client:  botClient,
-		Ctx:     ctx,
-		Cancel:  cancel,
 		BotName: BotName,
 	}
 }
 
 func LarkMessageHandler(ctx context.Context, message *larkim.P2MessageReceiveV1) error {
-	l := NewLarkRobot(ctx, message)
-	l.Robot = NewRobot(WithRobot(l))
+	l := NewLarkRobot(message)
+	l.Robot = NewRobot(WithRobot(l), WithContext(ctx))
 	go func() {
 		defer func() {
 			if err := recover(); err != nil {
@@ -258,7 +252,7 @@ func (l *LarkRobot) sendImg() {
 			originImageURI = fmt.Sprintf("data:image/%s;base64,%s", format, base64Content)
 		}
 		
-		resp, err := l.Client.Im.V1.Image.Create(l.Ctx, larkim.NewCreateImageReqBuilder().
+		resp, err := l.Client.Im.V1.Image.Create(l.Robot.Ctx, larkim.NewCreateImageReqBuilder().
 			Body(larkim.NewCreateImageReqBodyBuilder().
 				ImageType("message").
 				Image(bytes.NewReader(imageContent)).
@@ -277,7 +271,7 @@ func (l *LarkRobot) sendImg() {
 				},
 			}).Build()).Build()
 		
-		updateRes, err := l.Client.Im.Message.Update(l.Ctx, larkim.NewUpdateMessageReqBuilder().
+		updateRes, err := l.Client.Im.Message.Update(l.Robot.Ctx, larkim.NewUpdateMessageReqBuilder().
 			MessageId(originalMsgID).
 			Body(larkim.NewUpdateMessageReqBodyBuilder().
 				MsgType(larkim.MsgTypePost).
@@ -327,7 +321,7 @@ func (l *LarkRobot) sendVideo() {
 		}
 		
 		format := utils.DetectVideoMimeType(videoContent)
-		resp, err := l.Client.Im.V1.File.Create(l.Ctx, larkim.NewCreateFileReqBuilder().
+		resp, err := l.Client.Im.V1.File.Create(l.Robot.Ctx, larkim.NewCreateFileReqBuilder().
 			Body(larkim.NewCreateFileReqBodyBuilder().
 				FileType(format).
 				FileName(utils.RandomFilename(format)).
@@ -348,7 +342,7 @@ func (l *LarkRobot) sendVideo() {
 				},
 			}).Build()).Build()
 		
-		updateRes, err := l.Client.Im.Message.Update(l.Ctx, larkim.NewUpdateMessageReqBuilder().
+		updateRes, err := l.Client.Im.Message.Update(l.Robot.Ctx, larkim.NewUpdateMessageReqBuilder().
 			MessageId(originalMsgID).
 			Body(larkim.NewUpdateMessageReqBodyBuilder().
 				MsgType(larkim.MsgTypePost).
@@ -406,7 +400,7 @@ func (l *LarkRobot) sendText(messageChan *MsgChan) {
 		}
 		
 		if msg.MsgId == "" {
-			resp, err := l.Client.Im.Message.Reply(l.Ctx, larkim.NewReplyMessageReqBuilder().
+			resp, err := l.Client.Im.Message.Reply(l.Robot.Ctx, larkim.NewReplyMessageReqBuilder().
 				MessageId(messageId).
 				Body(larkim.NewReplyMessageReqBodyBuilder().
 					MsgType(larkim.MsgTypePost).
@@ -420,7 +414,7 @@ func (l *LarkRobot) sendText(messageChan *MsgChan) {
 			msg.MsgId = larkcore.StringValue(resp.Data.MessageId)
 		} else {
 			
-			resp, err := l.Client.Im.Message.Update(l.Ctx, larkim.NewUpdateMessageReqBuilder().
+			resp, err := l.Client.Im.Message.Update(l.Robot.Ctx, larkim.NewUpdateMessageReqBuilder().
 				MessageId(msg.MsgId).
 				Body(larkim.NewUpdateMessageReqBodyBuilder().
 					MsgType(larkim.MsgTypePost).
@@ -459,7 +453,7 @@ func (l *LarkRobot) getContent(content string) (string, error) {
 			return "", err
 		}
 		
-		resp, err := l.Client.Im.V1.MessageResource.Get(l.Ctx,
+		resp, err := l.Client.Im.V1.MessageResource.Get(l.Robot.Ctx,
 			larkim.NewGetMessageResourceReqBuilder().
 				MessageId(msgId).
 				FileKey(msgImage.ImageKey).
@@ -488,7 +482,7 @@ func (l *LarkRobot) getContent(content string) (string, error) {
 			logger.Warn("unmarshal message audio failed", "err", err)
 			return "", err
 		}
-		resp, err := l.Client.Im.V1.MessageResource.Get(l.Ctx,
+		resp, err := l.Client.Im.V1.MessageResource.Get(l.Robot.Ctx,
 			larkim.NewGetMessageResourceReqBuilder().
 				MessageId(msgId).
 				FileKey(msgAudio.FileKey).
@@ -616,7 +610,7 @@ func (l *LarkRobot) GetMessageContent() (bool, error) {
 						l.Prompt = prompt
 					}
 				case "img":
-					resp, err := l.Client.Im.V1.MessageResource.Get(l.Ctx,
+					resp, err := l.Client.Im.V1.MessageResource.Get(l.Robot.Ctx,
 						larkim.NewGetMessageResourceReqBuilder().
 							MessageId(msgId).
 							FileKey(msgPostContent.ImageKey).
@@ -658,7 +652,7 @@ func (l *LarkRobot) getPerMsgLen() int {
 func (l *LarkRobot) sendVoiceContent(voiceContent []byte, duration int) error {
 	_, messageId, _ := l.Robot.GetChatIdAndMsgIdAndUserID()
 	
-	resp, err := l.Client.Im.V1.File.Create(l.Ctx, larkim.NewCreateFileReqBuilder().
+	resp, err := l.Client.Im.V1.File.Create(l.Robot.Ctx, larkim.NewCreateFileReqBuilder().
 		Body(larkim.NewCreateFileReqBodyBuilder().
 			FileType("opus").
 			FileName(utils.RandomFilename(".ogg")).
@@ -676,7 +670,7 @@ func (l *LarkRobot) sendVoiceContent(voiceContent []byte, duration int) error {
 	}
 	msgContent, _ := audio.String()
 	
-	updateRes, err := l.Client.Im.Message.Reply(l.Ctx, larkim.NewReplyMessageReqBuilder().
+	updateRes, err := l.Client.Im.Message.Reply(l.Robot.Ctx, larkim.NewReplyMessageReqBuilder().
 		MessageId(messageId).
 		Body(larkim.NewReplyMessageReqBodyBuilder().
 			MsgType(larkim.MsgTypeAudio).

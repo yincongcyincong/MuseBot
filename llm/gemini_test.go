@@ -23,7 +23,7 @@ func TestGeminiSend(t *testing.T) {
 	*conf.BaseConfInfo.Type = param.Gemini
 	
 	callLLM := NewLLM(WithChatId("1"), WithMsgId("2"), WithUserId("4"),
-		WithMessageChan(messageChan), WithContent("hi"))
+		WithMessageChan(messageChan), WithContent("hi"), WithContext(context.Background()))
 	callLLM.LLMClient.GetModel(callLLM)
 	callLLM.GetMessages("4", "hi")
 	err := callLLM.LLMClient.Send(context.Background(), callLLM)

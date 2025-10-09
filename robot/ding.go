@@ -49,8 +49,6 @@ type DingRobot struct {
 	Client  *client.StreamClient
 	Message *chatbot.BotCallbackDataModel
 	
-	Ctx          context.Context
-	Cancel       context.CancelFunc
 	Command      string
 	Prompt       string
 	BotName      string
@@ -82,8 +80,8 @@ func StartDingRobot(ctx context.Context) {
 }
 
 func OnChatReceive(ctx context.Context, message *chatbot.BotCallbackDataModel) ([]byte, error) {
-	d := NewDingRobot(ctx, message)
-	d.Robot = NewRobot(WithRobot(d))
+	d := NewDingRobot(message)
+	d.Robot = NewRobot(WithRobot(d), WithContext(ctx))
 	go func() {
 		defer func() {
 			if err := recover(); err != nil {
@@ -97,13 +95,10 @@ func OnChatReceive(ctx context.Context, message *chatbot.BotCallbackDataModel) (
 	return nil, nil
 }
 
-func NewDingRobot(ctx context.Context, message *chatbot.BotCallbackDataModel) *DingRobot {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Minute*5)
+func NewDingRobot(message *chatbot.BotCallbackDataModel) *DingRobot {
 	return &DingRobot{
 		Message: message,
 		Client:  dingBotClient,
-		Ctx:     ctx,
-		Cancel:  cancel,
 		BotName: BotName,
 	}
 }
@@ -274,7 +269,7 @@ func (d *DingRobot) sendImg() {
 			return
 		}
 		
-		_, err = d.SimpleReplyMarkdown(d.Ctx, []byte(fmt.Sprintf("![image](%s)", mediaId)))
+		_, err = d.SimpleReplyMarkdown(d.Robot.Ctx, []byte(fmt.Sprintf("![image](%s)", mediaId)))
 		if err != nil {
 			logger.Warn("send image fail", "err", err)
 			d.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
@@ -357,7 +352,7 @@ func (d *DingRobot) sendVideo() {
 			return
 		}
 		
-		_, err = d.VideoReplyMarkdown(d.Ctx, mediaId, format)
+		_, err = d.VideoReplyMarkdown(d.Robot.Ctx, mediaId, format)
 		if err != nil {
 			logger.Warn("send image fail", "err", err)
 			d.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
@@ -838,7 +833,7 @@ func (d *DingRobot) sendVoiceContent(voiceContent []byte, duration int) error {
 		return err
 	}
 	
-	_, err = d.VoiceReplyMarkdown(d.Ctx, mediaId, duration)
+	_, err = d.VoiceReplyMarkdown(d.Robot.Ctx, mediaId, duration)
 	if err != nil {
 		logger.Error("send voice fail", "err", err)
 		return err

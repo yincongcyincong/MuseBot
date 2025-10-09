@@ -238,3 +238,56 @@ func (l *QQLoggerInfo) Errorf(format string, v ...interface{}) {
 func (l *QQLoggerInfo) Sync() error {
 	return nil
 }
+
+func DebugCtx(ctx context.Context, msg string, fields ...interface{}) {
+	callerFile := getCallerFile()
+	botName, logId := GetBotNameAndLogId(ctx)
+	fields = append(fields, "bot_name", botName, "log_id", logId)
+	Logger.logger.Debug().Fields(fields).Msg(callerFile + " " + msg)
+}
+
+// InfoCtx info log
+func InfoCtx(ctx context.Context, msg string, fields ...interface{}) {
+	callerFile := getCallerFile()
+	botName, logId := GetBotNameAndLogId(ctx)
+	fields = append(fields, "bot_name", botName, "log_id", logId)
+	Logger.logger.Info().Fields(fields).Msg(callerFile + " " + msg)
+}
+
+// WarnCtx log
+func WarnCtx(ctx context.Context, msg string, fields ...interface{}) {
+	callerFile := getCallerFile()
+	botName, logId := GetBotNameAndLogId(ctx)
+	fields = append(fields, "bot_name", botName, "log_id", logId)
+	Logger.logger.Warn().Fields(fields).Msg(callerFile + " " + msg)
+}
+
+// ErrorCtx error log
+func ErrorCtx(ctx context.Context, msg string, fields ...interface{}) {
+	callerFile := getCallerFile()
+	botName, logId := GetBotNameAndLogId(ctx)
+	fields = append(fields, "bot_name", botName, "log_id", logId)
+	Logger.logger.Error().Fields(fields).Msg(callerFile + " " + msg)
+}
+
+// FatalCtx fatal log
+func FatalCtx(ctx context.Context, msg string, fields ...interface{}) {
+	callerFile := getCallerFile()
+	botName, logId := GetBotNameAndLogId(ctx)
+	fields = append(fields, "bot_name", botName, "log_id", logId)
+	Logger.logger.Fatal().Fields(fields).Msg(callerFile + " " + msg)
+}
+
+func GetBotNameAndLogId(ctx context.Context) (string, string) {
+	botName := ""
+	if ctx != nil {
+		botName, _ = ctx.Value("bot_name").(string)
+	}
+	
+	logId := ""
+	if ctx != nil {
+		logId, _ = ctx.Value("log_id").(string)
+	}
+	
+	return botName, logId
+}
