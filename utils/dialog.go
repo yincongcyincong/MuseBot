@@ -11,7 +11,7 @@ import (
 	"math"
 	"sync"
 	"time"
-	
+
 	"github.com/gorilla/websocket"
 	"github.com/yincongcyincong/MuseBot/logger"
 )
@@ -31,20 +31,20 @@ var (
 	errReadPayloadSize               = errors.New("read payload size")
 	errReadSequence                  = errors.New("read sequence number")
 	errReadErrorCode                 = errors.New("read error code")
-	
+
 	protocol = NewBinaryProtocol()
-	
+
 	wsWriteLock sync.Mutex
 )
 
 type (
 	// MsgType defines message type which determines how the message will be
-	// serialized with the 
+	// serialized with the
 	MsgType int32
 	// MsgTypeFlagBits defines the 4-bit message-type specific flags. The specific
 	// values should be defined in each specific usage scenario.
 	MsgTypeFlagBits uint8
-	
+
 	// VersionBits defines the 4-bit version type.
 	VersionBits uint8
 	// HeaderSizeBits defines the 4-bit header-size type.
@@ -64,7 +64,7 @@ const (
 	MsgTypeAudioOnlyServer
 	MsgTypeFrontEndResultServer
 	MsgTypeError
-	
+
 	MsgTypeServerACK = MsgTypeAudioOnlyServer
 )
 
@@ -89,7 +89,7 @@ func (t MsgType) String() string {
 
 // Values that a MsgTypeFlagBits variable can take.
 const (
-	// For common 
+	// For common
 	MsgTypeFlagNoSeq       MsgTypeFlagBits = 0     // Non-terminal packet with no sequence
 	MsgTypeFlagPositiveSeq MsgTypeFlagBits = 0b1   // Non-terminal packet with sequence > 0
 	MsgTypeFlagLastNoSeq   MsgTypeFlagBits = 0b10  // last packet with no sequence
@@ -138,14 +138,14 @@ var (
 		MsgTypeError:                0b1111 << 4,
 	}
 	bitsToMsgType = make(map[uint8]MsgType, len(msgTypeToBits))
-	
+
 	serializations = map[SerializationBits]bool{
 		SerializationRaw:    true,
 		SerializationJSON:   true,
 		SerializationThrift: true,
 		SerializationCustom: true,
 	}
-	
+
 	compressions = map[CompressionBits]bool{
 		CompressionNone:   true,
 		CompressionGzip:   true,
@@ -182,29 +182,29 @@ func Unmarshal(data []byte, containsSequence ContainsSequenceFunc) (*Message, *B
 		buf      = bytes.NewBuffer(data)
 		readSize int
 	)
-	
+
 	versionSize, err := buf.ReadByte()
 	if err != nil {
 		return nil, nil, errNoVersionAndSize
 	}
 	readSize++
-	
+
 	prot := &BinaryProtocol{
 		versionAndHeaderSize: versionSize,
 		containsSequence:     containsSequence,
 	}
-	
+
 	typeAndFlag, err := buf.ReadByte()
 	if err != nil {
 		return nil, nil, errNoTypeAndFlag
 	}
 	readSize++
-	
+
 	msg, err := NewMessageFromByte(typeAndFlag)
 	if err != nil {
 		return nil, nil, err
 	}
-	
+
 	serializationCompression, err := buf.ReadByte()
 	if err != nil {
 		return nil, nil, errNoSerializationAndCompression
@@ -217,14 +217,14 @@ func Unmarshal(data []byte, containsSequence ContainsSequenceFunc) (*Message, *B
 	if _, ok := compressions[prot.Compression()]; !ok {
 		return nil, nil, fmt.Errorf("%w: %b", errInvalidCompression, prot.Compression())
 	}
-	
+
 	// Read all the remaining zero-padding bytes in the header.
 	if paddingSize := prot.HeaderSize() - readSize; paddingSize > 0 {
 		if n, err := buf.Read(make([]byte, paddingSize)); err != nil || n < paddingSize {
 			return nil, nil, fmt.Errorf("%w: %d", errNoEnoughHeaderBytes, n)
 		}
 	}
-	
+
 	readers, err := msg.readers(containsSequence)
 	if err != nil {
 		return nil, nil, err
@@ -234,7 +234,7 @@ func Unmarshal(data []byte, containsSequence ContainsSequenceFunc) (*Message, *B
 			return nil, nil, err
 		}
 	}
-	
+
 	if _, err := buf.ReadByte(); err != io.EOF {
 		return nil, nil, errRedundantBytes
 	}
@@ -245,7 +245,7 @@ func Unmarshal(data []byte, containsSequence ContainsSequenceFunc) (*Message, *B
 type Message struct {
 	Type            MsgType
 	typeAndFlagBits uint8
-	
+
 	Event     int32
 	SessionID string
 	ConnectID string
@@ -296,15 +296,15 @@ func (m *Message) writers(compress CompressFunc) (writers []writeFunc, _ error) 
 		}
 		m.Payload = payload
 	}
-	
+
 	if containsSequence(m.TypeFlag()) {
 		writers = append(writers, m.writeSequence)
 	}
-	
+
 	if containsEvent(m.TypeFlag()) {
 		writers = append(writers, m.writeEvent, m.writeSessionID)
 	}
-	
+
 	writers = append(writers, m.writePayload)
 	return writers, nil
 }
@@ -321,7 +321,7 @@ func (m *Message) writeSessionID(buf *bytes.Buffer) error {
 	case 1, 2, 50, 51, 52: // StartConnection, FinishConnection, ConnectionStarted, ConnectionFailed, ConnectionFinished
 		return nil
 	}
-	
+
 	size := len(m.SessionID)
 	if size > math.MaxUint32 {
 		return fmt.Errorf("payload size (%d) exceeds max(uint32)", size)
@@ -360,31 +360,31 @@ func (m *Message) writePayload(buf *bytes.Buffer) error {
 }
 
 func (m *Message) readers(containsSequence ContainsSequenceFunc) (readers []readFunc, _ error) {
-	
+
 	switch m.Type {
 	case MsgTypeFullClient, MsgTypeFullServer, MsgTypeFrontEndResultServer:
-	
+
 	case MsgTypeAudioOnlyClient:
 		if containsSequence == nil || containsSequence(m.TypeFlag()) {
 			readers = append(readers, m.readSequence)
 		}
-	
+
 	case MsgTypeAudioOnlyServer:
 		if containsSequence != nil && containsSequence(m.TypeFlag()) {
 			readers = append(readers, m.readSequence)
 		}
-	
+
 	case MsgTypeError:
 		readers = append(readers, m.readErrorCode)
-	
+
 	default:
 		return nil, fmt.Errorf("cannot deserialize message with invalid type: %d", m.Type)
 	}
-	
+
 	if containsEvent(m.TypeFlag()) {
 		readers = append(readers, m.readEvent, m.readSessionID, m.readConnectID)
 	}
-	
+
 	readers = append(readers, m.readPayload)
 	return readers, nil
 }
@@ -401,12 +401,12 @@ func (m *Message) readSessionID(buf *bytes.Buffer) error {
 	case 1, 2, 50, 51, 52: //StartConnection, FinishConnection, ConnectionStarted, ConnectionFailed, ConnectionFinished
 		return nil
 	}
-	
+
 	var size uint32
 	if err := binary.Read(buf, binary.BigEndian, &size); err != nil {
 		return fmt.Errorf("%w: %v", errReadSessionIDSize, err)
 	}
-	
+
 	if size > 0 {
 		m.SessionID = string(buf.Next(int(size)))
 	}
@@ -419,12 +419,12 @@ func (m *Message) readConnectID(buf *bytes.Buffer) error {
 	default:
 		return nil
 	}
-	
+
 	var size uint32
 	if err := binary.Read(buf, binary.BigEndian, &size); err != nil {
 		return fmt.Errorf("%w: %v", errReadConnectIDSize, err)
 	}
-	
+
 	if size > 0 {
 		m.ConnectID = string(buf.Next(int(size)))
 	}
@@ -450,7 +450,7 @@ func (m *Message) readPayload(buf *bytes.Buffer) error {
 	if err := binary.Read(buf, binary.BigEndian, &size); err != nil {
 		return fmt.Errorf("%w: %v", errReadPayloadSize, err)
 	}
-	
+
 	if size > 0 {
 		m.Payload = buf.Next(int(size))
 	}
@@ -461,7 +461,7 @@ func (m *Message) readPayload(buf *bytes.Buffer) error {
 
 // ContainsSequence reports whether a message type specific flag indicates
 // messages with this kind of flag contain a sequence number in its serialized
-// value. This determiner function should be used for common binary 
+// value. This determiner function should be used for common binary
 func ContainsSequence(bits MsgTypeFlagBits) bool {
 	return bits&MsgTypeFlagPositiveSeq == MsgTypeFlagPositiveSeq || bits&MsgTypeFlagNegativeSeq == MsgTypeFlagNegativeSeq
 }
@@ -480,7 +480,7 @@ func containsSequence(bits MsgTypeFlagBits) bool {
 type BinaryProtocol struct {
 	versionAndHeaderSize        uint8
 	serializationAndCompression uint8
-	
+
 	containsSequence ContainsSequenceFunc
 	compress         CompressFunc
 }
@@ -557,7 +557,7 @@ func (p *BinaryProtocol) Marshal(msg *Message) ([]byte, error) {
 	if err := p.writeHeader(buf, msg); err != nil {
 		return nil, fmt.Errorf("write header: %w", err)
 	}
-	
+
 	writers, err := msg.writers(p.compress)
 	if err != nil {
 		return nil, err
@@ -662,16 +662,16 @@ func StartConnection(conn *websocket.Conn) error {
 	}
 	msg.Event = 1
 	msg.Payload = []byte("{}")
-	
+
 	frame, err := protocol.Marshal(msg)
 	if err != nil {
 		return fmt.Errorf("marshal StartConnection request message: %w", err)
 	}
-	
+
 	if err := sendRequest(conn, frame); err != nil {
 		return fmt.Errorf("send StartConnection request: %w", err)
 	}
-	
+
 	// Read ConnectionStarted message.
 	mt, frame, err := conn.ReadMessage()
 	if err != nil {
@@ -680,7 +680,7 @@ func StartConnection(conn *websocket.Conn) error {
 	if mt != websocket.BinaryMessage && mt != websocket.TextMessage {
 		return fmt.Errorf("unexpected Websocket message type: %d", mt)
 	}
-	
+
 	msg, _, err = Unmarshal(frame, containsSequence)
 	if err != nil {
 		return fmt.Errorf("unmarshal ConnectionStarted response message: %w", err)
@@ -691,7 +691,7 @@ func StartConnection(conn *websocket.Conn) error {
 	if msg.Event != 50 {
 		return fmt.Errorf("unexpected response event (%d) for StartConnection request", msg.Event)
 	}
-	
+
 	return nil
 }
 
@@ -700,7 +700,7 @@ func StartSession(conn *websocket.Conn, sessionID string, req *StartSessionPaylo
 	if err != nil {
 		return fmt.Errorf("marshal StartSession request payload: %w", err)
 	}
-	
+
 	msg, err := NewMessage(MsgTypeFullClient, MsgTypeFlagWithEvent)
 	if err != nil {
 		return fmt.Errorf("create StartSession request message: %w", err)
@@ -708,16 +708,16 @@ func StartSession(conn *websocket.Conn, sessionID string, req *StartSessionPaylo
 	msg.Event = 100
 	msg.SessionID = sessionID
 	msg.Payload = payload
-	
+
 	frame, err := protocol.Marshal(msg)
 	if err != nil {
 		return fmt.Errorf("marshal StartSession request message: %w", err)
 	}
-	
+
 	if err := sendRequest(conn, frame); err != nil {
 		return fmt.Errorf("send StartSession request: %w", err)
 	}
-	
+
 	// Read SessionStarted message.
 	mt, frame, err := conn.ReadMessage()
 	if err != nil {
@@ -726,7 +726,7 @@ func StartSession(conn *websocket.Conn, sessionID string, req *StartSessionPaylo
 	if mt != websocket.BinaryMessage && mt != websocket.TextMessage {
 		return fmt.Errorf("unexpected Websocket message type: %d", mt)
 	}
-	
+
 	// Validate SessionStarted message.
 	msg, _, err = Unmarshal(frame, containsSequence)
 	if err != nil {
@@ -754,7 +754,7 @@ func SendAudio(c *websocket.Conn, sessionID string, data []byte) error {
 	msg.Event = 200
 	msg.SessionID = sessionID
 	msg.Payload = data
-	
+
 	frame, err := protocol.Marshal(msg)
 	if err != nil {
 		return fmt.Errorf("marshal TaskRequest message: %w", err)
@@ -762,15 +762,15 @@ func SendAudio(c *websocket.Conn, sessionID string, data []byte) error {
 	if err := sendRequest(c, frame); err != nil {
 		return fmt.Errorf("send request: %w", err)
 	}
-	
+
 	time.Sleep(20 * time.Millisecond)
 	return nil
 }
 
 func SendAudioFromWav(ctx context.Context, c *websocket.Conn, sessionID string, content []byte) error {
-	
+
 	protocol.SetSerialization(SerializationRaw)
-	
+
 	// 16000Hz, 16bit, 1 channel
 	sleepDuration := 20 * time.Millisecond
 	bufferSize := 640
@@ -786,7 +786,7 @@ func SendAudioFromWav(ctx context.Context, c *websocket.Conn, sessionID string, 
 		msg.Event = 200
 		msg.SessionID = sessionID
 		msg.Payload = content[curPos : curPos+bufferSize]
-		
+
 		frame, err := protocol.Marshal(msg)
 		if err != nil {
 			return fmt.Errorf("marshal TaskRequest message: %w", err)
@@ -794,7 +794,7 @@ func SendAudioFromWav(ctx context.Context, c *websocket.Conn, sessionID string, 
 		if err = sendRequest(c, frame); err != nil {
 			return fmt.Errorf("send TaskRequest request: %w", err)
 		}
-		
+
 		curPos += bufferSize
 		// 非最后一片时，休眠对应时长（模拟实时输入）
 		if curPos < len(content) {
@@ -847,7 +847,7 @@ func ReceiveMessage(conn *websocket.Conn) (*Message, error) {
 	if mt != websocket.BinaryMessage && mt != websocket.TextMessage {
 		return nil, fmt.Errorf("unexpected Websocket message type: %d", mt)
 	}
-	
+
 	msg, _, err := Unmarshal(frame, ContainsSequence)
 	if err != nil {
 		if len(frame) > 500 {
@@ -889,11 +889,11 @@ func SendSilenceAudio(c *websocket.Conn, sessionID string) error {
 	if err != nil {
 		return err
 	}
-	
+
 	if err := sendRequest(c, frame); err != nil {
 		return fmt.Errorf("send request: %w", err)
 	}
-	
+
 	time.Sleep(10 * time.Millisecond)
 	return nil
 }
@@ -914,6 +914,6 @@ func GetDialogUsage(data []byte) *UsageResponse {
 		logger.Error("unmarshal usage response fail", "err", err)
 		return nil
 	}
-	
+
 	return usage
 }

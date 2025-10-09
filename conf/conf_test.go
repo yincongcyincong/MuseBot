@@ -31,11 +31,11 @@ func TestInitConf_AllEnvVars(t *testing.T) {
 	os.Setenv("GEMINI_TOKEN", "gemini_test")
 	os.Setenv("ERNIE_AK", "ernie-ak")
 	os.Setenv("ERNIE_SK", "ernie-sk")
-	
+
 	os.Setenv("VOL_AUDIO_APP_ID", "test-audio-app-id")
 	os.Setenv("VOL_AUDIO_TOKEN", "test-audio-token")
 	os.Setenv("VOL_AUDIO_REC_CLUSTER", "test-cluster")
-	
+
 	os.Setenv("TELEGRAM_BOT_TOKEN", "test_bot_token")
 	os.Setenv("DEEPSEEK_TOKEN", "test_deepseek_token")
 	os.Setenv("FREQUENCY_PENALTY", "0.5")
@@ -46,7 +46,7 @@ func TestInitConf_AllEnvVars(t *testing.T) {
 	os.Setenv("STOP", "stop-sequence")
 	os.Setenv("LOG_PROBS", "true")
 	os.Setenv("TOP_LOG_PROBS", "5")
-	
+
 	os.Setenv("TELEGRAM_BOT_TOKEN", "test_bot_token")
 	os.Setenv("DEEPSEEK_TOKEN", "test_deepseek_token")
 	os.Setenv("REQ_KEY", "test-req-key")
@@ -65,7 +65,7 @@ func TestInitConf_AllEnvVars(t *testing.T) {
 	os.Setenv("PHOTO_LANGUAGE", "1")
 	os.Setenv("OPACITY", "0.75")
 	os.Setenv("LOGO_TEXT_CONTENT", "Test Logo")
-	
+
 	os.Setenv("TELEGRAM_BOT_TOKEN", "test_bot_token")
 	os.Setenv("DEEPSEEK_TOKEN", "test_deepseek_token")
 	os.Setenv("EMBEDDING_TYPE", "openai")
@@ -75,9 +75,9 @@ func TestInitConf_AllEnvVars(t *testing.T) {
 	os.Setenv("SPACE", "test-space")
 	os.Setenv("CHUNK_SIZE", "500")
 	os.Setenv("CHUNK_OVERLAP", "50")
-	
+
 	os.Setenv("MCP_CONF_PATH", "./conf/mcp/mcp.json")
-	
+
 	os.Setenv("TELEGRAM_BOT_TOKEN", "test_bot_token")
 	os.Setenv("DEEPSEEK_TOKEN", "test_deepseek_token")
 	os.Setenv("VOL_VIDEO_MODEL", "model-v1")
@@ -86,10 +86,10 @@ func TestInitConf_AllEnvVars(t *testing.T) {
 	os.Setenv("FPS", "30")
 	os.Setenv("RESOLUTION", "1920x1080")
 	os.Setenv("WATERMARK", "true")
-	
+
 	// 调用初始化函数
 	InitConf()
-	
+
 	// 断言检查
 	assertEqual(t, *BaseConfInfo.TelegramBotToken, "test_bot_token", "BotToken")
 	assertEqual(t, *BaseConfInfo.DeepseekToken, "test_deepseek_token", "DeepseekToken")
@@ -110,11 +110,11 @@ func TestInitConf_AllEnvVars(t *testing.T) {
 	assertEqual(t, *BaseConfInfo.GeminiToken, "gemini_test", "GeminiToken")
 	assertEqual(t, *BaseConfInfo.ErnieAK, "ernie-ak", "ErnieAK")
 	assertEqual(t, *BaseConfInfo.ErnieSK, "ernie-sk", "ErnieSK")
-	
+
 	assertEqual(t, *AudioConfInfo.VolAudioAppID, "test-audio-app-id", "AudioAppID")
 	assertEqual(t, *AudioConfInfo.VolAudioToken, "test-audio-token", "AudioToken")
 	assertEqual(t, *AudioConfInfo.VolAudioRecCluster, "test-cluster", "AudioCluster")
-	
+
 	assertFloatEqual(t, *LLMConfInfo.FrequencyPenalty, 0.5, "FrequencyPenalty")
 	assertInt(t, *LLMConfInfo.MaxTokens, 2048, "MaxTokens")
 	assertFloatEqual(t, *LLMConfInfo.PresencePenalty, 1.0, "PresencePenalty")
@@ -122,7 +122,7 @@ func TestInitConf_AllEnvVars(t *testing.T) {
 	assertFloatEqual(t, *LLMConfInfo.TopP, 0.8, "TopP")
 	assertBool(t, *LLMConfInfo.LogProbs, true, "LogProbs")
 	assertInt(t, *LLMConfInfo.TopLogProbs, 5, "TopLogProbs")
-	
+
 	assertEqual(t, *PhotoConfInfo.ReqKey, "test-req-key", "ReqKey")
 	assertEqual(t, *PhotoConfInfo.ModelVersion, "v2.1", "ModelVersion")
 	assertEqual(t, *PhotoConfInfo.ReqScheduleConf, "scheduleA", "ReqScheduleConf")
@@ -139,7 +139,7 @@ func TestInitConf_AllEnvVars(t *testing.T) {
 	assertInt(t, *PhotoConfInfo.Language, 1, "Language")
 	assertFloatEqual(t, *PhotoConfInfo.Opacity, 0.75, "Opacity")
 	assertEqual(t, *PhotoConfInfo.LogoTextContent, "Test Logo", "LogoTextContent")
-	
+
 	assertEqual(t, *RagConfInfo.EmbeddingType, "openai", "EmbeddingType")
 	assertEqual(t, *RagConfInfo.KnowledgePath, "/data/knowledge", "KnowledgePath")
 	assertEqual(t, *RagConfInfo.VectorDBType, "milvus", "VectorDBType")
@@ -147,16 +147,16 @@ func TestInitConf_AllEnvVars(t *testing.T) {
 	assertEqual(t, *RagConfInfo.Space, "test-space", "ChromaSpace")
 	assertInt(t, *RagConfInfo.ChunkSize, 500, "ChunkSize")
 	assertInt(t, *RagConfInfo.ChunkOverlap, 50, "ChunkOverlap")
-	
+
 	assertEqual(t, *McpConfPath, "./conf/mcp/mcp.json", "MCP_CONF_PATH")
-	
+
 	assertEqual(t, *VideoConfInfo.VolVideoModel, "model-v1", "VOL_VIDEO_MODEL")
 	assertEqual(t, *VideoConfInfo.Radio, "radio-123", "RADIO")
 	assertInt(t, *VideoConfInfo.Duration, 120, "DURATION")
 	assertInt(t, *VideoConfInfo.FPS, 30, "FPS")
 	assertEqual(t, *VideoConfInfo.Resolution, "1920x1080", "RESOLUTION")
 	assertBool(t, *VideoConfInfo.Watermark, true, "WATERMARK")
-	
+
 	os.Clearenv()
 }
 

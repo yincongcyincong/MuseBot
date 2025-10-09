@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	_ "net/http/pprof"
-	
+
 	"github.com/yincongcyincong/MuseBot/admin/checkpoint"
 	"github.com/yincongcyincong/MuseBot/admin/conf"
 	"github.com/yincongcyincong/MuseBot/admin/controller"
@@ -18,16 +18,16 @@ func main() {
 	controller.InitSessionStore()
 	db.InitTable()
 	checkpoint.InitStatusCheck()
-	
+
 	http.Handle("/", View())
-	
+
 	// User API
 	http.HandleFunc("/user/create", controller.RequireLogin(controller.CreateUser))
 	http.HandleFunc("/user/get", controller.RequireLogin(controller.GetUser))
 	http.HandleFunc("/user/update", controller.RequireLogin(controller.UpdateUserPassword))
 	http.HandleFunc("/user/delete", controller.RequireLogin(controller.DeleteUser))
 	http.HandleFunc("/user/list", controller.RequireLogin(controller.ListUsers))
-	
+
 	// Bot API
 	http.HandleFunc("/bot/dashboard", controller.RequireLogin(controller.Dashboard))
 	http.HandleFunc("/bot/create", controller.RequireLogin(controller.CreateBot))
@@ -55,11 +55,11 @@ func main() {
 	http.HandleFunc("/bot/mcp/sync", controller.RequireLogin(controller.SyncMCPServer))
 	http.HandleFunc("/bot/communicate", controller.RequireLogin(controller.Communicate))
 	http.HandleFunc("/bot/admin/chat", controller.RequireLogin(controller.GetBotAdminRecord))
-	
+
 	http.HandleFunc("/user/login", controller.UserLogin)
 	http.HandleFunc("/user/me", controller.RequireLogin(controller.GetCurrentUserHandler))
 	http.HandleFunc("/user/logout", controller.RequireLogin(controller.UserLogout))
-	
+
 	err := http.ListenAndServe(fmt.Sprintf(":%s", *conf.BaseConfInfo.AdminPort), nil)
 	if err != nil {
 		panic(err)

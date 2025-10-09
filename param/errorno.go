@@ -25,9 +25,9 @@ func (e *errorErrno) Errno() uint32 {
 const (
 	CodeSuccess = 0
 	CodeUnknown = 1
-	
+
 	CodeParamError = 210009
-	
+
 	CodeServerFail       = 110003
 	CodeMethodNotFound   = 210003
 	CodeCallUserFuncFail = 210004
@@ -41,7 +41,7 @@ const (
 const (
 	MsgSuccess = "success"
 	MsgUnknown = "err unknown"
-	
+
 	MsgParamError       = "param error"
 	MsgServerFail       = "request server fail"
 	MsgDBWriteFail      = "db write fail"
@@ -56,9 +56,9 @@ const (
 var (
 	ErrSuccess = New(CodeSuccess, MsgSuccess)
 	ErrUnknown = New(CodeUnknown, MsgUnknown)
-	
+
 	ErrParamError = New(CodeParamError, MsgParamError)
-	
+
 	ErrMethodNotFound   = New(CodeMethodNotFound, MsgMethodNotFound)
 	ErrServerFail       = New(CodeServerFail, MsgServerFail)
 	ErrCallUserFuncFail = New(CodeCallUserFuncFail, MsgCallUserFuncFail)

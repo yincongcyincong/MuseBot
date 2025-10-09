@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
-	
+
 	"github.com/yincongcyincong/MuseBot/param"
 )
 
@@ -20,10 +20,10 @@ func Failure(w http.ResponseWriter, code int, message string, data interface{}) 
 		Message: message,
 		Data:    data,
 	}
-	
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK) // 可选，默认就是 200
-	
+
 	json.NewEncoder(w).Encode(resp)
 }
 
@@ -33,10 +33,10 @@ func Success(w http.ResponseWriter, data interface{}) {
 		Message: param.MsgSuccess,
 		Data:    data,
 	}
-	
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK) // 可选，默认就是 200
-	
+
 	json.NewEncoder(w).Encode(resp)
 }
 
@@ -46,11 +46,11 @@ func HandleJsonBody(r *http.Request, v interface{}) error {
 		return err
 	}
 	defer r.Body.Close()
-	
+
 	// 解析 JSON 数据到结构体
 	if err = json.Unmarshal(body, v); err != nil {
 		return err
 	}
-	
+
 	return nil
 }

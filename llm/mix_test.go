@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"testing"
-	
+
 	openrouter "github.com/revrost/go-openrouter"
 	"github.com/stretchr/testify/assert"
 	"github.com/yincongcyincong/MuseBot/conf"
@@ -15,13 +15,13 @@ func TestAIRouterReq_GetModel_Default(t *testing.T) {
 	*conf.BaseConfInfo.Type = param.OpenRouter
 	mock := &AIRouterReq{}
 	l := &LLM{UserId: "non-exist"}
-	
+
 	mock.GetModel(l)
 	assert.Equal(t, param.DeepseekDeepseekR1_0528Free, l.Model)
 }
 
 func TestAIRouterReq_GetModel_UserMode(t *testing.T) {
-	
+
 	*conf.BaseConfInfo.Type = param.OpenRouter
 	mock := &AIRouterReq{}
 	l := &LLM{UserId: "1"}
@@ -50,7 +50,7 @@ func TestAIRouterReq_AppendMessages(t *testing.T) {
 	child := &AIRouterReq{
 		OpenRouterMsgs: []openrouter.ChatCompletionMessage{{Role: "assistant", Content: openrouter.Content{Text: "Child"}}},
 	}
-	
+
 	main.AppendMessages(child)
 	assert.Len(t, main.OpenRouterMsgs, 2)
 	assert.Equal(t, "Child", main.OpenRouterMsgs[1].Content.Text)
@@ -60,7 +60,7 @@ func TestAIRouterReq_GetMessage(t *testing.T) {
 	mock := &AIRouterReq{}
 	mock.GetMessage("user", "test")
 	assert.Equal(t, "test", mock.OpenRouterMsgs[0].Content.Text)
-	
+
 	mock.GetMessage("assistant", "answer")
 	assert.Equal(t, "answer", mock.OpenRouterMsgs[1].Content.Text)
 }

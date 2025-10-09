@@ -14,7 +14,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	
+
 	"github.com/yincongcyincong/MuseBot/admin/checkpoint"
 	adminConf "github.com/yincongcyincong/MuseBot/admin/conf"
 	"github.com/yincongcyincong/MuseBot/admin/db"
@@ -71,7 +71,7 @@ func Dashboard(w http.ResponseWriter, r *http.Request) {
 	if day == "" {
 		day = "7"
 	}
-	
+
 	resp, err := adminUtils.GetCrtClient(botInfo).Get(strings.TrimSuffix(botInfo.Address, "/") +
 		fmt.Sprintf("/dashboard?day=%s", day))
 	if err != nil {
@@ -80,7 +80,7 @@ func Dashboard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer resp.Body.Close()
-	
+
 	_, err = io.Copy(w, resp.Body)
 	if err != nil {
 		logger.Error("copy response body error", "err", err)
@@ -97,7 +97,7 @@ func CreateBot(w http.ResponseWriter, r *http.Request) {
 		utils.Failure(w, param.CodeParamError, param.MsgParamError, err)
 		return
 	}
-	
+
 	if b.Command == "" {
 		resp, err := adminUtils.GetCrtClient(&db.Bot{
 			CaFile:  b.CaFile,
@@ -114,14 +114,14 @@ func CreateBot(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
-	
+
 	commands := adminUtils.ParseCommand(b.Command)
 	if len(commands) == 0 || commands["bot_name"] == "" || commands["http_host"] == "" {
 		logger.Error("create bot error", "commands", commands)
 		utils.Failure(w, param.CodeParamError, param.MsgParamError, errors.New("command is empty"))
 		return
 	}
-	
+
 	b.Address = adminUtils.NormalizeHTTP(commands["http_host"])
 	b.Name = commands["bot_name"]
 	err = db.CreateBot(b.Address, b.Name, b.CrtFile, b.KeyFile, b.CaFile, b.Command)
@@ -130,9 +130,9 @@ func CreateBot(w http.ResponseWriter, r *http.Request) {
 		utils.Failure(w, param.CodeDBWriteFail, param.MsgDBWriteFail, err)
 		return
 	}
-	
+
 	go checkpoint.ScheduleBotChecks()
-	
+
 	if b.IsStart {
 		err = adminUtils.StartDetachedProcess(b.Command)
 		if err != nil {
@@ -141,7 +141,7 @@ func CreateBot(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	
+
 	utils.Success(w, "bot created")
 }
 
@@ -152,7 +152,7 @@ func RestartBot(w http.ResponseWriter, r *http.Request) {
 		utils.Failure(w, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
 		return
 	}
-	
+
 	params := r.URL.Query().Get("params")
 	resp, err := adminUtils.GetCrtClient(botInfo).Get(strings.TrimSuffix(botInfo.Address, "/") + "/restart?params=" + url.QueryEscape(params))
 	if err != nil {
@@ -160,7 +160,7 @@ func RestartBot(w http.ResponseWriter, r *http.Request) {
 		utils.Failure(w, param.CodeServerFail, param.MsgServerFail, err)
 		return
 	}
-	
+
 	defer resp.Body.Close()
 	_, err = io.Copy(w, resp.Body)
 	if err != nil {
@@ -177,7 +177,7 @@ func StopBot(w http.ResponseWriter, r *http.Request) {
 		utils.Failure(w, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
 		return
 	}
-	
+
 	adminUtils.GetCrtClient(botInfo).Get(strings.TrimSuffix(botInfo.Address, "/") + "/stop")
 	utils.Success(w, "bot stopped")
 }
@@ -189,14 +189,14 @@ func GetBot(w http.ResponseWriter, r *http.Request) {
 		utils.Failure(w, param.CodeParamError, param.MsgParamError, errors.New("empty id"))
 		return
 	}
-	
+
 	bot, err := db.GetBotByID(idStr)
 	if err != nil {
 		logger.Error("get bot error", "reason", "not found", "id", idStr, "err", err)
 		utils.Failure(w, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
 		return
 	}
-	
+
 	utils.Success(w, bot)
 }
 
@@ -208,7 +208,7 @@ func UpdateBotAddress(w http.ResponseWriter, r *http.Request) {
 		utils.Failure(w, param.CodeParamError, param.MsgParamError, err)
 		return
 	}
-	
+
 	if b.Command == "" {
 		resp, err := adminUtils.GetCrtClient(&db.Bot{
 			CaFile:  b.CaFile,
@@ -225,21 +225,21 @@ func UpdateBotAddress(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
-	
+
 	commands := adminUtils.ParseCommand(b.Command)
 	if len(commands) == 0 || commands["bot_name"] == "" || commands["http_host"] == "" {
 		logger.Error("create bot error", "commands", commands)
 		utils.Failure(w, param.CodeParamError, param.MsgParamError, errors.New("command is empty"))
 		return
 	}
-	
+
 	botInfo, err := db.GetBotByID(strconv.Itoa(b.ID))
 	if err != nil {
 		logger.Error("update bot address error", "reason", "not found", "id", b.ID, "err", err)
 		utils.Failure(w, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
 		return
 	}
-	
+
 	b.Address = adminUtils.NormalizeHTTP(commands["http_host"])
 	b.Name = commands["bot_name"]
 	err = db.UpdateBotAddress(b.ID, b.Address, b.Name, b.CrtFile, b.KeyFile, b.CaFile, b.Command)
@@ -248,12 +248,12 @@ func UpdateBotAddress(w http.ResponseWriter, r *http.Request) {
 		utils.Failure(w, param.CodeDBWriteFail, param.MsgDBWriteFail, err)
 		return
 	}
-	
+
 	go checkpoint.ScheduleBotChecks()
 	if botInfo.Address != b.Address || b.IsStart {
 		adminUtils.GetCrtClient(botInfo).Get(strings.TrimSuffix(botInfo.Address, "/") + "/stop")
 	}
-	
+
 	if b.IsStart {
 		err = adminUtils.StartDetachedProcess(b.Command)
 		if err != nil {
@@ -262,7 +262,7 @@ func UpdateBotAddress(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	
+
 	utils.Success(w, "bot address updated")
 }
 
@@ -274,38 +274,38 @@ func SoftDeleteBot(w http.ResponseWriter, r *http.Request) {
 		utils.Failure(w, param.CodeParamError, param.MsgParamError, err)
 		return
 	}
-	
+
 	botInfo, err := db.GetBotByID(idStr)
 	if err != nil {
 		logger.Error("get bot error", "reason", "not found", "id", idStr, "err", err)
 		utils.Failure(w, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
 		return
 	}
-	
+
 	err = db.SoftDeleteBot(id)
 	if err != nil {
 		logger.Error("soft delete bot error", "reason", "db fail", "id", id, "err", err)
 		utils.Failure(w, param.CodeDBWriteFail, param.MsgDBWriteFail, err)
 		return
 	}
-	
+
 	go checkpoint.ScheduleBotChecks()
 	adminUtils.GetCrtClient(botInfo).Get(strings.TrimSuffix(botInfo.Address, "/") + "/stop")
-	
+
 	utils.Success(w, "bot deleted")
 }
 
 func ListBots(w http.ResponseWriter, r *http.Request) {
 	page, pageSize := parsePaginationParams(r)
-	
+
 	if *adminConf.RegisterConfInfo.Type != "" {
 		bots := make([]*RegisterBot, 0)
-		
+
 		var total = 0
 		var index = 0
 		start := (page - 1) * pageSize
 		end := start + pageSize
-		
+
 		checkpoint.BotMap.Range(func(key, value any) bool {
 			total++
 			if index >= start && index < end {
@@ -323,7 +323,7 @@ func ListBots(w http.ResponseWriter, r *http.Request) {
 			index++
 			return true
 		})
-		
+
 		utils.Success(w, map[string]interface{}{
 			"list":        bots,
 			"total":       total,
@@ -331,9 +331,9 @@ func ListBots(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
-	
+
 	address := r.URL.Query().Get("address")
-	
+
 	offset := (page - 1) * pageSize
 	bots, total, err := db.ListBots(offset, pageSize, address)
 	if err != nil {
@@ -341,7 +341,7 @@ func ListBots(w http.ResponseWriter, r *http.Request) {
 		utils.Failure(w, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
 		return
 	}
-	
+
 	for _, bot := range bots {
 		statusInter, ok := checkpoint.BotMap.Load(bot.ID)
 		if ok {
@@ -353,7 +353,7 @@ func ListBots(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
-	
+
 	utils.Success(w, map[string]interface{}{
 		"list":        bots,
 		"total":       total,
@@ -368,16 +368,16 @@ func GetBotConf(w http.ResponseWriter, r *http.Request) {
 		utils.Failure(w, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
 		return
 	}
-	
+
 	resp, err := adminUtils.GetCrtClient(botInfo).Get(strings.TrimSuffix(botInfo.Address, "/") + "/conf/get")
 	if err != nil {
 		logger.Error("get bot conf error", "err", err)
 		utils.Failure(w, param.CodeServerFail, param.MsgServerFail, err)
 		return
 	}
-	
+
 	defer resp.Body.Close()
-	
+
 	bodyByte, err := io.ReadAll(resp.Body)
 	httpRes := new(GetBotConfRes)
 	err = json.Unmarshal(bodyByte, httpRes)
@@ -386,7 +386,7 @@ func GetBotConf(w http.ResponseWriter, r *http.Request) {
 		utils.Failure(w, param.CodeServerFail, param.MsgServerFail, err)
 		return
 	}
-	
+
 	res := map[string]map[string]any{
 		"base":  make(map[string]any),
 		"audio": make(map[string]any),
@@ -409,7 +409,7 @@ func GetBotConf(w http.ResponseWriter, r *http.Request) {
 	for k, v := range CompareFlagsWithStructTags(httpRes.Data.Video) {
 		res["video"][k] = v
 	}
-	
+
 	utils.Success(w, res)
 }
 
@@ -420,14 +420,14 @@ func AddUserToken(w http.ResponseWriter, r *http.Request) {
 		utils.Failure(w, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
 		return
 	}
-	
+
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		logger.Error("get bot conf error", "err", err)
 		utils.Failure(w, param.CodeParamError, param.MsgParamError, err)
 		return
 	}
-	
+
 	req, err := http.NewRequest("POST", strings.TrimSuffix(botInfo.Address, "/")+"/user/token/add", bytes.NewBuffer(body))
 	if err != nil {
 		logger.Error("Error creating request", "err", err)
@@ -435,14 +435,14 @@ func AddUserToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	req.Header.Set("Content-Type", "application/json")
-	
+
 	resp, err := adminUtils.GetCrtClient(botInfo).Do(req)
 	if err != nil {
 		logger.Error("get bot conf error", "err", err)
 		utils.Failure(w, param.CodeServerFail, param.MsgServerFail, err)
 		return
 	}
-	
+
 	defer resp.Body.Close()
 	_, err = io.Copy(w, resp.Body)
 	if err != nil {
@@ -472,7 +472,7 @@ func GetBotUser(w http.ResponseWriter, r *http.Request) {
 		utils.Failure(w, param.CodeServerFail, param.MsgServerFail, err)
 		return
 	}
-	
+
 	defer resp.Body.Close()
 	_, err = io.Copy(w, resp.Body)
 	if err != nil {
@@ -493,14 +493,14 @@ func GetBotAdminRecord(w http.ResponseWriter, r *http.Request) {
 		utils.Failure(w, param.CodeNotLogin, param.MsgNotLogin, nil)
 		return
 	}
-	
+
 	botInfo, err := getBot(r)
 	if err != nil {
 		logger.Error("get bot user record error", "err", err)
 		utils.Failure(w, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
 		return
 	}
-	
+
 	resp, err := adminUtils.GetCrtClient(botInfo).Get(strings.TrimSuffix(botInfo.Address, "/") +
 		fmt.Sprintf("/record/list?page=%s&page_size=%s&user_id=%d&is_deleted=0&record_type=3",
 			r.FormValue("page"), r.FormValue("pageSize"), userIDValue.(int)*-1))
@@ -509,7 +509,7 @@ func GetBotAdminRecord(w http.ResponseWriter, r *http.Request) {
 		utils.Failure(w, param.CodeServerFail, param.MsgServerFail, err)
 		return
 	}
-	
+
 	defer resp.Body.Close()
 	_, err = io.Copy(w, resp.Body)
 	if err != nil {
@@ -539,7 +539,7 @@ func GetBotUserRecord(w http.ResponseWriter, r *http.Request) {
 		utils.Failure(w, param.CodeServerFail, param.MsgServerFail, err)
 		return
 	}
-	
+
 	defer resp.Body.Close()
 	_, err = io.Copy(w, resp.Body)
 	if err != nil {
@@ -559,7 +559,7 @@ func GetAllOnlineBot(w http.ResponseWriter, r *http.Request) {
 		}
 		return true
 	})
-	
+
 	utils.Success(w, res)
 }
 
@@ -570,14 +570,14 @@ func UpdateBotConf(w http.ResponseWriter, r *http.Request) {
 		utils.Failure(w, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
 		return
 	}
-	
+
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		logger.Error("get bot conf error", "err", err)
 		utils.Failure(w, param.CodeParamError, param.MsgParamError, err)
 		return
 	}
-	
+
 	req, err := http.NewRequest("POST", strings.TrimSuffix(botInfo.Address, "/")+"/conf/update", bytes.NewBuffer(body))
 	if err != nil {
 		logger.Error("Error creating request", "err", err)
@@ -585,14 +585,14 @@ func UpdateBotConf(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	req.Header.Set("Content-Type", "application/json")
-	
+
 	resp, err := adminUtils.GetCrtClient(botInfo).Do(req)
 	if err != nil {
 		logger.Error("get bot conf error", "err", err)
 		utils.Failure(w, param.CodeServerFail, param.MsgServerFail, err)
 		return
 	}
-	
+
 	defer resp.Body.Close()
 	_, err = io.Copy(w, resp.Body)
 	if err != nil {
@@ -609,14 +609,14 @@ func GetBotCommand(w http.ResponseWriter, r *http.Request) {
 		utils.Failure(w, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
 		return
 	}
-	
+
 	resp, err := adminUtils.GetCrtClient(botInfo).Get(strings.TrimSuffix(botInfo.Address, "/") + "/command/get")
 	if err != nil {
 		logger.Error("get bot conf error", "err", err)
 		utils.Failure(w, param.CodeServerFail, param.MsgServerFail, err)
 		return
 	}
-	
+
 	defer resp.Body.Close()
 	_, err = io.Copy(w, resp.Body)
 	if err != nil {
@@ -633,14 +633,14 @@ func GetBotMCPConf(w http.ResponseWriter, r *http.Request) {
 		utils.Failure(w, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
 		return
 	}
-	
+
 	resp, err := adminUtils.GetCrtClient(botInfo).Get(strings.TrimSuffix(botInfo.Address, "/") + "/mcp/get")
 	if err != nil {
 		logger.Error("get bot conf error", "err", err)
 		utils.Failure(w, param.CodeServerFail, param.MsgServerFail, err)
 		return
 	}
-	
+
 	defer resp.Body.Close()
 	_, err = io.Copy(w, resp.Body)
 	if err != nil {
@@ -657,14 +657,14 @@ func UpdateBotMCPConf(w http.ResponseWriter, r *http.Request) {
 		utils.Failure(w, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
 		return
 	}
-	
+
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		logger.Error("get bot conf error", "err", err)
 		utils.Failure(w, param.CodeParamError, param.MsgParamError, err)
 		return
 	}
-	
+
 	name := r.URL.Query().Get("name")
 	req, err := http.NewRequest("POST", strings.TrimSuffix(botInfo.Address, "/")+"/mcp/update?name="+name, bytes.NewBuffer(body))
 	if err != nil {
@@ -673,14 +673,14 @@ func UpdateBotMCPConf(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	req.Header.Set("Content-Type", "application/json")
-	
+
 	resp, err := adminUtils.GetCrtClient(botInfo).Do(req)
 	if err != nil {
 		logger.Error("get bot conf error", "err", err)
 		utils.Failure(w, param.CodeServerFail, param.MsgServerFail, err)
 		return
 	}
-	
+
 	defer resp.Body.Close()
 	_, err = io.Copy(w, resp.Body)
 	if err != nil {
@@ -697,7 +697,7 @@ func DeleteBotMCPConf(w http.ResponseWriter, r *http.Request) {
 		utils.Failure(w, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
 		return
 	}
-	
+
 	name := r.URL.Query().Get("name")
 	resp, err := adminUtils.GetCrtClient(botInfo).Get(strings.TrimSuffix(botInfo.Address, "/") + "/mcp/delete?name=" + name)
 	if err != nil {
@@ -705,7 +705,7 @@ func DeleteBotMCPConf(w http.ResponseWriter, r *http.Request) {
 		utils.Failure(w, param.CodeServerFail, param.MsgServerFail, err)
 		return
 	}
-	
+
 	defer resp.Body.Close()
 	_, err = io.Copy(w, resp.Body)
 }
@@ -717,7 +717,7 @@ func DisableBotMCPConf(w http.ResponseWriter, r *http.Request) {
 		utils.Failure(w, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
 		return
 	}
-	
+
 	name := r.URL.Query().Get("name")
 	disable := r.URL.Query().Get("disable")
 	resp, err := adminUtils.GetCrtClient(botInfo).Get(strings.TrimSuffix(botInfo.Address, "/") + "/mcp/disable?disable=" + disable + "&name=" + name)
@@ -726,7 +726,7 @@ func DisableBotMCPConf(w http.ResponseWriter, r *http.Request) {
 		utils.Failure(w, param.CodeServerFail, param.MsgServerFail, err)
 		return
 	}
-	
+
 	defer resp.Body.Close()
 	_, err = io.Copy(w, resp.Body)
 }
@@ -738,7 +738,7 @@ func GetPrepareMCPServer(w http.ResponseWriter, r *http.Request) {
 		utils.Failure(w, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
 		return
 	}
-	
+
 	resp, err := adminUtils.GetCrtClient(botInfo).Get(strings.TrimSuffix(botInfo.Address, "/") + "/mcp/get")
 	if err != nil {
 		logger.Error("get bot conf error", "err", err)
@@ -746,25 +746,25 @@ func GetPrepareMCPServer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer resp.Body.Close()
-	
+
 	byteBody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		logger.Error("read response body error", "err", err)
 		utils.Failure(w, param.CodeServerFail, param.MsgServerFail, err)
 		return
 	}
-	
+
 	getRes := struct {
 		Data *mcpParam.McpClientGoConfig `json:"data"`
 	}{}
-	
+
 	err = json.Unmarshal(byteBody, &getRes)
 	if err != nil {
 		logger.Error("unmarshal response body error", "err", err)
 		utils.Failure(w, param.CodeServerFail, param.MsgServerFail, err)
 		return
 	}
-	
+
 	res := &mcpParam.McpClientGoConfig{
 		McpServers: make(map[string]*mcpParam.MCPConfig),
 	}
@@ -773,7 +773,7 @@ func GetPrepareMCPServer(w http.ResponseWriter, r *http.Request) {
 			res.McpServers[name] = config
 		}
 	}
-	
+
 	utils.Success(w, res)
 }
 
@@ -784,7 +784,7 @@ func SyncMCPServer(w http.ResponseWriter, r *http.Request) {
 		utils.Failure(w, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
 		return
 	}
-	
+
 	resp, err := adminUtils.GetCrtClient(botInfo).Get(strings.TrimSuffix(botInfo.Address, "/") + "/mcp/sync")
 	if err != nil {
 		logger.Error("get bot conf error", "err", err)
@@ -816,26 +816,26 @@ func Communicate(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Streaming unsupported!", http.StatusInternalServerError)
 		return
 	}
-	
+
 	session, err := sessionStore.Get(r, sessionName)
 	if err != nil {
 		utils.Failure(w, param.CodeNotLogin, param.MsgNotLogin, nil)
 		return
 	}
-	
+
 	userIDValue, ok := session.Values["user_id"]
 	if !ok || userIDValue == nil {
 		utils.Failure(w, param.CodeNotLogin, param.MsgNotLogin, nil)
 		return
 	}
-	
+
 	err = r.ParseMultipartForm(10 << 20)
 	if err != nil {
 		logger.Error("parse form error", "err", err)
 		utils.Failure(w, param.CodeServerFail, param.MsgServerFail, err)
 		return
 	}
-	
+
 	file, _, err := r.FormFile("file")
 	var data []byte
 	if err != nil {
@@ -846,7 +846,7 @@ func Communicate(w http.ResponseWriter, r *http.Request) {
 		}
 	} else {
 		defer file.Close()
-		
+
 		data, err = io.ReadAll(file)
 		if err != nil {
 			http.Error(w, "Failed to read uploaded file", http.StatusInternalServerError)
@@ -854,7 +854,7 @@ func Communicate(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	
+
 	req, err := http.NewRequest("POST", strings.TrimSuffix(botInfo.Address, "/")+
 		fmt.Sprintf("/communicate?prompt=%s&user_id=-%d",
 			url.QueryEscape(r.URL.Query().Get("prompt")), userIDValue), bytes.NewBuffer(data))
@@ -864,7 +864,7 @@ func Communicate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	req.Header.Set("Content-Type", "application/json")
-	
+
 	resp, err := adminUtils.GetCrtClient(botInfo).Do(req)
 	if err != nil {
 		logger.Error("get bot conf error", "err", err)
@@ -872,9 +872,9 @@ func Communicate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer resp.Body.Close()
-	
+
 	reader := bufio.NewReader(resp.Body)
-	
+
 	for {
 		line, err := reader.ReadString('\n')
 		fmt.Fprint(w, line)
@@ -904,7 +904,7 @@ func Log(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Streaming unsupported!", http.StatusInternalServerError)
 		return
 	}
-	
+
 	resp, err := adminUtils.GetCrtClient(botInfo).Get(strings.TrimSuffix(botInfo.Address, "/") + "/log")
 	if err != nil {
 		logger.Error("get bot conf error", "err", err)
@@ -912,9 +912,9 @@ func Log(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer resp.Body.Close()
-	
+
 	reader := bufio.NewReader(resp.Body)
-	
+
 	for {
 		line, err := reader.ReadString('\n')
 		if len(line) > 0 {
@@ -937,26 +937,26 @@ func getBot(r *http.Request) (*db.Bot, error) {
 		logger.Error("get bot error", "id", idStr)
 		return nil, param.ErrParamError
 	}
-	
+
 	if *adminConf.RegisterConfInfo.Type != "" {
 		return &db.Bot{
 			Address: idStr,
 		}, nil
 	}
-	
+
 	bot, err := db.GetBotByID(idStr)
 	if err != nil {
 		logger.Error("get bot error", "id", idStr, "err", err)
 		return nil, param.ErrDBQueryFail
 	}
-	
+
 	return bot, nil
 }
 
 func CompareFlagsWithStructTags(cfg interface{}) map[string]any {
 	v := reflect.ValueOf(cfg)
 	t := reflect.TypeOf(cfg)
-	
+
 	// If it's a pointer, get the element it points to
 	if t.Kind() == reflect.Ptr {
 		if v.IsNil() {
@@ -966,12 +966,12 @@ func CompareFlagsWithStructTags(cfg interface{}) map[string]any {
 		v = v.Elem()
 		t = t.Elem()
 	}
-	
+
 	if t.Kind() != reflect.Struct {
 		logger.Warn("Input must be a struct or pointer to struct")
 		return nil
 	}
-	
+
 	res := make(map[string]any)
 	for i := 0; i < t.NumField(); i++ {
 		field := t.Field(i)
@@ -979,7 +979,7 @@ func CompareFlagsWithStructTags(cfg interface{}) map[string]any {
 		if jsonTag == "" || SkipKey[jsonTag] || jsonTag == "-" {
 			continue
 		}
-		
+
 		structValue := ""
 		switch jsonTag {
 		case "allowed_user_ids", "allowed_group_ids", "admin_user_ids":
@@ -987,10 +987,10 @@ func CompareFlagsWithStructTags(cfg interface{}) map[string]any {
 		default:
 			structValue = utils.ValueToString(v.Field(i).Interface())
 		}
-		
+
 		res[jsonTag] = structValue
 	}
-	
+
 	return res
 }
 
@@ -1001,30 +1001,30 @@ func InsertUserRecord(w http.ResponseWriter, r *http.Request) {
 		utils.Failure(w, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
 		return
 	}
-	
+
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		logger.Error("get bot conf error", "err", err)
 		utils.Failure(w, param.CodeParamError, param.MsgParamError, err)
 		return
 	}
-	
+
 	req, err := http.NewRequest("POST", strings.TrimSuffix(botInfo.Address, "/")+"/user/insert/record", bytes.NewBuffer(body))
 	if err != nil {
 		logger.Error("Error creating request", "err", err)
 		utils.Failure(w, param.CodeServerFail, param.MsgServerFail, err)
 		return
 	}
-	
+
 	req.Header.Set("Content-Type", "application/json")
-	
+
 	resp, err := adminUtils.GetCrtClient(botInfo).Do(req)
 	if err != nil {
 		logger.Error("get bot conf error", "err", err)
 		utils.Failure(w, param.CodeServerFail, param.MsgServerFail, err)
 		return
 	}
-	
+
 	defer resp.Body.Close()
 	_, err = io.Copy(w, resp.Body)
 	if err != nil {

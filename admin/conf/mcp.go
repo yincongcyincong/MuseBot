@@ -75,7 +75,7 @@ var MCPConf = &param.McpClientGoConfig{
 				"AP_PUB_KEY":    "MIIB...DAQAB",
 				"AP_NOTIFY_URL": "https://your-own-server",
 				"AP_RETURN_URL": "https://success-page",
-				"...其他参数":   "...其他值", // Note: Key from original data
+				"...其他参数":       "...其他值", // Note: Key from original data
 			},
 			Description: "request alipay payment api",
 		},

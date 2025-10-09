@@ -3,7 +3,7 @@ package register
 import (
 	"context"
 	"time"
-	
+
 	"github.com/yincongcyincong/MuseBot/conf"
 	"github.com/yincongcyincong/MuseBot/logger"
 	"github.com/yincongcyincong/MuseBot/utils"
@@ -14,7 +14,7 @@ func InitRegister() {
 	if *conf.RegisterConfInfo.Type == "" {
 		return
 	}
-	
+
 	switch *conf.RegisterConfInfo.Type {
 	case "etcd":
 		StartEtcdRegister()
@@ -25,7 +25,7 @@ func StartEtcdRegister() {
 	if len(conf.RegisterConfInfo.EtcdURLs) == 0 {
 		return
 	}
-	
+
 	go func() {
 		for {
 			cli, err := clientv3.New(clientv3.Config{
@@ -39,11 +39,11 @@ func StartEtcdRegister() {
 				time.Sleep(3 * time.Second)
 				continue
 			}
-			
+
 			serviceKey := "/services/musebot/" +
 				utils.MD5(*conf.BaseConfInfo.HTTPHost) +
 				"/" + *conf.BaseConfInfo.BotName
-			
+
 			leaseResp, err := cli.Grant(context.Background(), 5)
 			if err != nil {
 				logger.Error("lease grant failed:", err)
@@ -51,7 +51,7 @@ func StartEtcdRegister() {
 				time.Sleep(3 * time.Second)
 				continue
 			}
-			
+
 			_, err = cli.Put(context.Background(), serviceKey, *conf.BaseConfInfo.HTTPHost, clientv3.WithLease(leaseResp.ID))
 			if err != nil {
 				logger.Error("register put fail:", err)
@@ -59,7 +59,7 @@ func StartEtcdRegister() {
 				time.Sleep(3 * time.Second)
 				continue
 			}
-			
+
 			ch, err := cli.KeepAlive(context.Background(), leaseResp.ID)
 			if err != nil {
 				logger.Error("keepalive start failed:", err)
@@ -67,9 +67,9 @@ func StartEtcdRegister() {
 				time.Sleep(3 * time.Second)
 				continue
 			}
-			
+
 			logger.Info("service registered", "serviceKey", serviceKey)
-			
+
 			keepAliveOK := true
 			for ka := range ch {
 				if ka == nil {
@@ -78,9 +78,9 @@ func StartEtcdRegister() {
 					break
 				}
 			}
-			
+
 			cli.Close()
-			
+
 			// 如果 keepalive 挂了，3 秒后重试注册
 			if !keepAliveOK {
 				time.Sleep(3 * time.Second)

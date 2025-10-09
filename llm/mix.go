@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 	"unicode"
-	
+
 	"github.com/cohesion-org/deepseek-go/constants"
 	openrouter "github.com/revrost/go-openrouter"
 	"github.com/sashabaranov/go-openai"
@@ -30,7 +30,7 @@ type AIRouterReq struct {
 	ToolCall           []openrouter.ToolCall
 	ToolMessage        []openrouter.ChatCompletionMessage
 	CurrentToolMessage []openrouter.ChatCompletionMessage
-	
+
 	OpenRouterMsgs []openrouter.ChatCompletionMessage
 }
 
@@ -70,7 +70,7 @@ func (d *AIRouterReq) GetModel(l *LLM) {
 		logger.ErrorCtx(l.Ctx, "Error getting user info", "err", err)
 		return
 	}
-	
+
 	switch *conf.BaseConfInfo.Type {
 	case param.AI302:
 		l.Model = openai.GPT3Dot5Turbo
@@ -83,20 +83,20 @@ func (d *AIRouterReq) GetModel(l *LLM) {
 			l.Model = userInfo.Mode
 		}
 	}
-	
+
 	logger.InfoCtx(l.Ctx, "User info", "userID", l.UserId, "mode", l.Model)
-	
+
 }
 
 func (d *AIRouterReq) Send(ctx context.Context, l *LLM) error {
 	if l.OverLoop() {
 		return errors.New("too many loops")
 	}
-	
+
 	start := time.Now()
-	
+
 	client := GetMixClient(false)
-	
+
 	request := openrouter.ChatCompletionRequest{
 		Model:  l.Model,
 		Stream: true,
@@ -113,9 +113,9 @@ func (d *AIRouterReq) Send(ctx context.Context, l *LLM) error {
 		Temperature:      float32(*conf.LLMConfInfo.Temperature),
 		Tools:            l.OpenRouterTools,
 	}
-	
+
 	request.Messages = d.OpenRouterMsgs
-	
+
 	stream, err := client.CreateChatCompletionStream(ctx, request)
 	if err != nil {
 		logger.ErrorCtx(l.Ctx, "ChatCompletionStream error", "updateMsgID", l.MsgId, "err", err)
@@ -125,7 +125,7 @@ func (d *AIRouterReq) Send(ctx context.Context, l *LLM) error {
 	msgInfoContent := &param.MsgInfo{
 		SendLen: FirstSendLen,
 	}
-	
+
 	hasTools := false
 	for {
 		response, err := stream.Recv()
@@ -149,22 +149,22 @@ func (d *AIRouterReq) Send(ctx context.Context, l *LLM) error {
 					}
 				}
 			}
-			
+
 			if !hasTools {
 				msgInfoContent = l.SendMsg(msgInfoContent, choice.Delta.Content)
 			}
 		}
-		
+
 		if response.Usage != nil {
 			l.Token += response.Usage.TotalTokens
 			metrics.TotalTokens.Add(float64(l.Token))
 		}
 	}
-	
+
 	if l.MessageChan != nil && len(strings.TrimRightFunc(msgInfoContent.Content, unicode.IsSpace)) > 0 {
 		l.MessageChan <- msgInfoContent
 	}
-	
+
 	if hasTools && len(d.CurrentToolMessage) != 0 {
 		d.CurrentToolMessage = append([]openrouter.ChatCompletionMessage{
 			{
@@ -175,14 +175,14 @@ func (d *AIRouterReq) Send(ctx context.Context, l *LLM) error {
 				ToolCalls: d.ToolCall,
 			},
 		}, d.CurrentToolMessage...)
-		
+
 		d.ToolMessage = append(d.ToolMessage, d.CurrentToolMessage...)
 		d.OpenRouterMsgs = append(d.OpenRouterMsgs, d.CurrentToolMessage...)
 		d.CurrentToolMessage = make([]openrouter.ChatCompletionMessage, 0)
 		d.ToolCall = make([]openrouter.ToolCall, 0)
 		return d.Send(ctx, l)
 	}
-	
+
 	// record time costing in dialog
 	totalDuration := time.Since(start).Seconds()
 	metrics.ConversationDuration.Observe(totalDuration)
@@ -201,7 +201,7 @@ func (d *AIRouterReq) AppendMessages(client LLMClient) {
 	if len(d.OpenRouterMsgs) == 0 {
 		d.OpenRouterMsgs = make([]openrouter.ChatCompletionMessage, 0)
 	}
-	
+
 	d.OpenRouterMsgs = append(d.OpenRouterMsgs, client.(*AIRouterReq).OpenRouterMsgs...)
 }
 
@@ -223,7 +223,7 @@ func (d *AIRouterReq) GetMessage(role, msg string) {
 		}
 		return
 	}
-	
+
 	d.OpenRouterMsgs = append(d.OpenRouterMsgs, openrouter.ChatCompletionMessage{
 		Role: role,
 		Content: openrouter.Content{
@@ -240,7 +240,7 @@ func (d *AIRouterReq) GetMessage(role, msg string) {
 
 func (d *AIRouterReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 	client := GetMixClient(false)
-	
+
 	request := openrouter.ChatCompletionRequest{
 		Model:            l.Model,
 		MaxTokens:        *conf.LLMConfInfo.MaxTokens,
@@ -254,26 +254,26 @@ func (d *AIRouterReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 		Tools:            l.OpenRouterTools,
 		Messages:         d.OpenRouterMsgs,
 	}
-	
+
 	// assign task
 	response, err := client.CreateChatCompletion(ctx, request)
 	if err != nil {
 		logger.ErrorCtx(l.Ctx, "CreateChatCompletion error", "updateMsgID", l.MsgId, "err", err)
 		return "", err
 	}
-	
+
 	if len(response.Choices) == 0 {
 		logger.ErrorCtx(l.Ctx, "response is emtpy", "response", response)
 		return "", errors.New("response is empty")
 	}
-	
+
 	l.Token += response.Usage.TotalTokens
 	if len(response.Choices[0].Message.ToolCalls) > 0 {
 		d.GetAssistantMessage("")
 		d.OpenRouterMsgs[len(d.OpenRouterMsgs)-1].ToolCalls = response.Choices[0].Message.ToolCalls
 		d.requestOneToolsCall(ctx, response.Choices[0].Message.ToolCalls, l)
 	}
-	
+
 	return response.Choices[0].Message.Content.Text, nil
 }
 
@@ -284,19 +284,19 @@ func (d *AIRouterReq) requestOneToolsCall(ctx context.Context, toolsCall []openr
 		if err != nil {
 			return
 		}
-		
+
 		mc, err := clients.GetMCPClientByToolName(tool.Function.Name)
 		if err != nil {
 			logger.WarnCtx(l.Ctx, "get mcp fail", "err", err)
 			return
 		}
-		
+
 		toolsData, err := mc.ExecTools(ctx, tool.Function.Name, property)
 		if err != nil {
 			logger.WarnCtx(l.Ctx, "exec tools fail", "err", err)
 			return
 		}
-		
+
 		d.OpenRouterMsgs = append(d.OpenRouterMsgs, openrouter.ChatCompletionMessage{
 			Role: constants.ChatMessageRoleTool,
 			Content: openrouter.Content{
@@ -314,32 +314,32 @@ func (d *AIRouterReq) requestOneToolsCall(ctx context.Context, toolsCall []openr
 }
 
 func (d *AIRouterReq) requestToolsCall(ctx context.Context, choice openrouter.ChatCompletionStreamChoice, l *LLM) error {
-	
+
 	for _, toolCall := range choice.Delta.ToolCalls {
 		property := make(map[string]interface{})
-		
+
 		if toolCall.Function.Name != "" {
 			d.ToolCall = append(d.ToolCall, toolCall)
 			d.ToolCall[len(d.ToolCall)-1].Function.Name = toolCall.Function.Name
 		}
-		
+
 		if toolCall.ID != "" {
 			d.ToolCall[len(d.ToolCall)-1].ID = toolCall.ID
 		}
-		
+
 		if toolCall.Type != "" {
 			d.ToolCall[len(d.ToolCall)-1].Type = toolCall.Type
 		}
-		
+
 		if toolCall.Function.Arguments != "" && toolCall.Function.Name == "" {
 			d.ToolCall[len(d.ToolCall)-1].Function.Arguments += toolCall.Function.Arguments
 		}
-		
+
 		err := json.Unmarshal([]byte(d.ToolCall[len(d.ToolCall)-1].Function.Arguments), &property)
 		if err != nil {
 			return ToolsJsonErr
 		}
-		
+
 		tool := d.ToolCall[len(d.ToolCall)-1]
 		mc, err := clients.GetMCPClientByToolName(tool.Function.Name)
 		if err != nil {
@@ -347,7 +347,7 @@ func (d *AIRouterReq) requestToolsCall(ctx context.Context, choice openrouter.Ch
 				"toolCall", tool.ID, "argument", tool.Function.Arguments)
 			return err
 		}
-		
+
 		toolsData, err := mc.ExecTools(ctx, tool.Function.Name, property)
 		if err != nil {
 			logger.WarnCtx(l.Ctx, "exec tools fail", "err", err, "function", tool.Function.Name,
@@ -361,18 +361,18 @@ func (d *AIRouterReq) requestToolsCall(ctx context.Context, choice openrouter.Ch
 			},
 			ToolCallID: tool.ID,
 		})
-		
+
 		logger.InfoCtx(l.Ctx, "send tool request", "function", tool.Function.Name,
 			"toolCall", tool.ID, "argument", tool.Function.Arguments,
 			"res", toolsData)
-		
+
 		l.DirectSendMsg(i18n.GetMessage(*conf.BaseConfInfo.Lang, "send_mcp_info", map[string]interface{}{
 			"function_name": tool.Function.Name,
 			"request_args":  property,
 			"response":      toolsData,
 		}))
 	}
-	
+
 	return nil
 }
 
@@ -388,7 +388,7 @@ func GenerateMixImg(ctx context.Context, prompt string, imageContent []byte) (st
 			},
 		},
 	}
-	
+
 	if len(imageContent) != 0 {
 		messages.Content.Multi = append(messages.Content.Multi, openrouter.ChatMessagePart{
 			Type: openrouter.ChatMessagePartTypeImageURL,
@@ -397,20 +397,20 @@ func GenerateMixImg(ctx context.Context, prompt string, imageContent []byte) (st
 			},
 		})
 	}
-	
+
 	client := GetMixClient(true)
 	request := openrouter.ChatCompletionRequest{
 		Model:    *conf.PhotoConfInfo.MixImageModel,
 		Messages: []openrouter.ChatCompletionMessage{messages},
 	}
-	
+
 	// assign task
 	response, err := client.CreateChatCompletion(ctx, request)
 	if err != nil {
 		logger.ErrorCtx(ctx, "create chat completion fail", "err", err)
 		return "", 0, err
 	}
-	
+
 	if len(response.Choices) != 0 {
 		if *conf.BaseConfInfo.MediaType == param.AI302 {
 			pngs := pngFetch.FindAllString(response.Choices[0].Message.Content.Text, -1)
@@ -421,7 +421,7 @@ func GenerateMixImg(ctx context.Context, prompt string, imageContent []byte) (st
 			}
 		}
 	}
-	
+
 	return "", 0, errors.New("image is empty")
 }
 
@@ -430,7 +430,7 @@ func GetMixClient(isMedia bool) *openrouter.Client {
 	if isMedia {
 		t = *conf.BaseConfInfo.MediaType
 	}
-	
+
 	token := ""
 	switch t {
 	case param.OpenRouter:
@@ -438,7 +438,7 @@ func GetMixClient(isMedia bool) *openrouter.Client {
 	case param.AI302:
 		token = *conf.BaseConfInfo.AI302Token
 	}
-	
+
 	config := openrouter.DefaultConfig(token)
 	config.HTTPClient = utils.GetLLMProxyClient()
 	if conf.BaseConfInfo.SpecialLLMUrl != "" {
@@ -452,7 +452,7 @@ func GetMixClient(isMedia bool) *openrouter.Client {
 
 func Generate302AIVideo(ctx context.Context, prompt string, image []byte) (string, int, error) {
 	httpClient := utils.GetLLMProxyClient()
-	
+
 	// Step 1: prepare payload using map -> json
 	payloadMap := map[string]interface{}{
 		"model":      *conf.VideoConfInfo.AI302VideoModel,
@@ -461,28 +461,28 @@ func Generate302AIVideo(ctx context.Context, prompt string, image []byte) (strin
 		"resolution": *conf.VideoConfInfo.Resolution,
 		"fps":        *conf.VideoConfInfo.FPS,
 	}
-	
+
 	payloadBytes, err := json.Marshal(payloadMap)
 	if err != nil {
 		return "", 0, fmt.Errorf("failed to marshal payload: %w", err)
 	}
 	payload := strings.NewReader(string(payloadBytes))
-	
+
 	req, err := http.NewRequestWithContext(ctx, "POST", "https://api.302.ai/302/v2/video/create", payload)
 	if err != nil {
 		return "", 0, fmt.Errorf("failed to create request: %w", err)
 	}
 	req.Header.Add("Authorization", "Bearer "+*conf.BaseConfInfo.AI302Token)
 	req.Header.Add("Content-Type", "application/json")
-	
+
 	res, err := httpClient.Do(req)
 	if err != nil {
 		return "", 0, fmt.Errorf("failed to call create API: %w", err)
 	}
 	defer res.Body.Close()
-	
+
 	body, _ := io.ReadAll(res.Body)
-	
+
 	var createResp CreateResp
 	if err := json.Unmarshal(body, &createResp); err != nil {
 		return "", 0, fmt.Errorf("failed to parse create response: %w, body=%s", err, string(body))
@@ -490,7 +490,7 @@ func Generate302AIVideo(ctx context.Context, prompt string, image []byte) (strin
 	if createResp.TaskID == "" {
 		return "", 0, fmt.Errorf("no task_id returned from create API, body=%s", string(body))
 	}
-	
+
 	// Step 2: Poll fetch API (保持原逻辑)
 	fetchURL := "https://api.302.ai/302/v2/video/fetch/" + createResp.TaskID
 	for {
@@ -499,10 +499,10 @@ func Generate302AIVideo(ctx context.Context, prompt string, image []byte) (strin
 			return "", 0, fmt.Errorf("context canceled or timeout: %w", ctx.Err())
 		default:
 		}
-		
+
 		req, _ := http.NewRequestWithContext(ctx, "GET", fetchURL, nil)
 		req.Header.Add("Authorization", "Bearer "+*conf.BaseConfInfo.AI302Token)
-		
+
 		res, err := httpClient.Do(req)
 		if err != nil {
 			logger.ErrorCtx(ctx, "failed to fetch result:", "err", err)
@@ -511,14 +511,14 @@ func Generate302AIVideo(ctx context.Context, prompt string, image []byte) (strin
 		}
 		body, _ := io.ReadAll(res.Body)
 		res.Body.Close()
-		
+
 		var fetchResp AI302FetchResp
 		if err := json.Unmarshal(body, &fetchResp); err != nil {
 			logger.ErrorCtx(ctx, "failed to parse fetch response:", "err", err, "body", string(body))
 			time.Sleep(5 * time.Second)
 			continue
 		}
-		
+
 		if fetchResp.Status == "completed" {
 			if fetchResp.VideoURL != "" {
 				return fetchResp.VideoURL, 0, nil
@@ -529,7 +529,7 @@ func Generate302AIVideo(ctx context.Context, prompt string, image []byte) (strin
 		} else {
 			logger.InfoCtx(ctx, "task is still running, polling again...")
 		}
-		
+
 		time.Sleep(5 * time.Second)
 	}
 }
@@ -539,7 +539,7 @@ func GetMixImageContent(ctx context.Context, imageContent []byte, content string
 	if content == "" {
 		contentPrompt = i18n.GetMessage(*conf.BaseConfInfo.Lang, "photo_handle_prompt", nil)
 	}
-	
+
 	messages := openrouter.ChatCompletionMessage{
 		Role: constants.ChatMessageRoleUser,
 		Content: openrouter.Content{
@@ -557,25 +557,25 @@ func GetMixImageContent(ctx context.Context, imageContent []byte, content string
 			},
 		},
 	}
-	
+
 	client := GetMixClient(true)
-	
+
 	request := openrouter.ChatCompletionRequest{
 		Model:    *conf.PhotoConfInfo.MixRecModel,
 		Messages: []openrouter.ChatCompletionMessage{messages},
 	}
-	
+
 	// assign task
 	response, err := client.CreateChatCompletion(ctx, request)
 	if err != nil {
 		logger.ErrorCtx(ctx, "create chat completion fail", "err", err)
 		return "", 0, err
 	}
-	
+
 	if len(response.Choices) == 0 {
 		logger.ErrorCtx(ctx, "response is emtpy", "response", response)
 		return "", 0, errors.New("response is empty")
 	}
-	
+
 	return response.Choices[0].Message.Content.Text, response.Usage.TotalTokens, nil
 }

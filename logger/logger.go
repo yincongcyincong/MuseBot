@@ -8,7 +8,7 @@ import (
 	"os"
 	"runtime"
 	"strings"
-	
+
 	"github.com/mgutz/ansi"
 	"github.com/rs/zerolog"
 	"gopkg.in/natefinch/lumberjack.v2"
@@ -28,11 +28,11 @@ var (
 
 func init() {
 	LogLevel = flag.String("log_level", "info", "log level")
-	
+
 	if os.Getenv("LOG_LEVEL") != "" {
 		*LogLevel = os.Getenv("LOG_LEVEL")
 	}
-	
+
 	fmt.Println("log level:", *LogLevel)
 }
 
@@ -49,18 +49,18 @@ func InitLogger() {
 		MaxAge:     30,
 		Compress:   false,
 	}
-	
+
 	stdoutWriter := zerolog.ConsoleWriter{
 		Out:         os.Stdout,
 		TimeFormat:  "2006-01-02 15:04:05",
 		FormatLevel: Logger.ColorFormatLevel,
 	}
-	
+
 	Logger.logger = zerolog.New(zerolog.MultiLevelWriter(fileWriter, stdoutWriter)).With().
 		Timestamp().
 		Logger()
 	QQLogger.logger = Logger.logger
-	
+
 	log.SetOutput(Logger.logger)
 	log.SetFlags(0)
 	// set log level
@@ -76,7 +76,7 @@ func InitLogger() {
 	default:
 		zerolog.SetGlobalLevel(zerolog.InfoLevel)
 	}
-	
+
 	Info("log level", "loglevel", *LogLevel)
 }
 
@@ -283,11 +283,11 @@ func GetBotNameAndLogId(ctx context.Context) (string, string) {
 	if ctx != nil {
 		botName, _ = ctx.Value("bot_name").(string)
 	}
-	
+
 	logId := ""
 	if ctx != nil {
 		logId, _ = ctx.Value("log_id").(string)
 	}
-	
+
 	return botName, logId
 }
