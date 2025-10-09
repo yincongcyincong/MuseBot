@@ -1,6 +1,7 @@
 package llm
 
 import (
+	"context"
 	"testing"
 	"time"
 	
@@ -44,6 +45,7 @@ func TestNewLLM_DefaultsToClient(t *testing.T) {
 		WithUserId("u1"),
 		WithContent("ask"),
 		WithModel("m1"),
+		WithContext(context.Background()),
 	)
 	assert.NotNil(t, l)
 	assert.Equal(t, "u1", l.UserId)

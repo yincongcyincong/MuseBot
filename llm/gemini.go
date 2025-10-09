@@ -37,7 +37,7 @@ func (h *GeminiReq) Send(ctx context.Context, l *LLM) error {
 	
 	client, err := GetGeminiClient(ctx)
 	if err != nil {
-		logger.Error("create client fail", "err", err)
+		logger.ErrorCtx(l.Ctx, "create client fail", "err", err)
 		return err
 	}
 	
@@ -51,7 +51,7 @@ func (h *GeminiReq) Send(ctx context.Context, l *LLM) error {
 	
 	chat, err := client.Chats.Create(ctx, l.Model, config, h.GeminiMsgs)
 	if err != nil {
-		logger.Error("create chat fail", "err", err)
+		logger.ErrorCtx(l.Ctx, "create chat fail", "err", err)
 		return err
 	}
 	
@@ -62,11 +62,11 @@ func (h *GeminiReq) Send(ctx context.Context, l *LLM) error {
 	hasTools := false
 	for response, err := range chat.SendMessageStream(ctx, *genai.NewPartFromText(l.GetContent(l.Content))) {
 		if errors.Is(err, io.EOF) {
-			logger.Info("stream finished", "updateMsgID", l.MsgId)
+			logger.InfoCtx(l.Ctx, "stream finished", "updateMsgID", l.MsgId)
 			break
 		}
 		if err != nil {
-			logger.Error("stream error:", "updateMsgID", l.MsgId, "err", err)
+			logger.ErrorCtx(l.Ctx, "stream error:", "updateMsgID", l.MsgId, "err", err)
 			return err
 		}
 		
@@ -78,7 +78,7 @@ func (h *GeminiReq) Send(ctx context.Context, l *LLM) error {
 				if errors.Is(err, ToolsJsonErr) {
 					continue
 				} else {
-					logger.Error("requestToolsCall error", "updateMsgID", l.MsgId, "err", err)
+					logger.ErrorCtx(l.Ctx, "requestToolsCall error", "updateMsgID", l.MsgId, "err", err)
 				}
 			}
 		}
@@ -98,7 +98,7 @@ func (h *GeminiReq) Send(ctx context.Context, l *LLM) error {
 		l.MessageChan <- msgInfoContent
 	}
 	
-	logger.Info("Stream finished", "updateMsgID", l.MsgId)
+	logger.InfoCtx(l.Ctx, "Stream finished", "updateMsgID", l.MsgId)
 	if hasTools && len(h.CurrentToolMessage) != 0 {
 		h.ToolMessage = append(h.ToolMessage, h.CurrentToolMessage...)
 		h.GeminiMsgs = append(h.GeminiMsgs, h.CurrentToolMessage...)
@@ -157,7 +157,7 @@ func (h *GeminiReq) GetMessage(role, msg string) {
 func (h *GeminiReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 	client, err := GetGeminiClient(ctx)
 	if err != nil {
-		logger.Error("create client fail", "err", err)
+		logger.ErrorCtx(l.Ctx, "create client fail", "err", err)
 		return "", err
 	}
 	
@@ -171,13 +171,13 @@ func (h *GeminiReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 	
 	chat, err := client.Chats.Create(ctx, l.Model, config, h.GeminiMsgs)
 	if err != nil {
-		logger.Error("create chat fail", "updateMsgID", l.MsgId, "err", err)
+		logger.ErrorCtx(l.Ctx, "create chat fail", "updateMsgID", l.MsgId, "err", err)
 		return "", err
 	}
 	
 	response, err := chat.Send(ctx, genai.NewPartFromText(l.Content))
 	if err != nil {
-		logger.Error("create chat fail", "err", err)
+		logger.ErrorCtx(l.Ctx, "create chat fail", "err", err)
 		return "", err
 	}
 	
@@ -226,7 +226,7 @@ func (h *GeminiReq) requestOneToolsCall(ctx context.Context, toolsCall []*genai.
 			},
 		})
 		
-		logger.Info("exec tool", "name", tool.Name, "args", tool.Args, "toolsData", toolsData)
+		logger.InfoCtx(l.Ctx, "exec tool", "name", tool.Name, "args", tool.Args, "toolsData", toolsData)
 		l.DirectSendMsg(i18n.GetMessage(*conf.BaseConfInfo.Lang, "send_mcp_info", map[string]interface{}{
 			"function_name": tool.Name,
 			"request_args":  tool.Args,
@@ -284,7 +284,7 @@ func (h *GeminiReq) RequestToolsCall(ctx context.Context, response *genai.Genera
 				},
 			},
 		})
-		logger.Info("send tool request", "function", toolCall.Name,
+		logger.InfoCtx(l.Ctx, "send tool request", "function", toolCall.Name,
 			"toolCall", toolCall.ID, "argument", toolCall.Args, "toolsData", toolsData)
 		
 		l.DirectSendMsg(i18n.GetMessage(*conf.BaseConfInfo.Lang, "send_mcp_info", map[string]interface{}{
@@ -301,21 +301,18 @@ func (h *GeminiReq) GetModel(l *LLM) {
 	l.Model = param.ModelGemini20Flash
 	userInfo, err := db.GetUserByID(l.UserId)
 	if err != nil {
-		logger.Error("Error getting user info", "err", err)
+		logger.ErrorCtx(l.Ctx, "Error getting user info", "err", err)
 	}
 	if userInfo != nil && userInfo.Mode != "" && param.GeminiModels[userInfo.Mode] {
-		logger.Info("User info", "userID", userInfo.UserId, "mode", userInfo.Mode)
+		logger.InfoCtx(l.Ctx, "User info", "userID", userInfo.UserId, "mode", userInfo.Mode)
 		l.Model = userInfo.Mode
 	}
 }
 
-func GenerateGeminiImg(prompt string, imageContent []byte) ([]byte, int, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
-	defer cancel()
-	
+func GenerateGeminiImg(ctx context.Context, prompt string, imageContent []byte) ([]byte, int, error) {
 	client, err := GetGeminiClient(ctx)
 	if err != nil {
-		logger.Error("create client fail", "err", err)
+		logger.ErrorCtx(ctx, "create client fail", "err", err)
 		return nil, 0, err
 	}
 	
@@ -343,7 +340,7 @@ func GenerateGeminiImg(prompt string, imageContent []byte) ([]byte, int, error) 
 		},
 	)
 	if err != nil {
-		logger.Error("generate image fail", "err", err)
+		logger.ErrorCtx(ctx, "generate image fail", "err", err)
 		return nil, 0, err
 	}
 	
@@ -358,13 +355,10 @@ func GenerateGeminiImg(prompt string, imageContent []byte) ([]byte, int, error) 
 	return nil, 0, errors.New("image is empty")
 }
 
-func GenerateGeminiVideo(prompt string, image []byte) ([]byte, int, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
-	defer cancel()
-	
+func GenerateGeminiVideo(ctx context.Context, prompt string, image []byte) ([]byte, int, error) {
 	client, err := GetGeminiClient(ctx)
 	if err != nil {
-		logger.Error("create client fail", "err", err)
+		logger.ErrorCtx(ctx, "create client fail", "err", err)
 		return nil, 0, err
 	}
 	
@@ -385,22 +379,22 @@ func GenerateGeminiVideo(prompt string, image []byte) ([]byte, int, error) {
 			DurationSeconds: &duration,
 		})
 	if err != nil {
-		logger.Error("generate video fail", "err", err)
+		logger.ErrorCtx(ctx, "generate video fail", "err", err)
 		return nil, 0, err
 	}
 	
 	for !operation.Done {
-		logger.Info("video is createing...")
+		logger.InfoCtx(ctx, "video is createing...")
 		time.Sleep(5 * time.Second)
 		operation, err = client.Operations.GetVideosOperation(ctx, operation, nil)
 		if err != nil {
-			logger.Error("get video operation fail", "err", err)
+			logger.ErrorCtx(ctx, "get video operation fail", "err", err)
 			return nil, 0, err
 		}
 	}
 	
 	if len(operation.Response.GeneratedVideos) == 0 {
-		logger.Error("generate video fail", "err", "video is empty", "resp", operation.Response)
+		logger.ErrorCtx(ctx, "generate video fail", "err", "video is empty", "resp", operation.Response)
 		return nil, 0, errors.New("video is empty")
 	}
 	
@@ -420,13 +414,10 @@ func GenerateGeminiVideo(prompt string, image []byte) ([]byte, int, error) {
 	return operation.Response.GeneratedVideos[0].Video.VideoBytes, totalToken, nil
 }
 
-func GenerateGeminiText(audioContent []byte) (string, int, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
-	defer cancel()
-	
+func GenerateGeminiText(ctx context.Context, audioContent []byte) (string, int, error) {
 	client, err := GetGeminiClient(ctx)
 	if err != nil {
-		logger.Error("create client fail", "err", err)
+		logger.ErrorCtx(ctx, "create client fail", "err", err)
 		return "", 0, err
 	}
 	
@@ -451,20 +442,17 @@ func GenerateGeminiText(audioContent []byte) (string, int, error) {
 	)
 	
 	if err != nil || result == nil {
-		logger.Error("generate text fail", "err", err)
+		logger.ErrorCtx(ctx, "generate text fail", "err", err)
 		return "", 0, err
 	}
 	
 	return result.Text(), int(result.UsageMetadata.TotalTokenCount), nil
 }
 
-func GetGeminiImageContent(imageContent []byte, content string) (string, int, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
-	defer cancel()
-	
+func GetGeminiImageContent(ctx context.Context, imageContent []byte, content string) (string, int, error) {
 	client, err := GetGeminiClient(ctx)
 	if err != nil {
-		logger.Error("create client fail", "err", err)
+		logger.ErrorCtx(ctx, "create client fail", "err", err)
 		return "", 0, err
 	}
 	
@@ -490,7 +478,7 @@ func GetGeminiImageContent(imageContent []byte, content string) (string, int, er
 	)
 	
 	if err != nil || result == nil {
-		logger.Error("generate text fail", "err", err)
+		logger.ErrorCtx(ctx, "generate text fail", "err", err)
 		return "", 0, err
 	}
 	
@@ -498,13 +486,10 @@ func GetGeminiImageContent(imageContent []byte, content string) (string, int, er
 	
 }
 
-func GeminiTTS(content, encoding string) ([]byte, int, int, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
-	defer cancel()
-	
+func GeminiTTS(ctx context.Context, content, encoding string) ([]byte, int, int, error) {
 	client, err := GetGeminiClient(ctx)
 	if err != nil {
-		logger.Error("create client fail", "err", err)
+		logger.ErrorCtx(ctx, "create client fail", "err", err)
 		return nil, 0, 0, err
 	}
 	
@@ -537,7 +522,7 @@ func GeminiTTS(content, encoding string) ([]byte, int, int, error) {
 	)
 	
 	if err != nil {
-		logger.Error("generate audio fail", "err", err)
+		logger.ErrorCtx(ctx, "generate audio fail", "err", err)
 		return nil, 0, 0, err
 	}
 	
@@ -547,7 +532,7 @@ func GeminiTTS(content, encoding string) ([]byte, int, int, error) {
 				var data = part.InlineData.Data
 				data, err = utils.GetAudioData(encoding, part.InlineData.Data)
 				if err != nil {
-					logger.Error("convert audio fail", "err", err)
+					logger.ErrorCtx(ctx, "convert audio fail", "err", err)
 				}
 				return data, int(response.UsageMetadata.TotalTokenCount), utils.PCMDuration(len(data), 24000, 1, 16), nil
 			}

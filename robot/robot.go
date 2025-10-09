@@ -17,6 +17,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 	godeepseek "github.com/cohesion-org/deepseek-go"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/google/uuid"
 	larkcore "github.com/larksuite/oapi-sdk-go/v3/core"
 	larkim "github.com/larksuite/oapi-sdk-go/v3/service/im/v1"
 	"github.com/slack-go/slack"
@@ -47,6 +48,7 @@ type RobotController struct {
 }
 
 type RobotInfo struct {
+	Ctx          context.Context
 	Robot        Robot
 	TencentRobot TencentRobot
 	
@@ -55,8 +57,8 @@ type RobotInfo struct {
 }
 
 var (
-	robotController = new(RobotController)
-	TencentMsgMap   sync.Map
+	RobotControl  = new(RobotController)
+	TencentMsgMap sync.Map
 )
 
 type TencentWechatMessage struct {
@@ -104,6 +106,15 @@ func NewRobot(options ...botOption) *RobotInfo {
 	for _, o := range options {
 		o(r)
 	}
+	
+	if r.Ctx == nil {
+		r.Ctx = context.Background()
+	}
+	
+	ctx, _ := context.WithTimeout(r.Ctx, 15*time.Minute)
+	ctx = context.WithValue(ctx, "bot_name", *conf.BaseConfInfo.BotName)
+	ctx = context.WithValue(ctx, "log_id", uuid.New().String())
+	r.Ctx = ctx
 	return r
 }
 
@@ -311,7 +322,7 @@ func (r *RobotInfo) SendMsg(chatId string, msgContent string, replyToMessageID s
 		lark := r.Robot.(*LarkRobot)
 		
 		if replyToMessageID != "" {
-			resp, err := lark.Client.Im.Message.Reply(lark.Ctx, larkim.NewReplyMessageReqBuilder().
+			resp, err := lark.Client.Im.Message.Reply(r.Ctx, larkim.NewReplyMessageReqBuilder().
 				MessageId(replyToMessageID).
 				Body(larkim.NewReplyMessageReqBodyBuilder().
 					MsgType(larkim.MsgTypePost).
@@ -325,7 +336,7 @@ func (r *RobotInfo) SendMsg(chatId string, msgContent string, replyToMessageID s
 			
 			return *resp.Data.MessageId
 		} else {
-			resp, err := lark.Client.Im.Message.Create(lark.Ctx, larkim.NewCreateMessageReqBuilder().
+			resp, err := lark.Client.Im.Message.Create(r.Ctx, larkim.NewCreateMessageReqBuilder().
 				ReceiveIdType(larkim.ReceiveIdTypeChatId).
 				Body(larkim.NewCreateMessageReqBodyBuilder().
 					MsgType(larkim.MsgTypePost).
@@ -343,14 +354,14 @@ func (r *RobotInfo) SendMsg(chatId string, msgContent string, replyToMessageID s
 	
 	case *DingRobot:
 		d := r.Robot.(*DingRobot)
-		_, err := d.SimpleReplyMarkdown(d.Ctx, []byte(">"+d.OriginPrompt+"\n\n"+msgContent))
+		_, err := d.SimpleReplyMarkdown(r.Ctx, []byte(">"+d.OriginPrompt+"\n\n"+msgContent))
 		if err != nil {
 			logger.Warn("send message fail", "err", err)
 			return ""
 		}
 	case *ComWechatRobot:
 		c := r.Robot.(*ComWechatRobot)
-		_, err := c.App.Message.SendMarkdown(c.Ctx, &request.RequestMessageSendMarkdown{
+		_, err := c.App.Message.SendMarkdown(r.Ctx, &request.RequestMessageSendMarkdown{
 			RequestMessageSend: request.RequestMessageSend{
 				ToUser:                 chatId,
 				MsgType:                "markdown",
@@ -377,7 +388,7 @@ func (r *RobotInfo) SendMsg(chatId string, msgContent string, replyToMessageID s
 			},
 		}
 		if q.C2CMessage != nil {
-			resp, err := q.QQApi.PostC2CMessage(q.Ctx, q.C2CMessage.Author.ID, qqMsg)
+			resp, err := q.QQApi.PostC2CMessage(q.Robot.Ctx, q.C2CMessage.Author.ID, qqMsg)
 			if err != nil {
 				logger.Warn("send message fail", "err", err)
 				return ""
@@ -387,7 +398,7 @@ func (r *RobotInfo) SendMsg(chatId string, msgContent string, replyToMessageID s
 		}
 		
 		if q.ATMessage != nil {
-			resp, err := q.QQApi.PostMessage(q.Ctx, q.ATMessage.GuildID, qqMsg)
+			resp, err := q.QQApi.PostMessage(r.Ctx, q.ATMessage.GuildID, qqMsg)
 			if err != nil {
 				logger.Warn("send message fail", "err", err)
 				return ""
@@ -397,7 +408,7 @@ func (r *RobotInfo) SendMsg(chatId string, msgContent string, replyToMessageID s
 		}
 		
 		if q.GroupAtMessage != nil {
-			resp, err := q.QQApi.PostGroupMessage(q.Ctx, q.GroupAtMessage.GroupID, qqMsg)
+			resp, err := q.QQApi.PostGroupMessage(r.Ctx, q.GroupAtMessage.GroupID, qqMsg)
 			if err != nil {
 				logger.Warn("send message fail", "err", err)
 				return ""
@@ -408,8 +419,8 @@ func (r *RobotInfo) SendMsg(chatId string, msgContent string, replyToMessageID s
 	case *WechatRobot:
 		w := r.Robot.(*WechatRobot)
 		if *conf.BaseConfInfo.WechatActive {
-			resp, err := w.App.CustomerService.Message(w.Ctx, messages.NewText(msgContent)).
-				SetTo(w.Event.GetFromUserName()).From(w.Event.GetToUserName()).Send(w.Ctx)
+			resp, err := w.App.CustomerService.Message(r.Ctx, messages.NewText(msgContent)).
+				SetTo(w.Event.GetFromUserName()).From(w.Event.GetToUserName()).Send(r.Ctx)
 			if err != nil {
 				logger.Error("send image fail", "err", err, "resp", resp)
 				return ""
@@ -444,9 +455,16 @@ func WithTencentRobot(robot TencentRobot) func(*RobotInfo) {
 	}
 }
 
+func WithContext(ctx context.Context) func(*RobotInfo) {
+	return func(r *RobotInfo) {
+		r.Ctx = ctx
+	}
+}
+
 func StartRobot() {
 	ctx, cancel := context.WithCancel(context.Background())
-	robotController.Cancel = cancel
+	RobotControl.Cancel = cancel
+	ctx = context.WithValue(ctx, "bot_name", *conf.BaseConfInfo.BotName)
 	
 	if *conf.BaseConfInfo.TelegramBotToken != "" {
 		go func() {
@@ -572,7 +590,7 @@ func (r *RobotInfo) GetAudioContent(audioContent []byte) (string, error) {
 	case param.OpenAi:
 		answer, err = llm.GenerateOpenAIText(audioContent)
 	case param.Gemini:
-		answer, token, err = llm.GenerateGeminiText(audioContent)
+		answer, token, err = llm.GenerateGeminiText(r.Ctx, audioContent)
 	}
 	
 	if err != nil {
@@ -593,13 +611,13 @@ func (r *RobotInfo) GetImageContent(imageContent []byte, content string) (string
 	var token int
 	switch *conf.BaseConfInfo.MediaType {
 	case param.Vol:
-		answer, token, err = llm.GetVolImageContent(imageContent, content)
+		answer, token, err = llm.GetVolImageContent(r.Ctx, imageContent, content)
 	case param.Gemini:
-		answer, token, err = llm.GetGeminiImageContent(imageContent, content)
+		answer, token, err = llm.GetGeminiImageContent(r.Ctx, imageContent, content)
 	case param.OpenAi, param.Aliyun:
-		answer, token, err = llm.GetOpenAIImageContent(imageContent, content)
+		answer, token, err = llm.GetOpenAIImageContent(r.Ctx, imageContent, content)
 	case param.AI302, param.OpenRouter:
-		answer, token, err = llm.GetMixImageContent(imageContent, content)
+		answer, token, err = llm.GetMixImageContent(r.Ctx, imageContent, content)
 	}
 	
 	if err != nil {
@@ -852,6 +870,7 @@ func (r *RobotInfo) ExecLLM(msgContent string, msgChan *MsgChan) {
 		llm.WithContent(content),
 		llm.WithPerMsgLen(perMsgLen),
 		llm.WithRecordId(r.RecordID),
+		llm.WithContext(r.Ctx),
 	)
 	
 	err = llmClient.CallLLM()
@@ -871,7 +890,7 @@ func (r *RobotInfo) showBalanceInfo() {
 		return
 	}
 	
-	balance := llm.GetBalanceInfo()
+	balance := llm.GetBalanceInfo(r.Ctx)
 	
 	// handle balance info msg
 	msgContent := fmt.Sprintf(i18n.GetMessage(*conf.BaseConfInfo.Lang, "balance_title", nil), balance.IsAvailable)
@@ -977,6 +996,7 @@ func (r *RobotInfo) sendMultiAgent(agentType string, emptyPromptFunc func()) {
 			ChatId:    chatId,
 			MsgId:     msgId,
 			PerMsgLen: r.Robot.getPerMsgLen(),
+			Ctx:       r.Ctx,
 		}
 		
 		if _, ok := r.Robot.(*QQRobot); ok {
@@ -1026,13 +1046,13 @@ func (r *RobotInfo) CreatePhoto(prompt string, lastImageContent []byte) ([]byte,
 	var err error
 	switch *conf.BaseConfInfo.MediaType {
 	case param.Vol:
-		imageUrl, totalToken, err = llm.GenerateVolImg(prompt, lastImageContent)
+		imageUrl, totalToken, err = llm.GenerateVolImg(r.Ctx, prompt, lastImageContent)
 	case param.OpenAi:
-		imageContent, totalToken, err = llm.GenerateOpenAIImg(prompt, lastImageContent)
+		imageContent, totalToken, err = llm.GenerateOpenAIImg(r.Ctx, prompt, lastImageContent)
 	case param.Gemini:
-		imageContent, totalToken, err = llm.GenerateGeminiImg(prompt, lastImageContent)
+		imageContent, totalToken, err = llm.GenerateGeminiImg(r.Ctx, prompt, lastImageContent)
 	case param.AI302, param.OpenRouter:
-		imageUrl, totalToken, err = llm.GenerateMixImg(prompt, lastImageContent)
+		imageUrl, totalToken, err = llm.GenerateMixImg(r.Ctx, prompt, lastImageContent)
 	default:
 		err = fmt.Errorf("unsupported media type: %s", *conf.BaseConfInfo.MediaType)
 	}
@@ -1060,11 +1080,11 @@ func (r *RobotInfo) CreateVideo(prompt string, lastImageContent []byte) ([]byte,
 	var totalToken int
 	switch *conf.BaseConfInfo.MediaType {
 	case param.Vol:
-		videoUrl, totalToken, err = llm.GenerateVolVideo(prompt, lastImageContent)
+		videoUrl, totalToken, err = llm.GenerateVolVideo(r.Ctx, prompt, lastImageContent)
 	case param.Gemini:
-		videoContent, totalToken, err = llm.GenerateGeminiVideo(prompt, lastImageContent)
+		videoContent, totalToken, err = llm.GenerateGeminiVideo(r.Ctx, prompt, lastImageContent)
 	case param.AI302:
-		videoUrl, totalToken, err = llm.Generate302AIVideo(prompt, lastImageContent)
+		videoUrl, totalToken, err = llm.Generate302AIVideo(r.Ctx, prompt, lastImageContent)
 	default:
 		err = fmt.Errorf("unsupported type: %s", *conf.BaseConfInfo.MediaType)
 	}
@@ -1092,11 +1112,11 @@ func (r *RobotInfo) GetVoiceBaseTTS(content, encoding string) ([]byte, int, erro
 	var token int
 	switch *conf.AudioConfInfo.TTSType {
 	case param.Vol:
-		ttsContent, token, duration, err = llm.VolTTS(content, userId, encoding)
+		ttsContent, token, duration, err = llm.VolTTS(r.Ctx, content, userId, encoding)
 	case param.Gemini:
-		ttsContent, token, duration, err = llm.GeminiTTS(content, encoding)
+		ttsContent, token, duration, err = llm.GeminiTTS(r.Ctx, content, encoding)
 	case param.OpenAi:
-		ttsContent, token, duration, err = llm.OpenAITTS(content, encoding)
+		ttsContent, token, duration, err = llm.OpenAITTS(r.Ctx, content, encoding)
 	}
 	
 	err = db.AddRecordToken(r.RecordID, token)

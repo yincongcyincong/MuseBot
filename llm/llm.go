@@ -3,7 +3,6 @@ package llm
 import (
 	"context"
 	"errors"
-	"time"
 	
 	godeepseek "github.com/cohesion-org/deepseek-go"
 	"github.com/revrost/go-openrouter"
@@ -42,6 +41,8 @@ type LLM struct {
 	
 	LLMClient LLMClient
 	
+	Ctx context.Context
+	
 	DeepseekTools   []godeepseek.Tool
 	VolTools        []*model.Tool
 	OpenAITools     []openai.Tool
@@ -67,21 +68,19 @@ type LLMClient interface {
 }
 
 func (l *LLM) CallLLM() error {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
-	defer cancel()
-	logger.Info("msg receive", "userID", l.UserId, "prompt", l.Content)
+	logger.InfoCtx(l.Ctx, "msg receive", "userID", l.UserId, "prompt", l.Content)
 	
 	l.GetMessages(l.UserId, l.GetContent(l.Content))
 	l.LLMClient.GetModel(l)
-	err := l.LLMClient.Send(ctx, l)
+	err := l.LLMClient.Send(l.Ctx, l)
 	if err != nil {
-		logger.Error("Error calling LLM API", "err", err)
+		logger.ErrorCtx(l.Ctx, "Error calling LLM API", "err", err)
 		return err
 	}
 	
 	err = l.InsertOrUpdate()
 	if err != nil {
-		logger.Error("insert or update record", "err", err)
+		logger.ErrorCtx(l.Ctx, "insert or update record", "err", err)
 		return err
 	}
 	
@@ -222,7 +221,7 @@ func (l *LLM) InsertOrUpdate() error {
 		Mode:   *conf.BaseConfInfo.Type,
 	})
 	if err != nil {
-		logger.Error("update record fail", "err", err)
+		logger.ErrorCtx(l.Ctx, "update record fail", "err", err)
 		return err
 	}
 	
@@ -235,7 +234,7 @@ func (l *LLM) GetMessages(userId string, prompt string) {
 		aqs := db.FilterByMaxContextFromLatest(msgRecords.AQs, param.DefaultContextToken)
 		for i, record := range aqs {
 			
-			logger.Info("context content", "dialog", i, "question:", record.Question, "answer:", record.Answer)
+			logger.InfoCtx(l.Ctx, "context content", "dialog", i, "question:", record.Question, "answer:", record.Answer)
 			if record.Question != "" {
 				l.LLMClient.GetUserMessage(record.Question)
 			}
@@ -322,5 +321,11 @@ func WithTaskTools(taskTool *conf.AgentInfo) Option {
 		p.OpenAITools = taskTool.OpenAITools
 		p.GeminiTools = taskTool.GeminiTools
 		p.OpenRouterTools = taskTool.OpenRouterTools
+	}
+}
+
+func WithContext(ctx context.Context) Option {
+	return func(p *LLM) {
+		p.Ctx = ctx
 	}
 }

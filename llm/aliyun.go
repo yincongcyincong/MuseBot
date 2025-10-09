@@ -20,7 +20,6 @@ func GenerateAliyunImg(prompt string, imageContent []byte) ([]byte, int, error) 
 	)
 	
 	if imageContent != nil {
-		// 有图片内容 → 调用图像修改接口
 		url = "https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation"
 		
 		base64Img := "data:image/png;base64," + base64.StdEncoding.EncodeToString(imageContent)

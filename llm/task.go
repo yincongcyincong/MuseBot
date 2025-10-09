@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"regexp"
-	"time"
 	
 	"github.com/yincongcyincong/MuseBot/conf"
 	"github.com/yincongcyincong/MuseBot/i18n"
@@ -28,6 +27,8 @@ type LLMTaskReq struct {
 	UserId string
 	ChatId string
 	MsgId  string
+	
+	Ctx context.Context
 }
 
 type Task struct {
@@ -46,10 +47,7 @@ type TaskResult struct {
 
 // ExecuteTask execute task command
 func (d *LLMTaskReq) ExecuteTask() error {
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
-	defer cancel()
-	
-	logger.Info("task content", "content", d.Content)
+	logger.InfoCtx(d.Ctx, "task content", "content", d.Content)
 	taskParam := make(map[string]interface{})
 	taskParam["assign_param"] = make([]map[string]string, 0)
 	taskParam["user_task"] = d.Content
@@ -65,12 +63,12 @@ func (d *LLMTaskReq) ExecuteTask() error {
 	prompt := i18n.GetMessage(*conf.BaseConfInfo.Lang, "assign_task_prompt", taskParam)
 	llm := NewLLM(WithUserId(d.UserId), WithChatId(d.ChatId), WithMsgId(d.MsgId),
 		WithMessageChan(d.MessageChan), WithContent(prompt), WithHTTPMsgChan(d.HTTPMsgChan),
-		WithPerMsgLen(d.PerMsgLen))
+		WithPerMsgLen(d.PerMsgLen), WithContext(d.Ctx))
 	llm.LLMClient.GetUserMessage(prompt)
 	llm.LLMClient.GetModel(llm)
-	c, err := llm.LLMClient.SyncSend(ctx, llm)
+	c, err := llm.LLMClient.SyncSend(d.Ctx, llm)
 	if err != nil {
-		logger.Error("get message fail", "err", err)
+		logger.ErrorCtx(d.Ctx, "get message fail", "err", err)
 		return err
 	}
 	
@@ -81,32 +79,32 @@ func (d *LLMTaskReq) ExecuteTask() error {
 	for _, match := range matches {
 		err = json.Unmarshal([]byte(match), &plans)
 		if err != nil {
-			logger.Warn("json umarshal fail", "err", err)
+			logger.WarnCtx(d.Ctx, "json umarshal fail", "err", err)
 		}
 	}
 	
-	logger.Info("task plan", "plan", plans)
+	logger.InfoCtx(d.Ctx, "task plan", "plan", plans)
 	
 	if len(plans.Plan) == 0 {
-		logger.Info("no plan created!")
+		logger.InfoCtx(d.Ctx, "no plan created!")
 		
 		finalLLM := NewLLM(WithUserId(d.UserId), WithChatId(d.ChatId), WithMsgId(d.MsgId),
 			WithMessageChan(d.MessageChan), WithContent(d.Content), WithHTTPMsgChan(d.HTTPMsgChan),
-			WithPerMsgLen(d.PerMsgLen))
+			WithPerMsgLen(d.PerMsgLen), WithContext(d.Ctx))
 		finalLLM.LLMClient.GetUserMessage(c)
 		finalLLM.LLMClient.GetModel(finalLLM)
-		err = finalLLM.LLMClient.Send(ctx, finalLLM)
+		err = finalLLM.LLMClient.Send(d.Ctx, finalLLM)
 		if err != nil {
-			logger.Error("request summary fail", "err", err)
+			logger.ErrorCtx(d.Ctx, "request summary fail", "err", err)
 		}
 		return err
 	}
 	
 	llm.DirectSendMsg(c)
 	llm.LLMClient.GetAssistantMessage(c)
-	err = d.loopTask(ctx, plans, c, llm, 0)
+	err = d.loopTask(d.Ctx, plans, c, llm, 0)
 	if err != nil {
-		logger.Error("loopTask fail", "err", err)
+		logger.ErrorCtx(d.Ctx, "loopTask fail", "err", err)
 		return err
 	}
 	
@@ -116,15 +114,15 @@ func (d *LLMTaskReq) ExecuteTask() error {
 	summaryPrompt := i18n.GetMessage(*conf.BaseConfInfo.Lang, "summary_task_prompt", summaryParam)
 	llm.LLMClient.GetUserMessage(summaryPrompt)
 	llm.Content = summaryPrompt
-	err = llm.LLMClient.Send(ctx, llm)
+	err = llm.LLMClient.Send(d.Ctx, llm)
 	if err != nil {
-		logger.Error("request summary fail", "err", err)
+		logger.ErrorCtx(d.Ctx, "request summary fail", "err", err)
 		return err
 	}
 	
 	err = llm.InsertOrUpdate()
 	if err != nil {
-		logger.Error("insertOrUpdate fail", "err", err)
+		logger.ErrorCtx(d.Ctx, "insertOrUpdate fail", "err", err)
 	}
 	return err
 }
@@ -137,7 +135,8 @@ func (d *LLMTaskReq) loopTask(ctx context.Context, plans *TaskInfo, lastPlan str
 	
 	completeTasks := map[string]bool{}
 	taskLLM := NewLLM(WithUserId(d.UserId), WithChatId(d.ChatId), WithMsgId(d.MsgId),
-		WithMessageChan(d.MessageChan), WithHTTPMsgChan(d.HTTPMsgChan), WithPerMsgLen(d.PerMsgLen))
+		WithMessageChan(d.MessageChan), WithHTTPMsgChan(d.HTTPMsgChan), WithPerMsgLen(d.PerMsgLen),
+		WithContext(d.Ctx))
 	for _, plan := range plans.Plan {
 		toolInter, ok := conf.TaskTools.Load(plan.Name)
 		var tool *conf.AgentInfo
@@ -148,7 +147,7 @@ func (d *LLMTaskReq) loopTask(ctx context.Context, plans *TaskInfo, lastPlan str
 		taskLLM.LLMClient.GetUserMessage(plan.Description)
 		taskLLM.Content = plan.Description
 		taskLLM.LLMClient.GetModel(taskLLM)
-		logger.Info("execute task", "task", plan.Name, "task desc", plan.Description)
+		logger.InfoCtx(d.Ctx, "execute task", "task", plan.Name, "task desc", plan.Description)
 		err := d.requestTask(ctx, taskLLM, plan)
 		if err != nil {
 			return err
@@ -169,12 +168,12 @@ func (d *LLMTaskReq) loopTask(ctx context.Context, plans *TaskInfo, lastPlan str
 	llm.LLMClient.GetModel(llm)
 	c, err := llm.LLMClient.SyncSend(ctx, llm)
 	if err != nil {
-		logger.Error("ChatCompletionStream error", "err", err)
+		logger.ErrorCtx(d.Ctx, "ChatCompletionStream error", "err", err)
 		return err
 	}
 	
 	if len(c) == 0 {
-		logger.Error("response is emtpy", "response", c)
+		logger.ErrorCtx(d.Ctx, "response is emtpy", "response", c)
 		return errors.New("response is emtpy")
 	}
 	
@@ -185,7 +184,7 @@ func (d *LLMTaskReq) loopTask(ctx context.Context, plans *TaskInfo, lastPlan str
 	for _, match := range matches {
 		err := json.Unmarshal([]byte(match), &plans)
 		if err != nil {
-			logger.Error("json umarshal fail", "err", err)
+			logger.ErrorCtx(d.Ctx, "json umarshal fail", "err", err)
 		}
 	}
 	
@@ -202,7 +201,7 @@ func (d *LLMTaskReq) loopTask(ctx context.Context, plans *TaskInfo, lastPlan str
 func (d *LLMTaskReq) requestTask(ctx context.Context, llm *LLM, plan *Task) error {
 	c, err := llm.LLMClient.SyncSend(ctx, llm)
 	if err != nil {
-		logger.Error("ChatCompletionStream error", "err", err)
+		logger.ErrorCtx(d.Ctx, "ChatCompletionStream error", "err", err)
 		return err
 	}
 	

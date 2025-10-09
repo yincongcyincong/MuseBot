@@ -33,7 +33,7 @@ func TestSendTelegramMsg(t *testing.T) {
 	messageChan := make(chan *param.MsgInfo)
 	
 	go func() {
-		bot := robot.CreateBot()
+		bot := robot.CreateBot(context.Background())
 		t := robot.NewTelegramRobot(tgbotapi.Update{
 			Message: &tgbotapi.Message{
 				MessageID: 1,
