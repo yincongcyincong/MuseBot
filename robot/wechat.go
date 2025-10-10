@@ -9,7 +9,7 @@ import (
 	"runtime/debug"
 	"strings"
 	"time"
-
+	
 	"github.com/ArtisanCloud/PowerWeChat/v3/src/kernel/contract"
 	"github.com/ArtisanCloud/PowerWeChat/v3/src/kernel/messages"
 	"github.com/ArtisanCloud/PowerWeChat/v3/src/kernel/models"
@@ -32,7 +32,7 @@ const (
 	msgHandling = 1
 	msgFinished = 2
 	msgSent     = 3
-
+	
 	msgChangePhoto    = 10
 	msgRecognizePhoto = 11
 	msgSaveVoice      = 12
@@ -42,12 +42,12 @@ type WechatRobot struct {
 	Event contract.EventInterface
 	Robot *RobotInfo
 	App   *officialAccount.OfficialAccount
-
+	
 	Command      string
 	Prompt       string
 	OriginPrompt string
 	ImageContent []byte
-
+	
 	TextMsg  *serverModel.MessageText
 	VoiceMsg *serverModel.MessageVoice
 	ImageMsg *serverModel.MessageImage
@@ -73,14 +73,14 @@ func StartWechatRobot() {
 		logger.Error("Wechat init error: ", err)
 		return
 	}
-
+	
 	go deleteMsgMapData()
 }
 
 func deleteMsgMapData() {
 	ticker := time.NewTicker(time.Minute) // 每分钟执行一次
 	defer ticker.Stop()
-
+	
 	for {
 		<-ticker.C
 		TencentMsgMap.Range(func(key, value interface{}) bool {
@@ -132,19 +132,19 @@ func NewWechatRobot(event contract.EventInterface) (*WechatRobot, bool) {
 		w.VoiceMsg = msg
 		msgId = msg.MsgID
 	}
-
+	
 	if _, ok := TencentMsgMap.Load(msgId); !ok {
 		TencentMsgMap.Store(msgId, &TencentWechatMessage{
 			Status:    msgHandling,
 			Msg:       "",
 			StartTime: time.Now(),
 		})
-
+		
 		w.Robot = NewRobot(WithRobot(w), WithTencentRobot(w))
 		return w, true
 	}
-
-	logger.Info("msg still handling", "msgId", msgId)
+	
+	logger.InfoCtx(w.Robot.Ctx, "msg still handling", "msgId", msgId)
 	w.Robot = NewRobot(WithRobot(w))
 	return w, false
 }
@@ -153,35 +153,35 @@ func (w *WechatRobot) checkValid() bool {
 	if w.Event.GetMsgType() == models.CALLBACK_MSG_TYPE_TEXT {
 		w.OriginPrompt = w.TextMsg.Content
 		w.Command, w.Prompt = ParseCommand(w.TextMsg.Content)
-		logger.Info("WechatRobot msg", "Command", w.Command, "Prompt", w.Prompt, "msgId", w.TextMsg.MsgID)
+		logger.InfoCtx(w.Robot.Ctx, "WechatRobot msg", "Command", w.Command, "Prompt", w.Prompt, "msgId", w.TextMsg.MsgID)
 	}
-
+	
 	if w.Event.GetMsgType() == models.CALLBACK_MSG_TYPE_IMAGE {
 		_, msgId, userId := w.Robot.GetChatIdAndMsgIdAndUserID()
 		if msgInfoInter, ok := TencentMsgMap.Load(userId); ok {
 			if msgInfo, ok := msgInfoInter.(*TencentWechatMessage); ok {
 				if msgInfo.Status == msgChangePhoto || msgInfo.Status == msgRecognizePhoto {
-					logger.Info("WechatRobot handle photo msg", "msgId", msgId, "userId", userId)
+					logger.InfoCtx(w.Robot.Ctx, "WechatRobot handle photo msg", "msgId", msgId, "userId", userId)
 					w.passiveExecCmd()
 					return false
 				}
 			}
 		}
 	}
-
+	
 	if w.Event.GetMsgType() == models.CALLBACK_MSG_TYPE_VOICE {
 		_, msgId, userId := w.Robot.GetChatIdAndMsgIdAndUserID()
 		if msgInfoInter, ok := TencentMsgMap.Load(userId); ok {
 			if msgInfo, ok := msgInfoInter.(*TencentWechatMessage); ok {
 				if msgInfo.Status == msgSaveVoice {
-					logger.Info("WechatRobot handle voice msg", "msgId", msgId, "userId", userId)
+					logger.InfoCtx(w.Robot.Ctx, "WechatRobot handle voice msg", "msgId", msgId, "userId", userId)
 					w.passiveExecCmd()
 					return false
 				}
 			}
 		}
 	}
-
+	
 	return true
 }
 
@@ -210,7 +210,7 @@ func (w *WechatRobot) sendHelpConfigurationOptions() {
 
 func (w *WechatRobot) sendModeConfigurationOptions() {
 	chatId, msgId, _ := w.Robot.GetChatIdAndMsgIdAndUserID()
-
+	
 	prompt := strings.TrimSpace(w.Prompt)
 	if prompt != "" {
 		if param.GeminiModels[prompt] || param.OpenAIModels[prompt] ||
@@ -220,9 +220,9 @@ func (w *WechatRobot) sendModeConfigurationOptions() {
 		}
 		return
 	}
-
+	
 	var modelList []string
-
+	
 	switch *conf.BaseConfInfo.Type {
 	case param.DeepSeek:
 		if *conf.BaseConfInfo.CustomUrl == "" || *conf.BaseConfInfo.CustomUrl == "https://api.deepseek.com/" {
@@ -260,7 +260,7 @@ func (w *WechatRobot) sendModeConfigurationOptions() {
 			}),
 				msgId, tgbotapi.ModeMarkdown, nil)
 		}
-
+		
 		return
 	case param.Vol:
 		for k := range param.VolModels {
@@ -273,7 +273,7 @@ func (w *WechatRobot) sendModeConfigurationOptions() {
 
 `, model)
 	}
-
+	
 	w.Robot.SendMsg(chatId, totalContent, msgId, "", nil)
 }
 
@@ -285,14 +285,14 @@ func (w *WechatRobot) sendImg() {
 			w.Robot.SendMsg(chatId, "only wechat_active is true can generate image", msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
-
+		
 		prompt := strings.TrimSpace(w.Prompt)
 		if prompt == "" {
 			logger.Warn("prompt is empty")
 			w.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "photo_empty_content", nil), msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
-
+		
 		lastImageContent := w.ImageContent
 		var err error
 		if len(lastImageContent) == 0 && strings.Contains(w.Command, "edit_photo") {
@@ -301,18 +301,18 @@ func (w *WechatRobot) sendImg() {
 				logger.Warn("get last image record fail", "err", err)
 			}
 		}
-
+		
 		imageContent, totalToken, err := w.Robot.CreatePhoto(prompt, lastImageContent)
 		if err != nil {
 			logger.Error("create photo fail", "err", err)
 			w.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
-
+		
 		base64Content := base64.StdEncoding.EncodeToString(imageContent)
 		format := utils.DetectImageFormat(imageContent)
 		dataURI := fmt.Sprintf("data:image/%s;base64,%s", format, base64Content)
-
+		
 		fileName := utils.GetAbsPath("data/" + utils.RandomFilename(format))
 		err = os.WriteFile(fileName, imageContent, 0666)
 		if err != nil {
@@ -320,7 +320,7 @@ func (w *WechatRobot) sendImg() {
 			w.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
-
+		
 		mediaResp, err := w.App.Media.UploadImage(w.Robot.Ctx, fileName)
 		if err != nil {
 			logger.Error("upload image fail", "err", err)
@@ -334,7 +334,7 @@ func (w *WechatRobot) sendImg() {
 			w.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
-
+		
 		// save data record
 		db.InsertRecordInfo(&db.Record{
 			UserId:     userId,
@@ -357,25 +357,25 @@ func (w *WechatRobot) sendVideo() {
 			w.Robot.SendMsg(chatId, "only wechat_active is true can generate video", msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
-
+		
 		prompt := strings.TrimSpace(w.Prompt)
 		if prompt == "" {
 			logger.Warn("prompt is empty")
 			w.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "video_empty_content", nil), msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
-
+		
 		videoContent, totalToken, err := w.Robot.CreateVideo(prompt, w.ImageContent)
 		if err != nil {
 			logger.Warn("generate video fail", "err", err)
 			w.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
-
+		
 		base64Content := base64.StdEncoding.EncodeToString(videoContent)
 		format := utils.DetectVideoMimeType(videoContent)
 		dataURI := fmt.Sprintf("data:video/%s;base64,%s", format, base64Content)
-
+		
 		fileName := utils.GetAbsPath("data/" + utils.RandomFilename(format))
 		err = os.WriteFile(fileName, videoContent, 0666)
 		if err != nil {
@@ -387,7 +387,7 @@ func (w *WechatRobot) sendVideo() {
 			logger.Error("upload image fail", "err", err)
 			return
 		}
-
+		
 		resp, err := w.App.CustomerService.Message(w.Robot.Ctx, messages.NewMedia(mediaResp.MediaID, "video", nil)).
 			SetTo(w.Event.GetFromUserName()).Send(w.Robot.Ctx)
 		if err != nil {
@@ -395,7 +395,7 @@ func (w *WechatRobot) sendVideo() {
 			w.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
-
+		
 		db.InsertRecordInfo(&db.Record{
 			UserId:     userId,
 			Question:   w.Prompt,
@@ -406,7 +406,7 @@ func (w *WechatRobot) sendVideo() {
 			Mode:       *conf.BaseConfInfo.MediaType,
 		})
 	})
-
+	
 }
 
 func (w *WechatRobot) sendChatMessage() {
@@ -417,7 +417,7 @@ func (w *WechatRobot) sendChatMessage() {
 			w.executeLLM()
 		}
 	})
-
+	
 }
 
 func (w *WechatRobot) executeChain() {
@@ -425,7 +425,7 @@ func (w *WechatRobot) executeChain() {
 		NormalMessageChan: make(chan *param.MsgInfo),
 	}
 	go w.Robot.ExecChain(w.Prompt, messageChan)
-
+	
 	go w.Robot.HandleUpdate(messageChan, "amr")
 }
 
@@ -434,14 +434,14 @@ func (w *WechatRobot) executeLLM() {
 		NormalMessageChan: make(chan *param.MsgInfo),
 	}
 	go w.Robot.HandleUpdate(messageChan, "amr")
-
+	
 	go w.Robot.ExecLLM(w.Prompt, messageChan)
-
+	
 }
 
 func (w *WechatRobot) getContent(content string) (string, error) {
 	msgType := w.Event.GetMsgType()
-
+	
 	switch msgType {
 	case models.CALLBACK_MSG_TYPE_IMAGE:
 		data, err := w.getMedia()
@@ -449,28 +449,28 @@ func (w *WechatRobot) getContent(content string) (string, error) {
 			return "", err
 		}
 		return w.Robot.GetImageContent(data, content)
-
+	
 	case models.CALLBACK_MSG_TYPE_VOICE:
 		data, err := w.getMedia()
 		if err != nil {
 			logger.Error("read media fail", "err", err)
 			return "", err
 		}
-
+		
 		data, err = utils.AmrToOgg(data)
 		if err != nil {
 			logger.Error("convert amr to wav fail", "err", err)
 			return "", err
 		}
 		return w.Robot.GetAudioContent(data)
-
+		
 	}
-
+	
 	if content == "" {
 		logger.Warn("content extraction returned empty")
 		return "", errors.New("content is empty")
 	}
-
+	
 	return content, nil
 }
 
@@ -489,7 +489,7 @@ func (w *WechatRobot) GetLLMContent() interface{} {
 		}
 		time.Sleep(1 * time.Second)
 	}
-
+	
 	return ""
 }
 
@@ -513,7 +513,7 @@ func (w *WechatRobot) passiveExecCmd() {
 			w.Robot.SendMsg(chatId, "only wechat_active is true can generate image", msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
-
+		
 		if w.TextMsg != nil {
 			status := msgChangePhoto
 			switch w.Command {
@@ -533,7 +533,7 @@ func (w *WechatRobot) passiveExecCmd() {
 				msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
-
+		
 		if w.ImageMsg != nil {
 			if msgInfoInter, ok := TencentMsgMap.Load(userId); ok {
 				if msgInfo, ok := msgInfoInter.(*TencentWechatMessage); ok {
@@ -552,12 +552,12 @@ func (w *WechatRobot) passiveExecCmd() {
 						w.Prompt = msgInfo.Msg
 						w.executeLLM()
 					}
-
+					
 					TencentMsgMap.Delete(userId)
 				}
 			}
 		}
-
+		
 		if w.VoiceMsg != nil {
 			if msgInfoInter, ok := TencentMsgMap.Load(userId); ok {
 				if msgInfo, ok := msgInfoInter.(*TencentWechatMessage); ok {
@@ -575,7 +575,7 @@ func (w *WechatRobot) passiveExecCmd() {
 							w.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
 							return
 						}
-
+						
 						fileName := utils.GetAbsPath("data/" + utils.RandomFilename(utils.DetectAudioFormat(data)))
 						err = os.WriteFile(fileName, data, 0666)
 						if err != nil {
@@ -583,13 +583,13 @@ func (w *WechatRobot) passiveExecCmd() {
 							w.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
 							return
 						}
-
+						
 						w.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "save_audio_success", map[string]interface{}{
 							"filename": fileName,
 						}), msgId, tgbotapi.ModeMarkdown, nil)
-
+						
 					}
-
+					
 					TencentMsgMap.Delete(userId)
 				}
 			}
@@ -605,38 +605,38 @@ func (w *WechatRobot) getMedia() ([]byte, error) {
 	if w.VoiceMsg != nil {
 		mediaId = w.VoiceMsg.MediaID
 	}
-
+	
 	resp, err := w.App.Media.Get(w.Robot.Ctx, mediaId)
 	if err != nil {
 		logger.Error("get media fail", "err", err)
 		return nil, err
 	}
-
+	
 	defer resp.Body.Close()
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
 		logger.Error("read media fail", "err", err)
 		return nil, err
 	}
-
+	
 	return data, nil
 }
 
 func (w *WechatRobot) sendText(messageChan *MsgChan) {
 	chatId, messageId, _ := w.Robot.GetChatIdAndMsgIdAndUserID()
-
+	
 	var msg *param.MsgInfo
 	for msg = range messageChan.NormalMessageChan {
 		if msg.Finished {
 			w.Robot.SendMsg(chatId, msg.Content, messageId, "", nil)
 		}
 	}
-
+	
 	if msg == nil || len(msg.Content) == 0 {
 		msg = new(param.MsgInfo)
 		return
 	}
-
+	
 	w.Robot.SendMsg(chatId, msg.Content, messageId, "", nil)
 }
 
@@ -647,7 +647,7 @@ func (w *WechatRobot) sendVoiceContent(voiceContent []byte, duration int) error 
 		logger.Error("save voice fail", "err", err)
 		return err
 	}
-
+	
 	mediaResp, err := w.App.Media.UploadVoice(w.Robot.Ctx, fileName)
 	if err != nil {
 		logger.Error("upload voice fail", "err", err)
@@ -659,6 +659,6 @@ func (w *WechatRobot) sendVoiceContent(voiceContent []byte, duration int) error 
 		logger.Error("send voice fail", "err", err, "resp", resp)
 		return err
 	}
-
+	
 	return nil
 }

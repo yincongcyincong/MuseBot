@@ -4,6 +4,7 @@ import BotSelector from "../components/BotSelector";
 import Toast from "../components/Toast";
 import Modal from "../components/Modal";
 import {ArrowUp, Circle, Copy, Mic, Check, Image as ImageIcon} from "lucide-react";
+import {useTranslation} from "react-i18next";
 
 function Communicate() {
     const [botId, setBotId] = useState(null);
@@ -24,6 +25,8 @@ function Communicate() {
 
     const messageEndRef = useRef(null);
     const chatContainerRef = useRef(null);
+
+    const { t } = useTranslation();
 
     useEffect(() => {
         if (botId !== null) {
@@ -354,7 +357,7 @@ function Communicate() {
                             <textarea
                                 rows={2}
                                 className="w-full border rounded p-2 focus:outline-none focus:ring resize-none"
-                                placeholder="Type your message..."
+                                placeholder={t("message_placeholder")}
                                 value={input}
                                 onChange={(e) => setInput(e.target.value)}
                                 onKeyDown={handleKeyDown}

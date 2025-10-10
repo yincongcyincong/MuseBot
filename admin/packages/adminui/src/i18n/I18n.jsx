@@ -68,7 +68,25 @@ i18n
                     command: "Command",
                     start: "Start",
                     stop: "Stop",
-                    local_start: "Local Start"
+                    local_start: "Local Start",
+
+                    address_placeholder: "Search By Address",
+                    username_placeholder: "Search By Username",
+                    user_id_placeholder: "Search By User ID",
+                    message_placeholder: "Type your message here...",
+
+                    dashboard: "Dashboard",
+                    admin_users: "AdminUsers",
+                    bots: "Bots",
+                    mcp: "MCP",
+                    bot_users: "BotUsers",
+                    bot_chats: "BotChats",
+                    chat: "Chat",
+                    log: "Log",
+
+                    welcome_back: "Welcome Back",
+                    password: "Password",
+                    login: "Login",
                 }
             },
             zh: {
@@ -132,7 +150,25 @@ i18n
                     command: "命令",
                     start: "启动",
                     stop: "停止",
-                    local_start: "本地启动"
+                    local_start: "本地启动",
+
+                    address_placeholder: "通过地址搜索",
+                    username_placeholder: "通过用户名搜索",
+                    user_id_placeholder: "通过用户 ID 搜索",
+                    message_placeholder: "在此输入您的消息...",
+
+                    dashboard: "仪表盘",
+                    admin_users: "管理员用户",
+                    bots: "机器人",
+                    mcp: "MCP",
+                    bot_users: "机器人用户",
+                    bot_chats: "机器人聊天记录",
+                    chat: "聊天",
+                    log: "日志",
+
+                    welcome_back: "欢迎回来",
+                    password: "密码",
+                    login: "登录",
                 }
             }
         },

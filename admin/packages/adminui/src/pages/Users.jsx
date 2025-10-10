@@ -150,7 +150,7 @@ function Users() {
             <div className="flex mb-4 space-x-2">
                 <input
                     type="text"
-                    placeholder="Search by username"
+                    placeholder={t("username_placeholder")}
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     className="w-full sm:w-64 px-4 py-2 border border-gray-300 rounded shadow-sm focus:outline-none focus:ring focus:border-blue-400"
