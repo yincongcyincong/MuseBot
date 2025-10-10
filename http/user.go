@@ -2,7 +2,7 @@ package http
 
 import (
 	"net/http"
-
+	
 	"github.com/yincongcyincong/MuseBot/db"
 	"github.com/yincongcyincong/MuseBot/logger"
 	"github.com/yincongcyincong/MuseBot/param"
@@ -15,81 +15,85 @@ type UserToken struct {
 }
 
 func AddUserToken(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	userToken := &UserToken{}
 	err := utils.HandleJsonBody(r, userToken)
 	if err != nil {
-		logger.Error("parse json body error", "err", err)
+		logger.ErrorCtx(ctx, "parse json body error", "err", err)
 		utils.Failure(w, param.CodeParamError, param.MsgParamError, err)
 		return
 	}
-
+	
 	err = db.AddAvailToken(userToken.UserID, userToken.Token)
 	if err != nil {
-		logger.Error("add user token error", "err", err)
+		logger.ErrorCtx(ctx, "add user token error", "err", err)
 		utils.Failure(w, param.CodeDBWriteFail, param.MsgDBWriteFail, err)
 		return
 	}
-
+	
 	utils.Success(w, "success")
 }
 
 func GetUsers(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	// 解析参数
 	err := r.ParseForm()
 	if err != nil {
-		logger.Error("parse form error", "err", err)
+		logger.ErrorCtx(ctx, "parse form error", "err", err)
 		utils.Failure(w, param.CodeParamError, param.MsgParamError, err)
 		return
 	}
 	page := utils.ParseInt(r.FormValue("page"))
 	pageSize := utils.ParseInt(r.FormValue("page_size"))
 	userId := r.FormValue("user_id")
-
+	
 	users, err := db.GetUserByPage(page, pageSize, userId)
 	if err != nil {
-		logger.Error("get user error", "err", err)
+		logger.ErrorCtx(ctx, "get user error", "err", err)
 		utils.Failure(w, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
 		return
 	}
-
+	
 	total, err := db.GetUserCount(userId)
 	if err != nil {
-		logger.Error("get user count error", "err", err)
+		logger.ErrorCtx(ctx, "get user count error", "err", err)
 		utils.Failure(w, param.CodeDBQueryFail, param.MsgDBWriteFail, err)
 		return
 	}
-
+	
 	// 返回结果
 	result := map[string]interface{}{
 		"list":  users,
 		"total": total,
 	}
-
+	
 	utils.Success(w, result)
 }
 
 func UpdateMode(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	err := r.ParseForm()
 	if err != nil {
-		logger.Error("parse form error", "err", err)
+		logger.ErrorCtx(ctx, "parse form error", "err", err)
 		utils.Failure(w, param.CodeParamError, param.MsgParamError, err)
 		return
 	}
-
+	
 	userId := r.FormValue("user_id")
 	mode := r.FormValue("mode")
-
+	
 	err = db.UpdateUserMode(userId, mode)
 	if err != nil {
-		logger.Error("change user mode error", "err", err)
+		logger.ErrorCtx(ctx, "change user mode error", "err", err)
 		utils.Failure(w, param.CodeDBWriteFail, param.MsgDBWriteFail, err)
 		return
 	}
-
+	
 	utils.Success(w, "success")
 }
 
 func GetRecords(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	// 获取参数
 	query := r.URL.Query()
 	page := utils.ParseInt(query.Get("page"))
@@ -100,58 +104,59 @@ func GetRecords(w http.ResponseWriter, r *http.Request) {
 	}
 	userId := query.Get("user_id")
 	recordTypeStr := query.Get("record_type")
-
+	
 	if page <= 0 {
 		page = 1
 	}
-
+	
 	if pageSize <= 0 {
 		pageSize = 10
 	}
-
+	
 	// 查询总数和数据
 	total, err := db.GetRecordCount(userId, isDeleted, recordTypeStr)
 	if err != nil {
-		logger.Error("get record count error", "err", err)
+		logger.ErrorCtx(ctx, "get record count error", "err", err)
 		utils.Failure(w, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
 		return
 	}
-
+	
 	list, err := db.GetRecordList(userId, page, pageSize, isDeleted, recordTypeStr)
 	if err != nil {
-		logger.Error("get record list error", "err", err)
+		logger.ErrorCtx(ctx, "get record list error", "err", err)
 		utils.Failure(w, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
 		return
 	}
-
+	
 	result := map[string]interface{}{
 		"list":  list,
 		"total": total,
 	}
-
+	
 	utils.Success(w, result)
 }
 
 func InsertUserRecords(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	userRecords := &db.UserRecords{}
 	err := utils.HandleJsonBody(r, userRecords)
 	if err != nil {
-		logger.Error("parse json body error", "err", err)
+		logger.ErrorCtx(ctx, "parse json body error", "err", err)
 		utils.Failure(w, param.CodeParamError, param.MsgParamError, err)
 		return
 	}
-
+	
 	err = db.InsertUserRecords(userRecords)
 	if err != nil {
-		logger.Error("change user mode error", "err", err)
+		logger.ErrorCtx(ctx, "change user mode error", "err", err)
 		utils.Failure(w, param.CodeDBWriteFail, param.MsgDBWriteFail, err)
 		return
 	}
-
+	
 	for _, aq := range userRecords.Records {
 		db.InsertMsgRecord(userRecords.UserId, aq, false)
 	}
-
+	
 	utils.Success(w, "success")
-
+	
 }

@@ -2,10 +2,14 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"embed"
 	"io/fs"
 	"net/http"
 	"time"
+	
+	"github.com/google/uuid"
+	"github.com/yincongcyincong/MuseBot/logger"
 )
 
 //go:embed adminui/*
@@ -13,21 +17,21 @@ var staticFiles embed.FS
 
 func View() http.HandlerFunc {
 	distFS, _ := fs.Sub(staticFiles, "adminui")
-
+	
 	staticHandler := http.FileServer(http.FS(distFS))
-
+	
 	return func(w http.ResponseWriter, r *http.Request) {
 		if fileExists(distFS, r.URL.Path[1:]) {
 			staticHandler.ServeHTTP(w, r)
 			return
 		}
-
+		
 		fileBytes, err := fs.ReadFile(distFS, "index.html")
 		if err != nil {
 			http.Error(w, "index.html not found", http.StatusInternalServerError)
 			return
 		}
-
+		
 		reader := bytes.NewReader(fileBytes)
 		http.ServeContent(w, r, "index.html", time.Now(), reader)
 	}
@@ -44,4 +48,18 @@ func fileExists(fsys fs.FS, path string) bool {
 		return false
 	}
 	return true
+}
+
+func WithRequestContext(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		logID := uuid.New().String()
+		ctx, cancel := context.WithTimeout(ctx, 1*time.Minute)
+		defer cancel()
+		
+		ctx = context.WithValue(ctx, "log_id", logID)
+		r = r.WithContext(ctx)
+		logger.InfoCtx(ctx, "request start", "path", r.URL.Path)
+		next.ServeHTTP(w, r)
+	})
 }

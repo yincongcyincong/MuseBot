@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import BotSelector from "../components/BotSelector";
 import Toast from "../components/Toast";
+import {useTranslation} from "react-i18next";
 
 function BotLogPage() {
     const [botId, setBotId] = useState(null);
@@ -8,6 +9,8 @@ function BotLogPage() {
     const [toast, setToast] = useState({ show: false, message: "", type: "error" });
     const eventSourceRef = useRef(null);
     const logRef = useRef(null);
+
+    const { t } = useTranslation();
 
     const showToast = (message, type = "error") => {
         setToast({ show: true, message, type });
@@ -93,7 +96,7 @@ function BotLogPage() {
 
             {/* 标题 */}
             <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-gray-800">Log</h2>
+                <h2 className="text-2xl font-bold text-gray-800">{t("log")}</h2>
             </div>
 
             {/* BotSelector */}

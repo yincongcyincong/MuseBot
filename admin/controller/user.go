@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-
+	
 	"github.com/yincongcyincong/MuseBot/admin/db"
 	adminUtils "github.com/yincongcyincong/MuseBot/admin/utils"
 	"github.com/yincongcyincong/MuseBot/logger"
@@ -21,16 +21,17 @@ type User struct {
 }
 
 func CreateUser(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	var u User
 	err := utils.HandleJsonBody(r, &u)
 	if err != nil {
-		logger.Error("create user error", "user", u)
+		logger.ErrorCtx(ctx, "create user error", "user", u)
 		utils.Failure(w, param.CodeParamError, param.MsgParamError, err)
 		return
 	}
 	err = db.CreateUser(u.Username, u.Password)
 	if err != nil {
-		logger.Error("create user error", "user", u)
+		logger.ErrorCtx(ctx, "create user error", "user", u)
 		utils.Failure(w, param.CodeDBWriteFail, param.MsgDBWriteFail, err)
 		return
 	}
@@ -38,16 +39,17 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetUser(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	idStr := r.URL.Query().Get("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil || id <= 0 {
-		logger.Error("get user error", "user", id)
+		logger.ErrorCtx(ctx, "get user error", "user", id)
 		utils.Failure(w, param.CodeParamError, param.MsgParamError, err)
 		return
 	}
 	u, err := db.GetUserByID(id)
 	if err != nil {
-		logger.Error("get user error", "user", u)
+		logger.ErrorCtx(ctx, "get user error", "user", u)
 		utils.Failure(w, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
 		return
 	}
@@ -55,16 +57,17 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func UpdateUserPassword(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	var u User
 	err := utils.HandleJsonBody(r, &u)
 	if err != nil {
-		logger.Error("update user error", "user", u)
+		logger.ErrorCtx(ctx, "update user error", "user", u)
 		utils.Failure(w, param.CodeParamError, param.MsgParamError, err)
 		return
 	}
 	err = db.UpdateUserPassword(u.ID, u.Password)
 	if err != nil {
-		logger.Error("update user error", "user", u)
+		logger.ErrorCtx(ctx, "update user error", "user", u)
 		utils.Failure(w, param.CodeDBWriteFail, param.MsgDBWriteFail, err)
 		return
 	}
@@ -72,16 +75,17 @@ func UpdateUserPassword(w http.ResponseWriter, r *http.Request) {
 }
 
 func DeleteUser(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	idStr := r.URL.Query().Get("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil || id <= 0 {
-		logger.Error("delete user error", "id", id)
+		logger.ErrorCtx(ctx, "delete user error", "id", id)
 		utils.Failure(w, param.CodeParamError, param.MsgParamError, err)
 		return
 	}
 	err = db.DeleteUser(id)
 	if err != nil {
-		logger.Error("delete user error", "id", id)
+		logger.ErrorCtx(ctx, "delete user error", "id", id)
 		utils.Failure(w, param.CodeDBWriteFail, param.MsgDBWriteFail, err)
 		return
 	}
@@ -89,18 +93,19 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func ListUsers(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	page, pageSize := parsePaginationParams(r)
-
+	
 	username := r.URL.Query().Get("username")
-
+	
 	offset := (page - 1) * pageSize
 	users, total, err := db.ListUsers(offset, pageSize, username)
 	if err != nil {
-		logger.Error("list users error", "err", err)
+		logger.ErrorCtx(ctx, "list users error", "err", err)
 		utils.Failure(w, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
 		return
 	}
-
+	
 	utils.Success(w, map[string]interface{}{
 		"list":  users,
 		"total": total,
@@ -108,27 +113,28 @@ func ListUsers(w http.ResponseWriter, r *http.Request) {
 }
 
 func UpdateUserMode(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	botInfo, err := getBot(r)
 	if err != nil {
-		logger.Error("get bot conf error", "err", err)
+		logger.ErrorCtx(ctx, "get bot conf error", "err", err)
 		utils.Failure(w, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
 		return
 	}
-
+	
 	userId := r.URL.Query().Get("userId")
 	mode := r.URL.Query().Get("mode")
-
+	
 	resp, err := adminUtils.GetCrtClient(botInfo).Get(strings.TrimSuffix(botInfo.Address, "/") +
 		fmt.Sprintf("/user/mode/update?userId=%s&mode=%s", userId, mode))
 	if err != nil {
-		logger.Error("get bot conf error", "err", err)
+		logger.ErrorCtx(ctx, "get bot conf error", "err", err)
 		utils.Failure(w, param.CodeServerFail, param.MsgServerFail, err)
 		return
 	}
 	defer resp.Body.Close()
 	_, err = io.Copy(w, resp.Body)
 	if err != nil {
-		logger.Error("copy response body error", "err", err)
+		logger.ErrorCtx(ctx, "copy response body error", "err", err)
 		utils.Failure(w, param.CodeServerFail, param.MsgServerFail, err)
 		return
 	}
@@ -137,10 +143,10 @@ func UpdateUserMode(w http.ResponseWriter, r *http.Request) {
 func parsePaginationParams(r *http.Request) (page int, pageSize int) {
 	pageStr := r.URL.Query().Get("page")
 	pageSizeStr := r.URL.Query().Get("page_size")
-
+	
 	page, _ = strconv.Atoi(pageStr)
 	pageSize, _ = strconv.Atoi(pageSizeStr)
-
+	
 	if page <= 0 {
 		page = 1
 	}

@@ -12,20 +12,22 @@ import {
     ChevronLast,
     ScrollText,
 } from "lucide-react";
+import {useTranslation} from "react-i18next";
 
 export default function Sidebar() {
     const location = useLocation();
     const [collapsed, setCollapsed] = useState(false);
+    const { t } = useTranslation();
 
     const links = [
-        { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-        { path: "/admins", label: "Users", icon: Users },
-        { path: "/bot", label: "Bots", icon: Bot },
-        { path: "/mcp", label: "MCP", icon: Database },
-        { path: "/users", label: "BotUsers", icon: UserCircle },
-        { path: "/chats", label: "BotChats", icon: MessageCircle },
-        { path: "/communicate", label: "Chat", icon: MessageSquare },
-        { path: "/log", label: "Log", icon: ScrollText },
+        { path: "/dashboard", label: t("dashboard"), icon: LayoutDashboard },
+        { path: "/admins", label: t("admin_users"), icon: Users },
+        { path: "/bot", label: t("bots"), icon: Bot },
+        { path: "/mcp", label: t("mcp"), icon: Database },
+        { path: "/users", label: t("bot_users"), icon: UserCircle },
+        { path: "/chats", label: t("bot_chats"), icon: MessageCircle },
+        { path: "/communicate", label: t("chat"), icon: MessageSquare },
+        { path: "/log", label: t("log"), icon: ScrollText },
     ];
 
     return (

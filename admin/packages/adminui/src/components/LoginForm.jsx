@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { login } from "../api/auth";
 import { useUser } from "../context/UserContext.jsx";
+import {useTranslation} from "react-i18next";
 
 export default function LoginForm() {
     const [username, setUsername] = useState("");
@@ -9,6 +10,8 @@ export default function LoginForm() {
     const [error, setError] = useState(null);
     const navigate = useNavigate();
     const { setUser } = useUser();
+
+    const { t } = useTranslation();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -30,7 +33,7 @@ export default function LoginForm() {
                 className="bg-white bg-opacity-90 backdrop-blur-md rounded-2xl shadow-xl p-10 max-w-md w-full animate-fadeIn"
             >
                 <h2 className="text-4xl font-extrabold text-center mb-8 text-indigo-700 drop-shadow-lg">
-                    Welcome Back
+                    {t("welcome_back")}
                 </h2>
 
                 {error && (
@@ -42,7 +45,7 @@ export default function LoginForm() {
                 <div className="mb-6 relative">
                     <input
                         type="text"
-                        placeholder="Username"
+                        placeholder={t("username")}
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
                         required
@@ -51,19 +54,12 @@ export default function LoginForm() {
               transition transform duration-200
               focus:shadow-lg focus:scale-105"
                     />
-                    <label
-                        className="absolute left-5 top-3 text-gray-400 text-sm pointer-events-none
-              peer-placeholder-shown:top-3 peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-400
-              peer-focus:top-1 peer-focus:text-xs peer-focus:text-indigo-600 transition-all"
-                    >
-                        Username
-                    </label>
                 </div>
 
                 <div className="mb-8 relative">
                     <input
                         type="password"
-                        placeholder="Password"
+                        placeholder={t("password")}
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         required
@@ -72,13 +68,6 @@ export default function LoginForm() {
               transition transform duration-200
               focus:shadow-lg focus:scale-105"
                     />
-                    <label
-                        className="absolute left-5 top-3 text-gray-400 text-sm pointer-events-none
-              peer-placeholder-shown:top-3 peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-400
-              peer-focus:top-1 peer-focus:text-xs peer-focus:text-indigo-600 transition-all"
-                    >
-                        Password
-                    </label>
                 </div>
 
                 <button
@@ -86,11 +75,11 @@ export default function LoginForm() {
                     className="w-full py-3 bg-indigo-600 text-white font-semibold rounded-xl shadow-lg
             hover:bg-indigo-700 active:scale-95 transition-transform duration-150"
                 >
-                    Log In
+                    {t("login")}
                 </button>
 
                 <p className="mt-6 text-center text-gray-600 text-sm select-none">
-                    Powered by <span className="font-bold text-indigo-600">Jack Yin</span>
+                    Powered by <a href="https://github.com/yincongcyincong/MuseBot" className="font-bold text-indigo-600">Jack Yin</a>
                 </p>
             </form>
         </div>

@@ -12,7 +12,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
+	
 	"github.com/yincongcyincong/MuseBot/conf"
 	"github.com/yincongcyincong/MuseBot/logger"
 	"github.com/yincongcyincong/MuseBot/param"
@@ -34,7 +34,7 @@ func GetCommand(w http.ResponseWriter, r *http.Request) {
 	res += CompareFlagsWithStructTags(conf.PhotoConfInfo)
 	res += CompareFlagsWithStructTags(conf.RagConfInfo)
 	res += CompareFlagsWithStructTags(conf.VideoConfInfo)
-
+	
 	flagValue := flag.Lookup("mcp_conf_path")
 	if flagValue.DefValue != *conf.McpConfPath {
 		res += fmt.Sprintf("-mcp_conf_path=%s", *conf.McpConfPath)
@@ -43,15 +43,16 @@ func GetCommand(w http.ResponseWriter, r *http.Request) {
 }
 
 func UpdateConf(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	var updateConfParam UpdateConfParam
 	if err := utils.HandleJsonBody(r, &updateConfParam); err != nil {
-		logger.Error("parse json body error", "err", err)
+		logger.ErrorCtx(ctx, "parse json body error", "err", err)
 		utils.Failure(w, param.CodeParamError, param.MsgParamError, err)
 		return
 	}
-
+	
 	handleSpecialData(&updateConfParam)
-
+	
 	var err error
 	switch updateConfParam.Type {
 	case "base":
@@ -67,17 +68,17 @@ func UpdateConf(w http.ResponseWriter, r *http.Request) {
 	case "video":
 		err = utils.SetStructFieldByJSONTag(conf.VideoConfInfo, updateConfParam.Key, updateConfParam.Value)
 	default:
-		logger.Error("update conf error", "type", updateConfParam.Type)
+		logger.ErrorCtx(ctx, "update conf error", "type", updateConfParam.Type)
 		utils.Failure(w, param.CodeParamError, param.MsgParamError, err)
 		return
 	}
-
+	
 	if err != nil {
-		logger.Error("update conf error", "err", err)
+		logger.ErrorCtx(ctx, "update conf error", "err", err)
 		utils.Failure(w, param.CodeParamError, param.MsgParamError, err)
 		return
 	}
-
+	
 	utils.Success(w, "")
 }
 
@@ -89,89 +90,92 @@ func GetConf(w http.ResponseWriter, r *http.Request) {
 	res["photo"] = conf.PhotoConfInfo
 	res["rag"] = conf.RagConfInfo
 	res["video"] = conf.VideoConfInfo
-
+	
 	utils.Success(w, res)
 }
 
 func GetMCPConf(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	data, err := os.ReadFile(*conf.McpConfPath)
 	if err != nil {
-		logger.Error("read mcp conf error", "err", err)
+		logger.ErrorCtx(ctx, "read mcp conf error", "err", err)
 		utils.Failure(w, param.CodeConfigError, param.MsgConfigError, err)
 		return
 	}
-
+	
 	config := new(mcpParam.McpClientGoConfig)
 	err = json.Unmarshal(data, config)
 	if err != nil {
-		logger.Error("unmarshal mcp conf error", "err", err)
+		logger.ErrorCtx(ctx, "unmarshal mcp conf error", "err", err)
 		utils.Failure(w, param.CodeConfigError, param.MsgConfigError, err)
 		return
 	}
-
+	
 	utils.Success(w, config)
 }
 
 func UpdateMCPConf(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	name := r.URL.Query().Get("name")
 	config := new(mcpParam.MCPConfig)
 	err := utils.HandleJsonBody(r, config)
 	if err != nil {
-		logger.Error("parse json body error", "err", err)
+		logger.ErrorCtx(ctx, "parse json body error", "err", err)
 		utils.Failure(w, param.CodeParamError, param.MsgParamError, err)
 		return
 	}
-
-	mcpConfigs, err := getMCPConf()
+	
+	mcpConfigs, err := getMCPConf(ctx)
 	if err != nil {
-		logger.Error("get mcp conf error", "err", err)
+		logger.ErrorCtx(ctx, "get mcp conf error", "err", err)
 		utils.Failure(w, param.CodeConfigError, param.MsgConfigError, err)
 		return
 	}
-
+	
 	mcpConfigs.McpServers[name] = config
-
+	
 	mcpClientConf := clients.GetOneMCPClient(name, config)
 	if mcpClientConf == nil {
-		logger.Error("get mcp client error")
+		logger.ErrorCtx(ctx, "get mcp client error")
 		utils.Failure(w, param.CodeConfigError, param.MsgConfigError, err)
 		return
 	}
-
-	err = updateMCPConfFile(mcpConfigs)
+	
+	err = updateMCPConfFile(ctx, mcpConfigs)
 	if err != nil {
-		logger.Error("update mcp conf error", "err", err)
+		logger.ErrorCtx(ctx, "update mcp conf error", "err", err)
 		utils.Failure(w, param.CodeConfigError, param.MsgConfigError, err)
 		return
 	}
-
-	go updateMCPConf(name, mcpClientConf)
+	
+	go updateMCPConf(ctx, name, mcpClientConf)
 	utils.Success(w, "")
 }
 
 func DeleteMCPConf(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	name := r.URL.Query().Get("name")
-
-	mcpConfigs, err := getMCPConf()
+	
+	mcpConfigs, err := getMCPConf(ctx)
 	if err != nil {
-		logger.Error("get mcp conf error", "err", err)
+		logger.ErrorCtx(ctx, "get mcp conf error", "err", err)
 		utils.Failure(w, param.CodeConfigError, param.MsgConfigError, err)
 		return
 	}
-
+	
 	if mcpConfigs.McpServers[name] != nil {
 		err = clients.RemoveMCPClient(name)
 		if err != nil {
-			logger.Error("remove mcp client error", "err", err)
+			logger.ErrorCtx(ctx, "remove mcp client error", "err", err)
 		}
 	}
-
+	
 	delete(mcpConfigs.McpServers, name)
 	conf.TaskTools.Delete(name)
-
-	err = updateMCPConfFile(mcpConfigs)
+	
+	err = updateMCPConfFile(ctx, mcpConfigs)
 	if err != nil {
-		logger.Error("update mcp conf error", "err", err)
+		logger.ErrorCtx(ctx, "update mcp conf error", "err", err)
 		utils.Failure(w, param.CodeConfigError, param.MsgConfigError, err)
 		return
 	}
@@ -179,16 +183,17 @@ func DeleteMCPConf(w http.ResponseWriter, r *http.Request) {
 }
 
 func DisableMCPConf(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	name := r.URL.Query().Get("name")
 	disable := r.URL.Query().Get("disable")
-
-	config, err := getMCPConf()
+	
+	config, err := getMCPConf(ctx)
 	if err != nil {
-		logger.Error("get mcp conf error", "err", err)
+		logger.ErrorCtx(ctx, "get mcp conf error", "err", err)
 		utils.Failure(w, param.CodeConfigError, param.MsgConfigError, err)
 		return
 	}
-
+	
 	if disable == "1" {
 		for mcpName, client := range config.McpServers {
 			if mcpName == name {
@@ -196,7 +201,7 @@ func DisableMCPConf(w http.ResponseWriter, r *http.Request) {
 				conf.TaskTools.Delete(name)
 				err = clients.RemoveMCPClient(name)
 				if err != nil {
-					logger.Error("remove mcp client error", "err", err)
+					logger.ErrorCtx(ctx, "remove mcp client error", "err", err)
 				}
 			}
 		}
@@ -206,22 +211,22 @@ func DisableMCPConf(w http.ResponseWriter, r *http.Request) {
 				client.Disabled = false
 				mcpClientConf := clients.GetOneMCPClient(name, client)
 				if mcpClientConf == nil {
-					logger.Error("get mcp client error")
+					logger.ErrorCtx(ctx, "get mcp client error")
 					utils.Failure(w, param.CodeConfigError, param.MsgConfigError, err)
 					return
 				}
-				go updateMCPConf(name, mcpClientConf)
+				go updateMCPConf(ctx, name, mcpClientConf)
 			}
 		}
 	}
-
-	err = updateMCPConfFile(config)
+	
+	err = updateMCPConfFile(ctx, config)
 	if err != nil {
-		logger.Error("update mcp conf error", "err", err)
+		logger.ErrorCtx(ctx, "update mcp conf error", "err", err)
 		utils.Failure(w, param.CodeConfigError, param.MsgConfigError, err)
 		return
 	}
-
+	
 	utils.Success(w, "")
 }
 
@@ -232,46 +237,46 @@ func SyncMCPConf(w http.ResponseWriter, r *http.Request) {
 	utils.Success(w, "")
 }
 
-func getMCPConf() (*mcpParam.McpClientGoConfig, error) {
+func getMCPConf(ctx context.Context) (*mcpParam.McpClientGoConfig, error) {
 	data, err := os.ReadFile(*conf.McpConfPath)
 	if err != nil {
-		logger.Error("read mcp conf error", "err", err)
+		logger.ErrorCtx(ctx, "read mcp conf error", "err", err)
 		return nil, err
 	}
-
+	
 	config := new(mcpParam.McpClientGoConfig)
 	err = json.Unmarshal(data, config)
 	if err != nil {
-		logger.Error("unmarshal mcp conf error", "err", err)
+		logger.ErrorCtx(ctx, "unmarshal mcp conf error", "err", err)
 		return nil, err
 	}
-
+	
 	return config, nil
 }
 
-func updateMCPConfFile(config *mcpParam.McpClientGoConfig) error {
+func updateMCPConfFile(ctx context.Context, config *mcpParam.McpClientGoConfig) error {
 	file, err := os.OpenFile(*conf.McpConfPath, os.O_RDWR|os.O_TRUNC, 0644)
 	if err != nil {
-		logger.Error("open mcp conf error", "err", err)
+		logger.ErrorCtx(ctx, "open mcp conf error", "err", err)
 		return err
 	}
 	defer file.Close()
-
+	
 	encoder := json.NewEncoder(file)
 	encoder.SetIndent("", "  ")
-
+	
 	if err := encoder.Encode(config); err != nil {
-		logger.Error("encode mcp conf error", "err", err)
+		logger.ErrorCtx(ctx, "encode mcp conf error", "err", err)
 		return err
 	}
-
+	
 	return nil
 }
 
-func updateMCPConf(name string, mcpClientConf *mcpParam.MCPClientConf) {
+func updateMCPConf(ctx context.Context, name string, mcpClientConf *mcpParam.MCPClientConf) {
 	defer func() {
 		if err := recover(); err != nil {
-			logger.Error("update mcp conf error", "err", err, "stack", string(debug.Stack()))
+			logger.ErrorCtx(ctx, "update mcp conf error", "err", err, "stack", string(debug.Stack()))
 		}
 	}()
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*60)
@@ -279,7 +284,7 @@ func updateMCPConf(name string, mcpClientConf *mcpParam.MCPClientConf) {
 	errs := clients.RegisterMCPClient(ctx, []*mcpParam.MCPClientConf{mcpClientConf})
 	if len(errs) > 0 {
 		for mcpServer, err := range errs {
-			logger.Error("register mcp client error", "server", mcpServer, "error", err)
+			logger.ErrorCtx(ctx, "register mcp client error", "server", mcpServer, "error", err)
 		}
 	}
 	conf.InsertTools(name)
@@ -307,7 +312,7 @@ func handleSpecialData(updateConfParam *UpdateConfParam) {
 func CompareFlagsWithStructTags(cfg interface{}) string {
 	v := reflect.ValueOf(cfg)
 	t := reflect.TypeOf(cfg)
-
+	
 	// If it's a pointer, get the element it points to
 	if t.Kind() == reflect.Ptr {
 		if v.IsNil() {
@@ -317,12 +322,12 @@ func CompareFlagsWithStructTags(cfg interface{}) string {
 		v = v.Elem()
 		t = t.Elem()
 	}
-
+	
 	if t.Kind() != reflect.Struct {
 		fmt.Println("Input must be a struct or pointer to struct")
 		return ""
 	}
-
+	
 	res := ""
 	for i := 0; i < t.NumField(); i++ {
 		field := t.Field(i)
@@ -330,13 +335,13 @@ func CompareFlagsWithStructTags(cfg interface{}) string {
 		if jsonTag == "" || jsonTag == "-" {
 			continue
 		}
-
+		
 		flagValue := flag.Lookup(jsonTag)
 		if flagValue == nil {
 			logger.Warn("Flag not found", "jsonTag", jsonTag)
 			continue
 		}
-
+		
 		structValue := ""
 		switch jsonTag {
 		case "allowed_user_ids", "allowed_group_ids", "admin_user_ids":
@@ -344,11 +349,11 @@ func CompareFlagsWithStructTags(cfg interface{}) string {
 		default:
 			structValue = utils.ValueToString(v.Field(i).Interface())
 		}
-
+		
 		if structValue != flagValue.DefValue {
 			res += fmt.Sprintf("-%s=%s\n", jsonTag, structValue)
 		}
 	}
-
+	
 	return res
 }
