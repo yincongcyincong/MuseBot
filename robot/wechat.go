@@ -20,6 +20,7 @@ import (
 	"github.com/yincongcyincong/MuseBot/db"
 	"github.com/yincongcyincong/MuseBot/i18n"
 	"github.com/yincongcyincong/MuseBot/logger"
+	"github.com/yincongcyincong/MuseBot/metrics"
 	"github.com/yincongcyincong/MuseBot/param"
 	"github.com/yincongcyincong/MuseBot/utils"
 )
@@ -98,6 +99,7 @@ func deleteMsgMapData() {
 }
 
 func NewWechatRobot(event contract.EventInterface) (*WechatRobot, bool) {
+	metrics.AppRequestCount.WithLabelValues("wechat").Inc()
 	w := &WechatRobot{
 		Event: event,
 		App:   OfficialAccountApp,
