@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 	"unicode"
-
+	
 	"github.com/yincongcyincong/MuseBot/conf"
 	"github.com/yincongcyincong/MuseBot/db"
 	"github.com/yincongcyincong/MuseBot/i18n"
@@ -24,7 +24,7 @@ type GeminiReq struct {
 	ToolCall           []*genai.FunctionCall
 	ToolMessage        []*genai.Content
 	CurrentToolMessage []*genai.Content
-
+	
 	GeminiMsgs []*genai.Content
 }
 
@@ -32,15 +32,16 @@ func (h *GeminiReq) Send(ctx context.Context, l *LLM) error {
 	if l.OverLoop() {
 		return errors.New("too many loops")
 	}
-
+	
 	start := time.Now()
-
+	metrics.APIRequestCount.WithLabelValues(l.Model).Inc()
+	
 	client, err := GetGeminiClient(ctx)
 	if err != nil {
 		logger.ErrorCtx(l.Ctx, "create client fail", "err", err)
 		return err
 	}
-
+	
 	config := &genai.GenerateContentConfig{
 		TopP:             genai.Ptr[float32](float32(*conf.LLMConfInfo.TopP)),
 		FrequencyPenalty: genai.Ptr[float32](float32(*conf.LLMConfInfo.FrequencyPenalty)),
@@ -48,17 +49,21 @@ func (h *GeminiReq) Send(ctx context.Context, l *LLM) error {
 		Temperature:      genai.Ptr[float32](float32(*conf.LLMConfInfo.Temperature)),
 		Tools:            l.GeminiTools,
 	}
-
+	
 	chat, err := client.Chats.Create(ctx, l.Model, config, h.GeminiMsgs)
 	if err != nil {
 		logger.ErrorCtx(l.Ctx, "create chat fail", "err", err)
 		return err
 	}
-
+	
 	msgInfoContent := &param.MsgInfo{
 		SendLen: FirstSendLen,
 	}
-
+	
+	// record time costing in dialog
+	totalDuration := time.Since(start).Milliseconds()
+	metrics.APIRequestDuration.WithLabelValues(l.Model).Observe(float64(totalDuration))
+	
 	hasTools := false
 	for response, err := range chat.SendMessageStream(ctx, *genai.NewPartFromText(l.GetContent(l.Content))) {
 		if errors.Is(err, io.EOF) {
@@ -69,7 +74,7 @@ func (h *GeminiReq) Send(ctx context.Context, l *LLM) error {
 			logger.ErrorCtx(l.Ctx, "stream error:", "updateMsgID", l.MsgId, "err", err)
 			return err
 		}
-
+		
 		toolCalls := response.FunctionCalls()
 		if len(toolCalls) > 0 {
 			hasTools = true
@@ -82,22 +87,21 @@ func (h *GeminiReq) Send(ctx context.Context, l *LLM) error {
 				}
 			}
 		}
-
+		
 		if !hasTools {
 			msgInfoContent = l.SendMsg(msgInfoContent, response.Text())
 		}
-
+		
 		if response.UsageMetadata != nil {
 			l.Token += int(response.UsageMetadata.TotalTokenCount)
-			metrics.TotalTokens.Add(float64(l.Token))
 		}
-
+		
 	}
-
+	
 	if l.MessageChan != nil && len(strings.TrimRightFunc(msgInfoContent.Content, unicode.IsSpace)) > 0 {
 		l.MessageChan <- msgInfoContent
 	}
-
+	
 	logger.InfoCtx(l.Ctx, "Stream finished", "updateMsgID", l.MsgId)
 	if hasTools && len(h.CurrentToolMessage) != 0 {
 		h.ToolMessage = append(h.ToolMessage, h.CurrentToolMessage...)
@@ -106,10 +110,7 @@ func (h *GeminiReq) Send(ctx context.Context, l *LLM) error {
 		h.ToolCall = make([]*genai.FunctionCall, 0)
 		return h.Send(ctx, l)
 	}
-
-	// record time costing in dialog
-	totalDuration := time.Since(start).Seconds()
-	metrics.ConversationDuration.Observe(totalDuration)
+	
 	return nil
 }
 
@@ -125,7 +126,7 @@ func (h *GeminiReq) AppendMessages(client LLMClient) {
 	if len(h.GeminiMsgs) == 0 {
 		h.GeminiMsgs = make([]*genai.Content, 0)
 	}
-
+	
 	h.GeminiMsgs = append(h.GeminiMsgs, client.(*GeminiReq).GeminiMsgs...)
 }
 
@@ -143,7 +144,7 @@ func (h *GeminiReq) GetMessage(role, msg string) {
 		}
 		return
 	}
-
+	
 	h.GeminiMsgs = append(h.GeminiMsgs, &genai.Content{
 		Role: role,
 		Parts: []*genai.Part{
@@ -155,12 +156,15 @@ func (h *GeminiReq) GetMessage(role, msg string) {
 }
 
 func (h *GeminiReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
+	start := time.Now()
+	metrics.APIRequestCount.WithLabelValues(l.Model).Inc()
+	
 	client, err := GetGeminiClient(ctx)
 	if err != nil {
 		logger.ErrorCtx(l.Ctx, "create client fail", "err", err)
 		return "", err
 	}
-
+	
 	config := &genai.GenerateContentConfig{
 		TopP:             genai.Ptr[float32](float32(*conf.LLMConfInfo.TopP)),
 		FrequencyPenalty: genai.Ptr[float32](float32(*conf.LLMConfInfo.FrequencyPenalty)),
@@ -168,42 +172,46 @@ func (h *GeminiReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 		Temperature:      genai.Ptr[float32](float32(*conf.LLMConfInfo.Temperature)),
 		Tools:            l.GeminiTools,
 	}
-
+	
 	chat, err := client.Chats.Create(ctx, l.Model, config, h.GeminiMsgs)
 	if err != nil {
 		logger.ErrorCtx(l.Ctx, "create chat fail", "updateMsgID", l.MsgId, "err", err)
 		return "", err
 	}
-
+	
 	response, err := chat.Send(ctx, genai.NewPartFromText(l.Content))
 	if err != nil {
 		logger.ErrorCtx(l.Ctx, "create chat fail", "err", err)
 		return "", err
 	}
-
+	
+	// record time costing in dialog
+	totalDuration := time.Since(start).Milliseconds()
+	metrics.APIRequestDuration.WithLabelValues(l.Model).Observe(float64(totalDuration))
+	
 	l.Token += int(response.UsageMetadata.TotalTokenCount)
 	if len(response.FunctionCalls()) > 0 {
 		h.requestOneToolsCall(ctx, response.FunctionCalls(), l)
 	}
-
+	
 	return response.Text(), nil
 }
 
 func (h *GeminiReq) requestOneToolsCall(ctx context.Context, toolsCall []*genai.FunctionCall, l *LLM) {
 	for _, tool := range toolsCall {
-
+		
 		mc, err := clients.GetMCPClientByToolName(tool.Name)
 		if err != nil {
 			logger.WarnCtx(l.Ctx, "get mcp fail", "err", err, "name", tool.Name, "args", tool.Args)
 			return
 		}
-
+		
 		toolsData, err := mc.ExecTools(ctx, tool.Name, tool.Args)
 		if err != nil {
 			logger.WarnCtx(l.Ctx, "exec tools fail", "err", err, "name", tool.Name, "args", tool.Args)
 			return
 		}
-
+		
 		h.GeminiMsgs = append(h.GeminiMsgs, &genai.Content{
 			Role: genai.RoleModel,
 			Parts: []*genai.Part{
@@ -212,7 +220,7 @@ func (h *GeminiReq) requestOneToolsCall(ctx context.Context, toolsCall []*genai.
 				},
 			},
 		})
-
+		
 		h.GeminiMsgs = append(h.GeminiMsgs, &genai.Content{
 			Role: genai.RoleModel,
 			Parts: []*genai.Part{
@@ -225,7 +233,7 @@ func (h *GeminiReq) requestOneToolsCall(ctx context.Context, toolsCall []*genai.
 				},
 			},
 		})
-
+		
 		logger.InfoCtx(l.Ctx, "exec tool", "name", tool.Name, "args", tool.Args, "toolsData", toolsData)
 		l.DirectSendMsg(i18n.GetMessage(*conf.BaseConfInfo.Lang, "send_mcp_info", map[string]interface{}{
 			"function_name": tool.Name,
@@ -236,28 +244,28 @@ func (h *GeminiReq) requestOneToolsCall(ctx context.Context, toolsCall []*genai.
 }
 
 func (h *GeminiReq) RequestToolsCall(ctx context.Context, response *genai.GenerateContentResponse, l *LLM) error {
-
+	
 	for _, toolCall := range response.FunctionCalls() {
-
+		
 		if toolCall.Name != "" {
 			h.ToolCall = append(h.ToolCall, toolCall)
 			h.ToolCall[len(h.ToolCall)-1].Name = toolCall.Name
 		}
-
+		
 		if toolCall.ID != "" {
 			h.ToolCall[len(h.ToolCall)-1].ID = toolCall.ID
 		}
-
+		
 		if toolCall.Args != nil {
 			h.ToolCall[len(h.ToolCall)-1].Args = toolCall.Args
 		}
-
+		
 		mc, err := clients.GetMCPClientByToolName(h.ToolCall[len(h.ToolCall)-1].Name)
 		if err != nil {
 			logger.WarnCtx(l.Ctx, "get mcp fail", "err", err)
 			return err
 		}
-
+		
 		toolsData, err := mc.ExecTools(ctx, h.ToolCall[len(h.ToolCall)-1].Name, h.ToolCall[len(h.ToolCall)-1].Args)
 		if err != nil {
 			logger.WarnCtx(l.Ctx, "exec tools fail", "err", err)
@@ -271,7 +279,7 @@ func (h *GeminiReq) RequestToolsCall(ctx context.Context, response *genai.Genera
 				},
 			},
 		})
-
+		
 		h.CurrentToolMessage = append(h.CurrentToolMessage, &genai.Content{
 			Role: genai.RoleModel,
 			Parts: []*genai.Part{
@@ -286,14 +294,14 @@ func (h *GeminiReq) RequestToolsCall(ctx context.Context, response *genai.Genera
 		})
 		logger.InfoCtx(l.Ctx, "send tool request", "function", toolCall.Name,
 			"toolCall", toolCall.ID, "argument", toolCall.Args, "toolsData", toolsData)
-
+		
 		l.DirectSendMsg(i18n.GetMessage(*conf.BaseConfInfo.Lang, "send_mcp_info", map[string]interface{}{
 			"function_name": toolCall.Name,
 			"request_args":  toolCall.Args,
 			"response":      toolsData,
 		}))
 	}
-
+	
 	return nil
 }
 
@@ -315,7 +323,10 @@ func GenerateGeminiImg(ctx context.Context, prompt string, imageContent []byte) 
 		logger.ErrorCtx(ctx, "create client fail", "err", err)
 		return nil, 0, err
 	}
-
+	
+	start := time.Now()
+	metrics.APIRequestCount.WithLabelValues(*conf.PhotoConfInfo.GeminiImageModel).Inc()
+	
 	geminiContent := genai.Text(prompt)
 	if len(imageContent) > 0 {
 		geminiContent = append(geminiContent, &genai.Content{
@@ -330,7 +341,7 @@ func GenerateGeminiImg(ctx context.Context, prompt string, imageContent []byte) 
 			},
 		})
 	}
-
+	
 	response, err := client.Models.GenerateContent(
 		ctx,
 		*conf.PhotoConfInfo.GeminiImageModel,
@@ -339,11 +350,15 @@ func GenerateGeminiImg(ctx context.Context, prompt string, imageContent []byte) 
 			ResponseModalities: []string{"TEXT", "IMAGE"},
 		},
 	)
+	
+	// record time costing in dialog
+	totalDuration := time.Since(start).Milliseconds()
+	metrics.APIRequestDuration.WithLabelValues(*conf.PhotoConfInfo.GeminiImageModel).Observe(float64(totalDuration))
 	if err != nil {
 		logger.ErrorCtx(ctx, "generate image fail", "err", err)
 		return nil, 0, err
 	}
-
+	
 	if len(response.Candidates) > 0 {
 		for _, part := range response.Candidates[0].Content.Parts {
 			if part.InlineData != nil {
@@ -351,7 +366,7 @@ func GenerateGeminiImg(ctx context.Context, prompt string, imageContent []byte) 
 			}
 		}
 	}
-
+	
 	return nil, 0, errors.New("image is empty")
 }
 
@@ -361,7 +376,10 @@ func GenerateGeminiVideo(ctx context.Context, prompt string, image []byte) ([]by
 		logger.ErrorCtx(ctx, "create client fail", "err", err)
 		return nil, 0, err
 	}
-
+	
+	start := time.Now()
+	metrics.APIRequestCount.WithLabelValues(*conf.VideoConfInfo.GeminiVideoModel).Inc()
+	
 	var geminiImage *genai.Image
 	if len(image) > 0 {
 		geminiImage = &genai.Image{
@@ -369,7 +387,7 @@ func GenerateGeminiVideo(ctx context.Context, prompt string, image []byte) ([]by
 			MIMEType:   "image/" + utils.DetectImageFormat(image),
 		}
 	}
-
+	
 	duration := int32(*conf.VideoConfInfo.Duration)
 	operation, err := client.Models.GenerateVideos(ctx,
 		*conf.VideoConfInfo.GeminiVideoModel, prompt,
@@ -382,7 +400,7 @@ func GenerateGeminiVideo(ctx context.Context, prompt string, image []byte) ([]by
 		logger.ErrorCtx(ctx, "generate video fail", "err", err)
 		return nil, 0, err
 	}
-
+	
 	for !operation.Done {
 		logger.InfoCtx(ctx, "video is createing...")
 		time.Sleep(5 * time.Second)
@@ -392,12 +410,16 @@ func GenerateGeminiVideo(ctx context.Context, prompt string, image []byte) ([]by
 			return nil, 0, err
 		}
 	}
-
+	
+	// record time costing in dialog
+	totalDuration := time.Since(start).Milliseconds()
+	metrics.APIRequestDuration.WithLabelValues(*conf.VideoConfInfo.GeminiVideoModel).Observe(float64(totalDuration))
+	
 	if len(operation.Response.GeneratedVideos) == 0 {
 		logger.ErrorCtx(ctx, "generate video fail", "err", "video is empty", "resp", operation.Response)
 		return nil, 0, errors.New("video is empty")
 	}
-
+	
 	var totalToken int
 	if operation.Metadata != nil {
 		if usageRaw, ok := operation.Metadata["usageMetadata"]; ok {
@@ -410,7 +432,7 @@ func GenerateGeminiVideo(ctx context.Context, prompt string, image []byte) ([]by
 			}
 		}
 	}
-
+	
 	return operation.Response.GeneratedVideos[0].Video.VideoBytes, totalToken, nil
 }
 
@@ -420,7 +442,10 @@ func GenerateGeminiText(ctx context.Context, audioContent []byte) (string, int, 
 		logger.ErrorCtx(ctx, "create client fail", "err", err)
 		return "", 0, err
 	}
-
+	
+	start := time.Now()
+	metrics.APIRequestCount.WithLabelValues(*conf.PhotoConfInfo.GeminiRecModel).Inc()
+	
 	parts := []*genai.Part{
 		genai.NewPartFromText("Get Content from this audio clip"),
 		{
@@ -433,19 +458,23 @@ func GenerateGeminiText(ctx context.Context, audioContent []byte) (string, int, 
 	contents := []*genai.Content{
 		genai.NewContentFromParts(parts, genai.RoleUser),
 	}
-
+	
 	result, err := client.Models.GenerateContent(
 		ctx,
 		*conf.PhotoConfInfo.GeminiRecModel,
 		contents,
 		nil,
 	)
-
+	
+	// record time costing in dialog
+	totalDuration := time.Since(start).Milliseconds()
+	metrics.APIRequestDuration.WithLabelValues(*conf.PhotoConfInfo.GeminiRecModel).Observe(float64(totalDuration))
+	
 	if err != nil || result == nil {
 		logger.ErrorCtx(ctx, "generate text fail", "err", err)
 		return "", 0, err
 	}
-
+	
 	return result.Text(), int(result.UsageMetadata.TotalTokenCount), nil
 }
 
@@ -455,35 +484,42 @@ func GetGeminiImageContent(ctx context.Context, imageContent []byte, content str
 		logger.ErrorCtx(ctx, "create client fail", "err", err)
 		return "", 0, err
 	}
-
+	
+	start := time.Now()
+	metrics.APIRequestCount.WithLabelValues(*conf.PhotoConfInfo.GeminiRecModel).Inc()
+	
 	contentPrompt := content
 	if content == "" {
 		contentPrompt = i18n.GetMessage(*conf.BaseConfInfo.Lang, "photo_handle_prompt", nil)
 	}
-
+	
 	parts := []*genai.Part{
 		genai.NewPartFromBytes(imageContent, "image/jpeg"),
 		genai.NewPartFromText(contentPrompt),
 	}
-
+	
 	contents := []*genai.Content{
 		genai.NewContentFromParts(parts, genai.RoleUser),
 	}
-
+	
 	result, err := client.Models.GenerateContent(
 		ctx,
 		*conf.PhotoConfInfo.GeminiRecModel,
 		contents,
 		nil,
 	)
-
+	
+	// record time costing in dialog
+	totalDuration := time.Since(start).Milliseconds()
+	metrics.APIRequestDuration.WithLabelValues(*conf.PhotoConfInfo.GeminiRecModel).Observe(float64(totalDuration))
+	
 	if err != nil || result == nil {
 		logger.ErrorCtx(ctx, "generate text fail", "err", err)
 		return "", 0, err
 	}
-
+	
 	return result.Text(), int(result.UsageMetadata.TotalTokenCount), nil
-
+	
 }
 
 func GeminiTTS(ctx context.Context, content, encoding string) ([]byte, int, int, error) {
@@ -492,17 +528,20 @@ func GeminiTTS(ctx context.Context, content, encoding string) ([]byte, int, int,
 		logger.ErrorCtx(ctx, "create client fail", "err", err)
 		return nil, 0, 0, err
 	}
-
+	
+	start := time.Now()
+	metrics.APIRequestCount.WithLabelValues(*conf.AudioConfInfo.GeminiAudioModel).Inc()
+	
 	parts := []*genai.Part{
 		genai.NewPartFromText(i18n.GetMessage(*conf.BaseConfInfo.Lang, "audio_create_prompt", map[string]interface{}{
 			"content": content,
 		})),
 	}
-
+	
 	contents := []*genai.Content{
 		genai.NewContentFromParts(parts, genai.RoleUser),
 	}
-
+	
 	response, err := client.Models.GenerateContent(
 		ctx,
 		*conf.AudioConfInfo.GeminiAudioModel,
@@ -520,12 +559,16 @@ func GeminiTTS(ctx context.Context, content, encoding string) ([]byte, int, int,
 			},
 		},
 	)
-
+	
+	// record time costing in dialog
+	totalDuration := time.Since(start).Milliseconds()
+	metrics.APIRequestDuration.WithLabelValues(*conf.AudioConfInfo.GeminiAudioModel).Observe(float64(totalDuration))
+	
 	if err != nil {
 		logger.ErrorCtx(ctx, "generate audio fail", "err", err)
 		return nil, 0, 0, err
 	}
-
+	
 	if len(response.Candidates) > 0 {
 		for _, part := range response.Candidates[0].Content.Parts {
 			if part.InlineData != nil {
@@ -538,7 +581,7 @@ func GeminiTTS(ctx context.Context, content, encoding string) ([]byte, int, int,
 			}
 		}
 	}
-
+	
 	return nil, 0, 0, errors.New("audio is empty")
 }
 

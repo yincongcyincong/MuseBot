@@ -7,11 +7,10 @@ import (
 	"sync"
 	"time"
 	"unicode"
-
+	
 	"github.com/cohesion-org/deepseek-go"
 	"github.com/yincongcyincong/MuseBot/conf"
 	"github.com/yincongcyincong/MuseBot/logger"
-	"github.com/yincongcyincong/MuseBot/metrics"
 	"github.com/yincongcyincong/MuseBot/param"
 )
 
@@ -66,7 +65,7 @@ func InsertMsgRecord(userId string, aq *AQ, insertDB bool) {
 		msgRecord.updateTime = time.Now().Unix()
 	}
 	MsgRecord.Store(userId, msgRecord)
-
+	
 	if insertDB {
 		go InsertRecordInfo(&Record{
 			UserId:     userId,
@@ -101,7 +100,7 @@ func InsertRecord() {
 	if err != nil {
 		logger.Error("InsertRecord GetUsers err", "err", err)
 	}
-
+	
 	for _, user := range users {
 		records, err := getRecordsByUserId(user.UserId)
 		if err != nil {
@@ -114,12 +113,9 @@ func InsertRecord() {
 				Answer:   record.Answer,
 				Content:  record.Content,
 			}, false)
-			metrics.TotalRecords.Inc()
 		}
 	}
-
-	metrics.TotalUsers.Add(float64(len(users)))
-
+	
 }
 
 // getRecordsByUserId get latest 10 records by user_id
@@ -127,14 +123,14 @@ func getRecordsByUserId(userId string) ([]Record, error) {
 	// construct SQL statements
 	query := fmt.Sprintf("SELECT id, user_id, question, answer, content, mode FROM records WHERE user_id =  ? " +
 		"and is_deleted = 0 and record_type = 0 order by create_time desc limit ?")
-
+	
 	// execute query
 	rows, err := DB.Query(query, userId, *conf.BaseConfInfo.MaxQAPair)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-
+	
 	var records []Record
 	for rows.Next() {
 		var record Record
@@ -144,7 +140,7 @@ func getRecordsByUserId(userId string) ([]Record, error) {
 		}
 		records = append(records, record)
 	}
-
+	
 	return records, nil
 }
 
@@ -152,29 +148,28 @@ func getRecordsByUserId(userId string) ([]Record, error) {
 func InsertRecordInfo(record *Record) (int64, error) {
 	query := `INSERT INTO records (user_id, question, answer, content, token, create_time, is_deleted, record_type, mode, from_bot) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 	result, err := DB.Exec(query, record.UserId, record.Question, record.Answer, record.Content, record.Token, time.Now().Unix(), record.IsDeleted, record.RecordType, record.Mode, *conf.BaseConfInfo.BotName)
-	metrics.TotalRecords.Inc()
 	if err != nil {
 		logger.Error("insertRecord err", "err", err)
 		return 0, err
 	}
-
+	
 	user, err := GetUserByID(record.UserId)
 	if err != nil {
 		logger.Error("Error get user by userid", "err", err)
 	}
-
+	
 	if user == nil {
 		_, err = InsertUser(record.UserId, deepseek.DeepSeekChat)
 		if err != nil {
 			logger.Error("Error insert user by userid", "err", err)
 		}
 	}
-
+	
 	err = AddToken(record.UserId, record.Token)
 	if err != nil {
 		logger.Error("Error update token by user", "err", err)
 	}
-
+	
 	return result.LastInsertId()
 }
 
@@ -188,7 +183,7 @@ func DeleteRecord(userId string) error {
 func GetTokenByUserIdAndTime(userId string, start, end int64) (int, error) {
 	querySQL := `SELECT sum(token) FROM records WHERE user_id = ? and create_time >= ? and create_time <= ?`
 	row := DB.QueryRow(querySQL, userId, start, end)
-
+	
 	// scan row get result
 	var user User
 	err := row.Scan(&user.Token)
@@ -204,14 +199,14 @@ func GetTokenByUserIdAndTime(userId string, start, end int64) (int, error) {
 
 func GetLastImageRecord(userId string) (*Record, error) {
 	query := fmt.Sprintf("SELECT id, user_id, question, answer, content FROM records WHERE user_id =  ? and record_type = ? and is_deleted = 0 order by id desc")
-
+	
 	// execute query
 	rows, err := DB.Query(query, userId, param.ImageRecordType)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-
+	
 	var records []Record
 	for rows.Next() {
 		var record Record
@@ -221,11 +216,11 @@ func GetLastImageRecord(userId string) (*Record, error) {
 		}
 		records = append(records, record)
 	}
-
+	
 	if len(records) == 0 {
 		return nil, nil
 	}
-
+	
 	return &records[0], nil
 }
 
@@ -234,17 +229,17 @@ func GetRecordCount(userId string, isDeleted int, recordType string) (int, error
 	query := "SELECT COUNT(*) FROM records"
 	var args []interface{}
 	var conditions []string
-
+	
 	if userId != "" {
 		conditions = append(conditions, "user_id = ?")
 		args = append(args, userId)
 	}
-
+	
 	if isDeleted >= 0 {
 		conditions = append(conditions, "is_deleted = ?")
 		args = append(args, isDeleted)
 	}
-
+	
 	if recordType != "" {
 		types := strings.Split(recordType, ",")
 		if len(types) > 0 {
@@ -258,11 +253,11 @@ func GetRecordCount(userId string, isDeleted int, recordType string) (int, error
 			}
 		}
 	}
-
+	
 	if len(conditions) > 0 {
 		query += " WHERE " + strings.Join(conditions, " AND ")
 	}
-
+	
 	err := DB.QueryRow(query, args...).Scan(&count)
 	return count, err
 }
@@ -275,13 +270,13 @@ func GetRecordList(userId string, page, pageSize, isDeleted int, recordType stri
 		pageSize = 10
 	}
 	offset := (page - 1) * pageSize
-
+	
 	query := `
 		SELECT id, user_id, question, answer, content, token, is_deleted, create_time, mode, update_time
 		FROM records`
 	var args []interface{}
 	var conditions []string
-
+	
 	if userId != "" {
 		conditions = append(conditions, "user_id = ?")
 		args = append(args, userId)
@@ -290,7 +285,7 @@ func GetRecordList(userId string, page, pageSize, isDeleted int, recordType stri
 		conditions = append(conditions, "is_deleted = ?")
 		args = append(args, isDeleted)
 	}
-
+	
 	if recordType != "" {
 		types := strings.Split(recordType, ",")
 		if len(types) > 0 {
@@ -304,20 +299,20 @@ func GetRecordList(userId string, page, pageSize, isDeleted int, recordType stri
 			}
 		}
 	}
-
+	
 	if len(conditions) > 0 {
 		query += " WHERE " + strings.Join(conditions, " AND ")
 	}
-
+	
 	query += " ORDER BY id DESC LIMIT ? OFFSET ?"
 	args = append(args, pageSize, offset)
-
+	
 	rows, err := DB.Query(query, args...)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-
+	
 	var records []Record
 	for rows.Next() {
 		var r Record
@@ -332,7 +327,7 @@ func GetRecordList(userId string, page, pageSize, isDeleted int, recordType stri
 func GetDailyNewRecords(days int) ([]DailyStat, error) {
 	var query string
 	var intervalSeconds int64
-
+	
 	if days <= 3 {
 		intervalSeconds = 3600 // 每小时
 	} else if days <= 7 {
@@ -340,7 +335,7 @@ func GetDailyNewRecords(days int) ([]DailyStat, error) {
 	} else {
 		intervalSeconds = 86400 // 每天
 	}
-
+	
 	if *conf.BaseConfInfo.DBType == "mysql" {
 		query = `
 			SELECT
@@ -364,7 +359,7 @@ func GetDailyNewRecords(days int) ([]DailyStat, error) {
 	} else {
 		return nil, fmt.Errorf("unsupported DBType: %s", *conf.BaseConfInfo.DBType)
 	}
-
+	
 	var rows *sql.Rows
 	var err error
 	if *conf.BaseConfInfo.DBType == "sqlite3" {
@@ -376,7 +371,7 @@ func GetDailyNewRecords(days int) ([]DailyStat, error) {
 		return nil, err
 	}
 	defer rows.Close()
-
+	
 	var stats []DailyStat
 	for rows.Next() {
 		var stat DailyStat
@@ -385,7 +380,7 @@ func GetDailyNewRecords(days int) ([]DailyStat, error) {
 		}
 		stats = append(stats, stat)
 	}
-
+	
 	return stats, nil
 }
 
@@ -393,7 +388,7 @@ func UpdateRecordInfo(record *Record) error {
 	query := `UPDATE records
 			  SET answer = ?, content = ?, token = token + ?, mode = ?, update_time = ?
 			  WHERE id = ?`
-
+	
 	_, err := DB.Exec(query,
 		record.Answer,
 		record.Content,
@@ -406,7 +401,7 @@ func UpdateRecordInfo(record *Record) error {
 		logger.Error("updateRecord err", "err", err)
 		return err
 	}
-
+	
 	return nil
 }
 
@@ -414,13 +409,13 @@ func AddRecordToken(recordID int64, delta int) error {
 	query := `UPDATE records
 			  SET token = token + ?, update_time = ?
 			  WHERE id = ?`
-
+	
 	_, err := DB.Exec(query, delta, time.Now().Unix(), recordID)
 	if err != nil {
 		logger.Error("addRecordToken err", "err", err)
 		return err
 	}
-
+	
 	return nil
 }
 
@@ -444,28 +439,28 @@ func FilterByMaxContextFromLatest(aqs []*AQ, maxContext int) []*AQ {
 	if n == 0 {
 		return nil
 	}
-
+	
 	var result []*AQ
 	cumulative := 0
-
+	
 	for i := n - 1; i >= 0; i-- {
 		totalText := aqs[i].Question + " " + aqs[i].Answer
 		tokens := EstimateTokens(totalText)
-
+		
 		if cumulative+tokens > maxContext {
 			break
 		}
-
+		
 		aq := aqs[i]
 		aq.Token = tokens
 		result = append(result, aq)
 		cumulative += tokens
 	}
-
+	
 	for i, j := 0, len(result)-1; i < j; i, j = i+1, j-1 {
 		result[i], result[j] = result[j], result[i]
 	}
-
+	
 	return result
 }
 
@@ -475,9 +470,9 @@ func InsertUserRecords(ur *UserRecords) error {
 			user_id, question, answer, content, token, create_time, is_deleted, record_type, mode, from_bot
 		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
-
+	
 	now := time.Now().Unix()
-
+	
 	for _, r := range ur.Records {
 		_, err := DB.Exec(query,
 			ur.UserId,

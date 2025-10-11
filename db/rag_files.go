@@ -2,9 +2,8 @@ package db
 
 import (
 	"time"
-
+	
 	"github.com/yincongcyincong/MuseBot/conf"
-	"github.com/yincongcyincong/MuseBot/metrics"
 )
 
 type RagFiles struct {
@@ -24,25 +23,24 @@ func InsertRagFile(fileName, fileMd5 string) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-
+	
 	// get last insert id
 	id, err := result.LastInsertId()
 	if err != nil {
 		return 0, err
 	}
-	metrics.TotalUsers.Inc()
 	return id, nil
 }
 
 func GetRagFileByFileMd5(fileMd5 string) ([]*RagFiles, error) {
 	querySQL := `SELECT id, file_name, file_md5, update_time, create_time FROM rag_files WHERE file_md5 = ? and is_deleted = 0 and from_bot = ?`
 	rows, err := DB.Query(querySQL, fileMd5, *conf.BaseConfInfo.BotName)
-
+	
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-
+	
 	var ragFiles []*RagFiles
 	for rows.Next() {
 		var ragFile RagFiles
@@ -51,7 +49,7 @@ func GetRagFileByFileMd5(fileMd5 string) ([]*RagFiles, error) {
 		}
 		ragFiles = append(ragFiles, &ragFile)
 	}
-
+	
 	// check error
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -62,12 +60,12 @@ func GetRagFileByFileMd5(fileMd5 string) ([]*RagFiles, error) {
 func GetRagFileByFileName(fileName string) ([]*RagFiles, error) {
 	querySQL := `SELECT id, file_name, file_md5, update_time, create_time, vector_id FROM rag_files WHERE file_name = ? and is_deleted = 0 and from_bot = ?`
 	rows, err := DB.Query(querySQL, fileName, *conf.BaseConfInfo.BotName)
-
+	
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-
+	
 	var ragFiles []*RagFiles
 	for rows.Next() {
 		var ragFile RagFiles
@@ -76,7 +74,7 @@ func GetRagFileByFileName(fileName string) ([]*RagFiles, error) {
 		}
 		ragFiles = append(ragFiles, &ragFile)
 	}
-
+	
 	// check error
 	if err := rows.Err(); err != nil {
 		return nil, err

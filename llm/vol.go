@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 	"unicode"
-
+	
 	"github.com/cohesion-org/deepseek-go"
 	"github.com/cohesion-org/deepseek-go/constants"
 	"github.com/google/uuid"
@@ -33,7 +33,7 @@ type VolReq struct {
 	ToolCall           []*model.ToolCall
 	ToolMessage        []*model.ChatCompletionMessage
 	CurrentToolMessage []*model.ChatCompletionMessage
-
+	
 	VolMsgs []*model.ChatCompletionMessage
 }
 
@@ -53,10 +53,10 @@ func (h *VolReq) Send(ctx context.Context, l *LLM) error {
 	if l.OverLoop() {
 		return errors.New("too many loops")
 	}
-
+	
 	start := time.Now()
 	client := GetVolClient()
-
+	
 	req := model.ChatCompletionRequest{
 		Model:    l.Model,
 		Messages: h.VolMsgs,
@@ -73,20 +73,20 @@ func (h *VolReq) Send(ctx context.Context, l *LLM) error {
 		Temperature:      float32(*conf.LLMConfInfo.Temperature),
 		Tools:            l.VolTools,
 	}
-
+	
 	stream, err := client.CreateChatCompletionStream(ctx, req)
 	if err != nil {
 		logger.ErrorCtx(l.Ctx, "standard chat error", "err", err)
 		return err
 	}
 	defer stream.Close()
-
+	
 	msgInfoContent := &param.MsgInfo{
 		SendLen: FirstSendLen,
 	}
-
+	
 	hasTools := false
-
+	
 	for {
 		response, err := stream.Recv()
 		if errors.Is(err, io.EOF) {
@@ -98,7 +98,7 @@ func (h *VolReq) Send(ctx context.Context, l *LLM) error {
 			return err
 		}
 		for _, choice := range response.Choices {
-
+			
 			if len(choice.Delta.ToolCalls) > 0 {
 				hasTools = true
 				err = h.requestToolsCall(ctx, choice, l)
@@ -110,23 +110,22 @@ func (h *VolReq) Send(ctx context.Context, l *LLM) error {
 					}
 				}
 			}
-
+			
 			if !hasTools {
 				msgInfoContent = l.SendMsg(msgInfoContent, choice.Delta.Content)
 			}
 		}
-
+		
 		if response.Usage != nil {
 			l.Token += response.Usage.TotalTokens
-			metrics.TotalTokens.Add(float64(l.Token))
 		}
-
+		
 	}
-
+	
 	if l.MessageChan != nil && len(strings.TrimRightFunc(msgInfoContent.Content, unicode.IsSpace)) > 0 {
 		l.MessageChan <- msgInfoContent
 	}
-
+	
 	if hasTools && len(h.CurrentToolMessage) != 0 {
 		h.CurrentToolMessage = append([]*model.ChatCompletionMessage{
 			{
@@ -137,46 +136,46 @@ func (h *VolReq) Send(ctx context.Context, l *LLM) error {
 				ToolCalls: h.ToolCall,
 			},
 		}, h.CurrentToolMessage...)
-
+		
 		h.ToolMessage = append(h.ToolMessage, h.CurrentToolMessage...)
 		h.VolMsgs = append(h.VolMsgs, h.CurrentToolMessage...)
 		h.CurrentToolMessage = make([]*model.ChatCompletionMessage, 0)
 		h.ToolCall = make([]*model.ToolCall, 0)
 		return h.Send(ctx, l)
 	}
-
+	
 	// record time costing in dialog
-	totalDuration := time.Since(start).Seconds()
-	metrics.ConversationDuration.Observe(totalDuration)
+	totalDuration := time.Since(start).Milliseconds()
+	metrics.APIRequestDuration.WithLabelValues(l.Model).Observe(float64(totalDuration))
 	return nil
 }
 
 func (h *VolReq) requestToolsCall(ctx context.Context, choice *model.ChatCompletionStreamChoice, l *LLM) error {
 	for _, toolCall := range choice.Delta.ToolCalls {
 		property := make(map[string]interface{})
-
+		
 		if toolCall.Function.Name != "" {
 			h.ToolCall = append(h.ToolCall, toolCall)
 			h.ToolCall[len(h.ToolCall)-1].Function.Name = toolCall.Function.Name
 		}
-
+		
 		if toolCall.ID != "" {
 			h.ToolCall[len(h.ToolCall)-1].ID = toolCall.ID
 		}
-
+		
 		if toolCall.Type != "" {
 			h.ToolCall[len(h.ToolCall)-1].Type = toolCall.Type
 		}
-
+		
 		if toolCall.Function.Arguments != "" && toolCall.Function.Name == "" {
 			h.ToolCall[len(h.ToolCall)-1].Function.Arguments += toolCall.Function.Arguments
 		}
-
+		
 		err := json.Unmarshal([]byte(h.ToolCall[len(h.ToolCall)-1].Function.Arguments), &property)
 		if err != nil {
 			return ToolsJsonErr
 		}
-
+		
 		tool := h.ToolCall[len(h.ToolCall)-1]
 		mc, err := clients.GetMCPClientByToolName(tool.Function.Name)
 		if err != nil {
@@ -184,7 +183,7 @@ func (h *VolReq) requestToolsCall(ctx context.Context, choice *model.ChatComplet
 				"toolCall", tool.ID, "argument", tool.Function.Arguments)
 			return err
 		}
-
+		
 		toolsData, err := mc.ExecTools(ctx, tool.Function.Name, property)
 		if err != nil {
 			logger.WarnCtx(l.Ctx, "exec tools fail", "err", err, "function", tool.Function.Name,
@@ -198,7 +197,7 @@ func (h *VolReq) requestToolsCall(ctx context.Context, choice *model.ChatComplet
 			},
 			ToolCallID: tool.ID,
 		})
-
+		
 		logger.InfoCtx(l.Ctx, "send tool request", "function", tool.Function.Name,
 			"toolCall", tool.ID, "argument", tool.Function.Arguments,
 			"res", toolsData)
@@ -208,7 +207,7 @@ func (h *VolReq) requestToolsCall(ctx context.Context, choice *model.ChatComplet
 			"response":      toolsData,
 		}))
 	}
-
+	
 	return nil
 }
 
@@ -224,7 +223,7 @@ func (h *VolReq) AppendMessages(client LLMClient) {
 	if len(h.VolMsgs) == 0 {
 		h.VolMsgs = make([]*model.ChatCompletionMessage, 0)
 	}
-
+	
 	h.VolMsgs = append(h.VolMsgs, client.(*VolReq).VolMsgs...)
 }
 
@@ -240,7 +239,7 @@ func (h *VolReq) GetMessage(role, msg string) {
 		}
 		return
 	}
-
+	
 	h.VolMsgs = append(h.VolMsgs, &model.ChatCompletionMessage{
 		Role: role,
 		Content: &model.ChatCompletionMessageContent{
@@ -251,7 +250,7 @@ func (h *VolReq) GetMessage(role, msg string) {
 
 func (h *VolReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 	client := GetVolClient()
-
+	
 	req := model.ChatCompletionRequest{
 		Model:    l.Model,
 		Messages: h.VolMsgs,
@@ -268,25 +267,25 @@ func (h *VolReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 		Temperature:      float32(*conf.LLMConfInfo.Temperature),
 		Tools:            l.VolTools,
 	}
-
+	
 	response, err := client.CreateChatCompletion(ctx, req)
 	if err != nil {
 		logger.ErrorCtx(l.Ctx, "CreateChatCompletion error", "updateMsgID", l.MsgId, "err", err)
 		return "", err
 	}
-
+	
 	if len(response.Choices) == 0 {
 		logger.ErrorCtx(l.Ctx, "response is emtpy", "response", response)
 		return "", errors.New("response is empty")
 	}
-
+	
 	l.Token += response.Usage.TotalTokens
 	if len(response.Choices[0].Message.ToolCalls) > 0 {
 		h.GetAssistantMessage("")
 		h.VolMsgs[len(h.VolMsgs)-1].ToolCalls = response.Choices[0].Message.ToolCalls
 		h.requestOneToolsCall(ctx, response.Choices[0].Message.ToolCalls, l)
 	}
-
+	
 	return *response.Choices[0].Message.Content.StringValue, nil
 }
 
@@ -297,19 +296,19 @@ func (h *VolReq) requestOneToolsCall(ctx context.Context, toolsCall []*model.Too
 		if err != nil {
 			return
 		}
-
+		
 		mc, err := clients.GetMCPClientByToolName(tool.Function.Name)
 		if err != nil {
 			logger.WarnCtx(l.Ctx, "get mcp fail", "err", err)
 			return
 		}
-
+		
 		toolsData, err := mc.ExecTools(ctx, tool.Function.Name, property)
 		if err != nil {
 			logger.WarnCtx(l.Ctx, "exec tools fail", "err", err)
 			return
 		}
-
+		
 		h.VolMsgs = append(h.VolMsgs, &model.ChatCompletionMessage{
 			Role: constants.ChatMessageRoleTool,
 			Content: &model.ChatCompletionMessageContent{
@@ -331,7 +330,7 @@ func GenerateVolImg(ctx context.Context, prompt string, imageContent []byte) (st
 	start := time.Now()
 	visual.DefaultInstance.Client.SetAccessKey(*conf.BaseConfInfo.VolcAK)
 	visual.DefaultInstance.Client.SetSecretKey(*conf.BaseConfInfo.VolcSK)
-
+	
 	reqBody := map[string]interface{}{
 		"req_key":           *conf.PhotoConfInfo.ReqKey,
 		"prompt":            prompt,
@@ -354,17 +353,17 @@ func GenerateVolImg(ctx context.Context, prompt string, imageContent []byte) (st
 			"logo_text_content": *conf.PhotoConfInfo.LogoTextContent,
 		},
 	}
-
+	
 	if len(imageContent) != 0 {
 		reqBody["binary_data_base64"] = []string{base64.StdEncoding.EncodeToString(imageContent)}
 	}
-
+	
 	resp, _, err := visual.DefaultInstance.CVProcess(reqBody)
 	if err != nil {
 		logger.ErrorCtx(ctx, "request img api fail", "err", err)
 		return "", 0, err
 	}
-
+	
 	respByte, _ := json.Marshal(resp)
 	data := &param.ImgResponse{}
 	err = json.Unmarshal(respByte, data)
@@ -372,18 +371,18 @@ func GenerateVolImg(ctx context.Context, prompt string, imageContent []byte) (st
 		logger.ErrorCtx(ctx, "unmarshal response fail", "err", err)
 		return "", 0, err
 	}
-
+	
 	logger.InfoCtx(ctx, "image response", "respByte", respByte)
-
+	
 	// generate image time costing
-	totalDuration := time.Since(start).Seconds()
-	metrics.ImageDuration.Observe(totalDuration)
-
+	totalDuration := time.Since(start).Milliseconds()
+	metrics.APIRequestDuration.WithLabelValues(*conf.PhotoConfInfo.ModelVersion).Observe(float64(totalDuration))
+	
 	if data.Data == nil || len(data.Data.ImageUrls) == 0 {
 		logger.WarnCtx(ctx, "no image generated")
 		return "", 0, errors.New("no image generated")
 	}
-
+	
 	return data.Data.ImageUrls[0], param.ImageTokenUsage, nil
 }
 
@@ -393,18 +392,18 @@ func GenerateVolVideo(ctx context.Context, prompt string, imageContent []byte) (
 		logger.WarnCtx(ctx, "prompt is empty", "prompt", prompt)
 		return "", 0, errors.New("prompt is empty")
 	}
-
+	
 	client := GetVolClient()
 	videoParam := fmt.Sprintf(" --ratio %s --fps %d  --dur %d --resolution %s --watermark %t",
 		*conf.VideoConfInfo.Radio, *conf.VideoConfInfo.FPS, *conf.VideoConfInfo.Duration, *conf.VideoConfInfo.Resolution, *conf.VideoConfInfo.Watermark)
-
+	
 	text := prompt + videoParam
 	contents := make([]*model.CreateContentGenerationContentItem, 0)
 	contents = append(contents, &model.CreateContentGenerationContentItem{
 		Type: model.ContentGenerationContentItemTypeText,
 		Text: &text,
 	})
-
+	
 	if len(imageContent) > 0 {
 		frame := "first_frame"
 		contents = append(contents, &model.CreateContentGenerationContentItem{
@@ -415,7 +414,7 @@ func GenerateVolVideo(ctx context.Context, prompt string, imageContent []byte) (
 			Role: &frame,
 		})
 	}
-
+	
 	resp, err := client.CreateContentGenerationTask(ctx, model.CreateContentGenerationTaskRequest{
 		Model:   *conf.VideoConfInfo.VolVideoModel,
 		Content: contents,
@@ -424,28 +423,28 @@ func GenerateVolVideo(ctx context.Context, prompt string, imageContent []byte) (
 		logger.ErrorCtx(ctx, "request create video api fail", "err", err)
 		return "", 0, err
 	}
-
+	
 	for {
 		getResp, err := client.GetContentGenerationTask(ctx, model.GetContentGenerationTaskRequest{
 			ID: resp.ID,
 		})
-
+		
 		if err != nil {
 			logger.ErrorCtx(ctx, "request get video api fail", "err", err)
 			return "", 0, err
 		}
-
+		
 		if getResp.Status == model.StatusRunning || getResp.Status == model.StatusQueued {
 			logger.InfoCtx(ctx, "video is createing...")
 			time.Sleep(5 * time.Second)
 			continue
 		}
-
+		
 		if getResp.Error != nil {
 			logger.ErrorCtx(ctx, "request get video api fail", "err", getResp.Error)
 			return "", 0, errors.New(getResp.Error.Message)
 		}
-
+		
 		if getResp.Status == model.StatusSucceeded {
 			return getResp.Content.VideoURL, getResp.Usage.TotalTokens, nil
 		} else {
@@ -457,12 +456,12 @@ func GenerateVolVideo(ctx context.Context, prompt string, imageContent []byte) (
 
 func GetVolImageContent(ctx context.Context, imageContent []byte, content string) (string, int, error) {
 	client := GetVolClient()
-
+	
 	contentPrompt := content
 	if content == "" {
 		contentPrompt = i18n.GetMessage(*conf.BaseConfInfo.Lang, "photo_handle_prompt", nil)
 	}
-
+	
 	req := model.ChatCompletionRequest{
 		Model: *conf.PhotoConfInfo.VolRecModel,
 		Messages: []*model.ChatCompletionMessage{
@@ -485,18 +484,18 @@ func GetVolImageContent(ctx context.Context, imageContent []byte, content string
 			},
 		},
 	}
-
+	
 	response, err := client.CreateChatCompletion(ctx, req)
 	if err != nil {
 		logger.ErrorCtx(ctx, "CreateChatCompletion error", "err", err)
 		return "", 0, err
 	}
-
+	
 	if len(response.Choices) == 0 {
 		logger.ErrorCtx(ctx, "response is emtpy", "response", response)
 		return "", 0, errors.New("response is empty")
 	}
-
+	
 	return *response.Choices[0].Message.Content.StringValue, response.Usage.TotalTokens, nil
 }
 
@@ -517,19 +516,19 @@ func VolTTS(ctx context.Context, text, userId, encoding string) ([]byte, int, in
 	if encoding != "mp3" && encoding != "wav" && encoding != "ogg_opus" && encoding != "pcm" {
 		formatEncoding = "pcm"
 	}
-
+	
 	reqID := uuid.NewString()
 	params := make(map[string]map[string]interface{})
 	params["app"] = make(map[string]interface{})
-
+	
 	params["app"]["appid"] = *conf.AudioConfInfo.VolAudioAppID
 	params["app"]["token"] = *conf.AudioConfInfo.VolAudioToken
 	params["app"]["cluster"] = *conf.AudioConfInfo.VolAudioTTSCluster
 	params["user"] = make(map[string]interface{})
-
+	
 	params["user"]["uid"] = userId
 	params["audio"] = make(map[string]interface{})
-
+	
 	params["audio"]["voice_type"] = *conf.AudioConfInfo.VolAudioVoiceType
 	params["audio"]["encoding"] = formatEncoding
 	params["audio"]["speed_ratio"] = 1.0
@@ -540,11 +539,11 @@ func VolTTS(ctx context.Context, text, userId, encoding string) ([]byte, int, in
 	params["request"]["text"] = text
 	params["request"]["text_type"] = "plain"
 	params["request"]["operation"] = "query"
-
+	
 	headers := make(map[string]string)
 	headers["Content-Type"] = "application/json"
 	headers["Authorization"] = fmt.Sprintf("Bearer;%s", *conf.AudioConfInfo.VolAudioToken)
-
+	
 	url := "https://openspeech.bytedance.com/api/v1/tts"
 	bodyStr, _ := json.Marshal(params)
 	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(bodyStr))
@@ -555,20 +554,20 @@ func VolTTS(ctx context.Context, text, userId, encoding string) ([]byte, int, in
 	for key, value := range headers {
 		req.Header.Set(key, value)
 	}
-
+	
 	httpClient := utils.GetLLMProxyClient()
 	resp, err := httpClient.Do(req)
 	if err != nil {
 		logger.ErrorCtx(ctx, "httpClient.Do error", "err", err)
 		return nil, 0, 0, err
 	}
-
+	
 	synResp, err := io.ReadAll(resp.Body)
 	if err != nil {
 		logger.ErrorCtx(ctx, "io.ReadAll error", "err", err)
 		return nil, 0, 0, err
 	}
-
+	
 	var respJSON TTSServResponse
 	err = json.Unmarshal(synResp, &respJSON)
 	if err != nil {
@@ -579,7 +578,7 @@ func VolTTS(ctx context.Context, text, userId, encoding string) ([]byte, int, in
 		logger.ErrorCtx(ctx, "resp code fail", "code", code, "message", respJSON.Message)
 		return nil, 0, 0, errors.New("resp code fail")
 	}
-
+	
 	audio, _ := base64.StdEncoding.DecodeString(respJSON.Data)
 	if formatEncoding == "pcm" {
 		audio, err = utils.GetAudioData(encoding, audio)
@@ -588,7 +587,7 @@ func VolTTS(ctx context.Context, text, userId, encoding string) ([]byte, int, in
 			return nil, 0, 0, err
 		}
 	}
-
+	
 	return audio, param.AudioTokenUsage, utils.ParseInt(respJSON.Addition.Duration), nil
 }
 

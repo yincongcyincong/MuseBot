@@ -11,13 +11,14 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
+	
 	"github.com/disintegration/imaging"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/yincongcyincong/MuseBot/conf"
 	"github.com/yincongcyincong/MuseBot/db"
 	"github.com/yincongcyincong/MuseBot/i18n"
 	"github.com/yincongcyincong/MuseBot/logger"
+	"github.com/yincongcyincong/MuseBot/metrics"
 	"github.com/yincongcyincong/MuseBot/param"
 	"github.com/yincongcyincong/MuseBot/utils"
 )
@@ -25,13 +26,14 @@ import (
 type TelegramRobot struct {
 	Update tgbotapi.Update
 	Bot    *tgbotapi.BotAPI
-
+	
 	Robot  *RobotInfo
 	Prompt string
 	Cmd    string
 }
 
 func NewTelegramRobot(update tgbotapi.Update, bot *tgbotapi.BotAPI) *TelegramRobot {
+	metrics.AppRequestCount.WithLabelValues("telegram").Inc()
 	t := &TelegramRobot{
 		Update: update,
 		Bot:    bot,
@@ -42,7 +44,7 @@ func NewTelegramRobot(update tgbotapi.Update, bot *tgbotapi.BotAPI) *TelegramRob
 // StartTelegramRobot start listen robot callback
 func StartTelegramRobot(ctx context.Context) {
 	var bot *tgbotapi.BotAPI
-
+	
 	defer func() {
 		bot.StopReceivingUpdates()
 		if err := recover(); err != nil {
@@ -50,14 +52,14 @@ func StartTelegramRobot(ctx context.Context) {
 			StartTelegramRobot(ctx)
 		}
 	}()
-
+	
 	for {
 		bot = CreateBot(ctx)
 		logger.InfoCtx(ctx, "telegramBot Info", "username", bot.Self.UserName)
-
+		
 		u := tgbotapi.NewUpdate(0)
 		u.Timeout = 60
-
+		
 		updates := bot.GetUpdatesChan(u)
 		for {
 			select {
@@ -74,7 +76,7 @@ func StartTelegramRobot(ctx context.Context) {
 
 func CreateBot(ctx context.Context) *tgbotapi.BotAPI {
 	client := utils.GetRobotProxyClient()
-
+	
 	var err error
 	var bot *tgbotapi.BotAPI
 	bot, err = tgbotapi.NewBotAPIWithClient(*conf.BaseConfInfo.TelegramBotToken, tgbotapi.APIEndpoint, client)
@@ -82,11 +84,11 @@ func CreateBot(ctx context.Context) *tgbotapi.BotAPI {
 		logger.ErrorCtx(ctx, "telegramBot Error", "error", err)
 		return nil
 	}
-
+	
 	if *logger.LogLevel == "debug" {
 		bot.Debug = true
 	}
-
+	
 	// set command
 	cmdCfg := tgbotapi.NewSetMyCommands(
 		tgbotapi.BotCommand{
@@ -139,18 +141,18 @@ func CreateBot(ctx context.Context) *tgbotapi.BotAPI {
 		},
 	)
 	bot.Send(cmdCfg)
-
+	
 	return bot
 }
 
 func (t *TelegramRobot) checkValid() bool {
 	chatId, msgId, _ := t.Robot.GetChatIdAndMsgIdAndUserID()
-
+	
 	t.Cmd, t.Prompt = ParseCommand(t.getMsgContent())
 	if t.handleCommandAndCallback() {
 		return false
 	}
-
+	
 	if t.Update.Message != nil {
 		if t.skipThisMsg() {
 			logger.WarnCtx(t.Robot.Ctx, "skip this msg", "msgId", msgId, "chat", chatId, "type", t.getMessage().Chat.Type, "content", t.getMsgContent())
@@ -158,7 +160,7 @@ func (t *TelegramRobot) checkValid() bool {
 		}
 		return true
 	}
-
+	
 	return false
 }
 
@@ -167,11 +169,11 @@ func (t *TelegramRobot) getMsgContent() string {
 	if t.getMessage() != nil {
 		content = t.getMessage().Text
 	}
-
+	
 	if t.Update.CallbackQuery != nil {
 		return ""
 	}
-
+	
 	if content == "" && t.getMessage() != nil {
 		content = t.getMessage().Caption
 	}
@@ -194,12 +196,12 @@ func (t *TelegramRobot) executeChain(content string) {
 	messageChan := &MsgChan{
 		NormalMessageChan: make(chan *param.MsgInfo),
 	}
-
+	
 	go t.Robot.ExecChain(content, messageChan)
-
+	
 	// send response message
 	go t.Robot.HandleUpdate(messageChan, "ogg_opus")
-
+	
 }
 
 // executeLLM directly interact llm
@@ -208,10 +210,10 @@ func (t *TelegramRobot) executeLLM(content string) {
 		NormalMessageChan: make(chan *param.MsgInfo),
 	}
 	go t.Robot.ExecLLM(content, messageChan)
-
+	
 	// send response message
 	go t.Robot.HandleUpdate(messageChan, "ogg_opus")
-
+	
 }
 
 // sleepUtilNoLimit handle "Too Many Requests" error
@@ -223,7 +225,7 @@ func (t *TelegramRobot) sleepUtilNoLimit(msgId int, err error) bool {
 		time.Sleep(waitTime)
 		return true
 	}
-
+	
 	return false
 }
 
@@ -234,18 +236,18 @@ func (t *TelegramRobot) handleCommandAndCallback() bool {
 		go t.handleCommand()
 		return true
 	}
-
+	
 	if t.Update.CallbackQuery != nil {
 		go t.handleCallbackQuery()
 		return true
 	}
-
+	
 	if t.Update.Message != nil && t.Update.Message.ReplyToMessage != nil && t.Update.Message.ReplyToMessage.From != nil &&
 		t.Update.Message.ReplyToMessage.From.UserName == t.Bot.Self.UserName {
 		go t.ExecuteForceReply()
 		return true
 	}
-
+	
 	return false
 }
 
@@ -256,19 +258,19 @@ func (t *TelegramRobot) skipThisMsg() bool {
 			t.Update.Message.Voice == nil && t.Update.Message.Photo == nil {
 			return true
 		}
-
+		
 		return false
 	} else {
 		if strings.TrimSpace(strings.ReplaceAll(t.getMsgContent(), "@"+t.Bot.Self.UserName, "")) == "" &&
 			t.Update.Message.Voice == nil {
 			return true
 		}
-
+		
 		if !strings.Contains(t.getMsgContent(), "@"+t.Bot.Self.UserName) {
 			return true
 		}
 	}
-
+	
 	return false
 }
 
@@ -279,11 +281,11 @@ func (t *TelegramRobot) handleCommand() {
 			logger.ErrorCtx(t.Robot.Ctx, "handleCommand panic err", "err", err, "stack", string(debug.Stack()))
 		}
 	}()
-
+	
 	cmd := t.Update.Message.Command()
 	_, _, userID := t.Robot.GetChatIdAndMsgIdAndUserID()
 	logger.InfoCtx(t.Robot.Ctx, "command info", "userID", userID, "cmd", cmd)
-
+	
 	// check if at bot
 	chatType := t.getMessage().Chat.Type
 	if chatType == "group" || chatType == "supergroup" {
@@ -292,7 +294,7 @@ func (t *TelegramRobot) handleCommand() {
 			return
 		}
 	}
-
+	
 	t.Robot.ExecCmd(cmd, t.sendChatMessage)
 }
 
@@ -314,11 +316,11 @@ func (t *TelegramRobot) sendChatMessage() {
 	} else {
 		t.Update.Message = new(tgbotapi.Message)
 	}
-
+	
 	// Remove /chat and /chat@botUserName from the message
 	content := utils.ReplaceCommand(messageText, "/chat", t.Bot.Self.UserName)
 	t.Update.Message.Text = content
-
+	
 	if len(content) == 0 {
 		err := ForceReply(int64(utils.ParseInt(chatId)), utils.ParseInt(msgID), "chat_empty_content", t.Bot)
 		if err != nil {
@@ -326,7 +328,7 @@ func (t *TelegramRobot) sendChatMessage() {
 		}
 		return
 	}
-
+	
 	// Reply to the chat content
 	t.requestLLMAndResp(content)
 }
@@ -334,7 +336,7 @@ func (t *TelegramRobot) sendChatMessage() {
 // sendModeConfigurationOptions send config view
 func (t *TelegramRobot) sendModeConfigurationOptions() {
 	chatID, msgId, _ := t.Robot.GetChatIdAndMsgIdAndUserID()
-
+	
 	var inlineKeyboard tgbotapi.InlineKeyboardMarkup
 	inlineButton := make([][]tgbotapi.InlineKeyboardButton, 0)
 	switch *conf.BaseConfInfo.Type {
@@ -380,7 +382,7 @@ func (t *TelegramRobot) sendModeConfigurationOptions() {
 			}),
 				msgId, tgbotapi.ModeMarkdown, nil)
 		}
-
+		
 		return
 	case param.Vol:
 		// create inline button
@@ -389,11 +391,11 @@ func (t *TelegramRobot) sendModeConfigurationOptions() {
 				tgbotapi.NewInlineKeyboardButtonData(k, k),
 			))
 		}
-
+		
 	}
-
+	
 	inlineKeyboard = tgbotapi.NewInlineKeyboardMarkup(inlineButton...)
-
+	
 	t.Robot.SendMsg(chatID, i18n.GetMessage(*conf.BaseConfInfo.Lang, "chat_mode", nil),
 		msgId, tgbotapi.ModeMarkdown, &inlineKeyboard)
 }
@@ -401,7 +403,7 @@ func (t *TelegramRobot) sendModeConfigurationOptions() {
 // sendHelpConfigurationOptions
 func (t *TelegramRobot) sendHelpConfigurationOptions() {
 	chatID, msgId, _ := t.Robot.GetChatIdAndMsgIdAndUserID()
-
+	
 	// create inline button
 	inlineKeyboard := tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
@@ -421,7 +423,7 @@ func (t *TelegramRobot) sendHelpConfigurationOptions() {
 			tgbotapi.NewInlineKeyboardButtonData("video", "video"),
 		),
 	)
-
+	
 	t.Robot.SendMsg(chatID, i18n.GetMessage(*conf.BaseConfInfo.Lang, "command_notice", nil),
 		msgId, tgbotapi.ModeMarkdown, &inlineKeyboard)
 }
@@ -436,7 +438,7 @@ func (t *TelegramRobot) handleCallbackQuery() {
 	if t.Update.CallbackQuery.Message.ReplyToMessage != nil {
 		t.Update.CallbackQuery.Message.MessageID = t.Update.CallbackQuery.Message.ReplyToMessage.MessageID
 	}
-
+	
 	t.Robot.ExecCmd(t.Update.CallbackQuery.Data, t.chooseMode)
 }
 
@@ -459,16 +461,16 @@ func (t *TelegramRobot) chooseMode() {
 		inlineKeyboard := tgbotapi.NewInlineKeyboardMarkup(inlineButton...)
 		t.Robot.SendMsg(chatID, i18n.GetMessage(*conf.BaseConfInfo.Lang, "chat_mode", nil),
 			msgId, tgbotapi.ModeMarkdown, &inlineKeyboard)
-
+		
 	}
 }
 
 // sendVideo send video to telegram
 func (t *TelegramRobot) sendVideo() {
-
+	
 	t.Robot.TalkingPreCheck(func() {
 		chatId, replyToMessageID, userId := t.Robot.GetChatIdAndMsgIdAndUserID()
-
+		
 		prompt := t.Prompt
 		if len(prompt) == 0 {
 			err := ForceReply(int64(utils.ParseInt(chatId)), utils.ParseInt(replyToMessageID), "video_empty_content", t.Bot)
@@ -477,19 +479,19 @@ func (t *TelegramRobot) sendVideo() {
 			}
 			return
 		}
-
+		
 		lastImageContent := t.GetPhotoContent()
-
+		
 		thinkingMsgId := t.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "thinking", nil),
 			replyToMessageID, tgbotapi.ModeMarkdown, nil)
-
+		
 		videoContent, totalToken, err := t.Robot.CreateVideo(prompt, lastImageContent)
-
+		
 		video := tgbotapi.NewInputMediaVideo(tgbotapi.FileBytes{
 			Name:  "video." + utils.DetectVideoMimeType(videoContent),
 			Bytes: videoContent,
 		})
-
+		
 		edit := tgbotapi.EditMessageMediaConfig{
 			BaseEdit: tgbotapi.BaseEdit{
 				ChatID:    int64(utils.ParseInt(chatId)),
@@ -497,17 +499,17 @@ func (t *TelegramRobot) sendVideo() {
 			},
 			Media: video,
 		}
-
+		
 		_, err = t.Bot.Request(edit)
 		if err != nil {
 			logger.WarnCtx(t.Robot.Ctx, "send video fail", "result", edit)
 			t.Robot.SendMsg(chatId, err.Error(), replyToMessageID, "", nil)
 			return
 		}
-
+		
 		base64Content := base64.StdEncoding.EncodeToString(videoContent)
 		dataURI := fmt.Sprintf("data:video/%s;base64,%s", utils.DetectVideoMimeType(videoContent), base64Content)
-
+		
 		db.InsertRecordInfo(&db.Record{
 			UserId:     userId,
 			Question:   prompt,
@@ -524,12 +526,12 @@ func (t *TelegramRobot) sendVideo() {
 func (t *TelegramRobot) sendImg() {
 	t.Robot.TalkingPreCheck(func() {
 		chatId, replyToMessageID, userId := t.Robot.GetChatIdAndMsgIdAndUserID()
-
+		
 		prompt := t.Prompt
 		if prompt == "" && t.Update.Message != nil && len(t.Update.Message.Photo) > 0 {
 			prompt = t.Update.Message.Caption
 		}
-
+		
 		var err error
 		if len(prompt) == 0 {
 			if strings.Contains(t.Cmd, "edit_photo") {
@@ -537,13 +539,13 @@ func (t *TelegramRobot) sendImg() {
 			} else {
 				err = ForceReply(int64(utils.ParseInt(chatId)), utils.ParseInt(replyToMessageID), "photo_empty_content", t.Bot)
 			}
-
+			
 			if err != nil {
 				logger.WarnCtx(t.Robot.Ctx, "force reply fail", "err", err)
 			}
 			return
 		}
-
+		
 		lastImageContent := t.GetPhotoContent()
 		if len(lastImageContent) == 0 && strings.Contains(t.Cmd, "edit_photo") {
 			lastImageContent, err = t.Robot.GetLastImageContent()
@@ -551,10 +553,10 @@ func (t *TelegramRobot) sendImg() {
 				logger.WarnCtx(t.Robot.Ctx, "get last image record fail", "err", err)
 			}
 		}
-
+		
 		thinkingMsgId := t.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "thinking", nil),
 			replyToMessageID, tgbotapi.ModeMarkdown, nil)
-
+		
 		var photo tgbotapi.InputMediaPhoto
 		imageContent, totalToken, err := t.Robot.CreatePhoto(prompt, lastImageContent)
 		if err != nil {
@@ -562,7 +564,7 @@ func (t *TelegramRobot) sendImg() {
 			t.Robot.SendMsg(chatId, err.Error(), replyToMessageID, "", nil)
 			return
 		}
-
+		
 		img, _, err := image.Decode(bytes.NewReader(imageContent))
 		if err != nil {
 			logger.ErrorCtx(t.Robot.Ctx, "decode image fail", "err", err)
@@ -570,20 +572,20 @@ func (t *TelegramRobot) sendImg() {
 		}
 		resizedImg := imaging.Fit(img, 1280, 1280, imaging.Lanczos)
 		var buf bytes.Buffer
-
+		
 		err = imaging.Encode(&buf, resizedImg, imaging.JPEG)
 		if err != nil {
 			logger.ErrorCtx(t.Robot.Ctx, "encode image fail", "err", err)
 			return
 		}
-
+		
 		imageContent = buf.Bytes()
-
+		
 		photo = tgbotapi.NewInputMediaPhoto(tgbotapi.FileBytes{
 			Name:  "image." + utils.DetectImageFormat(imageContent),
 			Bytes: imageContent,
 		})
-
+		
 		edit := tgbotapi.EditMessageMediaConfig{
 			BaseEdit: tgbotapi.BaseEdit{
 				ChatID:    int64(utils.ParseInt(chatId)),
@@ -591,17 +593,17 @@ func (t *TelegramRobot) sendImg() {
 			},
 			Media: photo,
 		}
-
+		
 		_, err = t.Bot.Request(edit)
 		if err != nil {
 			logger.WarnCtx(t.Robot.Ctx, "send image fail", "result", edit)
 			t.Robot.SendMsg(chatId, err.Error(), replyToMessageID, "", nil)
 			return
 		}
-
+		
 		base64Content := base64.StdEncoding.EncodeToString(imageContent)
 		dataURI := fmt.Sprintf("data:image/%s;base64,%s", utils.DetectImageFormat(imageContent), base64Content)
-
+		
 		db.InsertRecordInfo(&db.Record{
 			UserId:     userId,
 			Question:   prompt,
@@ -621,7 +623,7 @@ func (t *TelegramRobot) ExecuteForceReply() {
 			logger.ErrorCtx(t.Robot.Ctx, "ExecuteForceReply panic err", "err", err, "stack", string(debug.Stack()))
 		}
 	}()
-
+	
 	switch t.getMessage().ReplyToMessage.Text {
 	case i18n.GetMessage(*conf.BaseConfInfo.Lang, "chat_empty_content", nil):
 		t.sendChatMessage()
@@ -647,15 +649,15 @@ func (t *TelegramRobot) getContent(content string) (string, error) {
 			logger.WarnCtx(t.Robot.Ctx, "audio url empty")
 			return "", errors.New("audio url empty")
 		}
-
+		
 		content, err = t.Robot.GetAudioContent(audioContent)
 		if err != nil {
 			logger.WarnCtx(t.Robot.Ctx, "generate text fail", "err", err)
 			return "", err
 		}
-
+		
 	}
-
+	
 	if t.Update.Message.Photo != nil {
 		content, err = t.Robot.GetImageContent(t.GetPhotoContent(), content)
 		if err != nil {
@@ -663,12 +665,12 @@ func (t *TelegramRobot) getContent(content string) (string, error) {
 			return "", err
 		}
 	}
-
+	
 	if content == "" {
 		logger.WarnCtx(t.Robot.Ctx, "content empty")
 		return "", errors.New("content empty")
 	}
-
+	
 	text := strings.ReplaceAll(content, "@"+t.Bot.Self.UserName, "")
 	return text, nil
 }
@@ -677,14 +679,14 @@ func (t *TelegramRobot) GetAudioContent() []byte {
 	if t.Update.Message == nil || t.Update.Message.Voice == nil {
 		return nil
 	}
-
+	
 	fileID := t.Update.Message.Voice.FileID
 	file, err := t.Bot.GetFile(tgbotapi.FileConfig{FileID: fileID})
 	if err != nil {
 		logger.WarnCtx(t.Robot.Ctx, "get file fail", "err", err)
 		return nil
 	}
-
+	
 	downloadURL := file.Link(t.Bot.Token)
 	voice, err := utils.DownloadFile(downloadURL)
 	if err != nil {
@@ -698,7 +700,7 @@ func (t *TelegramRobot) GetPhotoContent() []byte {
 	if t.Update.Message == nil || t.Update.Message.Photo == nil {
 		return nil
 	}
-
+	
 	var photo tgbotapi.PhotoSize
 	for i := len(t.Update.Message.Photo) - 1; i >= 0; i-- {
 		if t.Update.Message.Photo[i].FileSize < 8*1024*1024 {
@@ -706,21 +708,21 @@ func (t *TelegramRobot) GetPhotoContent() []byte {
 			break
 		}
 	}
-
+	
 	fileID := photo.FileID
 	file, err := t.Bot.GetFile(tgbotapi.FileConfig{FileID: fileID})
 	if err != nil {
 		logger.WarnCtx(t.Robot.Ctx, "get file fail", "err", err)
 		return nil
 	}
-
+	
 	downloadURL := file.Link(t.Bot.Token)
 	photoContent, err := utils.DownloadFile(downloadURL)
 	if err != nil {
 		logger.WarnCtx(t.Robot.Ctx, "read response fail", "err", err)
 		return nil
 	}
-
+	
 	return photoContent
 }
 
@@ -772,12 +774,12 @@ func (t *TelegramRobot) sendText(messageChan *MsgChan) {
 	msgId := utils.ParseInt(msgIdStr)
 	chatId := int64(utils.ParseInt(chatIdStr))
 	parseMode := tgbotapi.ModeMarkdown
-
+	
 	for msg = range messageChan.NormalMessageChan {
 		if len(msg.Content) == 0 {
 			msg.Content = "get nothing from llm!"
 		}
-
+		
 		if msg.MsgId == "" {
 			tgMsgInfo := tgbotapi.NewMessage(chatId, msg.Content)
 			tgMsgInfo.ReplyToMessageID = msgId
@@ -817,14 +819,14 @@ func (t *TelegramRobot) sendText(messageChan *MsgChan) {
 				}
 			}
 		}
-
+		
 	}
 }
 
 func (t *TelegramRobot) sendVoiceContent(voiceContent []byte, duration int) error {
 	chatIdStr, _, _ := t.Robot.GetChatIdAndMsgIdAndUserID()
 	chatId := int64(utils.ParseInt(chatIdStr))
-
+	
 	_, err := t.Bot.Send(tgbotapi.NewVoice(chatId, tgbotapi.FileBytes{
 		Name:  "voice." + utils.DetectAudioFormat(voiceContent),
 		Bytes: voiceContent,
@@ -833,6 +835,6 @@ func (t *TelegramRobot) sendVoiceContent(voiceContent []byte, duration int) erro
 		logger.WarnCtx(t.Robot.Ctx, "send voice fail", "err", err)
 		return err
 	}
-
+	
 	return nil
 }
