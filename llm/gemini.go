@@ -60,9 +60,7 @@ func (h *GeminiReq) Send(ctx context.Context, l *LLM) error {
 		SendLen: FirstSendLen,
 	}
 	
-	// record time costing in dialog
-	totalDuration := time.Since(start).Milliseconds()
-	metrics.APIRequestDuration.WithLabelValues(l.Model).Observe(float64(totalDuration))
+	metrics.APIRequestDuration.WithLabelValues(l.Model).Observe(time.Since(start).Seconds())
 	
 	hasTools := false
 	for response, err := range chat.SendMessageStream(ctx, *genai.NewPartFromText(l.GetContent(l.Content))) {
@@ -185,9 +183,7 @@ func (h *GeminiReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 		return "", err
 	}
 	
-	// record time costing in dialog
-	totalDuration := time.Since(start).Milliseconds()
-	metrics.APIRequestDuration.WithLabelValues(l.Model).Observe(float64(totalDuration))
+	metrics.APIRequestDuration.WithLabelValues(l.Model).Observe(time.Since(start).Seconds())
 	
 	l.Token += int(response.UsageMetadata.TotalTokenCount)
 	if len(response.FunctionCalls()) > 0 {
@@ -351,9 +347,7 @@ func GenerateGeminiImg(ctx context.Context, prompt string, imageContent []byte) 
 		},
 	)
 	
-	// record time costing in dialog
-	totalDuration := time.Since(start).Milliseconds()
-	metrics.APIRequestDuration.WithLabelValues(*conf.PhotoConfInfo.GeminiImageModel).Observe(float64(totalDuration))
+	metrics.APIRequestDuration.WithLabelValues(*conf.PhotoConfInfo.GeminiImageModel).Observe(time.Since(start).Seconds())
 	if err != nil {
 		logger.ErrorCtx(ctx, "generate image fail", "err", err)
 		return nil, 0, err
@@ -411,9 +405,7 @@ func GenerateGeminiVideo(ctx context.Context, prompt string, image []byte) ([]by
 		}
 	}
 	
-	// record time costing in dialog
-	totalDuration := time.Since(start).Milliseconds()
-	metrics.APIRequestDuration.WithLabelValues(*conf.VideoConfInfo.GeminiVideoModel).Observe(float64(totalDuration))
+	metrics.APIRequestDuration.WithLabelValues(*conf.VideoConfInfo.GeminiVideoModel).Observe(time.Since(start).Seconds())
 	
 	if len(operation.Response.GeneratedVideos) == 0 {
 		logger.ErrorCtx(ctx, "generate video fail", "err", "video is empty", "resp", operation.Response)
@@ -466,9 +458,7 @@ func GenerateGeminiText(ctx context.Context, audioContent []byte) (string, int, 
 		nil,
 	)
 	
-	// record time costing in dialog
-	totalDuration := time.Since(start).Milliseconds()
-	metrics.APIRequestDuration.WithLabelValues(*conf.PhotoConfInfo.GeminiRecModel).Observe(float64(totalDuration))
+	metrics.APIRequestDuration.WithLabelValues(*conf.PhotoConfInfo.GeminiRecModel).Observe(time.Since(start).Seconds())
 	
 	if err != nil || result == nil {
 		logger.ErrorCtx(ctx, "generate text fail", "err", err)
@@ -509,9 +499,7 @@ func GetGeminiImageContent(ctx context.Context, imageContent []byte, content str
 		nil,
 	)
 	
-	// record time costing in dialog
-	totalDuration := time.Since(start).Milliseconds()
-	metrics.APIRequestDuration.WithLabelValues(*conf.PhotoConfInfo.GeminiRecModel).Observe(float64(totalDuration))
+	metrics.APIRequestDuration.WithLabelValues(*conf.PhotoConfInfo.GeminiRecModel).Observe(time.Since(start).Seconds())
 	
 	if err != nil || result == nil {
 		logger.ErrorCtx(ctx, "generate text fail", "err", err)
@@ -560,9 +548,7 @@ func GeminiTTS(ctx context.Context, content, encoding string) ([]byte, int, int,
 		},
 	)
 	
-	// record time costing in dialog
-	totalDuration := time.Since(start).Milliseconds()
-	metrics.APIRequestDuration.WithLabelValues(*conf.AudioConfInfo.GeminiAudioModel).Observe(float64(totalDuration))
+	metrics.APIRequestDuration.WithLabelValues(*conf.AudioConfInfo.GeminiAudioModel).Observe(time.Since(start).Seconds())
 	
 	if err != nil {
 		logger.ErrorCtx(ctx, "generate audio fail", "err", err)

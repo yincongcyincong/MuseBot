@@ -55,6 +55,8 @@ func (h *VolReq) Send(ctx context.Context, l *LLM) error {
 	}
 	
 	start := time.Now()
+	metrics.APIRequestCount.WithLabelValues(l.Model).Inc()
+	
 	client := GetVolClient()
 	
 	req := model.ChatCompletionRequest{
@@ -75,6 +77,8 @@ func (h *VolReq) Send(ctx context.Context, l *LLM) error {
 	}
 	
 	stream, err := client.CreateChatCompletionStream(ctx, req)
+	metrics.APIRequestDuration.WithLabelValues(l.Model).Observe(time.Since(start).Seconds())
+	
 	if err != nil {
 		logger.ErrorCtx(l.Ctx, "standard chat error", "err", err)
 		return err
@@ -144,9 +148,7 @@ func (h *VolReq) Send(ctx context.Context, l *LLM) error {
 		return h.Send(ctx, l)
 	}
 	
-	// record time costing in dialog
-	totalDuration := time.Since(start).Milliseconds()
-	metrics.APIRequestDuration.WithLabelValues(l.Model).Observe(float64(totalDuration))
+	metrics.APIRequestDuration.WithLabelValues(l.Model).Observe(time.Since(start).Seconds())
 	return nil
 }
 
@@ -328,6 +330,8 @@ func (h *VolReq) requestOneToolsCall(ctx context.Context, toolsCall []*model.Too
 // GenerateVolImg generate image
 func GenerateVolImg(ctx context.Context, prompt string, imageContent []byte) (string, int, error) {
 	start := time.Now()
+	metrics.APIRequestCount.WithLabelValues(*conf.PhotoConfInfo.ModelVersion).Inc()
+	
 	visual.DefaultInstance.Client.SetAccessKey(*conf.BaseConfInfo.VolcAK)
 	visual.DefaultInstance.Client.SetSecretKey(*conf.BaseConfInfo.VolcSK)
 	
@@ -374,9 +378,7 @@ func GenerateVolImg(ctx context.Context, prompt string, imageContent []byte) (st
 	
 	logger.InfoCtx(ctx, "image response", "respByte", respByte)
 	
-	// generate image time costing
-	totalDuration := time.Since(start).Milliseconds()
-	metrics.APIRequestDuration.WithLabelValues(*conf.PhotoConfInfo.ModelVersion).Observe(float64(totalDuration))
+	metrics.APIRequestDuration.WithLabelValues(*conf.PhotoConfInfo.ModelVersion).Observe(time.Since(start).Seconds())
 	
 	if data.Data == nil || len(data.Data.ImageUrls) == 0 {
 		logger.WarnCtx(ctx, "no image generated")
@@ -392,6 +394,9 @@ func GenerateVolVideo(ctx context.Context, prompt string, imageContent []byte) (
 		logger.WarnCtx(ctx, "prompt is empty", "prompt", prompt)
 		return "", 0, errors.New("prompt is empty")
 	}
+	
+	start := time.Now()
+	metrics.APIRequestCount.WithLabelValues(*conf.PhotoConfInfo.ModelVersion).Inc()
 	
 	client := GetVolClient()
 	videoParam := fmt.Sprintf(" --ratio %s --fps %d  --dur %d --resolution %s --watermark %t",
@@ -424,6 +429,7 @@ func GenerateVolVideo(ctx context.Context, prompt string, imageContent []byte) (
 		return "", 0, err
 	}
 	
+	metrics.APIRequestDuration.WithLabelValues(*conf.PhotoConfInfo.ModelVersion).Observe(time.Since(start).Seconds())
 	for {
 		getResp, err := client.GetContentGenerationTask(ctx, model.GetContentGenerationTaskRequest{
 			ID: resp.ID,
@@ -456,6 +462,8 @@ func GenerateVolVideo(ctx context.Context, prompt string, imageContent []byte) (
 
 func GetVolImageContent(ctx context.Context, imageContent []byte, content string) (string, int, error) {
 	client := GetVolClient()
+	start := time.Now()
+	metrics.APIRequestCount.WithLabelValues(*conf.PhotoConfInfo.VolRecModel).Inc()
 	
 	contentPrompt := content
 	if content == "" {
@@ -486,6 +494,7 @@ func GetVolImageContent(ctx context.Context, imageContent []byte, content string
 	}
 	
 	response, err := client.CreateChatCompletion(ctx, req)
+	metrics.APIRequestDuration.WithLabelValues(*conf.PhotoConfInfo.VolRecModel).Observe(time.Since(start).Seconds())
 	if err != nil {
 		logger.ErrorCtx(ctx, "CreateChatCompletion error", "err", err)
 		return "", 0, err
@@ -512,6 +521,9 @@ type TTSServResponse struct {
 }
 
 func VolTTS(ctx context.Context, text, userId, encoding string) ([]byte, int, int, error) {
+	start := time.Now()
+	metrics.APIRequestCount.WithLabelValues(*conf.AudioConfInfo.VolAudioTTSCluster).Inc()
+	
 	formatEncoding := encoding
 	if encoding != "mp3" && encoding != "wav" && encoding != "ogg_opus" && encoding != "pcm" {
 		formatEncoding = "pcm"
@@ -561,6 +573,8 @@ func VolTTS(ctx context.Context, text, userId, encoding string) ([]byte, int, in
 		logger.ErrorCtx(ctx, "httpClient.Do error", "err", err)
 		return nil, 0, 0, err
 	}
+	
+	metrics.APIRequestDuration.WithLabelValues(*conf.AudioConfInfo.VolAudioTTSCluster).Observe(time.Since(start).Seconds())
 	
 	synResp, err := io.ReadAll(resp.Body)
 	if err != nil {

@@ -127,9 +127,7 @@ func (d *AIRouterReq) Send(ctx context.Context, l *LLM) error {
 		SendLen: FirstSendLen,
 	}
 	
-	// record time costing in dialog
-	totalDuration := time.Since(start).Milliseconds()
-	metrics.APIRequestDuration.WithLabelValues(l.Model).Observe(float64(totalDuration))
+	metrics.APIRequestDuration.WithLabelValues(l.Model).Observe(time.Since(start).Seconds())
 	
 	hasTools := false
 	for {
@@ -262,9 +260,7 @@ func (d *AIRouterReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 	// assign task
 	response, err := client.CreateChatCompletion(ctx, request)
 	
-	// record time costing in dialog
-	totalDuration := time.Since(start).Milliseconds()
-	metrics.APIRequestDuration.WithLabelValues(l.Model).Observe(float64(totalDuration))
+	metrics.APIRequestDuration.WithLabelValues(l.Model).Observe(time.Since(start).Seconds())
 	
 	if err != nil {
 		logger.ErrorCtx(l.Ctx, "CreateChatCompletion error", "updateMsgID", l.MsgId, "err", err)
@@ -420,9 +416,7 @@ func GenerateMixImg(ctx context.Context, prompt string, imageContent []byte) (st
 	// assign task
 	response, err := client.CreateChatCompletion(ctx, request)
 	
-	// record time costing in dialog
-	totalDuration := time.Since(start).Milliseconds()
-	metrics.APIRequestDuration.WithLabelValues(*conf.PhotoConfInfo.MixImageModel).Observe(float64(totalDuration))
+	metrics.APIRequestDuration.WithLabelValues(*conf.PhotoConfInfo.MixImageModel).Observe(time.Since(start).Seconds())
 	
 	if err != nil {
 		logger.ErrorCtx(ctx, "create chat completion fail", "err", err)
@@ -491,9 +485,7 @@ func Generate302AIVideo(ctx context.Context, prompt string, image []byte) (strin
 	
 	req, err := http.NewRequestWithContext(ctx, "POST", "https://api.302.ai/302/v2/video/create", payload)
 	
-	// record time costing in dialog
-	totalDuration := time.Since(start).Milliseconds()
-	metrics.APIRequestDuration.WithLabelValues(*conf.VideoConfInfo.AI302VideoModel).Observe(float64(totalDuration))
+	metrics.APIRequestDuration.WithLabelValues(*conf.VideoConfInfo.AI302VideoModel).Observe(time.Since(start).Seconds())
 	
 	if err != nil {
 		return "", 0, fmt.Errorf("failed to create request: %w", err)
@@ -597,9 +589,7 @@ func GetMixImageContent(ctx context.Context, imageContent []byte, content string
 	// assign task
 	response, err := client.CreateChatCompletion(ctx, request)
 	
-	// record time costing in dialog
-	totalDuration := time.Since(start).Milliseconds()
-	metrics.APIRequestDuration.WithLabelValues(*conf.PhotoConfInfo.MixRecModel).Observe(float64(totalDuration))
+	metrics.APIRequestDuration.WithLabelValues(*conf.PhotoConfInfo.MixRecModel).Observe(time.Since(start).Seconds())
 	
 	if err != nil {
 		logger.ErrorCtx(ctx, "create chat completion fail", "err", err)

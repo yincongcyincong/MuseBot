@@ -1,6 +1,8 @@
 package metrics
 
 import (
+	"time"
+	
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -36,4 +38,13 @@ func RegisterMetrics() {
 	prometheus.MustRegister(APIRequestCount)
 	prometheus.MustRegister(APIRequestDuration)
 	prometheus.MustRegister(AppRequestCount)
+}
+
+func LLMMetrics(f func(), model string) {
+	APIRequestCount.WithLabelValues(model).Inc()
+	start := time.Now()
+	
+	f()
+	
+	APIRequestDuration.WithLabelValues(model).Observe(time.Since(start).Seconds())
 }

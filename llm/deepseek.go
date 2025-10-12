@@ -89,9 +89,7 @@ func (d *DeepseekReq) Send(ctx context.Context, l *LLM) error {
 		SendLen: FirstSendLen,
 	}
 	
-	// record time costing in dialog
-	totalDuration := time.Since(start).Milliseconds()
-	metrics.APIRequestDuration.WithLabelValues(l.Model).Observe(float64(totalDuration))
+	metrics.APIRequestDuration.WithLabelValues(l.Model).Observe(time.Since(start).Seconds())
 	
 	hasTools := false
 	for {
@@ -218,9 +216,7 @@ func (d *DeepseekReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 		logger.ErrorCtx(l.Ctx, "ChatCompletionStream error", "updateMsgID", l.MsgId, "err", err)
 		return "", err
 	}
-	
-	totalDuration := time.Since(start).Milliseconds()
-	metrics.APIRequestDuration.WithLabelValues(l.Model).Observe(float64(totalDuration))
+	metrics.APIRequestDuration.WithLabelValues(l.Model).Observe(time.Since(start).Seconds())
 	
 	if len(response.Choices) == 0 {
 		logger.ErrorCtx(l.Ctx, "response is emtpy", "response", response)

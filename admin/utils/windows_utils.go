@@ -4,6 +4,7 @@
 package utils
 
 import (
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -29,8 +30,11 @@ func StartDetachedProcess(argsStr string) error {
 	
 	cmd := exec.Command(args[0], args[1:]...)
 	cmd.SysProcAttr = &syscall.SysProcAttr{
-		CreationFlags: syscall.CREATE_NEW_PROCESS_GROUP,
+		CreationFlags: syscall.CREATE_NEW_PROCESS_GROUP | 0x00000010,
 	}
 	
+	cmd.Stdout = os.Stdout
+	cmd.Stdin = os.Stdin
+	cmd.Stderr = os.Stderr
 	return cmd.Start()
 }

@@ -128,7 +128,9 @@ func WithRequestContext(next http.Handler) http.Handler {
 		defer cancel()
 		
 		ctx = context.WithValue(ctx, "log_id", logID)
-		ctx = context.WithValue(ctx, "bot_name", *conf.BaseConfInfo.BotName)
+		if conf.BaseConfInfo.BotName != nil {
+			ctx = context.WithValue(ctx, "bot_name", *conf.BaseConfInfo.BotName)
+		}
 		r = r.WithContext(ctx)
 		logger.InfoCtx(ctx, "request start", "path", r.URL.Path)
 		next.ServeHTTP(w, r)

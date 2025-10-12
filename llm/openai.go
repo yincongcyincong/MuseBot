@@ -96,9 +96,7 @@ func (d *OpenAIReq) Send(ctx context.Context, l *LLM) error {
 		SendLen: FirstSendLen,
 	}
 	
-	// record time costing in dialog
-	totalDuration := time.Since(start).Milliseconds()
-	metrics.APIRequestDuration.WithLabelValues(l.Model).Observe(float64(totalDuration))
+	metrics.APIRequestDuration.WithLabelValues(l.Model).Observe(time.Since(start).Seconds())
 	
 	hasTools := false
 	for {
@@ -212,9 +210,7 @@ func (d *OpenAIReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 	
 	response, err := client.CreateChatCompletion(ctx, request)
 	
-	// record time costing in dialog
-	totalDuration := time.Since(start).Milliseconds()
-	metrics.APIRequestDuration.WithLabelValues(l.Model).Observe(float64(totalDuration))
+	metrics.APIRequestDuration.WithLabelValues(l.Model).Observe(time.Since(start).Seconds())
 	if err != nil {
 		logger.ErrorCtx(l.Ctx, "ChatCompletionStream error", "updateMsgID", l.MsgId, "err", err)
 		return "", err
@@ -370,9 +366,7 @@ func GenerateOpenAIImg(ctx context.Context, prompt string, imageContent []byte) 
 		)
 	}
 	
-	// record time costing in dialog
-	totalDuration := time.Since(start).Milliseconds()
-	metrics.APIRequestDuration.WithLabelValues(*conf.PhotoConfInfo.OpenAIImageModel).Observe(float64(totalDuration))
+	metrics.APIRequestDuration.WithLabelValues(*conf.PhotoConfInfo.OpenAIImageModel).Observe(time.Since(start).Seconds())
 	
 	if err != nil {
 		logger.ErrorCtx(ctx, "CreateImage error", "err", err)
@@ -409,9 +403,7 @@ func GenerateOpenAIText(ctx context.Context, audioContent []byte) (string, error
 	
 	resp, err := client.CreateTranscription(ctx, req)
 	
-	// record time costing in dialog
-	totalDuration := time.Since(start).Milliseconds()
-	metrics.APIRequestDuration.WithLabelValues(openai.Whisper1).Observe(float64(totalDuration))
+	metrics.APIRequestDuration.WithLabelValues(openai.Whisper1).Observe(time.Since(start).Seconds())
 	
 	if err != nil {
 		logger.ErrorCtx(ctx, "CreateTranscription error", "err", err)
@@ -463,9 +455,7 @@ func GetOpenAIImageContent(ctx context.Context, imageContent []byte, content str
 	
 	resp, err := client.CreateChatCompletion(ctx, req)
 	
-	// record time costing in dialog
-	totalDuration := time.Since(start).Milliseconds()
-	metrics.APIRequestDuration.WithLabelValues(model).Observe(float64(totalDuration))
+	metrics.APIRequestDuration.WithLabelValues(model).Observe(time.Since(start).Seconds())
 	if err != nil {
 		logger.ErrorCtx(ctx, "CreateChatCompletion error", "err", err)
 		return "", 0, err
@@ -493,9 +483,7 @@ func OpenAITTS(ctx context.Context, content, encoding string) ([]byte, int, int,
 		Speed:          1.0,
 	})
 	
-	// record time costing in dialog
-	totalDuration := time.Since(start).Milliseconds()
-	metrics.APIRequestDuration.WithLabelValues(*conf.AudioConfInfo.OpenAIAudioModel).Observe(float64(totalDuration))
+	metrics.APIRequestDuration.WithLabelValues(*conf.AudioConfInfo.OpenAIAudioModel).Observe(time.Since(start).Seconds())
 	if err != nil {
 		logger.ErrorCtx(ctx, "decode image error", "err", err)
 		return nil, 0, 0, err
