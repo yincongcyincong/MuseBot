@@ -76,9 +76,7 @@ func (d *OllamaDeepseekReq) Send(ctx context.Context, l *LLM) error {
 		SendLen: FirstSendLen,
 	}
 	
-	// record time costing in dialog
-	totalDuration := time.Since(start).Milliseconds()
-	metrics.APIRequestDuration.WithLabelValues(l.Model).Observe(float64(totalDuration))
+	metrics.APIRequestDuration.WithLabelValues(l.Model).Observe(time.Since(start).Seconds())
 	
 	hasTools := false
 	for {
@@ -190,9 +188,7 @@ func (d *OllamaDeepseekReq) SyncSend(ctx context.Context, l *LLM) (string, error
 	// assign task
 	response, err := deepseek.CreateOllamaChatCompletion(request)
 	
-	// record time costing in dialog
-	totalDuration := time.Since(start).Milliseconds()
-	metrics.APIRequestDuration.WithLabelValues(l.Model).Observe(float64(totalDuration))
+	metrics.APIRequestDuration.WithLabelValues(l.Model).Observe(time.Since(start).Seconds())
 	if err != nil {
 		logger.ErrorCtx(l.Ctx, "ChatCompletionStream error", "updateMsgID", l.MsgId, "err", err)
 		return "", err
