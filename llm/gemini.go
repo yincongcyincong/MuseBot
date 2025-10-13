@@ -16,7 +16,6 @@ import (
 	"github.com/yincongcyincong/MuseBot/metrics"
 	"github.com/yincongcyincong/MuseBot/param"
 	"github.com/yincongcyincong/MuseBot/utils"
-	"github.com/yincongcyincong/mcp-client-go/clients"
 	"google.golang.org/genai"
 )
 
@@ -194,13 +193,7 @@ func (h *GeminiReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 func (h *GeminiReq) requestOneToolsCall(ctx context.Context, toolsCall []*genai.FunctionCall, l *LLM) {
 	for _, tool := range toolsCall {
 		
-		mc, err := clients.GetMCPClientByToolName(tool.Name)
-		if err != nil {
-			logger.WarnCtx(l.Ctx, "get mcp fail", "err", err, "name", tool.Name, "args", tool.Args)
-			return
-		}
-		
-		toolsData, err := mc.ExecTools(ctx, tool.Name, tool.Args)
+		toolsData, err := l.ExecMcpReq(ctx, tool.Name, tool.Args)
 		if err != nil {
 			logger.WarnCtx(l.Ctx, "exec tools fail", "err", err, "name", tool.Name, "args", tool.Args)
 			return
@@ -227,13 +220,6 @@ func (h *GeminiReq) requestOneToolsCall(ctx context.Context, toolsCall []*genai.
 				},
 			},
 		})
-		
-		logger.InfoCtx(l.Ctx, "exec tool", "name", tool.Name, "args", tool.Args, "toolsData", toolsData)
-		l.DirectSendMsg(i18n.GetMessage(*conf.BaseConfInfo.Lang, "send_mcp_info", map[string]interface{}{
-			"function_name": tool.Name,
-			"request_args":  tool.Args,
-			"response":      toolsData,
-		}))
 	}
 }
 
