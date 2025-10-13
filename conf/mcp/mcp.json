@@ -1,29 +1,3 @@
 {
-  "mcpServers": {
-    "amap": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@amap/amap-maps-mcp-server"
-      ],
-      "env": {
-        "AMAP_MAPS_API_KEY": "12345"
-      },
-      "description": "get geo info from amap service",
-      "disabled": true
-    },
-    "filesystem": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@modelcontextprotocol/server-filesystem",
-        "/Users/yincong/go/src/github.com/yincongcyincong/test-mcp"
-      ],
-      "description": "supports file operations such as reading, writing, deleting, renaming, moving, and listing files and directories."
-    },
-    "playwright": {
-      "url": "http://localhost:8931/sse",
-      "description": "Simulates browser behavior for tasks like web navigation, data scraping, and automated interactions with web pages."
-    }
-  }
+  "mcpServers": {}
 }

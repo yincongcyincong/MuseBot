@@ -20,18 +20,18 @@ func AddUserToken(w http.ResponseWriter, r *http.Request) {
 	err := utils.HandleJsonBody(r, userToken)
 	if err != nil {
 		logger.ErrorCtx(ctx, "parse json body error", "err", err)
-		utils.Failure(w, param.CodeParamError, param.MsgParamError, err)
+		utils.Failure(ctx, w, r, param.CodeParamError, param.MsgParamError, err)
 		return
 	}
 	
 	err = db.AddAvailToken(userToken.UserID, userToken.Token)
 	if err != nil {
 		logger.ErrorCtx(ctx, "add user token error", "err", err)
-		utils.Failure(w, param.CodeDBWriteFail, param.MsgDBWriteFail, err)
+		utils.Failure(ctx, w, r, param.CodeDBWriteFail, param.MsgDBWriteFail, err)
 		return
 	}
 	
-	utils.Success(w, "success")
+	utils.Success(ctx, w, r, "success")
 }
 
 func GetUsers(w http.ResponseWriter, r *http.Request) {
@@ -40,7 +40,7 @@ func GetUsers(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 	if err != nil {
 		logger.ErrorCtx(ctx, "parse form error", "err", err)
-		utils.Failure(w, param.CodeParamError, param.MsgParamError, err)
+		utils.Failure(ctx, w, r, param.CodeParamError, param.MsgParamError, err)
 		return
 	}
 	page := utils.ParseInt(r.FormValue("page"))
@@ -50,14 +50,14 @@ func GetUsers(w http.ResponseWriter, r *http.Request) {
 	users, err := db.GetUserByPage(page, pageSize, userId)
 	if err != nil {
 		logger.ErrorCtx(ctx, "get user error", "err", err)
-		utils.Failure(w, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
+		utils.Failure(ctx, w, r, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
 		return
 	}
 	
 	total, err := db.GetUserCount(userId)
 	if err != nil {
 		logger.ErrorCtx(ctx, "get user count error", "err", err)
-		utils.Failure(w, param.CodeDBQueryFail, param.MsgDBWriteFail, err)
+		utils.Failure(ctx, w, r, param.CodeDBQueryFail, param.MsgDBWriteFail, err)
 		return
 	}
 	
@@ -67,7 +67,7 @@ func GetUsers(w http.ResponseWriter, r *http.Request) {
 		"total": total,
 	}
 	
-	utils.Success(w, result)
+	utils.Success(ctx, w, r, result)
 }
 
 func UpdateMode(w http.ResponseWriter, r *http.Request) {
@@ -75,7 +75,7 @@ func UpdateMode(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 	if err != nil {
 		logger.ErrorCtx(ctx, "parse form error", "err", err)
-		utils.Failure(w, param.CodeParamError, param.MsgParamError, err)
+		utils.Failure(ctx, w, r, param.CodeParamError, param.MsgParamError, err)
 		return
 	}
 	
@@ -85,11 +85,11 @@ func UpdateMode(w http.ResponseWriter, r *http.Request) {
 	err = db.UpdateUserMode(userId, mode)
 	if err != nil {
 		logger.ErrorCtx(ctx, "change user mode error", "err", err)
-		utils.Failure(w, param.CodeDBWriteFail, param.MsgDBWriteFail, err)
+		utils.Failure(ctx, w, r, param.CodeDBWriteFail, param.MsgDBWriteFail, err)
 		return
 	}
 	
-	utils.Success(w, "success")
+	utils.Success(ctx, w, r, "success")
 }
 
 func GetRecords(w http.ResponseWriter, r *http.Request) {
@@ -117,14 +117,14 @@ func GetRecords(w http.ResponseWriter, r *http.Request) {
 	total, err := db.GetRecordCount(userId, isDeleted, recordTypeStr)
 	if err != nil {
 		logger.ErrorCtx(ctx, "get record count error", "err", err)
-		utils.Failure(w, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
+		utils.Failure(ctx, w, r, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
 		return
 	}
 	
 	list, err := db.GetRecordList(userId, page, pageSize, isDeleted, recordTypeStr)
 	if err != nil {
 		logger.ErrorCtx(ctx, "get record list error", "err", err)
-		utils.Failure(w, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
+		utils.Failure(ctx, w, r, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
 		return
 	}
 	
@@ -133,7 +133,7 @@ func GetRecords(w http.ResponseWriter, r *http.Request) {
 		"total": total,
 	}
 	
-	utils.Success(w, result)
+	utils.Success(ctx, w, r, result)
 }
 
 func InsertUserRecords(w http.ResponseWriter, r *http.Request) {
@@ -142,14 +142,14 @@ func InsertUserRecords(w http.ResponseWriter, r *http.Request) {
 	err := utils.HandleJsonBody(r, userRecords)
 	if err != nil {
 		logger.ErrorCtx(ctx, "parse json body error", "err", err)
-		utils.Failure(w, param.CodeParamError, param.MsgParamError, err)
+		utils.Failure(ctx, w, r, param.CodeParamError, param.MsgParamError, err)
 		return
 	}
 	
 	err = db.InsertUserRecords(userRecords)
 	if err != nil {
 		logger.ErrorCtx(ctx, "change user mode error", "err", err)
-		utils.Failure(w, param.CodeDBWriteFail, param.MsgDBWriteFail, err)
+		utils.Failure(ctx, w, r, param.CodeDBWriteFail, param.MsgDBWriteFail, err)
 		return
 	}
 	
@@ -157,6 +157,6 @@ func InsertUserRecords(w http.ResponseWriter, r *http.Request) {
 		db.InsertMsgRecord(userRecords.UserId, aq, false)
 	}
 	
-	utils.Success(w, "success")
+	utils.Success(ctx, w, r, "success")
 	
 }

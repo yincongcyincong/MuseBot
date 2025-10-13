@@ -5,10 +5,11 @@ import (
 	"encoding/json"
 	"regexp"
 	"time"
-
+	
 	"github.com/yincongcyincong/MuseBot/conf"
 	"github.com/yincongcyincong/MuseBot/i18n"
 	"github.com/yincongcyincong/MuseBot/logger"
+	"github.com/yincongcyincong/MuseBot/metrics"
 )
 
 var (
@@ -23,7 +24,7 @@ type McpResult struct {
 func (d *LLMTaskReq) ExecuteMcp() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
 	defer cancel()
-
+	
 	logger.InfoCtx(d.Ctx, "mcp content", "content", d.Content)
 	taskParam := make(map[string]interface{})
 	taskParam["assign_param"] = make([]map[string]string, 0)
@@ -36,22 +37,24 @@ func (d *LLMTaskReq) ExecuteMcp() error {
 		})
 		return true
 	})
-
+	
 	// get mcp request
 	llm := NewLLM(WithChatId(d.ChatId), WithMsgId(d.MsgId), WithUserId(d.UserId),
 		WithMessageChan(d.MessageChan), WithContent(d.Content), WithHTTPMsgChan(d.HTTPMsgChan),
 		WithPerMsgLen(d.PerMsgLen), WithContext(d.Ctx))
-
+	
 	prompt := i18n.GetMessage(*conf.BaseConfInfo.Lang, "mcp_prompt", taskParam)
 	llm.LLMClient.GetUserMessage(prompt)
 	llm.Content = prompt
 	llm.LLMClient.GetModel(llm)
+	
+	metrics.APIRequestCount.WithLabelValues(llm.Model).Inc()
 	c, err := llm.LLMClient.SyncSend(ctx, llm)
 	if err != nil {
 		logger.ErrorCtx(d.Ctx, "get message fail", "err", err)
 		return err
 	}
-
+	
 	matches := mcpRe.FindAllString(c, -1)
 	mcpResult := new(McpResult)
 	for _, match := range matches {
@@ -60,9 +63,9 @@ func (d *LLMTaskReq) ExecuteMcp() error {
 			logger.ErrorCtx(d.Ctx, "json umarshal fail", "err", err)
 		}
 	}
-
+	
 	logger.InfoCtx(d.Ctx, "mcp plan", "plan", mcpResult)
-
+	
 	// execute mcp request
 	var taskTool *conf.AgentInfo
 	taskToolInter, ok := conf.TaskTools.Load(mcpResult.Agent)
@@ -76,16 +79,18 @@ func (d *LLMTaskReq) ExecuteMcp() error {
 	mcpLLM.Content = d.Content
 	mcpLLM.LLMClient.GetUserMessage(d.Content)
 	mcpLLM.LLMClient.GetModel(mcpLLM)
+	
+	metrics.APIRequestCount.WithLabelValues(mcpLLM.Model).Inc()
 	err = mcpLLM.LLMClient.Send(ctx, mcpLLM)
 	if err != nil {
 		logger.ErrorCtx(d.Ctx, "execute conversation fail", "err", err)
 		return err
 	}
-
+	
 	err = mcpLLM.InsertOrUpdate()
 	if err != nil {
 		logger.ErrorCtx(d.Ctx, "insertOrUpdate fail", "err", err)
 	}
-
+	
 	return err
 }
