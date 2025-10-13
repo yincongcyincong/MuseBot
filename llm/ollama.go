@@ -13,11 +13,9 @@ import (
 	"github.com/cohesion-org/deepseek-go/constants"
 	"github.com/yincongcyincong/MuseBot/conf"
 	"github.com/yincongcyincong/MuseBot/db"
-	"github.com/yincongcyincong/MuseBot/i18n"
 	"github.com/yincongcyincong/MuseBot/logger"
 	"github.com/yincongcyincong/MuseBot/metrics"
 	"github.com/yincongcyincong/MuseBot/param"
-	"github.com/yincongcyincong/mcp-client-go/clients"
 )
 
 type OllamaDeepseekReq struct {
@@ -217,13 +215,7 @@ func (d *OllamaDeepseekReq) requestOneToolsCall(ctx context.Context, toolsCall [
 			return
 		}
 		
-		mc, err := clients.GetMCPClientByToolName(tool.Function.Name)
-		if err != nil {
-			logger.WarnCtx(l.Ctx, "get mcp fail", "err", err)
-			return
-		}
-		
-		toolsData, err := mc.ExecTools(ctx, tool.Function.Name, property)
+		toolsData, err := l.ExecMcpReq(ctx, tool.Function.Name, property)
 		if err != nil {
 			logger.WarnCtx(l.Ctx, "exec tools fail", "err", err)
 			return
@@ -234,13 +226,6 @@ func (d *OllamaDeepseekReq) requestOneToolsCall(ctx context.Context, toolsCall [
 			Content:    toolsData,
 			ToolCallID: tool.ID,
 		})
-		logger.InfoCtx(l.Ctx, "exec tool", "name", tool.Function.Name, "args", property, "toolsData", toolsData)
-		
-		l.DirectSendMsg(i18n.GetMessage(*conf.BaseConfInfo.Lang, "send_mcp_info", map[string]interface{}{
-			"function_name": tool.Function.Name,
-			"request_args":  property,
-			"response":      toolsData,
-		}))
 	}
 }
 
