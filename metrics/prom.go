@@ -46,10 +46,28 @@ var (
 		[]string{"path", "code"},
 	)
 	
+	HTTPResponseDuration = prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Name:    "http_response_duration_seconds",
+			Help:    "Histogram of HTTP response durations in seconds.",
+			Buckets: prometheus.DefBuckets,
+		},
+		[]string{"path", "code"},
+	)
+	
 	MCPRequestCount = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "mcp_request_total",
 			Help: "Total number of MCP requests.",
+		},
+		[]string{"mcp_service", "mcp_func"},
+	)
+	
+	MCPRequestDuration = prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Name:    "mcp_request_duration_seconds",
+			Help:    "Histogram of MCP request durations in seconds.",
+			Buckets: prometheus.DefBuckets,
 		},
 		[]string{"mcp_service", "mcp_func"},
 	)
@@ -63,4 +81,6 @@ func RegisterMetrics() {
 	prometheus.MustRegister(HTTPRequestCount)
 	prometheus.MustRegister(MCPRequestCount)
 	prometheus.MustRegister(HTTPResponseCount)
+	prometheus.MustRegister(HTTPResponseDuration)
+	prometheus.MustRegister(MCPRequestDuration)
 }

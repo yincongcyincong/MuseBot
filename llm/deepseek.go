@@ -297,32 +297,17 @@ func (d *DeepseekReq) RequestToolsCall(ctx context.Context, choice deepseek.Stre
 		}
 		
 		tool := d.ToolCall[len(d.ToolCall)-1]
-		mc, err := clients.GetMCPClientByToolName(tool.Function.Name)
+		toolsData, err := l.ExecMcpReq(ctx, tool.Function.Name, property)
 		if err != nil {
-			logger.WarnCtx(l.Ctx, "get mcp fail", "err", err, "function", tool.Function.Name,
-				"toolCall", tool.ID, "argument", tool.Function.Arguments)
+			logger.ErrorCtx(ctx, "Error executing MCP request", "toolId", tool.ID, "err", err)
 			return err
 		}
 		
-		toolsData, err := mc.ExecTools(ctx, tool.Function.Name, property)
-		if err != nil {
-			logger.WarnCtx(l.Ctx, "exec tools fail", "err", err, "function", tool.Function.Name,
-				"toolCall", tool.ID, "argument", tool.Function.Arguments)
-			return err
-		}
 		d.CurrentToolMessage = append(d.CurrentToolMessage, deepseek.ChatCompletionMessage{
 			Role:       constants.ChatMessageRoleTool,
 			Content:    toolsData,
 			ToolCallID: tool.ID,
 		})
-		logger.InfoCtx(l.Ctx, "send tool request", "function", tool.Function.Name,
-			"toolCall", tool.ID, "argument", tool.Function.Arguments,
-			"res", toolsData)
-		l.DirectSendMsg(i18n.GetMessage(*conf.BaseConfInfo.Lang, "send_mcp_info", map[string]interface{}{
-			"function_name": tool.Function.Name,
-			"request_args":  property,
-			"response":      toolsData,
-		}))
 	}
 	
 	return nil

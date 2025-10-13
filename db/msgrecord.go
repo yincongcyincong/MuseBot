@@ -402,17 +402,29 @@ func UpdateRecordInfo(record *Record) error {
 		return err
 	}
 	
+	err = AddToken(record.UserId, record.Token)
+	if err != nil {
+		logger.Error("add token fail", "err", err)
+		return err
+	}
+	
 	return nil
 }
 
-func AddRecordToken(recordID int64, delta int) error {
+func AddRecordToken(recordID int64, userId string, token int) error {
 	query := `UPDATE records
 			  SET token = token + ?, update_time = ?
 			  WHERE id = ?`
 	
-	_, err := DB.Exec(query, delta, time.Now().Unix(), recordID)
+	_, err := DB.Exec(query, token, time.Now().Unix(), recordID)
 	if err != nil {
 		logger.Error("addRecordToken err", "err", err)
+		return err
+	}
+	
+	err = AddToken(userId, token)
+	if err != nil {
+		logger.Error("add token fail", "err", err)
 		return err
 	}
 	
