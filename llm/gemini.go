@@ -254,15 +254,9 @@ func (h *GeminiReq) RequestToolsCall(ctx context.Context, response *genai.Genera
 			h.ToolCall[len(h.ToolCall)-1].Args = toolCall.Args
 		}
 		
-		mc, err := clients.GetMCPClientByToolName(h.ToolCall[len(h.ToolCall)-1].Name)
+		toolsData, err := l.ExecMcpReq(ctx, toolCall.Name, toolCall.Args)
 		if err != nil {
-			logger.WarnCtx(l.Ctx, "get mcp fail", "err", err)
-			return err
-		}
-		
-		toolsData, err := mc.ExecTools(ctx, h.ToolCall[len(h.ToolCall)-1].Name, h.ToolCall[len(h.ToolCall)-1].Args)
-		if err != nil {
-			logger.WarnCtx(l.Ctx, "exec tools fail", "err", err)
+			logger.ErrorCtx(ctx, "Error executing MCP request", "toolId", toolCall.ID, "err", err)
 			return err
 		}
 		h.CurrentToolMessage = append(h.CurrentToolMessage, &genai.Content{
@@ -286,14 +280,6 @@ func (h *GeminiReq) RequestToolsCall(ctx context.Context, response *genai.Genera
 				},
 			},
 		})
-		logger.InfoCtx(l.Ctx, "send tool request", "function", toolCall.Name,
-			"toolCall", toolCall.ID, "argument", toolCall.Args, "toolsData", toolsData)
-		
-		l.DirectSendMsg(i18n.GetMessage(*conf.BaseConfInfo.Lang, "send_mcp_info", map[string]interface{}{
-			"function_name": toolCall.Name,
-			"request_args":  toolCall.Args,
-			"response":      toolsData,
-		}))
 	}
 	
 	return nil

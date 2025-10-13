@@ -599,7 +599,8 @@ func (r *RobotInfo) GetAudioContent(audioContent []byte) (string, error) {
 		return "", err
 	}
 	
-	err = db.AddRecordToken(r.RecordID, token)
+	_, _, userId := r.GetChatIdAndMsgIdAndUserID()
+	err = db.AddRecordToken(r.RecordID, userId, token)
 	if err != nil {
 		logger.WarnCtx(r.Ctx, "addRecordToken err", "err", err)
 	}
@@ -626,7 +627,8 @@ func (r *RobotInfo) GetImageContent(imageContent []byte, content string) (string
 		return "", err
 	}
 	
-	err = db.AddRecordToken(r.RecordID, token)
+	_, _, userId := r.GetChatIdAndMsgIdAndUserID()
+	err = db.AddRecordToken(r.RecordID, userId, token)
 	if err != nil {
 		logger.WarnCtx(r.Ctx, "addRecordToken err", "err", err)
 	}
@@ -1121,7 +1123,7 @@ func (r *RobotInfo) GetVoiceBaseTTS(content, encoding string) ([]byte, int, erro
 		ttsContent, token, duration, err = llm.OpenAITTS(r.Ctx, content, encoding)
 	}
 	
-	err = db.AddRecordToken(r.RecordID, token)
+	err = db.AddRecordToken(r.RecordID, userId, token)
 	if err != nil {
 		logger.WarnCtx(r.Ctx, "addRecordToken err", "err", err)
 	}

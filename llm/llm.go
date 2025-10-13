@@ -3,6 +3,7 @@ package llm
 import (
 	"context"
 	"errors"
+	"time"
 	
 	godeepseek "github.com/cohesion-org/deepseek-go"
 	"github.com/revrost/go-openrouter"
@@ -10,9 +11,11 @@ import (
 	"github.com/volcengine/volcengine-go-sdk/service/arkruntime/model"
 	"github.com/yincongcyincong/MuseBot/conf"
 	"github.com/yincongcyincong/MuseBot/db"
+	"github.com/yincongcyincong/MuseBot/i18n"
 	"github.com/yincongcyincong/MuseBot/logger"
 	"github.com/yincongcyincong/MuseBot/metrics"
 	"github.com/yincongcyincong/MuseBot/param"
+	"github.com/yincongcyincong/mcp-client-go/clients"
 	"google.golang.org/genai"
 )
 
@@ -222,6 +225,7 @@ func (l *LLM) InsertOrUpdate() error {
 		Answer: l.WholeContent,
 		Token:  l.Token,
 		Mode:   *conf.BaseConfInfo.Type,
+		UserId: l.UserId,
 	})
 	if err != nil {
 		logger.ErrorCtx(l.Ctx, "update record fail", "err", err)
@@ -243,7 +247,7 @@ func (l *LLM) GetMessages(userId string, prompt string) {
 			}
 			
 			if record.Answer != "" {
-				l.LLMClient.GetAssistantMessage(record.Question)
+				l.LLMClient.GetAssistantMessage(record.Answer)
 			}
 		}
 	}
@@ -331,4 +335,32 @@ func WithContext(ctx context.Context) Option {
 	return func(p *LLM) {
 		p.Ctx = ctx
 	}
+}
+
+func (l *LLM) ExecMcpReq(ctx context.Context, funcName string, property map[string]interface{}) (string, error) {
+	mc, err := clients.GetMCPClientByToolName(funcName)
+	if err != nil {
+		logger.ErrorCtx(ctx, "get mcp fail", "err", err, "function", funcName, "argument", property)
+		return "", err
+	}
+	
+	metrics.MCPRequestCount.WithLabelValues(mc.Conf.Name, funcName).Inc()
+	startTime := time.Now()
+	
+	toolsData, err := mc.ExecTools(ctx, funcName, property)
+	if err != nil {
+		logger.ErrorCtx(ctx, "get mcp fail", "err", err, "function", funcName, "argument", property)
+		return "", err
+	}
+	
+	metrics.MCPRequestDuration.WithLabelValues(mc.Conf.Name, funcName).Observe(time.Since(startTime).Seconds())
+	
+	logger.InfoCtx(ctx, "get mcp fail", "function", funcName, "argument", property, "res", toolsData)
+	l.DirectSendMsg(i18n.GetMessage(*conf.BaseConfInfo.Lang, "send_mcp_info", map[string]interface{}{
+		"function_name": funcName,
+		"request_args":  property,
+		"response":      toolsData,
+	}))
+	
+	return toolsData, nil
 }

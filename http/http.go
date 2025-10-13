@@ -135,6 +135,7 @@ func WithRequestContext(next http.Handler) http.Handler {
 		if conf.BaseConfInfo.BotName != nil {
 			ctx = context.WithValue(ctx, "bot_name", *conf.BaseConfInfo.BotName)
 		}
+		ctx = context.WithValue(ctx, "start_time", time.Now())
 		r = r.WithContext(ctx)
 		logger.InfoCtx(ctx, "request start", "path", r.URL.Path)
 		
