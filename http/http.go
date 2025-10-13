@@ -14,6 +14,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/yincongcyincong/MuseBot/conf"
 	"github.com/yincongcyincong/MuseBot/logger"
+	"github.com/yincongcyincong/MuseBot/metrics"
 )
 
 type HTTPServer struct {
@@ -123,16 +124,21 @@ func runTLSServer(wrappedMux http.Handler) error {
 func WithRequestContext(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		logID := uuid.New().String()
 		ctx, cancel := context.WithTimeout(ctx, 1*time.Minute)
 		defer cancel()
 		
+		logID := r.Header.Get("LogId")
+		if logID == "" {
+			logID = uuid.New().String()
+		}
 		ctx = context.WithValue(ctx, "log_id", logID)
 		if conf.BaseConfInfo.BotName != nil {
 			ctx = context.WithValue(ctx, "bot_name", *conf.BaseConfInfo.BotName)
 		}
 		r = r.WithContext(ctx)
 		logger.InfoCtx(ctx, "request start", "path", r.URL.Path)
+		
 		next.ServeHTTP(w, r)
+		metrics.HTTPRequestCount.WithLabelValues(r.URL.Path).Inc()
 	})
 }

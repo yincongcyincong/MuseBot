@@ -55,7 +55,6 @@ func (h *VolReq) Send(ctx context.Context, l *LLM) error {
 	}
 	
 	start := time.Now()
-	metrics.APIRequestCount.WithLabelValues(l.Model).Inc()
 	
 	client := GetVolClient()
 	

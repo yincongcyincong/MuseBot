@@ -48,7 +48,7 @@ func (d *DeepseekReq) Send(ctx context.Context, l *LLM) error {
 	start := time.Now()
 	
 	// set deepseek proxy
-	metrics.APIRequestCount.WithLabelValues(l.Model).Inc()
+	
 	httpClient := utils.GetLLMProxyClient()
 	client, err := deepseek.NewClientWithOptions(*conf.BaseConfInfo.DeepseekToken, deepseek.WithHTTPClient(httpClient))
 	if err != nil {
@@ -182,7 +182,7 @@ func (d *DeepseekReq) GetMessage(role, msg string) {
 }
 
 func (d *DeepseekReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
-	metrics.APIRequestCount.WithLabelValues(l.Model).Inc()
+	
 	start := time.Now()
 	
 	httpClient := utils.GetLLMProxyClient()

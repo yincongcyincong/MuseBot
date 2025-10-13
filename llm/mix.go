@@ -94,7 +94,6 @@ func (d *AIRouterReq) Send(ctx context.Context, l *LLM) error {
 	}
 	
 	start := time.Now()
-	metrics.APIRequestCount.WithLabelValues(l.Model).Inc()
 	
 	client := GetMixClient(false)
 	
@@ -241,7 +240,6 @@ func (d *AIRouterReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 	client := GetMixClient(false)
 	
 	start := time.Now()
-	metrics.APIRequestCount.WithLabelValues(l.Model).Inc()
 	
 	request := openrouter.ChatCompletionRequest{
 		Model:            l.Model,

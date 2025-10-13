@@ -34,7 +34,6 @@ func (h *GeminiReq) Send(ctx context.Context, l *LLM) error {
 	}
 	
 	start := time.Now()
-	metrics.APIRequestCount.WithLabelValues(l.Model).Inc()
 	
 	client, err := GetGeminiClient(ctx)
 	if err != nil {
@@ -155,7 +154,6 @@ func (h *GeminiReq) GetMessage(role, msg string) {
 
 func (h *GeminiReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 	start := time.Now()
-	metrics.APIRequestCount.WithLabelValues(l.Model).Inc()
 	
 	client, err := GetGeminiClient(ctx)
 	if err != nil {

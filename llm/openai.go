@@ -64,7 +64,6 @@ func (d *OpenAIReq) Send(ctx context.Context, l *LLM) error {
 	}
 	
 	start := time.Now()
-	metrics.APIRequestCount.WithLabelValues(l.Model).Inc()
 	
 	client := GetOpenAIClient(false)
 	request := openai.ChatCompletionRequest{
@@ -189,7 +188,6 @@ func (d *OpenAIReq) GetMessage(role, msg string) {
 
 func (d *OpenAIReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 	start := time.Now()
-	metrics.APIRequestCount.WithLabelValues(l.Model).Inc()
 	
 	client := GetOpenAIClient(false)
 	

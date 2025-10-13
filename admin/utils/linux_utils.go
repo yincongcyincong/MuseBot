@@ -10,16 +10,17 @@ import (
 	"runtime"
 	"strings"
 	"syscall"
-
+	
 	"github.com/yincongcyincong/MuseBot/utils"
 )
 
 func StartDetachedProcess(argsStr string) error {
+	argsStr += "\n"
 	lines := strings.Split(argsStr, "\n")
 	execName := "MuseBot"
-
+	
 	exePath := filepath.Join(utils.GetAbsPath(""), execName)
-
+	
 	var args []string
 	for _, l := range lines {
 		trimmed := strings.TrimSpace(l)
@@ -27,7 +28,7 @@ func StartDetachedProcess(argsStr string) error {
 			args = append(args, trimmed)
 		}
 	}
-
+	
 	switch runtime.GOOS {
 	case "darwin":
 		cmdStr := fmt.Sprintf("%s %s", exePath, strings.Join(args, " "))
@@ -35,10 +36,10 @@ func StartDetachedProcess(argsStr string) error {
 	activate
 	do script "%s"
 end tell`, cmdStr)
-
+		
 		cmd := exec.Command("osascript", "-e", script)
 		return cmd.Start()
-
+	
 	default: // Linux 或其他
 		cmd := exec.Command(exePath, args...)
 		cmd.SysProcAttr = &syscall.SysProcAttr{

@@ -26,16 +26,16 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 	err := utils.HandleJsonBody(r, &u)
 	if err != nil {
 		logger.ErrorCtx(ctx, "create user error", "user", u)
-		utils.Failure(w, param.CodeParamError, param.MsgParamError, err)
+		utils.Failure(ctx, w, r, param.CodeParamError, param.MsgParamError, err)
 		return
 	}
 	err = db.CreateUser(u.Username, u.Password)
 	if err != nil {
 		logger.ErrorCtx(ctx, "create user error", "user", u)
-		utils.Failure(w, param.CodeDBWriteFail, param.MsgDBWriteFail, err)
+		utils.Failure(ctx, w, r, param.CodeDBWriteFail, param.MsgDBWriteFail, err)
 		return
 	}
-	utils.Success(w, "success")
+	utils.Success(ctx, w, r, "success")
 }
 
 func GetUser(w http.ResponseWriter, r *http.Request) {
@@ -44,16 +44,16 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(idStr)
 	if err != nil || id <= 0 {
 		logger.ErrorCtx(ctx, "get user error", "user", id)
-		utils.Failure(w, param.CodeParamError, param.MsgParamError, err)
+		utils.Failure(ctx, w, r, param.CodeParamError, param.MsgParamError, err)
 		return
 	}
 	u, err := db.GetUserByID(id)
 	if err != nil {
 		logger.ErrorCtx(ctx, "get user error", "user", u)
-		utils.Failure(w, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
+		utils.Failure(ctx, w, r, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
 		return
 	}
-	utils.Success(w, u)
+	utils.Success(ctx, w, r, u)
 }
 
 func UpdateUserPassword(w http.ResponseWriter, r *http.Request) {
@@ -62,16 +62,16 @@ func UpdateUserPassword(w http.ResponseWriter, r *http.Request) {
 	err := utils.HandleJsonBody(r, &u)
 	if err != nil {
 		logger.ErrorCtx(ctx, "update user error", "user", u)
-		utils.Failure(w, param.CodeParamError, param.MsgParamError, err)
+		utils.Failure(ctx, w, r, param.CodeParamError, param.MsgParamError, err)
 		return
 	}
 	err = db.UpdateUserPassword(u.ID, u.Password)
 	if err != nil {
 		logger.ErrorCtx(ctx, "update user error", "user", u)
-		utils.Failure(w, param.CodeDBWriteFail, param.MsgDBWriteFail, err)
+		utils.Failure(ctx, w, r, param.CodeDBWriteFail, param.MsgDBWriteFail, err)
 		return
 	}
-	utils.Success(w, "success")
+	utils.Success(ctx, w, r, "success")
 }
 
 func DeleteUser(w http.ResponseWriter, r *http.Request) {
@@ -80,16 +80,16 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(idStr)
 	if err != nil || id <= 0 {
 		logger.ErrorCtx(ctx, "delete user error", "id", id)
-		utils.Failure(w, param.CodeParamError, param.MsgParamError, err)
+		utils.Failure(ctx, w, r, param.CodeParamError, param.MsgParamError, err)
 		return
 	}
 	err = db.DeleteUser(id)
 	if err != nil {
 		logger.ErrorCtx(ctx, "delete user error", "id", id)
-		utils.Failure(w, param.CodeDBWriteFail, param.MsgDBWriteFail, err)
+		utils.Failure(ctx, w, r, param.CodeDBWriteFail, param.MsgDBWriteFail, err)
 		return
 	}
-	utils.Success(w, "success")
+	utils.Success(ctx, w, r, "success")
 }
 
 func ListUsers(w http.ResponseWriter, r *http.Request) {
@@ -102,11 +102,11 @@ func ListUsers(w http.ResponseWriter, r *http.Request) {
 	users, total, err := db.ListUsers(offset, pageSize, username)
 	if err != nil {
 		logger.ErrorCtx(ctx, "list users error", "err", err)
-		utils.Failure(w, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
+		utils.Failure(ctx, w, r, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
 		return
 	}
 	
-	utils.Success(w, map[string]interface{}{
+	utils.Success(ctx, w, r, map[string]interface{}{
 		"list":  users,
 		"total": total,
 	})
@@ -117,7 +117,7 @@ func UpdateUserMode(w http.ResponseWriter, r *http.Request) {
 	botInfo, err := getBot(r)
 	if err != nil {
 		logger.ErrorCtx(ctx, "get bot conf error", "err", err)
-		utils.Failure(w, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
+		utils.Failure(ctx, w, r, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
 		return
 	}
 	
@@ -128,14 +128,14 @@ func UpdateUserMode(w http.ResponseWriter, r *http.Request) {
 		fmt.Sprintf("/user/mode/update?userId=%s&mode=%s", userId, mode))
 	if err != nil {
 		logger.ErrorCtx(ctx, "get bot conf error", "err", err)
-		utils.Failure(w, param.CodeServerFail, param.MsgServerFail, err)
+		utils.Failure(ctx, w, r, param.CodeServerFail, param.MsgServerFail, err)
 		return
 	}
 	defer resp.Body.Close()
 	_, err = io.Copy(w, resp.Body)
 	if err != nil {
 		logger.ErrorCtx(ctx, "copy response body error", "err", err)
-		utils.Failure(w, param.CodeServerFail, param.MsgServerFail, err)
+		utils.Failure(ctx, w, r, param.CodeServerFail, param.MsgServerFail, err)
 		return
 	}
 }

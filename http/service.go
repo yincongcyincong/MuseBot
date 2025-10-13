@@ -21,7 +21,8 @@ import (
 )
 
 func PongHandler(w http.ResponseWriter, r *http.Request) {
-	utils.Success(w, "pong")
+	ctx := r.Context()
+	utils.Success(ctx, w, r, "pong")
 }
 
 func DashboardHandler(w http.ResponseWriter, r *http.Request) {
@@ -29,14 +30,14 @@ func DashboardHandler(w http.ResponseWriter, r *http.Request) {
 	recordCount, err := db.GetRecordCount("", -1, "")
 	if err != nil {
 		logger.ErrorCtx(ctx, "parse json body error", "err", err)
-		utils.Failure(w, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
+		utils.Failure(ctx, w, r, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
 		return
 	}
 	
 	userCount, err := db.GetUserCount("")
 	if err != nil {
 		logger.ErrorCtx(ctx, "parse json body error", "err", err)
-		utils.Failure(w, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
+		utils.Failure(ctx, w, r, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
 		return
 	}
 	
@@ -44,18 +45,18 @@ func DashboardHandler(w http.ResponseWriter, r *http.Request) {
 	userDayCount, err := db.GetDailyNewUsers(day)
 	if err != nil {
 		logger.ErrorCtx(ctx, "parse json body error", "err", err)
-		utils.Failure(w, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
+		utils.Failure(ctx, w, r, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
 		return
 	}
 	
 	recordDayCount, err := db.GetDailyNewRecords(day)
 	if err != nil {
 		logger.ErrorCtx(ctx, "parse json body error", "err", err)
-		utils.Failure(w, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
+		utils.Failure(ctx, w, r, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
 		return
 	}
 	
-	utils.Success(w, map[string]interface{}{
+	utils.Success(ctx, w, r, map[string]interface{}{
 		"record_count":     recordCount,
 		"user_count":       userCount,
 		"user_day_count":   userDayCount,
@@ -70,7 +71,7 @@ func Restart(w http.ResponseWriter, r *http.Request) {
 	params := r.URL.Query().Get("params")
 	if params == "" {
 		logger.ErrorCtx(ctx, "get param error", "param", params)
-		utils.Failure(w, param.CodeDBQueryFail, param.MsgDBQueryFail, "")
+		utils.Failure(ctx, w, r, param.CodeDBQueryFail, param.MsgDBQueryFail, "")
 		return
 	}
 	
@@ -110,7 +111,7 @@ func Restart(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 	
-	utils.Success(w, "")
+	utils.Success(ctx, w, r, "")
 }
 
 func Log(w http.ResponseWriter, r *http.Request) {
