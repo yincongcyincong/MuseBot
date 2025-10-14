@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/url"
 	"reflect"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -300,7 +301,8 @@ func SoftDeleteBot(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	go checkpoint.ScheduleBotChecks()
+	checkpoint.BotMap.Delete(id)
+	
 	adminUtils.GetCrtClient(botInfo).Do(GetRequest(ctx, http.MethodGet,
 		strings.TrimSuffix(botInfo.Address, "/")+"/stop", bytes.NewBuffer(nil)))
 	
@@ -566,6 +568,10 @@ func GetAllOnlineBot(w http.ResponseWriter, r *http.Request) {
 			res = append(res, status)
 		}
 		return true
+	})
+	
+	sort.Slice(res, func(i, j int) bool {
+		return res[i].Id < res[j].Id
 	})
 	
 	utils.Success(ctx, w, r, res)
@@ -850,7 +856,7 @@ func Communicate(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	
-	resp, err := adminUtils.GetCrtClient(botInfo).Do(GetRequest(ctx, http.MethodPost,
+	resp, err := adminUtils.GetCrtClient(botInfo).Do(GetSSERequest(ctx, http.MethodPost,
 		strings.TrimSuffix(botInfo.Address, "/")+
 			fmt.Sprintf("/communicate?prompt=%s&user_id=-%d",
 				url.QueryEscape(r.URL.Query().Get("prompt")), userIDValue), bytes.NewBuffer(data)))
@@ -894,7 +900,7 @@ func Log(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	resp, err := adminUtils.GetCrtClient(botInfo).Do(GetRequest(ctx, http.MethodGet,
+	resp, err := adminUtils.GetCrtClient(botInfo).Do(GetSSERequest(ctx, http.MethodGet,
 		strings.TrimSuffix(botInfo.Address, "/")+"/log",
 		bytes.NewBuffer(nil)))
 	if err != nil {
@@ -1016,5 +1022,13 @@ func GetRequest(ctx context.Context, method, path string, body io.Reader) *http.
 	req, _ := http.NewRequest(method, path, body)
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("LogId", ctx.Value("log_id").(string))
+	return req
+}
+
+func GetSSERequest(ctx context.Context, method, path string, body io.Reader) *http.Request {
+	req, _ := http.NewRequest(method, path, body)
+	req.Header.Set("Content-Type", "text/event-stream")
+	req.Header.Set("LogId", ctx.Value("log_id").(string))
+	req.Header.Set("Accept", "text/event-stream")
 	return req
 }

@@ -124,22 +124,33 @@ func runTLSServer(wrappedMux http.Handler) error {
 func WithRequestContext(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		ctx, cancel := context.WithTimeout(ctx, 1*time.Minute)
-		defer cancel()
+		
+		isSSE := r.Header.Get("Accept") == "text/event-stream"
+		
+		var cancel context.CancelFunc
+		if !isSSE {
+			ctx, cancel = context.WithTimeout(ctx, 15*time.Minute)
+			defer cancel()
+		}
 		
 		logID := r.Header.Get("LogId")
 		if logID == "" {
 			logID = uuid.New().String()
 		}
 		ctx = context.WithValue(ctx, "log_id", logID)
+		
 		if conf.BaseConfInfo.BotName != nil {
 			ctx = context.WithValue(ctx, "bot_name", *conf.BaseConfInfo.BotName)
 		}
+		
 		ctx = context.WithValue(ctx, "start_time", time.Now())
+		
 		r = r.WithContext(ctx)
+		
 		logger.InfoCtx(ctx, "request start", "path", r.URL.Path)
 		
 		next.ServeHTTP(w, r)
+		
 		metrics.HTTPRequestCount.WithLabelValues(r.URL.Path).Inc()
 	})
 }

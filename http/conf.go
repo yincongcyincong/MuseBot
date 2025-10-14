@@ -355,7 +355,7 @@ func CompareFlagsWithStructTags(cfg interface{}) string {
 			structValue = utils.ValueToString(v.Field(i).Interface())
 		}
 		
-		if structValue != flagValue.DefValue {
+		if structValue != flagValue.DefValue || jsonTag == "bot_name" || jsonTag == "http_host" {
 			res += fmt.Sprintf("-%s='%s'\n", jsonTag, structValue)
 		}
 	}
