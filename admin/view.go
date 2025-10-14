@@ -54,11 +54,20 @@ func WithRequestContext(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		logID := uuid.New().String()
-		ctx, cancel := context.WithTimeout(ctx, 1*time.Minute)
-		defer cancel()
 		
+		isSSE := r.Header.Get("Accept") == "text/event-stream"
+		
+		if !isSSE {
+			var cancel context.CancelFunc
+			ctx, cancel = context.WithTimeout(ctx, 1*time.Minute)
+			defer cancel()
+		}
+		
+		// 通用的 context 值
 		ctx = context.WithValue(ctx, "log_id", logID)
+		ctx = context.WithValue(ctx, "start_time", time.Now())
 		r = r.WithContext(ctx)
+		
 		logger.InfoCtx(ctx, "request start", "path", r.URL.Path)
 		next.ServeHTTP(w, r)
 	})

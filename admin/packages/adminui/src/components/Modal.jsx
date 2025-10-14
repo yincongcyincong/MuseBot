@@ -15,7 +15,7 @@ export default function Modal({ visible, title, children, onClose }) {
             onClick={handleBackgroundClick}
         >
             <div
-                className="bg-white p-6 rounded-lg shadow-lg max-w-xl w-full mx-4"
+                className="bg-white p-6 rounded-lg shadow-lg max-w-[50%] w-full mx-4"
                 onClick={(e) => e.stopPropagation()}
             >
                 <div className="flex justify-between items-center mb-4">

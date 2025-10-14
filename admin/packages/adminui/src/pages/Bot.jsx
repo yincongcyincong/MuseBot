@@ -311,7 +311,7 @@ function Bots() {
                                 )}
                                 <button
                                     onClick={() => handleShowRawConfig(bot.id)}
-                                    className="text-purple-600 hover:underline"
+                                    className="text-green-600 hover:underline"
                                 >
                                     {t("command")}
                                 </button>
@@ -424,7 +424,6 @@ function Bots() {
                 <div className="mb-4">
                     <Editor
                         height="300px"
-                        defaultLanguage="json"
                         value={rawConfigText}
                         onChange={(value) => setRawConfigText(value ?? "")}
                         options={{

@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import BotSelector from "../components/BotSelector";
 import Toast from "../components/Toast";
-import {useTranslation} from "react-i18next";
+import { useTranslation } from "react-i18next";
 
 function BotLogPage() {
     const [botId, setBotId] = useState(null);
@@ -9,6 +9,8 @@ function BotLogPage() {
     const [toast, setToast] = useState({ show: false, message: "", type: "error" });
     const eventSourceRef = useRef(null);
     const logRef = useRef(null);
+    const shouldAutoScroll = useRef(true);
+    const hasFirstScroll = useRef(false);
 
     const { t } = useTranslation();
 
@@ -43,15 +45,46 @@ function BotLogPage() {
         };
 
         eventSourceRef.current = es;
+        hasFirstScroll.current = false;
+
         return () => es.close();
     }, [botId]);
 
+    // 用户滚动事件
+    const handleScroll = () => {
+        const el = logRef.current;
+        if (!el) return;
+        const isAtBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 50;
+        shouldAutoScroll.current = isAtBottom;
+    };
+
+    // 添加滚动监听
     useEffect(() => {
-        if (logRef.current) {
-            logRef.current.scrollTop = logRef.current.scrollHeight;
+        const el = logRef.current;
+        if (!el) return;
+        el.addEventListener("scroll", handleScroll);
+        return () => el.removeEventListener("scroll", handleScroll);
+    }, []);
+
+    // 自动滚动到底部逻辑
+    useEffect(() => {
+        const el = logRef.current;
+        if (!el) return;
+
+        const scrollToBottom = () => {
+            el.scrollTop = el.scrollHeight;
+        };
+
+        if (shouldAutoScroll.current || !hasFirstScroll.current) {
+            // 用两层 requestAnimationFrame 保证 DOM 渲染完成
+            requestAnimationFrame(() => {
+                requestAnimationFrame(scrollToBottom);
+                hasFirstScroll.current = true;
+            });
         }
     }, [logs]);
 
+    // 日志颜色
     const getLevelColor = (level) => {
         switch (level) {
             case "info":
@@ -106,13 +139,15 @@ function BotLogPage() {
                     onChange={(bot) => {
                         setBotId(bot.id);
                         setLogs([]);
+                        hasFirstScroll.current = false; // 切换 Bot 时重置首次滚动
                     }}
                 />
             </div>
 
-            {/* 日志展示部分，黑色背景 */}
+            {/* 日志展示部分 */}
             <div
                 ref={logRef}
+                onScroll={handleScroll}
                 className="rounded-lg shadow border border-gray-700 overflow-y-auto h-[70vh] p-2 bg-gray-900"
             >
                 {logs.map(renderLogLine)}
