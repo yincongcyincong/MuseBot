@@ -37,6 +37,7 @@ chatgpt: https://www.youtube.com/watch?v=G_DZYMvd5Ug
   see [doc](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/admin.md).
 - 🌛 **Register**: With the service registration module, robot instances can be automatically registered to the
   registration center [doc](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/register.md)
+- 🌈 **Metrics**: Support Metrics for monitoring, see [doc](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/metrics.md).
 
 ## 📸 Support Platform
 
