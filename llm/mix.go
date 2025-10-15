@@ -491,7 +491,7 @@ func Generate302AIVideo(ctx context.Context, prompt string, image []byte) (strin
 	
 	// Step 2: Poll fetch API (保持原逻辑)
 	fetchURL := "https://api.302.ai/302/v2/video/fetch/" + createResp.TaskID
-	for {
+	for i := 0; i < 100; i++ {
 		select {
 		case <-ctx.Done():
 			return "", 0, fmt.Errorf("context canceled or timeout: %w", ctx.Err())
@@ -530,6 +530,8 @@ func Generate302AIVideo(ctx context.Context, prompt string, image []byte) (strin
 		
 		time.Sleep(5 * time.Second)
 	}
+	
+	return "", 0, fmt.Errorf("video generation timeout")
 }
 
 func GetMixImageContent(ctx context.Context, imageContent []byte, content string) (string, int, error) {

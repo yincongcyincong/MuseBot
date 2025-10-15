@@ -585,7 +585,7 @@ func (r *RobotInfo) checkAdminUser(userId string) bool {
 func (r *RobotInfo) GetAudioContent(audioContent []byte) (string, error) {
 	var answer string
 	var err error
-	var token int
+	var token = param.AudioTokenUsage
 	switch *conf.BaseConfInfo.MediaType {
 	case param.Vol:
 		answer, err = utils.FileRecognize(audioContent)
@@ -593,6 +593,8 @@ func (r *RobotInfo) GetAudioContent(audioContent []byte) (string, error) {
 		answer, err = llm.GenerateOpenAIText(r.Ctx, audioContent)
 	case param.Gemini:
 		answer, token, err = llm.GenerateGeminiText(r.Ctx, audioContent)
+	case param.Aliyun:
+		answer, token, err = llm.GenerateAliyunText(r.Ctx, audioContent)
 	}
 	
 	if err != nil {
@@ -1057,6 +1059,8 @@ func (r *RobotInfo) CreatePhoto(prompt string, lastImageContent []byte) ([]byte,
 		imageContent, totalToken, err = llm.GenerateGeminiImg(r.Ctx, prompt, lastImageContent)
 	case param.AI302, param.OpenRouter:
 		imageUrl, totalToken, err = llm.GenerateMixImg(r.Ctx, prompt, lastImageContent)
+	case param.Aliyun:
+		imageUrl, totalToken, err = llm.GenerateAliyunImg(r.Ctx, prompt, lastImageContent)
 	default:
 		err = fmt.Errorf("unsupported media type: %s", *conf.BaseConfInfo.MediaType)
 	}
@@ -1089,6 +1093,8 @@ func (r *RobotInfo) CreateVideo(prompt string, lastImageContent []byte) ([]byte,
 		videoContent, totalToken, err = llm.GenerateGeminiVideo(r.Ctx, prompt, lastImageContent)
 	case param.AI302:
 		videoUrl, totalToken, err = llm.Generate302AIVideo(r.Ctx, prompt, lastImageContent)
+	case param.Aliyun:
+		videoUrl, totalToken, err = llm.GenerateAliyunVideo(r.Ctx, prompt, lastImageContent)
 	default:
 		err = fmt.Errorf("unsupported type: %s", *conf.BaseConfInfo.MediaType)
 	}
@@ -1121,6 +1127,8 @@ func (r *RobotInfo) GetVoiceBaseTTS(content, encoding string) ([]byte, int, erro
 		ttsContent, token, duration, err = llm.GeminiTTS(r.Ctx, content, encoding)
 	case param.OpenAi:
 		ttsContent, token, duration, err = llm.OpenAITTS(r.Ctx, content, encoding)
+	case param.Aliyun:
+		ttsContent, token, duration, err = llm.AliyunTTS(r.Ctx, content, encoding)
 	}
 	
 	err = db.AddRecordToken(r.RecordID, userId, token)

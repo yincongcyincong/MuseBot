@@ -399,7 +399,7 @@ func GenerateVolVideo(ctx context.Context, prompt string, imageContent []byte) (
 	}
 	
 	metrics.APIRequestDuration.WithLabelValues(*conf.PhotoConfInfo.ModelVersion).Observe(time.Since(start).Seconds())
-	for {
+	for i := 0; i < 100; i++ {
 		getResp, err := client.GetContentGenerationTask(ctx, model.GetContentGenerationTaskRequest{
 			ID: resp.ID,
 		})
@@ -427,6 +427,8 @@ func GenerateVolVideo(ctx context.Context, prompt string, imageContent []byte) (
 			return "", 0, errors.New("create video fail")
 		}
 	}
+	
+	return "", 0, fmt.Errorf("video generation timeout")
 }
 
 func GetVolImageContent(ctx context.Context, imageContent []byte, content string) (string, int, error) {

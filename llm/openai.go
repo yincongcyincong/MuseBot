@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"strings"
@@ -391,13 +392,13 @@ func GetOpenAIImageContent(ctx context.Context, imageContent []byte, content str
 	
 	model := *conf.PhotoConfInfo.OpenAIRecModel
 	if *conf.BaseConfInfo.MediaType == param.Aliyun {
-		model = "qwen-vl-max-latest"
+		model = *conf.PhotoConfInfo.AliyunRecModel
 	}
 	
 	start := time.Now()
 	metrics.APIRequestCount.WithLabelValues(model).Inc()
 	
-	imageDataURL := "data:image/png;base64," + base64.StdEncoding.EncodeToString(imageContent)
+	imageDataURL := fmt.Sprintf("data:image/%s;base64,%s", utils.DetectImageFormat(imageContent), base64.StdEncoding.EncodeToString(imageContent))
 	req := openai.ChatCompletionRequest{
 		Model: model,
 		Messages: []openai.ChatCompletionMessage{

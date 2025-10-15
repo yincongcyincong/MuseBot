@@ -48,5 +48,6 @@
   "save_audio_success": "Voice saved successfully. File path: {{.filename}}",
   "audio_create_prompt": "Please say the following content: {{.content}}",
   "talk_param_error": "Missing conversation parameters",
-  "bot_talking": "The bot is currently talking"
+  "bot_talking": "The bot is currently talking",
+  "audio_rec_prompt": "get Content from this audio clip, only return the content"
 }
