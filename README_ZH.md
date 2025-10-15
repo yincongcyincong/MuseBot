@@ -64,7 +64,7 @@ chatgpt: https://www.bilibili.com/video/BV1RutxzJEGY/
 | 🌟 **Gemini**     | 谷歌         | ✅    |  ✅   |  ✅   |  ✅   |    ✅ | [文档](https://gemini.google.com/app)                                                                          |
 | 💬 **ChatGPT**    | OpenAI     | ✅    |  ✅   |  ❌   |  ✅   |    ✅ | [文档](https://chat.openai.com)                                                                                |
 | 🐦 **Doubao**     | 字节跳动       | ✅    |  ✅   |  ✅   |  ✅   |    ✅ | [文档](https://www.volcengine.com/)                                                                            |
-| 🐦 **Qwen**       | 阿里云        | ✅    |  ❌   |  ❌   |  ❌   |    ❌ | [文档](https://bailian.console.aliyun.com/?spm=5176.12818093_47.overview_recent.1.663b2cc9wXXcVC&tab=api#/api) |
+| 🐦 **Qwen**       | 阿里云        | ✅    |  ✅   |  ✅   |  ✅   |    ✅ | [文档](https://bailian.console.aliyun.com/?spm=5176.12818093_47.overview_recent.1.663b2cc9wXXcVC&tab=api#/api) |
 | ⚙️ **302.AI**     | 302.AI     | ✅    |  ✅   |  ✅   |  ✅   |    ❌ | [文档](https://302.ai/)                                                                                        |
 | 🧠 **DeepSeek**   | DeepSeek   | ✅    |  ❌   |  ❌   |  ❌   |    ❌ | [文档](https://www.deepseek.com/)                                                                              |
 | 🌐 **OpenRouter** | OpenRouter | ✅    |  ✅   |  ❌   |  ✅   |    ❌ | [文档](https://openrouter.ai/)                                                                                 |

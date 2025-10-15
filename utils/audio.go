@@ -11,7 +11,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os/exec"
-
+	
 	"github.com/gorilla/websocket"
 	"github.com/satori/go.uuid"
 	"github.com/wdvxdr1123/go-silk"
@@ -26,10 +26,10 @@ type CompressionType byte
 
 const (
 	SuccessCode = 1000
-
+	
 	PROTOCOL_VERSION    = ProtocolVersion(0b0001)
 	DEFAULT_HEADER_SIZE = 0b0001
-
+	
 	PROTOCOL_VERSION_BITS            = 4
 	HEADER_BITS                      = 4
 	MESSAGE_TYPE_BITS                = 4
@@ -37,26 +37,26 @@ const (
 	MESSAGE_SERIALIZATION_BITS       = 4
 	MESSAGE_COMPRESSION_BITS         = 4
 	RESERVED_BITS                    = 8
-
+	
 	// Message Type:
 	CLIENT_FULL_REQUEST       = MessageType(0b0001)
 	CLIENT_AUDIO_ONLY_REQUEST = MessageType(0b0010)
 	SERVER_FULL_RESPONSE      = MessageType(0b1001)
 	SERVER_ACK                = MessageType(0b1011)
 	SERVER_ERROR_RESPONSE     = MessageType(0b1111)
-
+	
 	// Message Type Specific Flags
 	NO_SEQUENCE    = MessageTypeSpecificFlags(0b0000) // no check sequence
 	POS_SEQUENCE   = MessageTypeSpecificFlags(0b0001)
 	NEG_SEQUENCE   = MessageTypeSpecificFlags(0b0010)
 	NEG_SEQUENCE_1 = MessageTypeSpecificFlags(0b0011)
-
+	
 	// Message Serialization
 	NO_SERIALIZATION = SerializationType(0b0000)
 	JSON             = SerializationType(0b0001)
 	THRIFT           = SerializationType(0b0011)
 	CUSTOM_TYPE      = SerializationType(0b1111)
-
+	
 	// Message Compression
 	NO_COMPRESSION     = CompressionType(0b0000)
 	GZIP               = CompressionType(0b0001)
@@ -170,14 +170,14 @@ func (client *AsrClient) RequestAsr(audioData []byte) (AsrResponse, error) {
 	}
 	defer c.Close()
 	client.Format = DetectAudioFormat(audioData)
-
+	
 	// 1. send full client request
 	req := client.ConstructRequest()
 	payload := gzipCompress(req)
 	payloadSize := len(payload)
 	payloadSizeArr := make([]byte, 4)
 	binary.BigEndian.PutUint32(payloadSizeArr, uint32(payloadSize))
-
+	
 	fullClientMsg := make([]byte, len(DefaultFullClientWsHeader))
 	copy(fullClientMsg, DefaultFullClientWsHeader)
 	fullClientMsg = append(fullClientMsg, payloadSizeArr...)
@@ -193,7 +193,7 @@ func (client *AsrClient) RequestAsr(audioData []byte) (AsrResponse, error) {
 		logger.Warn("fail to parse response ", err.Error())
 		return AsrResponse{}, err
 	}
-
+	
 	// 3. send segment audio request
 	for sentSize := 0; sentSize < len(audioData); sentSize += client.SegSize {
 		lastAudio := false
@@ -265,7 +265,7 @@ func (client *AsrClient) parseResponse(msg []byte) (AsrResponse, error) {
 	payloadMsg := make([]byte, 0)
 	payloadSize := 0
 	//print('message type: {}'.format(message_type))
-
+	
 	if messageType == byte(SERVER_FULL_RESPONSE) {
 		payloadSize = int(int32(binary.BigEndian.Uint32(payload[0:4])))
 		payloadMsg = payload[4:]
@@ -289,7 +289,7 @@ func (client *AsrClient) parseResponse(msg []byte) (AsrResponse, error) {
 	if messageCompression == byte(GZIP) {
 		payloadMsg = gzipDecompress(payloadMsg)
 	}
-
+	
 	var asrResponse = AsrResponse{}
 	if serializationMethod == byte(JSON) {
 		err := json.Unmarshal(payloadMsg, &asrResponse)
@@ -330,7 +330,7 @@ func SilkToMp3(silkBytes []byte) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	
 	cmd := exec.Command("ffmpeg",
 		"-f", "s16le",
 		"-ar", "16000",
@@ -342,16 +342,16 @@ func SilkToMp3(silkBytes []byte) ([]byte, error) {
 		"pipe:1",
 	)
 	cmd.Stdin = bytes.NewReader(pcm)
-
+	
 	var out bytes.Buffer
 	cmd.Stdout = &out
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
-
+	
 	if err := cmd.Run(); err != nil {
 		return nil, fmt.Errorf("ffmpeg error: %v, details: %s", err, stderr.String())
 	}
-
+	
 	return out.Bytes(), nil
 }
 
@@ -364,19 +364,19 @@ func AmrToOgg(amrData []byte) ([]byte, error) {
 		"-f", "ogg",
 		"pipe:1",
 	)
-
+	
 	cmd.Stdin = bytes.NewReader(amrData)
-
+	
 	var out bytes.Buffer
 	cmd.Stdout = &out
-
+	
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
-
+	
 	if err := cmd.Run(); err != nil {
 		return nil, fmt.Errorf("ffmpeg error: %v, details: %s", err, stderr.String())
 	}
-
+	
 	return out.Bytes(), nil
 }
 
@@ -392,17 +392,17 @@ func PCMToAMR(pcmData []byte, sampleRate int, channels int) ([]byte, error) {
 		"-f", "amr",
 		"pipe:1",
 	)
-
+	
 	cmd.Stdin = bytes.NewReader(pcmData)
 	var out bytes.Buffer
 	cmd.Stdout = &out
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
-
+	
 	if err := cmd.Run(); err != nil {
 		return nil, fmt.Errorf("ffmpeg error: %v, %s", err, stderr.String())
 	}
-
+	
 	return out.Bytes(), nil
 }
 
@@ -419,19 +419,19 @@ func PCMToOpus(pcmData []byte, sampleRate int, channels int) ([]byte, error) {
 		"-f", "opus",
 		"pipe:1",
 	)
-
+	
 	cmd.Stdin = bytes.NewReader(pcmData)
-
+	
 	var out bytes.Buffer
 	cmd.Stdout = &out
-
+	
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
-
+	
 	if err := cmd.Run(); err != nil {
 		return nil, fmt.Errorf("ffmpeg error: %v, %s", err, stderr.String())
 	}
-
+	
 	return out.Bytes(), nil
 }
 
@@ -445,18 +445,18 @@ func PCMToOGG(pcmBytes []byte, sampleRate int) ([]byte, error) {
 		"-f", "ogg",
 		"-",
 	)
-
+	
 	cmd.Stdin = bytes.NewReader(pcmBytes)
 	var out bytes.Buffer
 	cmd.Stdout = &out
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
-
+	
 	err := cmd.Run()
 	if err != nil {
 		return nil, fmt.Errorf("ffmpeg error: %v, %s", err, stderr.String())
 	}
-
+	
 	return out.Bytes(), nil
 }
 
@@ -469,17 +469,17 @@ func PCMToMP3(pcmBytes []byte, sampleRate int, channels int) ([]byte, error) {
 		"-f", "mp3",
 		"-",
 	)
-
+	
 	cmd.Stdin = bytes.NewReader(pcmBytes)
 	var out bytes.Buffer
 	cmd.Stdout = &out
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
-
+	
 	if err := cmd.Run(); err != nil {
 		return nil, fmt.Errorf("ffmpeg error: %v, %s", err, stderr.String())
 	}
-
+	
 	return out.Bytes(), nil
 }
 
@@ -494,19 +494,19 @@ func AmrToMp3(amrData []byte) ([]byte, error) {
 		"-f", "mp3",
 		"pipe:1",
 	)
-
+	
 	cmd.Stdin = bytes.NewReader(amrData)
-
+	
 	var out bytes.Buffer
 	cmd.Stdout = &out
-
+	
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
-
+	
 	if err := cmd.Run(); err != nil {
 		return nil, fmt.Errorf("ffmpeg error: %v, details: %s", err, stderr.String())
 	}
-
+	
 	return out.Bytes(), nil
 }
 
@@ -515,7 +515,7 @@ func TruncateText(text string, maxBytes int) string {
 	if len(data) <= maxBytes {
 		return text
 	}
-
+	
 	end := maxBytes
 	for end > 0 && (data[end]&0xC0) == 0x80 {
 		end--
@@ -523,7 +523,7 @@ func TruncateText(text string, maxBytes int) string {
 	if end == 0 {
 		end = maxBytes
 	}
-
+	
 	return string(data[:end])
 }
 
@@ -546,7 +546,24 @@ func GetAudioData(encoding string, data []byte) ([]byte, error) {
 	case "silk":
 		return silk.EncodePcmBuffToSilk(data, 24000, 1, true)
 	}
+	
+	return data, nil
+}
 
+func GetAudioDataDetail(encoding string, data []byte, sampleRate int, channels int) ([]byte, error) {
+	switch encoding {
+	case "amr":
+		return PCMToAMR(data, sampleRate, channels)
+	case "ogg_opus":
+		return PCMToOGG(data, sampleRate)
+	case "opus":
+		return PCMToOpus(data, sampleRate, channels)
+	case "mp3":
+		return PCMToMP3(data, sampleRate, channels)
+	case "silk":
+		return silk.EncodePcmBuffToSilk(data, sampleRate, channels, true)
+	}
+	
 	return data, nil
 }
 
@@ -558,26 +575,45 @@ func MP3ToOpus(mp3Path string) ([]byte, error) {
 		"-ac", "2",
 		"-f", "opus",
 		"pipe:1")
-
+	
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get stdout: %w", err)
 	}
-
+	
 	cmd.Stderr = nil
-
+	
 	if err := cmd.Start(); err != nil {
 		return nil, fmt.Errorf("failed to start ffmpeg: %w", err)
 	}
-
+	
 	data, err := io.ReadAll(stdout)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read opus data: %w", err)
 	}
-
+	
 	if err := cmd.Wait(); err != nil {
 		return nil, fmt.Errorf("ffmpeg exited with error: %w", err)
 	}
-
+	
 	return data, nil
+}
+
+func WavToPCMBytes(wavData []byte) ([]byte, error) {
+	if len(wavData) < 44 {
+		return nil, fmt.Errorf("invalid wav data: too short (%d bytes)", len(wavData))
+	}
+	
+	reader := bytes.NewReader(wavData)
+	
+	if _, err := reader.Seek(44, io.SeekStart); err != nil {
+		return nil, fmt.Errorf("failed to skip wav header: %w", err)
+	}
+	
+	pcmData, err := io.ReadAll(reader)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read pcm data: %w", err)
+	}
+	
+	return pcmData, nil
 }

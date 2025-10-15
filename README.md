@@ -37,7 +37,8 @@ chatgpt: https://www.youtube.com/watch?v=G_DZYMvd5Ug
   see [doc](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/admin.md).
 - 🌛 **Register**: With the service registration module, robot instances can be automatically registered to the
   registration center [doc](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/register.md)
-- 🌈 **Metrics**: Support Metrics for monitoring, see [doc](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/metrics.md).
+- 🌈 **Metrics**: Support Metrics for monitoring,
+  see [doc](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/metrics.md).
 
 ## 📸 Support Platform
 
@@ -60,7 +61,7 @@ chatgpt: https://www.youtube.com/watch?v=G_DZYMvd5Ug
 | 🌟 **Gemini**     | Google     | ✅               |        ✅         |        ✅         |               ✅ |   ✅ | [doc](https://gemini.google.com/app)                                                                          |
 | 💬 **ChatGPT**    | OpenAI     | ✅               |        ✅         |        ❌         |               ✅ |   ✅ | [doc](https://chat.openai.com)                                                                                |
 | 🐦 **Doubao**     | ByteDance  | ✅               |        ✅         |        ✅         |               ✅ |   ✅ | [doc](https://www.volcengine.com/)                                                                            |
-| 🐦 **Qwen**       | Aliyun     | ✅               |        ❌         |        ❌         |               ❌ |   ❌ | [doc](https://bailian.console.aliyun.com/?spm=5176.12818093_47.overview_recent.1.663b2cc9wXXcVC&tab=api#/api) |
+| 🐦 **Qwen**       | Aliyun     | ✅               |        ✅         |        ✅         |               ✅ |   ✅ | [doc](https://bailian.console.aliyun.com/?spm=5176.12818093_47.overview_recent.1.663b2cc9wXXcVC&tab=api#/api) |
 | 🧠 **DeepSeek**   | DeepSeek   | ✅               |        ❌         |        ❌         |               ❌ |   ❌ | [doc](https://www.deepseek.com/)                                                                              |
 | ⚙️ **302.AI**     | 302.AI     | ✅               |        ✅         |        ✅         |               ✅ |   ❌ | [doc](https://302.ai/)                                                                                        |
 | 🌐 **OpenRouter** | OpenRouter | ✅               |        ✅         |        ❌         |               ✅ |   ❌ | [doc](https://openrouter.ai/)                                                                                 |
@@ -183,7 +184,7 @@ choose a language for bot, English (`en`), Chinese (`zh`), Russian (`ru`).
 [deepseek_conf](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/deepseekconf.md)        
 [photo_conf](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/photoconf.md)      
 [video_conf](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/videoconf.md)      
-[audio_conf](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/audioconf.md)      
+[audio_conf](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/audioconf.md)
 
 ## Command
 

@@ -48,5 +48,6 @@
   "save_audio_success": "保存语音成功，语音文件地址:{{.filename}}",
   "audio_create_prompt": "请说下面的内容: {{.content}}",
   "talk_param_error": "交谈参数不全",
-  "bot_talking": "机器人正在交谈中"
+  "bot_talking": "机器人正在交谈中",
+  "audio_rec_prompt": "获取语音中的内容，只返回内容"
 }
