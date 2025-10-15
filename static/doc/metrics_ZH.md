@@ -193,8 +193,9 @@
 * API 调用次数与耗时；
 * HTTP 请求与错误率；
 * App 请求统计；
-* MCP 内部调用性能。
-
+* MCP 内部调用性能。      
+![image](https://github.com/user-attachments/assets/536daa93-34ee-4a95-b13f-1ba66a0f87a4)
+![image](https://github.com/user-attachments/assets/96b000a2-550b-4fe8-910b-1bd825ff667c)
 ---
 
 ### 2️⃣ Grafana 导入步骤

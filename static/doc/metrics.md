@@ -194,7 +194,10 @@ It includes visualizations for:
 * API call count and latency
 * HTTP traffic and error rate
 * App-level traffic
-* MCP internal performance metrics
+* MCP internal performance metrics      
+![image](https://github.com/user-attachments/assets/536daa93-34ee-4a95-b13f-1ba66a0f87a4)
+![image](https://github.com/user-attachments/assets/96b000a2-550b-4fe8-910b-1bd825ff667c)
+
 
 ---
 
