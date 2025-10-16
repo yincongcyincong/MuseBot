@@ -13,6 +13,7 @@ import (
 	"github.com/yincongcyincong/MuseBot/conf"
 	"github.com/yincongcyincong/MuseBot/i18n"
 	"github.com/yincongcyincong/MuseBot/logger"
+	"github.com/yincongcyincong/MuseBot/metrics"
 	"github.com/yincongcyincong/MuseBot/param"
 	"github.com/yincongcyincong/MuseBot/utils"
 )
@@ -117,7 +118,11 @@ func GenerateAliyunImg(ctx context.Context, prompt string, imageContent []byte) 
 	req.Header.Set("Authorization", "Bearer "+*conf.BaseConfInfo.AliyunToken)
 	
 	client := utils.GetLLMProxyClient()
+	start := time.Now()
+	metrics.APIRequestCount.WithLabelValues(model).Inc()
+	
 	resp, err := client.Do(req)
+	metrics.APIRequestDuration.WithLabelValues(model).Observe(time.Since(start).Seconds())
 	if err != nil {
 		logger.ErrorCtx(ctx, "create image fail", "err", err)
 		return "", 0, err
@@ -208,6 +213,12 @@ func GenerateAliyunVideo(ctx context.Context, prompt string, image []byte) (stri
 	req.Header.Set("X-DashScope-Async", "enable")
 	
 	client := utils.GetLLMProxyClient()
+	start := time.Now()
+	metrics.APIRequestCount.WithLabelValues(model).Inc()
+	defer func() {
+		metrics.APIRequestDuration.WithLabelValues(model).Observe(time.Since(start).Seconds())
+	}()
+	
 	resp, err := client.Do(req)
 	if err != nil {
 		return "", 0, err
@@ -298,7 +309,11 @@ func GenerateAliyunText(ctx context.Context, audioContent []byte) (string, int, 
 	req.Header.Set("Content-Type", "application/json")
 	
 	client := utils.GetLLMProxyClient()
+	start := time.Now()
+	metrics.APIRequestCount.WithLabelValues(*conf.AudioConfInfo.AliyunAudioRecModel).Inc()
 	resp, err := client.Do(req)
+	
+	metrics.APIRequestDuration.WithLabelValues(*conf.AudioConfInfo.AliyunAudioRecModel).Observe(time.Since(start).Seconds())
 	if err != nil {
 		return "", 0, fmt.Errorf("request failed: %w", err)
 	}
@@ -368,7 +383,10 @@ func AliyunTTS(ctx context.Context, text, encoding string) ([]byte, int, int, er
 	req.Header.Set("Content-Type", "application/json")
 	
 	client := utils.GetLLMProxyClient()
+	start := time.Now()
+	metrics.APIRequestCount.WithLabelValues(*conf.AudioConfInfo.AliyunAudioModel).Inc()
 	resp, err := client.Do(req)
+	metrics.APIRequestDuration.WithLabelValues(*conf.AudioConfInfo.AliyunAudioModel).Observe(time.Since(start).Seconds())
 	if err != nil {
 		return nil, 0, 0, fmt.Errorf("request error: %w", err)
 	}

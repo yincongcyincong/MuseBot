@@ -109,18 +109,18 @@ func NewLLM(opts ...Option) *LLM {
 	}
 	
 	switch *conf.BaseConfInfo.Type {
-	case param.DeepSeek:
+	case param.DeepSeek, param.Ollama:
 		l.LLMClient = &DeepseekReq{
 			ToolCall:           []godeepseek.ToolCall{},
 			ToolMessage:        []godeepseek.ChatCompletionMessage{},
 			CurrentToolMessage: []godeepseek.ChatCompletionMessage{},
 		}
-	case param.Ollama:
-		l.LLMClient = &OllamaDeepseekReq{
-			ToolCall:           []godeepseek.ToolCall{},
-			ToolMessage:        []godeepseek.ChatCompletionMessage{},
-			CurrentToolMessage: []godeepseek.ChatCompletionMessage{},
-		}
+	//case param.Ollama:
+	//	l.LLMClient = &OllamaDeepseekReq{
+	//		ToolCall:           []godeepseek.ToolCall{},
+	//		ToolMessage:        []godeepseek.ChatCompletionMessage{},
+	//		CurrentToolMessage: []godeepseek.ChatCompletionMessage{},
+	//	}
 	case param.Gemini:
 		l.LLMClient = &GeminiReq{
 			ToolCall:           []*genai.FunctionCall{},
