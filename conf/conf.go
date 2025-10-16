@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
+	
 	"github.com/yincongcyincong/MuseBot/logger"
 	"github.com/yincongcyincong/MuseBot/param"
 )
@@ -16,7 +16,7 @@ import (
 type BaseConf struct {
 	StartTime     int64  `json:"-"`
 	SpecialLLMUrl string `json:"-"`
-
+	
 	TelegramBotToken        *string `json:"telegram_bot_token"`
 	DiscordBotToken         *string `json:"discord_bot_token"`
 	SlackBotToken           *string `json:"slack_bot_token"`
@@ -38,7 +38,7 @@ type BaseConf struct {
 	WechatActive            *bool   `json:"wechat_active"`
 	QQAppID                 *string `json:"qq_app_id"`
 	QQAppSecret             *string `json:"qq_app_secret"`
-
+	
 	DeepseekToken   *string `json:"deepseek_token"`
 	OpenAIToken     *string `json:"openai_token"`
 	GeminiToken     *string `json:"gemini_token"`
@@ -48,7 +48,7 @@ type BaseConf struct {
 	AliyunToken     *string `json:"aliyun_token"`
 	ErnieAK         *string `json:"ernie_ak"`
 	ErnieSK         *string `json:"ernie_sk"`
-
+	
 	BotName      *string `json:"bot_name"`
 	Type         *string `json:"type"`
 	MediaType    *string `json:"media_type"`
@@ -66,11 +66,11 @@ type BaseConf struct {
 	UseTools     *bool   `json:"use_tools"`
 	MaxQAPair    *int    `json:"max_qa_pari"`
 	Character    *string `json:"character"`
-
+	
 	CrtFile *string `json:"crt_file"`
 	KeyFile *string `json:"key_file"`
 	CaFile  *string `json:"ca_file"`
-
+	
 	AllowedUserIds  map[string]bool `json:"allowed_user_ids"`
 	AllowedGroupIds map[string]bool `json:"allowed_group_ids"`
 	AdminUserIds    map[string]bool `json:"admin_user_ids"`
@@ -103,7 +103,7 @@ func InitConf() {
 	BaseConfInfo.WechatActive = flag.Bool("wechat_active", false, "Wechat active")
 	BaseConfInfo.QQAppID = flag.String("qq_app_id", "", "QQ app id")
 	BaseConfInfo.QQAppSecret = flag.String("qq_app_secret", "", "QQ app secret")
-
+	
 	BaseConfInfo.DeepseekToken = flag.String("deepseek_token", "", "deepseek auth token")
 	BaseConfInfo.OpenAIToken = flag.String("openai_token", "", "openai auth token")
 	BaseConfInfo.GeminiToken = flag.String("gemini_token", "", "gemini auth token")
@@ -115,7 +115,7 @@ func InitConf() {
 	BaseConfInfo.ErnieSK = flag.String("ernie_sk", "", "ernie sk")
 	BaseConfInfo.VolcAK = flag.String("volc_ak", "", "volc ak")
 	BaseConfInfo.VolcSK = flag.String("volc_sk", "", "volc sk")
-
+	
 	BaseConfInfo.BotName = flag.String("bot_name", "MuseBot"+strconv.Itoa(rand.Int()), "bot name")
 	BaseConfInfo.CustomUrl = flag.String("custom_url", "", "deepseek custom url")
 	BaseConfInfo.Type = flag.String("type", "deepseek", "llm type: deepseek gemini openai openrouter vol")
@@ -131,19 +131,19 @@ func InitConf() {
 	BaseConfInfo.UseTools = flag.Bool("use_tools", false, "use function tools")
 	BaseConfInfo.MaxQAPair = flag.Int("max_qa_pari", 100, "max qa pair")
 	BaseConfInfo.Character = flag.String("character", "", "ai's character")
-
+	
 	BaseConfInfo.CrtFile = flag.String("crt_file", "", "public key file")
 	BaseConfInfo.KeyFile = flag.String("key_file", "", "secret key file")
 	BaseConfInfo.CaFile = flag.String("ca_file", "", "ca file")
-
+	
 	adminUserIds := flag.String("admin_user_ids", "", "admin user ids")
 	allowedUserIds := flag.String("allowed_user_ids", "", "allowed user ids")
 	allowedGroupIds := flag.String("allowed_group_ids", "", "allowed group ids")
-
+	
 	BaseConfInfo.AllowedUserIds = make(map[string]bool)
 	BaseConfInfo.AllowedGroupIds = make(map[string]bool)
 	BaseConfInfo.AdminUserIds = make(map[string]bool)
-
+	
 	InitDeepseekConf()
 	InitPhotoConf()
 	InitVideoConf()
@@ -151,240 +151,240 @@ func InitConf() {
 	InitToolsConf()
 	InitRagConf()
 	InitRegisterConf()
-
+	
 	flag.CommandLine.Init(os.Args[0], flag.ContinueOnError)
 	flag.Parse()
-
+	
 	if os.Getenv("TELEGRAM_BOT_TOKEN") != "" {
 		*BaseConfInfo.TelegramBotToken = os.Getenv("TELEGRAM_BOT_TOKEN")
 	}
-
+	
 	if os.Getenv("DISCORD_BOT_TOKEN") != "" {
 		*BaseConfInfo.DiscordBotToken = os.Getenv("DISCORD_BOT_TOKEN")
 	}
-
+	
 	if os.Getenv("SLACK_BOT_TOKEN") != "" {
 		*BaseConfInfo.SlackBotToken = os.Getenv("SLACK_BOT_TOKEN")
 	}
-
+	
 	if os.Getenv("SLACK_APP_TOKEN") != "" {
 		*BaseConfInfo.SlackAppToken = os.Getenv("SLACK_APP_TOKEN")
 	}
-
+	
 	if os.Getenv("LARK_APP_ID") != "" {
 		*BaseConfInfo.LarkAPPID = os.Getenv("LARK_APP_ID")
 	}
-
+	
 	if os.Getenv("LARK_APP_SECRET") != "" {
 		*BaseConfInfo.LarkAppSecret = os.Getenv("LARK_APP_SECRET")
 	}
-
+	
 	if os.Getenv("DING_CLIENT_ID") != "" {
 		*BaseConfInfo.DingClientId = os.Getenv("DING_CLIENT_ID")
 	}
-
+	
 	if os.Getenv("DING_CLIENT_SECRET") != "" {
 		*BaseConfInfo.DingClientSecret = os.Getenv("DING_CLIENT_SECRET")
 	}
-
+	
 	if os.Getenv("DING_TEMPLATE_ID") != "" {
 		*BaseConfInfo.DingTemplateId = os.Getenv("DING_TEMPLATE_ID")
 	}
-
+	
 	if os.Getenv("COM_WECHAT_TOKEN") != "" {
 		*BaseConfInfo.ComWechatToken = os.Getenv("COM_WECHAT_TOKEN")
 	}
-
+	
 	if os.Getenv("WECHAT_TOKEN") != "" {
 		*BaseConfInfo.WechatToken = os.Getenv("WECHAT_TOKEN")
 	}
-
+	
 	if os.Getenv("WECHAT_APP_ID") != "" {
 		*BaseConfInfo.WechatAppID = os.Getenv("WECHAT_APP_ID")
 	}
-
+	
 	if os.Getenv("WECHAT_APP_SECRET") != "" {
 		*BaseConfInfo.WechatAppSecret = os.Getenv("WECHAT_APP_SECRET")
 	}
-
+	
 	if os.Getenv("WECHAT_ENCODING_AES_KEY") != "" {
 		*BaseConfInfo.WechatEncodingAESKey = os.Getenv("WECHAT_ENCODING_AES_KEY")
 	}
-
+	
 	if os.Getenv("WECHAT_ACTIVE") != "" {
 		*BaseConfInfo.WechatActive = os.Getenv("WECHAT_ACTIVE") == "true"
 	}
-
+	
 	if os.Getenv("COM_WECHAT_ENCODING_AES_KEY") != "" {
 		*BaseConfInfo.ComWechatEncodingAESKey = os.Getenv("COM_WECHAT_ENCODING_AES_KEY")
 	}
-
+	
 	if os.Getenv("COM_WECHAT_CORP_ID") != "" {
 		*BaseConfInfo.ComWechatCorpID = os.Getenv("COM_WECHAT_CORP_ID")
 	}
-
+	
 	if os.Getenv("COM_WECHAT_SECRET") != "" {
 		*BaseConfInfo.ComWechatSecret = os.Getenv("COM_WECHAT_SECRET")
 	}
-
+	
 	if os.Getenv("COM_WECHAT_AGENT_ID") != "" {
 		*BaseConfInfo.ComWechatAgentID = os.Getenv("COM_WECHAT_AGENT_ID")
 	}
-
+	
 	if os.Getenv("QQ_APP_ID") != "" {
 		*BaseConfInfo.QQAppID = os.Getenv("QQ_APP_ID")
 	}
-
+	
 	if os.Getenv("QQ_APP_SECRET") != "" {
 		*BaseConfInfo.QQAppSecret = os.Getenv("QQ_APP_SECRET")
 	}
-
+	
 	if os.Getenv("DEEPSEEK_TOKEN") != "" {
 		*BaseConfInfo.DeepseekToken = os.Getenv("DEEPSEEK_TOKEN")
 	}
-
+	
 	if os.Getenv("CUSTOM_URL") != "" {
 		*BaseConfInfo.CustomUrl = os.Getenv("CUSTOM_URL")
 	}
-
+	
 	if os.Getenv("BOT_NAME") != "" {
 		*BaseConfInfo.BotName = os.Getenv("BOT_NAME")
 	}
-
+	
 	if os.Getenv("TYPE") != "" {
 		*BaseConfInfo.Type = os.Getenv("TYPE")
 	}
-
+	
 	if os.Getenv("VOLC_AK") != "" {
 		*BaseConfInfo.VolcAK = os.Getenv("VOLC_AK")
 	}
-
+	
 	if os.Getenv("VOLC_SK") != "" {
 		*BaseConfInfo.VolcSK = os.Getenv("VOLC_SK")
 	}
-
+	
 	if os.Getenv("DB_TYPE") != "" {
 		*BaseConfInfo.DBType = os.Getenv("DB_TYPE")
 	}
-
+	
 	if os.Getenv("DB_CONF") != "" {
 		*BaseConfInfo.DBConf = os.Getenv("DB_CONF")
 	}
-
+	
 	if os.Getenv("ALLOWED_USER_IDS") != "" {
 		*allowedUserIds = os.Getenv("ALLOWED_USER_IDS")
 	}
-
+	
 	if os.Getenv("ALLOWED_GROUP_IDS") != "" {
 		*allowedGroupIds = os.Getenv("ALLOWED_GROUP_IDS")
 	}
-
+	
 	if os.Getenv("LLM_PROXY") != "" {
 		*BaseConfInfo.LLMProxy = os.Getenv("LLM_PROXY")
 	}
-
+	
 	if os.Getenv("ROBOT_PROXY") != "" {
 		*BaseConfInfo.RobotProxy = os.Getenv("ROBOT_PROXY")
 	}
-
+	
 	if os.Getenv("LANG") != "" {
 		*BaseConfInfo.Lang = os.Getenv("LANG")
 	}
-
+	
 	if os.Getenv("TOKEN_PER_USER") != "" {
 		*BaseConfInfo.TokenPerUser, _ = strconv.Atoi(os.Getenv("TOKEN_PER_USER"))
 	}
-
+	
 	if os.Getenv("ADMIN_USER_IDS") != "" {
 		*adminUserIds = os.Getenv("ADMIN_USER_IDS")
 	}
-
+	
 	if os.Getenv("MAX_USER_CHAT") != "" {
 		*BaseConfInfo.MaxUserChat, _ = strconv.Atoi(os.Getenv("MAX_USER_CHAT"))
 	}
-
+	
 	if os.Getenv("HTTP_HOST") != "" {
 		*BaseConfInfo.HTTPHost = os.Getenv("HTTP_HOST")
 	}
-
+	
 	if os.Getenv("USE_TOOLS") == "false" {
 		*BaseConfInfo.UseTools = false
 	}
-
+	
 	if os.Getenv("OPENAI_TOKEN") != "" {
 		*BaseConfInfo.OpenAIToken = os.Getenv("OPENAI_TOKEN")
 	}
-
+	
 	if os.Getenv("GEMINI_TOKEN") != "" {
 		*BaseConfInfo.GeminiToken = os.Getenv("GEMINI_TOKEN")
 	}
-
+	
 	if os.Getenv("VOL_TOKEN") != "" {
 		*BaseConfInfo.VolToken = os.Getenv("VOL_TOKEN")
 	}
-
+	
 	if os.Getenv("ALIYUN_TOKEN") != "" {
 		*BaseConfInfo.AliyunToken = os.Getenv("ALIYUN_TOKEN")
 	}
-
+	
 	if os.Getenv("ERNIE_AK") != "" {
 		*BaseConfInfo.ErnieAK = os.Getenv("ERNIE_AK")
 	}
-
+	
 	if os.Getenv("ERNIE_SK") != "" {
 		*BaseConfInfo.ErnieSK = os.Getenv("ERNIE_SK")
 	}
-
+	
 	if os.Getenv("OPEN_ROUTER_TOKEN") != "" {
 		*BaseConfInfo.OpenRouterToken = os.Getenv("OPEN_ROUTER_TOKEN")
 	}
-
+	
 	if os.Getenv("AI_302_TOKEN") != "" {
 		*BaseConfInfo.AI302Token = os.Getenv("AI_302_TOKEN")
 	}
-
+	
 	if os.Getenv("MAX_QA_PAIR") != "" {
 		*BaseConfInfo.MaxQAPair, _ = strconv.Atoi(os.Getenv("MAX_QA_PAIR"))
 	}
-
+	
 	if os.Getenv("CHARACTER") != "" {
 		*BaseConfInfo.Character = os.Getenv("CHARACTER")
 	}
-
+	
 	if os.Getenv("CRT_FILE") != "" {
 		*BaseConfInfo.CrtFile = os.Getenv("CRT_FILE")
 	}
-
+	
 	if os.Getenv("KEY_FILE") != "" {
 		*BaseConfInfo.KeyFile = os.Getenv("KEY_FILE")
 	}
-
+	
 	if os.Getenv("CA_FILE") != "" {
 		*BaseConfInfo.CaFile = os.Getenv("CA_FILE")
 	}
-
+	
 	if os.Getenv("MEDIA_TYPE") != "" {
 		*BaseConfInfo.MediaType = os.Getenv("MEDIA_TYPE")
 	}
-
+	
 	for _, userIdStr := range strings.Split(*allowedUserIds, ",") {
 		if userIdStr == "" {
 			continue
 		}
 		BaseConfInfo.AllowedUserIds[userIdStr] = true
 	}
-
+	
 	for _, groupIdStr := range strings.Split(*allowedGroupIds, ",") {
 		BaseConfInfo.AllowedGroupIds[groupIdStr] = true
 	}
-
+	
 	for _, userIdStr := range strings.Split(*adminUserIds, ",") {
 		if userIdStr == "" {
 			continue
 		}
 		BaseConfInfo.AdminUserIds[userIdStr] = true
 	}
-
+	
 	logger.Info("CONF", "TelegramBotToken", *BaseConfInfo.TelegramBotToken)
 	logger.Info("CONF", "DiscordBotToken", *BaseConfInfo.DiscordBotToken)
 	logger.Info("CONF", "SlackBotToken", *BaseConfInfo.SlackBotToken)
@@ -436,7 +436,7 @@ func InitConf() {
 	logger.Info("CONF", "MediaType", *BaseConfInfo.MediaType)
 	logger.Info("CONF", "BotName", *BaseConfInfo.BotName)
 	logger.Info("CONF", "MaxQAPair", *BaseConfInfo.MaxQAPair)
-
+	
 	EnvAudioConf()
 	EnvRagConf()
 	EnvDeepseekConf()
@@ -444,14 +444,16 @@ func InitConf() {
 	EnvToolsConf()
 	EnvVideoConf()
 	EnvRegisterConf()
-
+	
 	switch *BaseConfInfo.Type {
 	case param.AI302:
 		BaseConfInfo.SpecialLLMUrl = "https://api.302.ai/"
 	case param.Aliyun:
 		BaseConfInfo.SpecialLLMUrl = "https://dashscope.aliyuncs.com/compatible-mode/v1"
+	case param.Ollama:
+		BaseConfInfo.SpecialLLMUrl = "http://localhost:11434/"
 	}
-
+	
 }
 
 func GetAbsPath(relPath string) string {

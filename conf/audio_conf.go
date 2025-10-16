@@ -3,6 +3,7 @@ package conf
 import (
 	"flag"
 	"os"
+	"strconv"
 	
 	"github.com/yincongcyincong/MuseBot/logger"
 )
@@ -97,6 +98,38 @@ func EnvAudioConf() {
 	
 	if os.Getenv("TTS_TYPE") != "" {
 		*AudioConfInfo.TTSType = os.Getenv("TTS_TYPE")
+	}
+	
+	if os.Getenv("VOL_END_SMOOTH_WINDOW") != "" {
+		*AudioConfInfo.VolEndSmoothWindow, _ = strconv.Atoi(os.Getenv("VOL_END_SMOOTH_WINDOW"))
+	}
+	
+	if os.Getenv("VOL_TTS_SPEAKER") != "" {
+		*AudioConfInfo.VolTTSSpeaker = os.Getenv("VOL_TTS_SPEAKER")
+	}
+	
+	if os.Getenv("VOL_BOT_NAME") != "" {
+		*AudioConfInfo.VolBotName = os.Getenv("VOL_BOT_NAME")
+	}
+	
+	if os.Getenv("VOL_SYSTEM_ROLE") != "" {
+		*AudioConfInfo.VolSystemRole = os.Getenv("VOL_SYSTEM_ROLE")
+	}
+	
+	if os.Getenv("VOL_SPEAKING_STYLE") != "" {
+		*AudioConfInfo.VolSpeakingStyle = os.Getenv("VOL_SPEAKING_STYLE")
+	}
+	
+	if os.Getenv("ALIYUN_AUDIO_MODEL") != "" {
+		*AudioConfInfo.AliyunAudioModel = os.Getenv("ALIYUN_AUDIO_MODEL")
+	}
+	
+	if os.Getenv("ALIYUN_AUDIO_VOICE") != "" {
+		*AudioConfInfo.AliyunAudioVoice = os.Getenv("ALIYUN_AUDIO_VOICE")
+	}
+	
+	if os.Getenv("ALIYUN_AUDIO_REC_MODEL") != "" {
+		*AudioConfInfo.AliyunAudioRecModel = os.Getenv("ALIYUN_AUDIO_REC_MODEL")
 	}
 	
 	logger.Info("AUDIO_CONF", "AudioAppID", *AudioConfInfo.VolAudioAppID)

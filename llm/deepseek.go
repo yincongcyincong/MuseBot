@@ -1,16 +1,20 @@
 package llm
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
+	"net/http"
 	"strings"
 	"time"
 	"unicode"
 	
 	"github.com/cohesion-org/deepseek-go"
 	"github.com/cohesion-org/deepseek-go/constants"
+	deepseekUtils "github.com/cohesion-org/deepseek-go/utils"
 	"github.com/yincongcyincong/MuseBot/conf"
 	"github.com/yincongcyincong/MuseBot/db"
 	"github.com/yincongcyincong/MuseBot/logger"
@@ -28,14 +32,24 @@ type DeepseekReq struct {
 }
 
 func (d *DeepseekReq) GetModel(l *LLM) {
-	l.Model = deepseek.DeepSeekChat
 	userInfo, err := db.GetUserByID(l.UserId)
 	if err != nil {
 		logger.ErrorCtx(l.Ctx, "Error getting user info", "err", err)
 	}
-	if userInfo != nil && userInfo.Mode != "" && param.DeepseekModels[userInfo.Mode] {
-		logger.InfoCtx(l.Ctx, "User info", "userID", userInfo.UserId, "mode", userInfo.Mode)
-		l.Model = userInfo.Mode
+	
+	switch *conf.BaseConfInfo.Type {
+	case param.DeepSeek:
+		l.Model = deepseek.DeepSeekChat
+		if userInfo != nil && userInfo.Mode != "" && param.DeepseekModels[userInfo.Mode] {
+			logger.InfoCtx(l.Ctx, "User info", "userID", userInfo.UserId, "mode", userInfo.Mode)
+			l.Model = userInfo.Mode
+		}
+	case param.Ollama:
+		l.Model = "deepseek-r1"
+		if userInfo != nil && userInfo.Mode != "" {
+			logger.InfoCtx(l.Ctx, "User info", "userID", userInfo.UserId, "mode", userInfo.Mode)
+			l.Model = userInfo.Mode
+		}
 	}
 }
 
@@ -46,18 +60,7 @@ func (d *DeepseekReq) Send(ctx context.Context, l *LLM) error {
 	start := time.Now()
 	
 	// set deepseek proxy
-	
-	httpClient := utils.GetLLMProxyClient()
-	client, err := deepseek.NewClientWithOptions(*conf.BaseConfInfo.DeepseekToken, deepseek.WithHTTPClient(httpClient))
-	if err != nil {
-		logger.ErrorCtx(l.Ctx, "Error creating deepseek client", "err", err)
-		return err
-	}
-	
-	if *conf.BaseConfInfo.CustomUrl != "" {
-		client.BaseURL = *conf.BaseConfInfo.CustomUrl
-	}
-	
+	client := GetDeepseekClient(ctx)
 	request := &deepseek.StreamChatCompletionRequest{
 		Model:  l.Model,
 		Stream: true,
@@ -77,7 +80,7 @@ func (d *DeepseekReq) Send(ctx context.Context, l *LLM) error {
 	
 	request.Messages = d.DeepseekMsgs
 	
-	stream, err := client.CreateChatCompletionStream(ctx, request)
+	stream, err := requestDeepseek(ctx, client, request)
 	if err != nil {
 		logger.ErrorCtx(l.Ctx, "ChatCompletionStream error", "updateMsgID", l.MsgId, "err", err)
 		return err
@@ -91,7 +94,7 @@ func (d *DeepseekReq) Send(ctx context.Context, l *LLM) error {
 	
 	hasTools := false
 	for {
-		response, err := stream.Recv()
+		response, err := Receive(stream)
 		if errors.Is(err, io.EOF) {
 			logger.InfoCtx(l.Ctx, "Stream finished", "updateMsgID", l.MsgId)
 			break
@@ -183,17 +186,7 @@ func (d *DeepseekReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 	
 	start := time.Now()
 	
-	httpClient := utils.GetLLMProxyClient()
-	client, err := deepseek.NewClientWithOptions(*conf.BaseConfInfo.DeepseekToken, deepseek.WithHTTPClient(httpClient))
-	if err != nil {
-		logger.ErrorCtx(l.Ctx, "Error creating deepseek client", "err", err)
-		return "", err
-	}
-	
-	if *conf.BaseConfInfo.CustomUrl != "" {
-		client.BaseURL = *conf.BaseConfInfo.CustomUrl
-	}
-	
+	client := GetDeepseekClient(ctx)
 	request := &deepseek.ChatCompletionRequest{
 		Model:            l.Model,
 		MaxTokens:        *conf.LLMConfInfo.MaxTokens,
@@ -300,9 +293,32 @@ func (d *DeepseekReq) RequestToolsCall(ctx context.Context, choice deepseek.Stre
 	
 }
 
+func GetDeepseekClient(ctx context.Context) *deepseek.Client {
+	httpClient := utils.GetLLMProxyClient()
+	client, err := deepseek.NewClientWithOptions(*conf.BaseConfInfo.DeepseekToken, deepseek.WithHTTPClient(httpClient))
+	if err != nil {
+		logger.ErrorCtx(ctx, "Error creating deepseek client", "err", err)
+		return nil
+	}
+	
+	if *conf.BaseConfInfo.Type == param.Ollama {
+		client.Path = "api/chat"
+	}
+	
+	if conf.BaseConfInfo.SpecialLLMUrl != "" {
+		client.BaseURL = conf.BaseConfInfo.SpecialLLMUrl
+	}
+	
+	if *conf.BaseConfInfo.CustomUrl != "" {
+		client.BaseURL = *conf.BaseConfInfo.CustomUrl
+	}
+	
+	return client
+}
+
 // GetBalanceInfo get balance info
 func GetBalanceInfo(ctx context.Context) *deepseek.BalanceResponse {
-	client := deepseek.NewClient(*conf.BaseConfInfo.DeepseekToken)
+	client := GetDeepseekClient(ctx)
 	balance, err := deepseek.GetBalance(client, ctx)
 	if err != nil {
 		logger.ErrorCtx(ctx, "Error getting balance", "err", err)
@@ -313,4 +329,93 @@ func GetBalanceInfo(ctx context.Context) *deepseek.BalanceResponse {
 	}
 	
 	return balance
+}
+
+type Stream struct {
+	resp   *http.Response
+	reader *bufio.Reader
+}
+
+func requestDeepseek(ctx context.Context, c *deepseek.Client, request *deepseek.StreamChatCompletionRequest) (*Stream, error) {
+	req, err := deepseekUtils.NewRequestBuilder(c.AuthToken).
+		SetBaseURL(c.BaseURL).
+		SetPath(c.Path).
+		SetBodyFromStruct(request).
+		BuildStream(ctx)
+	
+	if err != nil {
+		return nil, fmt.Errorf("error building request: %w", err)
+	}
+	
+	resp, err := c.HTTPClient.Do(req)
+	if resp == nil || resp.StatusCode >= 400 {
+		return nil, fmt.Errorf("error sending request: %w", err)
+	}
+	
+	return &Stream{
+		resp:   resp,
+		reader: bufio.NewReader(resp.Body),
+	}, nil
+}
+
+func Receive(stream *Stream) (*deepseek.StreamChatCompletionResponse, error) {
+	reader := stream.reader
+	
+	for {
+		line, err := reader.ReadString('\n')
+		if err != nil {
+			if err == io.EOF {
+				return nil, io.EOF
+			}
+			return nil, fmt.Errorf("error reading stream: %w", err)
+		}
+		
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		
+		if strings.HasPrefix(line, "data: ") {
+			trimmed := strings.TrimPrefix(line, "data: ")
+			if trimmed == "[DONE]" {
+				return nil, io.EOF
+			}
+			
+			var resp deepseek.StreamChatCompletionResponse
+			if err := json.Unmarshal([]byte(trimmed), &resp); err != nil {
+				return nil, fmt.Errorf("unmarshal error (chatCompletion): %w, raw: %s", err, trimmed)
+			}
+			
+			if resp.Usage == nil {
+				resp.Usage = &deepseek.StreamUsage{}
+			}
+			
+			return &resp, nil
+		}
+		
+		var ollamaResp deepseek.OllamaStreamResponse
+		if err := json.Unmarshal([]byte(line), &ollamaResp); err == nil && ollamaResp.Model != "" {
+			resp := &deepseek.StreamChatCompletionResponse{
+				Model: ollamaResp.Model,
+				Choices: []deepseek.StreamChoices{
+					{
+						Index: 0,
+						Delta: deepseek.StreamDelta{
+							Content: ollamaResp.Message.Content,
+							Role:    ollamaResp.Message.Role,
+						},
+						FinishReason: ollamaResp.DoneReason,
+					},
+				},
+			}
+			if ollamaResp.Done && ollamaResp.Message.Content == "" {
+				return nil, io.EOF
+			}
+			return resp, nil
+		}
+	}
+}
+
+func (s *Stream) Close() {
+	s.resp.Body.Close()
 }

@@ -188,6 +188,14 @@ func EnvPhotoConf() {
 		*PhotoConfInfo.MixRecModel = os.Getenv("MIX_REC_MODEL")
 	}
 	
+	if os.Getenv("ALIYUN_IMAGE_MODEL") != "" {
+		*PhotoConfInfo.AliyunImageModel = os.Getenv("ALIYUN_IMAGE_MODEL")
+	}
+	
+	if os.Getenv("ALIYUN_REC_MODEL") != "" {
+		*PhotoConfInfo.AliyunRecModel = os.Getenv("ALIYUN_REC_MODEL")
+	}
+	
 	logger.Info("PHOTO_CONF", "ReqKey", *PhotoConfInfo.ReqKey)
 	logger.Info("PHOTO_CONF", "ModelVersion", *PhotoConfInfo.ModelVersion)
 	logger.Info("PHOTO_CONF", "ReqScheduleConf", *PhotoConfInfo.ReqScheduleConf)
