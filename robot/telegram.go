@@ -754,7 +754,7 @@ func (t *TelegramRobot) sendForceReply(agentType string) func() {
 }
 
 func (t *TelegramRobot) getPerMsgLen() int {
-	return 3896
+	return 3596
 }
 
 func ForceReply(chatId int64, msgId int, i18MsgId string, bot *tgbotapi.BotAPI) error {
