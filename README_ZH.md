@@ -15,7 +15,7 @@ QQ群：1031411708
 
 ## 🌞 视频
 
-最简单教程：https://www.bilibili.com/video/BV1f9nCzoERb/
+最简单教程：https://www.bilibili.com/video/BV1f9nCzoERb/      
 deepseek： https://www.bilibili.com/video/BV1CB8kzHEJi/    
 gemini： https://www.bilibili.com/video/BV1D4htz4Ekv/    
 chatgpt: https://www.bilibili.com/video/BV1RutxzJEGY/    
