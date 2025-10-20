@@ -56,9 +56,9 @@ func ListBots(offset, limit int, address string) ([]*Bot, int, error) {
 		args  []interface{}
 		query string
 	)
-
+	
 	bots := make([]*Bot, 0)
-
+	
 	if address != "" {
 		query = `SELECT id, address, name, crt_file, key_file, ca_file, create_time, update_time, is_deleted, command
 		         FROM bot
@@ -72,13 +72,13 @@ func ListBots(offset, limit int, address string) ([]*Bot, int, error) {
 		         LIMIT ? OFFSET ?`
 		args = append(args, limit, offset)
 	}
-
+	
 	rows, err = DB.Query(query, args...)
 	if err != nil {
 		return nil, 0, err
 	}
 	defer rows.Close()
-
+	
 	for rows.Next() {
 		var b Bot
 		if err := rows.Scan(&b.ID, &b.Address, &b.Name, &b.CrtFile, &b.KeyFile, &b.CaFile, &b.CreateTime, &b.UpdateTime, &b.IsDeleted, &b.Command); err != nil {
@@ -86,7 +86,7 @@ func ListBots(offset, limit int, address string) ([]*Bot, int, error) {
 		}
 		bots = append(bots, &b)
 	}
-
+	
 	var total int
 	if address != "" {
 		err = DB.QueryRow(`SELECT COUNT(*) FROM bot WHERE is_deleted = 0 AND address LIKE ?`, "%"+address+"%").Scan(&total)
@@ -96,6 +96,11 @@ func ListBots(offset, limit int, address string) ([]*Bot, int, error) {
 	if err != nil {
 		return nil, 0, err
 	}
-
+	
 	return bots, total, nil
+}
+
+func DeleteAllBotData() error {
+	_, err := DB.Exec(`DELETE FROM bot `)
+	return err
 }

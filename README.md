@@ -15,7 +15,7 @@ more natural and dynamic.
 
 ## Usage Video
 
-easy usage: https://www.youtube.com/watch?v=4UHoKRMfNZg
+easy usage: https://www.youtube.com/watch?v=4UHoKRMfNZg     
 deepseek: https://www.youtube.com/watch?v=kPtNdLjKVn0   
 gemini: https://www.youtube.com/watch?v=7mV9RYvdE6I    
 chatgpt: https://www.youtube.com/watch?v=G_DZYMvd5Ug
