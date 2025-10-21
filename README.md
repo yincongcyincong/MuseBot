@@ -22,12 +22,12 @@ chatgpt: https://www.youtube.com/watch?v=G_DZYMvd5Ug
 
 ## 🚀 Features
 
-- 🤖 **AI Responses**: Uses DeepSeek API for chatbot replies.
+- 🤖 **AI Responses**: Uses LLM API for chatbot replies.
 - ⏳ **Streaming Output**: Sends responses in real-time to improve user experience.
 - 🏗 **Easy Deployment**: Run locally or deploy to a cloud server.
-- 👀 **Identify Image**: use image to communicate with deepseek,
+- 👀 **Identify Image**: use image to communicate with LLM,
   see [doc](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/imageconf.md).
-- 🎺 **Support Voice**: use voice to communicate with deepseek,
+- 🎺 **Support Voice**: use voice to communicate with LLM,
   see [doc](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/audioconf.md).
 - 🐂 **Function Call**: transform mcp protocol to function call,
   see [doc](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/functioncall.md).

@@ -890,7 +890,8 @@ func Log(w http.ResponseWriter, r *http.Request) {
 		utils.Failure(ctx, w, r, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
 		return
 	}
-	// 设置 SSE 响应头
+	
+	typ := r.URL.Query().Get("type")
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
@@ -901,7 +902,7 @@ func Log(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	resp, err := adminUtils.GetCrtClient(botInfo).Do(GetSSERequest(ctx, http.MethodGet,
-		strings.TrimSuffix(botInfo.Address, "/")+"/log",
+		strings.TrimSuffix(botInfo.Address, "/")+"/log?type="+typ,
 		bytes.NewBuffer(nil)))
 	if err != nil {
 		logger.ErrorCtx(ctx, "get bot conf error", "err", err)

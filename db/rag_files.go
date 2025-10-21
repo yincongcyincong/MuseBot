@@ -1,6 +1,7 @@
 package db
 
 import (
+	"fmt"
 	"time"
 	
 	"github.com/yincongcyincong/MuseBot/conf"
@@ -98,4 +99,67 @@ func UpdateVectorIdByFileMd5(fileMd5, vectorId string) error {
 	query := `UPDATE rag_files set vector_id = ? WHERE file_md5 = ? and from_bot = ?`
 	_, err := DB.Exec(query, vectorId, fileMd5, *conf.BaseConfInfo.BotName)
 	return err
+}
+
+func GetRagFilesByPage(page, pageSize int, name string) ([]RagFiles, error) {
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 {
+		pageSize = 10
+	}
+	offset := (page - 1) * pageSize
+	
+	var (
+		whereSQL = "WHERE is_deleted = 1" // ✅ 默认只查 is_deleted = 1 的数据
+		args     []interface{}
+	)
+	
+	if name != "" {
+		whereSQL += " AND file_name LIKE ?" // ✅ 追加模糊匹配
+		args = append(args, "%"+name+"%")
+	}
+	
+	// 查询数据
+	listSQL := fmt.Sprintf(`
+		SELECT id, file_name, file_md5, vector_id, update_time, create_time, is_deleted
+		FROM rag_files %s
+		ORDER BY id DESC
+		LIMIT ? OFFSET ?`, whereSQL)
+	
+	args = append(args, pageSize, offset)
+	
+	rows, err := DB.Query(listSQL, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	
+	var files []RagFiles
+	for rows.Next() {
+		var f RagFiles
+		if err := rows.Scan(&f.ID, &f.FileName, &f.FileMd5, &f.VectorId, &f.UpdateTime, &f.CreateTime, &f.IsDeleted); err != nil {
+			return nil, err
+		}
+		files = append(files, f)
+	}
+	
+	return files, nil
+}
+
+func GetRagFilesCount(name string) (int, error) {
+	whereSQL := "WHERE is_deleted = 0"
+	args := []interface{}{}
+	
+	if name != "" {
+		whereSQL += " AND file_name LIKE ?"
+		args = append(args, "%"+name+"%")
+	}
+	
+	countSQL := fmt.Sprintf("SELECT COUNT(*) FROM rag_files %s", whereSQL)
+	
+	var count int
+	err := DB.QueryRow(countSQL, args...).Scan(&count)
+	
+	return count, err
 }

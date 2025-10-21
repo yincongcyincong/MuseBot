@@ -29,8 +29,9 @@ func InitConfig() {
 	BaseConfInfo.AdminPort = flag.String("admin_port", "18080", "admin port")
 	BaseConfInfo.CheckBotSec = flag.Int("check_bot_sec", 10, "check bot interval")
 	
-	flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
 	InitRegisterConf()
+	
+	flag.CommandLine.Init(os.Args[0], flag.ContinueOnError)
 	flag.Parse()
 	
 	if os.Getenv("DB_TYPE") != "" {
