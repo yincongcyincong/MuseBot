@@ -2,6 +2,7 @@ package http
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"os/exec"
@@ -117,33 +118,42 @@ func Restart(w http.ResponseWriter, r *http.Request) {
 func Log(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.Header().Set("Transfer-Encoding", "chunked")
+	typ := r.URL.Query().Get("type")
 	
-	t, _ := tail.TailFile(utils.GetAbsPath("log/muse_bot.log"), tail.Config{
+	maxLines := 5000
+	if typ != "" {
+		maxLines = 100000
+	}
+	
+	filePath := utils.GetAbsPath("log/muse_bot.log")
+	startFrom, err := utils.GetTailStartOffset(filePath, maxLines)
+	if err != nil {
+		http.Error(w, "Failed to read log file", http.StatusInternalServerError)
+		return
+	}
+	
+	t, err := tail.TailFile(filePath, tail.Config{
 		Follow:    true,
-		ReOpen:    true, // 日志切割后自动重新打开
+		ReOpen:    true,
 		MustExist: true,
 		Poll:      true,
+		Location:  &tail.SeekInfo{Offset: startFrom, Whence: io.SeekStart},
 	})
+	if err != nil {
+		http.Error(w, "Failed to tail log file", http.StatusInternalServerError)
+		return
+	}
 	
 	flusher := w.(http.Flusher)
-	
-	// 用 slice 维护最近 1000 行
-	const maxLines = 1000
-	var buffer []string
 	
 	for line := range t.Lines {
 		select {
 		case <-r.Context().Done():
 			return
 		default:
-			// 存入 buffer
-			if len(buffer) >= maxLines {
-				// 丢掉最旧的一条
-				buffer = buffer[1:]
+			if typ != "" && !strings.Contains(line.Text, typ) {
+				continue
 			}
-			buffer = append(buffer, line.Text)
-			
-			// 只输出 buffer 的最后一条（避免每次都全量输出）
 			fmt.Fprintln(w, line.Text)
 			flusher.Flush()
 		}

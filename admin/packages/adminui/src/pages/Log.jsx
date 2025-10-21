@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 
 function BotLogPage() {
     const [botId, setBotId] = useState(null);
+    const [typ, setTyp] = useState("");
     const [logs, setLogs] = useState([]);
     const [toast, setToast] = useState({ show: false, message: "", type: "error" });
     const eventSourceRef = useRef(null);
@@ -25,7 +26,8 @@ function BotLogPage() {
             eventSourceRef.current.close();
         }
 
-        const url = `http://127.0.0.1:18080/bot/log?id=${botId}`;
+        // ✅ 将 typ 参数加入请求 URL
+        const url = `http://127.0.0.1:18080/bot/log?id=${botId}&type=${typ}`;
         const es = new EventSource(url);
 
         es.onmessage = (event) => {
@@ -48,7 +50,7 @@ function BotLogPage() {
         hasFirstScroll.current = false;
 
         return () => es.close();
-    }, [botId]);
+    }, [botId, typ]);
 
     // 用户滚动事件
     const handleScroll = () => {
@@ -76,7 +78,6 @@ function BotLogPage() {
         };
 
         if (shouldAutoScroll.current || !hasFirstScroll.current) {
-            // 用两层 requestAnimationFrame 保证 DOM 渲染完成
             requestAnimationFrame(() => {
                 requestAnimationFrame(scrollToBottom);
                 hasFirstScroll.current = true;
@@ -132,19 +133,41 @@ function BotLogPage() {
                 <h2 className="text-2xl font-bold text-gray-800">{t("log")}</h2>
             </div>
 
-            {/* BotSelector */}
-            <div className="mb-6 max-w-4xl">
-                <BotSelector
-                    value={botId}
-                    onChange={(bot) => {
-                        setBotId(bot.id);
-                        setLogs([]);
-                        hasFirstScroll.current = false; // 切换 Bot 时重置首次滚动
-                    }}
-                />
+            <div className="flex space-x-4 mb-6 max-w-4xl flex-wrap">
+                <div className="flex-1 min-w-[200px]">
+                    <BotSelector
+                        value={botId}
+                        onChange={(bot) => {
+                            setBotId(bot.id);
+                            setLogs([]);
+                            hasFirstScroll.current = false;
+                        }}
+                    />
+                </div>
+
+                <div className="flex-1 min-w-[200px]">
+                    <label className="block font-medium text-gray-700 mb-1">{t("type")}:</label>
+
+                    <select
+                        id="logType"
+                        className="w-full px-4 py-2 border border-gray-300 rounded shadow-sm focus:outline-none focus:ring focus:border-blue-400"
+                        value={typ}
+                        onChange={(e) => {
+                            const value = e.target.value === "all" ? "" : e.target.value;
+                            setTyp(value);
+                            setLogs([]);
+                        }}
+                    >
+                        <option value="">All</option>
+                        <option value="info">Info</option>
+                        <option value="warn">Warn</option>
+                        <option value="error">Error</option>
+                    </select>
+                </div>
+
             </div>
 
-            {/* 日志展示部分 */}
+
             <div
                 ref={logRef}
                 onScroll={handleScroll}

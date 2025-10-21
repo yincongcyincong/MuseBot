@@ -87,6 +87,8 @@ i18n
                     welcome_back: "Welcome Back",
                     password: "Password",
                     login: "Login",
+
+                    type: "Type",
                 }
             },
             zh: {
@@ -169,6 +171,8 @@ i18n
                     welcome_back: "欢迎回来",
                     password: "密码",
                     login: "登录",
+
+                    type: "类型",
                 }
             }
         },
