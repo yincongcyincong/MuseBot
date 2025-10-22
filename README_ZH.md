@@ -10,7 +10,7 @@ QQ群：1031411708
 本仓库提供了一个是基于 **Golang** 构建的 **智能机器人**，集成了 **LLM API**，实现 AI 驱动的自然对话与智能回复。
 它支持 **OpenAI**、**DeepSeek**、**Gemini**、**Doubao**、**Qwen** 等多种大模型，    
 并可无缝接入 **Telegram**、**Discord**、**Slack**、**Lark（飞书）**、**钉钉**、**企业微信**、**QQ**、**微信** 等聊天平台，为用户带来更加流畅、多平台联通的 AI 对话体验。
-[English Doc](https://github.com/yincongcyincong/MuseBot/blob/main/Readme.md)
+[English Doc](https://github.com/yincongcyincong/MuseBot)
 
 ---
 
