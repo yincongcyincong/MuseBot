@@ -89,6 +89,7 @@ i18n
                     login: "Login",
 
                     type: "Type",
+                    rag: "RAG",
                 }
             },
             zh: {
@@ -173,6 +174,7 @@ i18n
                     login: "登录",
 
                     type: "类型",
+                    rag: "RAG",
                 }
             }
         },
