@@ -111,12 +111,12 @@ func GetRagFilesByPage(page, pageSize int, name string) ([]RagFiles, error) {
 	offset := (page - 1) * pageSize
 	
 	var (
-		whereSQL = "WHERE is_deleted = 1" // ✅ 默认只查 is_deleted = 1 的数据
+		whereSQL = "WHERE is_deleted = 0"
 		args     []interface{}
 	)
 	
 	if name != "" {
-		whereSQL += " AND file_name LIKE ?" // ✅ 追加模糊匹配
+		whereSQL += " AND file_name LIKE ?"
 		args = append(args, "%"+name+"%")
 	}
 	

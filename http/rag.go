@@ -1,6 +1,7 @@
 package http
 
 import (
+	"io"
 	"net/http"
 	"os"
 	
@@ -26,7 +27,7 @@ func CreateRagFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	path := utils.GetAbsPath(*conf.RagConfInfo.KnowledgePath) + "/" + ragFile.FileName
+	path := *conf.RagConfInfo.KnowledgePath + "/" + ragFile.FileName
 	err = os.WriteFile(path, []byte(ragFile.Content), 0644)
 	if err != nil {
 		logger.ErrorCtx(ctx, "write file error", "err", err)
@@ -35,6 +36,39 @@ func CreateRagFile(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	utils.Success(ctx, w, r, nil)
+}
+
+func GetRagFileContent(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	err := r.ParseForm()
+	if err != nil {
+		logger.ErrorCtx(ctx, "parse form error", "err", err)
+		utils.Failure(ctx, w, r, param.CodeParamError, param.MsgParamError, err)
+		return
+	}
+	name := r.FormValue("file_name")
+	
+	path := *conf.RagConfInfo.KnowledgePath + "/" + name
+	file, err := os.Open(path)
+	if err != nil {
+		logger.ErrorCtx(ctx, "open file error", "err", err)
+		utils.Failure(ctx, w, r, param.CodeServerFail, param.MsgServerFail, err)
+		return
+	}
+	defer file.Close()
+	
+	content, err := io.ReadAll(file)
+	if err != nil {
+		logger.ErrorCtx(ctx, "write file error", "err", err)
+		utils.Failure(ctx, w, r, param.CodeServerFail, param.MsgServerFail, err)
+		return
+	}
+	
+	result := map[string]interface{}{
+		"content": string(content),
+	}
+	
+	utils.Success(ctx, w, r, result)
 }
 
 func DeleteRagFile(w http.ResponseWriter, r *http.Request) {
@@ -46,11 +80,20 @@ func DeleteRagFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	err = os.Remove(utils.GetAbsPath(*conf.RagConfInfo.KnowledgePath) + "/" + r.FormValue("file_name"))
+	err = os.Remove(*conf.RagConfInfo.KnowledgePath + "/" + r.FormValue("file_name"))
 	if err != nil {
 		logger.ErrorCtx(ctx, "delete file error", "err", err)
 		utils.Failure(ctx, w, r, param.CodeServerFail, param.MsgServerFail, err)
 		return
+	}
+	
+	if conf.RagConfInfo.Store == nil {
+		err = db.DeleteRagFileByFileName(r.FormValue("name"))
+		if err != nil {
+			logger.ErrorCtx(ctx, "delete dir error", "err", err)
+			utils.Failure(ctx, w, r, param.CodeDBWriteFail, param.MsgDBWriteFail, err)
+			return
+		}
 	}
 	
 	utils.Success(ctx, w, r, nil)
@@ -82,7 +125,6 @@ func GetRagFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	// 返回结果
 	result := map[string]interface{}{
 		"list":  ragFiles,
 		"total": total,

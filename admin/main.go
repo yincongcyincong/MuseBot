@@ -56,6 +56,10 @@ func main() {
 	mux.HandleFunc("/bot/mcp/sync", controller.RequireLogin(controller.SyncMCPServer))
 	mux.HandleFunc("/bot/communicate", controller.RequireLogin(controller.Communicate))
 	mux.HandleFunc("/bot/admin/chat", controller.RequireLogin(controller.GetBotAdminRecord))
+	mux.HandleFunc("/bot/rag/list", controller.RequireLogin(controller.ListRagFiles))
+	mux.HandleFunc("/bot/rag/delete", controller.RequireLogin(controller.DeleteRagFile))
+	mux.HandleFunc("/bot/rag/create", controller.RequireLogin(controller.CreateRagFile))
+	mux.HandleFunc("/bot/rag/get", controller.RequireLogin(controller.GetRagFile))
 	
 	mux.HandleFunc("/user/login", controller.UserLogin)
 	mux.HandleFunc("/user/me", controller.RequireLogin(controller.GetCurrentUserHandler))

@@ -12,6 +12,7 @@ import BotChat from "../pages/BotChat.jsx";
 import MCP from "../pages/MCP.jsx";
 import Log from "../pages/Log.jsx";
 import Communicate from "../pages/Communicate.jsx";
+import Rag from "../pages/Rag.jsx";
 
 export default function Router() {
     const { isAuthenticated, isLoading } = useUser();
@@ -42,6 +43,7 @@ export default function Router() {
                     <Route path="chats" element={<BotChat />} />
                     <Route path="mcp" element={<MCP />} />
                     <Route path="communicate" element={<Communicate />} />
+                    <Route path="rag" element={<Rag />} />
                     <Route path="log" element={<Log />} />
                     <Route path="test" element={<TestPage />} />
                     {/* 从根路径 / 跳转到看板页 */}

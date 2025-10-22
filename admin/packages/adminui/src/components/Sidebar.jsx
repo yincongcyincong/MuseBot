@@ -11,6 +11,7 @@ import {
     ChevronFirst,
     ChevronLast,
     ScrollText,
+    DatabaseIcon,
 } from "lucide-react";
 import {useTranslation} from "react-i18next";
 
@@ -27,6 +28,7 @@ export default function Sidebar() {
         { path: "/users", label: t("bot_users"), icon: UserCircle },
         { path: "/chats", label: t("bot_chats"), icon: MessageCircle },
         { path: "/communicate", label: t("chat"), icon: MessageSquare },
+        { path: "/rag", label: t("rag"), icon: DatabaseIcon },
         { path: "/log", label: t("log"), icon: ScrollText },
     ];
 

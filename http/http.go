@@ -65,7 +65,8 @@ func (p *HTTPServer) Start() {
 		
 		mux.HandleFunc("/rag/list", GetRagFile)
 		mux.HandleFunc("/rag/delete", DeleteRagFile)
-		mux.HandleFunc("/rag/upload", CreateRagFile)
+		mux.HandleFunc("/rag/create", CreateRagFile)
+		mux.HandleFunc("/rag/get", GetRagFileContent)
 		
 		mux.HandleFunc("/pong", PongHandler)
 		mux.HandleFunc("/dashboard", DashboardHandler)
