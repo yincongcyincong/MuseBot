@@ -2,7 +2,6 @@ package conf
 
 import (
 	"flag"
-	"math/rand/v2"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -116,7 +115,7 @@ func InitConf() {
 	BaseConfInfo.VolcAK = flag.String("volc_ak", "", "volc ak")
 	BaseConfInfo.VolcSK = flag.String("volc_sk", "", "volc sk")
 	
-	BaseConfInfo.BotName = flag.String("bot_name", "MuseBot"+strconv.Itoa(rand.Int()), "bot name")
+	BaseConfInfo.BotName = flag.String("bot_name", "MuseBot", "bot name")
 	BaseConfInfo.CustomUrl = flag.String("custom_url", "", "deepseek custom url")
 	BaseConfInfo.Type = flag.String("type", "deepseek", "llm type: deepseek gemini openai openrouter vol")
 	BaseConfInfo.MediaType = flag.String("media_type", "vol", "media type: vol gemini openai aliyun 302-ai openrouter")

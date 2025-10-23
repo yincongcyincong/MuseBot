@@ -111,8 +111,8 @@ func GetRagFilesByPage(page, pageSize int, name string) ([]RagFiles, error) {
 	offset := (page - 1) * pageSize
 	
 	var (
-		whereSQL = "WHERE is_deleted = 0"
-		args     []interface{}
+		whereSQL = "WHERE is_deleted = 0 and from_bot = ?"
+		args     = []interface{}{*conf.BaseConfInfo.BotName}
 	)
 	
 	if name != "" {
@@ -148,8 +148,8 @@ func GetRagFilesByPage(page, pageSize int, name string) ([]RagFiles, error) {
 }
 
 func GetRagFilesCount(name string) (int, error) {
-	whereSQL := "WHERE is_deleted = 0"
-	args := []interface{}{}
+	whereSQL := "WHERE is_deleted = 0 and from_bot = ?"
+	args := []interface{}{*conf.BaseConfInfo.BotName}
 	
 	if name != "" {
 		whereSQL += " AND file_name LIKE ?"

@@ -90,6 +90,9 @@ i18n
 
                     type: "Type",
                     rag: "RAG",
+                    rag_manage: "RAG Management",
+                    add_file: "Add File",
+                    file_name: "File Name",
                 }
             },
             zh: {
@@ -175,6 +178,9 @@ i18n
 
                     type: "类型",
                     rag: "RAG",
+                    rag_manage: "RAG 管理",
+                    add_file: "添加文件",
+                    file_name: "文件名",
                 }
             }
         },
