@@ -142,12 +142,12 @@ function Rag() {
             )}
 
             <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-gray-800">{t("rag_manage") || "RAG File Manage"}</h2>
+                <h2 className="text-2xl font-bold text-gray-800">{t("rag_manage")}</h2>
                 <button
                     onClick={handleAdd}
                     className="px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700"
                 >
-                    {t("add_file") || "Add File"}
+                    {t("add_file")}
                 </button>
             </div>
 
@@ -167,7 +167,7 @@ function Rag() {
                 <table className="min-w-full bg-white divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                     <tr>
-                        {["File Name", "Created", "Updated", "Actions"].map(title => (
+                        {[t("file_name"), t("create_time"), t("update_time"), t("action")].map(title => (
                             <th
                                 key={title}
                                 className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"

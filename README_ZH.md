@@ -28,10 +28,10 @@ chatgpt: https://www.bilibili.com/video/BV1RutxzJEGY/
 - 🤖 **AI 回复**：使用 大模型 API 提供聊天机器人回复。
 - ⏳ **流式输出**：实时发送回复，提升用户体验。
 - 🏗 **轻松部署**：可本地运行或部署到云服务器。
-- 👀 **图像识别**：使用图片与 大模型进行交流，详见[文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/imageconf.md)。
-- 🎺 **支持语音**：使用语音与 大模型进行交流，详见[文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/audioconf.md)。
-- 🐂 **函数调用**：将 MCP协议转换为函数调用，详见[文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/functioncall.md)。
-- 🌊 **RAG（检索增强生成）**：支持 RAG以填充上下文，详见[文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/rag.md)。
+- 👀 **图像识别**：使用图片与大模型进行交流，详见[文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/photoconf_ZH.md)。
+- 🎺 **支持语音**：使用语音与大模型进行交流，详见[文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/audioconf_ZH.md)。
+- 🐂 **函数调用**：将 MCP协议转换为函数调用，详见[文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/functioncall_ZH.md)。
+- 🌊 **RAG（检索增强生成）**：支持 RAG以填充上下文，详见[文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/rag_ZH.md)。
 - 🌞 **管理平台（AdminPlatform）**：使用管理平台来管理MuseBot，详见[文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/admin_ZH.md)。
 - 🌛 **注册中心**：支持服务注册，机器人实例可自动注册，详见 [文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/register_ZH.md)
 - 🌈 **监控数据**：支持监控数据，详见[文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/metrics_ZH.md)。
