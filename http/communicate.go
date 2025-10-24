@@ -1,8 +1,12 @@
 package http
 
 import (
+	"crypto/hmac"
+	"crypto/sha1"
+	"encoding/hex"
 	"io"
 	"net/http"
+	"runtime/debug"
 	"strconv"
 	
 	"github.com/ArtisanCloud/PowerWeChat/v3/src/kernel"
@@ -150,4 +154,31 @@ func QQBotComm(w http.ResponseWriter, r *http.Request) {
 		AppSecret: *conf.BaseConfInfo.QQAppSecret,
 		AppID:     *conf.BaseConfInfo.QQAppID,
 	})
+}
+
+func NapCat(w http.ResponseWriter, r *http.Request) {
+	body, _ := io.ReadAll(r.Body)
+	signature := r.Header.Get("X-Signature")
+	
+	h := hmac.New(sha1.New, []byte(*conf.BaseConfInfo.QQNapCatReceiveToken))
+	h.Write(body)
+	expectedSign := "sha1=" + hex.EncodeToString(h.Sum(nil))
+	
+	if signature != expectedSign {
+		logger.ErrorCtx(r.Context(), "check sign fail", "expected", expectedSign, "actual", signature)
+		http.Error(w, "check sign fail", http.StatusUnauthorized)
+		return
+	}
+	
+	qqRobot := robot.NewPersonalQQRobot(body)
+	go func() {
+		defer func() {
+			if err := recover(); err != nil {
+				logger.Error("ding exec panic", "err", err, "stack", string(debug.Stack()))
+			}
+		}()
+		
+		qqRobot.Robot.Exec()
+	}()
+	
 }
