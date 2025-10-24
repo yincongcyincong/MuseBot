@@ -249,6 +249,16 @@ func (r *RobotInfo) GetChatIdAndMsgIdAndUserID() (string, string, string) {
 		if wechatRobot.VoiceMsg != nil {
 			msgId = wechatRobot.VoiceMsg.MsgID
 		}
+	case *PersonalQQRobot:
+		personalQQRobot := r.Robot.(*PersonalQQRobot)
+		chatId = personalQQRobot.Msg.Raw.PeerUid
+		if personalQQRobot.Msg.MessageType == "group" {
+			userId = strconv.Itoa(int(personalQQRobot.Msg.GroupId))
+		} else {
+			userId = strconv.Itoa(int(personalQQRobot.Msg.UserID))
+		}
+		
+		msgId = strconv.Itoa(int(personalQQRobot.Msg.MessageID))
 	}
 	
 	return chatId, msgId, userId
@@ -439,7 +449,15 @@ func (r *RobotInfo) SendMsg(chatId string, msgContent string, replyToMessageID s
 				})
 			}
 		}
-		
+	
+	case *PersonalQQRobot:
+		personalQQRobot := r.Robot.(*PersonalQQRobot)
+		msgId, err := personalQQRobot.SendMsg(msgContent, nil, nil, nil)
+		if err != nil {
+			logger.Error("send msg fail", "err", err)
+			return ""
+		}
+		return msgId
 	}
 	
 	return ""
@@ -1061,7 +1079,7 @@ func (r *RobotInfo) CreatePhoto(prompt string, lastImageContent []byte) ([]byte,
 	switch *conf.BaseConfInfo.MediaType {
 	case param.Vol:
 		imageUrl, totalToken, err = llm.GenerateVolImg(r.Ctx, prompt, lastImageContent)
-	case param.OpenAi:
+	case param.OpenAi, param.ChatAnyWhere:
 		imageContent, totalToken, err = llm.GenerateOpenAIImg(r.Ctx, prompt, lastImageContent)
 	case param.Gemini:
 		imageContent, totalToken, err = llm.GenerateGeminiImg(r.Ctx, prompt, lastImageContent)

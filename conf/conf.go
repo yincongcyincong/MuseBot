@@ -37,6 +37,9 @@ type BaseConf struct {
 	WechatActive            *bool   `json:"wechat_active"`
 	QQAppID                 *string `json:"qq_app_id"`
 	QQAppSecret             *string `json:"qq_app_secret"`
+	QQNapCatReceiveToken    *string `json:"qq_nap_cat_check_token"`
+	QQNapCatSendToken       *string `json:"qq_nap_cat_send_token"`
+	QQNapCatHttpServer      *string `json:"qq_nap_cat_http_server"`
 	
 	DeepseekToken     *string `json:"deepseek_token"`
 	OpenAIToken       *string `json:"openai_token"`
@@ -103,6 +106,9 @@ func InitConf() {
 	BaseConfInfo.WechatActive = flag.Bool("wechat_active", false, "Wechat active")
 	BaseConfInfo.QQAppID = flag.String("qq_app_id", "", "QQ app id")
 	BaseConfInfo.QQAppSecret = flag.String("qq_app_secret", "", "QQ app secret")
+	BaseConfInfo.QQNapCatReceiveToken = flag.String("qq_napcat_receive_token", "MuseBot", "napcat receive token")
+	BaseConfInfo.QQNapCatSendToken = flag.String("qq_napcat_send_token", "MuseBot", "napcat send token")
+	BaseConfInfo.QQNapCatHttpServer = flag.String("qq_napcat_http_server", "http://127.0.0.1:3000", "napcat http server")
 	
 	BaseConfInfo.DeepseekToken = flag.String("deepseek_token", "", "deepseek auth token")
 	BaseConfInfo.OpenAIToken = flag.String("openai_token", "", "openai auth token")
