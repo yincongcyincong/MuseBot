@@ -42,7 +42,7 @@ func (d *OpenAIReq) GetModel(l *LLM) {
 	}
 	
 	switch *conf.BaseConfInfo.Type {
-	case param.OpenAi:
+	case param.OpenAi, param.ChatAnyWhere:
 		l.Model = openai.GPT3Dot5Turbo0125
 		if userInfo != nil && userInfo.Mode != "" && param.OpenAIModels[userInfo.Mode] {
 			l.Model = userInfo.Mode
@@ -486,6 +486,8 @@ func GetOpenAIClient(isMedia bool) *openai.Client {
 		token = *conf.BaseConfInfo.OpenAIToken
 	case param.Aliyun:
 		token = *conf.BaseConfInfo.AliyunToken
+	case param.ChatAnyWhere:
+		token = *conf.BaseConfInfo.ChatAnyWhereToken
 	}
 	
 	openaiConfig := openai.DefaultConfig(token)

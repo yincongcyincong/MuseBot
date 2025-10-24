@@ -7,8 +7,9 @@ import (
 )
 
 const (
-	DeepSeek = "deepseek"
-	Ollama   = "ollama"
+	DeepSeek     = "deepseek"
+	Ollama       = "ollama"
+	ChatAnyWhere = "chatanywhere"
 	
 	Vol    = "vol"
 	AI302  = "302-ai"

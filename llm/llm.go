@@ -121,7 +121,7 @@ func NewLLM(opts ...Option) *LLM {
 			ToolMessage:        []*genai.Content{},
 			CurrentToolMessage: []*genai.Content{},
 		}
-	case param.OpenAi, param.Aliyun:
+	case param.OpenAi, param.Aliyun, param.ChatAnyWhere:
 		l.LLMClient = &OpenAIReq{
 			ToolCall:           []openai.ToolCall{},
 			ToolMessage:        []openai.ChatCompletionMessage{},

@@ -9,7 +9,8 @@ QQ群：1031411708
 
 本仓库提供了一个是基于 **Golang** 构建的 **智能机器人**，集成了 **LLM API**，实现 AI 驱动的自然对话与智能回复。
 它支持 **OpenAI**、**DeepSeek**、**Gemini**、**Doubao**、**Qwen** 等多种大模型，    
-并可无缝接入 **Telegram**、**Discord**、**Slack**、**Lark（飞书）**、**钉钉**、**企业微信**、**QQ**、**微信** 等聊天平台，为用户带来更加流畅、多平台联通的 AI 对话体验。
+并可无缝接入 **Telegram**、**Discord**、**Slack**、**Lark（飞书）**、**钉钉**、**企业微信**、**QQ**、**微信**
+等聊天平台，为用户带来更加流畅、多平台联通的 AI 对话体验。
 [English Doc](https://github.com/yincongcyincong/MuseBot)
 
 ---
@@ -28,12 +29,18 @@ chatgpt: https://www.bilibili.com/video/BV1RutxzJEGY/
 - 🤖 **AI 回复**：使用 大模型 API 提供聊天机器人回复。
 - ⏳ **流式输出**：实时发送回复，提升用户体验。
 - 🏗 **轻松部署**：可本地运行或部署到云服务器。
-- 👀 **图像识别**：使用图片与大模型进行交流，详见[文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/photoconf_ZH.md)。
-- 🎺 **支持语音**：使用语音与大模型进行交流，详见[文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/audioconf_ZH.md)。
-- 🐂 **函数调用**：将 MCP协议转换为函数调用，详见[文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/functioncall_ZH.md)。
-- 🌊 **RAG（检索增强生成）**：支持 RAG以填充上下文，详见[文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/rag_ZH.md)。
-- 🌞 **管理平台（AdminPlatform）**：使用管理平台来管理MuseBot，详见[文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/admin_ZH.md)。
-- 🌛 **注册中心**：支持服务注册，机器人实例可自动注册，详见 [文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/register_ZH.md)
+- 👀 **图像识别**
+  ：使用图片与大模型进行交流，详见[文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/photoconf_ZH.md)。
+- 🎺 **支持语音**
+  ：使用语音与大模型进行交流，详见[文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/audioconf_ZH.md)。
+- 🐂 **函数调用**：将
+  MCP协议转换为函数调用，详见[文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/functioncall_ZH.md)。
+- 🌊 **RAG（检索增强生成）**：支持
+  RAG以填充上下文，详见[文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/rag_ZH.md)。
+- 🌞 **管理平台（AdminPlatform）**
+  ：使用管理平台来管理MuseBot，详见[文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/admin_ZH.md)。
+- 🌛 **注册中心**
+  ：支持服务注册，机器人实例可自动注册，详见 [文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/register_ZH.md)
 - 🌈 **监控数据**：支持监控数据，详见[文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/metrics_ZH.md)。
 
 ---
@@ -54,15 +61,16 @@ chatgpt: https://www.bilibili.com/video/BV1RutxzJEGY/
 
 ## 支持的大型语言模型
 
-| 模型                | 提供方        | 文本生成 | 图片生成 | 视频生成 | 识别照片 | 返回语音 | 链接                                                                                                           |
-|-------------------|------------|------|:----:|:----:|:----:|-----:|--------------------------------------------------------------------------------------------------------------|
-| 🌟 **Gemini**     | 谷歌         | ✅    |  ✅   |  ✅   |  ✅   |    ✅ | [文档](https://gemini.google.com/app)                                                                          |
-| 💬 **ChatGPT**    | OpenAI     | ✅    |  ✅   |  ❌   |  ✅   |    ✅ | [文档](https://chat.openai.com)                                                                                |
-| 🐦 **Doubao**     | 字节跳动       | ✅    |  ✅   |  ✅   |  ✅   |    ✅ | [文档](https://www.volcengine.com/)                                                                            |
-| 🐦 **Qwen**       | 阿里云        | ✅    |  ✅   |  ✅   |  ✅   |    ✅ | [文档](https://bailian.console.aliyun.com/?spm=5176.12818093_47.overview_recent.1.663b2cc9wXXcVC&tab=api#/api) |
-| ⚙️ **302.AI**     | 302.AI     | ✅    |  ✅   |  ✅   |  ✅   |    ❌ | [文档](https://302.ai/)                                                                                        |
-| 🧠 **DeepSeek**   | DeepSeek   | ✅    |  ❌   |  ❌   |  ❌   |    ❌ | [文档](https://www.deepseek.com/)                                                                              |
-| 🌐 **OpenRouter** | OpenRouter | ✅    |  ✅   |  ❌   |  ✅   |    ❌ | [文档](https://openrouter.ai/)                                                                                 |
+| 模型                  | 提供方          | 文本生成 | 图片生成 | 视频生成 | 识别照片 | 返回语音 | 链接                                                                                                           |
+|---------------------|--------------|------|:----:|:----:|:----:|-----:|--------------------------------------------------------------------------------------------------------------|
+| 🌟 **Gemini**       | 谷歌           | ✅    |  ✅   |  ✅   |  ✅   |    ✅ | [文档](https://gemini.google.com/app)                                                                          |
+| 💬 **ChatGPT**      | OpenAI       | ✅    |  ✅   |  ❌   |  ✅   |    ✅ | [文档](https://chat.openai.com)                                                                                |
+| 🐦 **Doubao**       | 字节跳动         | ✅    |  ✅   |  ✅   |  ✅   |    ✅ | [文档](https://www.volcengine.com/)                                                                            |
+| 🐦 **Qwen**         | 阿里云          | ✅    |  ✅   |  ✅   |  ✅   |    ✅ | [文档](https://bailian.console.aliyun.com/?spm=5176.12818093_47.overview_recent.1.663b2cc9wXXcVC&tab=api#/api) |
+| ⚙️ **302.AI**       | 302.AI       | ✅    |  ✅   |  ✅   |  ✅   |    ❌ | [文档](https://302.ai/)                                                                                        |
+| 🧠 **DeepSeek**     | DeepSeek     | ✅    |  ❌   |  ❌   |  ❌   |    ❌ | [文档](https://www.deepseek.com/)                                                                              |
+| 🌐 **OpenRouter**   | OpenRouter   | ✅    |  ✅   |  ❌   |  ✅   |    ❌ | [文档](https://openrouter.ai/)                                                                                 |
+| 🌐 **ChatAnywhere** | ChatAnywhere | ✅    |  ✅   |  ❌   |  ✅   |    ❌ | [文档](https://api.chatanywhere.tech/#/)                                                                       |
 
 ## 🤖 文本示例
 
@@ -132,8 +140,9 @@ docker pull crpi-i1dsvpjijxpgjgbv.cn-hangzhou.personal.cr.aliyuncs.com/jackyin08
 | **ALIYUN_TOKEN**	           | Aliyun 令牌  [doc](https://bailian.console.aliyun.com/?spm=5176.12818093_47.overview_recent.1.663b2cc9zsj3BI&tab=doc#/doc/?type=model&url=2840915) | -                         |
 | **OPEN_ROUTER_TOKEN**       | OpenRouter 令牌 [文档](https://openrouter.ai/docs/quickstart)                                                                                        | -                         |
 | **VOL_TOKEN**               | 火山引擎 令牌 [文档](https://www.volcengine.com/docs/82379/1399008#b00dee71)                                                                             | -                         |
+| **CHAT_ANY_WHERE_TOKEN**    | ChatAnyWhere 令牌 [文档](https://api.chatanywhere.tech/#/)                                                                                           | -                         |
 | **CUSTOM_URL**              | 自定义 DeepSeek URL                                                                                                                                 | https://api.deepseek.com/ |
-| **TYPE**                    | 模型类型：deepseek/openai/gemini/openrouter/vol/aliyun/302-ai/ollama                                                                                  | deepseek                  |
+| **TYPE**                    | 模型类型：deepseek/openai/gemini/openrouter/vol/aliyun/302-ai/ollama/chatanywhere                                                                     | deepseek                  |
 | **VOLC_AK**                 | 火山引擎图片模型 AK [文档](https://www.volcengine.com/docs/6444/1340578)                                                                                   | -                         |
 | **VOLC_SK**                 | 火山引擎图片模型 SK [文档](https://www.volcengine.com/docs/6444/1340578)                                                                                   | -                         |
 | **Ernie_AK**                | 文心一言 AK [文档](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Sly8bm96d)                                                                             | -                         |
@@ -142,8 +151,8 @@ docker pull crpi-i1dsvpjijxpgjgbv.cn-hangzhou.personal.cr.aliyuncs.com/jackyin08
 | **DB_CONF**                 | 数据库配置：./data/telegram_bot.db 或 root:admin@tcp(127.0.0.1:3306)/dbname?charset=utf8mb4&parseTime=True&loc=Local                                    | ./data/telegram_bot.db    |
 | **ALLOWED_USER_IDS**        | 允许使用机器人的 Telegram 用户 ID，多个 ID 用逗号分隔。为空表示所有用户可用。为 0 表示禁止所有用户。                                                                                     | -                         |
 | **ALLOWED_GROUP_IDS**       | 允许使用机器人的 Telegram 群组 ID，多个 ID 用逗号分隔。为空表示所有群组可用。为 0 表示禁止所有群组。                                                                                     | -                         |
-| **DEEPSEEK_PROXY**          | DeepSeek 代理                                                                                                                                      | -                         |
-| **TELEGRAM_PROXY**          | Telegram 代理                                                                                                                                      | -                         |
+| **LLM_PROXY**               | 大模型 代理                                                                                                                                           | -                         |
+| **ROBOT_PROXY**             | robot 代理                                                                                                                                         | -                         |
 | **LANG**                    | 语言：en / zh                                                                                                                                       | en                        |
 | **TOKEN_PER_USER**          | 每个用户可使用的令牌数                                                                                                                                      | 10000                     |
 | **ADMIN_USER_IDS**          | 管理员用户 ID，可使用一些管理命令                                                                                                                               | -                         |

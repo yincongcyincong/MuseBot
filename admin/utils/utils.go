@@ -61,7 +61,7 @@ func ParseCommand(str string) map[string]string {
 		if strings.HasPrefix(part, "-") {
 			kv := strings.SplitN(part[1:], "=", 2)
 			if len(kv) == 2 {
-				m[kv[0]] = kv[1]
+				m[kv[0]] = strings.ReplaceAll(kv[1], "'", "")
 			}
 		}
 	}
