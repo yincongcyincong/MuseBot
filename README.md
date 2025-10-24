@@ -7,11 +7,12 @@ QQ群：1031411708
 
 # MuseBot
 
-This repository provides a **Chat bot** (Telegram, Discord, Slack, Lark（飞书），钉钉, 企业微信, QQ, 微信) that integrates with **LLM API** to provide
+This repository provides a **Chat bot** (Telegram, Discord, Slack, Lark（飞书），钉钉, 企业微信, QQ, 微信) that integrates
+with **LLM API** to provide
 AI-powered responses. The bot supports **openai** **deepseek** **gemini** **openrouter** LLMs, making interactions feel
 more natural and dynamic.       
 [中文文档](https://github.com/yincongcyincong/MuseBot/blob/main/README_ZH.md)       
-[Китайская документация](https://github.com/yincongcyincong/MuseBot/blob/main/README_RU.md)     
+[Китайская документация](https://github.com/yincongcyincong/MuseBot/blob/main/README_RU.md)
 
 ## Usage Video
 
@@ -56,15 +57,16 @@ chatgpt: https://www.youtube.com/watch?v=G_DZYMvd5Ug
 
 ## Supported Large Language Models
 
-| Model             | Provider   | Text Generation | Image Generation | Video Generation | Recognize Photo | TTS | Link                                                                                                          |
-|-------------------|------------|-----------------|:----------------:|:----------------:|----------------:|----:|---------------------------------------------------------------------------------------------------------------|
-| 🌟 **Gemini**     | Google     | ✅               |        ✅         |        ✅         |               ✅ |   ✅ | [doc](https://gemini.google.com/app)                                                                          |
-| 💬 **ChatGPT**    | OpenAI     | ✅               |        ✅         |        ❌         |               ✅ |   ✅ | [doc](https://chat.openai.com)                                                                                |
-| 🐦 **Doubao**     | ByteDance  | ✅               |        ✅         |        ✅         |               ✅ |   ✅ | [doc](https://www.volcengine.com/)                                                                            |
-| 🐦 **Qwen**       | Aliyun     | ✅               |        ✅         |        ✅         |               ✅ |   ✅ | [doc](https://bailian.console.aliyun.com/?spm=5176.12818093_47.overview_recent.1.663b2cc9wXXcVC&tab=api#/api) |
-| 🧠 **DeepSeek**   | DeepSeek   | ✅               |        ❌         |        ❌         |               ❌ |   ❌ | [doc](https://www.deepseek.com/)                                                                              |
-| ⚙️ **302.AI**     | 302.AI     | ✅               |        ✅         |        ✅         |               ✅ |   ❌ | [doc](https://302.ai/)                                                                                        |
-| 🌐 **OpenRouter** | OpenRouter | ✅               |        ✅         |        ❌         |               ✅ |   ❌ | [doc](https://openrouter.ai/)                                                                                 |
+| Model               | Provider     | Text Generation | Image Generation | Video Generation | Recognize Photo | TTS | Link                                                                                                          |
+|---------------------|--------------|-----------------|:----------------:|:----------------:|----------------:|----:|---------------------------------------------------------------------------------------------------------------|
+| 🌟 **Gemini**       | Google       | ✅               |        ✅         |        ✅         |               ✅ |   ✅ | [doc](https://gemini.google.com/app)                                                                          |
+| 💬 **ChatGPT**      | OpenAI       | ✅               |        ✅         |        ❌         |               ✅ |   ✅ | [doc](https://chat.openai.com)                                                                                |
+| 🐦 **Doubao**       | ByteDance    | ✅               |        ✅         |        ✅         |               ✅ |   ✅ | [doc](https://www.volcengine.com/)                                                                            |
+| 🐦 **Qwen**         | Aliyun       | ✅               |        ✅         |        ✅         |               ✅ |   ✅ | [doc](https://bailian.console.aliyun.com/?spm=5176.12818093_47.overview_recent.1.663b2cc9wXXcVC&tab=api#/api) |
+| 🧠 **DeepSeek**     | DeepSeek     | ✅               |        ❌         |        ❌         |               ❌ |   ❌ | [doc](https://www.deepseek.com/)                                                                              |
+| ⚙️ **302.AI**       | 302.AI       | ✅               |        ✅         |        ✅         |               ✅ |   ❌ | [doc](https://302.ai/)                                                                                        |
+| 🌐 **OpenRouter**   | OpenRouter   | ✅               |        ✅         |        ❌         |               ✅ |   ❌ | [doc](https://openrouter.ai/)                                                                                 |
+| 🌐 **ChatAnywhere** | ChatAnywhere | ✅               |        ✅         |        ❌         |               ✅ |   ❌ | [doc](https://api.chatanywhere.tech/#/)                                                                       |
 
 ## 🤖 Text Example
 
@@ -131,7 +133,7 @@ You can configure the bot via environment variables:
 | AI_302_TOKEN	                  | 302-AI token [doc](https://302.ai/)                                                                                                                 | -                         |
 | VOL_TOKEN	                     | Vol Token  [doc](https://www.volcengine.com/docs/82379/1399008#b00dee71)                                                                            | -                         |
 | CUSTOM_URL	                    | custom deepseek url                                                                                                                                 | https://api.deepseek.com/ |
-| TYPE	                          | deepseek/openai/gemini/openrouter/vol/302-ai/ollama                                                                                                 | deepseek                  |
+| TYPE	                          | deepseek/openai/gemini/openrouter/vol/302-ai/ollama/chatanywhere                                                                                    | deepseek                  |
 | VOLC_AK	                       | volcengine photo model ak     [doc](https://www.volcengine.com/docs/6444/1340578)                                                                   | -                         |
 | VOLC_SK	                       | volcengine photo model sk      [doc](https://www.volcengine.com/docs/6444/1340578)                                                                  | -                         |
 | Ernie_AK	                      | ernie ak     [doc](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Sly8bm96d)                                                                          | -                         |
@@ -140,8 +142,8 @@ You can configure the bot via environment variables:
 | DB_CONF	                       | ./data/telegram_bot.db / root:admin@tcp(127.0.0.1:3306)/dbname?charset=utf8mb4&parseTime=True&loc=Local                                             | ./data/telegram_bot.db    |
 | ALLOWED_USER_IDS	              | user id, only these users can use bot, using "," splite. empty means all use can use it. 0 means all user is banned                                 | -                         |
 | ALLOWED_GROUP_IDS	             | chat id, only these chat can use bot, using "," splite. empty means all group can use it. 0 means all group is banned                               | -                         |
-| DEEPSEEK_PROXY	                | deepseek proxy                                                                                                                                      | -                         |
-| TELEGRAM_PROXY	                | telegram proxy                                                                                                                                      | -                         |
+| LLM_PROXY	                     | llm proxy                                                                                                                                           | -                         |
+| ROBOT_PROXY	                   | robot proxy                                                                                                                                         | -                         |
 | LANG	                          | en / zh                                                                                                                                             | en                        |
 | TOKEN_PER_USER	                | The tokens that each user can use                                                                                                                   | 10000                     |
 | ADMIN_USER_IDS	                | admin user, can use some admin commands                                                                                                             | -                         |

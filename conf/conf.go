@@ -38,15 +38,16 @@ type BaseConf struct {
 	QQAppID                 *string `json:"qq_app_id"`
 	QQAppSecret             *string `json:"qq_app_secret"`
 	
-	DeepseekToken   *string `json:"deepseek_token"`
-	OpenAIToken     *string `json:"openai_token"`
-	GeminiToken     *string `json:"gemini_token"`
-	OpenRouterToken *string `json:"open_router_token"`
-	AI302Token      *string `json:"ai_302_token"`
-	VolToken        *string `json:"vol_token"`
-	AliyunToken     *string `json:"aliyun_token"`
-	ErnieAK         *string `json:"ernie_ak"`
-	ErnieSK         *string `json:"ernie_sk"`
+	DeepseekToken     *string `json:"deepseek_token"`
+	OpenAIToken       *string `json:"openai_token"`
+	GeminiToken       *string `json:"gemini_token"`
+	OpenRouterToken   *string `json:"open_router_token"`
+	AI302Token        *string `json:"ai_302_token"`
+	VolToken          *string `json:"vol_token"`
+	AliyunToken       *string `json:"aliyun_token"`
+	ChatAnyWhereToken *string `json:"chat_any_where_token"`
+	ErnieAK           *string `json:"ernie_ak"`
+	ErnieSK           *string `json:"ernie_sk"`
 	
 	BotName      *string `json:"bot_name"`
 	Type         *string `json:"type"`
@@ -114,10 +115,11 @@ func InitConf() {
 	BaseConfInfo.ErnieSK = flag.String("ernie_sk", "", "ernie sk")
 	BaseConfInfo.VolcAK = flag.String("volc_ak", "", "volc ak")
 	BaseConfInfo.VolcSK = flag.String("volc_sk", "", "volc sk")
+	BaseConfInfo.ChatAnyWhereToken = flag.String("chat_any_where_token", "", "chatAnyWhere Token")
 	
 	BaseConfInfo.BotName = flag.String("bot_name", "MuseBot", "bot name")
 	BaseConfInfo.CustomUrl = flag.String("custom_url", "", "deepseek custom url")
-	BaseConfInfo.Type = flag.String("type", "deepseek", "llm type: deepseek gemini openai openrouter vol")
+	BaseConfInfo.Type = flag.String("type", "deepseek", "llm type: deepseek gemini openai openrouter vol chatanywhere")
 	BaseConfInfo.MediaType = flag.String("media_type", "vol", "media type: vol gemini openai aliyun 302-ai openrouter")
 	BaseConfInfo.DBType = flag.String("db_type", "sqlite3", "db type")
 	BaseConfInfo.DBConf = flag.String("db_conf", GetAbsPath("data/muse_bot.db"), "db conf")
@@ -156,6 +158,10 @@ func InitConf() {
 	
 	if os.Getenv("TELEGRAM_BOT_TOKEN") != "" {
 		*BaseConfInfo.TelegramBotToken = os.Getenv("TELEGRAM_BOT_TOKEN")
+	}
+	
+	if os.Getenv("CHAT_ANY_WHERE_TOKEN") != "" {
+		*BaseConfInfo.ChatAnyWhereToken = os.Getenv("CHAT_ANY_WHERE_TOKEN")
 	}
 	
 	if os.Getenv("DISCORD_BOT_TOKEN") != "" {
@@ -451,6 +457,8 @@ func InitConf() {
 		BaseConfInfo.SpecialLLMUrl = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 	case param.Ollama:
 		BaseConfInfo.SpecialLLMUrl = "http://localhost:11434/"
+	case param.ChatAnyWhere:
+		BaseConfInfo.SpecialLLMUrl = "https://api.chatanywhere.tech"
 	}
 	
 }
