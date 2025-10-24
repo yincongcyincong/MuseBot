@@ -7,15 +7,15 @@ QQ群：1031411708
 
 # MuseBot
 
-This repository provides a **Telegram, Disccord bot** built with **Golang** that integrates with **LLM API** to provide
+This repository provides a **Chat bot** (Telegram, Discord, Slack, Lark（飞书），钉钉, 企业微信, QQ, 微信) that integrates with **LLM API** to provide
 AI-powered responses. The bot supports **openai** **deepseek** **gemini** **openrouter** LLMs, making interactions feel
-more natural and dynamic.
-[中文文档](https://github.com/yincongcyincong/MuseBot/blob/main/README_ZH.md)
-[Китайская документация](https://github.com/yincongcyincong/MuseBot/blob/main/README_RU.md)
+more natural and dynamic.       
+[中文文档](https://github.com/yincongcyincong/MuseBot/blob/main/README_ZH.md)       
+[Китайская документация](https://github.com/yincongcyincong/MuseBot/blob/main/README_RU.md)     
 
 ## Usage Video
 
-easy usage: https://www.youtube.com/watch?v=4UHoKRMfNZg     
+easiest way to use: https://www.youtube.com/watch?v=4UHoKRMfNZg     
 deepseek: https://www.youtube.com/watch?v=kPtNdLjKVn0   
 gemini: https://www.youtube.com/watch?v=7mV9RYvdE6I    
 chatgpt: https://www.youtube.com/watch?v=G_DZYMvd5Ug
@@ -111,7 +111,7 @@ Use docker
 
    ```sh
     ALIYUN:
-    docker pull crpi-i1dsvpjijxpgjgbv.cn-hangzhou.personal.cr.aliyuncs.com/jackyin0822/musebot
+    docker pull crpi-i1dsvpjijxpgjgbv.cn-hangzhou.personal.cr.aliyuncs.com/jackyin0822/musebot:latest
    ```
 
 command: (doc)[https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/param_conf.md]
@@ -265,12 +265,12 @@ save your voice to pc.
 
 1. **Build the Docker image**
    ```sh
-    docker build -t deepseek-telegram-bot .
+    docker build -t MuseBot .
    ```
 
 2. **Run the container**
    ```sh
-     docker run -d -v /home/user/xxx/data:/app/data -e TELEGRAM_BOT_TOKEN="telegram-bot-token" -e DEEPSEEK_TOKEN="deepseek-auth-token" --name my-telegram-bot MuseBot
+     docker run -d -v /home/user/xxx/data:/app/data -e TELEGRAM_BOT_TOKEN="telegram-bot-token" -e DEEPSEEK_TOKEN="deepseek-auth-token" --name my-bot MuseBot
    ```
 
 ## Contributing

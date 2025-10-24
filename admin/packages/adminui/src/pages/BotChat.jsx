@@ -91,7 +91,8 @@ function BotRecordsPage() {
             return null;
         }
 
-        if (answer.startsWith('data:video/')) {
+        // 🎥 视频展示
+        if (answer.startsWith("data:video/")) {
             return (
                 <video
                     controls
@@ -101,6 +102,18 @@ function BotRecordsPage() {
             );
         }
 
+        // 🎧 音频展示
+        if (answer.startsWith("data:audio/")) {
+            return (
+                <audio
+                    controls
+                    className="w-full mt-2"
+                    src={answer}
+                />
+            );
+        }
+
+        // 🖼 图片展示
         if (answer.startsWith('data:image/')) {
             return (
                 <img
@@ -111,6 +124,7 @@ function BotRecordsPage() {
             );
         }
 
+        // 📝 Markdown 内容展示
         return (
             <ReactMarkdown
                 components={{
@@ -171,7 +185,7 @@ function BotRecordsPage() {
                 <table className="min-w-full bg-white divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                     <tr>
-                        {[t("user_id"), t("question"), t("answer"), t("token"), t("status"), t("model"), t("create_time"), t("update_time")].map(title => (
+                        {[t("user_id"), t("question"), t("rich_text"), t("answer"), t("token"), t("status"), t("model"), t("create_time"), t("update_time")].map(title => (
                             <th
                                 key={title}
                                 className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
@@ -187,6 +201,9 @@ function BotRecordsPage() {
                             <tr key={record.id} className="hover:bg-gray-50">
                                 <td className="px-6 py-4 text-sm text-gray-800">{record.user_id}</td>
                                 <td className="px-6 py-4 text-sm text-gray-800">{record.question}</td>
+                                <td className="px-6 py-4 text-sm text-gray-800">
+                                    {renderAnswerContent(record.content)}
+                                </td>
                                 <td className="px-6 py-4 text-sm text-gray-800">
                                     {renderAnswerContent(record.answer)}
                                 </td>

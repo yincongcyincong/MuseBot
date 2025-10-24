@@ -337,11 +337,19 @@ func (w *WechatRobot) sendImg() {
 			return
 		}
 		
+		originImageURI := ""
+		if len(lastImageContent) > 0 {
+			base64Content = base64.StdEncoding.EncodeToString(lastImageContent)
+			format = utils.DetectImageFormat(lastImageContent)
+			originImageURI = fmt.Sprintf("data:image/%s;base64,%s", format, base64Content)
+		}
+		
 		// save data record
 		db.InsertRecordInfo(&db.Record{
 			UserId:     userId,
 			Question:   w.Prompt,
 			Answer:     dataURI,
+			Content:    originImageURI,
 			Token:      totalToken,
 			IsDeleted:  0,
 			RecordType: param.ImageRecordType,
@@ -398,10 +406,18 @@ func (w *WechatRobot) sendVideo() {
 			return
 		}
 		
+		originImageURI := ""
+		if len(w.ImageContent) > 0 {
+			base64Content = base64.StdEncoding.EncodeToString(w.ImageContent)
+			format := utils.DetectImageFormat(w.ImageContent)
+			originImageURI = fmt.Sprintf("data:image/%s;base64,%s", format, base64Content)
+		}
+		
 		db.InsertRecordInfo(&db.Record{
 			UserId:     userId,
 			Question:   w.Prompt,
 			Answer:     dataURI,
+			Content:    originImageURI,
 			Token:      totalToken,
 			IsDeleted:  0,
 			RecordType: param.VideoRecordType,

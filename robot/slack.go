@@ -449,12 +449,19 @@ func (s *SlackRobot) sendImg() {
 			}
 		}
 		
-		// 你可以记录数据库
+		originImageURI := ""
+		if len(lastImageContent) > 0 {
+			base64Content := base64.StdEncoding.EncodeToString(lastImageContent)
+			format := utils.DetectImageFormat(lastImageContent)
+			originImageURI = fmt.Sprintf("data:image/%s;base64,%s", format, base64Content)
+		}
+		
 		dataURI := "data:image/jpeg;base64," + base64.StdEncoding.EncodeToString(imageContent)
 		db.InsertRecordInfo(&db.Record{
 			UserId:     userId,
 			Question:   prompt,
 			Answer:     dataURI,
+			Content:    originImageURI,
 			Token:      totalToken,
 			IsDeleted:  0,
 			RecordType: param.ImageRecordType,
@@ -521,10 +528,18 @@ func (s *SlackRobot) sendVideo() {
 		base64Content := base64.StdEncoding.EncodeToString(videoContent)
 		dataURI := fmt.Sprintf("data:video/%s;base64,%s", utils.DetectVideoMimeType(videoContent), base64Content)
 		
+		originImageURI := ""
+		if len(lastImageContent) > 0 {
+			base64Content = base64.StdEncoding.EncodeToString(lastImageContent)
+			format := utils.DetectImageFormat(lastImageContent)
+			originImageURI = fmt.Sprintf("data:image/%s;base64,%s", format, base64Content)
+		}
+		
 		db.InsertRecordInfo(&db.Record{
 			UserId:     userID,
 			Question:   prompt,
 			Answer:     dataURI,
+			Content:    originImageURI,
 			Token:      totalToken,
 			IsDeleted:  0,
 			RecordType: param.VideoRecordType,

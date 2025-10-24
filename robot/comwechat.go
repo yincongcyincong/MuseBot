@@ -299,11 +299,19 @@ func (c *ComWechatRobot) sendImg() {
 			return
 		}
 		
+		originImageURI := ""
+		if len(lastImageContent) > 0 {
+			base64Content = base64.StdEncoding.EncodeToString(lastImageContent)
+			format = utils.DetectImageFormat(lastImageContent)
+			originImageURI = fmt.Sprintf("data:image/%s;base64,%s", format, base64Content)
+		}
+		
 		// save data record
 		db.InsertRecordInfo(&db.Record{
 			UserId:     userId,
 			Question:   c.Prompt,
 			Answer:     dataURI,
+			Content:    originImageURI,
 			Token:      totalToken,
 			IsDeleted:  0,
 			RecordType: param.ImageRecordType,

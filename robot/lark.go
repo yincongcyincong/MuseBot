@@ -360,11 +360,19 @@ func (l *LarkRobot) sendVideo() {
 		base64Content := base64.StdEncoding.EncodeToString(videoContent)
 		dataURI := fmt.Sprintf("data:video/%s;base64,%s", utils.DetectVideoMimeType(videoContent), base64Content)
 		
+		originImageURI := ""
+		if len(l.ImageContent) > 0 {
+			base64Content = base64.StdEncoding.EncodeToString(l.ImageContent)
+			format := utils.DetectImageFormat(l.ImageContent)
+			originImageURI = fmt.Sprintf("data:image/%s;base64,%s", format, base64Content)
+		}
+		
 		db.InsertRecordInfo(&db.Record{
 			UserId:     userId,
 			Question:   l.Prompt,
 			Answer:     dataURI,
 			Token:      totalToken,
+			Content:    originImageURI,
 			IsDeleted:  0,
 			RecordType: param.VideoRecordType,
 			Mode:       *conf.BaseConfInfo.MediaType,
