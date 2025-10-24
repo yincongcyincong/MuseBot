@@ -606,6 +606,10 @@ func (r *RobotInfo) GetAudioContent(audioContent []byte) (string, error) {
 	if err != nil {
 		logger.WarnCtx(r.Ctx, "addRecordToken err", "err", err)
 	}
+	err = db.AddRecordContent(r.RecordID, fmt.Sprintf("data:audio/%s;base64,%s", utils.DetectAudioFormat(audioContent), base64.StdEncoding.EncodeToString(audioContent)))
+	if err != nil {
+		logger.WarnCtx(r.Ctx, "AddRecordContent err", "err", err)
+	}
 	
 	return answer, err
 }
@@ -633,6 +637,10 @@ func (r *RobotInfo) GetImageContent(imageContent []byte, content string) (string
 	err = db.AddRecordToken(r.RecordID, userId, token)
 	if err != nil {
 		logger.WarnCtx(r.Ctx, "addRecordToken err", "err", err)
+	}
+	err = db.AddRecordContent(r.RecordID, fmt.Sprintf("data:image/%s;base64,%s", utils.DetectImageFormat(imageContent), base64.StdEncoding.EncodeToString(imageContent)))
+	if err != nil {
+		logger.WarnCtx(r.Ctx, "AddRecordContent err", "err", err)
 	}
 	
 	if content == "" {

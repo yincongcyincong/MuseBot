@@ -100,7 +100,8 @@ func DeleteRagFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	err = os.Remove(*conf.RagConfInfo.KnowledgePath + "/" + r.FormValue("file_name"))
+	fileName := r.FormValue("file_name")
+	err = os.Remove(*conf.RagConfInfo.KnowledgePath + "/" + fileName)
 	if err != nil {
 		logger.ErrorCtx(ctx, "delete file error", "err", err)
 		utils.Failure(ctx, w, r, param.CodeServerFail, param.MsgServerFail, err)
@@ -108,7 +109,7 @@ func DeleteRagFile(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	if conf.RagConfInfo.Store == nil {
-		err = db.DeleteRagFileByFileName(r.FormValue("name"))
+		err = db.DeleteRagFileByFileName(fileName)
 		if err != nil {
 			logger.ErrorCtx(ctx, "delete dir error", "err", err)
 			utils.Failure(ctx, w, r, param.CodeDBWriteFail, param.MsgDBWriteFail, err)

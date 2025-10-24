@@ -169,12 +169,12 @@ MIT License © 2025 jack yin
 
 1. **Соберите Docker-образ**
    ```sh
-   docker build -t deepseek-telegram-bot .
+   docker build -t MuseBot .
    ```
 
 2. **Запустите контейнер**
    ```sh
-   docker run -d -v /home/user/xxx/data:/app/data -e TELEGRAM_BOT_TOKEN="токен-телеграм-бота" -e DEEPSEEK_TOKEN="токен-авторизации-deepseek" --name my-telegram-bot MuseBot
+   docker run -d -v /home/user/xxx/data:/app/data -e TELEGRAM_BOT_TOKEN="токен-телеграм-бота" -e DEEPSEEK_TOKEN="токен-авторизации-deepseek" --name my-bot MuseBot
    ```
 
 ## Участие

@@ -386,12 +386,11 @@ func GetDailyNewRecords(days int) ([]DailyStat, error) {
 
 func UpdateRecordInfo(record *Record) error {
 	query := `UPDATE records
-			  SET answer = ?, content = ?, token = token + ?, mode = ?, update_time = ?
+			  SET answer = ?, token = token + ?, mode = ?, update_time = ?
 			  WHERE id = ?`
 	
 	_, err := DB.Exec(query,
 		record.Answer,
-		record.Content,
 		record.Token,
 		record.Mode,
 		time.Now().Unix(),
@@ -425,6 +424,20 @@ func AddRecordToken(recordID int64, userId string, token int) error {
 	err = AddToken(userId, token)
 	if err != nil {
 		logger.Error("add token fail", "err", err)
+		return err
+	}
+	
+	return nil
+}
+
+func AddRecordContent(recordID int64, content string) error {
+	query := `UPDATE records
+			  SET content = ?, update_time = ?
+			  WHERE id = ?`
+	
+	_, err := DB.Exec(query, content, time.Now().Unix(), recordID)
+	if err != nil {
+		logger.Error("addRecordToken err", "err", err)
 		return err
 	}
 	

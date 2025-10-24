@@ -363,10 +363,18 @@ func (d *DingRobot) sendVideo() {
 		base64Content := base64.StdEncoding.EncodeToString(videoContent)
 		dataURI := fmt.Sprintf("data:video/%s;base64,%s", format, base64Content)
 		
+		originImageURI := ""
+		if len(imageContent) > 0 {
+			base64Content = base64.StdEncoding.EncodeToString(imageContent)
+			format = utils.DetectImageFormat(imageContent)
+			originImageURI = fmt.Sprintf("data:image/%s;base64,%s", format, base64Content)
+		}
+		
 		db.InsertRecordInfo(&db.Record{
 			UserId:     userId,
 			Question:   d.Prompt,
 			Answer:     dataURI,
+			Content:    originImageURI,
 			Token:      totalToken,
 			IsDeleted:  0,
 			RecordType: param.VideoRecordType,

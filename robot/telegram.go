@@ -510,10 +510,18 @@ func (t *TelegramRobot) sendVideo() {
 		base64Content := base64.StdEncoding.EncodeToString(videoContent)
 		dataURI := fmt.Sprintf("data:video/%s;base64,%s", utils.DetectVideoMimeType(videoContent), base64Content)
 		
+		originImageURI := ""
+		if len(lastImageContent) > 0 {
+			base64Content = base64.StdEncoding.EncodeToString(lastImageContent)
+			format := utils.DetectImageFormat(lastImageContent)
+			originImageURI = fmt.Sprintf("data:image/%s;base64,%s", format, base64Content)
+		}
+		
 		db.InsertRecordInfo(&db.Record{
 			UserId:     userId,
 			Question:   prompt,
 			Answer:     dataURI,
+			Content:    originImageURI,
 			Token:      totalToken,
 			IsDeleted:  0,
 			RecordType: param.VideoRecordType,
@@ -604,11 +612,19 @@ func (t *TelegramRobot) sendImg() {
 		base64Content := base64.StdEncoding.EncodeToString(imageContent)
 		dataURI := fmt.Sprintf("data:image/%s;base64,%s", utils.DetectImageFormat(imageContent), base64Content)
 		
+		originImageURI := ""
+		if len(lastImageContent) > 0 {
+			base64Content = base64.StdEncoding.EncodeToString(lastImageContent)
+			format := utils.DetectImageFormat(lastImageContent)
+			originImageURI = fmt.Sprintf("data:image/%s;base64,%s", format, base64Content)
+		}
+		
 		db.InsertRecordInfo(&db.Record{
 			UserId:     userId,
 			Question:   prompt,
 			Answer:     dataURI,
 			Token:      totalToken,
+			Content:    originImageURI,
 			IsDeleted:  0,
 			RecordType: param.ImageRecordType,
 			Mode:       *conf.BaseConfInfo.MediaType,

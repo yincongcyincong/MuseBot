@@ -29,12 +29,14 @@ type UpdateConfParam struct {
 
 func GetCommand(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	res := CompareFlagsWithStructTags(conf.BaseConfInfo)
-	res += CompareFlagsWithStructTags(conf.AudioConfInfo)
-	res += CompareFlagsWithStructTags(conf.LLMConfInfo)
-	res += CompareFlagsWithStructTags(conf.PhotoConfInfo)
-	res += CompareFlagsWithStructTags(conf.RagConfInfo)
-	res += CompareFlagsWithStructTags(conf.VideoConfInfo)
+	
+	useQuota := r.URL.Query().Get("use_quota") == "1"
+	res := CompareFlagsWithStructTags(conf.BaseConfInfo, useQuota)
+	res += CompareFlagsWithStructTags(conf.AudioConfInfo, useQuota)
+	res += CompareFlagsWithStructTags(conf.LLMConfInfo, useQuota)
+	res += CompareFlagsWithStructTags(conf.PhotoConfInfo, useQuota)
+	res += CompareFlagsWithStructTags(conf.RagConfInfo, useQuota)
+	res += CompareFlagsWithStructTags(conf.VideoConfInfo, useQuota)
 	
 	flagValue := flag.Lookup("mcp_conf_path")
 	if flagValue.DefValue != *conf.McpConfPath {
@@ -314,7 +316,7 @@ func handleSpecialData(updateConfParam *UpdateConfParam) {
 	}
 }
 
-func CompareFlagsWithStructTags(cfg interface{}) string {
+func CompareFlagsWithStructTags(cfg interface{}, useQuota bool) string {
 	v := reflect.ValueOf(cfg)
 	t := reflect.TypeOf(cfg)
 	
@@ -356,7 +358,12 @@ func CompareFlagsWithStructTags(cfg interface{}) string {
 		}
 		
 		if structValue != flagValue.DefValue || jsonTag == "bot_name" || jsonTag == "http_host" {
-			res += fmt.Sprintf("-%s='%s'\n", jsonTag, structValue)
+			if useQuota {
+				res += fmt.Sprintf("-%s='%s'\n", jsonTag, structValue)
+			} else {
+				res += fmt.Sprintf("-%s=%s\n", jsonTag, structValue)
+			}
+			
 		}
 	}
 	

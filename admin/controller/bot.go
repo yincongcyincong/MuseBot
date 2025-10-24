@@ -116,7 +116,7 @@ func CreateBot(w http.ResponseWriter, r *http.Request) {
 		CaFile:  b.CaFile,
 		CrtFile: b.CrtFile,
 		KeyFile: b.KeyFile,
-	}).Do(GetRequest(ctx, http.MethodGet, strings.TrimSuffix(b.Address, "/")+"/command/get", bytes.NewBuffer(nil)))
+	}).Do(GetRequest(ctx, http.MethodGet, strings.TrimSuffix(b.Address, "/")+"/command/get?use_quota=1", bytes.NewBuffer(nil)))
 	if err == nil {
 		isRuning = true
 		defer resp.Body.Close()
@@ -224,7 +224,7 @@ func UpdateBotAddress(w http.ResponseWriter, r *http.Request) {
 			CaFile:  b.CaFile,
 			CrtFile: b.CrtFile,
 			KeyFile: b.KeyFile,
-		}).Do(GetRequest(ctx, http.MethodGet, strings.TrimSuffix(b.Address, "/")+"/command/get", bytes.NewBuffer(nil)))
+		}).Do(GetRequest(ctx, http.MethodGet, strings.TrimSuffix(b.Address, "/")+"/command/get?use_quota=1", bytes.NewBuffer(nil)))
 		if err == nil {
 			defer resp.Body.Close()
 			bodyByte, err := io.ReadAll(resp.Body)

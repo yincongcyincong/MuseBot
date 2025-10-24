@@ -114,7 +114,7 @@ docker run -d -v /home/user/data:/app/data -e TELEGRAM_BOT_TOKEN="你的Telegram
 
 ```sh
 阿里云:
-docker pull crpi-i1dsvpjijxpgjgbv.cn-hangzhou.personal.cr.aliyuncs.com/jackyin0822/musebot
+docker pull crpi-i1dsvpjijxpgjgbv.cn-hangzhou.personal.cr.aliyuncs.com/jackyin0822/musebot:latest
 ```
 
 命令介绍: (文档)[https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/param_conf_ZH.md]
@@ -247,12 +247,12 @@ docker pull crpi-i1dsvpjijxpgjgbv.cn-hangzhou.personal.cr.aliyuncs.com/jackyin08
 
 1. **构建 Docker 镜像**
    ```sh
-   docker build -t deepseek-telegram-bot .
+   docker build -t musebot .
    ```
 
 2. **运行 Docker 容器**
    ```sh
-   docker run -d -v /home/user/xxx/data:/app/data -e TELEGRAM_BOT_TOKEN="你的Telegram Bot Token" -e DEEPSEEK_TOKEN="你的DeepSeek API密钥" --name my-telegram-bot deepseek-telegram-bot
+   docker run -d -v /home/user/xxx/data:/app/data -e TELEGRAM_BOT_TOKEN="你的Telegram Bot Token" -e DEEPSEEK_TOKEN="你的DeepSeek API密钥" --name my-telegram-bot musebot
    ```
 
 ---

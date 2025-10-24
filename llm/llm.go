@@ -115,12 +115,6 @@ func NewLLM(opts ...Option) *LLM {
 			ToolMessage:        []godeepseek.ChatCompletionMessage{},
 			CurrentToolMessage: []godeepseek.ChatCompletionMessage{},
 		}
-	//case param.Ollama:
-	//	l.LLMClient = &OllamaDeepseekReq{
-	//		ToolCall:           []godeepseek.ToolCall{},
-	//		ToolMessage:        []godeepseek.ChatCompletionMessage{},
-	//		CurrentToolMessage: []godeepseek.ChatCompletionMessage{},
-	//	}
 	case param.Gemini:
 		l.LLMClient = &GeminiReq{
 			ToolCall:           []*genai.FunctionCall{},
