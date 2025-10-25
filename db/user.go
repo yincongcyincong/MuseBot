@@ -1,25 +1,29 @@
 package db
 
 import (
+	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"time"
 	
 	"github.com/yincongcyincong/MuseBot/conf"
+	"github.com/yincongcyincong/MuseBot/param"
 )
 
 type User struct {
-	ID         int64  `json:"id"`
-	UserId     string `json:"user_id"`
-	Mode       string `json:"mode"`
-	Token      int    `json:"token"`
-	UpdateTime int64  `json:"update_time"`
-	CreateTime int64  `json:"create_time"`
-	AvailToken int    `json:"avail_token"`
+	ID           int64            `json:"id"`
+	UserId       string           `json:"user_id"`
+	Token        int              `json:"token"`
+	UpdateTime   int64            `json:"update_time"`
+	CreateTime   int64            `json:"create_time"`
+	AvailToken   int              `json:"avail_token"`
+	LLMConfig    string           `json:"llm_config"`
+	LLMConfigRaw *param.LLMConfig `json:"llm_config_raw"`
 }
 
 // InsertUser insert user data
-func InsertUser(userId string, mode string) (int64, error) {
+func InsertUser(userId string, llmConfig string) (int64, error) {
 	userInfo, err := GetUserByID(userId)
 	if err != nil {
 		return 0, err
@@ -29,8 +33,8 @@ func InsertUser(userId string, mode string) (int64, error) {
 	}
 	
 	// insert data
-	insertSQL := `INSERT INTO users (user_id, mode, update_time, create_time, avail_token, from_bot) VALUES (?, ?, ?, ?, ?, ?)`
-	result, err := DB.Exec(insertSQL, userId, mode, time.Now().Unix(), time.Now().Unix(), *conf.BaseConfInfo.TokenPerUser, *conf.BaseConfInfo.BotName)
+	insertSQL := `INSERT INTO users (user_id, llm_config, update_time, create_time, avail_token, from_bot) VALUES (?, ?, ?, ?, ?, ?)`
+	result, err := DB.Exec(insertSQL, userId, llmConfig, time.Now().Unix(), time.Now().Unix(), *conf.BaseConfInfo.TokenPerUser, *conf.BaseConfInfo.BotName)
 	if err != nil {
 		return 0, err
 	}
@@ -46,12 +50,12 @@ func InsertUser(userId string, mode string) (int64, error) {
 // GetUserByID get user by userId
 func GetUserByID(userId string) (*User, error) {
 	// select one use base on name
-	querySQL := `SELECT id, user_id, mode, token, avail_token, update_time, create_time FROM users WHERE user_id = ?`
+	querySQL := `SELECT id, user_id, llm_config, token, avail_token, update_time, create_time FROM users WHERE user_id = ?`
 	row := DB.QueryRow(querySQL, userId)
 	
 	// scan row get result
 	var user User
-	err := row.Scan(&user.ID, &user.UserId, &user.Mode, &user.Token, &user.AvailToken, &user.UpdateTime, &user.CreateTime)
+	err := row.Scan(&user.ID, &user.UserId, &user.LLMConfig, &user.Token, &user.AvailToken, &user.UpdateTime, &user.CreateTime)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			// 如果没有找到数据，返回 nil
@@ -59,12 +63,20 @@ func GetUserByID(userId string) (*User, error) {
 		}
 		return nil, err
 	}
+	
+	if user.LLMConfig != "" {
+		err := json.Unmarshal([]byte(user.LLMConfig), &user.LLMConfigRaw)
+		if err != nil {
+			return nil, fmt.Errorf("UnmarshalJSON failed: %v", err)
+		}
+	}
+	
 	return &user, nil
 }
 
 // GetUsers get 1000 users order by updatetime
 func GetUsers() ([]User, error) {
-	rows, err := DB.Query("SELECT id, user_id, mode, update_time FROM users order by update_time limit 10000")
+	rows, err := DB.Query("SELECT id, user_id, llm_config, update_time FROM users order by update_time limit 10000")
 	if err != nil {
 		return nil, err
 	}
@@ -73,7 +85,7 @@ func GetUsers() ([]User, error) {
 	var users []User
 	for rows.Next() {
 		var user User
-		if err := rows.Scan(&user.ID, &user.UserId, &user.Mode, &user.UpdateTime); err != nil {
+		if err := rows.Scan(&user.ID, &user.UserId, &user.LLMConfig, &user.UpdateTime); err != nil {
 			return nil, err
 		}
 		users = append(users, user)
@@ -86,10 +98,10 @@ func GetUsers() ([]User, error) {
 	return users, nil
 }
 
-// UpdateUserMode update user mode
-func UpdateUserMode(userId string, mode string) error {
-	updateSQL := `UPDATE users SET mode = ? WHERE user_id = ?`
-	_, err := DB.Exec(updateSQL, mode, userId)
+// UpdateUserLLMConfig update user llm config
+func UpdateUserLLMConfig(userId string, llmConfig string) error {
+	updateSQL := `UPDATE users SET llm_config = ? WHERE user_id = ?`
+	_, err := DB.Exec(updateSQL, llmConfig, userId)
 	return err
 }
 
@@ -135,7 +147,7 @@ func GetUserByPage(page, pageSize int, userId string) ([]User, error) {
 	
 	// 查询数据
 	listSQL := fmt.Sprintf(`
-		SELECT id, user_id, mode, token, update_time, avail_token, create_time
+		SELECT id, user_id, llm_config, token, update_time, avail_token, create_time
 		FROM users %s
 		ORDER BY id DESC
 		LIMIT ? OFFSET ?`, whereSQL)
@@ -150,8 +162,14 @@ func GetUserByPage(page, pageSize int, userId string) ([]User, error) {
 	var users []User
 	for rows.Next() {
 		var u User
-		if err := rows.Scan(&u.ID, &u.UserId, &u.Mode, &u.Token, &u.UpdateTime, &u.AvailToken, &u.CreateTime); err != nil {
+		if err := rows.Scan(&u.ID, &u.UserId, &u.LLMConfig, &u.Token, &u.UpdateTime, &u.AvailToken, &u.CreateTime); err != nil {
 			return nil, err
+		}
+		if u.LLMConfig != "" {
+			err := json.Unmarshal([]byte(u.LLMConfig), &u.LLMConfigRaw)
+			if err != nil {
+				return nil, fmt.Errorf("UnmarshalJSON failed: %v", err)
+			}
 		}
 		users = append(users, u)
 	}
@@ -236,4 +254,13 @@ func GetDailyNewUsers(days int) ([]DailyStat, error) {
 	}
 	
 	return stats, nil
+}
+
+func GetCtxUserInfo(ctx context.Context) *User {
+	userInfo, ok := ctx.Value("user_info").(*User)
+	if ok {
+		return userInfo
+	}
+	
+	return nil
 }

@@ -38,13 +38,14 @@ type VolReq struct {
 
 func (h *VolReq) GetModel(l *LLM) {
 	l.Model = param.ModelDeepSeekR1_528
-	userInfo, err := db.GetUserByID(l.UserId)
-	if err != nil {
-		logger.ErrorCtx(l.Ctx, "Error getting user info", "err", err)
+	userInfo := db.GetCtxUserInfo(l.Ctx)
+	model := ""
+	if userInfo != nil && userInfo.LLMConfigRaw != nil {
+		model = userInfo.LLMConfigRaw.TxtModel
 	}
-	if userInfo != nil && userInfo.Mode != "" && param.VolModels[userInfo.Mode] {
-		logger.InfoCtx(l.Ctx, "User info", "userID", userInfo.UserId, "mode", userInfo.Mode)
-		l.Model = userInfo.Mode
+	if userInfo != nil && model != "" && param.VolModels[model] {
+		logger.InfoCtx(l.Ctx, "User info", "userID", userInfo.UserId, "mode", model)
+		l.Model = model
 	}
 }
 

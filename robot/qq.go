@@ -193,7 +193,7 @@ func (q *QQRobot) requestLLMAndResp(content string) {
 	if !strings.Contains(content, "/") && q.Prompt == "" {
 		q.Prompt = content
 	}
-	q.Robot.ExecCmd(content, q.sendChatMessage, nil)
+	q.Robot.ExecCmd(content, q.sendChatMessage, nil, nil)
 }
 
 func (q *QQRobot) sendHelpConfigurationOptions() {

@@ -32,23 +32,23 @@ type DeepseekReq struct {
 }
 
 func (d *DeepseekReq) GetModel(l *LLM) {
-	userInfo, err := db.GetUserByID(l.UserId)
-	if err != nil {
-		logger.ErrorCtx(l.Ctx, "Error getting user info", "err", err)
+	userInfo := db.GetCtxUserInfo(l.Ctx)
+	model := ""
+	if userInfo != nil && userInfo.LLMConfigRaw != nil {
+		model = userInfo.LLMConfigRaw.TxtModel
 	}
-	
-	switch *conf.BaseConfInfo.Type {
+	switch utils.GetTxtType(db.GetCtxUserInfo(l.Ctx).LLMConfigRaw) {
 	case param.DeepSeek:
 		l.Model = deepseek.DeepSeekChat
-		if userInfo != nil && userInfo.Mode != "" && param.DeepseekModels[userInfo.Mode] {
-			logger.InfoCtx(l.Ctx, "User info", "userID", userInfo.UserId, "mode", userInfo.Mode)
-			l.Model = userInfo.Mode
+		if userInfo != nil && model != "" && param.DeepseekModels[model] {
+			logger.InfoCtx(l.Ctx, "User info", "userID", userInfo.UserId, "mode", model)
+			l.Model = model
 		}
 	case param.Ollama:
 		l.Model = "deepseek-r1"
-		if userInfo != nil && userInfo.Mode != "" {
-			logger.InfoCtx(l.Ctx, "User info", "userID", userInfo.UserId, "mode", userInfo.Mode)
-			l.Model = userInfo.Mode
+		if userInfo != nil && model != "" {
+			logger.InfoCtx(l.Ctx, "User info", "userID", userInfo.UserId, "mode", model)
+			l.Model = model
 		}
 	}
 }
@@ -301,12 +301,9 @@ func GetDeepseekClient(ctx context.Context) *deepseek.Client {
 		return nil
 	}
 	
-	if *conf.BaseConfInfo.Type == param.Ollama {
+	if utils.GetTxtType(db.GetCtxUserInfo(ctx).LLMConfigRaw) == param.Ollama {
 		client.Path = "api/chat"
-	}
-	
-	if conf.BaseConfInfo.SpecialLLMUrl != "" {
-		client.BaseURL = conf.BaseConfInfo.SpecialLLMUrl
+		client.BaseURL = "http://localhost:11434/"
 	}
 	
 	if *conf.BaseConfInfo.CustomUrl != "" {

@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
-
+	
 	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/yincongcyincong/MuseBot/conf"
@@ -18,12 +18,12 @@ const (
 			CREATE TABLE users (
 				id INTEGER PRIMARY KEY AUTOINCREMENT,
 				user_id varchar(100) NOT NULL DEFAULT '0',
-				mode VARCHAR(100) NOT NULL DEFAULT '',
 				update_time int(10) NOT NULL DEFAULT '0',
 				token int(20) NOT NULL DEFAULT '0',
 				avail_token int(20) NOT NULL DEFAULT 0,
 				create_time int(10) NOT NULL DEFAULT '0',
-				from_bot VARCHAR(255) NOT NULL DEFAULT ''
+				from_bot VARCHAR(255) NOT NULL DEFAULT '',
+				llm_config TEXT NOT NULL
 			);
 			CREATE TABLE records (
 				id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -52,19 +52,19 @@ const (
 			CREATE INDEX idx_users_user_id ON users(user_id);
 			CREATE INDEX idx_records_user_id ON records(user_id);
 			CREATE INDEX idx_records_create_time ON records(create_time);`
-
+	
 	mysqlCreateUsersSQL = `
 			CREATE TABLE IF NOT EXISTS users (
 				id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
 				user_id varchar(100) NOT NULL DEFAULT 0,
-				mode VARCHAR(100) NOT NULL DEFAULT '',
 				update_time INT(10) NOT NULL DEFAULT 0,
 				token BIGINT NOT NULL DEFAULT 0,
 				avail_token BIGINT NOT NULL DEFAULT 0,
 			    create_time int(10) NOT NULL DEFAULT '0',
-			    from_bot VARCHAR(255) NOT NULL DEFAULT ''
+			    from_bot VARCHAR(255) NOT NULL DEFAULT '',
+			    llm_config TEXT NOT NULL
 			);`
-
+	
 	mysqlCreateRecordsSQL = `
 			CREATE TABLE IF NOT EXISTS records (
 				id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -80,7 +80,7 @@ const (
 			    record_type tinyint(1) NOT NULL DEFAULT 0 COMMENT '0:text, 1:image 2:video 3: web',
 			    from_bot VARCHAR(255) NOT NULL DEFAULT ''
 			);`
-
+	
 	mysqlCreateRagFileSQL = `CREATE TABLE IF NOT EXISTS rag_files (
 				id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
 				file_name VARCHAR(255) NOT NULL DEFAULT '',
@@ -116,12 +116,12 @@ func InitTable() {
 		}
 		logger.Info("✅ create direction success")
 	}
-
+	
 	DB, err = sql.Open(*conf.BaseConfInfo.DBType, *conf.BaseConfInfo.DBConf)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
-
+	
 	// init table
 	switch *conf.BaseConfInfo.DBType {
 	case "sqlite3":
@@ -134,18 +134,18 @@ func InitTable() {
 		if err := initializeMysqlTable(DB, "users", mysqlCreateUsersSQL); err != nil {
 			logger.Fatal("create mysql table fail", "err", err)
 		}
-
+		
 		if err := initializeMysqlTable(DB, "records", mysqlCreateRecordsSQL); err != nil {
 			logger.Fatal("create mysql table fail", "err", err)
 		}
-
+		
 		if err := initializeMysqlTable(DB, "rag_files", mysqlCreateRagFileSQL); err != nil {
 			logger.Fatal("create mysql table fail", "err", err)
 		}
 	}
-
+	
 	InsertRecord()
-
+	
 	logger.Info("db initialize successfully")
 }
 
@@ -153,7 +153,7 @@ func initializeMysqlTable(db *sql.DB, tableName string, createSQL string) error 
 	var tb string
 	query := fmt.Sprintf("SHOW TABLES LIKE '%s'", tableName)
 	err := db.QueryRow(query).Scan(&tb)
-
+	
 	if errors.Is(err, sql.ErrNoRows) || tb == "" {
 		logger.Info("Table not exist, creating...", "tableName", tableName)
 		_, err := db.Exec(createSQL)
@@ -161,7 +161,7 @@ func initializeMysqlTable(db *sql.DB, tableName string, createSQL string) error 
 			return fmt.Errorf("create table failed: %v", err)
 		}
 		logger.Info("Create table success", "tableName", tableName)
-
+		
 		// 创建索引（防止重复创建）
 		if tableName == "records" {
 			_, err = db.Exec(mysqlCreateUserIndexSQL)
@@ -182,7 +182,7 @@ func initializeMysqlTable(db *sql.DB, tableName string, createSQL string) error 
 	} else {
 		logger.Info("Table exists", "tableName", tableName)
 	}
-
+	
 	return nil
 }
 
@@ -192,7 +192,7 @@ func initializeSqlite3Table(db *sql.DB, tableName string) error {
 	query := `SELECT name FROM sqlite_master WHERE type='table' AND name=?;`
 	var name string
 	err := db.QueryRow(query, tableName).Scan(&name)
-
+	
 	if err != nil {
 		if err == sql.ErrNoRows {
 			logger.Info("table not exist，creating...", "tableName", tableName)
@@ -207,6 +207,6 @@ func initializeSqlite3Table(db *sql.DB, tableName string) error {
 	} else {
 		logger.Info("table exist", "tableName", tableName)
 	}
-
+	
 	return nil
 }

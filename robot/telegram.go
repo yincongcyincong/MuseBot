@@ -104,7 +104,28 @@ func CreateBot(ctx context.Context) *tgbotapi.BotAPI {
 			Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.retry.description", nil),
 		},
 		tgbotapi.BotCommand{
-			Command:     "mode",
+			Command:     "txt_model",
+			Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.mode.description", nil),
+		},
+		tgbotapi.BotCommand{
+			Command:     "photo_model",
+			Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.mode.description", nil),
+		},
+		tgbotapi.BotCommand{
+			Command:     "video_model",
+			Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.mode.description", nil),
+		},
+		tgbotapi.BotCommand{
+			Command:     "photo_type",
+			Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.mode.description", nil),
+		},
+		tgbotapi.BotCommand{
+			Command:     "video_type",
+			Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.mode.description", nil),
+		},
+		
+		tgbotapi.BotCommand{
+			Command:     "txt_type",
 			Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.mode.description", nil),
 		},
 		tgbotapi.BotCommand{
@@ -147,21 +168,16 @@ func CreateBot(ctx context.Context) *tgbotapi.BotAPI {
 
 func (t *TelegramRobot) checkValid() bool {
 	chatId, msgId, _ := t.Robot.GetChatIdAndMsgIdAndUserID()
-	
-	t.Cmd, t.Prompt = ParseCommand(t.getMsgContent())
-	if t.handleCommandAndCallback() {
-		return false
-	}
-	
-	if t.Update.Message != nil {
-		if t.skipThisMsg() {
-			logger.WarnCtx(t.Robot.Ctx, "skip this msg", "msgId", msgId, "chat", chatId, "type", t.getMessage().Chat.Type, "content", t.getMsgContent())
-			return false
-		}
+	if t.Update.CallbackQuery != nil {
 		return true
 	}
 	
-	return false
+	if t.skipThisMsg() {
+		logger.WarnCtx(t.Robot.Ctx, "skip this msg", "msgId", msgId, "chat", chatId, "type", t.getMessage().Chat.Type, "content", t.getMsgContent())
+		return false
+	}
+	
+	return true
 }
 
 func (t *TelegramRobot) getMsgContent() string {
@@ -182,13 +198,12 @@ func (t *TelegramRobot) getMsgContent() string {
 
 // requestLLMAndResp request deepseek api
 func (t *TelegramRobot) requestLLMAndResp(content string) {
-	t.Robot.TalkingPreCheck(func() {
-		if conf.RagConfInfo.Store != nil {
-			t.executeChain(content)
-		} else {
-			t.executeLLM(content)
-		}
-	})
+	t.Cmd, t.Prompt = ParseCommand(t.getMsgContent())
+	if t.handleCommandAndCallback() {
+		return
+	}
+	
+	t.sendChatMessage()
 }
 
 // executeChain use langchain to interact llm
@@ -295,7 +310,7 @@ func (t *TelegramRobot) handleCommand() {
 		}
 	}
 	
-	t.Robot.ExecCmd(cmd, t.sendChatMessage, t.sendModeConfigurationOptions)
+	t.Robot.ExecCmd(cmd, t.sendChatMessage, t.changeModel, t.changeType)
 }
 
 // sendChatMessage response chat command to telegram
@@ -330,16 +345,55 @@ func (t *TelegramRobot) sendChatMessage() {
 	}
 	
 	// Reply to the chat content
-	t.requestLLMAndResp(content)
+	t.Robot.TalkingPreCheck(func() {
+		if conf.RagConfInfo.Store != nil {
+			t.executeChain(content)
+		} else {
+			t.executeLLM(content)
+		}
+	})
+}
+
+func (t *TelegramRobot) changeType(ty string) {
+	var inlineKeyboard tgbotapi.InlineKeyboardMarkup
+	inlineButton := make([][]tgbotapi.InlineKeyboardButton, 0)
+	switch ty {
+	case "txt_type", "/txt_type":
+		for _, k := range utils.GetAvailTxtType() {
+			inlineButton = append(inlineButton, tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonData(k, k),
+			))
+		}
+	
+	case "photo_type", "/photo_type":
+		for _, k := range utils.GetAvailImgType() {
+			inlineButton = append(inlineButton, tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonData(k, k),
+			))
+		}
+	
+	case "video_type", "/video_type":
+		for _, k := range utils.GetAvailVideoType() {
+			inlineButton = append(inlineButton, tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonData(k, k),
+			))
+		}
+	}
+	
+	chatID, msgId, _ := t.Robot.GetChatIdAndMsgIdAndUserID()
+	
+	inlineKeyboard = tgbotapi.NewInlineKeyboardMarkup(inlineButton...)
+	t.Robot.SendMsg(chatID, i18n.GetMessage(*conf.BaseConfInfo.Lang, "chat_mode", nil),
+		msgId, tgbotapi.ModeMarkdown, &inlineKeyboard)
 }
 
 // sendModeConfigurationOptions send config view
-func (t *TelegramRobot) sendModeConfigurationOptions() {
+func (t *TelegramRobot) changeModel() {
 	chatID, msgId, _ := t.Robot.GetChatIdAndMsgIdAndUserID()
 	
 	var inlineKeyboard tgbotapi.InlineKeyboardMarkup
 	inlineButton := make([][]tgbotapi.InlineKeyboardButton, 0)
-	switch *conf.BaseConfInfo.Type {
+	switch utils.GetTxtType(db.GetCtxUserInfo(t.Robot.Ctx).LLMConfigRaw) {
 	case param.DeepSeek:
 		if *conf.BaseConfInfo.CustomUrl == "" || *conf.BaseConfInfo.CustomUrl == "https://api.deepseek.com/" {
 			for k := range param.DeepseekModels {
@@ -368,10 +422,10 @@ func (t *TelegramRobot) sendModeConfigurationOptions() {
 		}
 	case param.OpenRouter, param.AI302, param.Ollama:
 		if t.Prompt != "" {
-			t.Robot.handleModeUpdate(t.Prompt)
+			t.Robot.handleModelUpdate(&RobotModel{TxtType: t.Prompt})
 			return
 		}
-		switch *conf.BaseConfInfo.Type {
+		switch utils.GetTxtType(db.GetCtxUserInfo(t.Robot.Ctx).LLMConfigRaw) {
 		case param.AI302:
 			t.Robot.SendMsg(chatID, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
 				"link": "https://302.ai/",
@@ -413,11 +467,7 @@ func (t *TelegramRobot) sendHelpConfigurationOptions() {
 	// create inline button
 	inlineKeyboard := tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("mode", "mode"),
 			tgbotapi.NewInlineKeyboardButtonData("clear", "clear"),
-		),
-		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("balance", "balance"),
 			tgbotapi.NewInlineKeyboardButtonData("state", "state"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
@@ -441,34 +491,20 @@ func (t *TelegramRobot) handleCallbackQuery() {
 			logger.ErrorCtx(t.Robot.Ctx, "handleCommand panic err", "err", err, "stack", string(debug.Stack()))
 		}
 	}()
-	if t.Update.CallbackQuery.Message.ReplyToMessage != nil {
+	if t.Update.CallbackQuery != nil && t.Update.CallbackQuery.Message.ReplyToMessage != nil {
 		t.Update.CallbackQuery.Message.MessageID = t.Update.CallbackQuery.Message.ReplyToMessage.MessageID
+		t.Prompt = t.Update.CallbackQuery.Data
+		switch t.Update.CallbackQuery.Message.ReplyToMessage.Text {
+		case "/txt_type", "/photo_type", "/video_type":
+			t.Robot.changeType(t.Update.CallbackQuery.Message.ReplyToMessage.Text)
+			return
+		case "/txt_model", "/photo_model", "/video_model":
+			t.Robot.changeModel(t.Update.CallbackQuery.Message.ReplyToMessage.Text)
+			return
+		}
 	}
 	
-	t.Robot.ExecCmd(t.Update.CallbackQuery.Data, t.chooseMode, t.sendModeConfigurationOptions)
-}
-
-func (t *TelegramRobot) chooseMode() {
-	if param.GeminiModels[t.Update.CallbackQuery.Data] || param.OpenAIModels[t.Update.CallbackQuery.Data] ||
-		param.DeepseekModels[t.Update.CallbackQuery.Data] || param.DeepseekLocalModels[t.Update.CallbackQuery.Data] ||
-		param.OpenRouterModels[t.Update.CallbackQuery.Data] || param.VolModels[t.Update.CallbackQuery.Data] {
-		t.Robot.handleModeUpdate(t.Update.CallbackQuery.Data)
-	}
-	if param.OpenRouterModelTypes[t.Update.CallbackQuery.Data] {
-		chatID, msgId, _ := t.Robot.GetChatIdAndMsgIdAndUserID()
-		inlineButton := make([][]tgbotapi.InlineKeyboardButton, 0)
-		for k := range param.OpenRouterModels {
-			if strings.Contains(k, t.Update.CallbackQuery.Data+"/") {
-				inlineButton = append(inlineButton, tgbotapi.NewInlineKeyboardRow(
-					tgbotapi.NewInlineKeyboardButtonData(k, k),
-				))
-			}
-		}
-		inlineKeyboard := tgbotapi.NewInlineKeyboardMarkup(inlineButton...)
-		t.Robot.SendMsg(chatID, i18n.GetMessage(*conf.BaseConfInfo.Lang, "chat_mode", nil),
-			msgId, tgbotapi.ModeMarkdown, &inlineKeyboard)
-		
-	}
+	t.Robot.ExecCmd(t.Update.CallbackQuery.Data, nil, nil, nil)
 }
 
 // sendVideo send video to telegram

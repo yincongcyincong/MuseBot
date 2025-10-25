@@ -273,13 +273,10 @@ func (h *GeminiReq) RequestToolsCall(ctx context.Context, response *genai.Genera
 
 func (h *GeminiReq) GetModel(l *LLM) {
 	l.Model = param.ModelGemini20Flash
-	userInfo, err := db.GetUserByID(l.UserId)
-	if err != nil {
-		logger.ErrorCtx(l.Ctx, "Error getting user info", "err", err)
-	}
-	if userInfo != nil && userInfo.Mode != "" && param.GeminiModels[userInfo.Mode] {
-		logger.InfoCtx(l.Ctx, "User info", "userID", userInfo.UserId, "mode", userInfo.Mode)
-		l.Model = userInfo.Mode
+	userInfo := db.GetCtxUserInfo(l.Ctx)
+	if userInfo != nil && userInfo.LLMConfigRaw != nil && param.GeminiModels[userInfo.LLMConfigRaw.TxtModel] {
+		logger.InfoCtx(l.Ctx, "User info", "userID", userInfo.UserId, "mode", userInfo.LLMConfigRaw.TxtModel)
+		l.Model = userInfo.LLMConfigRaw.TxtModel
 	}
 }
 

@@ -132,7 +132,7 @@ func (l *LarkRobot) requestLLMAndResp(content string) {
 	if !strings.Contains(content, "/") && l.Prompt == "" {
 		l.Prompt = content
 	}
-	l.Robot.ExecCmd(content, l.sendChatMessage, nil)
+	l.Robot.ExecCmd(content, l.sendChatMessage, nil, nil)
 }
 
 func (l *LarkRobot) sendHelpConfigurationOptions() {
