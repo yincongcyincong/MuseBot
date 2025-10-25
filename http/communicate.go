@@ -157,6 +157,7 @@ func QQBotComm(w http.ResponseWriter, r *http.Request) {
 }
 
 func NapCat(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	body, _ := io.ReadAll(r.Body)
 	signature := r.Header.Get("X-Signature")
 	
@@ -165,16 +166,16 @@ func NapCat(w http.ResponseWriter, r *http.Request) {
 	expectedSign := "sha1=" + hex.EncodeToString(h.Sum(nil))
 	
 	if signature != expectedSign {
-		logger.ErrorCtx(r.Context(), "check sign fail", "expected", expectedSign, "actual", signature)
+		logger.ErrorCtx(ctx, "check sign fail", "expected", expectedSign, "actual", signature)
 		http.Error(w, "check sign fail", http.StatusUnauthorized)
 		return
 	}
 	
-	qqRobot := robot.NewPersonalQQRobot(body)
+	qqRobot := robot.NewPersonalQQRobot(ctx, body)
 	go func() {
 		defer func() {
 			if err := recover(); err != nil {
-				logger.Error("ding exec panic", "err", err, "stack", string(debug.Stack()))
+				logger.ErrorCtx(ctx, "ding exec panic", "err", err, "stack", string(debug.Stack()))
 			}
 		}()
 		

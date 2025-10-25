@@ -295,7 +295,7 @@ func (t *TelegramRobot) handleCommand() {
 		}
 	}
 	
-	t.Robot.ExecCmd(cmd, t.sendChatMessage)
+	t.Robot.ExecCmd(cmd, t.sendChatMessage, t.sendModeConfigurationOptions)
 }
 
 // sendChatMessage response chat command to telegram
@@ -356,6 +356,12 @@ func (t *TelegramRobot) sendModeConfigurationOptions() {
 		}
 	case param.OpenAi:
 		for k := range param.OpenAIModels {
+			inlineButton = append(inlineButton, tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonData(k, k),
+			))
+		}
+	case param.Aliyun:
+		for k := range param.AliyunModel {
 			inlineButton = append(inlineButton, tgbotapi.NewInlineKeyboardRow(
 				tgbotapi.NewInlineKeyboardButtonData(k, k),
 			))
@@ -439,7 +445,7 @@ func (t *TelegramRobot) handleCallbackQuery() {
 		t.Update.CallbackQuery.Message.MessageID = t.Update.CallbackQuery.Message.ReplyToMessage.MessageID
 	}
 	
-	t.Robot.ExecCmd(t.Update.CallbackQuery.Data, t.chooseMode)
+	t.Robot.ExecCmd(t.Update.CallbackQuery.Data, t.chooseMode, t.sendModeConfigurationOptions)
 }
 
 func (t *TelegramRobot) chooseMode() {

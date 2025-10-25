@@ -135,7 +135,7 @@ func SlackButtonHandler(callback *slack.InteractionCallback) {
 		case "chat", "photo", "video", "mcp", "task":
 			s.openModal(callback.TriggerID, action.ActionID)
 		case "state", "clear", "retry", "balance":
-			s.Robot.ExecCmd(s.Command, func() {})
+			s.Robot.ExecCmd(s.Command, func() {}, s.sendModeConfigurationOptions)
 		default:
 			if param.GeminiModels[action.ActionID] || param.OpenAIModels[action.ActionID] ||
 				param.DeepseekModels[action.ActionID] || param.DeepseekLocalModels[action.ActionID] ||
@@ -176,7 +176,7 @@ func SlackCmdHandler(command *slack.SlashCommand) {
 		
 		s.Command = command.Command
 		s.Prompt = command.Text
-		s.Robot.ExecCmd(s.Command, s.sendChatMessage)
+		s.Robot.ExecCmd(s.Command, s.sendChatMessage, s.sendModeConfigurationOptions)
 		
 	}()
 }
@@ -214,7 +214,7 @@ func (s *SlackRobot) requestLLMAndResp(content string) {
 	if !strings.Contains(content, "/") && s.Prompt == "" {
 		s.Prompt = content
 	}
-	s.Robot.ExecCmd(content, s.sendChatMessage)
+	s.Robot.ExecCmd(content, s.sendChatMessage, s.sendModeConfigurationOptions)
 }
 
 func (s *SlackRobot) sendChatMessage() {
@@ -338,6 +338,14 @@ func (s *SlackRobot) sendModeConfigurationOptions() {
 		}
 	case param.OpenAi:
 		for k := range param.OpenAIModels {
+			btnText := slack.NewTextBlockObject("plain_text", k, false, false)
+			btn := slack.NewButtonBlockElement(k, k, btnText)
+			btn.Value = k
+			actionBlock := slack.NewActionBlock("select_model"+k, btn)
+			blocks = append(blocks, actionBlock)
+		}
+	case param.Aliyun:
+		for k := range param.AliyunModel {
 			btnText := slack.NewTextBlockObject("plain_text", k, false, false)
 			btn := slack.NewButtonBlockElement(k, k, btnText)
 			btn.Value = k
@@ -615,7 +623,7 @@ func submissionHandler(callback *slack.InteractionCallback) {
 	}
 	s.Callback.Channel.ID = callback.View.CallbackID
 	
-	s.Robot.ExecCmd(s.Command, func() {})
+	s.Robot.ExecCmd(s.Command, func() {}, s.sendModeConfigurationOptions)
 	
 }
 
