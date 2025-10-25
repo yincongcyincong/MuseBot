@@ -2,6 +2,7 @@ package robot
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -97,6 +98,7 @@ type TextElement struct {
 type PersonalQQRobot struct {
 	Msg   *QQMessage
 	Robot *RobotInfo
+	Ctx   context.Context
 	
 	Command      string
 	Prompt       string
@@ -105,16 +107,17 @@ type PersonalQQRobot struct {
 	AudioContent []byte
 }
 
-func NewPersonalQQRobot(msgContent []byte) *PersonalQQRobot {
+func NewPersonalQQRobot(ctx context.Context, msgContent []byte) *PersonalQQRobot {
 	msg := new(QQMessage)
 	err := json.Unmarshal(msgContent, msg)
 	if err != nil {
-		logger.Error("Unmarshal QQMessage error", "error", err)
+		logger.ErrorCtx(ctx, "Unmarshal QQMessage error", "error", err)
 		return nil
 	}
 	
 	q := &PersonalQQRobot{
 		Msg: msg,
+		Ctx: ctx,
 	}
 	
 	q.Robot = NewRobot(WithRobot(q))
@@ -122,11 +125,9 @@ func NewPersonalQQRobot(msgContent []byte) *PersonalQQRobot {
 }
 
 func (q *PersonalQQRobot) checkValid() bool {
-	chatId, msgId, _ := q.Robot.GetChatIdAndMsgIdAndUserID()
 	atBot, err := q.GetMessageContent()
 	if err != nil {
-		logger.Error("get message content error", "err", err)
-		q.Robot.SendMsg(chatId, err.Error(), msgId, "", nil)
+		logger.ErrorCtx(q.Ctx, "get message content error", "err", err)
 		return false
 	}
 	
@@ -145,81 +146,12 @@ func (q *PersonalQQRobot) requestLLMAndResp(content string) {
 	if !strings.Contains(content, "/") && q.Prompt == "" {
 		q.Prompt = content
 	}
-	q.Robot.ExecCmd(content, q.sendChatMessage)
+	q.Robot.ExecCmd(content, q.sendChatMessage, nil)
 }
 
 func (q *PersonalQQRobot) sendHelpConfigurationOptions() {
 	chatId, msgId, _ := q.Robot.GetChatIdAndMsgIdAndUserID()
 	q.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "help_text", nil), msgId, tgbotapi.ModeMarkdown, nil)
-}
-
-func (q *PersonalQQRobot) sendModeConfigurationOptions() {
-	chatId, msgId, _ := q.Robot.GetChatIdAndMsgIdAndUserID()
-	
-	prompt := strings.TrimSpace(q.Prompt)
-	if prompt != "" {
-		if param.GeminiModels[prompt] || param.OpenAIModels[prompt] ||
-			param.DeepseekModels[prompt] || param.DeepseekLocalModels[prompt] ||
-			param.OpenRouterModels[prompt] || param.VolModels[prompt] {
-			q.Robot.handleModeUpdate(prompt)
-		}
-		return
-	}
-	
-	var modelList []string
-	
-	switch *conf.BaseConfInfo.Type {
-	case param.DeepSeek:
-		if *conf.BaseConfInfo.CustomUrl == "" || *conf.BaseConfInfo.CustomUrl == "https://api.deepseek.com/" {
-			for k := range param.DeepseekModels {
-				modelList = append(modelList, k)
-			}
-		}
-	case param.Gemini:
-		for k := range param.GeminiModels {
-			modelList = append(modelList, k)
-		}
-	case param.OpenAi:
-		for k := range param.OpenAIModels {
-			modelList = append(modelList, k)
-		}
-	case param.OpenRouter, param.AI302, param.Ollama:
-		if q.Prompt != "" {
-			q.Robot.handleModeUpdate(q.Prompt)
-			return
-		}
-		switch *conf.BaseConfInfo.Type {
-		case param.AI302:
-			q.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
-				"link": "https://302.ai/",
-			}),
-				msgId, tgbotapi.ModeMarkdown, nil)
-		case param.OpenRouter:
-			q.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
-				"link": "https://openrouter.ai/",
-			}),
-				msgId, tgbotapi.ModeMarkdown, nil)
-		case param.Ollama:
-			q.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
-				"link": "https://ollama.com/",
-			}),
-				msgId, tgbotapi.ModeMarkdown, nil)
-		}
-		
-		return
-	case param.Vol:
-		for k := range param.VolModels {
-			modelList = append(modelList, k)
-		}
-	}
-	totalContent := ""
-	for _, model := range modelList {
-		totalContent += fmt.Sprintf(`%s
-
-`, model)
-	}
-	
-	q.Robot.SendMsg(chatId, totalContent, msgId, "", nil)
 }
 
 func (q *PersonalQQRobot) sendImg() {
@@ -430,7 +362,7 @@ type NapCatResult struct {
 }
 
 func (q *PersonalQQRobot) SendMsg(txt string, image []byte, video []byte, voice []byte) (string, error) {
-	_, _, sendId := q.Robot.GetChatIdAndMsgIdAndUserID()
+	_, _, userId := q.Robot.GetChatIdAndMsgIdAndUserID()
 	
 	msgArray := []map[string]interface{}{}
 	
@@ -476,9 +408,9 @@ func (q *PersonalQQRobot) SendMsg(txt string, image []byte, video []byte, voice 
 	path := "/send_private_msg"
 	if q.Msg.MessageType == "group" {
 		path = "/send_group_msg"
-		payload["group_id"] = sendId
+		payload["group_id"] = q.Msg.GroupId
 	} else {
-		payload["user_id"] = sendId
+		payload["user_id"] = userId
 	}
 	
 	data, _ := json.Marshal(payload)
@@ -492,6 +424,7 @@ func (q *PersonalQQRobot) SendMsg(txt string, image []byte, video []byte, voice 
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
+		logger.ErrorCtx(q.Ctx, "send message failed", "err", err, "req", payload)
 		return "", err
 	}
 	defer resp.Body.Close()
@@ -499,10 +432,12 @@ func (q *PersonalQQRobot) SendMsg(txt string, image []byte, video []byte, voice 
 	// 解析返回值
 	result := new(NapCatResult)
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		logger.ErrorCtx(q.Ctx, "send message failed", "err", err, "req", payload)
 		return "", err
 	}
 	
 	if result.Status != "ok" && result.MessageID == "" {
+		logger.ErrorCtx(q.Ctx, "send message failed", "err", err, "result", result)
 		return "", fmt.Errorf("send fail: %v", result)
 	}
 	
@@ -532,6 +467,10 @@ func (q *PersonalQQRobot) GetMessageContent() (bool, error) {
 		}
 	}
 	q.Command, q.Prompt = ParseCommand(prompt)
+	if q.Command == "" && q.Prompt == "" && q.ImageContent == nil && q.AudioContent == nil {
+		return false, fmt.Errorf("no content")
+	}
+	
 	return isAt, nil
 }
 

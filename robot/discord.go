@@ -399,7 +399,7 @@ func onInteractionCreate(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		return
 	}
 	
-	d.Robot.ExecCmd(cmd, d.sendChatMessage)
+	d.Robot.ExecCmd(cmd, d.sendChatMessage, d.sendModeConfigurationOptions)
 }
 
 func (d *DiscordRobot) changeMode(mode string) {
@@ -466,6 +466,10 @@ func (d *DiscordRobot) sendModeConfigurationOptions() {
 		}
 	case param.OpenAi:
 		for k := range param.OpenAIModels {
+			buttons = append(buttons, discordgo.Button{Label: k, Style: discordgo.PrimaryButton, CustomID: k})
+		}
+	case param.Aliyun:
+		for k := range param.AliyunModel {
 			buttons = append(buttons, discordgo.Button{Label: k, Style: discordgo.PrimaryButton, CustomID: k})
 		}
 	case param.OpenRouter, param.AI302, param.Ollama:

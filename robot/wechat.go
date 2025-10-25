@@ -201,82 +201,13 @@ func (w *WechatRobot) requestLLMAndResp(content string) {
 		if !strings.Contains(content, "/") && w.Prompt == "" {
 			w.Prompt = content
 		}
-		w.Robot.ExecCmd(content, w.sendChatMessage)
+		w.Robot.ExecCmd(content, w.sendChatMessage, nil)
 	}()
 }
 
 func (w *WechatRobot) sendHelpConfigurationOptions() {
 	chatId, msgId, _ := w.Robot.GetChatIdAndMsgIdAndUserID()
 	w.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "help_text", nil), msgId, tgbotapi.ModeMarkdown, nil)
-}
-
-func (w *WechatRobot) sendModeConfigurationOptions() {
-	chatId, msgId, _ := w.Robot.GetChatIdAndMsgIdAndUserID()
-	
-	prompt := strings.TrimSpace(w.Prompt)
-	if prompt != "" {
-		if param.GeminiModels[prompt] || param.OpenAIModels[prompt] ||
-			param.DeepseekModels[prompt] || param.DeepseekLocalModels[prompt] ||
-			param.OpenRouterModels[prompt] || param.VolModels[prompt] {
-			w.Robot.handleModeUpdate(prompt)
-		}
-		return
-	}
-	
-	var modelList []string
-	
-	switch *conf.BaseConfInfo.Type {
-	case param.DeepSeek:
-		if *conf.BaseConfInfo.CustomUrl == "" || *conf.BaseConfInfo.CustomUrl == "https://api.deepseek.com/" {
-			for k := range param.DeepseekModels {
-				modelList = append(modelList, k)
-			}
-		}
-	case param.Gemini:
-		for k := range param.GeminiModels {
-			modelList = append(modelList, k)
-		}
-	case param.OpenAi:
-		for k := range param.OpenAIModels {
-			modelList = append(modelList, k)
-		}
-	case param.OpenRouter, param.AI302, param.Ollama:
-		if w.Prompt != "" {
-			w.Robot.handleModeUpdate(w.Prompt)
-			return
-		}
-		switch *conf.BaseConfInfo.Type {
-		case param.AI302:
-			w.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
-				"link": "https://302.ai/",
-			}),
-				msgId, tgbotapi.ModeMarkdown, nil)
-		case param.OpenRouter:
-			w.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
-				"link": "https://openrouter.ai/",
-			}),
-				msgId, tgbotapi.ModeMarkdown, nil)
-		case param.Ollama:
-			w.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
-				"link": "https://ollama.com/",
-			}),
-				msgId, tgbotapi.ModeMarkdown, nil)
-		}
-		
-		return
-	case param.Vol:
-		for k := range param.VolModels {
-			modelList = append(modelList, k)
-		}
-	}
-	totalContent := ""
-	for _, model := range modelList {
-		totalContent += fmt.Sprintf(`%s
-
-`, model)
-	}
-	
-	w.Robot.SendMsg(chatId, totalContent, msgId, "", nil)
 }
 
 func (w *WechatRobot) sendImg() {

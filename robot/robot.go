@@ -77,8 +77,6 @@ type Robot interface {
 	
 	sendChatMessage()
 	
-	sendModeConfigurationOptions()
-	
 	sendImg()
 	
 	sendVideo()
@@ -252,12 +250,7 @@ func (r *RobotInfo) GetChatIdAndMsgIdAndUserID() (string, string, string) {
 	case *PersonalQQRobot:
 		personalQQRobot := r.Robot.(*PersonalQQRobot)
 		chatId = personalQQRobot.Msg.Raw.PeerUid
-		if personalQQRobot.Msg.MessageType == "group" {
-			userId = strconv.Itoa(int(personalQQRobot.Msg.GroupId))
-		} else {
-			userId = strconv.Itoa(int(personalQQRobot.Msg.UserID))
-		}
-		
+		userId = strconv.Itoa(int(personalQQRobot.Msg.UserID))
 		msgId = strconv.Itoa(int(personalQQRobot.Msg.MessageID))
 	}
 	
@@ -775,7 +768,7 @@ func ParseCommand(prompt string) (command string, args string) {
 	return command, args
 }
 
-func (r *RobotInfo) ExecCmd(cmd string, defaultFunc func()) {
+func (r *RobotInfo) ExecCmd(cmd string, defaultFunc func(), modeFunc func()) {
 	switch cmd {
 	case "balance", "/balance":
 		r.showBalanceInfo()
@@ -788,7 +781,11 @@ func (r *RobotInfo) ExecCmd(cmd string, defaultFunc func()) {
 	case "chat", "/chat":
 		r.Robot.sendChatMessage()
 	case "mode", "/mode":
-		r.Robot.sendModeConfigurationOptions()
+		if modeFunc != nil {
+			modeFunc()
+		} else {
+			r.sendModeConfigurationOptions()
+		}
 	case "photo", "/photo", "edit_photo", "/edit_photo":
 		r.Robot.sendImg()
 	case "video", "/video":
@@ -816,6 +813,79 @@ func (r *RobotInfo) ExecCmd(cmd string, defaultFunc func()) {
 	default:
 		defaultFunc()
 	}
+}
+
+func (r *RobotInfo) sendModeConfigurationOptions() {
+	chatId, msgId, _ := r.GetChatIdAndMsgIdAndUserID()
+	
+	prompt := strings.TrimSpace(r.Robot.getPrompt())
+	if prompt != "" {
+		if param.GeminiModels[prompt] || param.OpenAIModels[prompt] ||
+			param.DeepseekModels[prompt] || param.DeepseekLocalModels[prompt] ||
+			param.OpenRouterModels[prompt] || param.VolModels[prompt] {
+			r.handleModeUpdate(prompt)
+		}
+		return
+	}
+	
+	var modelList []string
+	
+	switch *conf.BaseConfInfo.Type {
+	case param.DeepSeek:
+		if *conf.BaseConfInfo.CustomUrl == "" || *conf.BaseConfInfo.CustomUrl == "https://api.deepseek.com/" {
+			for k := range param.DeepseekModels {
+				modelList = append(modelList, k)
+			}
+		}
+	case param.Gemini:
+		for k := range param.GeminiModels {
+			modelList = append(modelList, k)
+		}
+	case param.OpenAi:
+		for k := range param.OpenAIModels {
+			modelList = append(modelList, k)
+		}
+	case param.Aliyun:
+		for k := range param.AliyunModel {
+			modelList = append(modelList, k)
+		}
+	case param.OpenRouter, param.AI302, param.Ollama:
+		if r.Robot.getPrompt() != "" {
+			r.handleModeUpdate(r.Robot.getPrompt())
+			return
+		}
+		switch *conf.BaseConfInfo.Type {
+		case param.AI302:
+			r.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
+				"link": "https://302.ai/",
+			}),
+				msgId, tgbotapi.ModeMarkdown, nil)
+		case param.OpenRouter:
+			r.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
+				"link": "https://openrouter.ai/",
+			}),
+				msgId, tgbotapi.ModeMarkdown, nil)
+		case param.Ollama:
+			r.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
+				"link": "https://ollama.com/",
+			}),
+				msgId, tgbotapi.ModeMarkdown, nil)
+		}
+		
+		return
+	case param.Vol:
+		for k := range param.VolModels {
+			modelList = append(modelList, k)
+		}
+	}
+	totalContent := ""
+	for _, model := range modelList {
+		totalContent += fmt.Sprintf(`%s
+
+`, model)
+	}
+	
+	r.SendMsg(chatId, totalContent, msgId, "", nil)
 }
 
 func (r *RobotInfo) ExecChain(msgContent string, msgChan *MsgChan) {

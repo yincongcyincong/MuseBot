@@ -132,7 +132,7 @@ func (l *LarkRobot) requestLLMAndResp(content string) {
 	if !strings.Contains(content, "/") && l.Prompt == "" {
 		l.Prompt = content
 	}
-	l.Robot.ExecCmd(content, l.sendChatMessage)
+	l.Robot.ExecCmd(content, l.sendChatMessage, nil)
 }
 
 func (l *LarkRobot) sendHelpConfigurationOptions() {
@@ -141,75 +141,6 @@ func (l *LarkRobot) sendHelpConfigurationOptions() {
 	
 	chatId, msgId, _ := l.Robot.GetChatIdAndMsgIdAndUserID()
 	l.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "help_text", nil), msgId, tgbotapi.ModeMarkdown, nil)
-}
-
-func (l *LarkRobot) sendModeConfigurationOptions() {
-	chatId, msgId, _ := l.Robot.GetChatIdAndMsgIdAndUserID()
-	
-	prompt := strings.TrimSpace(l.Prompt)
-	if prompt != "" {
-		if param.GeminiModels[prompt] || param.OpenAIModels[prompt] ||
-			param.DeepseekModels[prompt] || param.DeepseekLocalModels[prompt] ||
-			param.OpenRouterModels[prompt] || param.VolModels[prompt] {
-			l.Robot.handleModeUpdate(prompt)
-		}
-		return
-	}
-	
-	var modelList []string
-	
-	switch *conf.BaseConfInfo.Type {
-	case param.DeepSeek:
-		if *conf.BaseConfInfo.CustomUrl == "" || *conf.BaseConfInfo.CustomUrl == "https://api.deepseek.com/" {
-			for k := range param.DeepseekModels {
-				modelList = append(modelList, k)
-			}
-		}
-	case param.Gemini:
-		for k := range param.GeminiModels {
-			modelList = append(modelList, k)
-		}
-	case param.OpenAi:
-		for k := range param.OpenAIModels {
-			modelList = append(modelList, k)
-		}
-	case param.OpenRouter, param.AI302, param.Ollama:
-		if l.Prompt != "" {
-			l.Robot.handleModeUpdate(l.Prompt)
-			return
-		}
-		switch *conf.BaseConfInfo.Type {
-		case param.AI302:
-			l.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
-				"link": "https://302.ai/",
-			}),
-				msgId, tgbotapi.ModeMarkdown, nil)
-		case param.OpenRouter:
-			l.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
-				"link": "https://openrouter.ai/",
-			}),
-				msgId, tgbotapi.ModeMarkdown, nil)
-		case param.Ollama:
-			l.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
-				"link": "https://ollama.com/",
-			}),
-				msgId, tgbotapi.ModeMarkdown, nil)
-		}
-		
-		return
-	case param.Vol:
-		for k := range param.VolModels {
-			modelList = append(modelList, k)
-		}
-	}
-	totalContent := ""
-	for _, model := range modelList {
-		totalContent += fmt.Sprintf(`%s
-
-`, model)
-	}
-	
-	l.Robot.SendMsg(chatId, totalContent, msgId, "", nil)
 }
 
 func (l *LarkRobot) sendImg() {

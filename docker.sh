@@ -12,25 +12,18 @@ IMAGE_NAME=musebot
 DOCKER_HUB_USER=jackyin0822
 DOCKER_HUB_REPO=${DOCKER_HUB_USER}/${IMAGE_NAME}
 
-ALIYUN_REGISTRY=crpi-i1dsvpjijxpgjgbv.cn-hangzhou.personal.cr.aliyuncs.com
-ALIYUN_NAMESPACE=haha03942007
-ALIYUN_REPO=${ALIYUN_REGISTRY}/${ALIYUN_NAMESPACE}/${IMAGE_NAME}
+PLATFORMS="linux/amd64,linux/arm64"
 
-echo "🚀 create image..."
-docker build -t ${IMAGE_NAME}:latest .
+echo "🚀 create multi-platform image..."
+docker buildx build \
+  --platform ${PLATFORMS} \
+  -t ${DOCKER_HUB_REPO}:${VERSION} \
+  -t ${DOCKER_HUB_REPO}:latest \
+  --push .
 
-echo "📦 push Docker Hub..."
-docker tag ${IMAGE_NAME}:latest ${DOCKER_HUB_REPO}:${VERSION}
-docker push ${DOCKER_HUB_REPO}:${VERSION}
 
-docker tag ${IMAGE_NAME}:latest ${DOCKER_HUB_REPO}:latest
-docker push ${DOCKER_HUB_REPO}:latest
-
-echo "📦 push ali ACR..."
-docker tag ${IMAGE_NAME}:latest ${ALIYUN_REPO}:${VERSION}
-docker push ${ALIYUN_REPO}:${VERSION}
-
-docker tag ${IMAGE_NAME}:latest ${ALIYUN_REPO}:latest
-docker push ${ALIYUN_REPO}:latest
+docker buildx imagetools create \
+  --tag crpi-i1dsvpjijxpgjgbv.cn-hangzhou.personal.cr.aliyuncs.com/jackyin0822/musebot:latest \
+  jackyin0822/musebot:latest
 
 echo "✅ success"
