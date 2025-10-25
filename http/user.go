@@ -70,28 +70,6 @@ func GetUsers(w http.ResponseWriter, r *http.Request) {
 	utils.Success(ctx, w, r, result)
 }
 
-func UpdateMode(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	err := r.ParseForm()
-	if err != nil {
-		logger.ErrorCtx(ctx, "parse form error", "err", err)
-		utils.Failure(ctx, w, r, param.CodeParamError, param.MsgParamError, err)
-		return
-	}
-	
-	userId := r.FormValue("user_id")
-	mode := r.FormValue("mode")
-	
-	err = db.UpdateUserMode(userId, mode)
-	if err != nil {
-		logger.ErrorCtx(ctx, "change user mode error", "err", err)
-		utils.Failure(ctx, w, r, param.CodeDBWriteFail, param.MsgDBWriteFail, err)
-		return
-	}
-	
-	utils.Success(ctx, w, r, "success")
-}
-
 func GetRecords(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	// 获取参数

@@ -15,6 +15,7 @@ import (
 	"github.com/yincongcyincong/MuseBot/logger"
 	"github.com/yincongcyincong/MuseBot/metrics"
 	"github.com/yincongcyincong/MuseBot/param"
+	"github.com/yincongcyincong/MuseBot/utils"
 	"github.com/yincongcyincong/mcp-client-go/clients"
 	"google.golang.org/genai"
 )
@@ -72,10 +73,12 @@ type LLMClient interface {
 }
 
 func (l *LLM) CallLLM() error {
-	logger.InfoCtx(l.Ctx, "msg receive", "userID", l.UserId, "prompt", l.Content)
 	
 	l.GetMessages(l.UserId, l.GetContent(l.Content))
 	l.LLMClient.GetModel(l)
+	
+	logger.InfoCtx(l.Ctx, "msg receive", "userID", l.UserId, "prompt", l.Content, "type",
+		utils.GetTxtType(db.GetCtxUserInfo(l.Ctx).LLMConfigRaw), "model", l.Model)
 	
 	metrics.APIRequestCount.WithLabelValues(l.Model).Inc()
 	err := l.LLMClient.Send(l.Ctx, l)
@@ -108,7 +111,7 @@ func NewLLM(opts ...Option) *LLM {
 		opt(l)
 	}
 	
-	switch *conf.BaseConfInfo.Type {
+	switch utils.GetTxtType(db.GetCtxUserInfo(l.Ctx).LLMConfigRaw) {
 	case param.DeepSeek, param.Ollama:
 		l.LLMClient = &DeepseekReq{
 			ToolCall:           []godeepseek.ToolCall{},
@@ -205,7 +208,6 @@ func (l *LLM) InsertOrUpdate() error {
 			Question: l.Content,
 			Answer:   l.WholeContent,
 			Token:    l.Token,
-			Mode:     *conf.BaseConfInfo.Type,
 		}, true)
 		return nil
 	}
@@ -218,7 +220,6 @@ func (l *LLM) InsertOrUpdate() error {
 		ID:     l.RecordId,
 		Answer: l.WholeContent,
 		Token:  l.Token,
-		Mode:   *conf.BaseConfInfo.Type,
 		UserId: l.UserId,
 	})
 	if err != nil {
@@ -246,7 +247,7 @@ func (l *LLM) GetMessages(userId string, prompt string) {
 		}
 	}
 	
-	if *conf.BaseConfInfo.Type != "gemini" {
+	if utils.GetTxtType(db.GetCtxUserInfo(l.Ctx).LLMConfigRaw) != "gemini" {
 		l.LLMClient.GetUserMessage(prompt)
 	}
 }

@@ -8,7 +8,6 @@ import (
 	"time"
 	"unicode"
 	
-	"github.com/cohesion-org/deepseek-go"
 	"github.com/yincongcyincong/MuseBot/conf"
 	"github.com/yincongcyincong/MuseBot/logger"
 	"github.com/yincongcyincong/MuseBot/param"
@@ -151,18 +150,6 @@ func InsertRecordInfo(record *Record) (int64, error) {
 	if err != nil {
 		logger.Error("insertRecord err", "err", err)
 		return 0, err
-	}
-	
-	user, err := GetUserByID(record.UserId)
-	if err != nil {
-		logger.Error("Error get user by userid", "err", err)
-	}
-	
-	if user == nil {
-		_, err = InsertUser(record.UserId, deepseek.DeepSeekChat)
-		if err != nil {
-			logger.Error("Error insert user by userid", "err", err)
-		}
 	}
 	
 	err = AddToken(record.UserId, record.Token)

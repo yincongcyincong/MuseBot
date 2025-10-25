@@ -65,22 +65,22 @@ type CreateResp struct {
 }
 
 func (d *AIRouterReq) GetModel(l *LLM) {
-	userInfo, err := db.GetUserByID(l.UserId)
-	if err != nil {
-		logger.ErrorCtx(l.Ctx, "Error getting user info", "err", err)
-		return
+	userInfo := db.GetCtxUserInfo(l.Ctx)
+	model := ""
+	if userInfo != nil && userInfo.LLMConfigRaw != nil {
+		model = userInfo.LLMConfigRaw.TxtModel
 	}
 	
-	switch *conf.BaseConfInfo.Type {
+	switch utils.GetTxtType(db.GetCtxUserInfo(l.Ctx).LLMConfigRaw) {
 	case param.AI302:
 		l.Model = openai.GPT3Dot5Turbo
-		if userInfo != nil && userInfo.Mode != "" {
-			l.Model = userInfo.Mode
+		if userInfo != nil && model != "" {
+			l.Model = model
 		}
 	case param.OpenRouter:
 		l.Model = param.DeepseekDeepseekR1_0528Free
-		if userInfo != nil && userInfo.Mode != "" && param.OpenRouterModels[userInfo.Mode] {
-			l.Model = userInfo.Mode
+		if userInfo != nil && model != "" && param.OpenRouterModels[model] {
+			l.Model = model
 		}
 	}
 	
@@ -95,7 +95,7 @@ func (d *AIRouterReq) Send(ctx context.Context, l *LLM) error {
 	
 	start := time.Now()
 	
-	client := GetMixClient(false)
+	client := GetMixClient(l.Ctx, false)
 	
 	request := openrouter.ChatCompletionRequest{
 		Model:  l.Model,
@@ -237,7 +237,7 @@ func (d *AIRouterReq) GetMessage(role, msg string) {
 }
 
 func (d *AIRouterReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
-	client := GetMixClient(false)
+	client := GetMixClient(ctx, false)
 	
 	start := time.Now()
 	
@@ -387,7 +387,7 @@ func GenerateMixImg(ctx context.Context, prompt string, imageContent []byte) (st
 		})
 	}
 	
-	client := GetMixClient(true)
+	client := GetMixClient(ctx, true)
 	request := openrouter.ChatCompletionRequest{
 		Model:    *conf.PhotoConfInfo.MixImageModel,
 		Messages: []openrouter.ChatCompletionMessage{messages},
@@ -417,24 +417,26 @@ func GenerateMixImg(ctx context.Context, prompt string, imageContent []byte) (st
 	return "", 0, errors.New("image is empty")
 }
 
-func GetMixClient(isMedia bool) *openrouter.Client {
-	t := *conf.BaseConfInfo.Type
+func GetMixClient(ctx context.Context, isMedia bool) *openrouter.Client {
+	t := utils.GetTxtType(db.GetCtxUserInfo(ctx).LLMConfigRaw)
 	if isMedia {
-		t = *conf.BaseConfInfo.MediaType
+		t = utils.GetImgType(db.GetCtxUserInfo(ctx).LLMConfigRaw)
 	}
 	
 	token := ""
+	specialLLMUrl := ""
 	switch t {
 	case param.OpenRouter:
 		token = *conf.BaseConfInfo.OpenRouterToken
 	case param.AI302:
 		token = *conf.BaseConfInfo.AI302Token
+		specialLLMUrl = "https://api.302.ai/"
 	}
 	
 	config := openrouter.DefaultConfig(token)
 	config.HTTPClient = utils.GetLLMProxyClient()
-	if conf.BaseConfInfo.SpecialLLMUrl != "" {
-		config.BaseURL = conf.BaseConfInfo.SpecialLLMUrl
+	if specialLLMUrl != "" {
+		config.BaseURL = specialLLMUrl
 	}
 	if *conf.BaseConfInfo.CustomUrl != "" {
 		config.BaseURL = *conf.BaseConfInfo.CustomUrl
@@ -561,7 +563,7 @@ func GetMixImageContent(ctx context.Context, imageContent []byte, content string
 		},
 	}
 	
-	client := GetMixClient(true)
+	client := GetMixClient(ctx, true)
 	
 	request := openrouter.ChatCompletionRequest{
 		Model:    *conf.PhotoConfInfo.MixRecModel,

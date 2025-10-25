@@ -127,39 +127,14 @@ func SlackButtonHandler(callback *slack.InteractionCallback) {
 	s := NewSlackRobot(nil, nil, callback)
 	s.Robot = NewRobot(WithRobot(s))
 	
-	chatId, _, _ := s.Robot.GetChatIdAndMsgIdAndUserID()
-	
 	for _, action := range callback.ActionCallback.BlockActions {
 		s.Command = action.ActionID
 		switch action.ActionID {
 		case "chat", "photo", "video", "mcp", "task":
 			s.openModal(callback.TriggerID, action.ActionID)
-		case "state", "clear", "retry", "balance":
-			s.Robot.ExecCmd(s.Command, func() {}, s.sendModeConfigurationOptions)
 		default:
-			if param.GeminiModels[action.ActionID] || param.OpenAIModels[action.ActionID] ||
-				param.DeepseekModels[action.ActionID] || param.DeepseekLocalModels[action.ActionID] ||
-				param.OpenRouterModels[action.ActionID] || param.VolModels[action.ActionID] {
-				s.Robot.handleModeUpdate(action.ActionID)
-			}
+			s.Robot.ExecCmd(s.Command, nil, nil, nil)
 			
-			if param.OpenRouterModelTypes[action.ActionID] {
-				var blocks []slack.Block
-				for k := range param.OpenRouterModels {
-					if strings.Contains(k, action.ActionID+"/") {
-						btnText := slack.NewTextBlockObject("plain_text", k, false, false)
-						btn := slack.NewButtonBlockElement(k, k, btnText)
-						btn.Value = k
-						actionBlock := slack.NewActionBlock("select_model"+k, btn)
-						blocks = append(blocks, actionBlock)
-					}
-				}
-				
-				_, _, err := s.Client.PostMessage(chatId, slack.MsgOptionBlocks(blocks...))
-				if err != nil {
-					logger.Error("post message failed", "err", err)
-				}
-			}
 		}
 	}
 }
@@ -176,7 +151,7 @@ func SlackCmdHandler(command *slack.SlashCommand) {
 		
 		s.Command = command.Command
 		s.Prompt = command.Text
-		s.Robot.ExecCmd(s.Command, s.sendChatMessage, s.sendModeConfigurationOptions)
+		s.Robot.ExecCmd(s.Command, s.sendChatMessage, nil, nil)
 		
 	}()
 }
@@ -214,7 +189,7 @@ func (s *SlackRobot) requestLLMAndResp(content string) {
 	if !strings.Contains(content, "/") && s.Prompt == "" {
 		s.Prompt = content
 	}
-	s.Robot.ExecCmd(content, s.sendChatMessage, s.sendModeConfigurationOptions)
+	s.Robot.ExecCmd(content, s.sendChatMessage, nil, nil)
 }
 
 func (s *SlackRobot) sendChatMessage() {
@@ -311,91 +286,6 @@ func (s *SlackRobot) downloadSlackFile(url string) ([]byte, error) {
 	}
 	
 	return io.ReadAll(resp.Body)
-}
-
-func (s *SlackRobot) sendModeConfigurationOptions() {
-	channelId, msgId, _ := s.Robot.GetChatIdAndMsgIdAndUserID()
-	var blocks []slack.Block
-	
-	switch *conf.BaseConfInfo.Type {
-	case param.DeepSeek:
-		if *conf.BaseConfInfo.CustomUrl == "" || *conf.BaseConfInfo.CustomUrl == "https://api.deepseek.com/" {
-			for k := range param.DeepseekModels {
-				btnText := slack.NewTextBlockObject("plain_text", k, false, false)
-				btn := slack.NewButtonBlockElement(k, k, btnText)
-				btn.Value = k
-				actionBlock := slack.NewActionBlock("select_model"+k, btn)
-				blocks = append(blocks, actionBlock)
-			}
-		}
-	case param.Gemini:
-		for k := range param.GeminiModels {
-			btnText := slack.NewTextBlockObject("plain_text", k, false, false)
-			btn := slack.NewButtonBlockElement(k, k, btnText)
-			btn.Value = k
-			actionBlock := slack.NewActionBlock("select_model"+k, btn)
-			blocks = append(blocks, actionBlock)
-		}
-	case param.OpenAi:
-		for k := range param.OpenAIModels {
-			btnText := slack.NewTextBlockObject("plain_text", k, false, false)
-			btn := slack.NewButtonBlockElement(k, k, btnText)
-			btn.Value = k
-			actionBlock := slack.NewActionBlock("select_model"+k, btn)
-			blocks = append(blocks, actionBlock)
-		}
-	case param.Aliyun:
-		for k := range param.AliyunModel {
-			btnText := slack.NewTextBlockObject("plain_text", k, false, false)
-			btn := slack.NewButtonBlockElement(k, k, btnText)
-			btn.Value = k
-			actionBlock := slack.NewActionBlock("select_model"+k, btn)
-			blocks = append(blocks, actionBlock)
-		}
-	case param.OpenRouter, param.AI302, param.Ollama:
-		if s.Prompt != "" {
-			s.Robot.handleModeUpdate(s.Prompt)
-			return
-		}
-		switch *conf.BaseConfInfo.Type {
-		case param.AI302:
-			s.Robot.SendMsg(channelId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
-				"link": "https://302.ai/",
-			}),
-				msgId, tgbotapi.ModeMarkdown, nil)
-		case param.OpenRouter:
-			s.Robot.SendMsg(channelId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
-				"link": "https://openrouter.ai/",
-			}),
-				msgId, tgbotapi.ModeMarkdown, nil)
-		case param.Ollama:
-			s.Robot.SendMsg(channelId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
-				"link": "https://ollama.com/",
-			}),
-				msgId, tgbotapi.ModeMarkdown, nil)
-		}
-		
-		return
-	case param.Vol:
-		for k := range param.VolModels {
-			btnText := slack.NewTextBlockObject("plain_text", k, false, false)
-			btn := slack.NewButtonBlockElement(k, k, btnText)
-			btn.Value = k
-			actionBlock := slack.NewActionBlock("select_model"+k, btn)
-			blocks = append(blocks, actionBlock)
-		}
-	}
-	
-	_, _, err := s.Client.PostMessage(
-		channelId,
-		slack.MsgOptionBlocks(blocks...),
-		slack.MsgOptionText(i18n.GetMessage(*conf.BaseConfInfo.Lang, "chat_mode", nil), false),
-	)
-	if err != nil {
-		logger.Warn("send mode config options failed", "err", err)
-		return
-	}
-	
 }
 
 func (s *SlackRobot) sendImg() {
@@ -623,7 +513,7 @@ func submissionHandler(callback *slack.InteractionCallback) {
 	}
 	s.Callback.Channel.ID = callback.View.CallbackID
 	
-	s.Robot.ExecCmd(s.Command, func() {}, s.sendModeConfigurationOptions)
+	s.Robot.ExecCmd(s.Command, nil, nil, nil)
 	
 }
 

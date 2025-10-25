@@ -158,7 +158,7 @@ func (c *ComWechatRobot) requestLLMAndResp(content string) {
 		if !strings.Contains(content, "/") && c.Prompt == "" {
 			c.Prompt = content
 		}
-		c.Robot.ExecCmd(content, c.sendChatMessage, nil)
+		c.Robot.ExecCmd(content, c.sendChatMessage, nil, nil)
 	}()
 }
 

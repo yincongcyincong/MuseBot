@@ -1,6 +1,7 @@
 package robot
 
 import (
+	"context"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -9,7 +10,6 @@ import (
 	"strings"
 	"time"
 	
-	godeepseek "github.com/cohesion-org/deepseek-go"
 	"github.com/yincongcyincong/MuseBot/conf"
 	"github.com/yincongcyincong/MuseBot/db"
 	"github.com/yincongcyincong/MuseBot/i18n"
@@ -66,8 +66,10 @@ func (web *Web) Exec() {
 	case "/chat":
 		web.InsertRecord()
 		web.sendChatMessage()
-	case "/mode":
-		web.sendModeConfigurationOptions()
+	case "txt_type", "/txt_type", "photo_type", "/photo_type", "video_type", "/video_type":
+		web.changeType(web.Command)
+	case "txt_model", "/txt_model", "photo_model", "/photo_model", "video_model", "/video_model":
+		web.changeModel(web.Command)
 	case "/balance":
 		web.showBalanceInfo()
 	case "/state":
@@ -104,28 +106,57 @@ func (web *Web) sendHelpConfigurationOptions() {
 	})
 }
 
-func (web *Web) sendModeConfigurationOptions() {
-	prompt := strings.TrimSpace(web.Prompt)
-	if prompt != "" {
-		if param.GeminiModels[prompt] || param.OpenAIModels[prompt] ||
-			param.DeepseekModels[prompt] || param.DeepseekLocalModels[prompt] ||
-			param.OpenRouterModels[prompt] || param.VolModels[prompt] {
-			web.Robot.handleModeUpdate(prompt)
-			db.InsertRecordInfo(&db.Record{
-				UserId:     web.RealUserId,
-				Question:   web.OriginalPrompt,
-				Answer:     i18n.GetMessage(*conf.BaseConfInfo.Lang, "mode_choose", nil) + prompt,
-				Token:      0, // llm already calculate it
-				IsDeleted:  0,
-				RecordType: param.WEBRecordType,
-			})
+func (web *Web) changeType(t string) {
+	
+	switch t {
+	case "txt_type", "/txt_type":
+		if web.Prompt != "" {
+			web.Robot.handleModelUpdate(&RobotModel{TxtType: web.Prompt})
+			return
 		}
-		return
+	
+	case "photo_type", "/photo_type":
+		if web.Prompt != "" {
+			web.Robot.handleModelUpdate(&RobotModel{ImgType: web.Prompt})
+			return
+		}
+	
+	case "video_type", "/video_type":
+		if web.Prompt != "" {
+			web.Robot.handleModelUpdate(&RobotModel{VideoType: web.Prompt})
+		}
+	}
+	
+	totalContent := ""
+	for _, model := range utils.GetAvailImgType() {
+		totalContent += fmt.Sprintf(`%s
+
+`, model)
+	}
+	
+	web.SendMsg(totalContent)
+	
+}
+
+func (web *Web) changeModel(t string) {
+	switch t {
+	case "txt_model", "/txt_model":
+		if web.Prompt != "" {
+			web.Robot.handleModelUpdate(&RobotModel{TxtModel: web.Prompt})
+		}
+	case "photo_model", "/photo_model":
+		if web.Prompt != "" {
+			web.Robot.handleModelUpdate(&RobotModel{ImgModel: web.Prompt})
+		}
+	case "video_model", "/video_model":
+		if web.Prompt != "" {
+			web.Robot.handleModelUpdate(&RobotModel{VideoModel: web.Prompt})
+		}
 	}
 	
 	var modelList []string
 	
-	switch *conf.BaseConfInfo.Type {
+	switch utils.GetTxtType(db.GetCtxUserInfo(web.Robot.Ctx).LLMConfigRaw) {
 	case param.DeepSeek:
 		if *conf.BaseConfInfo.CustomUrl == "" || *conf.BaseConfInfo.CustomUrl == "https://api.deepseek.com/" {
 			for k := range param.DeepseekModels {
@@ -140,26 +171,27 @@ func (web *Web) sendModeConfigurationOptions() {
 		for k := range param.OpenAIModels {
 			modelList = append(modelList, k)
 		}
-	case param.OpenRouter, param.AI302, param.Ollama:
-		if web.Prompt != "" {
-			web.Robot.handleModeUpdate(web.Prompt)
-			return
+	case param.Aliyun:
+		for k := range param.AliyunModel {
+			modelList = append(modelList, k)
 		}
-		switch *conf.BaseConfInfo.Type {
+	case param.OpenRouter, param.AI302, param.Ollama:
+		switch utils.GetTxtType(db.GetCtxUserInfo(web.Robot.Ctx).LLMConfigRaw) {
 		case param.AI302:
-			modelList = append(modelList, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
+			web.SendMsg(i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
 				"link": "https://302.ai/",
 			}))
 		case param.OpenRouter:
-			modelList = append(modelList, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
-				"link": "https://openrouter.ai/",
+			web.SendMsg(i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
+				"link": "https://openrouteweb.ai/",
 			}))
 		case param.Ollama:
-			modelList = append(modelList, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
+			web.SendMsg(i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
 				"link": "https://ollama.com/",
 			}))
 		}
-	
+		
+		return
 	case param.Vol:
 		for k := range param.VolModels {
 			modelList = append(modelList, k)
@@ -173,20 +205,10 @@ func (web *Web) sendModeConfigurationOptions() {
 	}
 	
 	web.SendMsg(totalContent)
-	
-	db.InsertRecordInfo(&db.Record{
-		UserId:     web.RealUserId,
-		Question:   web.OriginalPrompt,
-		Answer:     totalContent,
-		Token:      0, // llm already calculate it
-		IsDeleted:  0,
-		RecordType: param.WEBRecordType,
-	})
 }
 
 func (web *Web) showBalanceInfo() {
-	
-	if *conf.BaseConfInfo.Type != param.DeepSeek {
+	if utils.GetTxtType(db.GetCtxUserInfo(web.Robot.Ctx).LLMConfigRaw) != param.DeepSeek {
 		web.SendMsg(i18n.GetMessage(*conf.BaseConfInfo.Lang, "not_deepseek", nil))
 		return
 	}
@@ -226,7 +248,7 @@ func (web *Web) showStateInfo() {
 	}
 	
 	if userInfo == nil {
-		db.InsertUser(userId, godeepseek.DeepSeekChat)
+		db.InsertUser(userId, utils.GetDefaultLLMConfig())
 		userInfo, err = db.GetUserByID(userId)
 	}
 	
@@ -361,174 +383,171 @@ func (web *Web) sendMultiAgent(agentType string) {
 }
 
 func (web *Web) sendImg() {
-	web.Robot.TalkingPreCheck(func() {
-		prompt := strings.TrimSpace(web.Prompt)
-		if prompt == "" {
-			logger.WarnCtx(web.Robot.Ctx, "prompt is empty")
-			web.SendMsg(i18n.GetMessage(*conf.BaseConfInfo.Lang, "photo_empty_content", nil))
-			return
-		}
-		
-		lastImageContent := web.BodyData
-		var err error
-		if len(lastImageContent) == 0 && strings.Contains(web.Command, "edit_photo") {
-			lastImageContent, err = web.Robot.GetLastImageContent()
-			if err != nil {
-				logger.WarnCtx(web.Robot.Ctx, "get last image record fail", "err", err)
-			}
-		}
-		
-		imageContent, totalToken, err := web.Robot.CreatePhoto(prompt, lastImageContent)
+	
+	prompt := strings.TrimSpace(web.Prompt)
+	if prompt == "" {
+		logger.WarnCtx(web.Robot.Ctx, "prompt is empty")
+		web.SendMsg(i18n.GetMessage(*conf.BaseConfInfo.Lang, "photo_empty_content", nil))
+		return
+	}
+	
+	lastImageContent := web.BodyData
+	var err error
+	if len(lastImageContent) == 0 && strings.Contains(web.Command, "edit_photo") {
+		lastImageContent, err = web.Robot.GetLastImageContent()
 		if err != nil {
-			logger.WarnCtx(web.Robot.Ctx, "generate image fail", "err", err)
-			web.SendMsg(err.Error())
-			return
+			logger.WarnCtx(web.Robot.Ctx, "get last image record fail", "err", err)
 		}
-		
-		// 构建 base64 图片
-		base64Content := base64.StdEncoding.EncodeToString(imageContent)
-		format := utils.DetectImageFormat(imageContent)
-		dataURI := fmt.Sprintf("data:image/%s;base64,%s", format, base64Content)
-		
-		fmt.Fprintf(web.W, "%s", dataURI)
-		web.Flusher.Flush()
-		
-		originImageURI := ""
-		
-		if len(web.BodyData) > 0 {
-			base64Content = base64.StdEncoding.EncodeToString(web.BodyData)
-			format = utils.DetectImageFormat(web.BodyData)
-			originImageURI = fmt.Sprintf("data:image/%s;base64,%s", format, base64Content)
-		}
-		
-		// save message record
-		db.InsertRecordInfo(&db.Record{
-			UserId:     web.RealUserId,
-			Question:   web.OriginalPrompt,
-			Answer:     dataURI,
-			Content:    originImageURI,
-			Token:      0,
-			IsDeleted:  0,
-			RecordType: param.WEBRecordType,
-			Mode:       *conf.BaseConfInfo.MediaType,
-		})
-		
-		// save data record
-		db.InsertRecordInfo(&db.Record{
-			UserId:     web.RealUserId,
-			Question:   web.OriginalPrompt,
-			Answer:     dataURI,
-			Content:    originImageURI,
-			Token:      totalToken,
-			IsDeleted:  0,
-			RecordType: param.ImageRecordType,
-			Mode:       *conf.BaseConfInfo.MediaType,
-		})
+	}
+	
+	imageContent, totalToken, err := web.Robot.CreatePhoto(prompt, lastImageContent)
+	if err != nil {
+		logger.WarnCtx(web.Robot.Ctx, "generate image fail", "err", err)
+		web.SendMsg(err.Error())
+		return
+	}
+	
+	// 构建 base64 图片
+	base64Content := base64.StdEncoding.EncodeToString(imageContent)
+	format := utils.DetectImageFormat(imageContent)
+	dataURI := fmt.Sprintf("data:image/%s;base64,%s", format, base64Content)
+	
+	fmt.Fprintf(web.W, "%s", dataURI)
+	web.Flusher.Flush()
+	
+	originImageURI := ""
+	
+	if len(web.BodyData) > 0 {
+		base64Content = base64.StdEncoding.EncodeToString(web.BodyData)
+		format = utils.DetectImageFormat(web.BodyData)
+		originImageURI = fmt.Sprintf("data:image/%s;base64,%s", format, base64Content)
+	}
+	
+	// save message record
+	db.InsertRecordInfo(&db.Record{
+		UserId:     web.RealUserId,
+		Question:   web.OriginalPrompt,
+		Answer:     dataURI,
+		Content:    originImageURI,
+		Token:      0,
+		IsDeleted:  0,
+		RecordType: param.WEBRecordType,
+		Mode:       *conf.BaseConfInfo.MediaType,
 	})
+	
+	// save data record
+	db.InsertRecordInfo(&db.Record{
+		UserId:     web.RealUserId,
+		Question:   web.OriginalPrompt,
+		Answer:     dataURI,
+		Content:    originImageURI,
+		Token:      totalToken,
+		IsDeleted:  0,
+		RecordType: param.ImageRecordType,
+		Mode:       *conf.BaseConfInfo.MediaType,
+	})
+	
 }
 
 func (web *Web) sendVideo() {
 	// 检查 prompt
-	web.Robot.TalkingPreCheck(func() {
-		
-		prompt := strings.TrimSpace(web.Prompt)
-		if prompt == "" {
-			logger.WarnCtx(web.Robot.Ctx, "prompt is empty")
-			web.SendMsg(i18n.GetMessage(*conf.BaseConfInfo.Lang, "video_empty_content", nil))
-			return
-		}
-		
-		videoContent, totalToken, err := web.Robot.CreateVideo(prompt, web.BodyData)
-		if err != nil {
-			logger.WarnCtx(web.Robot.Ctx, "generate video fail", "err", err)
-			web.SendMsg(err.Error())
-			return
-		}
-		
-		base64Content := base64.StdEncoding.EncodeToString(videoContent)
-		dataURI := fmt.Sprintf("data:video/%s;base64,%s", utils.DetectVideoMimeType(videoContent), base64Content)
-		
-		fmt.Fprintf(web.W, "%s", dataURI)
-		web.Flusher.Flush()
-		
-		db.InsertRecordInfo(&db.Record{
-			UserId:     web.RealUserId,
-			Question:   web.OriginalPrompt,
-			Answer:     dataURI,
-			Token:      0,
-			IsDeleted:  0,
-			RecordType: param.WEBRecordType,
-			Mode:       *conf.BaseConfInfo.MediaType,
-		})
-		
-		db.InsertRecordInfo(&db.Record{
-			UserId:     web.RealUserId,
-			Question:   web.OriginalPrompt,
-			Answer:     dataURI,
-			Token:      totalToken,
-			IsDeleted:  0,
-			RecordType: param.VideoRecordType,
-			Mode:       *conf.BaseConfInfo.MediaType,
-		})
+	
+	prompt := strings.TrimSpace(web.Prompt)
+	if prompt == "" {
+		logger.WarnCtx(web.Robot.Ctx, "prompt is empty")
+		web.SendMsg(i18n.GetMessage(*conf.BaseConfInfo.Lang, "video_empty_content", nil))
+		return
+	}
+	
+	videoContent, totalToken, err := web.Robot.CreateVideo(prompt, web.BodyData)
+	if err != nil {
+		logger.WarnCtx(web.Robot.Ctx, "generate video fail", "err", err)
+		web.SendMsg(err.Error())
+		return
+	}
+	
+	base64Content := base64.StdEncoding.EncodeToString(videoContent)
+	dataURI := fmt.Sprintf("data:video/%s;base64,%s", utils.DetectVideoMimeType(videoContent), base64Content)
+	
+	fmt.Fprintf(web.W, "%s", dataURI)
+	web.Flusher.Flush()
+	
+	db.InsertRecordInfo(&db.Record{
+		UserId:     web.RealUserId,
+		Question:   web.OriginalPrompt,
+		Answer:     dataURI,
+		Token:      0,
+		IsDeleted:  0,
+		RecordType: param.WEBRecordType,
+		Mode:       *conf.BaseConfInfo.MediaType,
+	})
+	
+	db.InsertRecordInfo(&db.Record{
+		UserId:     web.RealUserId,
+		Question:   web.OriginalPrompt,
+		Answer:     dataURI,
+		Token:      totalToken,
+		IsDeleted:  0,
+		RecordType: param.VideoRecordType,
+		Mode:       *conf.BaseConfInfo.MediaType,
 	})
 	
 }
 
 func (web *Web) sendChatMessage() {
-	web.Robot.TalkingPreCheck(func() {
-		
-		prompt, err := web.GetContent(strings.TrimSpace(web.Prompt))
+	
+	prompt, err := web.GetContent(strings.TrimSpace(web.Prompt))
+	if err != nil {
+		logger.ErrorCtx(web.Robot.Ctx, "get content fail", "err", err)
+		web.SendMsg(err.Error())
+		return
+	}
+	
+	messageChan := make(chan string)
+	l := llm.NewLLM(
+		llm.WithChatId(web.RealUserId),
+		llm.WithUserId(web.RealUserId),
+		llm.WithMsgId(web.RealUserId),
+		llm.WithHTTPMsgChan(messageChan),
+		llm.WithContent(prompt),
+		llm.WithPerMsgLen(1000000),
+		llm.WithRecordId(web.RecordId),
+		llm.WithContext(web.Robot.Ctx),
+	)
+	go func() {
+		defer close(messageChan)
+		err := l.CallLLM()
 		if err != nil {
-			logger.ErrorCtx(web.Robot.Ctx, "get content fail", "err", err)
+			logger.WarnCtx(web.Robot.Ctx, "Error sending message", "err", err)
 			web.SendMsg(err.Error())
-			return
 		}
-		
-		messageChan := make(chan string)
-		l := llm.NewLLM(
-			llm.WithChatId(web.RealUserId),
-			llm.WithUserId(web.RealUserId),
-			llm.WithMsgId(web.RealUserId),
-			llm.WithHTTPMsgChan(messageChan),
-			llm.WithContent(prompt),
-			llm.WithPerMsgLen(1000000),
-			llm.WithRecordId(web.RecordId),
-			llm.WithContext(web.Robot.Ctx),
-		)
-		go func() {
-			defer close(messageChan)
-			err := l.CallLLM()
-			if err != nil {
-				logger.WarnCtx(web.Robot.Ctx, "Error sending message", "err", err)
-				web.SendMsg(err.Error())
-			}
-		}()
-		
-		totalContent := ""
-		for msg := range messageChan {
-			fmt.Fprintf(web.W, "%s", msg)
-			totalContent += msg
-			web.Flusher.Flush()
-		}
-		
-		originDataURI := ""
-		base64Content := base64.StdEncoding.EncodeToString(web.BodyData)
-		if format := utils.DetectImageFormat(web.BodyData); format != "unknown" {
-			originDataURI = fmt.Sprintf("data:image/%s;base64,%s", format, base64Content)
-		} else if format := utils.DetectAudioFormat(web.BodyData); format != "unknown" {
-			originDataURI = fmt.Sprintf("data:audio/%s;base64,%s", format, base64Content)
-		}
-		
-		db.InsertRecordInfo(&db.Record{
-			UserId:     web.RealUserId,
-			Question:   web.OriginalPrompt,
-			Answer:     totalContent,
-			Content:    originDataURI,
-			Token:      0, // llm already calculate it
-			IsDeleted:  0,
-			RecordType: param.WEBRecordType,
-		})
+	}()
+	
+	totalContent := ""
+	for msg := range messageChan {
+		fmt.Fprintf(web.W, "%s", msg)
+		totalContent += msg
+		web.Flusher.Flush()
+	}
+	
+	originDataURI := ""
+	base64Content := base64.StdEncoding.EncodeToString(web.BodyData)
+	if format := utils.DetectImageFormat(web.BodyData); format != "unknown" {
+		originDataURI = fmt.Sprintf("data:image/%s;base64,%s", format, base64Content)
+	} else if format := utils.DetectAudioFormat(web.BodyData); format != "unknown" {
+		originDataURI = fmt.Sprintf("data:audio/%s;base64,%s", format, base64Content)
+	}
+	
+	db.InsertRecordInfo(&db.Record{
+		UserId:     web.RealUserId,
+		Question:   web.OriginalPrompt,
+		Answer:     totalContent,
+		Content:    originDataURI,
+		Token:      0, // llm already calculate it
+		IsDeleted:  0,
+		RecordType: param.WEBRecordType,
 	})
+	
 }
 
 func (web *Web) GetContent(content string) (string, error) {
@@ -581,4 +600,30 @@ func (web *Web) InsertRecord() {
 	}
 	
 	web.RecordId = id
+}
+
+func (web *Web) AddUserInfo() bool {
+	userInfo, err := db.GetUserByID(web.RealUserId)
+	if err != nil {
+		logger.ErrorCtx(web.Robot.Ctx, "addUserInfo GetUserByID err", "err", err)
+		return false
+	}
+	
+	if userInfo == nil || userInfo.ID == 0 {
+		_, err = db.InsertUser(web.RealUserId, utils.GetDefaultLLMConfig())
+		if err != nil {
+			logger.ErrorCtx(web.Robot.Ctx, "insert user fail", "userID", web.RealUserId, "err", err)
+			return false
+		}
+		
+		userInfo, err = db.GetUserByID(web.RealUserId)
+		if err != nil || userInfo == nil {
+			logger.ErrorCtx(web.Robot.Ctx, "addUserInfo GetUserByID err", "err", err)
+			return false
+		}
+	}
+	
+	web.Robot.Ctx = context.WithValue(web.Robot.Ctx, "user_info", userInfo)
+	
+	return true
 }

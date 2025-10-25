@@ -146,7 +146,7 @@ func (q *PersonalQQRobot) requestLLMAndResp(content string) {
 	if !strings.Contains(content, "/") && q.Prompt == "" {
 		q.Prompt = content
 	}
-	q.Robot.ExecCmd(content, q.sendChatMessage, nil)
+	q.Robot.ExecCmd(content, q.sendChatMessage, nil, nil)
 }
 
 func (q *PersonalQQRobot) sendHelpConfigurationOptions() {
@@ -362,9 +362,14 @@ type NapCatResult struct {
 }
 
 func (q *PersonalQQRobot) SendMsg(txt string, image []byte, video []byte, voice []byte) (string, error) {
-	_, _, userId := q.Robot.GetChatIdAndMsgIdAndUserID()
+	_, msgId, userId := q.Robot.GetChatIdAndMsgIdAndUserID()
 	
-	msgArray := []map[string]interface{}{}
+	msgArray := []map[string]interface{}{
+		{
+			"type": "reply",
+			"data": map[string]string{"id": msgId},
+		},
+	}
 	
 	if txt != "" {
 		msgArray = append(msgArray, map[string]interface{}{

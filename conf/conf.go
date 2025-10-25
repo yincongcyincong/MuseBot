@@ -9,12 +9,10 @@ import (
 	"time"
 	
 	"github.com/yincongcyincong/MuseBot/logger"
-	"github.com/yincongcyincong/MuseBot/param"
 )
 
 type BaseConf struct {
-	StartTime     int64  `json:"-"`
-	SpecialLLMUrl string `json:"-"`
+	StartTime int64 `json:"-"`
 	
 	TelegramBotToken        *string `json:"telegram_bot_token"`
 	DiscordBotToken         *string `json:"discord_bot_token"`
@@ -425,8 +423,8 @@ func InitConf() {
 	logger.Info("CONF", "AliyunToken", *BaseConfInfo.AliyunToken)
 	logger.Info("CONF", "DBType", *BaseConfInfo.DBType)
 	logger.Info("CONF", "DBConf", *BaseConfInfo.DBConf)
-	logger.Info("CONF", "AllowedTelegramUserIds", *allowedUserIds)
-	logger.Info("CONF", "AllowedTelegramGroupIds", *allowedGroupIds)
+	logger.Info("CONF", "AllowedUserIds", *allowedUserIds)
+	logger.Info("CONF", "AllowedGroupIds", *allowedGroupIds)
 	logger.Info("CONF", "LLMProxy", *BaseConfInfo.LLMProxy)
 	logger.Info("CONF", "RobotProxy", *BaseConfInfo.RobotProxy)
 	logger.Info("CONF", "Lang", *BaseConfInfo.Lang)
@@ -455,17 +453,6 @@ func InitConf() {
 	EnvToolsConf()
 	EnvVideoConf()
 	EnvRegisterConf()
-	
-	switch *BaseConfInfo.Type {
-	case param.AI302:
-		BaseConfInfo.SpecialLLMUrl = "https://api.302.ai/"
-	case param.Aliyun:
-		BaseConfInfo.SpecialLLMUrl = "https://dashscope.aliyuncs.com/compatible-mode/v1"
-	case param.Ollama:
-		BaseConfInfo.SpecialLLMUrl = "http://localhost:11434/"
-	case param.ChatAnyWhere:
-		BaseConfInfo.SpecialLLMUrl = "https://api.chatanywhere.tech"
-	}
 	
 }
 

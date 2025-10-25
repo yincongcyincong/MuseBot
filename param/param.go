@@ -214,3 +214,12 @@ type ImgResponseData struct {
 	PredictTagResult string   `json:"predict_tag_result"`
 	RephraserResult  string   `json:"rephraser_result"`
 }
+
+type LLMConfig struct {
+	TxtType    string `json:"txt_type"`
+	TxtModel   string `json:"txt_model"`
+	ImgType    string `json:"img_type"`
+	ImgModel   string `json:"img_model"`
+	VideoType  string `json:"video_type"`
+	VideoModel string `json:"video_model"`
+}

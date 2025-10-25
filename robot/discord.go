@@ -384,8 +384,6 @@ func onInteractionCreate(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	switch i.Type {
 	case discordgo.InteractionApplicationCommand, discordgo.InteractionApplicationCommandAutocomplete:
 		cmd = i.ApplicationCommandData().Name
-	case discordgo.InteractionMessageComponent:
-		d.changeMode(i.MessageComponentData().CustomID)
 	}
 	
 	if d.Inter != nil && d.Inter.Type == discordgo.InteractionApplicationCommand && len(d.Inter.ApplicationCommandData().Options) > 0 {
@@ -399,45 +397,7 @@ func onInteractionCreate(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		return
 	}
 	
-	d.Robot.ExecCmd(cmd, d.sendChatMessage, d.sendModeConfigurationOptions)
-}
-
-func (d *DiscordRobot) changeMode(mode string) {
-	if param.GeminiModels[mode] || param.OpenAIModels[mode] ||
-		param.DeepseekModels[mode] || param.DeepseekLocalModels[mode] ||
-		param.OpenRouterModels[mode] || param.VolModels[mode] {
-		d.Robot.handleModeUpdate(mode)
-	}
-	
-	if param.OpenRouterModelTypes[mode] {
-		buttons := make([]discordgo.MessageComponent, 0)
-		for k := range param.OpenRouterModels {
-			if strings.Contains(k, mode+"/") {
-				buttons = append(buttons, discordgo.Button{Label: mode, CustomID: mode, Style: discordgo.SecondaryButton})
-			}
-		}
-		var rows []discordgo.MessageComponent
-		for i := 0; i < len(buttons); i += 5 {
-			end := i + 5
-			if end > len(buttons) {
-				end = len(buttons)
-			}
-			rows = append(rows, discordgo.ActionsRow{Components: buttons[i:end]})
-		}
-		
-		err := d.Session.InteractionRespond(d.Inter.Interaction, &discordgo.InteractionResponse{
-			Type: discordgo.InteractionResponseChannelMessageWithSource,
-			Data: &discordgo.InteractionResponseData{
-				Content:    i18n.GetMessage(*conf.BaseConfInfo.Lang, "chat_mode", nil),
-				Components: rows,
-				Flags:      1 << 6,
-			},
-		})
-		if err != nil {
-			logger.Error("Failed to defer interaction response", "err", err)
-		}
-		
-	}
+	d.Robot.ExecCmd(cmd, d.sendChatMessage, nil, nil)
 }
 
 func (d *DiscordRobot) sendChatMessage() {
@@ -447,83 +407,6 @@ func (d *DiscordRobot) sendChatMessage() {
 	}
 	d.Prompt = prompt
 	d.requestLLMAndResp(prompt)
-}
-
-func (d *DiscordRobot) sendModeConfigurationOptions() {
-	chatId, msgId, _ := d.Robot.GetChatIdAndMsgIdAndUserID()
-	
-	var buttons []discordgo.MessageComponent
-	switch *conf.BaseConfInfo.Type {
-	case param.DeepSeek:
-		if *conf.BaseConfInfo.CustomUrl == "" || *conf.BaseConfInfo.CustomUrl == "https://api.deepseek.com/" {
-			for k := range param.DeepseekModels {
-				buttons = append(buttons, discordgo.Button{Label: k, Style: discordgo.PrimaryButton, CustomID: k})
-			}
-		}
-	case param.Gemini:
-		for k := range param.GeminiModels {
-			buttons = append(buttons, discordgo.Button{Label: k, Style: discordgo.PrimaryButton, CustomID: k})
-		}
-	case param.OpenAi:
-		for k := range param.OpenAIModels {
-			buttons = append(buttons, discordgo.Button{Label: k, Style: discordgo.PrimaryButton, CustomID: k})
-		}
-	case param.Aliyun:
-		for k := range param.AliyunModel {
-			buttons = append(buttons, discordgo.Button{Label: k, Style: discordgo.PrimaryButton, CustomID: k})
-		}
-	case param.OpenRouter, param.AI302, param.Ollama:
-		if d.Prompt != "" {
-			d.Robot.handleModeUpdate(d.Prompt)
-			return
-		}
-		switch *conf.BaseConfInfo.Type {
-		case param.AI302:
-			d.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
-				"link": "https://302.ai/",
-			}),
-				msgId, tgbotapi.ModeMarkdown, nil)
-		case param.OpenRouter:
-			d.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
-				"link": "https://openrouter.ai/",
-			}),
-				msgId, tgbotapi.ModeMarkdown, nil)
-		case param.Ollama:
-			d.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
-				"link": "https://ollama.com/",
-			}),
-				msgId, tgbotapi.ModeMarkdown, nil)
-		}
-		
-		return
-	case param.Vol:
-		for k := range param.VolModels {
-			buttons = append(buttons, discordgo.Button{Label: k, Style: discordgo.PrimaryButton, CustomID: k})
-		}
-	}
-	
-	// 每行最多 5 个按钮，进行分组
-	var rows []discordgo.MessageComponent
-	for i := 0; i < len(buttons); i += 5 {
-		end := i + 5
-		if end > len(buttons) {
-			end = len(buttons)
-		}
-		rows = append(rows, discordgo.ActionsRow{Components: buttons[i:end]})
-	}
-	
-	err := d.Session.InteractionRespond(d.Inter.Interaction, &discordgo.InteractionResponse{
-		Type: discordgo.InteractionResponseChannelMessageWithSource,
-		Data: &discordgo.InteractionResponseData{
-			Content:    i18n.GetMessage(*conf.BaseConfInfo.Lang, "chat_mode", nil),
-			Components: rows,
-			Flags:      1 << 6,
-		},
-	})
-	
-	if err != nil {
-		logger.Error("send message error", "err", err)
-	}
 }
 
 func (d *DiscordRobot) sendImg() {

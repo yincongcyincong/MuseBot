@@ -35,22 +35,22 @@ type OpenAIReq struct {
 }
 
 func (d *OpenAIReq) GetModel(l *LLM) {
-	userInfo, err := db.GetUserByID(l.UserId)
-	if err != nil {
-		logger.ErrorCtx(l.Ctx, "Error getting user info", "err", err)
-		return
+	userInfo := db.GetCtxUserInfo(l.Ctx)
+	model := ""
+	if userInfo != nil && userInfo.LLMConfigRaw != nil {
+		model = userInfo.LLMConfigRaw.TxtModel
 	}
 	
-	switch *conf.BaseConfInfo.Type {
+	switch utils.GetTxtType(db.GetCtxUserInfo(l.Ctx).LLMConfigRaw) {
 	case param.OpenAi, param.ChatAnyWhere:
 		l.Model = openai.GPT3Dot5Turbo0125
-		if userInfo != nil && userInfo.Mode != "" && param.OpenAIModels[userInfo.Mode] {
-			l.Model = userInfo.Mode
+		if userInfo != nil && model != "" && param.OpenAIModels[model] {
+			l.Model = model
 		}
 	case param.Aliyun:
 		l.Model = qwen.QwenMax
-		if userInfo != nil && userInfo.Mode != "" && param.AliyunModel[userInfo.Mode] {
-			l.Model = userInfo.Mode
+		if userInfo != nil && model != "" && param.AliyunModel[model] {
+			l.Model = model
 		}
 	}
 	
@@ -65,7 +65,7 @@ func (d *OpenAIReq) Send(ctx context.Context, l *LLM) error {
 	
 	start := time.Now()
 	
-	client := GetOpenAIClient(false)
+	client := GetOpenAIClient(ctx, false)
 	request := openai.ChatCompletionRequest{
 		Model:  l.Model,
 		Stream: true,
@@ -189,7 +189,7 @@ func (d *OpenAIReq) GetMessage(role, msg string) {
 func (d *OpenAIReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 	start := time.Now()
 	
-	client := GetOpenAIClient(false)
+	client := GetOpenAIClient(ctx, false)
 	
 	request := openai.ChatCompletionRequest{
 		Model:            l.Model,
@@ -298,7 +298,7 @@ func (d *OpenAIReq) RequestToolsCall(ctx context.Context, choice openai.ChatComp
 
 // GenerateOpenAIImg generate image
 func GenerateOpenAIImg(ctx context.Context, prompt string, imageContent []byte) ([]byte, int, error) {
-	client := GetOpenAIClient(true)
+	client := GetOpenAIClient(ctx, true)
 	
 	start := time.Now()
 	metrics.APIRequestCount.WithLabelValues(*conf.PhotoConfInfo.OpenAIImageModel).Inc()
@@ -360,7 +360,7 @@ func GenerateOpenAIText(ctx context.Context, audioContent []byte) (string, error
 	start := time.Now()
 	metrics.APIRequestCount.WithLabelValues(openai.Whisper1).Inc()
 	
-	client := GetOpenAIClient(true)
+	client := GetOpenAIClient(ctx, true)
 	
 	req := openai.AudioRequest{
 		Model:    openai.Whisper1,
@@ -383,7 +383,7 @@ func GenerateOpenAIText(ctx context.Context, audioContent []byte) (string, error
 
 func GetOpenAIImageContent(ctx context.Context, imageContent []byte, content string) (string, int, error) {
 	
-	client := GetOpenAIClient(true)
+	client := GetOpenAIClient(ctx, true)
 	
 	contentPrompt := content
 	if content == "" {
@@ -442,7 +442,7 @@ func OpenAITTS(ctx context.Context, content, encoding string) ([]byte, int, int,
 	start := time.Now()
 	metrics.APIRequestCount.WithLabelValues(*conf.AudioConfInfo.OpenAIAudioModel).Inc()
 	
-	client := GetOpenAIClient(true)
+	client := GetOpenAIClient(ctx, true)
 	resp, err := client.CreateSpeech(ctx, openai.CreateSpeechRequest{
 		Model:          openai.SpeechModel(*conf.AudioConfInfo.OpenAIAudioModel),
 		Input:          content,
@@ -473,27 +473,31 @@ func OpenAITTS(ctx context.Context, content, encoding string) ([]byte, int, int,
 	return data, db.EstimateTokens(content), utils.PCMDuration(len(data), 24000, 1, 16), nil
 }
 
-func GetOpenAIClient(isMedia bool) *openai.Client {
+func GetOpenAIClient(ctx context.Context, isMedia bool) *openai.Client {
 	httpClient := utils.GetLLMProxyClient()
-	t := *conf.BaseConfInfo.Type
+	t := utils.GetTxtType(db.GetCtxUserInfo(ctx).LLMConfigRaw)
 	if isMedia {
-		t = *conf.BaseConfInfo.MediaType
+		t = utils.GetImgType(db.GetCtxUserInfo(ctx).LLMConfigRaw)
 	}
 	
 	var token string
+	var specialLLMUrl string
 	switch t {
 	case param.OpenAi:
 		token = *conf.BaseConfInfo.OpenAIToken
 	case param.Aliyun:
 		token = *conf.BaseConfInfo.AliyunToken
+		specialLLMUrl = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 	case param.ChatAnyWhere:
 		token = *conf.BaseConfInfo.ChatAnyWhereToken
+		specialLLMUrl = "https://api.chatanywhere.tech"
 	}
 	
 	openaiConfig := openai.DefaultConfig(token)
-	if conf.BaseConfInfo.SpecialLLMUrl != "" {
-		openaiConfig.BaseURL = conf.BaseConfInfo.SpecialLLMUrl
+	if specialLLMUrl != "" {
+		openaiConfig.BaseURL = specialLLMUrl
 	}
+	
 	if *conf.BaseConfInfo.CustomUrl != "" {
 		openaiConfig.BaseURL = *conf.BaseConfInfo.CustomUrl
 	}

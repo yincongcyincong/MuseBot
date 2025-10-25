@@ -138,7 +138,7 @@ func (d *DingRobot) requestLLMAndResp(content string) {
 	if !strings.Contains(content, "/") && d.Prompt == "" {
 		d.Prompt = content
 	}
-	d.Robot.ExecCmd(content, d.sendChatMessage, nil)
+	d.Robot.ExecCmd(content, d.sendChatMessage, nil, nil)
 }
 
 func (d *DingRobot) sendHelpConfigurationOptions() {

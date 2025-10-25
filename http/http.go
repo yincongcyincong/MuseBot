@@ -59,7 +59,6 @@ func (p *HTTPServer) Start() {
 		mux.HandleFunc("/mcp/sync", SyncMCPConf)
 		
 		mux.HandleFunc("/user/list", GetUsers)
-		mux.HandleFunc("/user/update/mode", UpdateMode)
 		mux.HandleFunc("/user/insert/record", InsertUserRecords)
 		mux.HandleFunc("/record/list", GetRecords)
 		

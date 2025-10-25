@@ -3,6 +3,7 @@ package robot
 import (
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"hash/crc32"
@@ -15,7 +16,6 @@ import (
 	"github.com/ArtisanCloud/PowerWeChat/v3/src/kernel/messages"
 	"github.com/ArtisanCloud/PowerWeChat/v3/src/work/message/request"
 	"github.com/bwmarrin/discordgo"
-	godeepseek "github.com/cohesion-org/deepseek-go"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/google/uuid"
 	larkcore "github.com/larksuite/oapi-sdk-go/v3/core"
@@ -128,9 +128,36 @@ func (r *RobotInfo) Exec() {
 		return
 	}
 	
-	if r.Robot.checkValid() {
+	if r.Robot.checkValid() && r.AddUserInfo() {
 		r.Robot.requestLLMAndResp(r.Robot.getMsgContent())
 	}
+}
+
+func (r *RobotInfo) AddUserInfo() bool {
+	_, _, userId := r.GetChatIdAndMsgIdAndUserID()
+	userInfo, err := db.GetUserByID(userId)
+	if err != nil {
+		logger.ErrorCtx(r.Ctx, "addUserInfo GetUserByID err", "err", err)
+		return false
+	}
+	
+	if userInfo == nil || userInfo.ID == 0 {
+		_, err = db.InsertUser(userId, utils.GetDefaultLLMConfig())
+		if err != nil {
+			logger.ErrorCtx(r.Ctx, "insert user fail", "userID", userId, "err", err)
+			return false
+		}
+		
+		userInfo, err = db.GetUserByID(userId)
+		if err != nil || userInfo == nil {
+			logger.ErrorCtx(r.Ctx, "addUserInfo GetUserByID err", "err", err)
+			return false
+		}
+	}
+	
+	r.Ctx = context.WithValue(r.Ctx, "user_info", userInfo)
+	return true
+	
 }
 
 func (r *RobotInfo) GetChatIdAndMsgIdAndUserID() (string, string, string) {
@@ -568,11 +595,6 @@ func (r *RobotInfo) checkUserTokenExceed(chatId string, msgId string, userId str
 		return false
 	}
 	
-	if userInfo == nil {
-		db.InsertUser(userId, godeepseek.DeepSeekChat)
-		return false
-	}
-	
 	if userInfo.Token >= userInfo.AvailToken {
 		tpl := i18n.GetMessage(*conf.BaseConfInfo.Lang, "token_exceed", nil)
 		content := fmt.Sprintf(tpl, userInfo.Token, userInfo.AvailToken-userInfo.Token, userInfo.AvailToken)
@@ -721,36 +743,55 @@ func (r *RobotInfo) TalkingPreCheck(f func()) {
 	f()
 }
 
-func (r *RobotInfo) handleModeUpdate(mode string) {
+type RobotModel struct {
+	TxtType    string
+	ImgType    string
+	VideoType  string
+	TxtModel   string
+	ImgModel   string
+	VideoModel string
+}
+
+func (r *RobotInfo) handleModelUpdate(rm *RobotModel) {
 	chatId, msgId, userId := r.GetChatIdAndMsgIdAndUserID()
 	
-	userInfo, err := db.GetUserByID(userId)
-	if err != nil {
-		logger.WarnCtx(r.Ctx, "get user fail", "userID", userId, "err", err)
-		r.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "set_mode", nil),
-			msgId, tgbotapi.ModeMarkdown, nil)
-		return
-	}
-	
+	userInfo := db.GetCtxUserInfo(r.Ctx)
 	if userInfo != nil && userInfo.ID != 0 {
-		err = db.UpdateUserMode(userId, mode)
+		llmConf := userInfo.LLMConfigRaw
+		if llmConf == nil {
+			llmConf = &param.LLMConfig{}
+		}
+		if rm.TxtType != "" {
+			llmConf.TxtType = rm.TxtType
+		}
+		if rm.ImgType != "" {
+			llmConf.ImgType = rm.ImgType
+		}
+		if rm.VideoType != "" {
+			llmConf.VideoType = rm.VideoType
+		}
+		if rm.TxtModel != "" {
+			llmConf.TxtModel = rm.TxtModel
+		}
+		if rm.ImgModel != "" {
+			llmConf.ImgModel = rm.ImgModel
+		}
+		if rm.VideoModel != "" {
+			llmConf.VideoModel = rm.VideoModel
+		}
+		
+		mode, _ := json.Marshal(llmConf)
+		
+		err := db.UpdateUserLLMConfig(userId, string(mode))
 		if err != nil {
 			logger.WarnCtx(r.Ctx, "update user fail", "userID", userId, "err", err)
 			r.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "set_mode", nil),
 				msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
-	} else {
-		_, err = db.InsertUser(userId, mode)
-		if err != nil {
-			logger.WarnCtx(r.Ctx, "insert user fail", "userID", userId, "err", err)
-			r.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "set_mode", nil),
-				msgId, tgbotapi.ModeMarkdown, nil)
-			return
-		}
 	}
 	
-	totalContent := i18n.GetMessage(*conf.BaseConfInfo.Lang, "mode_choose", nil) + mode
+	totalContent := i18n.GetMessage(*conf.BaseConfInfo.Lang, "mode_choose", nil) + r.Robot.getPrompt()
 	r.SendMsg(chatId, totalContent, msgId, "", nil)
 }
 
@@ -768,7 +809,7 @@ func ParseCommand(prompt string) (command string, args string) {
 	return command, args
 }
 
-func (r *RobotInfo) ExecCmd(cmd string, defaultFunc func(), modeFunc func()) {
+func (r *RobotInfo) ExecCmd(cmd string, defaultFunc func(), modeFunc func(), typesFunc func(string)) {
 	switch cmd {
 	case "balance", "/balance":
 		r.showBalanceInfo()
@@ -780,11 +821,17 @@ func (r *RobotInfo) ExecCmd(cmd string, defaultFunc func(), modeFunc func()) {
 		r.retryLastQuestion()
 	case "chat", "/chat":
 		r.Robot.sendChatMessage()
-	case "mode", "/mode":
+	case "txt_type", "/txt_type", "photo_type", "/photo_type", "video_type", "/video_type":
+		if typesFunc != nil {
+			typesFunc(cmd)
+		} else {
+			r.changeType(cmd)
+		}
+	case "txt_model", "/txt_model", "photo_model", "/photo_model", "video_model", "/video_model":
 		if modeFunc != nil {
 			modeFunc()
 		} else {
-			r.sendModeConfigurationOptions()
+			r.changeModel(cmd)
 		}
 	case "photo", "/photo", "edit_photo", "/edit_photo":
 		r.Robot.sendImg()
@@ -815,22 +862,72 @@ func (r *RobotInfo) ExecCmd(cmd string, defaultFunc func(), modeFunc func()) {
 	}
 }
 
-func (r *RobotInfo) sendModeConfigurationOptions() {
+func (r *RobotInfo) changeType(t string) {
 	chatId, msgId, _ := r.GetChatIdAndMsgIdAndUserID()
-	
-	prompt := strings.TrimSpace(r.Robot.getPrompt())
-	if prompt != "" {
-		if param.GeminiModels[prompt] || param.OpenAIModels[prompt] ||
-			param.DeepseekModels[prompt] || param.DeepseekLocalModels[prompt] ||
-			param.OpenRouterModels[prompt] || param.VolModels[prompt] {
-			r.handleModeUpdate(prompt)
+	totalContent := ""
+	switch t {
+	case "txt_type", "/txt_type":
+		if r.Robot.getPrompt() != "" {
+			r.handleModelUpdate(&RobotModel{TxtType: r.Robot.getPrompt()})
+			return
 		}
-		return
+		for _, model := range utils.GetAvailTxtType() {
+			totalContent += fmt.Sprintf(`%s
+
+`, model)
+		}
+	
+	case "photo_type", "/photo_type":
+		if r.Robot.getPrompt() != "" {
+			r.handleModelUpdate(&RobotModel{ImgType: r.Robot.getPrompt()})
+			return
+		}
+		for _, model := range utils.GetAvailImgType() {
+			totalContent += fmt.Sprintf(`%s
+
+`, model)
+		}
+	
+	case "video_type", "/video_type":
+		if r.Robot.getPrompt() != "" {
+			r.handleModelUpdate(&RobotModel{VideoType: r.Robot.getPrompt()})
+			return
+		}
+		
+		for _, model := range utils.GetAvailVideoType() {
+			totalContent += fmt.Sprintf(`%s
+
+`, model)
+		}
+	}
+	
+	r.SendMsg(chatId, totalContent, msgId, "", nil)
+	
+}
+
+func (r *RobotInfo) changeModel(t string) {
+	chatId, msgId, _ := r.GetChatIdAndMsgIdAndUserID()
+	switch t {
+	case "txt_model", "/txt_model":
+		if r.Robot.getPrompt() != "" {
+			r.handleModelUpdate(&RobotModel{TxtModel: r.Robot.getPrompt()})
+			return
+		}
+	case "photo_model", "/photo_model":
+		if r.Robot.getPrompt() != "" {
+			r.handleModelUpdate(&RobotModel{ImgModel: r.Robot.getPrompt()})
+			return
+		}
+	case "video_model", "/video_model":
+		if r.Robot.getPrompt() != "" {
+			r.handleModelUpdate(&RobotModel{VideoModel: r.Robot.getPrompt()})
+			return
+		}
 	}
 	
 	var modelList []string
 	
-	switch *conf.BaseConfInfo.Type {
+	switch utils.GetTxtType(db.GetCtxUserInfo(r.Ctx).LLMConfigRaw) {
 	case param.DeepSeek:
 		if *conf.BaseConfInfo.CustomUrl == "" || *conf.BaseConfInfo.CustomUrl == "https://api.deepseek.com/" {
 			for k := range param.DeepseekModels {
@@ -850,11 +947,7 @@ func (r *RobotInfo) sendModeConfigurationOptions() {
 			modelList = append(modelList, k)
 		}
 	case param.OpenRouter, param.AI302, param.Ollama:
-		if r.Robot.getPrompt() != "" {
-			r.handleModeUpdate(r.Robot.getPrompt())
-			return
-		}
-		switch *conf.BaseConfInfo.Type {
+		switch utils.GetTxtType(db.GetCtxUserInfo(r.Ctx).LLMConfigRaw) {
 		case param.AI302:
 			r.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
 				"link": "https://302.ai/",
@@ -986,7 +1079,7 @@ func (r *RobotInfo) ExecLLM(msgContent string, msgChan *MsgChan) {
 func (r *RobotInfo) showBalanceInfo() {
 	chatId, msgId, _ := r.GetChatIdAndMsgIdAndUserID()
 	
-	if *conf.BaseConfInfo.Type != param.DeepSeek {
+	if utils.GetTxtType(db.GetCtxUserInfo(r.Ctx).LLMConfigRaw) != param.DeepSeek {
 		r.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "not_deepseek", nil),
 			msgId, tgbotapi.ModeMarkdown, nil)
 		return
@@ -1015,11 +1108,6 @@ func (r *RobotInfo) showStateInfo() {
 		logger.WarnCtx(r.Ctx, "get user info fail", "err", err)
 		r.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
 		return
-	}
-	
-	if userInfo == nil {
-		db.InsertUser(userId, godeepseek.DeepSeekChat)
-		userInfo, err = db.GetUserByID(userId)
 	}
 	
 	// get today token
