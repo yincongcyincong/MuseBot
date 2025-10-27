@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"os"
 	"runtime/debug"
 	"strings"
 	
@@ -136,9 +135,6 @@ func (l *LarkRobot) requestLLMAndResp(content string) {
 }
 
 func (l *LarkRobot) sendHelpConfigurationOptions() {
-	data, _ := os.ReadFile("./data/117eb9b01d9f163db88.aud.mp3")
-	fmt.Println(l.sendVoiceContent(data, 10))
-	
 	chatId, msgId, _ := l.Robot.GetChatIdAndMsgIdAndUserID()
 	l.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "help_text", nil), msgId, tgbotapi.ModeMarkdown, nil)
 }
@@ -226,7 +222,7 @@ func (l *LarkRobot) sendImg() {
 			Token:      totalToken,
 			IsDeleted:  0,
 			RecordType: param.ImageRecordType,
-			Mode:       *conf.BaseConfInfo.MediaType,
+			Mode:       utils.GetImgType(db.GetCtxUserInfo(l.Robot.Ctx).LLMConfigRaw),
 		})
 	})
 }
@@ -306,7 +302,7 @@ func (l *LarkRobot) sendVideo() {
 			Content:    originImageURI,
 			IsDeleted:  0,
 			RecordType: param.VideoRecordType,
-			Mode:       *conf.BaseConfInfo.MediaType,
+			Mode:       utils.GetVideoType(db.GetCtxUserInfo(l.Robot.Ctx).LLMConfigRaw),
 		})
 	})
 	

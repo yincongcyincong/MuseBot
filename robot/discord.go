@@ -497,7 +497,7 @@ func (d *DiscordRobot) sendImg() {
 			Token:      totalToken,
 			IsDeleted:  0,
 			RecordType: param.ImageRecordType,
-			Mode:       *conf.BaseConfInfo.MediaType,
+			Mode:       utils.GetImgType(db.GetCtxUserInfo(d.Robot.Ctx).LLMConfigRaw),
 		})
 	})
 }
@@ -568,7 +568,7 @@ func (d *DiscordRobot) sendVideo() {
 			Content:    originImageURI,
 			IsDeleted:  0,
 			RecordType: param.VideoRecordType,
-			Mode:       *conf.BaseConfInfo.MediaType,
+			Mode:       utils.GetVideoType(db.GetCtxUserInfo(d.Robot.Ctx).LLMConfigRaw),
 		})
 	})
 }

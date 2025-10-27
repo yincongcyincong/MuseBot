@@ -91,10 +91,13 @@ const (
 	DoubaoSeed16VisionPro = "doubao-seed-1-6-250615"
 	
 	QwenImagePlus = "qwen-image-plus"
+	QwenVlMax     = "qwen-vl-max-latest"
 	
 	Wan2_5T2VPreview = "wan2.5-t2v-preview"
 	
 	DoubaoSeedance1_0Pro = "doubao-seedance-1-0-pro-250528"
+	
+	ChatGPT4_0 = "chatgpt-4o-latest"
 )
 
 var (
@@ -118,12 +121,22 @@ var (
 		ModelGemini15Flash:     true,
 	}
 	
+	GeminiRecModels = map[string]bool{
+		ModelGemini25Pro:   true,
+		ModelGemini25Flash: true,
+		ModelGemini20Flash: true,
+	}
+	
 	VolImageModels = map[string]bool{
 		DoubaoSeed16VisionPro: true,
 	}
 	
 	VolVideoModels = map[string]bool{
 		DoubaoSeedance1_0Pro: true,
+	}
+	
+	VolRecModels = map[string]bool{
+		DoubaoSeed16VisionPro: true,
 	}
 	
 	AliyunImageModels = map[string]bool{
@@ -134,8 +147,17 @@ var (
 		Wan2_5T2VPreview: true,
 	}
 	
-	ChatgptImageModels = map[string]bool{
+	AliyunRecModels = map[string]bool{
+		QwenVlMax: true,
+	}
+	
+	OpenAIImageModels = map[string]bool{
 		ModelImageGPT: true,
+	}
+	
+	OpenAiRecModels = map[string]bool{
+		openai.Whisper1: true,
+		ChatGPT4_0:      true,
 	}
 	
 	GeminiVideoModels = map[string]bool{
@@ -270,4 +292,6 @@ type LLMConfig struct {
 	ImgModel   string `json:"img_model"`
 	VideoType  string `json:"video_type"`
 	VideoModel string `json:"video_model"`
+	RecType    string `json:"rec_type"`
+	RecModel   string `json:"rec_model"`
 }

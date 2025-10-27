@@ -14,7 +14,7 @@ function Communicate() {
     const [chatPage, setChatPage] = useState(1);
     const [hasMoreHistory, setHasMoreHistory] = useState(true);
     const [toast, setToast] = useState(null);
-    const [mediaFile, setMediaFile] = useState(null);
+    const [t.File, setMediaFile] = useState(null);
     const [mediaPreview, setMediaPreview] = useState(null);
     const [modalVisible, setModalVisible] = useState(false);
     const [modalMedia, setModalMedia] = useState(null);

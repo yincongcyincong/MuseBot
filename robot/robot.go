@@ -619,7 +619,7 @@ func (r *RobotInfo) GetAudioContent(audioContent []byte) (string, error) {
 	var answer string
 	var err error
 	var token = param.AudioTokenUsage
-	switch *conf.BaseConfInfo.MediaType {
+	switch utils.GetRecType(db.GetCtxUserInfo(r.Ctx).LLMConfigRaw) {
 	case param.Vol:
 		answer, err = utils.FileRecognize(audioContent)
 	case param.OpenAi:
@@ -651,7 +651,7 @@ func (r *RobotInfo) GetImageContent(imageContent []byte, content string) (string
 	var answer string
 	var err error
 	var token int
-	switch *conf.BaseConfInfo.MediaType {
+	switch utils.GetRecType(db.GetCtxUserInfo(r.Ctx).LLMConfigRaw) {
 	case param.Vol:
 		answer, token, err = llm.GetVolImageContent(r.Ctx, imageContent, content)
 	case param.Gemini:
@@ -750,6 +750,8 @@ type RobotModel struct {
 	TxtModel   string
 	ImgModel   string
 	VideoModel string
+	RecType    string
+	RecModel   string
 }
 
 func (r *RobotInfo) handleModelUpdate(rm *RobotModel) {
@@ -778,6 +780,12 @@ func (r *RobotInfo) handleModelUpdate(rm *RobotModel) {
 		}
 		if rm.VideoModel != "" {
 			llmConf.VideoModel = rm.VideoModel
+		}
+		if rm.RecType != "" {
+			llmConf.RecType = rm.RecType
+		}
+		if rm.RecModel != "" {
+			llmConf.RecModel = rm.RecModel
 		}
 		
 		mode, _ := json.Marshal(llmConf)
@@ -821,13 +829,13 @@ func (r *RobotInfo) ExecCmd(cmd string, defaultFunc func(), modeFunc func(string
 		r.retryLastQuestion()
 	case "chat", "/chat":
 		r.Robot.sendChatMessage()
-	case "txt_type", "/txt_type", "photo_type", "/photo_type", "video_type", "/video_type":
+	case "txt_type", "/txt_type", "photo_type", "/photo_type", "video_type", "/video_type", "rec_type", "/rec_type":
 		if typesFunc != nil {
 			typesFunc(cmd)
 		} else {
 			r.changeType(cmd)
 		}
-	case "txt_model", "/txt_model", "photo_model", "/photo_model", "video_model", "/video_model":
+	case "txt_model", "/txt_model", "photo_model", "/photo_model", "video_model", "/video_model", "rec_model", "/rec_model":
 		if modeFunc != nil {
 			modeFunc(cmd)
 		} else {
@@ -857,9 +865,26 @@ func (r *RobotInfo) ExecCmd(cmd string, defaultFunc func(), modeFunc func(string
 			emptyPromptFunc = t.sendForceReply("mcp_empty_content")
 		}
 		r.sendMultiAgent("mcp_empty_content", emptyPromptFunc)
+	case "mode", "/mode":
+		r.showMode()
 	default:
 		defaultFunc()
 	}
+}
+
+func (r *RobotInfo) showMode() {
+	chatId, msgId, _ := r.GetChatIdAndMsgIdAndUserID()
+	llmConf := db.GetCtxUserInfo(r.Ctx).LLMConfigRaw
+	r.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mode_info", map[string]interface{}{
+		"txt_type":    llmConf.TxtType,
+		"photo_type":  llmConf.ImgType,
+		"video_type":  llmConf.VideoType,
+		"txt_model":   llmConf.TxtModel,
+		"photo_model": llmConf.ImgModel,
+		"video_model": llmConf.VideoModel,
+		"rec_type":    llmConf.RecType,
+		"rec_model":   llmConf.RecModel,
+	}), msgId, "", nil)
 }
 
 func (r *RobotInfo) changeType(t string) {
@@ -899,6 +924,17 @@ func (r *RobotInfo) changeType(t string) {
 
 `, model)
 		}
+	case "rec_type", "/rec_type":
+		if r.Robot.getPrompt() != "" {
+			r.handleModelUpdate(&RobotModel{RecType: r.Robot.getPrompt()})
+			return
+		}
+		
+		for _, model := range utils.GetAvailRecType() {
+			totalContent += fmt.Sprintf(`%s
+
+`, model)
+		}
 	}
 	
 	r.SendMsg(chatId, totalContent, msgId, "", nil)
@@ -926,6 +962,12 @@ func (r *RobotInfo) changeModel(ty string) {
 			return
 		}
 		r.showVideoModel(t)
+	case "rec_model", "/rec_model":
+		if r.Robot.getPrompt() != "" {
+			r.handleModelUpdate(&RobotModel{RecModel: r.Robot.getPrompt()})
+			return
+		}
+		r.showRecModel(t)
 	}
 	
 }
@@ -1001,7 +1043,7 @@ func (r *RobotInfo) showImageModel(ty string) {
 			modelList = append(modelList, k)
 		}
 	case param.OpenAi:
-		for k := range param.ChatgptImageModels {
+		for k := range param.OpenAIImageModels {
 			modelList = append(modelList, k)
 		}
 	case param.Aliyun:
@@ -1072,6 +1114,48 @@ func (r *RobotInfo) showVideoModel(ty string) {
 			for k := range param.VolVideoModels {
 				modelList = append(modelList, k)
 			}
+		}
+	}
+	totalContent := ""
+	for _, model := range modelList {
+		totalContent += fmt.Sprintf(`%s
+
+`, model)
+	}
+	
+	r.SendMsg(chatId, totalContent, msgId, "", nil)
+}
+
+func (r *RobotInfo) showRecModel(ty string) {
+	chatId, msgId, _ := r.GetChatIdAndMsgIdAndUserID()
+	var modelList []string
+	
+	switch utils.GetRecType(db.GetCtxUserInfo(r.Ctx).LLMConfigRaw) {
+	case param.Gemini:
+		for k := range param.GeminiRecModels {
+			modelList = append(modelList, k)
+		}
+	case param.Aliyun:
+		for k := range param.AliyunRecModels {
+			modelList = append(modelList, k)
+		}
+	case param.OpenAi:
+		for k := range param.OpenAiRecModels {
+			modelList = append(modelList, k)
+		}
+	case param.Vol:
+		for k := range param.VolRecModels {
+			modelList = append(modelList, k)
+		}
+	case param.AI302:
+		switch utils.GetTxtType(db.GetCtxUserInfo(r.Ctx).LLMConfigRaw) {
+		case param.AI302:
+			r.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
+				"link":    "https://302.ai/",
+				"command": ty,
+			}),
+				msgId, tgbotapi.ModeMarkdown, nil)
+			return
 		}
 	}
 	totalContent := ""
@@ -1337,7 +1421,9 @@ func (r *RobotInfo) CreatePhoto(prompt string, lastImageContent []byte) ([]byte,
 	var imageContent []byte
 	var totalToken int
 	var err error
-	switch *conf.BaseConfInfo.MediaType {
+	mediaType := utils.GetImgType(db.GetCtxUserInfo(r.Ctx).LLMConfigRaw)
+	logger.InfoCtx(r.Ctx, "create image", "mediaType", mediaType, "mediaModel", utils.GetImgModel(mediaType), "lastImageContent", len(lastImageContent))
+	switch mediaType {
 	case param.Vol:
 		imageUrl, totalToken, err = llm.GenerateVolImg(r.Ctx, prompt, lastImageContent)
 	case param.OpenAi, param.ChatAnyWhere:
@@ -1373,7 +1459,9 @@ func (r *RobotInfo) CreateVideo(prompt string, lastImageContent []byte) ([]byte,
 	var videoContent []byte
 	var err error
 	var totalToken int
-	switch *conf.BaseConfInfo.MediaType {
+	mediaType := utils.GetVideoType(db.GetCtxUserInfo(r.Ctx).LLMConfigRaw)
+	logger.InfoCtx(r.Ctx, "create video", "mediaType", mediaType, "mediaModel", utils.GetVideoModel(mediaType), "lastImageContent", len(lastImageContent))
+	switch mediaType {
 	case param.Vol:
 		videoUrl, totalToken, err = llm.GenerateVolVideo(r.Ctx, prompt, lastImageContent)
 	case param.Gemini:
@@ -1383,7 +1471,7 @@ func (r *RobotInfo) CreateVideo(prompt string, lastImageContent []byte) ([]byte,
 	case param.Aliyun:
 		videoUrl, totalToken, err = llm.GenerateAliyunVideo(r.Ctx, prompt, lastImageContent)
 	default:
-		err = fmt.Errorf("unsupported type: %s", *conf.BaseConfInfo.MediaType)
+		err = fmt.Errorf("unsupported type: %s", mediaType)
 	}
 	if err != nil {
 		logger.WarnCtx(r.Ctx, "generate video fail", "err", err)

@@ -339,7 +339,8 @@ func GenerateGeminiVideo(ctx context.Context, prompt string, image []byte) ([]by
 	}
 	
 	start := time.Now()
-	metrics.APIRequestCount.WithLabelValues(*conf.VideoConfInfo.GeminiVideoModel).Inc()
+	model := utils.GetUsingVideoModel(param.Gemini, db.GetCtxUserInfo(ctx).LLMConfigRaw.VideoModel)
+	metrics.APIRequestCount.WithLabelValues(model).Inc()
 	
 	var geminiImage *genai.Image
 	if len(image) > 0 {
@@ -351,7 +352,7 @@ func GenerateGeminiVideo(ctx context.Context, prompt string, image []byte) ([]by
 	
 	duration := int32(*conf.VideoConfInfo.Duration)
 	operation, err := client.Models.GenerateVideos(ctx,
-		*conf.VideoConfInfo.GeminiVideoModel, prompt,
+		model, prompt,
 		geminiImage,
 		&genai.GenerateVideosConfig{
 			AspectRatio:     *conf.VideoConfInfo.Radio,
@@ -372,7 +373,7 @@ func GenerateGeminiVideo(ctx context.Context, prompt string, image []byte) ([]by
 		}
 	}
 	
-	metrics.APIRequestDuration.WithLabelValues(*conf.VideoConfInfo.GeminiVideoModel).Observe(time.Since(start).Seconds())
+	metrics.APIRequestDuration.WithLabelValues(model).Observe(time.Since(start).Seconds())
 	
 	if len(operation.Response.GeneratedVideos) == 0 {
 		logger.ErrorCtx(ctx, "generate video fail", "err", "video is empty", "resp", operation.Response)
@@ -403,7 +404,8 @@ func GenerateGeminiText(ctx context.Context, audioContent []byte) (string, int, 
 	}
 	
 	start := time.Now()
-	metrics.APIRequestCount.WithLabelValues(*conf.PhotoConfInfo.GeminiRecModel).Inc()
+	model := utils.GetUsingRecModel(param.Gemini, db.GetCtxUserInfo(ctx).LLMConfigRaw.RecModel)
+	metrics.APIRequestCount.WithLabelValues(model).Inc()
 	
 	parts := []*genai.Part{
 		genai.NewPartFromText("Get Content from this audio clip"),
@@ -420,12 +422,12 @@ func GenerateGeminiText(ctx context.Context, audioContent []byte) (string, int, 
 	
 	result, err := client.Models.GenerateContent(
 		ctx,
-		*conf.PhotoConfInfo.GeminiRecModel,
+		model,
 		contents,
 		nil,
 	)
 	
-	metrics.APIRequestDuration.WithLabelValues(*conf.PhotoConfInfo.GeminiRecModel).Observe(time.Since(start).Seconds())
+	metrics.APIRequestDuration.WithLabelValues(model).Observe(time.Since(start).Seconds())
 	
 	if err != nil || result == nil {
 		logger.ErrorCtx(ctx, "generate text fail", "err", err)
@@ -443,7 +445,8 @@ func GetGeminiImageContent(ctx context.Context, imageContent []byte, content str
 	}
 	
 	start := time.Now()
-	metrics.APIRequestCount.WithLabelValues(*conf.PhotoConfInfo.GeminiRecModel).Inc()
+	model := utils.GetUsingImgModel(param.Gemini, db.GetCtxUserInfo(ctx).LLMConfigRaw.ImgModel)
+	metrics.APIRequestCount.WithLabelValues(model).Inc()
 	
 	contentPrompt := content
 	if content == "" {
@@ -461,12 +464,12 @@ func GetGeminiImageContent(ctx context.Context, imageContent []byte, content str
 	
 	result, err := client.Models.GenerateContent(
 		ctx,
-		*conf.PhotoConfInfo.GeminiRecModel,
+		model,
 		contents,
 		nil,
 	)
 	
-	metrics.APIRequestDuration.WithLabelValues(*conf.PhotoConfInfo.GeminiRecModel).Observe(time.Since(start).Seconds())
+	metrics.APIRequestDuration.WithLabelValues(model).Observe(time.Since(start).Seconds())
 	
 	if err != nil || result == nil {
 		logger.ErrorCtx(ctx, "generate text fail", "err", err)

@@ -284,7 +284,7 @@ func (w *WechatRobot) sendImg() {
 			Token:      totalToken,
 			IsDeleted:  0,
 			RecordType: param.ImageRecordType,
-			Mode:       *conf.BaseConfInfo.MediaType,
+			Mode:       utils.GetImgType(db.GetCtxUserInfo(w.Robot.Ctx).LLMConfigRaw),
 		})
 	})
 }
@@ -352,7 +352,7 @@ func (w *WechatRobot) sendVideo() {
 			Token:      totalToken,
 			IsDeleted:  0,
 			RecordType: param.VideoRecordType,
-			Mode:       *conf.BaseConfInfo.MediaType,
+			Mode:       utils.GetVideoType(db.GetCtxUserInfo(w.Robot.Ctx).LLMConfigRaw),
 		})
 	})
 	

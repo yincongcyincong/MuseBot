@@ -390,8 +390,11 @@ func GenerateVolVideo(ctx context.Context, prompt string, imageContent []byte) (
 		})
 	}
 	
+	llmConfig := db.GetCtxUserInfo(ctx).LLMConfigRaw
+	mediaType := utils.GetVideoType(llmConfig)
+	modelStr := utils.GetUsingVideoModel(mediaType, llmConfig.VideoModel)
 	resp, err := client.CreateContentGenerationTask(ctx, model.CreateContentGenerationTaskRequest{
-		Model:   *conf.VideoConfInfo.VolVideoModel,
+		Model:   modelStr,
 		Content: contents,
 	})
 	if err != nil {
@@ -435,7 +438,12 @@ func GenerateVolVideo(ctx context.Context, prompt string, imageContent []byte) (
 func GetVolImageContent(ctx context.Context, imageContent []byte, content string) (string, int, error) {
 	client := GetVolClient()
 	start := time.Now()
-	metrics.APIRequestCount.WithLabelValues(*conf.PhotoConfInfo.VolRecModel).Inc()
+	
+	llmConfig := db.GetCtxUserInfo(ctx).LLMConfigRaw
+	mediaType := utils.GetRecType(llmConfig)
+	modelStr := utils.GetUsingRecModel(mediaType, llmConfig.RecModel)
+	
+	metrics.APIRequestCount.WithLabelValues(modelStr).Inc()
 	
 	contentPrompt := content
 	if content == "" {
@@ -443,7 +451,7 @@ func GetVolImageContent(ctx context.Context, imageContent []byte, content string
 	}
 	
 	req := model.ChatCompletionRequest{
-		Model: *conf.PhotoConfInfo.VolRecModel,
+		Model: modelStr,
 		Messages: []*model.ChatCompletionMessage{
 			{
 				Role: model.ChatMessageRoleUser,
@@ -466,7 +474,7 @@ func GetVolImageContent(ctx context.Context, imageContent []byte, content string
 	}
 	
 	response, err := client.CreateChatCompletion(ctx, req)
-	metrics.APIRequestDuration.WithLabelValues(*conf.PhotoConfInfo.VolRecModel).Observe(time.Since(start).Seconds())
+	metrics.APIRequestDuration.WithLabelValues(modelStr).Observe(time.Since(start).Seconds())
 	if err != nil {
 		logger.ErrorCtx(ctx, "CreateChatCompletion error", "err", err)
 		return "", 0, err

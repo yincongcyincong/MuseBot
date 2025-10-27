@@ -125,6 +125,10 @@ func NewPersonalQQRobot(ctx context.Context, msgContent []byte) *PersonalQQRobot
 }
 
 func (q *PersonalQQRobot) checkValid() bool {
+	if q.Msg.Message == nil {
+		return false
+	}
+	
 	atBot, err := q.GetMessageContent()
 	if err != nil {
 		logger.ErrorCtx(q.Ctx, "get message content error", "err", err)
@@ -208,7 +212,7 @@ func (q *PersonalQQRobot) sendImg() {
 			Token:      totalToken,
 			IsDeleted:  0,
 			RecordType: param.ImageRecordType,
-			Mode:       *conf.BaseConfInfo.MediaType,
+			Mode:       utils.GetImgType(db.GetCtxUserInfo(q.Robot.Ctx).LLMConfigRaw),
 		})
 	})
 }
@@ -258,7 +262,7 @@ func (q *PersonalQQRobot) sendVideo() {
 			Content:    originImageURI,
 			IsDeleted:  0,
 			RecordType: param.VideoRecordType,
-			Mode:       *conf.BaseConfInfo.MediaType,
+			Mode:       utils.GetVideoType(db.GetCtxUserInfo(q.Robot.Ctx).LLMConfigRaw),
 		})
 	})
 	
@@ -289,7 +293,7 @@ func (q *PersonalQQRobot) executeChain() {
 	go q.Robot.ExecChain(q.Prompt, msgChan)
 	
 	// send response message
-	go q.Robot.HandleUpdate(msgChan, "silk")
+	go q.Robot.HandleUpdate(msgChan, "mp3")
 }
 
 func (q *PersonalQQRobot) executeLLM() {
@@ -297,7 +301,7 @@ func (q *PersonalQQRobot) executeLLM() {
 		NormalMessageChan: make(chan *param.MsgInfo),
 	}
 	
-	go q.Robot.HandleUpdate(msgChan, "silk")
+	go q.Robot.HandleUpdate(msgChan, "mp3")
 	
 	go q.Robot.ExecLLM(q.Prompt, msgChan)
 	
@@ -364,14 +368,13 @@ type NapCatResult struct {
 func (q *PersonalQQRobot) SendMsg(txt string, image []byte, video []byte, voice []byte) (string, error) {
 	_, msgId, userId := q.Robot.GetChatIdAndMsgIdAndUserID()
 	
-	msgArray := []map[string]interface{}{
-		{
-			"type": "reply",
-			"data": map[string]string{"id": msgId},
-		},
-	}
+	msgArray := []map[string]interface{}{}
 	
 	if txt != "" {
+		msgArray = append(msgArray, map[string]interface{}{
+			"type": "reply",
+			"data": map[string]string{"id": msgId},
+		})
 		msgArray = append(msgArray, map[string]interface{}{
 			"type": "text",
 			"data": map[string]string{"text": txt},
@@ -379,6 +382,11 @@ func (q *PersonalQQRobot) SendMsg(txt string, image []byte, video []byte, voice 
 	}
 	
 	if len(image) > 0 {
+		msgArray = append(msgArray, map[string]interface{}{
+			"type": "reply",
+			"data": map[string]string{"id": msgId},
+		})
+		
 		encoded := "base64://" + base64.StdEncoding.EncodeToString(image)
 		msgArray = append(msgArray, map[string]interface{}{
 			"type": "image",
@@ -397,7 +405,7 @@ func (q *PersonalQQRobot) SendMsg(txt string, image []byte, video []byte, voice 
 	if len(voice) > 0 {
 		encoded := "base64://" + base64.StdEncoding.EncodeToString(voice)
 		msgArray = append(msgArray, map[string]interface{}{
-			"type": "voice",
+			"type": "record",
 			"data": map[string]string{"file": encoded},
 		})
 	}
@@ -406,7 +414,6 @@ func (q *PersonalQQRobot) SendMsg(txt string, image []byte, video []byte, voice 
 		return "", fmt.Errorf("no content")
 	}
 	
-	// 构造 POST 请求参数
 	payload := map[string]interface{}{
 		"message": msgArray,
 	}
@@ -462,7 +469,7 @@ func (q *PersonalQQRobot) GetMessageContent() (bool, error) {
 			if err != nil {
 				return false, err
 			}
-		case "voice":
+		case "record":
 			q.AudioContent, err = utils.DownloadFile(v.Data.Url)
 			if err != nil {
 				return false, err
@@ -480,5 +487,6 @@ func (q *PersonalQQRobot) GetMessageContent() (bool, error) {
 }
 
 func (q *PersonalQQRobot) sendVoiceContent(voiceContent []byte, duration int) error {
-	return nil
+	_, err := q.SendMsg("", nil, nil, voiceContent)
+	return err
 }

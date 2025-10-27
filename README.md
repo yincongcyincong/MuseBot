@@ -199,11 +199,11 @@ clear all of your communication record with deepseek. this record use for helpin
 
 retry last question.
 
-### /txt_type /photo_type /video_type
-choose txt/photo/video model type.
+### /txt_type /photo_type /video_type /rec_type
+choose txt/photo/video/recognize model type.
 
-### /txt_model /img_model /video_model
-choose txt/photo/video model.
+### /txt_model /img_model /video_model /rec_model
+choose txt/photo/video/recognize model.
 
 ### /balance
 

@@ -44,10 +44,11 @@
   "photo_export_prompt": "I have a question about the image:\n\n {{.question}} \n\n This is the recognized content of the image: {{.answer}}\n\n please provide a summary",
   "set_pre_prompt_success": "\uD83D\uDE80 Successfully set command, please upload photo/voice in 5 min.",
   "send_mcp_info": "request mcp server, function name is {{.function_name}} \n\n request args is {{.request_args}}\n\n response is {{.response}}",
-  "mix_mode_choose": "Please go to {{.link}} to choose a model. Use /$command xxx, for example /txt_model gpt-5-chat-latest, to select a model.",
+  "mix_mode_choose": "Please go to {{.link}} to choose a model. Use /$command xxx, for example /txt\\_model gpt-5-chat-latest, to select a model.",
   "save_audio_success": "Voice saved successfully. File path: {{.filename}}",
   "audio_create_prompt": "Please say the following content: {{.content}}",
   "talk_param_error": "Missing conversation parameters",
   "bot_talking": "The bot is currently talking",
-  "audio_rec_prompt": "get Content from this audio clip, only return the content"
+  "audio_rec_prompt": "get Content from this audio clip, only return the content",
+  "mode_info": "Model Info \n Txt Type: {{.txt_type}} \n Txt Model: {{.txt_model}} \n\n Photo Type: {{.photo_type}} \n Photo Model: {{.photo_model}} \n\n Video Type: {{.video_type}} \n Video Model: {{.video_model}} \n\n Recognition Type: {{.rec_type}} \n Recognition Model: {{.rec_model}}"
 }

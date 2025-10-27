@@ -144,7 +144,7 @@ function BotUserListPage() {
                             <tr key={user.id} className="hover:bg-gray-50">
                                 <td className="px-6 py-4 text-sm text-gray-800">{user.id}</td>
                                 <td className="px-6 py-4 text-sm text-gray-800">{user.user_id}</td>
-                                <td className="px-6 py-4 text-sm text-gray-800">{user.mode}</td>
+                                <td className="px-6 py-4 text-sm text-gray-800">{user.llm_config}</td>
                                 <td className="px-6 py-4 text-sm text-gray-800">{user.token}</td>
                                 <td className="px-6 py-4 text-sm text-gray-800">{user.avail_token}</td>
                                 <td className="px-6 py-4 text-sm text-gray-800">
