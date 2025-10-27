@@ -43,17 +43,18 @@ chatgpt: https://www.youtube.com/watch?v=G_DZYMvd5Ug
 
 ## 📸 Support Platform
 
-| Platform             | Supported | Description                                                                                                           | Docs / Links                                                                          |
-|----------------------|:---------:|-----------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------|
-| 🟦 **Telegram**      |     ✅     | Supports Telegram bot (go-telegram-bot-api based, handles commands, inline buttons, ForceReply, etc.)                 | [Docs](https://github.com/yincongcyincong/MuseBot)                                    |
-| 🌈 **Discord**       |     ✅     | Supports Discord bot                                                                                                  | [Docs](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/discord.md)    |
-| 🌛 **Web API**       |     ✅     | Provides HTTP/Web API for interacting with LLM (great for custom frontends/backends)                                  | [Docs](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/web_api.md)    |
-| 🔷 **Slack**         |     ✅     | Supports Slack (Socket Mode / Events API / Block Kit interactions)                                                    | [Docs](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/slack.md)      |
-| 🟣 **Lark (Feishu)** |     ✅     | Supports Lark long connection & message handling (based on larksuite SDK, with image/audio download & message update) | [Docs](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/lark.md)       |
-| 🆙 **DingDing**      |     ✅     | Supports Dingding long connection                                                                                     | [Docs](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/dingding.md)   |
-| ⚡️ **Work WeChat**   |     ✅     | Support Work WeChat http callback to trigger LLM                                                                      | [Docs](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/com_wechat.md) |
-| 🌞 **QQ**            |     ✅     | Support QQ http callback to trigger LLM                                                                               | [Docs](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/qq.md)         |
-| 🚇 **Wechat**        |     ✅     | Support Wechat http callback to trigger LLM                                                                           | [Docs](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/wechat.md)     |
+| Platform             | Supported | Description                                                                                                           | Docs / Links                                                                           |
+|----------------------|:---------:|-----------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------|
+| 🟦 **Telegram**      |     ✅     | Supports Telegram bot (go-telegram-bot-api based, handles commands, inline buttons, ForceReply, etc.)                 | [Docs](https://github.com/yincongcyincong/MuseBot)                                     |
+| 🌈 **Discord**       |     ✅     | Supports Discord bot                                                                                                  | [Docs](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/discord.md)     |
+| 🌛 **Web API**       |     ✅     | Provides HTTP/Web API for interacting with LLM (great for custom frontends/backends)                                  | [Docs](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/web_api.md)     |
+| 🔷 **Slack**         |     ✅     | Supports Slack (Socket Mode / Events API / Block Kit interactions)                                                    | [Docs](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/slack.md)       |
+| 🟣 **Lark (Feishu)** |     ✅     | Supports Lark long connection & message handling (based on larksuite SDK, with image/audio download & message update) | [Docs](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/lark.md)        |
+| 🆙 **DingDing**      |     ✅     | Supports Dingding long connection                                                                                     | [Docs](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/dingding.md)    |
+| ⚡️ **Work WeChat**   |     ✅     | Support Work WeChat http callback to trigger LLM                                                                      | [Docs](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/com_wechat.md)  |
+| 🌞 **QQ**            |     ✅     | Support QQ http callback to trigger LLM                                                                               | [Docs](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/qq.md)          |
+| 🚇 **Wechat**        |     ✅     | Support Wechat http callback to trigger LLM                                                                           | [Docs](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/wechat.md)      |
+| 🚗 **Personal QQ**   |     ✅     | Support Personal QQ http callback to trigger LLM                                                                      | [Docs](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/personal_qq.md) |
 
 ## Supported Large Language Models
 
@@ -122,42 +123,67 @@ command: (doc)[https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/p
 
 You can configure the bot via environment variables:
 
-| Variable Name                  | 	Description                                                                                                                                        | Default Value             |
-|--------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------|
-| TELEGRAM_BOT_TOKEN (required)	 | Your Telegram bot token                                                                                                                             | -                         |
-| DEEPSEEK_TOKEN	  (required)    | DeepSeek Api Key                                                                                                                                    | -                         |
-| OPENAI_TOKEN	                  | Open AI Token                                                                                                                                       | -                         |
-| GEMINI_TOKEN	                  | Gemini Token                                                                                                                                        | -                         |
-| OPEN_ROUTER_TOKEN	             | OpenRouter Token  [doc](https://openrouter.ai/docs/quickstart)                                                                                      | -                         |
-| ALIYUN_TOKEN	                  | Aliyun Token  [doc](https://bailian.console.aliyun.com/?spm=5176.12818093_47.overview_recent.1.663b2cc9zsj3BI&tab=doc#/doc/?type=model&url=2840915) | -                         |
-| AI_302_TOKEN	                  | 302-AI token [doc](https://302.ai/)                                                                                                                 | -                         |
-| VOL_TOKEN	                     | Vol Token  [doc](https://www.volcengine.com/docs/82379/1399008#b00dee71)                                                                            | -                         |
-| CUSTOM_URL	                    | custom deepseek url                                                                                                                                 | https://api.deepseek.com/ |
-| TYPE	                          | deepseek/openai/gemini/openrouter/vol/302-ai/ollama/chatanywhere                                                                                    | deepseek                  |
-| VOLC_AK	                       | volcengine photo model ak     [doc](https://www.volcengine.com/docs/6444/1340578)                                                                   | -                         |
-| VOLC_SK	                       | volcengine photo model sk      [doc](https://www.volcengine.com/docs/6444/1340578)                                                                  | -                         |
-| Ernie_AK	                      | ernie ak     [doc](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Sly8bm96d)                                                                          | -                         |
-| Ernie_SK	                      | ernie sk      [doc](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Sly8bm96d)                                                                         | -                         |
-| DB_TYPE                        | sqlite3 / mysql                                                                                                                                     | sqlite3                   |
-| DB_CONF	                       | ./data/telegram_bot.db / root:admin@tcp(127.0.0.1:3306)/dbname?charset=utf8mb4&parseTime=True&loc=Local                                             | ./data/telegram_bot.db    |
-| ALLOWED_USER_IDS	              | user id, only these users can use bot, using "," splite. empty means all use can use it. 0 means all user is banned                                 | -                         |
-| ALLOWED_GROUP_IDS	             | chat id, only these chat can use bot, using "," splite. empty means all group can use it. 0 means all group is banned                               | -                         |
-| LLM_PROXY	                     | llm proxy                                                                                                                                           | -                         |
-| ROBOT_PROXY	                   | robot proxy                                                                                                                                         | -                         |
-| LANG	                          | en / zh                                                                                                                                             | en                        |
-| TOKEN_PER_USER	                | The tokens that each user can use                                                                                                                   | 10000                     |
-| ADMIN_USER_IDS	                | admin user, can use some admin commands                                                                                                             | -                         |
-| NEED_AT_BOT	                   | is it necessary to trigger an at robot in the group                                                                                                 | false                     |
-| MAX_USER_CHAT	                 | max existing chat per user                                                                                                                          | 2                         |
-| VIDEO_TOKEN	                   | volcengine Api key[doc](https://www.volcengine.com/docs/82379/1399008#b00dee71)                                                                     | -                         |
-| HTTP_PORT	                     | http server port                                                                                                                                    | 36060                     |
-| USE_TOOLS	                     | if normal conversation  use function call tools or not                                                                                              | false                     |
-| CA_FILE	                       | http server ca file                                                                                                                                 | -                         |
-| CRT_FILE	                      | http server crt file                                                                                                                                | -                         |
-| KEY_FILE	                      | http server key file                                                                                                                                | -                         |
-| MEDIA_TYPE	                    | openai/gemini/vol/openrouter/aliyun/302-ai   create photo or video                                                                                  | vol                       |
-| MAX_QA_PAIR	                   | how many question and answer pairs as context                                                                                                       | 15                        |
-| CHARACTER	                     | background character                                                                                                                                | -                         |
+Here’s the **English version** of your environment variable table:
+
+| Variable Name                     | Description                                                                                  | Default Value                                          |
+|-----------------------------------|----------------------------------------------------------------------------------------------|--------------------------------------------------------|
+| **TELEGRAM_BOT_TOKEN** (required) | Telegram bot token                                                                           | -                                                      |
+| **DISCORD_BOT_TOKEN**             | Discord bot token                                                                            | -                                                      |
+| **SLACK_BOT_TOKEN**               | Slack bot token                                                                              | -                                                      |
+| **SLACK_APP_TOKEN**               | Slack app-level token                                                                        | -                                                      |
+| **LARK_APP_ID**                   | Lark (Feishu) App ID                                                                         | -                                                      |
+| **LARK_APP_SECRET**               | Lark (Feishu) App Secret                                                                     | -                                                      |
+| **DING_CLIENT_ID**                | DingTalk App Key / Client ID                                                                 | -                                                      |
+| **DING_CLIENT_SECRET**            | DingTalk App Secret                                                                          | -                                                      |
+| **DING_TEMPLATE_ID**              | DingTalk template message ID                                                                 | -                                                      |
+| **COM_WECHAT_TOKEN**              | WeCom (Enterprise WeChat) token                                                              | -                                                      |
+| **COM_WECHAT_ENCODING_AES_KEY**   | WeCom EncodingAESKey                                                                         | -                                                      |
+| **COM_WECHAT_CORP_ID**            | WeCom CorpID                                                                                 | -                                                      |
+| **COM_WECHAT_SECRET**             | WeCom App Secret                                                                             | -                                                      |
+| **COM_WECHAT_AGENT_ID**           | WeCom Agent ID                                                                               | -                                                      |
+| **WECHAT_APP_ID**                 | WeChat Official Account AppID                                                                | -                                                      |
+| **WECHAT_APP_SECRET**             | WeChat Official Account AppSecret                                                            | -                                                      |
+| **WECHAT_ENCODING_AES_KEY**       | WeChat Official Account EncodingAESKey                                                       | -                                                      |
+| **WECHAT_TOKEN**                  | WeChat Official Account Token                                                                | -                                                      |
+| **WECHAT_ACTIVE**                 | Whether to enable WeChat message listening (true/false)                                      | false                                                  |
+| **QQ_APP_ID**                     | QQ Open Platform AppID                                                                       | -                                                      |
+| **QQ_APP_SECRET**                 | QQ Open Platform AppSecret                                                                   | -                                                      |
+| **QQ_NAPCAT_RECEIVE_TOKEN**       | Token for NapCat → MuseBot event messages                                                    | MuseBot                                                |
+| **QQ_NAPCAT_SEND_TOKEN**          | Token for MuseBot → NapCat message sending                                                   | MuseBot                                                |
+| **QQ_NAPCAT_HTTP_SERVER**         | NapCat HTTP server address                                                                   | [http://127.0.0.1:3000](http://127.0.0.1:3000)         |
+| **DEEPSEEK_TOKEN** (required)     | DeepSeek API key                                                                             | -                                                      |
+| **OPENAI_TOKEN**                  | OpenAI API key                                                                               | -                                                      |
+| **GEMINI_TOKEN**                  | Google Gemini API token                                                                      | -                                                      |
+| **OPEN_ROUTER_TOKEN**             | OpenRouter token [doc](https://openrouter.ai/docs/quickstart)                                | -                                                      |
+| **ALIYUN_TOKEN**                  | Aliyun Bailian token [doc](https://bailian.console.aliyun.com/#/doc/?type=model&url=2840915) | -                                                      |
+| **AI_302_TOKEN**                  | 302.AI token [doc](https://302.ai/)                                                          | -                                                      |
+| **VOL_TOKEN**                     | Volcano Engine general token [doc](https://www.volcengine.com/docs/82379/1399008#b00dee71)   | -                                                      |
+| **VOLC_AK**                       | Volcano Engine multimedia access key [doc](https://www.volcengine.com/docs/6444/1340578)     | -                                                      |
+| **VOLC_SK**                       | Volcano Engine multimedia secret key [doc](https://www.volcengine.com/docs/6444/1340578)     | -                                                      |
+| **ERNIE_AK**                      | Baidu ERNIE large model AK [doc](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Sly8bm96d)     | -                                                      |
+| **ERNIE_SK**                      | Baidu ERNIE large model SK [doc](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Sly8bm96d)     | -                                                      |
+| **CUSTOM_URL**                    | Custom DeepSeek API endpoint                                                                 | [https://api.deepseek.com/](https://api.deepseek.com/) |
+| **TYPE**                          | LLM type (deepseek/openai/gemini/openrouter/vol/302-ai/chatanywhere)                         | deepseek                                               |
+| **MEDIA_TYPE**                    | Media generation source (openai/gemini/vol/openrouter/aliyun/302-ai)                         | vol                                                    |
+| **DB_TYPE**                       | Database type (sqlite3/mysql)                                                                | sqlite3                                                |
+| **DB_CONF**                       | Database config path or connection string                                                    | ./data/muse_bot.db                                     |
+| **LLM_PROXY**                     | LLM network proxy (e.g. [http://127.0.0.1:7890](http://127.0.0.1:7890))                      | -                                                      |
+| **ROBOT_PROXY**                   | Bot network proxy (e.g. [http://127.0.0.1:7890](http://127.0.0.1:7890))                      | -                                                      |
+| **LANG**                          | Language (en/zh)                                                                             | en                                                     |
+| **TOKEN_PER_USER**                | Max tokens allowed per user                                                                  | 10000                                                  |
+| **MAX_USER_CHAT**                 | Maximum concurrent chats per user                                                            | 2                                                      |
+| **HTTP_HOST**                     | MuseBot HTTP server port                                                                     | :36060                                                 |
+| **USE_TOOLS**                     | Enable function-calling tools (true/false)                                                   | false                                                  |
+| **MAX_QA_PAIR**                   | Max number of question-answer pairs to keep as context                                       | 100                                                    |
+| **CHARACTER**                     | AI personality description                                                                   | -                                                      |
+| **CRT_FILE**                      | HTTPS certificate file path                                                                  | -                                                      |
+| **KEY_FILE**                      | HTTPS private key file path                                                                  | -                                                      |
+| **CA_FILE**                       | HTTPS CA certificate file path                                                               | -                                                      |
+| **ADMIN_USER_IDS**                | Comma-separated list of admin user IDs                                                       | -                                                      |
+| **ALLOWED_USER_IDS**              | Comma-separated user IDs allowed to use the bot; empty = all allowed; 0 = all banned         | -                                                      |
+| **ALLOWED_GROUP_IDS**             | Comma-separated group IDs allowed to use the bot; empty = all allowed; 0 = all banned        | -                                                      |
+| **BOT_NAME**                      | Bot name                                                                                     | MuseBot                                                |
+| **CHAT_ANY_WHERE_TOKEN**          | ChatAnyWhere platform token                                                                  | -                                                      |
 
 ### CUSTOM_URL
 
@@ -200,12 +226,15 @@ clear all of your communication record with deepseek. this record use for helpin
 retry last question.
 
 ### /txt_type /photo_type /video_type /rec_type
+
 choose txt/photo/video/recognize model type.
 
 ### /txt_model /img_model /video_model /rec_model
+
 choose txt/photo/video/recognize model.
 
 ### /mode
+
 show current model type and model.
 
 ### /balance
