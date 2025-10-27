@@ -96,7 +96,7 @@ func NewDiscordRobot(s *discordgo.Session, msg *discordgo.MessageCreate, i *disc
 
 func (d *DiscordRobot) checkValid() bool {
 	chatId, msgId, _ := d.Robot.GetChatIdAndMsgIdAndUserID()
-	// check whether you have new message
+	
 	if d.Msg != nil {
 		if d.skipThisMsg() {
 			logger.WarnCtx(d.Robot.Ctx, "skip this msg", "msgId", msgId, "chat", chatId, "content", d.Msg.Content)
@@ -106,22 +106,40 @@ func (d *DiscordRobot) checkValid() bool {
 		return true
 	}
 	
+	if d.Inter != nil {
+		return true
+	}
+	
 	return false
 }
 
 func (d *DiscordRobot) getMsgContent() string {
-	return d.Msg.Content
+	if d.Msg != nil {
+		return d.Msg.Content
+	}
+	return ""
 }
 
 func (d *DiscordRobot) requestLLMAndResp(content string) {
-	d.Robot.TalkingPreCheck(func() {
-		if conf.RagConfInfo.Store != nil {
-			d.executeChain(content)
-		} else {
-			d.executeLLM(content)
+	d.Prompt = content
+	if d.Inter != nil {
+		switch d.Inter.Type {
+		case discordgo.InteractionApplicationCommand, discordgo.InteractionApplicationCommandAutocomplete:
+			d.Command = d.Inter.ApplicationCommandData().Name
 		}
-	})
+		
+		if d.Inter != nil && d.Inter.Type == discordgo.InteractionApplicationCommand && len(d.Inter.ApplicationCommandData().Options) > 0 {
+			d.Prompt = d.Inter.ApplicationCommandData().Options[0].StringValue()
+		}
+	}
 	
+	switch d.Command {
+	case "talk":
+		d.Talk()
+		return
+	}
+	
+	d.Robot.ExecCmd(d.Command, d.sendChatMessage, nil, nil)
 }
 
 func (d *DiscordRobot) executeChain(content string) {
@@ -334,8 +352,23 @@ func registerSlashCommands(s *discordgo.Session) {
 			{Type: discordgo.ApplicationCommandOptionString, Name: "prompt", Description: "Prompt", Required: true},
 			{Type: discordgo.ApplicationCommandOptionAttachment, Name: "image", Description: "upload a image", Required: false},
 		}},
-		{Name: "mode", Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.mode.description", nil), Options: []*discordgo.ApplicationCommandOption{
-			{Type: discordgo.ApplicationCommandOptionString, Name: "mode", Description: "Mode", Required: false},
+		{Name: "txt_type", Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.mode.description", nil), Options: []*discordgo.ApplicationCommandOption{
+			{Type: discordgo.ApplicationCommandOptionString, Name: "type", Description: "Type", Required: false},
+		}},
+		{Name: "photo_type", Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.mode.description", nil), Options: []*discordgo.ApplicationCommandOption{
+			{Type: discordgo.ApplicationCommandOptionString, Name: "type", Description: "Type", Required: false},
+		}},
+		{Name: "video_type", Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.mode.description", nil), Options: []*discordgo.ApplicationCommandOption{
+			{Type: discordgo.ApplicationCommandOptionString, Name: "type", Description: "Type", Required: false},
+		}},
+		{Name: "txt_model", Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.mode.description", nil), Options: []*discordgo.ApplicationCommandOption{
+			{Type: discordgo.ApplicationCommandOptionString, Name: "type", Description: "Type", Required: false},
+		}},
+		{Name: "photo_model", Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.mode.description", nil), Options: []*discordgo.ApplicationCommandOption{
+			{Type: discordgo.ApplicationCommandOptionString, Name: "type", Description: "Type", Required: false},
+		}},
+		{Name: "video_model", Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.mode.description", nil), Options: []*discordgo.ApplicationCommandOption{
+			{Type: discordgo.ApplicationCommandOptionString, Name: "type", Description: "Type", Required: false},
 		}},
 		{Name: "balance", Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.balance.description", nil)},
 		{Name: "talk", Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.balance.talk", nil)},
@@ -379,34 +412,16 @@ func onInteractionCreate(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	d := NewDiscordRobot(s, nil, i)
 	d.Robot = NewRobot(WithRobot(d))
 	d.Robot.Exec()
-	
-	cmd := ""
-	switch i.Type {
-	case discordgo.InteractionApplicationCommand, discordgo.InteractionApplicationCommandAutocomplete:
-		cmd = i.ApplicationCommandData().Name
-	}
-	
-	if d.Inter != nil && d.Inter.Type == discordgo.InteractionApplicationCommand && len(d.Inter.ApplicationCommandData().Options) > 0 {
-		d.Prompt = d.Inter.ApplicationCommandData().Options[0].StringValue()
-	}
-	
-	d.Command = cmd
-	switch d.Command {
-	case "talk":
-		d.Talk()
-		return
-	}
-	
-	d.Robot.ExecCmd(cmd, d.sendChatMessage, nil, nil)
 }
 
 func (d *DiscordRobot) sendChatMessage() {
-	prompt := ""
-	if d.Inter != nil && d.Inter.Type == discordgo.InteractionApplicationCommand && len(d.Inter.ApplicationCommandData().Options) > 0 {
-		prompt = d.Inter.ApplicationCommandData().Options[0].StringValue()
-	}
-	d.Prompt = prompt
-	d.requestLLMAndResp(prompt)
+	d.Robot.TalkingPreCheck(func() {
+		if conf.RagConfInfo.Store != nil {
+			d.executeChain(d.Prompt)
+		} else {
+			d.executeLLM(d.Prompt)
+		}
+	})
 }
 
 func (d *DiscordRobot) sendImg() {

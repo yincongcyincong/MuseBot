@@ -124,11 +124,11 @@ MIT License © 2025 jack yin
 
 Повторить последний вопрос.
 
-### /mode
+### /txt_type /photo_type /video_type
+choose txt/photo/video model type.
 
-Выбор режима DeepSeek: `chat`, `coder`, `reasoner`.  
-`chat` и `coder` — DeepSeek-V3, `reasoner` — DeepSeek-R1.  
-<img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/55ac3101-92d2-490d-8ee0-31a5b297e56e" />
+### /txt_model /img_model /video_model
+choose txt/photo/video model.
 
 ### /balance
 

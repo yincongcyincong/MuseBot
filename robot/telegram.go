@@ -388,7 +388,33 @@ func (t *TelegramRobot) changeType(ty string) {
 }
 
 // sendModeConfigurationOptions send config view
-func (t *TelegramRobot) changeModel() {
+func (t *TelegramRobot) changeModel(ty string) {
+	
+	switch ty {
+	case "txt_model", "/txt_model":
+		if t.getPrompt() != "" {
+			t.Robot.handleModelUpdate(&RobotModel{TxtModel: t.Prompt})
+			return
+		}
+		t.showTxtModel(ty)
+	
+	case "photo_model", "/photo_model":
+		if t.getPrompt() != "" {
+			t.Robot.handleModelUpdate(&RobotModel{ImgModel: t.Prompt})
+			return
+		}
+		t.showImageModel(ty)
+	
+	case "video_model", "/video_model":
+		if t.getPrompt() != "" {
+			t.Robot.handleModelUpdate(&RobotModel{VideoModel: t.Prompt})
+			return
+		}
+		t.showVideoModel(ty)
+	}
+}
+
+func (t *TelegramRobot) showTxtModel(ty string) {
 	chatID, msgId, _ := t.Robot.GetChatIdAndMsgIdAndUserID()
 	
 	var inlineKeyboard tgbotapi.InlineKeyboardMarkup
@@ -428,17 +454,20 @@ func (t *TelegramRobot) changeModel() {
 		switch utils.GetTxtType(db.GetCtxUserInfo(t.Robot.Ctx).LLMConfigRaw) {
 		case param.AI302:
 			t.Robot.SendMsg(chatID, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
-				"link": "https://302.ai/",
+				"link":    "https://302.ai/",
+				"command": ty,
 			}),
 				msgId, tgbotapi.ModeMarkdown, nil)
 		case param.OpenRouter:
 			t.Robot.SendMsg(chatID, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
-				"link": "https://openrouter.ai/",
+				"link":    "https://openrouter.ai/",
+				"command": ty,
 			}),
 				msgId, tgbotapi.ModeMarkdown, nil)
 		case param.Ollama:
 			t.Robot.SendMsg(chatID, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
-				"link": "https://ollama.com/",
+				"link":    "https://ollama.com/",
+				"command": ty,
 			}),
 				msgId, tgbotapi.ModeMarkdown, nil)
 		}
@@ -452,6 +481,109 @@ func (t *TelegramRobot) changeModel() {
 			))
 		}
 		
+	}
+	
+	inlineKeyboard = tgbotapi.NewInlineKeyboardMarkup(inlineButton...)
+	
+	t.Robot.SendMsg(chatID, i18n.GetMessage(*conf.BaseConfInfo.Lang, "chat_mode", nil),
+		msgId, tgbotapi.ModeMarkdown, &inlineKeyboard)
+}
+
+func (t *TelegramRobot) showImageModel(ty string) {
+	chatID, msgId, _ := t.Robot.GetChatIdAndMsgIdAndUserID()
+	var inlineKeyboard tgbotapi.InlineKeyboardMarkup
+	inlineButton := make([][]tgbotapi.InlineKeyboardButton, 0)
+	
+	switch utils.GetImgType(db.GetCtxUserInfo(t.Robot.Ctx).LLMConfigRaw) {
+	case param.Gemini:
+		for k := range param.GeminiImageModels {
+			inlineButton = append(inlineButton, tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonData(k, k),
+			))
+		}
+	case param.OpenAi:
+		for k := range param.ChatgptImageModels {
+			inlineButton = append(inlineButton, tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonData(k, k),
+			))
+		}
+	case param.Aliyun:
+		for k := range param.AliyunImageModels {
+			inlineButton = append(inlineButton, tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonData(k, k),
+			))
+		}
+	case param.OpenRouter, param.AI302, param.Ollama:
+		switch utils.GetImgType(db.GetCtxUserInfo(t.Robot.Ctx).LLMConfigRaw) {
+		case param.AI302:
+			t.Robot.SendMsg(chatID, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
+				"link":    "https://302.ai/",
+				"command": ty,
+			}),
+				msgId, tgbotapi.ModeMarkdown, nil)
+		case param.OpenRouter:
+			t.Robot.SendMsg(chatID, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
+				"link":    "https://openrouter.ai/",
+				"command": ty,
+			}),
+				msgId, tgbotapi.ModeMarkdown, nil)
+		case param.Ollama:
+			t.Robot.SendMsg(chatID, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
+				"link":    "https://ollama.com/",
+				"command": ty,
+			}),
+				msgId, tgbotapi.ModeMarkdown, nil)
+		}
+		
+		return
+	case param.Vol:
+		for k := range param.VolImageModels {
+			inlineButton = append(inlineButton, tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonData(k, k),
+			))
+		}
+	}
+	
+	inlineKeyboard = tgbotapi.NewInlineKeyboardMarkup(inlineButton...)
+	
+	t.Robot.SendMsg(chatID, i18n.GetMessage(*conf.BaseConfInfo.Lang, "chat_mode", nil),
+		msgId, tgbotapi.ModeMarkdown, &inlineKeyboard)
+}
+
+func (t *TelegramRobot) showVideoModel(ty string) {
+	chatID, msgId, _ := t.Robot.GetChatIdAndMsgIdAndUserID()
+	var inlineKeyboard tgbotapi.InlineKeyboardMarkup
+	inlineButton := make([][]tgbotapi.InlineKeyboardButton, 0)
+	
+	switch utils.GetVideoType(db.GetCtxUserInfo(t.Robot.Ctx).LLMConfigRaw) {
+	case param.Gemini:
+		for k := range param.GeminiVideoModels {
+			inlineButton = append(inlineButton, tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonData(k, k),
+			))
+		}
+	case param.Aliyun:
+		for k := range param.AliyunVideoModels {
+			inlineButton = append(inlineButton, tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonData(k, k),
+			))
+		}
+	case param.Vol:
+		for k := range param.VolVideoModels {
+			inlineButton = append(inlineButton, tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonData(k, k),
+			))
+		}
+	case param.AI302:
+		switch utils.GetVideoType(db.GetCtxUserInfo(t.Robot.Ctx).LLMConfigRaw) {
+		case param.AI302:
+			t.Robot.SendMsg(chatID, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
+				"link":    "https://302.ai/",
+				"command": ty,
+			}),
+				msgId, tgbotapi.ModeMarkdown, nil)
+			return
+		}
 	}
 	
 	inlineKeyboard = tgbotapi.NewInlineKeyboardMarkup(inlineButton...)
