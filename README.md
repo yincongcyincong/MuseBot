@@ -226,16 +226,20 @@ clear all of your communication record with deepseek. this record use for helpin
 retry last question.
 
 ### /txt_type /photo_type /video_type /rec_type
-
-choose txt/photo/video/recognize model type.
+choose txt/photo/video/recognize model type.    
+<img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/b001e178-4c2a-4e4f-a679-b60be51a776b" />
+<img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/ad7c3b84-b471-418b-8fe7-05af53893842" />
 
 ### /txt_model /img_model /video_model /rec_model
+choose txt/photo/video/recognize model.    
+<img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/882f7766-c237-45e7-b0d1-9035fc65ff73" />
+<img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/276af04a-d602-470e-b2c1-ba22e16225b0" />
 
-choose txt/photo/video/recognize model.
 
 ### /mode
+show current model type and model.    
+<img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/47fb4043-7385-4f81-b8f9-83f8352b81f9" />
 
-show current model type and model.
 
 ### /balance
 
