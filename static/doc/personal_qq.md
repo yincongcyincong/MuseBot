@@ -41,7 +41,7 @@ docker run -d \
 4. You’ll find a line like this:
 
    ```
-   NapCat: HTTP Key: 123456789abcdef
+   [NapCat] [WebUi] 🔑 token=bcc53c876d56
    ```
 
    This **Key** is NapCat’s HTTP authentication token — save it carefully.
@@ -79,6 +79,10 @@ In the NapCat Web Console → “Settings” → “Network Configuration”, fi
 | **HTTP Server**   | Address MuseBot uses to call NapCat APIs           | `http://127.0.0.1:3000`         |
 | **HTTP Client**   | Address NapCat uses to push events to MuseBot      | `http://127.0.0.1:36060/napcat` |
 | **HTTP Auth Key** | Must match the token in your environment variables | `MuseBot`                       |
+
+![image](https://github.com/user-attachments/assets/b6aa893d-6db9-444a-82e6-a185561ad818)
+![image](https://github.com/user-attachments/assets/53e86994-a19d-487b-b46f-3b457a38d5c0)
+
 
 ---
 
