@@ -47,17 +47,18 @@ chatgpt: https://www.bilibili.com/video/BV1RutxzJEGY/
 
 ## 支持平台
 
-| 平台                 | 支持情况 | 简要说明                                                            | 文档 / 链接                                                                                |
-|--------------------|:----:|-----------------------------------------------------------------|----------------------------------------------------------------------------------------|
-| 🟦 **Telegram**    |  ✅   | 支持 Telegram 机器人（基于 go-telegram-bot-api，可处理命令、内联按钮、ForceReply 等） | [文档](https://github.com/yincongcyincong/MuseBot/blob/main/README_ZH.md)                |
-| 🌈 **Discord**     |  ✅   | 支持 Discord 机器人                                                  | [文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/discord_ZH.md)    |
-| 🌛 **Web API**     |  ✅   | 提供 HTTP/Web API 与 LLM 交互（适合构建自己的前端或后端集成）                        | [文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/web_api_ZH.md)    |
-| 🔷 **Slack**       |  ✅   | 支持 Slack（Socket Mode / Events API / Block Kit 交互）               | [文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/slack_ZH.md)      |
-| 🟣 **Lark（飞书）**    |  ✅   | 支持 Lark 长连接与消息处理（基于 larksuite SDK，支持图片/音频下载与消息更新）               | [文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/lark_ZH.md)       |
-| 🆙 **钉钉**          |  ✅   | 支持钉钉长链接服务                                                       | [文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/dingding_ZH.md)   |
-| ⚡️ **Work WeChat** |  ✅   | 支持企业微信触发大模型                                                     | [文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/com_wechat_ZH.md) |
-| ⚡️ **QQ**          |  ✅   | 支持QQ触发大模型                                                       | [文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/qq_ZH.md)         |
-| ⚡️ **WeChat**      |  ✅   | 支持微信触发大模型                                                       | [文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/wechat_ZH.md)     |
+| 平台                 | 支持情况 | 简要说明                                                            | 文档 / 链接                                                                                   |
+|--------------------|:----:|-----------------------------------------------------------------|-------------------------------------------------------------------------------------------|
+| 🟦 **Telegram**    |  ✅   | 支持 Telegram 机器人（基于 go-telegram-bot-api，可处理命令、内联按钮、ForceReply 等） | [文档](https://github.com/yincongcyincong/MuseBot/blob/main/README_ZH.md)                   |
+| 🌈 **Discord**     |  ✅   | 支持 Discord 机器人                                                  | [文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/discord_ZH.md)       |
+| 🌛 **Web API**     |  ✅   | 提供 HTTP/Web API 与 LLM 交互（适合构建自己的前端或后端集成）                        | [文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/web_api_ZH.md)       |
+| 🔷 **Slack**       |  ✅   | 支持 Slack（Socket Mode / Events API / Block Kit 交互）               | [文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/slack_ZH.md)         |
+| 🟣 **Lark（飞书）**    |  ✅   | 支持 Lark 长连接与消息处理（基于 larksuite SDK，支持图片/音频下载与消息更新）               | [文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/lark_ZH.md)          |
+| 🆙 **钉钉**          |  ✅   | 支持钉钉长链接服务                                                       | [文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/dingding_ZH.md)      |
+| ⚡️ **Work WeChat** |  ✅   | 支持企业微信触发大模型                                                     | [文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/com_wechat_ZH.md)    |
+| ⚡️ **QQ**          |  ✅   | 支持QQ机器人触发大模型                                                    | [文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/qq_ZH.md)            |
+| ⚡️ **WeChat**      |  ✅   | 支持微信触发大模型                                                       | [文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/wechat_ZH.md)        |
+| 🚗 **Personal QQ**   |     ✅     | 支持个人QQ触发大模型                                                     | [Docs](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/personal_qq_ZH.md) |
 
 ## 支持的大型语言模型
 
@@ -131,42 +132,68 @@ docker pull crpi-i1dsvpjijxpgjgbv.cn-hangzhou.personal.cr.aliyuncs.com/jackyin08
 
 ## ⚙️ 配置项
 
-| 变量名                         | 描述                                                                                                                                               | 默认值                       |
-|:----------------------------|:-------------------------------------------------------------------------------------------------------------------------------------------------|:--------------------------|
-| **TELEGRAM_BOT_TOKEN** (必需) | 您的 Telegram 机器人令牌                                                                                                                                | -                         |
-| **DEEPSEEK_TOKEN** (必需)     | DeepSeek API 密钥                                                                                                                                  | -                         |
-| **OPENAI_TOKEN**            | OpenAI 令牌                                                                                                                                        | -                         |
-| **GEMINI_TOKEN**            | Gemini 令牌                                                                                                                                        | -                         |
-| **ALIYUN_TOKEN**	           | Aliyun 令牌  [doc](https://bailian.console.aliyun.com/?spm=5176.12818093_47.overview_recent.1.663b2cc9zsj3BI&tab=doc#/doc/?type=model&url=2840915) | -                         |
-| **OPEN_ROUTER_TOKEN**       | OpenRouter 令牌 [文档](https://openrouter.ai/docs/quickstart)                                                                                        | -                         |
-| **VOL_TOKEN**               | 火山引擎 令牌 [文档](https://www.volcengine.com/docs/82379/1399008#b00dee71)                                                                             | -                         |
-| **CHAT_ANY_WHERE_TOKEN**    | ChatAnyWhere 令牌 [文档](https://api.chatanywhere.tech/#/)                                                                                           | -                         |
-| **CUSTOM_URL**              | 自定义 DeepSeek URL                                                                                                                                 | https://api.deepseek.com/ |
-| **TYPE**                    | 模型类型：deepseek/openai/gemini/openrouter/vol/aliyun/302-ai/ollama/chatanywhere                                                                     | deepseek                  |
-| **VOLC_AK**                 | 火山引擎图片模型 AK [文档](https://www.volcengine.com/docs/6444/1340578)                                                                                   | -                         |
-| **VOLC_SK**                 | 火山引擎图片模型 SK [文档](https://www.volcengine.com/docs/6444/1340578)                                                                                   | -                         |
-| **Ernie_AK**                | 文心一言 AK [文档](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Sly8bm96d)                                                                             | -                         |
-| **Ernie_SK**                | 文心一言 SK [文档](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Sly8bm96d)                                                                             | -                         |
-| **DB_TYPE**                 | 数据库类型：sqlite3 / mysql                                                                                                                            | sqlite3                   |
-| **DB_CONF**                 | 数据库配置：./data/telegram_bot.db 或 root:admin@tcp(127.0.0.1:3306)/dbname?charset=utf8mb4&parseTime=True&loc=Local                                    | ./data/telegram_bot.db    |
-| **ALLOWED_USER_IDS**        | 允许使用机器人的 Telegram 用户 ID，多个 ID 用逗号分隔。为空表示所有用户可用。为 0 表示禁止所有用户。                                                                                     | -                         |
-| **ALLOWED_GROUP_IDS**       | 允许使用机器人的 Telegram 群组 ID，多个 ID 用逗号分隔。为空表示所有群组可用。为 0 表示禁止所有群组。                                                                                     | -                         |
-| **LLM_PROXY**               | 大模型 代理                                                                                                                                           | -                         |
-| **ROBOT_PROXY**             | robot 代理                                                                                                                                         | -                         |
-| **LANG**                    | 语言：en / zh                                                                                                                                       | en                        |
-| **TOKEN_PER_USER**          | 每个用户可使用的令牌数                                                                                                                                      | 10000                     |
-| **ADMIN_USER_IDS**          | 管理员用户 ID，可使用一些管理命令                                                                                                                               | -                         |
-| **NEED_AT_BOT**             | 在群组中是否需要 @机器人才能触发                                                                                                                                | false                     |
-| **MAX_USER_CHAT**           | 每个用户最大同时存在的聊天数                                                                                                                                   | 2                         |
-| **VIDEO_TOKEN**             | 火山引擎视频模型 API 密钥 [文档](https://www.volcengine.com/docs/82379/1399008#b00dee71)                                                                     | -                         |
-| **HTTP_PORT**               | HTTP 服务器端口                                                                                                                                       | 36060                     |
-| **USE_TOOLS**               | 普通对话是否使用函数调用工具                                                                                                                                   | false                     |
-| **CA_FILE**		               | http 服务的 ca文件                                                                                                                                    | -                         |
-| **CRT_FILE**		              | http 服务的 crt 文件                                                                                                                                  | -                         |
-| **KEY_FILE**		              | http 服务的 key 文件                                                                                                                                  | -                         |
-| **MEDIA_TYPE**		            | openai/gemini/vol/aliyun/openrouter/302-ai   图片或视频生成模型                                                                                           | vol                       |
-| **MAX_QA_PAIR**	            | 用多少问题对作为上下文                                                                                                                                      | 15                        |
-| **CHARACTER**	              | 角色背景                                                                                                                                             | -                         |
+| Variable Name                     | Description                                                                         | Default Value             |
+|-----------------------------------|-------------------------------------------------------------------------------------|---------------------------|
+| **TELEGRAM_BOT_TOKEN** (required) | Telegram 机器人 Token                                                                  | -                         |
+| **DISCORD_BOT_TOKEN**             | Discord 机器人 Token                                                                   | -                         |
+| **SLACK_BOT_TOKEN**               | Slack 机器人 Bot Token                                                                 | -                         |
+| **SLACK_APP_TOKEN**               | Slack App-level Token                                                               | -                         |
+| **LARK_APP_ID**                   | 飞书 App ID                                                                           | -                         |
+| **LARK_APP_SECRET**               | 飞书 App Secret                                                                       | -                         |
+| **DING_CLIENT_ID**                | 钉钉 App Key / Client ID                                                              | -                         |
+| **DING_CLIENT_SECRET**            | 钉钉 App Secret                                                                       | -                         |
+| **DING_TEMPLATE_ID**              | 钉钉 模板消息 ID                                                                          | -                         |
+| **COM_WECHAT_TOKEN**              | 企业微信 Token                                                                          | -                         |
+| **COM_WECHAT_ENCODING_AES_KEY**   | 企业微信 EncodingAESKey                                                                 | -                         |
+| **COM_WECHAT_CORP_ID**            | 企业微信 CorpID                                                                         | -                         |
+| **COM_WECHAT_SECRET**             | 企业微信 Secret                                                                         | -                         |
+| **COM_WECHAT_AGENT_ID**           | 企业微信 AgentID                                                                        | -                         |
+| **WECHAT_APP_ID**                 | 微信公众号 AppID                                                                         | -                         |
+| **WECHAT_APP_SECRET**             | 微信公众号 AppSecret                                                                     | -                         |
+| **WECHAT_ENCODING_AES_KEY**       | 微信公众号 EncodingAESKey                                                                | -                         |
+| **WECHAT_TOKEN**                  | 微信公众号 Token                                                                         | -                         |
+| **WECHAT_ACTIVE**                 | 是否启用公众号消息监听（true/false）                                                             | false                     |
+| **QQ_APP_ID**                     | QQ 开放平台 AppID                                                                       | -                         |
+| **QQ_APP_SECRET**                 | QQ 开放平台 AppSecret                                                                   | -                         |
+| **QQ_NAPCAT_RECEIVE_TOKEN**       | NapCat → MuseBot 事件推送 token                                                         | MuseBot                   |
+| **QQ_NAPCAT_SEND_TOKEN**          | MuseBot → NapCat 消息发送 token                                                         | MuseBot                   |
+| **QQ_NAPCAT_HTTP_SERVER**         | NapCat HTTP 服务地址                                                                    | http://127.0.0.1:3000     |
+| **DEEPSEEK_TOKEN** (required)     | DeepSeek API Key                                                                    | -                         |
+| **OPENAI_TOKEN**                  | OpenAI API Key                                                                      | -                         |
+| **GEMINI_TOKEN**                  | Google Gemini Token                                                                 | -                         |
+| **OPEN_ROUTER_TOKEN**             | OpenRouter Token [doc](https://openrouter.ai/docs/quickstart)                       | -                         |
+| **ALIYUN_TOKEN**                  | 阿里云百炼 Token [doc](https://bailian.console.aliyun.com/#/doc/?type=model&url=2840915) | -                         |
+| **AI_302_TOKEN**                  | 302.AI Token [doc](https://302.ai/)                                                 | -                         |
+| **VOL_TOKEN**                     | 火山引擎通用 Token [doc](https://www.volcengine.com/docs/82379/1399008#b00dee71)          | -                         |
+| **VOLC_AK**                       | 火山引擎多媒体 AK [doc](https://www.volcengine.com/docs/6444/1340578)                      | -                         |
+| **VOLC_SK**                       | 火山引擎多媒体 SK [doc](https://www.volcengine.com/docs/6444/1340578)                      | -                         |
+| **ERNIE_AK**                      | 百度文心大模型 AK [doc](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Sly8bm96d)            | -                         |
+| **ERNIE_SK**                      | 百度文心大模型 SK [doc](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Sly8bm96d)            | -                         |
+| **ALIYUN_TOKEN**                  | 阿里云大模型 Token                                                                        | -                         |
+| **AI_302_TOKEN**                  | 302.AI 平台 Token                                                                     | -                         |
+| **OPEN_ROUTER_TOKEN**             | OpenRouter API Key                                                                  | -                         |
+| **CUSTOM_URL**                    | 自定义 DeepSeek API 地址                                                                 | https://api.deepseek.com/ |
+| **TYPE**                          | LLM 类型（deepseek/openai/gemini/openrouter/vol/302-ai/chatanywhere）                   | deepseek                  |
+| **MEDIA_TYPE**                    | 图片/视频生成模型来源（openai/gemini/vol/openrouter/aliyun/302-ai）                             | vol                       |
+| **DB_TYPE**                       | 数据库类型（sqlite3/mysql）                                                                | sqlite3                   |
+| **DB_CONF**                       | 数据库配置路径或连接字符串                                                                       | ./data/muse_bot.db        |
+| **LLM_PROXY**                     | LLM 网络代理（如 http://127.0.0.1:7890）                                                   | -                         |
+| **ROBOT_PROXY**                   | 机器人访问代理（如 http://127.0.0.1:7890）                                                    | -                         |
+| **LANG**                          | 语言（en/zh）                                                                           | en                        |
+| **TOKEN_PER_USER**                | 每个用户可用的最大 token 数                                                                   | 10000                     |
+| **MAX_USER_CHAT**                 | 每个用户可同时存在的最大对话数                                                                     | 2                         |
+| **HTTP_HOST**                     | MuseBot HTTP 服务监听端口                                                                 | :36060                    |
+| **USE_TOOLS**                     | 是否启用 Function Call 工具（true/false）                                                   | false                     |
+| **MAX_QA_PAIR**                   | 上下文保留问答对数量                                                                          | 100                       |
+| **CHARACTER**                     | AI 的人格设定描述                                                                          | -                         |
+| **CRT_FILE**                      | HTTPS 公钥文件路径                                                                        | -                         |
+| **KEY_FILE**                      | HTTPS 私钥文件路径                                                                        | -                         |
+| **CA_FILE**                       | HTTPS CA 证书路径                                                                       | -                         |
+| **ADMIN_USER_IDS**                | 管理员用户 ID，逗号分隔                                                                       | -                         |
+| **ALLOWED_USER_IDS**              | 允许使用的用户 ID，逗号分隔；空=全部可用；0=全部禁用                                                       | -                         |
+| **ALLOWED_GROUP_IDS**             | 允许使用的群组 ID，逗号分隔；空=全部可用；0=全部禁用                                                       | -                         |
+| **BOT_NAME**                      | Bot 名称                                                                              | MuseBot                   |
+| **CHAT_ANY_WHERE_TOKEN**          | ChatAnyWhere 平台 Token                                                               | -                         |
 
 ### 其他配置
 
@@ -187,12 +214,15 @@ docker pull crpi-i1dsvpjijxpgjgbv.cn-hangzhou.personal.cr.aliyuncs.com/jackyin08
 重试上一次问题。
 
 ### `/txt_type /photo_type /video_type /rec_type`
+
 选择你想用的 文字/图片/视频的 模型类型.
 
 ### `/txt_model /img_model /video_model /rec_model`
+
 选择具体的模型名称.
 
 ### `/mode`
+
 展示正在使用的模型信息
 
 ### `/balance`

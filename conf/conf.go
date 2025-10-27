@@ -248,6 +248,18 @@ func InitConf() {
 		*BaseConfInfo.QQAppSecret = os.Getenv("QQ_APP_SECRET")
 	}
 	
+	if os.Getenv("QQ_NAPCAT_SEND_TOKEN") != "" {
+		*BaseConfInfo.QQNapCatSendToken = os.Getenv("QQ_NAPCAT_SEND_TOKEN")
+	}
+	
+	if os.Getenv("QQ_NAPCAT_RECEIVE_TOKEN") != "" {
+		*BaseConfInfo.QQNapCatReceiveToken = os.Getenv("QQ_NAPCAT_RECEIVE_TOKEN")
+	}
+	
+	if os.Getenv("QQ_NAPCAT_HTTP_SERVER") != "" {
+		*BaseConfInfo.QQNapCatHttpServer = os.Getenv("QQ_NAPCAT_HTTP_SERVER")
+	}
+	
 	if os.Getenv("DEEPSEEK_TOKEN") != "" {
 		*BaseConfInfo.DeepseekToken = os.Getenv("DEEPSEEK_TOKEN")
 	}
@@ -415,6 +427,9 @@ func InitConf() {
 	logger.Info("CONF", "WechatEncodingAESKey", *BaseConfInfo.WechatEncodingAESKey)
 	logger.Info("CONF", "QQAppID", *BaseConfInfo.QQAppID)
 	logger.Info("CONF", "QQAppSecret", *BaseConfInfo.QQAppSecret)
+	logger.Info("CONF", "QQNapCatHttpServer", *BaseConfInfo.QQNapCatHttpServer)
+	logger.Info("CONF", "QQNapCatReceiveToken", *BaseConfInfo.QQNapCatReceiveToken)
+	logger.Info("CONF", "QQNapCatSendToken", *BaseConfInfo.QQNapCatSendToken)
 	logger.Info("CONF", "DeepseekToken", *BaseConfInfo.DeepseekToken)
 	logger.Info("CONF", "CustomUrl", *BaseConfInfo.CustomUrl)
 	logger.Info("CONF", "Type", *BaseConfInfo.Type)
