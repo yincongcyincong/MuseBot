@@ -301,7 +301,10 @@ func GenerateOpenAIImg(ctx context.Context, prompt string, imageContent []byte) 
 	client := GetOpenAIClient(ctx, true)
 	
 	start := time.Now()
-	metrics.APIRequestCount.WithLabelValues(*conf.PhotoConfInfo.OpenAIImageModel).Inc()
+	llmConfig := db.GetCtxUserInfo(ctx).LLMConfigRaw
+	mediaType := utils.GetImgType(llmConfig)
+	model := utils.GetUsingImgModel(mediaType, llmConfig.ImgModel)
+	metrics.APIRequestCount.WithLabelValues(model).Inc()
 	
 	var respUrl openai.ImageResponse
 	var err error
@@ -317,7 +320,7 @@ func GenerateOpenAIImg(ctx context.Context, prompt string, imageContent []byte) 
 		respUrl, err = client.CreateEditImage(ctx, openai.ImageEditRequest{
 			Image:  imageFile,
 			Prompt: prompt,
-			Model:  *conf.PhotoConfInfo.OpenAIImageModel,
+			Model:  model,
 			N:      1,
 			Size:   *conf.PhotoConfInfo.OpenAIImageSize,
 		})
@@ -326,7 +329,7 @@ func GenerateOpenAIImg(ctx context.Context, prompt string, imageContent []byte) 
 			ctx,
 			openai.ImageRequest{
 				Prompt: prompt,
-				Model:  *conf.PhotoConfInfo.OpenAIImageModel,
+				Model:  model,
 				Size:   *conf.PhotoConfInfo.OpenAIImageSize,
 				N:      1,
 				Style:  *conf.PhotoConfInfo.OpenAIImageStyle,
@@ -334,7 +337,7 @@ func GenerateOpenAIImg(ctx context.Context, prompt string, imageContent []byte) 
 		)
 	}
 	
-	metrics.APIRequestDuration.WithLabelValues(*conf.PhotoConfInfo.OpenAIImageModel).Observe(time.Since(start).Seconds())
+	metrics.APIRequestDuration.WithLabelValues(model).Observe(time.Since(start).Seconds())
 	
 	if err != nil {
 		logger.ErrorCtx(ctx, "CreateImage error", "err", err)
@@ -390,10 +393,9 @@ func GetOpenAIImageContent(ctx context.Context, imageContent []byte, content str
 		contentPrompt = i18n.GetMessage(*conf.BaseConfInfo.Lang, "photo_handle_prompt", nil)
 	}
 	
-	model := *conf.PhotoConfInfo.OpenAIRecModel
-	if *conf.BaseConfInfo.MediaType == param.Aliyun {
-		model = *conf.PhotoConfInfo.AliyunRecModel
-	}
+	llmConfig := db.GetCtxUserInfo(ctx).LLMConfigRaw
+	mediaType := utils.GetImgType(llmConfig)
+	model := utils.GetUsingImgModel(mediaType, llmConfig.ImgModel)
 	
 	start := time.Now()
 	metrics.APIRequestCount.WithLabelValues(model).Inc()

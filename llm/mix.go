@@ -364,7 +364,10 @@ func (d *AIRouterReq) requestToolsCall(ctx context.Context, choice openrouter.Ch
 
 func GenerateMixImg(ctx context.Context, prompt string, imageContent []byte) (string, int, error) {
 	start := time.Now()
-	metrics.APIRequestCount.WithLabelValues(*conf.PhotoConfInfo.MixImageModel).Inc()
+	llmConfig := db.GetCtxUserInfo(ctx).LLMConfigRaw
+	mediaType := utils.GetImgType(llmConfig)
+	model := utils.GetUsingImgModel(mediaType, llmConfig.ImgModel)
+	metrics.APIRequestCount.WithLabelValues(model).Inc()
 	
 	messages := openrouter.ChatCompletionMessage{
 		Role: constants.ChatMessageRoleUser,
@@ -389,14 +392,14 @@ func GenerateMixImg(ctx context.Context, prompt string, imageContent []byte) (st
 	
 	client := GetMixClient(ctx, true)
 	request := openrouter.ChatCompletionRequest{
-		Model:    *conf.PhotoConfInfo.MixImageModel,
+		Model:    model,
 		Messages: []openrouter.ChatCompletionMessage{messages},
 	}
 	
 	// assign task
 	response, err := client.CreateChatCompletion(ctx, request)
 	
-	metrics.APIRequestDuration.WithLabelValues(*conf.PhotoConfInfo.MixImageModel).Observe(time.Since(start).Seconds())
+	metrics.APIRequestDuration.WithLabelValues(model).Observe(time.Since(start).Seconds())
 	
 	if err != nil {
 		logger.ErrorCtx(ctx, "create chat completion fail", "err", err)
@@ -404,10 +407,10 @@ func GenerateMixImg(ctx context.Context, prompt string, imageContent []byte) (st
 	}
 	
 	if len(response.Choices) != 0 {
-		if *conf.BaseConfInfo.MediaType == param.AI302 {
+		if mediaType == param.AI302 {
 			pngs := pngFetch.FindAllString(response.Choices[0].Message.Content.Text, -1)
 			return pngs[len(pngs)-1], response.Usage.TotalTokens, nil
-		} else if *conf.BaseConfInfo.MediaType == param.OpenRouter {
+		} else if mediaType == param.OpenRouter {
 			if len(response.Choices[0].Message.Content.Multi) != 0 {
 				return response.Choices[0].Message.Content.Multi[0].ImageURL.URL, response.Usage.TotalTokens, nil
 			}
@@ -448,11 +451,14 @@ func Generate302AIVideo(ctx context.Context, prompt string, image []byte) (strin
 	httpClient := utils.GetLLMProxyClient()
 	
 	start := time.Now()
-	metrics.APIRequestCount.WithLabelValues(*conf.VideoConfInfo.AI302VideoModel).Inc()
+	llmConfig := db.GetCtxUserInfo(ctx).LLMConfigRaw
+	mediaType := utils.GetVideoType(llmConfig)
+	model := utils.GetUsingVideoModel(mediaType, llmConfig.VideoModel)
+	metrics.APIRequestCount.WithLabelValues(model).Inc()
 	
 	// Step 1: prepare payload using map -> json
 	payloadMap := map[string]interface{}{
-		"model":      *conf.VideoConfInfo.AI302VideoModel,
+		"model":      model,
 		"prompt":     prompt,
 		"duration":   *conf.VideoConfInfo.Duration,
 		"resolution": *conf.VideoConfInfo.Resolution,
@@ -467,7 +473,7 @@ func Generate302AIVideo(ctx context.Context, prompt string, image []byte) (strin
 	
 	req, err := http.NewRequestWithContext(ctx, "POST", "https://api.302.ai/302/v2/video/create", payload)
 	
-	metrics.APIRequestDuration.WithLabelValues(*conf.VideoConfInfo.AI302VideoModel).Observe(time.Since(start).Seconds())
+	metrics.APIRequestDuration.WithLabelValues(model).Observe(time.Since(start).Seconds())
 	
 	if err != nil {
 		return "", 0, fmt.Errorf("failed to create request: %w", err)
@@ -543,7 +549,10 @@ func GetMixImageContent(ctx context.Context, imageContent []byte, content string
 	}
 	
 	start := time.Now()
-	metrics.APIRequestCount.WithLabelValues(*conf.PhotoConfInfo.MixRecModel).Inc()
+	llmConfig := db.GetCtxUserInfo(ctx).LLMConfigRaw
+	mediaType := utils.GetRecType(llmConfig)
+	model := utils.GetUsingRecModel(mediaType, llmConfig.RecModel)
+	metrics.APIRequestCount.WithLabelValues(model).Inc()
 	
 	messages := openrouter.ChatCompletionMessage{
 		Role: constants.ChatMessageRoleUser,
@@ -566,14 +575,14 @@ func GetMixImageContent(ctx context.Context, imageContent []byte, content string
 	client := GetMixClient(ctx, true)
 	
 	request := openrouter.ChatCompletionRequest{
-		Model:    *conf.PhotoConfInfo.MixRecModel,
+		Model:    model,
 		Messages: []openrouter.ChatCompletionMessage{messages},
 	}
 	
 	// assign task
 	response, err := client.CreateChatCompletion(ctx, request)
 	
-	metrics.APIRequestDuration.WithLabelValues(*conf.PhotoConfInfo.MixRecModel).Observe(time.Since(start).Seconds())
+	metrics.APIRequestDuration.WithLabelValues(model).Observe(time.Since(start).Seconds())
 	
 	if err != nil {
 		logger.ErrorCtx(ctx, "create chat completion fail", "err", err)

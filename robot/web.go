@@ -432,7 +432,7 @@ func (web *Web) sendImg() {
 		Token:      0,
 		IsDeleted:  0,
 		RecordType: param.WEBRecordType,
-		Mode:       *conf.BaseConfInfo.MediaType,
+		Mode:       utils.GetImgType(db.GetCtxUserInfo(web.Robot.Ctx).LLMConfigRaw),
 	})
 	
 	// save data record
@@ -444,7 +444,7 @@ func (web *Web) sendImg() {
 		Token:      totalToken,
 		IsDeleted:  0,
 		RecordType: param.ImageRecordType,
-		Mode:       *conf.BaseConfInfo.MediaType,
+		Mode:       utils.GetImgType(db.GetCtxUserInfo(web.Robot.Ctx).LLMConfigRaw),
 	})
 	
 }
@@ -479,7 +479,7 @@ func (web *Web) sendVideo() {
 		Token:      0,
 		IsDeleted:  0,
 		RecordType: param.WEBRecordType,
-		Mode:       *conf.BaseConfInfo.MediaType,
+		Mode:       utils.GetVideoType(db.GetCtxUserInfo(web.Robot.Ctx).LLMConfigRaw),
 	})
 	
 	db.InsertRecordInfo(&db.Record{
@@ -489,7 +489,7 @@ func (web *Web) sendVideo() {
 		Token:      totalToken,
 		IsDeleted:  0,
 		RecordType: param.VideoRecordType,
-		Mode:       *conf.BaseConfInfo.MediaType,
+		Mode:       utils.GetVideoType(db.GetCtxUserInfo(web.Robot.Ctx).LLMConfigRaw),
 	})
 	
 }

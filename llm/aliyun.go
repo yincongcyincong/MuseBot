@@ -11,6 +11,7 @@ import (
 	"time"
 	
 	"github.com/yincongcyincong/MuseBot/conf"
+	"github.com/yincongcyincong/MuseBot/db"
 	"github.com/yincongcyincong/MuseBot/i18n"
 	"github.com/yincongcyincong/MuseBot/logger"
 	"github.com/yincongcyincong/MuseBot/metrics"
@@ -81,7 +82,7 @@ type TextResponse struct {
 func GenerateAliyunImg(ctx context.Context, prompt string, imageContent []byte) (string, int, error) {
 	url := "https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation"
 	
-	model := *conf.PhotoConfInfo.AliyunImageModel
+	model := utils.GetUsingImgModel(param.Aliyun, db.GetCtxUserInfo(ctx).LLMConfigRaw.ImgModel)
 	if imageContent != nil {
 		model = "qwen-image-edit"
 	}
@@ -180,7 +181,7 @@ func GenerateAliyunVideo(ctx context.Context, prompt string, image []byte) (stri
 		"prompt": prompt,
 	}
 	
-	model := *conf.VideoConfInfo.AliyunVideoModel
+	model := utils.GetUsingVideoModel(param.Aliyun, db.GetCtxUserInfo(ctx).LLMConfigRaw.VideoModel)
 	if len(image) > 0 {
 		base64Img := base64.StdEncoding.EncodeToString(image)
 		input["img_url"] = fmt.Sprintf("data:image/%s;base64,%s", utils.DetectImageFormat(image), base64Img)
@@ -278,8 +279,9 @@ func GenerateAliyunText(ctx context.Context, audioContent []byte) (string, int, 
 	audioBase64 := base64.StdEncoding.EncodeToString(audioContent)
 	audioDataURL := "data:;base64," + audioBase64
 	
+	recModel := utils.GetUsingRecModel(param.Aliyun, db.GetCtxUserInfo(ctx).LLMConfigRaw.RecModel)
 	payload := map[string]interface{}{
-		"model": *conf.AudioConfInfo.AliyunAudioRecModel,
+		"model": recModel,
 		"input": map[string]interface{}{
 			"messages": []map[string]interface{}{
 				{
@@ -310,10 +312,10 @@ func GenerateAliyunText(ctx context.Context, audioContent []byte) (string, int, 
 	
 	client := utils.GetLLMProxyClient()
 	start := time.Now()
-	metrics.APIRequestCount.WithLabelValues(*conf.AudioConfInfo.AliyunAudioRecModel).Inc()
+	metrics.APIRequestCount.WithLabelValues(recModel).Inc()
 	resp, err := client.Do(req)
 	
-	metrics.APIRequestDuration.WithLabelValues(*conf.AudioConfInfo.AliyunAudioRecModel).Observe(time.Since(start).Seconds())
+	metrics.APIRequestDuration.WithLabelValues(recModel).Observe(time.Since(start).Seconds())
 	if err != nil {
 		return "", 0, fmt.Errorf("request failed: %w", err)
 	}
