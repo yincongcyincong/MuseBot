@@ -240,7 +240,7 @@ func GetRecType(llmConf *param.LLMConfig) string {
 	
 	aType := GetAvailRecType()
 	for _, v := range aType {
-		if v == llmConf.VideoType {
+		if v == llmConf.RecType {
 			return v
 		}
 	}
@@ -337,4 +337,36 @@ func GetUsingRecModel(ty string, model string) string {
 	}
 	
 	return ""
+}
+
+func GetUsingTxtModel(ty string, model string) string {
+	switch ty {
+	case param.DeepSeek:
+		if param.DeepseekModels[model] {
+			return model
+		}
+		return godeepseek.DeepSeekChat
+	case param.Gemini:
+		if param.GeminiModels[model] {
+			return model
+		}
+		return param.ModelGemini20Flash
+	case param.OpenAi:
+		if param.OpenAIModels[model] {
+			return model
+		}
+		return openai.GPT3Dot5Turbo
+	case param.Vol:
+		if param.VolModels[model] {
+			return model
+		}
+		return param.ModelDeepSeekR1_528
+	case param.Aliyun:
+		if param.AliyunModel[model] {
+			return model
+		}
+		return qwen.QwenMax
+	}
+	
+	return godeepseek.DeepSeekChat
 }

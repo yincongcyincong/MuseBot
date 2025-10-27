@@ -124,11 +124,14 @@ MIT License © 2025 jack yin
 
 Повторить последний вопрос.
 
-### /txt_type /photo_type /video_type
+### /txt_type /photo_type /video_type /rec_type
 choose txt/photo/video model type.
 
-### /txt_model /img_model /video_model
+### /txt_model /img_model /video_model /rec_model
 choose txt/photo/video model.
+
+### /mode
+show current model type and model.
 
 ### /balance
 
