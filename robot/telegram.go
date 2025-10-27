@@ -646,7 +646,7 @@ func (t *TelegramRobot) showRecModel(ty string) {
 			))
 		}
 	case param.AI302:
-		switch utils.GetVideoType(db.GetCtxUserInfo(t.Robot.Ctx).LLMConfigRaw) {
+		switch utils.GetRecType(db.GetCtxUserInfo(t.Robot.Ctx).LLMConfigRaw) {
 		case param.AI302:
 			t.Robot.SendMsg(chatID, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
 				"link":    "https://302.ai/",

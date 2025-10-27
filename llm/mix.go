@@ -95,7 +95,7 @@ func (d *AIRouterReq) Send(ctx context.Context, l *LLM) error {
 	
 	start := time.Now()
 	
-	client := GetMixClient(l.Ctx, false)
+	client := GetMixClient(l.Ctx, "txt")
 	
 	request := openrouter.ChatCompletionRequest{
 		Model:  l.Model,
@@ -237,7 +237,7 @@ func (d *AIRouterReq) GetMessage(role, msg string) {
 }
 
 func (d *AIRouterReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
-	client := GetMixClient(ctx, false)
+	client := GetMixClient(ctx, "txt")
 	
 	start := time.Now()
 	
@@ -390,7 +390,7 @@ func GenerateMixImg(ctx context.Context, prompt string, imageContent []byte) (st
 		})
 	}
 	
-	client := GetMixClient(ctx, true)
+	client := GetMixClient(ctx, "img")
 	request := openrouter.ChatCompletionRequest{
 		Model:    model,
 		Messages: []openrouter.ChatCompletionMessage{messages},
@@ -420,10 +420,17 @@ func GenerateMixImg(ctx context.Context, prompt string, imageContent []byte) (st
 	return "", 0, errors.New("image is empty")
 }
 
-func GetMixClient(ctx context.Context, isMedia bool) *openrouter.Client {
-	t := utils.GetTxtType(db.GetCtxUserInfo(ctx).LLMConfigRaw)
-	if isMedia {
+func GetMixClient(ctx context.Context, clientType string) *openrouter.Client {
+	t := param.OpenRouter
+	switch clientType {
+	case "txt":
+		t = utils.GetTxtType(db.GetCtxUserInfo(ctx).LLMConfigRaw)
+	case "img":
 		t = utils.GetImgType(db.GetCtxUserInfo(ctx).LLMConfigRaw)
+	case "video":
+		t = utils.GetVideoType(db.GetCtxUserInfo(ctx).LLMConfigRaw)
+	case "rec":
+		t = utils.GetRecType(db.GetCtxUserInfo(ctx).LLMConfigRaw)
 	}
 	
 	token := ""
@@ -572,7 +579,7 @@ func GetMixImageContent(ctx context.Context, imageContent []byte, content string
 		},
 	}
 	
-	client := GetMixClient(ctx, true)
+	client := GetMixClient(ctx, "rec")
 	
 	request := openrouter.ChatCompletionRequest{
 		Model:    model,

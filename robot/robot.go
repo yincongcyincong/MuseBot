@@ -879,11 +879,11 @@ func (r *RobotInfo) showMode() {
 		"txt_type":    llmConf.TxtType,
 		"photo_type":  llmConf.ImgType,
 		"video_type":  llmConf.VideoType,
-		"txt_model":   llmConf.TxtModel,
-		"photo_model": llmConf.ImgModel,
-		"video_model": llmConf.VideoModel,
+		"txt_model":   utils.GetUsingTxtModel(llmConf.TxtType, llmConf.TxtModel),
+		"photo_model": utils.GetUsingImgModel(llmConf.ImgType, llmConf.ImgModel),
+		"video_model": utils.GetUsingVideoModel(llmConf.VideoType, llmConf.VideoModel),
 		"rec_type":    llmConf.RecType,
-		"rec_model":   llmConf.RecModel,
+		"rec_model":   utils.GetUsingRecModel(llmConf.RecType, llmConf.RecModel),
 	}), msgId, "", nil)
 }
 

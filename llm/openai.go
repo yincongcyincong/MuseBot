@@ -65,7 +65,7 @@ func (d *OpenAIReq) Send(ctx context.Context, l *LLM) error {
 	
 	start := time.Now()
 	
-	client := GetOpenAIClient(ctx, false)
+	client := GetOpenAIClient(ctx, "txt")
 	request := openai.ChatCompletionRequest{
 		Model:  l.Model,
 		Stream: true,
@@ -189,7 +189,7 @@ func (d *OpenAIReq) GetMessage(role, msg string) {
 func (d *OpenAIReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 	start := time.Now()
 	
-	client := GetOpenAIClient(ctx, false)
+	client := GetOpenAIClient(ctx, "txt")
 	
 	request := openai.ChatCompletionRequest{
 		Model:            l.Model,
@@ -298,7 +298,7 @@ func (d *OpenAIReq) RequestToolsCall(ctx context.Context, choice openai.ChatComp
 
 // GenerateOpenAIImg generate image
 func GenerateOpenAIImg(ctx context.Context, prompt string, imageContent []byte) ([]byte, int, error) {
-	client := GetOpenAIClient(ctx, true)
+	client := GetOpenAIClient(ctx, "img")
 	
 	start := time.Now()
 	llmConfig := db.GetCtxUserInfo(ctx).LLMConfigRaw
@@ -363,7 +363,7 @@ func GenerateOpenAIText(ctx context.Context, audioContent []byte) (string, error
 	start := time.Now()
 	metrics.APIRequestCount.WithLabelValues(openai.Whisper1).Inc()
 	
-	client := GetOpenAIClient(ctx, true)
+	client := GetOpenAIClient(ctx, "rec")
 	
 	req := openai.AudioRequest{
 		Model:    openai.Whisper1,
@@ -386,7 +386,7 @@ func GenerateOpenAIText(ctx context.Context, audioContent []byte) (string, error
 
 func GetOpenAIImageContent(ctx context.Context, imageContent []byte, content string) (string, int, error) {
 	
-	client := GetOpenAIClient(ctx, true)
+	client := GetOpenAIClient(ctx, "rec")
 	
 	contentPrompt := content
 	if content == "" {
@@ -444,7 +444,7 @@ func OpenAITTS(ctx context.Context, content, encoding string) ([]byte, int, int,
 	start := time.Now()
 	metrics.APIRequestCount.WithLabelValues(*conf.AudioConfInfo.OpenAIAudioModel).Inc()
 	
-	client := GetOpenAIClient(ctx, true)
+	client := GetOpenAIClient(ctx, "")
 	resp, err := client.CreateSpeech(ctx, openai.CreateSpeechRequest{
 		Model:          openai.SpeechModel(*conf.AudioConfInfo.OpenAIAudioModel),
 		Input:          content,
@@ -475,11 +475,18 @@ func OpenAITTS(ctx context.Context, content, encoding string) ([]byte, int, int,
 	return data, db.EstimateTokens(content), utils.PCMDuration(len(data), 24000, 1, 16), nil
 }
 
-func GetOpenAIClient(ctx context.Context, isMedia bool) *openai.Client {
+func GetOpenAIClient(ctx context.Context, clientType string) *openai.Client {
 	httpClient := utils.GetLLMProxyClient()
-	t := utils.GetTxtType(db.GetCtxUserInfo(ctx).LLMConfigRaw)
-	if isMedia {
+	t := param.OpenAi
+	switch clientType {
+	case "txt":
+		t = utils.GetTxtType(db.GetCtxUserInfo(ctx).LLMConfigRaw)
+	case "img":
 		t = utils.GetImgType(db.GetCtxUserInfo(ctx).LLMConfigRaw)
+	case "video":
+		t = utils.GetVideoType(db.GetCtxUserInfo(ctx).LLMConfigRaw)
+	case "rec":
+		t = utils.GetRecType(db.GetCtxUserInfo(ctx).LLMConfigRaw)
 	}
 	
 	var token string
