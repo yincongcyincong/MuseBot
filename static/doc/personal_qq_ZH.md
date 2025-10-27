@@ -41,7 +41,7 @@ docker run -d \
 4. 日志中会出现：
 
    ```
-   NapCat: HTTP Key: 123456789abcdef
+    [NapCat] [WebUi] 🔑 token=bcc53c876d56
    ```
 
    这个 **Key** 是 NapCat 的 HTTP 鉴权密钥，请妥善保存。
@@ -79,6 +79,9 @@ export QQ_NAPCAT_HTTP_SERVER=http://127.0.0.1:3000
 | **HTTP 服务器**    | MuseBot 调用 NapCat 接口的地址    | `http://127.0.0.1:3000`         |
 | **HTTP 客户端**    | NapCat 向 MuseBot 推送消息事件的地址 | `http://127.0.0.1:36060/napcat` |
 | **HTTP 鉴权 Key** | 与环境变量中 token 一致            | `MuseBot`                       |
+
+![image](https://github.com/user-attachments/assets/b6aa893d-6db9-444a-82e6-a185561ad818)
+![image](https://github.com/user-attachments/assets/53e86994-a19d-487b-b46f-3b457a38d5c0)
 
 ---
 
