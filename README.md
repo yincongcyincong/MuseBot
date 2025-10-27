@@ -199,11 +199,11 @@ clear all of your communication record with deepseek. this record use for helpin
 
 retry last question.
 
-### /mode
+### /txt_type /photo_type /video_type
+choose txt/photo/video model type.
 
-chose deepseek mode, include chat, coder, reasoner
-chat and coder means DeepSeek-V3, reasoner means DeepSeek-R1.    
-<img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/55ac3101-92d2-490d-8ee0-31a5b297e56e" />
+### /txt_model /img_model /video_model
+choose txt/photo/video model.
 
 ### /balance
 

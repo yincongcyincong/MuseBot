@@ -186,9 +186,11 @@ docker pull crpi-i1dsvpjijxpgjgbv.cn-hangzhou.personal.cr.aliyuncs.com/jackyin08
 
 重试上一次问题。
 
-### `/mode`
+### `/txt_type /photo_type /video_type`
+选择你想用的 文字/图片/视频的 模型类型.
 
-<img width="400" src="https://github.com/user-attachments/assets/55ac3101-92d2-490d-8ee0-31a5b297e56e"  alt=""/>
+### `/txt_model /img_model /video_model`
+选择具体的模型名称.
 
 ### `/balance`
 

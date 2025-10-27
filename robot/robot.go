@@ -809,7 +809,7 @@ func ParseCommand(prompt string) (command string, args string) {
 	return command, args
 }
 
-func (r *RobotInfo) ExecCmd(cmd string, defaultFunc func(), modeFunc func(), typesFunc func(string)) {
+func (r *RobotInfo) ExecCmd(cmd string, defaultFunc func(), modeFunc func(string), typesFunc func(string)) {
 	switch cmd {
 	case "balance", "/balance":
 		r.showBalanceInfo()
@@ -829,7 +829,7 @@ func (r *RobotInfo) ExecCmd(cmd string, defaultFunc func(), modeFunc func(), typ
 		}
 	case "txt_model", "/txt_model", "photo_model", "/photo_model", "video_model", "/video_model":
 		if modeFunc != nil {
-			modeFunc()
+			modeFunc(cmd)
 		} else {
 			r.changeModel(cmd)
 		}
@@ -905,26 +905,33 @@ func (r *RobotInfo) changeType(t string) {
 	
 }
 
-func (r *RobotInfo) changeModel(t string) {
-	chatId, msgId, _ := r.GetChatIdAndMsgIdAndUserID()
+func (r *RobotInfo) changeModel(ty string) {
+	t := "/" + strings.TrimLeft(ty, "/")
 	switch t {
 	case "txt_model", "/txt_model":
 		if r.Robot.getPrompt() != "" {
 			r.handleModelUpdate(&RobotModel{TxtModel: r.Robot.getPrompt()})
 			return
 		}
+		r.showTxtModel(t)
 	case "photo_model", "/photo_model":
 		if r.Robot.getPrompt() != "" {
 			r.handleModelUpdate(&RobotModel{ImgModel: r.Robot.getPrompt()})
 			return
 		}
+		r.showImageModel(t)
 	case "video_model", "/video_model":
 		if r.Robot.getPrompt() != "" {
 			r.handleModelUpdate(&RobotModel{VideoModel: r.Robot.getPrompt()})
 			return
 		}
+		r.showVideoModel(t)
 	}
 	
+}
+
+func (r *RobotInfo) showTxtModel(ty string) {
+	chatId, msgId, _ := r.GetChatIdAndMsgIdAndUserID()
 	var modelList []string
 	
 	switch utils.GetTxtType(db.GetCtxUserInfo(r.Ctx).LLMConfigRaw) {
@@ -950,17 +957,20 @@ func (r *RobotInfo) changeModel(t string) {
 		switch utils.GetTxtType(db.GetCtxUserInfo(r.Ctx).LLMConfigRaw) {
 		case param.AI302:
 			r.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
-				"link": "https://302.ai/",
+				"link":    "https://302.ai/",
+				"command": ty,
 			}),
 				msgId, tgbotapi.ModeMarkdown, nil)
 		case param.OpenRouter:
 			r.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
-				"link": "https://openrouter.ai/",
+				"link":    "https://openrouter.ai/",
+				"command": ty,
 			}),
 				msgId, tgbotapi.ModeMarkdown, nil)
 		case param.Ollama:
 			r.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
-				"link": "https://ollama.com/",
+				"link":    "https://ollama.com/",
+				"command": ty,
 			}),
 				msgId, tgbotapi.ModeMarkdown, nil)
 		}
@@ -969,6 +979,99 @@ func (r *RobotInfo) changeModel(t string) {
 	case param.Vol:
 		for k := range param.VolModels {
 			modelList = append(modelList, k)
+		}
+	}
+	totalContent := ""
+	for _, model := range modelList {
+		totalContent += fmt.Sprintf(`%s
+
+`, model)
+	}
+	
+	r.SendMsg(chatId, totalContent, msgId, "", nil)
+}
+
+func (r *RobotInfo) showImageModel(ty string) {
+	chatId, msgId, _ := r.GetChatIdAndMsgIdAndUserID()
+	var modelList []string
+	
+	switch utils.GetTxtType(db.GetCtxUserInfo(r.Ctx).LLMConfigRaw) {
+	case param.Gemini:
+		for k := range param.GeminiImageModels {
+			modelList = append(modelList, k)
+		}
+	case param.OpenAi:
+		for k := range param.ChatgptImageModels {
+			modelList = append(modelList, k)
+		}
+	case param.Aliyun:
+		for k := range param.AliyunImageModels {
+			modelList = append(modelList, k)
+		}
+	case param.OpenRouter, param.AI302, param.Ollama:
+		switch utils.GetTxtType(db.GetCtxUserInfo(r.Ctx).LLMConfigRaw) {
+		case param.AI302:
+			r.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
+				"link":    "https://302.ai/",
+				"command": ty,
+			}),
+				msgId, tgbotapi.ModeMarkdown, nil)
+		case param.OpenRouter:
+			r.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
+				"link":    "https://openrouter.ai/",
+				"command": ty,
+			}),
+				msgId, tgbotapi.ModeMarkdown, nil)
+		case param.Ollama:
+			r.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
+				"link":    "https://ollama.com/",
+				"command": ty,
+			}),
+				msgId, tgbotapi.ModeMarkdown, nil)
+		}
+		
+		return
+	case param.Vol:
+		for k := range param.VolImageModels {
+			modelList = append(modelList, k)
+		}
+	}
+	totalContent := ""
+	for _, model := range modelList {
+		totalContent += fmt.Sprintf(`%s
+
+`, model)
+	}
+	
+	r.SendMsg(chatId, totalContent, msgId, "", nil)
+}
+
+func (r *RobotInfo) showVideoModel(ty string) {
+	chatId, msgId, _ := r.GetChatIdAndMsgIdAndUserID()
+	var modelList []string
+	
+	switch utils.GetTxtType(db.GetCtxUserInfo(r.Ctx).LLMConfigRaw) {
+	case param.Gemini:
+		for k := range param.GeminiVideoModels {
+			modelList = append(modelList, k)
+		}
+	case param.Aliyun:
+		for k := range param.AliyunVideoModels {
+			modelList = append(modelList, k)
+		}
+	case param.AI302:
+		switch utils.GetTxtType(db.GetCtxUserInfo(r.Ctx).LLMConfigRaw) {
+		case param.AI302:
+			r.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
+				"link":    "https://302.ai/",
+				"command": ty,
+			}),
+				msgId, tgbotapi.ModeMarkdown, nil)
+			return
+		case param.Vol:
+			for k := range param.VolVideoModels {
+				modelList = append(modelList, k)
+			}
 		}
 	}
 	totalContent := ""

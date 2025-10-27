@@ -78,6 +78,23 @@ const (
 	TalkRecordType  = 4
 	
 	DefaultContextToken = 128000
+	
+	GeminiImageGenPreview = "gemini-2.0-flash-preview-image-generation"
+	GeminiImageGenV2_5    = "gemini-2.5-flash-image"
+	ImagenModel           = "imagen-3.0-generate-001"
+	
+	GeminiVideoVeo2 = "veo-2.0-generate-001"
+	GeminiVideoVeo3 = "veo-3.0-generate-001"
+	
+	ModelImageGPT = "gpt-image-1"
+	
+	DoubaoSeed16VisionPro = "doubao-seed-1-6-250615"
+	
+	QwenImagePlus = "qwen-image-plus"
+	
+	Wan2_5T2VPreview = "wan2.5-t2v-preview"
+	
+	DoubaoSeedance1_0Pro = "doubao-seedance-1-0-pro-250528"
 )
 
 var (
@@ -99,6 +116,37 @@ var (
 		ModelGemini20FlashLite: true,
 		ModelGemini15Pro:       true,
 		ModelGemini15Flash:     true,
+	}
+	
+	VolImageModels = map[string]bool{
+		DoubaoSeed16VisionPro: true,
+	}
+	
+	VolVideoModels = map[string]bool{
+		DoubaoSeedance1_0Pro: true,
+	}
+	
+	AliyunImageModels = map[string]bool{
+		QwenImagePlus: true,
+	}
+	
+	AliyunVideoModels = map[string]bool{
+		Wan2_5T2VPreview: true,
+	}
+	
+	ChatgptImageModels = map[string]bool{
+		ModelImageGPT: true,
+	}
+	
+	GeminiVideoModels = map[string]bool{
+		GeminiVideoVeo2: true,
+		GeminiVideoVeo3: true,
+	}
+	
+	GeminiImageModels = map[string]bool{
+		GeminiImageGenPreview: true,
+		GeminiImageGenV2_5:    true,
+		ImagenModel:           true,
 	}
 	
 	DeepseekModels = map[string]bool{
