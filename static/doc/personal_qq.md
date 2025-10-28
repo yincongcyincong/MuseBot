@@ -1,12 +1,31 @@
-# 🤖 NapCat + MuseBot Environment Variable Configuration Guide
+# 🤖 OneBot + MuseBot Environment Variable Configuration Guide
 
-This guide explains how to launch NapCat in a Docker environment and configure MuseBot to communicate with it.
+## 🧩 1. Start the OneBot Container
+
+### Start **LLONEBot**
+
+```bash
+docker run -d \
+  --name llonebot \
+  -p 3000:3000 \
+  -p 3001:3001 \
+  -p 5600:5600 \
+  -p 3080:3080 \
+  -v ./QQ:/root/.config/QQ \
+  -v ./llonebot:/root/llonebot \
+  --add-host=host.docker.internal:host-gateway \
+  --restart unless-stopped \
+  initialencounter/llonebot:latest
+```
+
+**Explanation:**
+
+* `3000`: LLONEBot HTTP service port (used to receive messages from MuseBot)
+* `3080`: LLONEBot web management interface (used for QQ login via QR code)
 
 ---
 
-## 🧩 1. Start the NapCat Container
-
-Run the following command to start NapCat:
+### Or start **NapCat**:
 
 ```bash
 docker run -d \
@@ -20,88 +39,57 @@ docker run -d \
   mlikiowa/napcat-docker:latest
 ```
 
-### Explanation:
+**Explanation:**
 
-* `3000`: NapCat HTTP server port (used to receive messages from MuseBot)
-* `3001`: NapCat WebSocket port (optional)
-* `6099`: NapCat Web admin interface (for QQ login via QR code)
-* `NAPCAT_GID` & `NAPCAT_UID`: Keep permissions consistent with the host user to avoid file access issues
+* `3000`: NapCat HTTP service port (used to receive messages from MuseBot)
+* `6099`: NapCat web management interface (used for QQ login via QR code)
 
 ---
 
 ## 🔐 2. Log in to QQ
 
-1. Open your browser and visit [http://127.0.0.1:6099/](http://127.0.0.1:6099/)
-2. Scan the QR code to log in with your QQ account
-3. After logging in, check the container logs:
-
-   ```bash
-   docker logs -f napcat
-   ```
-4. You’ll find a line like this:
-
-   ```
-   [NapCat] [WebUi] 🔑 token=bcc53c876d56
-   ```
-
-   This **Key** is NapCat’s HTTP authentication token — save it carefully.
+1. Open your browser and visit `http://127.0.0.1:3080/` or `http://127.0.0.1:6099/`
+2. Scan the QR code to log into your QQ account
+3. Both LLONEBot and NapCat will generate a **key** — keep it safe for configuration
 
 ---
 
-## ⚙️ 3. Configure MuseBot Environment Variables
+## ⚙️ 3. MuseBot Environment Variable Configuration
 
-Before starting MuseBot, set the following environment variables related to NapCat:
+Before starting MuseBot, set the following **three environment variables** related to OneBot:
 
-| Environment Variable Name | Description                                                            | Example Value           |
-|---------------------------|------------------------------------------------------------------------|-------------------------|
-| `QQ_NAPCAT_RECEIVE_TOKEN` | Token used when NapCat sends messages to MuseBot (NapCat client token) | `MuseBot`               |
-| `QQ_NAPCAT_SEND_TOKEN`    | Token used when MuseBot sends messages to NapCat (NapCat server token) | `MuseBot`               |
-| `QQ_NAPCAT_HTTP_SERVER`   | NapCat HTTP server address (the endpoint for receiving messages)       | `http://127.0.0.1:3000` |
+| Variable Name             | Description                                                      | Example Value           |
+| ------------------------- | ---------------------------------------------------------------- | ----------------------- |
+| `QQ_ONEBOT_RECEIVE_TOKEN` | Token used by OneBot to send messages to MuseBot (client token)  | `MuseBot`               |
+| `QQ_ONEBOT_SEND_TOKEN`    | Token used by MuseBot to send messages to OneBot (server token)  | `MuseBot`               |
+| `QQ_ONEBOT_HTTP_SERVER`   | OneBot HTTP server address (OneBot’s message receiving endpoint) | `http://127.0.0.1:3000` |
 
-Example setup:
+**Example:**
 
 ```bash
-export QQ_NAPCAT_RECEIVE_TOKEN=MuseBot
-export QQ_NAPCAT_SEND_TOKEN=MuseBot
-export QQ_NAPCAT_HTTP_SERVER=http://127.0.0.1:3000
+export QQ_ONEBOT_RECEIVE_TOKEN=MuseBot
+export QQ_ONEBOT_SEND_TOKEN=MuseBot
+export QQ_ONEBOT_HTTP_SERVER=http://127.0.0.1:3000
 ```
 
-> ⚠️ These variables **must match** the configuration in NapCat’s web interface.
+> ⚠️ These three variables **must match** the configuration in the OneBot web interface.
 
 ---
 
-## 🔄 4. NapCat Network Configuration
+## 🔄 4. OneBot Network Configuration
 
-In the NapCat Web Console → “Settings” → “Network Configuration”, fill in the following fields:
+Go to the **OneBot Web Console → “Configuration” → “Network Settings”**, and fill in as follows:
 
-| Configuration     | Description                                        | Example                         |
-|-------------------|----------------------------------------------------|---------------------------------|
-| **HTTP Server**   | Address MuseBot uses to call NapCat APIs           | `http://127.0.0.1:3000`         |
-| **HTTP Client**   | Address NapCat uses to push events to MuseBot      | `http://127.0.0.1:36060/napcat` |
-| **HTTP Auth Key** | Must match the token in your environment variables | `MuseBot`                       |
+| Setting           | Description                                       | Example Value                   |
+| ----------------- | ------------------------------------------------- | ------------------------------- |
+| **HTTP Server**   | The address MuseBot uses to call OneBot APIs      | `http://127.0.0.1:3000`         |
+| **HTTP Client**   | The address where OneBot pushes message events    | `http://127.0.0.1:36060/onebot` |
+| **HTTP Auth Key** | Must match the token set in environment variables | `MuseBot`                       |
 
+---
+
+![image](https://github.com/user-attachments/assets/a6a7bf64-9f93-436f-8910-1177e1e2749a)
+![image](https://github.com/user-attachments/assets/13a118a7-ced0-4427-923d-44cc0df7ca2c)
 ![image](https://github.com/user-attachments/assets/b6aa893d-6db9-444a-82e6-a185561ad818)
 ![image](https://github.com/user-attachments/assets/53e86994-a19d-487b-b46f-3b457a38d5c0)
 
-
----
-
-## 🧠 5. Full Workflow
-
-1. Start the NapCat Docker container
-2. Open [http://127.0.0.1:6099/](http://127.0.0.1:6099/) and log in to QQ
-3. Retrieve the NapCat HTTP Key from the logs
-4. Configure NapCat network settings:
-
-    * HTTP Server: `http://127.0.0.1:3000`
-    * HTTP Client: `http://127.0.0.1:36060/napcat`
-    * Auth Key: `MuseBot`
-5. Set MuseBot environment variables:
-
-   ```bash
-   export QQ_NAPCAT_RECEIVE_TOKEN=MuseBot
-   export QQ_NAPCAT_SEND_TOKEN=MuseBot
-   export QQ_NAPCAT_HTTP_SERVER=http://127.0.0.1:3000
-   ```
-6. Start MuseBot
-7. NapCat will automatically forward QQ messages to MuseBot, and MuseBot can reply via the NapCat HTTP API.

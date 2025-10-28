@@ -355,7 +355,7 @@ func (q *PersonalQQRobot) sendText(messageChan *MsgChan) {
 	q.Robot.SendMsg(chatId, msg.Content, messageId, "", nil)
 }
 
-type NapCatResult struct {
+type OneBotResult struct {
 	MessageID string `json:"message_id"`
 	Status    string `json:"status"`
 }
@@ -421,11 +421,11 @@ func (q *PersonalQQRobot) SendMsg(txt string, image []byte, video []byte, voice 
 	}
 	
 	data, _ := json.Marshal(payload)
-	req, _ := http.NewRequest("POST", strings.TrimRight(*conf.BaseConfInfo.QQNapCatHttpServer, "/")+
+	req, _ := http.NewRequest("POST", strings.TrimRight(*conf.BaseConfInfo.QQOneBotHttpServer, "/")+
 		path, bytes.NewBuffer(data))
 	req.Header.Set("Content-Type", "application/json")
-	if *conf.BaseConfInfo.QQNapCatSendToken != "" {
-		req.Header.Set("Authorization", "Bearer "+*conf.BaseConfInfo.QQNapCatSendToken)
+	if *conf.BaseConfInfo.QQOneBotSendToken != "" {
+		req.Header.Set("Authorization", "Bearer "+*conf.BaseConfInfo.QQOneBotSendToken)
 	}
 	
 	client := &http.Client{}
@@ -437,7 +437,7 @@ func (q *PersonalQQRobot) SendMsg(txt string, image []byte, video []byte, voice 
 	defer resp.Body.Close()
 	
 	// 解析返回值
-	result := new(NapCatResult)
+	result := new(OneBotResult)
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		logger.ErrorCtx(q.Ctx, "send message failed", "err", err, "req", payload)
 		return "", err

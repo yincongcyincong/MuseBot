@@ -157,40 +157,12 @@ func QQBotComm(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func NapCat(w http.ResponseWriter, r *http.Request) {
+func OneBot(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	body, _ := io.ReadAll(r.Body)
 	signature := r.Header.Get("X-Signature")
 	
-	h := hmac.New(sha1.New, []byte(*conf.BaseConfInfo.QQNapCatReceiveToken))
-	h.Write(body)
-	expectedSign := "sha1=" + hex.EncodeToString(h.Sum(nil))
-	
-	if signature != expectedSign {
-		logger.ErrorCtx(ctx, "check sign fail", "expected", expectedSign, "actual", signature)
-		http.Error(w, "check sign fail", http.StatusUnauthorized)
-		return
-	}
-	
-	qqRobot := robot.NewPersonalQQRobot(ctx, body)
-	go func() {
-		defer func() {
-			if err := recover(); err != nil {
-				logger.ErrorCtx(ctx, "ding exec panic", "err", err, "stack", string(debug.Stack()))
-			}
-		}()
-		
-		qqRobot.Robot.Exec()
-	}()
-	
-}
-
-func LLOneBot(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	body, _ := io.ReadAll(r.Body)
-	signature := r.Header.Get("X-Signature")
-	
-	h := hmac.New(sha1.New, []byte(*conf.BaseConfInfo.QQNapCatReceiveToken))
+	h := hmac.New(sha1.New, []byte(*conf.BaseConfInfo.QQOneBotReceiveToken))
 	h.Write(body)
 	expectedSign := "sha1=" + hex.EncodeToString(h.Sum(nil))
 	

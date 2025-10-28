@@ -35,9 +35,9 @@ type BaseConf struct {
 	WechatActive            *bool   `json:"wechat_active"`
 	QQAppID                 *string `json:"qq_app_id"`
 	QQAppSecret             *string `json:"qq_app_secret"`
-	QQNapCatReceiveToken    *string `json:"qq_nap_cat_check_token"`
-	QQNapCatSendToken       *string `json:"qq_nap_cat_send_token"`
-	QQNapCatHttpServer      *string `json:"qq_nap_cat_http_server"`
+	QQOneBotReceiveToken    *string `json:"qq_nap_cat_check_token"`
+	QQOneBotSendToken       *string `json:"qq_nap_cat_send_token"`
+	QQOneBotHttpServer      *string `json:"qq_nap_cat_http_server"`
 	
 	DeepseekToken     *string `json:"deepseek_token"`
 	OpenAIToken       *string `json:"openai_token"`
@@ -105,9 +105,9 @@ func InitConf() {
 	BaseConfInfo.WechatActive = flag.Bool("wechat_active", false, "Wechat active")
 	BaseConfInfo.QQAppID = flag.String("qq_app_id", "", "QQ app id")
 	BaseConfInfo.QQAppSecret = flag.String("qq_app_secret", "", "QQ app secret")
-	BaseConfInfo.QQNapCatReceiveToken = flag.String("qq_napcat_receive_token", "MuseBot", "napcat receive token")
-	BaseConfInfo.QQNapCatSendToken = flag.String("qq_napcat_send_token", "MuseBot", "napcat send token")
-	BaseConfInfo.QQNapCatHttpServer = flag.String("qq_napcat_http_server", "http://127.0.0.1:3000", "napcat http server")
+	BaseConfInfo.QQOneBotReceiveToken = flag.String("qq_onebot_receive_token", "MuseBot", "onebot receive token")
+	BaseConfInfo.QQOneBotSendToken = flag.String("qq_onebot_send_token", "MuseBot", "onebot send token")
+	BaseConfInfo.QQOneBotHttpServer = flag.String("qq_onebot_http_server", "http://127.0.0.1:3000", "onebot http server")
 	
 	BaseConfInfo.DeepseekToken = flag.String("deepseek_token", "", "deepseek auth token")
 	BaseConfInfo.OpenAIToken = flag.String("openai_token", "", "openai auth token")
@@ -250,16 +250,16 @@ func InitConf() {
 		*BaseConfInfo.QQAppSecret = os.Getenv("QQ_APP_SECRET")
 	}
 	
-	if os.Getenv("QQ_NAPCAT_SEND_TOKEN") != "" {
-		*BaseConfInfo.QQNapCatSendToken = os.Getenv("QQ_NAPCAT_SEND_TOKEN")
+	if os.Getenv("QQ_ONEBOT_SEND_TOKEN") != "" {
+		*BaseConfInfo.QQOneBotSendToken = os.Getenv("QQ_ONEBOT_SEND_TOKEN")
 	}
 	
-	if os.Getenv("QQ_NAPCAT_RECEIVE_TOKEN") != "" {
-		*BaseConfInfo.QQNapCatReceiveToken = os.Getenv("QQ_NAPCAT_RECEIVE_TOKEN")
+	if os.Getenv("QQ_ONEBOT_RECEIVE_TOKEN") != "" {
+		*BaseConfInfo.QQOneBotReceiveToken = os.Getenv("QQ_ONEBOT_RECEIVE_TOKEN")
 	}
 	
-	if os.Getenv("QQ_NAPCAT_HTTP_SERVER") != "" {
-		*BaseConfInfo.QQNapCatHttpServer = os.Getenv("QQ_NAPCAT_HTTP_SERVER")
+	if os.Getenv("QQ_ONEBOT_HTTP_SERVER") != "" {
+		*BaseConfInfo.QQOneBotHttpServer = os.Getenv("QQ_ONEBOT_HTTP_SERVER")
 	}
 	
 	if os.Getenv("DEEPSEEK_TOKEN") != "" {
@@ -429,9 +429,9 @@ func InitConf() {
 	logger.Info("CONF", "WechatEncodingAESKey", *BaseConfInfo.WechatEncodingAESKey)
 	logger.Info("CONF", "QQAppID", *BaseConfInfo.QQAppID)
 	logger.Info("CONF", "QQAppSecret", *BaseConfInfo.QQAppSecret)
-	logger.Info("CONF", "QQNapCatHttpServer", *BaseConfInfo.QQNapCatHttpServer)
-	logger.Info("CONF", "QQNapCatReceiveToken", *BaseConfInfo.QQNapCatReceiveToken)
-	logger.Info("CONF", "QQNapCatSendToken", *BaseConfInfo.QQNapCatSendToken)
+	logger.Info("CONF", "QQOneBotHttpServer", *BaseConfInfo.QQOneBotHttpServer)
+	logger.Info("CONF", "QQOneBotReceiveToken", *BaseConfInfo.QQOneBotReceiveToken)
+	logger.Info("CONF", "QQOneBotSendToken", *BaseConfInfo.QQOneBotSendToken)
 	logger.Info("CONF", "DeepseekToken", *BaseConfInfo.DeepseekToken)
 	logger.Info("CONF", "CustomUrl", *BaseConfInfo.CustomUrl)
 	logger.Info("CONF", "Type", *BaseConfInfo.Type)
