@@ -1,8 +1,8 @@
 # 🤖 OneBot + MuseBot 环境变量配置说明
 
-## 🧩 一、启动 NapCat 容器
+## 🧩 一、启动 OneBot 容器
 
-启动LLONEBot
+启动 LLONEBot
 ```bash
 docker run -d \
   --name llonebot \
