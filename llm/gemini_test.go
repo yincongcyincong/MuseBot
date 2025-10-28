@@ -72,26 +72,42 @@ func TestAppendMessages(t *testing.T) {
 }
 
 func TestGenerateGeminiText_EmptyAudio(t *testing.T) {
-	text, _, err := GenerateGeminiText(context.Background(), []byte{})
+	ctx := context.WithValue(context.Background(), "user_info", &db.User{
+		LLMConfig:    `{"type":"gemini"}`,
+		LLMConfigRaw: &param.LLMConfig{TxtType: param.Gemini},
+	})
+	text, _, err := GenerateGeminiText(ctx, []byte{})
 	assert.Error(t, err)
 	assert.Empty(t, text)
 }
 
 func TestGenerateGeminiImage_EmptyPrompt(t *testing.T) {
-	image, _, err := GenerateGeminiImg(context.Background(), "", nil)
+	ctx := context.WithValue(context.Background(), "user_info", &db.User{
+		LLMConfig:    `{"type":"gemini"}`,
+		LLMConfigRaw: &param.LLMConfig{TxtType: param.Gemini},
+	})
+	image, _, err := GenerateGeminiImg(ctx, "", nil)
 	assert.Error(t, err)
 	assert.Nil(t, image)
 }
 
 func TestGenerateGeminiVideo_InvalidPrompt(t *testing.T) {
-	video, _, err := GenerateGeminiVideo(context.Background(), "", nil)
+	ctx := context.WithValue(context.Background(), "user_info", &db.User{
+		LLMConfig:    `{"type":"gemini"}`,
+		LLMConfigRaw: &param.LLMConfig{TxtType: param.Gemini},
+	})
+	video, _, err := GenerateGeminiVideo(ctx, "", nil)
 	assert.Error(t, err)
 	assert.Nil(t, video)
 }
 
 func TestRequestToolsCall_NilFunctionCall(t *testing.T) {
+	ctx := context.WithValue(context.Background(), "user_info", &db.User{
+		LLMConfig:    `{"type":"gemini"}`,
+		LLMConfigRaw: &param.LLMConfig{TxtType: param.Gemini},
+	})
 	req := &GeminiReq{}
-	err := req.RequestToolsCall(context.Background(), &genai.GenerateContentResponse{}, nil)
+	err := req.RequestToolsCall(ctx, &genai.GenerateContentResponse{}, nil)
 	assert.NoError(t, err) // should be a no-op
 }
 

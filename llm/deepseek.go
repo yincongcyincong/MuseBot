@@ -295,19 +295,27 @@ func (d *DeepseekReq) RequestToolsCall(ctx context.Context, choice deepseek.Stre
 
 func GetDeepseekClient(ctx context.Context) *deepseek.Client {
 	httpClient := utils.GetLLMProxyClient()
+	txtType := utils.GetTxtType(db.GetCtxUserInfo(ctx).LLMConfigRaw)
+	if txtType == param.Ollama {
+		*conf.BaseConfInfo.DeepseekToken = "ollama"
+	}
 	client, err := deepseek.NewClientWithOptions(*conf.BaseConfInfo.DeepseekToken, deepseek.WithHTTPClient(httpClient))
 	if err != nil {
 		logger.ErrorCtx(ctx, "Error creating deepseek client", "err", err)
 		return nil
 	}
 	
-	if utils.GetTxtType(db.GetCtxUserInfo(ctx).LLMConfigRaw) == param.Ollama {
+	if txtType == param.Ollama {
 		client.Path = "api/chat"
 		client.BaseURL = "http://localhost:11434/"
 	}
 	
 	if *conf.BaseConfInfo.CustomUrl != "" {
 		client.BaseURL = *conf.BaseConfInfo.CustomUrl
+	}
+	
+	if *conf.BaseConfInfo.CustomPath != "" {
+		client.Path = *conf.BaseConfInfo.CustomPath
 	}
 	
 	return client

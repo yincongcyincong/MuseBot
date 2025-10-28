@@ -54,6 +54,7 @@ type BaseConf struct {
 	Type         *string `json:"type"`
 	MediaType    *string `json:"media_type"`
 	CustomUrl    *string `json:"custom_url"`
+	CustomPath   *string `json:"custom_path"`
 	VolcAK       *string `json:"volc_ak"`
 	VolcSK       *string `json:"volc_sk"`
 	DBType       *string `json:"db_type"`
@@ -122,9 +123,10 @@ func InitConf() {
 	BaseConfInfo.ChatAnyWhereToken = flag.String("chat_any_where_token", "", "chatAnyWhere Token")
 	
 	BaseConfInfo.BotName = flag.String("bot_name", "MuseBot", "bot name")
-	BaseConfInfo.CustomUrl = flag.String("custom_url", "", "deepseek custom url")
-	BaseConfInfo.Type = flag.String("type", "deepseek", "llm type: deepseek gemini openai openrouter vol chatanywhere")
-	BaseConfInfo.MediaType = flag.String("media_type", "vol", "media type: vol gemini openai aliyun 302-ai openrouter")
+	BaseConfInfo.CustomUrl = flag.String("custom_url", "", "custom url")
+	BaseConfInfo.CustomPath = flag.String("custom_path", "", "custom path")
+	BaseConfInfo.Type = flag.String("type", "", "llm type: deepseek gemini openai openrouter vol chatanywhere")
+	BaseConfInfo.MediaType = flag.String("media_type", "", "media type: vol gemini openai aliyun 302-ai openrouter")
 	BaseConfInfo.DBType = flag.String("db_type", "sqlite3", "db type")
 	BaseConfInfo.DBConf = flag.String("db_conf", GetAbsPath("data/muse_bot.db"), "db conf")
 	BaseConfInfo.LLMProxy = flag.String("llm_proxy", "", "llm proxy: http://127.0.0.1:7890")

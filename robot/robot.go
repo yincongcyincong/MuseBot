@@ -978,41 +978,37 @@ func (r *RobotInfo) showTxtModel(ty string) {
 	
 	switch utils.GetTxtType(db.GetCtxUserInfo(r.Ctx).LLMConfigRaw) {
 	case param.DeepSeek:
-		if *conf.BaseConfInfo.CustomUrl == "" || *conf.BaseConfInfo.CustomUrl == "https://api.deepseek.com/" {
-			for k := range param.DeepseekModels {
-				modelList = append(modelList, k)
-			}
+		for k := range param.DeepseekModels {
+			modelList = append(modelList, k)
 		}
 	case param.Gemini:
 		for k := range param.GeminiModels {
-			modelList = append(modelList, k)
-		}
-	case param.OpenAi:
-		for k := range param.OpenAIModels {
 			modelList = append(modelList, k)
 		}
 	case param.Aliyun:
 		for k := range param.AliyunModel {
 			modelList = append(modelList, k)
 		}
-	case param.OpenRouter, param.AI302, param.Ollama:
+	case param.OpenRouter, param.AI302, param.Ollama, param.OpenAi:
 		switch utils.GetTxtType(db.GetCtxUserInfo(r.Ctx).LLMConfigRaw) {
+		case param.OpenAi:
+			r.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
+				"link": "https://platform.openai.com/",
+			}),
+				msgId, tgbotapi.ModeMarkdown, nil)
 		case param.AI302:
 			r.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
-				"link":    "https://302.ai/",
-				"command": ty,
+				"link": "https://302.ai/",
 			}),
 				msgId, tgbotapi.ModeMarkdown, nil)
 		case param.OpenRouter:
 			r.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
-				"link":    "https://openrouter.ai/",
-				"command": ty,
+				"link": "https://openrouter.ai/",
 			}),
 				msgId, tgbotapi.ModeMarkdown, nil)
 		case param.Ollama:
 			r.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
-				"link":    "https://ollama.com/",
-				"command": ty,
+				"link": "https://ollama.com/",
 			}),
 				msgId, tgbotapi.ModeMarkdown, nil)
 		}

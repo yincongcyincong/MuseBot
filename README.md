@@ -124,6 +124,7 @@ command: (doc)[https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/p
 You can configure the bot via environment variables:
 
 Here’s the **English version** of your environment variable table:
+If you use parameter. Please use lower letter and underscore. for example: ./MuseBot -telegram_bot_token=xxx
 
 | Variable Name                     | Description                                                                                  | Default Value                                          |
 |-----------------------------------|----------------------------------------------------------------------------------------------|--------------------------------------------------------|

@@ -167,16 +167,16 @@ func (web *Web) changeModel(t string) {
 		for k := range param.GeminiModels {
 			modelList = append(modelList, k)
 		}
-	case param.OpenAi:
-		for k := range param.OpenAIModels {
-			modelList = append(modelList, k)
-		}
 	case param.Aliyun:
 		for k := range param.AliyunModel {
 			modelList = append(modelList, k)
 		}
-	case param.OpenRouter, param.AI302, param.Ollama:
+	case param.OpenRouter, param.AI302, param.Ollama, param.OpenAi:
 		switch utils.GetTxtType(db.GetCtxUserInfo(web.Robot.Ctx).LLMConfigRaw) {
+		case param.OpenAi:
+			web.SendMsg(i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
+				"link": "https://platform.openai.com/",
+			}))
 		case param.AI302:
 			web.SendMsg(i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
 				"link": "https://302.ai/",
