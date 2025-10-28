@@ -164,7 +164,9 @@ func GetAvailTxtType() []string {
 	if *conf.BaseConfInfo.OpenRouterToken != "" {
 		res = append(res, param.OpenRouter)
 	}
-	
+	if *conf.BaseConfInfo.Type == param.Ollama {
+		res = append(res, param.Ollama)
+	}
 	return res
 }
 
@@ -315,18 +317,18 @@ func GetUsingRecModel(ty string, model string) string {
 		if param.GeminiRecModels[model] {
 			return model
 		}
-		return param.GeminiImageGenPreview
+		return param.ModelGemini20Flash
 	
 	case param.OpenAi:
 		if param.OpenAiRecModels[model] {
 			return model
 		}
-		return param.ModelImageGPT
+		return param.ChatGPT4_0
 	case param.Aliyun:
 		if param.AliyunRecModels[model] {
 			return model
 		}
-		return param.QwenImagePlus
+		return param.QwenVlMax
 	case param.AI302:
 		return model
 	case param.Vol:
@@ -351,11 +353,6 @@ func GetUsingTxtModel(ty string, model string) string {
 			return model
 		}
 		return param.ModelGemini20Flash
-	case param.OpenAi:
-		if param.OpenAIModels[model] {
-			return model
-		}
-		return openai.GPT3Dot5Turbo
 	case param.Vol:
 		if param.VolModels[model] {
 			return model
@@ -368,5 +365,5 @@ func GetUsingTxtModel(ty string, model string) string {
 		return qwen.QwenMax
 	}
 	
-	return godeepseek.DeepSeekChat
+	return model
 }

@@ -46,7 +46,9 @@ func StartTelegramRobot(ctx context.Context) {
 	var bot *tgbotapi.BotAPI
 	
 	defer func() {
-		bot.StopReceivingUpdates()
+		if bot != nil {
+			bot.StopReceivingUpdates()
+		}
 		if err := recover(); err != nil {
 			logger.ErrorCtx(ctx, "StartTelegramRobot panic", "err", err, "stack", string(debug.Stack()))
 			StartTelegramRobot(ctx)
@@ -180,6 +182,11 @@ func CreateBot(ctx context.Context) *tgbotapi.BotAPI {
 func (t *TelegramRobot) checkValid() bool {
 	chatId, msgId, _ := t.Robot.GetChatIdAndMsgIdAndUserID()
 	if t.Update.CallbackQuery != nil {
+		return true
+	}
+	
+	if t.Update.Message != nil && t.Update.Message.ReplyToMessage != nil && t.Update.Message.ReplyToMessage.From != nil &&
+		t.Update.Message.ReplyToMessage.From.UserName == t.Bot.Self.UserName {
 		return true
 	}
 	
@@ -444,21 +451,13 @@ func (t *TelegramRobot) showTxtModel(ty string) {
 	inlineButton := make([][]tgbotapi.InlineKeyboardButton, 0)
 	switch utils.GetTxtType(db.GetCtxUserInfo(t.Robot.Ctx).LLMConfigRaw) {
 	case param.DeepSeek:
-		if *conf.BaseConfInfo.CustomUrl == "" || *conf.BaseConfInfo.CustomUrl == "https://api.deepseek.com/" {
-			for k := range param.DeepseekModels {
-				inlineButton = append(inlineButton, tgbotapi.NewInlineKeyboardRow(
-					tgbotapi.NewInlineKeyboardButtonData(k, k),
-				))
-			}
-		}
-	case param.Gemini:
-		for k := range param.GeminiModels {
+		for k := range param.DeepseekModels {
 			inlineButton = append(inlineButton, tgbotapi.NewInlineKeyboardRow(
 				tgbotapi.NewInlineKeyboardButtonData(k, k),
 			))
 		}
-	case param.OpenAi:
-		for k := range param.OpenAIModels {
+	case param.Gemini:
+		for k := range param.GeminiModels {
 			inlineButton = append(inlineButton, tgbotapi.NewInlineKeyboardRow(
 				tgbotapi.NewInlineKeyboardButtonData(k, k),
 			))
@@ -469,12 +468,18 @@ func (t *TelegramRobot) showTxtModel(ty string) {
 				tgbotapi.NewInlineKeyboardButtonData(k, k),
 			))
 		}
-	case param.OpenRouter, param.AI302, param.Ollama:
+	case param.OpenRouter, param.AI302, param.Ollama, param.OpenAi:
 		if t.Prompt != "" {
 			t.Robot.handleModelUpdate(&RobotModel{TxtType: t.Prompt})
 			return
 		}
 		switch utils.GetTxtType(db.GetCtxUserInfo(t.Robot.Ctx).LLMConfigRaw) {
+		case param.OpenAi:
+			t.Robot.SendMsg(chatID, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
+				"link":    "https://platform.openai.com/",
+				"command": ty,
+			}),
+				msgId, tgbotapi.ModeMarkdown, nil)
 		case param.AI302:
 			t.Robot.SendMsg(chatID, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
 				"link":    "https://302.ai/",

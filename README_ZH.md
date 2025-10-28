@@ -58,7 +58,7 @@ chatgpt: https://www.bilibili.com/video/BV1RutxzJEGY/
 | ⚡️ **Work WeChat** |  ✅   | 支持企业微信触发大模型                                                     | [文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/com_wechat_ZH.md)    |
 | ⚡️ **QQ**          |  ✅   | 支持QQ机器人触发大模型                                                    | [文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/qq_ZH.md)            |
 | ⚡️ **WeChat**      |  ✅   | 支持微信触发大模型                                                       | [文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/wechat_ZH.md)        |
-| 🚗 **Personal QQ**   |     ✅     | 支持个人QQ触发大模型                                                     | [Docs](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/personal_qq_ZH.md) |
+| 🚗 **Personal QQ** |  ✅   | 支持个人QQ触发大模型                                                     | [Docs](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/personal_qq_ZH.md) |
 
 ## 支持的大型语言模型
 
@@ -132,7 +132,9 @@ docker pull crpi-i1dsvpjijxpgjgbv.cn-hangzhou.personal.cr.aliyuncs.com/jackyin08
 
 ## ⚙️ 配置项
 
-| Variable Name                     | Description                                                                         | Default Value             |
+如果用参数形式，使用小写加下划线形式，比如./MuseBot -telegram_bot_token=xxx
+
+| 环境变量名字                            | 描述                                                                                  | 默认值                       |
 |-----------------------------------|-------------------------------------------------------------------------------------|---------------------------|
 | **TELEGRAM_BOT_TOKEN** (required) | Telegram 机器人 Token                                                                  | -                         |
 | **DISCORD_BOT_TOKEN**             | Discord 机器人 Token                                                                   | -                         |
@@ -214,18 +216,19 @@ docker pull crpi-i1dsvpjijxpgjgbv.cn-hangzhou.personal.cr.aliyuncs.com/jackyin08
 重试上一次问题。
 
 ### `/txt_type /photo_type /video_type /rec_type`
+
 选择你想用的 文字/图片/视频的 模型类型.      
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/b001e178-4c2a-4e4f-a679-b60be51a776b" />
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/ad7c3b84-b471-418b-8fe7-05af53893842" />
 
-
 ### `/txt_model /img_model /video_model /rec_model`
+
 选择具体的模型名称.      
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/882f7766-c237-45e7-b0d1-9035fc65ff73" />
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/276af04a-d602-470e-b2c1-ba22e16225b0" />
 
-
 ### `/mode`
+
 展示正在使用的模型信息
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/47fb4043-7385-4f81-b8f9-83f8352b81f9" />
 

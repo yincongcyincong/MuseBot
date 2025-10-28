@@ -79,7 +79,7 @@ func (d *AIRouterReq) GetModel(l *LLM) {
 		}
 	case param.OpenRouter:
 		l.Model = param.DeepseekDeepseekR1_0528Free
-		if userInfo != nil && model != "" && param.OpenRouterModels[model] {
+		if userInfo != nil && model != "" {
 			l.Model = model
 		}
 	}

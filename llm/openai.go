@@ -44,7 +44,7 @@ func (d *OpenAIReq) GetModel(l *LLM) {
 	switch utils.GetTxtType(db.GetCtxUserInfo(l.Ctx).LLMConfigRaw) {
 	case param.OpenAi, param.ChatAnyWhere:
 		l.Model = openai.GPT3Dot5Turbo0125
-		if userInfo != nil && model != "" && param.OpenAIModels[model] {
+		if userInfo != nil && model != "" {
 			l.Model = model
 		}
 	case param.Aliyun:
