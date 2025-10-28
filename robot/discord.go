@@ -573,11 +573,6 @@ func (d *DiscordRobot) sendVideo() {
 	})
 }
 
-func (d *DiscordRobot) sendHelpConfigurationOptions() {
-	chatId, replyToMessageID, _ := d.Robot.GetChatIdAndMsgIdAndUserID()
-	d.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "help_text", nil), replyToMessageID, tgbotapi.ModeMarkdown, nil)
-}
-
 func (d *DiscordRobot) getPrompt() string {
 	return d.Prompt
 }

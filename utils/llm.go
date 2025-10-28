@@ -176,7 +176,7 @@ func GetAvailImgType() []string {
 	if *conf.BaseConfInfo.GeminiToken != "" {
 		res = append(res, param.Gemini)
 	}
-	if *conf.BaseConfInfo.OpenRouterToken != "" {
+	if *conf.BaseConfInfo.OpenAIToken != "" {
 		res = append(res, param.OpenAi)
 	}
 	if *conf.BaseConfInfo.AliyunToken != "" {
@@ -231,6 +231,9 @@ func GetAvailRecType() []string {
 	if *conf.BaseConfInfo.VolToken != "" {
 		res = append(res, param.Vol)
 	}
+	if *conf.BaseConfInfo.OpenAIToken != "" {
+		res = append(res, param.OpenAi)
+	}
 	
 	return res
 }
@@ -261,29 +264,19 @@ func GetUsingImgModel(ty string, model string) string {
 			return model
 		}
 		return param.GeminiImageGenPreview
-	
-	case param.OpenAi:
-		if param.OpenAIImageModels[model] {
-			return model
-		}
-		return param.ModelImageGPT
 	case param.Aliyun:
 		if param.AliyunImageModels[model] {
 			return model
 		}
 		return param.QwenImagePlus
-	case param.AI302:
-		return model
 	case param.Vol:
 		if param.VolImageModels[model] {
 			return model
 		}
 		return param.DoubaoSeed16VisionPro
-	case param.ChatAnyWhere:
+	default:
 		return model
 	}
-	
-	return ""
 }
 
 func GetUsingVideoModel(ty string, model string) string {
@@ -318,27 +311,19 @@ func GetUsingRecModel(ty string, model string) string {
 			return model
 		}
 		return param.ModelGemini20Flash
-	
-	case param.OpenAi:
-		if param.OpenAiRecModels[model] {
-			return model
-		}
-		return param.ChatGPT4_0
 	case param.Aliyun:
 		if param.AliyunRecModels[model] {
 			return model
 		}
 		return param.QwenVlMax
-	case param.AI302:
-		return model
 	case param.Vol:
 		if param.VolRecModels[model] {
 			return model
 		}
 		return param.DoubaoSeed16VisionPro
+	default:
+		return model
 	}
-	
-	return ""
 }
 
 func GetUsingTxtModel(ty string, model string) string {

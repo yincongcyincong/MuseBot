@@ -529,36 +529,32 @@ func (t *TelegramRobot) showImageModel(ty string) {
 				tgbotapi.NewInlineKeyboardButtonData(k, k),
 			))
 		}
-	case param.OpenAi:
-		for k := range param.OpenAIImageModels {
-			inlineButton = append(inlineButton, tgbotapi.NewInlineKeyboardRow(
-				tgbotapi.NewInlineKeyboardButtonData(k, k),
-			))
-		}
 	case param.Aliyun:
 		for k := range param.AliyunImageModels {
 			inlineButton = append(inlineButton, tgbotapi.NewInlineKeyboardRow(
 				tgbotapi.NewInlineKeyboardButtonData(k, k),
 			))
 		}
-	case param.OpenRouter, param.AI302, param.Ollama:
+	case param.OpenRouter, param.AI302, param.Ollama, param.OpenAi:
 		switch utils.GetImgType(db.GetCtxUserInfo(t.Robot.Ctx).LLMConfigRaw) {
 		case param.AI302:
 			t.Robot.SendMsg(chatID, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
-				"link":    "https://302.ai/",
-				"command": ty,
+				"link": "https://302.ai/",
 			}),
 				msgId, tgbotapi.ModeMarkdown, nil)
 		case param.OpenRouter:
 			t.Robot.SendMsg(chatID, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
-				"link":    "https://openrouter.ai/",
-				"command": ty,
+				"link": "https://openrouter.ai/",
 			}),
 				msgId, tgbotapi.ModeMarkdown, nil)
 		case param.Ollama:
 			t.Robot.SendMsg(chatID, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
-				"link":    "https://ollama.com/",
-				"command": ty,
+				"link": "https://ollama.com/",
+			}),
+				msgId, tgbotapi.ModeMarkdown, nil)
+		case param.OpenAi:
+			t.Robot.SendMsg(chatID, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
+				"link": "https://platform.openai.com/",
 			}),
 				msgId, tgbotapi.ModeMarkdown, nil)
 		}
@@ -632,12 +628,6 @@ func (t *TelegramRobot) showRecModel(ty string) {
 				tgbotapi.NewInlineKeyboardButtonData(k, k),
 			))
 		}
-	case param.OpenAi:
-		for k := range param.OpenAiRecModels {
-			inlineButton = append(inlineButton, tgbotapi.NewInlineKeyboardRow(
-				tgbotapi.NewInlineKeyboardButtonData(k, k),
-			))
-		}
 	case param.Aliyun:
 		for k := range param.AliyunRecModels {
 			inlineButton = append(inlineButton, tgbotapi.NewInlineKeyboardRow(
@@ -650,12 +640,17 @@ func (t *TelegramRobot) showRecModel(ty string) {
 				tgbotapi.NewInlineKeyboardButtonData(k, k),
 			))
 		}
-	case param.AI302:
+	case param.AI302, param.OpenAi:
 		switch utils.GetRecType(db.GetCtxUserInfo(t.Robot.Ctx).LLMConfigRaw) {
 		case param.AI302:
 			t.Robot.SendMsg(chatID, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
-				"link":    "https://302.ai/",
-				"command": ty,
+				"link": "https://302.ai/",
+			}),
+				msgId, tgbotapi.ModeMarkdown, nil)
+			return
+		case param.OpenAi:
+			t.Robot.SendMsg(chatID, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
+				"link": "https://platform.openai.com/",
 			}),
 				msgId, tgbotapi.ModeMarkdown, nil)
 			return

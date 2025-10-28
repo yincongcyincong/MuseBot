@@ -162,12 +162,6 @@ func (c *ComWechatRobot) requestLLMAndResp(content string) {
 	}()
 }
 
-func (c *ComWechatRobot) sendHelpConfigurationOptions() {
-	chatId, msgId, _ := c.Robot.GetChatIdAndMsgIdAndUserID()
-	c.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "help_text", nil),
-		msgId, tgbotapi.ModeMarkdown, nil)
-}
-
 func (c *ComWechatRobot) sendImg() {
 	c.Robot.TalkingPreCheck(func() {
 		chatId, msgId, userId := c.Robot.GetChatIdAndMsgIdAndUserID()
@@ -421,11 +415,11 @@ func (c *ComWechatRobot) passiveExecCmd() {
 		if c.TextMsg != nil {
 			status := msgChangePhoto
 			switch c.Command {
-			case "/change_photo", "change_photo":
+			case "/change_photo", "change_photo", "$change_photo":
 				status = msgChangePhoto
-			case "/rec_photo", "rec_photo":
+			case "/rec_photo", "rec_photo", "$rec_photo":
 				status = msgRecognizePhoto
-			case "/save_voice", "save_voice":
+			case "/save_voice", "save_voice", "$save_voice":
 				status = msgSaveVoice
 			}
 			TencentMsgMap.Store(userId, &TencentWechatMessage{

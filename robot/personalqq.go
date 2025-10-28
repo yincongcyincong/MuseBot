@@ -153,11 +153,6 @@ func (q *PersonalQQRobot) requestLLMAndResp(content string) {
 	q.Robot.ExecCmd(content, q.sendChatMessage, nil, nil)
 }
 
-func (q *PersonalQQRobot) sendHelpConfigurationOptions() {
-	chatId, msgId, _ := q.Robot.GetChatIdAndMsgIdAndUserID()
-	q.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "help_text", nil), msgId, tgbotapi.ModeMarkdown, nil)
-}
-
 func (q *PersonalQQRobot) sendImg() {
 	q.Robot.TalkingPreCheck(func() {
 		chatId, msgId, userId := q.Robot.GetChatIdAndMsgIdAndUserID()

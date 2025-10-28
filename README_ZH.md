@@ -47,18 +47,18 @@ chatgpt: https://www.bilibili.com/video/BV1RutxzJEGY/
 
 ## 支持平台
 
-| 平台                 | 支持情况 | 简要说明                                                            | 文档 / 链接                                                                                   |
-|--------------------|:----:|-----------------------------------------------------------------|-------------------------------------------------------------------------------------------|
-| 🟦 **Telegram**    |  ✅   | 支持 Telegram 机器人（基于 go-telegram-bot-api，可处理命令、内联按钮、ForceReply 等） | [文档](https://github.com/yincongcyincong/MuseBot/blob/main/README_ZH.md)                   |
-| 🌈 **Discord**     |  ✅   | 支持 Discord 机器人                                                  | [文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/discord_ZH.md)       |
-| 🌛 **Web API**     |  ✅   | 提供 HTTP/Web API 与 LLM 交互（适合构建自己的前端或后端集成）                        | [文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/web_api_ZH.md)       |
-| 🔷 **Slack**       |  ✅   | 支持 Slack（Socket Mode / Events API / Block Kit 交互）               | [文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/slack_ZH.md)         |
-| 🟣 **Lark（飞书）**    |  ✅   | 支持 Lark 长连接与消息处理（基于 larksuite SDK，支持图片/音频下载与消息更新）               | [文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/lark_ZH.md)          |
-| 🆙 **钉钉**          |  ✅   | 支持钉钉长链接服务                                                       | [文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/dingding_ZH.md)      |
-| ⚡️ **Work WeChat** |  ✅   | 支持企业微信触发大模型                                                     | [文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/com_wechat_ZH.md)    |
-| ⚡️ **QQ**          |  ✅   | 支持QQ机器人触发大模型                                                    | [文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/qq_ZH.md)            |
-| ⚡️ **WeChat**      |  ✅   | 支持微信触发大模型                                                       | [文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/wechat_ZH.md)        |
-| 🚗 **Personal QQ** |  ✅   | 支持个人QQ触发大模型                                                     | [Docs](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/personal_qq_ZH.md) |
+| 平台                 | 支持情况 | 简要说明                                                            | 文档 / 链接                                                                                 |
+|--------------------|:----:|-----------------------------------------------------------------|-----------------------------------------------------------------------------------------|
+| 🟦 **Telegram**    |  ✅   | 支持 Telegram 机器人（基于 go-telegram-bot-api，可处理命令、内联按钮、ForceReply 等） | [文档](https://github.com/yincongcyincong/MuseBot/blob/main/README_ZH.md)                 |
+| 🌈 **Discord**     |  ✅   | 支持 Discord 机器人                                                  | [文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/discord_ZH.md)     |
+| 🌛 **Web API**     |  ✅   | 提供 HTTP/Web API 与 LLM 交互（适合构建自己的前端或后端集成）                        | [文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/web_api_ZH.md)     |
+| 🔷 **Slack**       |  ✅   | 支持 Slack（Socket Mode / Events API / Block Kit 交互）               | [文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/slack_ZH.md)       |
+| 🟣 **Lark（飞书）**    |  ✅   | 支持 Lark 长连接与消息处理（基于 larksuite SDK，支持图片/音频下载与消息更新）               | [文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/lark_ZH.md)        |
+| 🆙 **钉钉**          |  ✅   | 支持钉钉长链接服务                                                       | [文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/dingding_ZH.md)    |
+| ⚡️ **Work WeChat** |  ✅   | 支持企业微信触发大模型                                                     | [文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/com_wechat_ZH.md)  |
+| ⚡️ **QQ**          |  ✅   | 支持QQ机器人触发大模型                                                    | [文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/qq_ZH.md)          |
+| ⚡️ **WeChat**      |  ✅   | 支持微信触发大模型                                                       | [文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/wechat_ZH.md)      |
+| 🚗 **Personal QQ** |  ✅   | 支持个人QQ触发大模型                                                     | [文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/personal_qq_ZH.md) |
 
 ## 支持的大型语言模型
 
@@ -246,19 +246,12 @@ docker pull crpi-i1dsvpjijxpgjgbv.cn-hangzhou.personal.cr.aliyuncs.com/jackyin08
 
 ### `/photo` `/edit_photo`
 
-使用火山引擎图片模型生成图片，DeepSeek 暂不支持图片生成。       
-需要配置 `VOLC_AK` 和 `VOLC_SK`。[文档](https://www.volcengine.com/docs/6444/1340578)
-
 <img width="400" src="https://github.com/user-attachments/assets/c8072d7d-74e6-4270-8496-1b4e7532134b"  alt=""/>        
 
 /edit_photo 支持编辑图片。     
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/b26c123a-8a61-4329-ba31-9b371bd9251c" />
 
 ### `/video`
-
-生成视频，需要使用火山引擎 API 密钥（`DEEPSEEK_TOKEN`），DeepSeek 暂不支持视频生成。
-[文档](https://www.volcengine.com/docs/82379/1399008#b00dee71)
-
 <img width="400" src="https://github.com/user-attachments/assets/884eeb48-76c4-4329-9446-5cd3822a5d16"  alt=""/>
 
 ### `/chat`

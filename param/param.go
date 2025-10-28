@@ -3,7 +3,6 @@ package param
 import (
 	"github.com/cohesion-org/deepseek-go"
 	"github.com/devinyf/dashscopego/qwen"
-	"github.com/sashabaranov/go-openai"
 )
 
 const (
@@ -151,15 +150,15 @@ var (
 		QwenVlMax: true,
 	}
 	
-	OpenAIImageModels = map[string]bool{
-		ModelImageGPT: true,
-	}
-	
-	OpenAiRecModels = map[string]bool{
-		openai.Whisper1: true,
-		ChatGPT4_0:      true,
-	}
-	
+	//OpenAIImageModels = map[string]bool{
+	//	ModelImageGPT: true,
+	//}
+	//
+	//OpenAiRecModels = map[string]bool{
+	//	openai.Whisper1: true,
+	//	ChatGPT4_0:      true,
+	//}
+	//
 	GeminiVideoModels = map[string]bool{
 		GeminiVideoVeo2: true,
 		GeminiVideoVeo3: true,
