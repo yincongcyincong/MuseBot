@@ -196,11 +196,6 @@ func (q *QQRobot) requestLLMAndResp(content string) {
 	q.Robot.ExecCmd(content, q.sendChatMessage, nil, nil)
 }
 
-func (q *QQRobot) sendHelpConfigurationOptions() {
-	chatId, msgId, _ := q.Robot.GetChatIdAndMsgIdAndUserID()
-	q.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "help_text", nil), msgId, tgbotapi.ModeMarkdown, nil)
-}
-
 func (q *QQRobot) sendImg() {
 	q.Robot.TalkingPreCheck(func() {
 		chatId, msgId, userId := q.Robot.GetChatIdAndMsgIdAndUserID()
@@ -632,11 +627,11 @@ func (q *QQRobot) passiveExecCmd() {
 		if attachment == nil {
 			status := msgChangePhoto
 			switch q.Command {
-			case "/change_photo", "change_photo":
+			case "/change_photo", "change_photo", "$change_photo":
 				status = msgChangePhoto
-			case "/rec_photo", "rec_photo":
+			case "/rec_photo", "rec_photo", "$rec_photo":
 				status = msgRecognizePhoto
-			case "/save_voice", "save_voice":
+			case "/save_voice", "save_voice", "$save_voice":
 				status = msgSaveVoice
 			}
 			TencentMsgMap.Store(userId, &TencentWechatMessage{

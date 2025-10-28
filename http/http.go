@@ -76,6 +76,7 @@ func (p *HTTPServer) Start() {
 		mux.HandleFunc("/wechat", WechatComm)
 		mux.HandleFunc("/qq", QQBotComm)
 		mux.HandleFunc("/napcat", NapCat)
+		mux.HandleFunc("/llonebot", LLOneBot)
 		
 		wrappedMux := WithRequestContext(mux)
 		

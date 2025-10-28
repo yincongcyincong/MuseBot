@@ -218,81 +218,75 @@ choose a language for bot, English (`en`), Chinese (`zh`), Russian (`ru`).
 
 ## Command
 
-### /clear
+### /clear $clear
 
 clear all of your communication record with deepseek. this record use for helping deepseek to understand the context.
 
-### /retry
+### /retry $retry
 
 retry last question.
 
-### /txt_type /photo_type /video_type /rec_type
+### /txt_type /photo_type /video_type /rec_type $txt_type $photo_type $video_type $rec_type
 choose txt/photo/video/recognize model type.    
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/b001e178-4c2a-4e4f-a679-b60be51a776b" />
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/ad7c3b84-b471-418b-8fe7-05af53893842" />
 
-### /txt_model /img_model /video_model /rec_model
+### /txt_model /img_model /video_model /rec_model $txt_model $img_model $video_model $rec_model
 choose txt/photo/video/recognize model.    
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/882f7766-c237-45e7-b0d1-9035fc65ff73" />
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/276af04a-d602-470e-b2c1-ba22e16225b0" />
 
 
-### /mode
+### /mode $mode
 show current model type and model.    
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/47fb4043-7385-4f81-b8f9-83f8352b81f9" />
 
 
-### /balance
+### /balance $balance
 
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/23048b44-a3af-457f-b6ce-3678b6776410" />
 
-### /state
+### /state $state
 
 calculate one user token usage.    
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/0814b3ac-dcf6-4ec7-ae6b-3b8d190a0132" />
 
-### /photo /edit_photo
-
-using volcengine photo model create photo, deepseek don't support to create photo now. VOLC_AK and VOLC_SK is
-necessary.[doc](https://www.volcengine.com/docs/6444/1340578)    
+### /photo /edit_photo $photo $edit_photo
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/b05fcadc-800e-40fb-b9a1-8aea44851550" />
 
 /edit_photo will update you photo base on your description.    
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/b26c123a-8a61-4329-ba31-9b371bd9251c" />
 
-### /video
-
-create video. `DEEPSEEK_TOKEN` must be volcengine Api key. deepseek don't support to create video
-now. [doc](https://www.volcengine.com/docs/82379/1399008#b00dee71)
+### /video $video
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/884eeb48-76c4-4329-9446-5cd3822a5d16" />
 
-### /chat
+### /chat $chat
 
 allows the bot to chat through /chat command in groups,
 without the bot being set as admin of the group.        
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/00a0faf3-6037-4d84-9a33-9aa6c320e44d" />
 
-### /help
+### /help $help
 
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/869e0207-388b-49ca-b26a-378f71d58818" />
 
-### /task
+### /task $task
 
 multi agent communicate with each other!
 
-### /change_photo
+### /change_photo $change_photo
 
 only for tencent app (wechat, qq, work wechat)          
 change photo base on your prompt.    
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/81e1eb85-ddb6-4a2b-b6bd-73da0d276036" />
 
-### /rec_photo
+### /rec_photo $rec_photo
 
 only for tencent app (wechat, qq, work wechat)    
 recognize photo base on your prompt.    
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/b67a2be2-cc5e-4985-90f3-d72c7a9bf4c1" />
 
-### /save_voice
+### /save_voice $save_voice
 
 only for tencent app (wechat, qq, work wechat)
 save your voice to pc.

@@ -112,7 +112,11 @@ func TestRequestToolsCall_NilFunctionCall(t *testing.T) {
 }
 
 func TestGetModel_DefaultModel(t *testing.T) {
-	l := &LLM{}
+	ctx := context.WithValue(context.Background(), "user_info", &db.User{
+		LLMConfig:    `{"type":"gemini"}`,
+		LLMConfigRaw: &param.LLMConfig{TxtType: param.Gemini},
+	})
+	l := NewLLM(WithChatId("1"), WithMsgId("2"), WithUserId("4"), WithContent("hi"), WithContext(ctx))
 	req := &GeminiReq{}
 	req.GetModel(l)
 	assert.NotEmpty(t, l.Model)

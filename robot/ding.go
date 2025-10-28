@@ -141,11 +141,6 @@ func (d *DingRobot) requestLLMAndResp(content string) {
 	d.Robot.ExecCmd(content, d.sendChatMessage, nil, nil)
 }
 
-func (d *DingRobot) sendHelpConfigurationOptions() {
-	chatId, msgId, _ := d.Robot.GetChatIdAndMsgIdAndUserID()
-	d.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "help_text", nil), msgId, tgbotapi.ModeMarkdown, nil)
-}
-
 func (d *DingRobot) sendImg() {
 	d.Robot.TalkingPreCheck(func() {
 		chatId, msgId, userId := d.Robot.GetChatIdAndMsgIdAndUserID()

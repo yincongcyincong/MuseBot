@@ -134,11 +134,6 @@ func (l *LarkRobot) requestLLMAndResp(content string) {
 	l.Robot.ExecCmd(content, l.sendChatMessage, nil, nil)
 }
 
-func (l *LarkRobot) sendHelpConfigurationOptions() {
-	chatId, msgId, _ := l.Robot.GetChatIdAndMsgIdAndUserID()
-	l.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "help_text", nil), msgId, tgbotapi.ModeMarkdown, nil)
-}
-
 func (l *LarkRobot) sendImg() {
 	l.Robot.TalkingPreCheck(func() {
 		chatId, msgId, userId := l.Robot.GetChatIdAndMsgIdAndUserID()

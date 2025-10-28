@@ -81,8 +81,6 @@ type Robot interface {
 	
 	sendVideo()
 	
-	sendHelpConfigurationOptions()
-	
 	getPrompt() string
 	
 	getContent(content string) (string, error)
@@ -806,7 +804,7 @@ func (r *RobotInfo) handleModelUpdate(rm *RobotModel) {
 // ParseCommand extracts command and arguments like /photo xxx
 func ParseCommand(prompt string) (command string, args string) {
 	prompt = strings.TrimSpace(prompt)
-	if len(prompt) == 0 || prompt[0] != '/' {
+	if len(prompt) == 0 || (prompt[0] != '/' && prompt[0] != '$') {
 		return "", prompt
 	}
 	parts := strings.SplitN(prompt, " ", 2)
@@ -819,53 +817,56 @@ func ParseCommand(prompt string) (command string, args string) {
 
 func (r *RobotInfo) ExecCmd(cmd string, defaultFunc func(), modeFunc func(string), typesFunc func(string)) {
 	switch cmd {
-	case "balance", "/balance":
+	case "balance", "/balance", "$balance":
 		r.showBalanceInfo()
-	case "state", "/state":
+	case "state", "/state", "$state":
 		r.showStateInfo()
-	case "clear", "/clear":
+	case "clear", "/clear", "$clear":
 		r.clearAllRecord()
-	case "retry", "/retry":
+	case "retry", "/retry", "$retry":
 		r.retryLastQuestion()
-	case "chat", "/chat":
+	case "chat", "/chat", "$chat":
 		r.Robot.sendChatMessage()
-	case "txt_type", "/txt_type", "photo_type", "/photo_type", "video_type", "/video_type", "rec_type", "/rec_type":
+	case "txt_type", "/txt_type", "$txt_type", "photo_type", "/photo_type", "$photo_type", "video_type",
+		"/video_type", "$video_type", "rec_type", "/rec_type", "$rec_type":
 		if typesFunc != nil {
 			typesFunc(cmd)
 		} else {
 			r.changeType(cmd)
 		}
-	case "txt_model", "/txt_model", "photo_model", "/photo_model", "video_model", "/video_model", "rec_model", "/rec_model":
+	case "txt_model", "/txt_model", "$txt_model", "photo_model", "/photo_model", "$photo_model",
+		"video_model", "/video_model", "$video_model", "rec_model", "/rec_model", "$rec_model":
 		if modeFunc != nil {
 			modeFunc(cmd)
 		} else {
 			r.changeModel(cmd)
 		}
-	case "photo", "/photo", "edit_photo", "/edit_photo":
+	case "photo", "/photo", "$photo", "edit_photo", "/edit_photo", "$edit_photo":
 		r.Robot.sendImg()
-	case "video", "/video":
+	case "video", "/video", "$video":
 		r.Robot.sendVideo()
-	case "help", "/help":
-		r.Robot.sendHelpConfigurationOptions()
-	case "change_photo", "/change_photo", "rec_photo", "/rec_photo", "save_voice", "/save_voice":
+	case "help", "/help", "$help":
+		r.sendHelpConfigurationOptions()
+	case "change_photo", "/change_photo", "$change_photo", "rec_photo", "/rec_photo", "$rec_photo",
+		"save_voice", "/save_voice", "$save_voice":
 		if r.TencentRobot != nil {
 			r.TencentRobot.passiveExecCmd()
 		} else {
 			defaultFunc()
 		}
-	case "task", "/task":
+	case "task", "/task", "$task":
 		var emptyPromptFunc func()
 		if t, ok := r.Robot.(*TelegramRobot); ok {
 			emptyPromptFunc = t.sendForceReply("task_empty_content")
 		}
 		r.sendMultiAgent("task_empty_content", emptyPromptFunc)
-	case "mcp", "/mcp":
+	case "mcp", "/mcp", "$mcp":
 		var emptyPromptFunc func()
 		if t, ok := r.Robot.(*TelegramRobot); ok {
 			emptyPromptFunc = t.sendForceReply("mcp_empty_content")
 		}
 		r.sendMultiAgent("mcp_empty_content", emptyPromptFunc)
-	case "mode", "/mode":
+	case "mode", "/mode", "$mode":
 		r.showMode()
 	default:
 		defaultFunc()
@@ -1038,36 +1039,33 @@ func (r *RobotInfo) showImageModel(ty string) {
 		for k := range param.GeminiImageModels {
 			modelList = append(modelList, k)
 		}
-	case param.OpenAi:
-		for k := range param.OpenAIImageModels {
-			modelList = append(modelList, k)
-		}
 	case param.Aliyun:
 		for k := range param.AliyunImageModels {
 			modelList = append(modelList, k)
 		}
-	case param.OpenRouter, param.AI302, param.Ollama:
+	case param.OpenRouter, param.AI302, param.Ollama, param.OpenAi:
 		switch utils.GetTxtType(db.GetCtxUserInfo(r.Ctx).LLMConfigRaw) {
+		case param.OpenAi:
+			r.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
+				"link": "https://platform.openai.com/",
+			}),
+				msgId, tgbotapi.ModeMarkdown, nil)
 		case param.AI302:
 			r.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
-				"link":    "https://302.ai/",
-				"command": ty,
+				"link": "https://302.ai/",
 			}),
 				msgId, tgbotapi.ModeMarkdown, nil)
 		case param.OpenRouter:
 			r.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
-				"link":    "https://openrouter.ai/",
-				"command": ty,
+				"link": "https://openrouter.ai/",
 			}),
 				msgId, tgbotapi.ModeMarkdown, nil)
 		case param.Ollama:
 			r.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
-				"link":    "https://ollama.com/",
-				"command": ty,
+				"link": "https://ollama.com/",
 			}),
 				msgId, tgbotapi.ModeMarkdown, nil)
 		}
-		
 		return
 	case param.Vol:
 		for k := range param.VolImageModels {
@@ -1135,20 +1133,21 @@ func (r *RobotInfo) showRecModel(ty string) {
 		for k := range param.AliyunRecModels {
 			modelList = append(modelList, k)
 		}
-	case param.OpenAi:
-		for k := range param.OpenAiRecModels {
-			modelList = append(modelList, k)
-		}
 	case param.Vol:
 		for k := range param.VolRecModels {
 			modelList = append(modelList, k)
 		}
-	case param.AI302:
+	case param.AI302, param.OpenAi:
 		switch utils.GetTxtType(db.GetCtxUserInfo(r.Ctx).LLMConfigRaw) {
 		case param.AI302:
 			r.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
-				"link":    "https://302.ai/",
-				"command": ty,
+				"link": "https://302.ai/",
+			}),
+				msgId, tgbotapi.ModeMarkdown, nil)
+			return
+		case param.OpenAi:
+			r.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
+				"link": "https://platform.openai.com/",
 			}),
 				msgId, tgbotapi.ModeMarkdown, nil)
 			return
@@ -1578,4 +1577,10 @@ func (r *RobotInfo) InsertRecord() {
 	}
 	
 	r.RecordID = id
+}
+
+func (r *RobotInfo) sendHelpConfigurationOptions() {
+	chatId, msgId, _ := r.GetChatIdAndMsgIdAndUserID()
+	r.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "help_text", nil),
+		msgId, tgbotapi.ModeMarkdown, nil)
 }
