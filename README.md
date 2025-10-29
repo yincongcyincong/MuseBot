@@ -1,10 +1,3 @@
-## group
-
-telegram-group: https://t.me/+WtaMcDpaMOlhZTE1 , or you can have a try robot `Guanwushan_bot`.
-every body have **10000** token to try this bot, please give me a star!
-
-QQ群：1031411708
-
 # MuseBot
 
 This repository provides a **Chat bot** (Telegram, Discord, Slack, Lark（飞书），钉钉, 企业微信, QQ, 微信) that integrates
@@ -309,6 +302,13 @@ save your voice to pc.
 ## Contributing
 
 Feel free to submit issues and pull requests to improve this bot. 🚀
+
+## group
+
+telegram-group: https://t.me/+WtaMcDpaMOlhZTE1 , or you can have a try robot `Guanwushan_bot`.
+every body have **10000** token to try this bot, please give me a star!
+
+QQ群：1031411708
 
 ## License
 

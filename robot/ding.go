@@ -135,7 +135,7 @@ func (d *DingRobot) getMsgContent() string {
 }
 
 func (d *DingRobot) requestLLMAndResp(content string) {
-	if !strings.Contains(content, "/") && d.Prompt == "" {
+	if !strings.Contains(content, "/") && !strings.Contains(content, "$") && d.Prompt == "" {
 		d.Prompt = content
 	}
 	d.Robot.ExecCmd(content, d.sendChatMessage, nil, nil)

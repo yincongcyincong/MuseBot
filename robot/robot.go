@@ -892,7 +892,7 @@ func (r *RobotInfo) changeType(t string) {
 	chatId, msgId, _ := r.GetChatIdAndMsgIdAndUserID()
 	totalContent := ""
 	switch t {
-	case "txt_type", "/txt_type":
+	case "txt_type", "/txt_type", "$txt_type":
 		if r.Robot.getPrompt() != "" {
 			r.handleModelUpdate(&RobotModel{TxtType: r.Robot.getPrompt()})
 			return
@@ -903,7 +903,7 @@ func (r *RobotInfo) changeType(t string) {
 `, model)
 		}
 	
-	case "photo_type", "/photo_type":
+	case "photo_type", "/photo_type", "$photo_type":
 		if r.Robot.getPrompt() != "" {
 			r.handleModelUpdate(&RobotModel{ImgType: r.Robot.getPrompt()})
 			return
@@ -914,7 +914,7 @@ func (r *RobotInfo) changeType(t string) {
 `, model)
 		}
 	
-	case "video_type", "/video_type":
+	case "video_type", "/video_type", "$video_type":
 		if r.Robot.getPrompt() != "" {
 			r.handleModelUpdate(&RobotModel{VideoType: r.Robot.getPrompt()})
 			return
@@ -925,7 +925,7 @@ func (r *RobotInfo) changeType(t string) {
 
 `, model)
 		}
-	case "rec_type", "/rec_type":
+	case "rec_type", "/rec_type", "$rec_type":
 		if r.Robot.getPrompt() != "" {
 			r.handleModelUpdate(&RobotModel{RecType: r.Robot.getPrompt()})
 			return
