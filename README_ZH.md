@@ -1,10 +1,3 @@
-## group
-
-telegram群: https://t.me/+WtaMcDpaMOlhZTE1, 或者尝试一下Guanwushan_bot。
-每个人有 **10000** token 去试用robot, 点个star吧!
-
-QQ群：1031411708
-
 # MuseBot
 
 本仓库提供了一个是基于 **Golang** 构建的 **智能机器人**，集成了 **LLM API**，实现 AI 驱动的自然对话与智能回复。
@@ -304,6 +297,13 @@ docker pull crpi-i1dsvpjijxpgjgbv.cn-hangzhou.personal.cr.aliyuncs.com/jackyin08
 ## 🤝 贡献
 
 欢迎提交 Issue 和 Pull Request，一起优化和改进本项目！🚀
+
+## 群聊
+
+telegram群: https://t.me/+WtaMcDpaMOlhZTE1, 或者尝试一下Guanwushan_bot。
+每个人有 **10000** token 去试用robot, 点个star吧!
+
+QQ群：1031411708
 
 ---
 

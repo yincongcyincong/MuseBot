@@ -186,7 +186,7 @@ func (s *SlackRobot) getMsgContent() string {
 }
 
 func (s *SlackRobot) requestLLMAndResp(content string) {
-	if !strings.Contains(content, "/") && s.Prompt == "" {
+	if !strings.Contains(content, "/") && !strings.Contains(content, "$") && s.Prompt == "" {
 		s.Prompt = content
 	}
 	s.Robot.ExecCmd(content, s.sendChatMessage, nil, nil)

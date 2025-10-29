@@ -147,7 +147,7 @@ func (q *PersonalQQRobot) getMsgContent() string {
 }
 
 func (q *PersonalQQRobot) requestLLMAndResp(content string) {
-	if !strings.Contains(content, "/") && q.Prompt == "" {
+	if !strings.Contains(content, "/") && !strings.Contains(content, "$") && q.Prompt == "" {
 		q.Prompt = content
 	}
 	q.Robot.ExecCmd(content, q.sendChatMessage, nil, nil)

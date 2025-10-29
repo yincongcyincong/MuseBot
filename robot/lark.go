@@ -128,7 +128,7 @@ func (l *LarkRobot) getMsgContent() string {
 }
 
 func (l *LarkRobot) requestLLMAndResp(content string) {
-	if !strings.Contains(content, "/") && l.Prompt == "" {
+	if !strings.Contains(content, "/") && !strings.Contains(content, "$") && l.Prompt == "" {
 		l.Prompt = content
 	}
 	l.Robot.ExecCmd(content, l.sendChatMessage, nil, nil)

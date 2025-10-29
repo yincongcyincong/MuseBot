@@ -155,7 +155,7 @@ func (c *ComWechatRobot) requestLLMAndResp(content string) {
 				logger.ErrorCtx(c.Robot.Ctx, "ComWechatRobot panic", "err", r, "stack", string(debug.Stack()))
 			}
 		}()
-		if !strings.Contains(content, "/") && c.Prompt == "" {
+		if !strings.Contains(content, "/") && !strings.Contains(content, "$") && c.Prompt == "" {
 			c.Prompt = content
 		}
 		c.Robot.ExecCmd(content, c.sendChatMessage, nil, nil)
