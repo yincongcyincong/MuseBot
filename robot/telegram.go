@@ -27,9 +27,9 @@ type TelegramRobot struct {
 	Update tgbotapi.Update
 	Bot    *tgbotapi.BotAPI
 	
-	Robot  *RobotInfo
-	Prompt string
-	Cmd    string
+	Robot   *RobotInfo
+	Prompt  string
+	Command string
 }
 
 func NewTelegramRobot(update tgbotapi.Update, bot *tgbotapi.BotAPI) *TelegramRobot {
@@ -193,14 +193,16 @@ func (t *TelegramRobot) checkValid() bool {
 		return true
 	}
 	
-	if t.Update.Message != nil && t.Update.Message.ReplyToMessage != nil && t.Update.Message.ReplyToMessage.From != nil &&
-		t.Update.Message.ReplyToMessage.From.UserName == t.Bot.Self.UserName {
-		return true
-	}
-	
-	if t.skipThisMsg() {
-		logger.WarnCtx(t.Robot.Ctx, "skip this msg", "msgId", msgId, "chat", chatId, "type", t.getMessage().Chat.Type, "content", t.getMsgContent())
-		return false
+	if t.Update.Message != nil {
+		t.Command, t.Prompt = ParseCommand(t.getMsgContent())
+		if t.Update.Message.IsCommand() {
+			t.Command = t.Update.Message.Command()
+		}
+		
+		if t.skipThisMsg() {
+			logger.WarnCtx(t.Robot.Ctx, "skip this msg", "msgId", msgId, "chat", chatId, "type", t.getMessage().Chat.Type, "content", t.getMsgContent())
+			return false
+		}
 	}
 	
 	return true
@@ -223,8 +225,7 @@ func (t *TelegramRobot) getMsgContent() string {
 }
 
 // requestLLMAndResp request deepseek api
-func (t *TelegramRobot) requestLLMAndResp(content string) {
-	t.Cmd, t.Prompt = ParseCommand(t.getMsgContent())
+func (t *TelegramRobot) requestLLM(content string) {
 	if t.handleCommandAndCallback() {
 		return
 	}
@@ -273,7 +274,7 @@ func (t *TelegramRobot) sleepUtilNoLimit(msgId int, err error) bool {
 // handleCommandAndCallback telegram command and callback function
 func (t *TelegramRobot) handleCommandAndCallback() bool {
 	// if it's command, directly
-	if t.Update.Message != nil && t.Update.Message.IsCommand() {
+	if t.Update.Message != nil && (t.Command != "" || t.Update.Message.IsCommand()) {
 		go t.handleCommand()
 		return true
 	}
@@ -294,6 +295,11 @@ func (t *TelegramRobot) handleCommandAndCallback() bool {
 
 // skipThisMsg check if msg trigger llm
 func (t *TelegramRobot) skipThisMsg() bool {
+	if t.Update.Message.ReplyToMessage != nil && t.Update.Message.ReplyToMessage.From != nil &&
+		t.Update.Message.ReplyToMessage.From.UserName == t.Bot.Self.UserName {
+		return false
+	}
+	
 	if t.Update.Message.Chat.Type == "private" {
 		if strings.TrimSpace(t.getMsgContent()) == "" &&
 			t.Update.Message.Voice == nil && t.Update.Message.Photo == nil {
@@ -323,20 +329,13 @@ func (t *TelegramRobot) handleCommand() {
 		}
 	}()
 	
-	cmd := t.Update.Message.Command()
-	_, _, userID := t.Robot.GetChatIdAndMsgIdAndUserID()
-	logger.InfoCtx(t.Robot.Ctx, "command info", "userID", userID, "cmd", cmd)
-	
-	// check if at bot
-	chatType := t.getMessage().Chat.Type
-	if chatType == "group" || chatType == "supergroup" {
-		if !strings.Contains(t.getMsgContent(), "@"+t.Bot.Self.UserName) {
-			logger.WarnCtx(t.Robot.Ctx, "not at bot", "userID", userID, "cmd", cmd)
-			return
-		}
+	if t.Command == "" {
+		t.Command = t.Update.Message.Command()
 	}
 	
-	t.Robot.ExecCmd(cmd, t.sendChatMessage, t.changeModel, t.changeType)
+	_, _, userID := t.Robot.GetChatIdAndMsgIdAndUserID()
+	logger.InfoCtx(t.Robot.Ctx, "command info", "userID", userID, "cmd", t.Command)
+	t.Robot.ExecCmd(t.Command, t.sendChatMessage, t.changeModel, t.changeType)
 }
 
 // sendChatMessage response chat command to telegram
@@ -757,12 +756,13 @@ func (t *TelegramRobot) handleCallbackQuery() {
 	if t.Update.CallbackQuery != nil && t.Update.CallbackQuery.Message.ReplyToMessage != nil {
 		t.Update.CallbackQuery.Message.MessageID = t.Update.CallbackQuery.Message.ReplyToMessage.MessageID
 		t.Prompt = t.Update.CallbackQuery.Data
-		switch t.Update.CallbackQuery.Message.ReplyToMessage.Text {
+		cmd := strings.TrimSpace(strings.ReplaceAll(t.Update.CallbackQuery.Message.ReplyToMessage.Text, "@"+t.Bot.Self.UserName, ""))
+		switch cmd {
 		case "/txt_type", "/photo_type", "/video_type", "/rec_type", "/tts_type":
-			t.Robot.changeType(t.Update.CallbackQuery.Message.ReplyToMessage.Text)
+			t.Robot.changeType(cmd)
 			return
 		case "/txt_model", "/photo_model", "/video_model", "/rec_model", "/tts_model":
-			t.Robot.changeModel(t.Update.CallbackQuery.Message.ReplyToMessage.Text)
+			t.Robot.changeModel(cmd)
 			return
 		}
 	}
@@ -847,7 +847,7 @@ func (t *TelegramRobot) sendImg() {
 		
 		var err error
 		if len(prompt) == 0 {
-			if strings.Contains(t.Cmd, "edit_photo") {
+			if strings.Contains(t.Command, "edit_photo") {
 				err = ForceReply(int64(utils.ParseInt(chatId)), utils.ParseInt(replyToMessageID), "edit_photo_empty_content", t.Bot)
 			} else {
 				err = ForceReply(int64(utils.ParseInt(chatId)), utils.ParseInt(replyToMessageID), "photo_empty_content", t.Bot)
@@ -860,7 +860,7 @@ func (t *TelegramRobot) sendImg() {
 		}
 		
 		lastImageContent := t.GetPhotoContent()
-		if len(lastImageContent) == 0 && strings.Contains(t.Cmd, "edit_photo") {
+		if len(lastImageContent) == 0 && strings.Contains(t.Command, "edit_photo") {
 			lastImageContent, err = t.Robot.GetLastImageContent()
 			if err != nil {
 				logger.WarnCtx(t.Robot.Ctx, "get last image record fail", "err", err)
@@ -951,7 +951,7 @@ func (t *TelegramRobot) ExecuteForceReply() {
 	case i18n.GetMessage(*conf.BaseConfInfo.Lang, "photo_empty_content", nil):
 		t.sendImg()
 	case i18n.GetMessage(*conf.BaseConfInfo.Lang, "edit_photo_empty_content", nil):
-		t.Cmd = "edit_photo"
+		t.Command = "edit_photo"
 		t.sendImg()
 	case i18n.GetMessage(*conf.BaseConfInfo.Lang, "video_empty_content", nil):
 		t.sendVideo()
@@ -1158,4 +1158,12 @@ func (t *TelegramRobot) sendVoiceContent(voiceContent []byte, duration int) erro
 	}
 	
 	return nil
+}
+
+func (t *TelegramRobot) setCommand(command string) {
+	t.Command = command
+}
+
+func (t *TelegramRobot) getCommand() string {
+	return t.Command
 }

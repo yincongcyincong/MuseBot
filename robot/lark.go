@@ -127,7 +127,7 @@ func (l *LarkRobot) getMsgContent() string {
 	return l.Command
 }
 
-func (l *LarkRobot) requestLLMAndResp(content string) {
+func (l *LarkRobot) requestLLM(content string) {
 	if !strings.Contains(content, "/") && !strings.Contains(content, "$") && l.Prompt == "" {
 		l.Prompt = content
 	}
@@ -615,4 +615,12 @@ func (l *LarkRobot) sendVoiceContent(voiceContent []byte, duration int) error {
 	}
 	
 	return err
+}
+
+func (l *LarkRobot) setCommand(command string) {
+	l.Command = command
+}
+
+func (l *LarkRobot) getCommand() string {
+	return l.Command
 }

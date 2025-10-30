@@ -223,13 +223,9 @@ func (l *LLM) GetMessages(userId string, prompt string) {
 	if msgRecords != nil {
 		aqs := db.FilterByMaxContextFromLatest(msgRecords.AQs, param.DefaultContextToken)
 		for i, record := range aqs {
-			
-			logger.InfoCtx(l.Ctx, "context content", "dialog", i, "question:", record.Question, "answer:", record.Answer)
-			if record.Question != "" {
+			if record.Question != "" && record.Answer != "" {
+				logger.InfoCtx(l.Ctx, "context content", "dialog", i, "question:", record.Question, "answer:", record.Answer)
 				l.LLMClient.GetUserMessage(record.Question)
-			}
-			
-			if record.Answer != "" {
 				l.LLMClient.GetAssistantMessage(record.Answer)
 			}
 		}

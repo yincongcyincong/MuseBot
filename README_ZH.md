@@ -16,8 +16,6 @@ gemini： https://www.bilibili.com/video/BV1D4htz4Ekv/
 chatgpt: https://www.bilibili.com/video/BV1RutxzJEGY/    
 豆包：https://www.bilibili.com/video/BV1QDbEzwE43/    
 怎么使用mcp: https://www.bilibili.com/video/BV1JbtJzVEJd/
-llonebot: https://www.youtube.com/watch?v=jbPGbnBaISE&t=7s
-napcat: https://www.youtube.com/watch?v=vrwcBTy6DeQ
 
 ## 🚀 功能特性
 
@@ -53,7 +51,6 @@ napcat: https://www.youtube.com/watch?v=vrwcBTy6DeQ
 | ⚡️ **Work WeChat** |  ✅   | 支持企业微信触发大模型                                                     | [文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/com_wechat_ZH.md)  |
 | ⚡️ **QQ**          |  ✅   | 支持QQ机器人触发大模型                                                    | [文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/qq_ZH.md)          |
 | ⚡️ **WeChat**      |  ✅   | 支持微信触发大模型                                                       | [文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/wechat_ZH.md)      |
-| 🚗 **Personal QQ** |  ✅   | 支持个人QQ触发大模型                                                     | [文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/personal_qq_ZH.md) |
 
 ## 支持的大型语言模型
 

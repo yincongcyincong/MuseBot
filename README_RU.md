@@ -44,7 +44,6 @@ chatgpt: [https://www.youtube.com/watch?v=G\_DZYMvd5Ug](https://www.youtube.com/
 | ⚡️ **Work WeChat** |     ✅     | Поддерживает HTTP-обратный вызов Work WeChat для запуска LLM                                                            | [Документация](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/com_wechat.md)  |
 | 🌞 **QQ** |     ✅     | Поддерживает HTTP-обратный вызов QQ для запуска LLM                                                                     | [Документация](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/qq.md)          |
 | 🚇 **Wechat** |     ✅     | Поддерживает HTTP-обратный вызов Wechat для запуска LLM                                                                 | [Документация](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/wechat.md)      |
-| 🚗 **Personal QQ** |     ✅     | Поддерживает HTTP-обратный вызов Personal QQ для запуска LLM                                                            | [Документация](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/personal_qq.md) |
 
 ## Поддерживаемые большие языковые модели
 

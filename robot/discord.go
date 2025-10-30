@@ -102,11 +102,19 @@ func (d *DiscordRobot) checkValid() bool {
 			logger.WarnCtx(d.Robot.Ctx, "skip this msg", "msgId", msgId, "chat", chatId, "content", d.Msg.Content)
 			return false
 		}
-		
+		d.Prompt = d.Msg.Content
 		return true
 	}
 	
 	if d.Inter != nil {
+		switch d.Inter.Type {
+		case discordgo.InteractionApplicationCommand, discordgo.InteractionApplicationCommandAutocomplete:
+			d.Command = d.Inter.ApplicationCommandData().Name
+		}
+		
+		if d.Inter != nil && d.Inter.Type == discordgo.InteractionApplicationCommand && len(d.Inter.ApplicationCommandData().Options) > 0 {
+			d.Prompt = d.Inter.ApplicationCommandData().Options[0].StringValue()
+		}
 		return true
 	}
 	
@@ -120,26 +128,21 @@ func (d *DiscordRobot) getMsgContent() string {
 	return ""
 }
 
-func (d *DiscordRobot) requestLLMAndResp(content string) {
-	d.Prompt = content
-	if d.Inter != nil {
-		switch d.Inter.Type {
-		case discordgo.InteractionApplicationCommand, discordgo.InteractionApplicationCommandAutocomplete:
-			d.Command = d.Inter.ApplicationCommandData().Name
+func (d *DiscordRobot) requestLLM(content string) {
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				logger.ErrorCtx(d.Robot.Ctx, "DiscordRobot panic", "err", r, "stack", string(debug.Stack()))
+			}
+		}()
+		switch d.Command {
+		case "talk":
+			d.Talk()
+			return
 		}
 		
-		if d.Inter != nil && d.Inter.Type == discordgo.InteractionApplicationCommand && len(d.Inter.ApplicationCommandData().Options) > 0 {
-			d.Prompt = d.Inter.ApplicationCommandData().Options[0].StringValue()
-		}
-	}
-	
-	switch d.Command {
-	case "talk":
-		d.Talk()
-		return
-	}
-	
-	d.Robot.ExecCmd(d.Command, d.sendChatMessage, nil, nil)
+		d.Robot.ExecCmd(d.Command, d.sendChatMessage, nil, nil)
+	}()
 }
 
 func (d *DiscordRobot) executeChain(content string) {
@@ -428,8 +431,7 @@ func (d *DiscordRobot) sendImg() {
 	d.Robot.TalkingPreCheck(func() {
 		chatId, msgId, userId := d.Robot.GetChatIdAndMsgIdAndUserID()
 		
-		prompt := d.Inter.ApplicationCommandData().Options[0].StringValue()
-		prompt = strings.TrimSpace(prompt)
+		prompt := strings.TrimSpace(d.getPrompt())
 		if prompt == "" {
 			d.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "video_empty_content", nil),
 				msgId, tgbotapi.ModeMarkdown, nil)
@@ -442,7 +444,7 @@ func (d *DiscordRobot) sendImg() {
 		var lastImageContent []byte
 		var err error
 		
-		if d.Inter.ApplicationCommandData().GetOption("image") != nil {
+		if d.Inter != nil && d.Inter.ApplicationCommandData().GetOption("image") != nil {
 			if attachment, ok := d.Inter.ApplicationCommandData().GetOption("image").Value.(string); ok {
 				lastImageContent, err = utils.DownloadFile(d.Inter.ApplicationCommandData().Resolved.Attachments[attachment].URL)
 				if err != nil {
@@ -469,9 +471,25 @@ func (d *DiscordRobot) sendImg() {
 			Name:   "image." + utils.DetectImageFormat(imageContent),
 			Reader: bytes.NewReader(imageContent),
 		}
-		_, err = d.Session.InteractionResponseEdit(d.Inter.Interaction, &discordgo.WebhookEdit{
-			Files: []*discordgo.File{file},
-		})
+		
+		if d.Inter != nil {
+			_, err = d.Session.InteractionResponseEdit(d.Inter.Interaction, &discordgo.WebhookEdit{
+				Files: []*discordgo.File{file},
+			})
+		} else {
+			messageSend := &discordgo.MessageSend{
+				Reference: &discordgo.MessageReference{
+					MessageID: msgId,
+					ChannelID: chatId,
+				},
+				Files: []*discordgo.File{file},
+			}
+			_, err = d.Session.ChannelMessageSendComplex(chatId, messageSend)
+			if err != nil {
+				logger.ErrorCtx(d.Robot.Ctx, "Error sending message:", "err", err)
+				return
+			}
+		}
 		
 		if err != nil {
 			logger.WarnCtx(d.Robot.Ctx, "send image fail", "err", err)
@@ -506,8 +524,7 @@ func (d *DiscordRobot) sendVideo() {
 	d.Robot.TalkingPreCheck(func() {
 		chatId, msgId, userId := d.Robot.GetChatIdAndMsgIdAndUserID()
 		
-		prompt := d.Inter.ApplicationCommandData().Options[0].StringValue()
-		prompt = strings.TrimSpace(prompt)
+		prompt := strings.TrimSpace(d.getPrompt())
 		if prompt == "" {
 			d.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "video_empty_content", nil),
 				msgId, tgbotapi.ModeMarkdown, nil)
@@ -519,7 +536,7 @@ func (d *DiscordRobot) sendVideo() {
 		
 		var imageContent []byte
 		var err error
-		if d.Inter.ApplicationCommandData().GetOption("image") != nil {
+		if d.Inter != nil && d.Inter.ApplicationCommandData().GetOption("image") != nil {
 			if attachment, ok := d.Inter.ApplicationCommandData().GetOption("image").Value.(string); ok {
 				imageContent, err = utils.DownloadFile(d.Inter.ApplicationCommandData().Resolved.Attachments[attachment].URL)
 				if err != nil {
@@ -540,9 +557,24 @@ func (d *DiscordRobot) sendVideo() {
 			Reader: bytes.NewReader(videoContent),
 		}
 		
-		_, err = d.Session.InteractionResponseEdit(d.Inter.Interaction, &discordgo.WebhookEdit{
-			Files: []*discordgo.File{file},
-		})
+		if d.Inter != nil {
+			_, err = d.Session.InteractionResponseEdit(d.Inter.Interaction, &discordgo.WebhookEdit{
+				Files: []*discordgo.File{file},
+			})
+		} else {
+			messageSend := &discordgo.MessageSend{
+				Reference: &discordgo.MessageReference{
+					MessageID: msgId,
+					ChannelID: chatId,
+				},
+				Files: []*discordgo.File{file},
+			}
+			_, err = d.Session.ChannelMessageSendComplex(chatId, messageSend)
+			if err != nil {
+				logger.ErrorCtx(d.Robot.Ctx, "Error sending message:", "err", err)
+				return
+			}
+		}
 		
 		if err != nil {
 			logger.WarnCtx(d.Robot.Ctx, "send video fail", "err", err)
@@ -910,4 +942,12 @@ func CloseTalk(vc *discordgo.VoiceConnection) {
 		})
 		volDialog.Token = 0
 	}
+}
+
+func (d *DiscordRobot) setCommand(command string) {
+	d.Command = command
+}
+
+func (d *DiscordRobot) getCommand() string {
+	return d.Command
 }

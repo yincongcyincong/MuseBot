@@ -146,7 +146,7 @@ func (q *PersonalQQRobot) getMsgContent() string {
 	return q.Command
 }
 
-func (q *PersonalQQRobot) requestLLMAndResp(content string) {
+func (q *PersonalQQRobot) requestLLM(content string) {
 	if !strings.Contains(content, "/") && !strings.Contains(content, "$") && q.Prompt == "" {
 		q.Prompt = content
 	}
@@ -484,4 +484,12 @@ func (q *PersonalQQRobot) GetMessageContent() (bool, error) {
 func (q *PersonalQQRobot) sendVoiceContent(voiceContent []byte, duration int) error {
 	_, err := q.SendMsg("", nil, nil, voiceContent)
 	return err
+}
+
+func (q *PersonalQQRobot) setCommand(command string) {
+	q.Command = command
+}
+
+func (q *PersonalQQRobot) getCommand() string {
+	return q.Command
 }

@@ -134,7 +134,7 @@ func (d *DingRobot) getMsgContent() string {
 	return d.Command
 }
 
-func (d *DingRobot) requestLLMAndResp(content string) {
+func (d *DingRobot) requestLLM(content string) {
 	if !strings.Contains(content, "/") && !strings.Contains(content, "$") && d.Prompt == "" {
 		d.Prompt = content
 	}
@@ -776,4 +776,12 @@ func (d *DingRobot) sendVoiceContent(voiceContent []byte, duration int) error {
 	}
 	
 	return nil
+}
+
+func (d *DingRobot) setCommand(command string) {
+	d.Command = command
+}
+
+func (d *DingRobot) getCommand() string {
+	return d.Command
 }
