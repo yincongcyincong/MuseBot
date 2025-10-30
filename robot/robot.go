@@ -1416,7 +1416,7 @@ func (r *RobotInfo) retryLastQuestion() {
 	
 	records := db.GetMsgRecord(userId)
 	if records != nil && len(records.AQs) > 0 {
-		r.Robot.requestLLMAndResp(records.AQs[len(records.AQs)-1].Question)
+		r.Robot.requestLLM(records.AQs[len(records.AQs)-1].Question)
 	} else {
 		r.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "last_question_fail", nil),
 			msgId, tgbotapi.ModeMarkdown, nil)
