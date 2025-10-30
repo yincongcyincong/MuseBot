@@ -38,6 +38,7 @@ type BaseConf struct {
 	QQOneBotReceiveToken    *string `json:"qq_one_bot_check_token"`
 	QQOneBotSendToken       *string `json:"qq_one_bot_send_token"`
 	QQOneBotHttpServer      *string `json:"qq_one_bot_http_server"`
+	SmartMode               *bool   `json:"smart_mode"`
 	
 	DeepseekToken     *string `json:"deepseek_token"`
 	OpenAIToken       *string `json:"openai_token"`
@@ -108,6 +109,7 @@ func InitConf() {
 	BaseConfInfo.QQOneBotReceiveToken = flag.String("qq_onebot_receive_token", "MuseBot", "onebot receive token")
 	BaseConfInfo.QQOneBotSendToken = flag.String("qq_onebot_send_token", "MuseBot", "onebot send token")
 	BaseConfInfo.QQOneBotHttpServer = flag.String("qq_onebot_http_server", "http://127.0.0.1:3000", "onebot http server")
+	BaseConfInfo.SmartMode = flag.Bool("smart_mode", false, "Smart mode")
 	
 	BaseConfInfo.DeepseekToken = flag.String("deepseek_token", "", "deepseek auth token")
 	BaseConfInfo.OpenAIToken = flag.String("openai_token", "", "openai auth token")
@@ -390,6 +392,10 @@ func InitConf() {
 		*BaseConfInfo.MediaType = os.Getenv("MEDIA_TYPE")
 	}
 	
+	if os.Getenv("SMART_MODE") != "" {
+		*BaseConfInfo.SmartMode = os.Getenv("SMART_MODE") == "true"
+	}
+	
 	for _, userIdStr := range strings.Split(*allowedUserIds, ",") {
 		if userIdStr == "" {
 			continue
@@ -462,6 +468,7 @@ func InitConf() {
 	logger.Info("CONF", "MediaType", *BaseConfInfo.MediaType)
 	logger.Info("CONF", "BotName", *BaseConfInfo.BotName)
 	logger.Info("CONF", "MaxQAPair", *BaseConfInfo.MaxQAPair)
+	logger.Info("CONF", "SmartMode", *BaseConfInfo.SmartMode)
 	
 	EnvAudioConf()
 	EnvRagConf()

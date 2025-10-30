@@ -189,7 +189,7 @@ func (q *QQRobot) getMsgContent() string {
 	return q.Command
 }
 
-func (q *QQRobot) requestLLMAndResp(content string) {
+func (q *QQRobot) requestLLM(content string) {
 	if !strings.Contains(content, "/") && !strings.Contains(content, "$") && q.Prompt == "" {
 		q.Prompt = content
 	}
@@ -749,4 +749,12 @@ func (q *QQRobot) sendVoiceContent(voiceContent []byte, duration int) error {
 	}
 	
 	return q.PostRichMediaMessage(data)
+}
+
+func (q *QQRobot) setCommand(command string) {
+	q.Command = command
+}
+
+func (q *QQRobot) getCommand() string {
+	return q.Command
 }

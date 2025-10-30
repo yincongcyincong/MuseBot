@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"hash/crc32"
+	"regexp"
 	"runtime/debug"
 	"strconv"
 	"strings"
@@ -36,6 +37,10 @@ import (
 
 const (
 	AudioMsgLen = 600
+)
+
+var (
+	smartModeReg = regexp.MustCompile(`\{\s*"command"\s*:\s*"[^\"]*"\s*\}`)
 )
 
 type MsgChan struct {
@@ -73,7 +78,7 @@ type Robot interface {
 	
 	getMsgContent() string
 	
-	requestLLMAndResp(content string)
+	requestLLM(content string)
 	
 	sendChatMessage()
 	
@@ -90,6 +95,10 @@ type Robot interface {
 	sendVoiceContent(voiceContent []byte, duration int) error
 	
 	sendText(msgChan *MsgChan)
+	
+	setCommand(command string)
+	
+	getCommand() string
 }
 
 type TencentRobot interface {
@@ -127,7 +136,8 @@ func (r *RobotInfo) Exec() {
 	}
 	
 	if r.Robot.checkValid() && r.AddUserInfo() {
-		r.Robot.requestLLMAndResp(r.Robot.getMsgContent())
+		r.smartMode()
+		r.Robot.requestLLM(r.Robot.getMsgContent())
 	}
 }
 
@@ -884,6 +894,9 @@ func (r *RobotInfo) ExecCmd(cmd string, defaultFunc func(), modeFunc func(string
 func (r *RobotInfo) showMode() {
 	chatId, msgId, _ := r.GetChatIdAndMsgIdAndUserID()
 	llmConf := db.GetCtxUserInfo(r.Ctx).LLMConfigRaw
+	if llmConf == nil {
+		llmConf = new(param.LLMConfig)
+	}
 	txtType := utils.GetTxtType(llmConf)
 	photoType := utils.GetImgType(llmConf)
 	videoType := utils.GetVideoType(llmConf)
@@ -969,8 +982,7 @@ func (r *RobotInfo) changeType(t string) {
 }
 
 func (r *RobotInfo) changeModel(ty string) {
-	t := "/" + strings.TrimLeft(ty, "/")
-	switch t {
+	switch ty {
 	case "txt_model", "/txt_model", "$txt_model":
 		if r.Robot.getPrompt() != "" {
 			r.handleModelUpdate(&RobotModel{TxtModel: r.Robot.getPrompt()})
@@ -1639,6 +1651,7 @@ func (r *RobotInfo) InsertRecord() {
 		UserId:     userId,
 		Question:   r.Robot.getPrompt(),
 		RecordType: param.TextRecordType,
+		Token:      r.Token,
 	})
 	if err != nil {
 		logger.Error("insert record fail", "err", err)
@@ -1652,4 +1665,49 @@ func (r *RobotInfo) sendHelpConfigurationOptions() {
 	chatId, msgId, _ := r.GetChatIdAndMsgIdAndUserID()
 	r.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "help_text", nil),
 		msgId, tgbotapi.ModeMarkdown, nil)
+}
+
+type SmartModeResult struct {
+	Command string `json:"command"`
+}
+
+func (r *RobotInfo) smartMode() {
+	if r.Robot.getCommand() != "" || r.Robot.getPrompt() == "" || !*conf.BaseConfInfo.SmartMode {
+		return
+	}
+	
+	chatId, msgId, userId := r.GetChatIdAndMsgIdAndUserID()
+	
+	llmClient := llm.NewLLM(
+		llm.WithChatId(chatId),
+		llm.WithUserId(userId),
+		llm.WithMsgId(msgId),
+		llm.WithContent(i18n.GetMessage(*conf.BaseConfInfo.Lang, "smart_mode_prompt", map[string]interface{}{
+			"prompt": r.Robot.getPrompt(),
+		})),
+		llm.WithContext(r.Ctx),
+	)
+	llmClient.LLMClient.GetModel(llmClient)
+	llmClient.LLMClient.GetUserMessage(llmClient.Content)
+	content, err := llmClient.LLMClient.SyncSend(r.Ctx, llmClient)
+	if err != nil {
+		logger.Error("get content fail", "err", err)
+		r.SendMsg(chatId, err.Error(), msgId, "", nil)
+		return
+	}
+	
+	matches := smartModeReg.FindAllString(content, -1)
+	smartResult := new(SmartModeResult)
+	for _, match := range matches {
+		err := json.Unmarshal([]byte(match), smartResult)
+		if err != nil {
+			logger.ErrorCtx(r.Ctx, "json umarshal fail", "err", err)
+		}
+	}
+	
+	logger.InfoCtx(r.Ctx, "smart mode result", "result", smartResult)
+	if smartResult.Command != "" {
+		r.Robot.setCommand(smartResult.Command)
+	}
+	r.Token = llmClient.Token
 }

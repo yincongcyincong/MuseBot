@@ -151,6 +151,7 @@ func SlackCmdHandler(command *slack.SlashCommand) {
 		
 		s.Command = command.Command
 		s.Prompt = command.Text
+		s.Robot.AddUserInfo()
 		s.Robot.ExecCmd(s.Command, s.sendChatMessage, nil, nil)
 		
 	}()
@@ -185,7 +186,7 @@ func (s *SlackRobot) getMsgContent() string {
 	return s.Command
 }
 
-func (s *SlackRobot) requestLLMAndResp(content string) {
+func (s *SlackRobot) requestLLM(content string) {
 	if !strings.Contains(content, "/") && !strings.Contains(content, "$") && s.Prompt == "" {
 		s.Prompt = content
 	}
@@ -513,6 +514,7 @@ func submissionHandler(callback *slack.InteractionCallback) {
 	}
 	s.Callback.Channel.ID = callback.View.CallbackID
 	
+	s.Robot.AddUserInfo()
 	s.Robot.ExecCmd(s.Command, nil, nil, nil)
 	
 }
@@ -577,4 +579,12 @@ func (s *SlackRobot) sendVoiceContent(voiceContent []byte, duration int) error {
 	}
 	
 	return nil
+}
+
+func (s *SlackRobot) setCommand(command string) {
+	s.Command = command
+}
+
+func (s *SlackRobot) getCommand() string {
+	return s.Command
 }

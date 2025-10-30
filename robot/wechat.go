@@ -191,7 +191,7 @@ func (w *WechatRobot) getMsgContent() string {
 	return w.Command
 }
 
-func (w *WechatRobot) requestLLMAndResp(content string) {
+func (w *WechatRobot) requestLLM(content string) {
 	go func() {
 		defer func() {
 			if r := recover(); r != nil {
@@ -605,4 +605,12 @@ func (w *WechatRobot) sendVoiceContent(voiceContent []byte, duration int) error 
 	}
 	
 	return nil
+}
+
+func (w *WechatRobot) setCommand(command string) {
+	w.Command = command
+}
+
+func (w *WechatRobot) getCommand() string {
+	return w.Command
 }
