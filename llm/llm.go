@@ -112,8 +112,8 @@ func NewLLM(opts ...Option) *LLM {
 	}
 	
 	switch utils.GetTxtType(db.GetCtxUserInfo(l.Ctx).LLMConfigRaw) {
-	case param.DeepSeek, param.Ollama:
-		l.LLMClient = &DeepseekReq{
+	case param.Ollama:
+		l.LLMClient = &OllamaReq{
 			ToolCall:           []godeepseek.ToolCall{},
 			ToolMessage:        []godeepseek.ChatCompletionMessage{},
 			CurrentToolMessage: []godeepseek.ChatCompletionMessage{},
@@ -124,23 +124,11 @@ func NewLLM(opts ...Option) *LLM {
 			ToolMessage:        []*genai.Content{},
 			CurrentToolMessage: []*genai.Content{},
 		}
-	case param.OpenAi, param.Aliyun, param.ChatAnyWhere:
+	default:
 		l.LLMClient = &OpenAIReq{
 			ToolCall:           []openai.ToolCall{},
 			ToolMessage:        []openai.ChatCompletionMessage{},
 			CurrentToolMessage: []openai.ChatCompletionMessage{},
-		}
-	case param.OpenRouter, param.AI302:
-		l.LLMClient = &AIRouterReq{
-			ToolCall:           []openrouter.ToolCall{},
-			ToolMessage:        []openrouter.ChatCompletionMessage{},
-			CurrentToolMessage: []openrouter.ChatCompletionMessage{},
-		}
-	case param.Vol:
-		l.LLMClient = &VolReq{
-			ToolCall:           []*model.ToolCall{},
-			ToolMessage:        []*model.ChatCompletionMessage{},
-			CurrentToolMessage: []*model.ChatCompletionMessage{},
 		}
 	}
 	

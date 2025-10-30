@@ -14,9 +14,11 @@ func GetDefaultLLMConfig() string {
 		TxtType:    *conf.BaseConfInfo.Type,
 		ImgType:    *conf.BaseConfInfo.MediaType,
 		VideoType:  *conf.BaseConfInfo.MediaType,
+		TTSType:    *conf.AudioConfInfo.TTSType,
 		TxtModel:   GetTxtModel(*conf.BaseConfInfo.Type),
 		ImgModel:   GetImgModel(*conf.BaseConfInfo.MediaType),
 		VideoModel: GetVideoModel(*conf.BaseConfInfo.MediaType),
+		TTSModel:   GetTTSModel(*conf.AudioConfInfo.TTSType),
 	}
 	b, _ := json.Marshal(llmConf)
 	return string(b)
@@ -79,6 +81,25 @@ func GetVideoType(llmConf *param.LLMConfig) string {
 	return *conf.BaseConfInfo.MediaType
 }
 
+func GetTTSType(llmConf *param.LLMConfig) string {
+	if llmConf == nil {
+		return *conf.BaseConfInfo.MediaType
+	}
+	
+	aType := GetAvailTTSType()
+	for _, v := range aType {
+		if v == llmConf.TTSType {
+			return v
+		}
+	}
+	
+	if len(aType) > 0 {
+		return aType[0]
+	}
+	
+	return *conf.BaseConfInfo.MediaType
+}
+
 func GetImgModel(t string) string {
 	switch t {
 	case param.Gemini:
@@ -108,6 +129,21 @@ func GetVideoModel(t string) string {
 		return *conf.VideoConfInfo.AI302VideoModel
 	case param.Vol:
 		return *conf.VideoConfInfo.VolVideoModel
+	}
+	
+	return ""
+}
+
+func GetTTSModel(t string) string {
+	switch t {
+	case param.Gemini:
+		return *conf.AudioConfInfo.GeminiAudioModel
+	case param.Aliyun:
+		return *conf.AudioConfInfo.AliyunAudioModel
+	case param.Vol:
+		return *conf.AudioConfInfo.VolAudioTTSCluster
+	case param.OpenAi:
+		return *conf.AudioConfInfo.OpenAIAudioModel
 	}
 	
 	return ""
@@ -208,6 +244,24 @@ func GetAvailVideoType() []string {
 	}
 	if *conf.BaseConfInfo.VolToken != "" {
 		res = append(res, param.Vol)
+	}
+	
+	return res
+}
+
+func GetAvailTTSType() []string {
+	res := []string{}
+	if *conf.BaseConfInfo.GeminiToken != "" {
+		res = append(res, param.Gemini)
+	}
+	if *conf.BaseConfInfo.AliyunToken != "" {
+		res = append(res, param.Aliyun)
+	}
+	if *conf.BaseConfInfo.VolcAK != "" {
+		res = append(res, param.Vol)
+	}
+	if *conf.BaseConfInfo.OpenAIToken != "" {
+		res = append(res, param.OpenAi)
 	}
 	
 	return res
@@ -348,6 +402,30 @@ func GetUsingTxtModel(ty string, model string) string {
 			return model
 		}
 		return qwen.QwenMax
+	}
+	
+	return model
+}
+
+func GetUsingTTSModel(ty string, model string) string {
+	switch ty {
+	case param.OpenAi:
+		return model
+	case param.Gemini:
+		if param.GeminiTTSModels[model] {
+			return model
+		}
+		return param.Gemini2_5FlashPreviewTTS
+	case param.Vol:
+		if param.VolTTSModels[model] {
+			return model
+		}
+		return param.VolTTS
+	case param.Aliyun:
+		if param.AliyunTTSModels[model] {
+			return model
+		}
+		return param.Qwen3TTSFlash
 	}
 	
 	return model

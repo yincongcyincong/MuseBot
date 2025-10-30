@@ -50,6 +50,6 @@
   "talk_param_error": "交谈参数不全",
   "bot_talking": "机器人正在交谈中",
   "audio_rec_prompt": "获取语音中的内容，只返回内容",
-  "mode_info": "模型信息 \n文本类型: {{.txt_type}} \n文本模型: {{.txt_model}} \n\n图片类型: {{.photo_type}} \n图片模型: {{.photo_model}} \n\n视频类型: {{.video_type}} \n视频模型: {{.video_model}} \n\n识别类型: {{.rec_type}} \n识别模型: {{.rec_model}}"
+  "mode_info": "模型信息 \n文本类型: {{.txt_type}} \n文本模型: {{.txt_model}} \n\n图片类型: {{.photo_type}} \n图片模型: {{.photo_model}} \n\n视频类型: {{.video_type}} \n视频模型: {{.video_model}} \n\n识别类型: {{.rec_type}} \n识别模型: {{.rec_model}}\n\nTTS Type: {{.tts_type}} \nTTS Model: {{.tts_model}}"
 
 }

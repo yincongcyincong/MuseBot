@@ -750,6 +750,8 @@ type RobotModel struct {
 	VideoModel string
 	RecType    string
 	RecModel   string
+	TTSType    string
+	TTSModel   string
 }
 
 func (r *RobotInfo) handleModelUpdate(rm *RobotModel) {
@@ -784,6 +786,12 @@ func (r *RobotInfo) handleModelUpdate(rm *RobotModel) {
 		}
 		if rm.RecModel != "" {
 			llmConf.RecModel = rm.RecModel
+		}
+		if rm.TTSType != "" {
+			llmConf.TTSType = rm.TTSType
+		}
+		if rm.TTSModel != "" {
+			llmConf.TTSModel = rm.TTSModel
 		}
 		
 		mode, _ := json.Marshal(llmConf)
@@ -828,14 +836,14 @@ func (r *RobotInfo) ExecCmd(cmd string, defaultFunc func(), modeFunc func(string
 	case "chat", "/chat", "$chat":
 		r.Robot.sendChatMessage()
 	case "txt_type", "/txt_type", "$txt_type", "photo_type", "/photo_type", "$photo_type", "video_type",
-		"/video_type", "$video_type", "rec_type", "/rec_type", "$rec_type":
+		"/video_type", "$video_type", "rec_type", "/rec_type", "$rec_type", "tts_type", "/tts_type", "$tts_type":
 		if typesFunc != nil {
 			typesFunc(cmd)
 		} else {
 			r.changeType(cmd)
 		}
 	case "txt_model", "/txt_model", "$txt_model", "photo_model", "/photo_model", "$photo_model",
-		"video_model", "/video_model", "$video_model", "rec_model", "/rec_model", "$rec_model":
+		"video_model", "/video_model", "$video_model", "rec_model", "/rec_model", "$rec_model", "tts_model", "/tts_model", "$tts_model":
 		if modeFunc != nil {
 			modeFunc(cmd)
 		} else {
@@ -876,15 +884,22 @@ func (r *RobotInfo) ExecCmd(cmd string, defaultFunc func(), modeFunc func(string
 func (r *RobotInfo) showMode() {
 	chatId, msgId, _ := r.GetChatIdAndMsgIdAndUserID()
 	llmConf := db.GetCtxUserInfo(r.Ctx).LLMConfigRaw
+	txtType := utils.GetTxtType(llmConf)
+	photoType := utils.GetImgType(llmConf)
+	videoType := utils.GetVideoType(llmConf)
+	recType := utils.GetRecType(llmConf)
+	ttsType := utils.GetTTSType(llmConf)
 	r.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mode_info", map[string]interface{}{
-		"txt_type":    llmConf.TxtType,
-		"photo_type":  llmConf.ImgType,
-		"video_type":  llmConf.VideoType,
-		"txt_model":   utils.GetUsingTxtModel(llmConf.TxtType, llmConf.TxtModel),
-		"photo_model": utils.GetUsingImgModel(llmConf.ImgType, llmConf.ImgModel),
-		"video_model": utils.GetUsingVideoModel(llmConf.VideoType, llmConf.VideoModel),
-		"rec_type":    llmConf.RecType,
-		"rec_model":   utils.GetUsingRecModel(llmConf.RecType, llmConf.RecModel),
+		"txt_type":    txtType,
+		"photo_type":  photoType,
+		"video_type":  videoType,
+		"rec_type":    recType,
+		"tts_type":    ttsType,
+		"txt_model":   utils.GetUsingTxtModel(txtType, llmConf.TxtModel),
+		"photo_model": utils.GetUsingImgModel(photoType, llmConf.ImgModel),
+		"video_model": utils.GetUsingVideoModel(videoType, llmConf.VideoModel),
+		"rec_model":   utils.GetUsingRecModel(recType, llmConf.RecModel),
+		"tts_model":   utils.GetUsingTTSModel(ttsType, llmConf.TTSModel),
 	}), msgId, "", nil)
 }
 
@@ -936,6 +951,17 @@ func (r *RobotInfo) changeType(t string) {
 
 `, model)
 		}
+	case "tts_type", "/tts_type", "$tts_type":
+		if r.Robot.getPrompt() != "" {
+			r.handleModelUpdate(&RobotModel{TTSType: r.Robot.getPrompt()})
+			return
+		}
+		
+		for _, model := range utils.GetAvailRecType() {
+			totalContent += fmt.Sprintf(`%s
+
+`, model)
+		}
 	}
 	
 	r.SendMsg(chatId, totalContent, msgId, "", nil)
@@ -945,35 +971,41 @@ func (r *RobotInfo) changeType(t string) {
 func (r *RobotInfo) changeModel(ty string) {
 	t := "/" + strings.TrimLeft(ty, "/")
 	switch t {
-	case "txt_model", "/txt_model":
+	case "txt_model", "/txt_model", "$txt_model":
 		if r.Robot.getPrompt() != "" {
 			r.handleModelUpdate(&RobotModel{TxtModel: r.Robot.getPrompt()})
 			return
 		}
-		r.showTxtModel(t)
-	case "photo_model", "/photo_model":
+		r.showTxtModel()
+	case "photo_model", "/photo_model", "$photo_model":
 		if r.Robot.getPrompt() != "" {
 			r.handleModelUpdate(&RobotModel{ImgModel: r.Robot.getPrompt()})
 			return
 		}
-		r.showImageModel(t)
-	case "video_model", "/video_model":
+		r.showImageModel()
+	case "video_model", "/video_model", "$video_model":
 		if r.Robot.getPrompt() != "" {
 			r.handleModelUpdate(&RobotModel{VideoModel: r.Robot.getPrompt()})
 			return
 		}
-		r.showVideoModel(t)
-	case "rec_model", "/rec_model":
+		r.showVideoModel()
+	case "rec_model", "/rec_model", "$rec_model":
 		if r.Robot.getPrompt() != "" {
 			r.handleModelUpdate(&RobotModel{RecModel: r.Robot.getPrompt()})
 			return
 		}
-		r.showRecModel(t)
+		r.showRecModel()
+	case "tts_model", "/tts_model", "$tts_model":
+		if r.Robot.getPrompt() != "" {
+			r.handleModelUpdate(&RobotModel{TTSModel: r.Robot.getPrompt()})
+			return
+		}
+		r.showTTSModel()
 	}
 	
 }
 
-func (r *RobotInfo) showTxtModel(ty string) {
+func (r *RobotInfo) showTxtModel() {
 	chatId, msgId, _ := r.GetChatIdAndMsgIdAndUserID()
 	var modelList []string
 	
@@ -1030,7 +1062,7 @@ func (r *RobotInfo) showTxtModel(ty string) {
 	r.SendMsg(chatId, totalContent, msgId, "", nil)
 }
 
-func (r *RobotInfo) showImageModel(ty string) {
+func (r *RobotInfo) showImageModel() {
 	chatId, msgId, _ := r.GetChatIdAndMsgIdAndUserID()
 	var modelList []string
 	
@@ -1082,7 +1114,7 @@ func (r *RobotInfo) showImageModel(ty string) {
 	r.SendMsg(chatId, totalContent, msgId, "", nil)
 }
 
-func (r *RobotInfo) showVideoModel(ty string) {
+func (r *RobotInfo) showVideoModel() {
 	chatId, msgId, _ := r.GetChatIdAndMsgIdAndUserID()
 	var modelList []string
 	
@@ -1099,8 +1131,7 @@ func (r *RobotInfo) showVideoModel(ty string) {
 		switch utils.GetTxtType(db.GetCtxUserInfo(r.Ctx).LLMConfigRaw) {
 		case param.AI302:
 			r.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
-				"link":    "https://302.ai/",
-				"command": ty,
+				"link": "https://302.ai/",
 			}),
 				msgId, tgbotapi.ModeMarkdown, nil)
 			return
@@ -1120,7 +1151,7 @@ func (r *RobotInfo) showVideoModel(ty string) {
 	r.SendMsg(chatId, totalContent, msgId, "", nil)
 }
 
-func (r *RobotInfo) showRecModel(ty string) {
+func (r *RobotInfo) showRecModel() {
 	chatId, msgId, _ := r.GetChatIdAndMsgIdAndUserID()
 	var modelList []string
 	
@@ -1138,13 +1169,50 @@ func (r *RobotInfo) showRecModel(ty string) {
 			modelList = append(modelList, k)
 		}
 	case param.AI302, param.OpenAi:
-		switch utils.GetTxtType(db.GetCtxUserInfo(r.Ctx).LLMConfigRaw) {
+		switch utils.GetRecType(db.GetCtxUserInfo(r.Ctx).LLMConfigRaw) {
 		case param.AI302:
 			r.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
 				"link": "https://302.ai/",
 			}),
 				msgId, tgbotapi.ModeMarkdown, nil)
 			return
+		case param.OpenAi:
+			r.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
+				"link": "https://platform.openai.com/",
+			}),
+				msgId, tgbotapi.ModeMarkdown, nil)
+			return
+		}
+	}
+	totalContent := ""
+	for _, model := range modelList {
+		totalContent += fmt.Sprintf(`%s
+
+`, model)
+	}
+	
+	r.SendMsg(chatId, totalContent, msgId, "", nil)
+}
+
+func (r *RobotInfo) showTTSModel() {
+	chatId, msgId, _ := r.GetChatIdAndMsgIdAndUserID()
+	var modelList []string
+	
+	switch utils.GetTTSType(db.GetCtxUserInfo(r.Ctx).LLMConfigRaw) {
+	case param.Gemini:
+		for k := range param.GeminiTTSModels {
+			modelList = append(modelList, k)
+		}
+	case param.Aliyun:
+		for k := range param.AliyunTTSModels {
+			modelList = append(modelList, k)
+		}
+	case param.Vol:
+		for k := range param.VolTTSModels {
+			modelList = append(modelList, k)
+		}
+	case param.OpenAi:
+		switch utils.GetTTSType(db.GetCtxUserInfo(r.Ctx).LLMConfigRaw) {
 		case param.OpenAi:
 			r.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
 				"link": "https://platform.openai.com/",
@@ -1454,8 +1522,9 @@ func (r *RobotInfo) CreateVideo(prompt string, lastImageContent []byte) ([]byte,
 	var videoContent []byte
 	var err error
 	var totalToken int
-	mediaType := utils.GetVideoType(db.GetCtxUserInfo(r.Ctx).LLMConfigRaw)
-	logger.InfoCtx(r.Ctx, "create video", "mediaType", mediaType, "mediaModel", utils.GetVideoModel(mediaType), "lastImageContent", len(lastImageContent))
+	llmConf := db.GetCtxUserInfo(r.Ctx).LLMConfigRaw
+	mediaType := utils.GetVideoType(llmConf)
+	logger.InfoCtx(r.Ctx, "create video", "mediaType", mediaType, "mediaModel", utils.GetUsingVideoModel(mediaType, llmConf.VideoModel), "lastImageContent", len(lastImageContent))
 	switch mediaType {
 	case param.Vol:
 		videoUrl, totalToken, err = llm.GenerateVolVideo(r.Ctx, prompt, lastImageContent)

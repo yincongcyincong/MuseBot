@@ -118,6 +118,10 @@ func CreateBot(ctx context.Context) *tgbotapi.BotAPI {
 			Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.mode.description", nil),
 		},
 		tgbotapi.BotCommand{
+			Command:     "tts_model",
+			Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.mode.description", nil),
+		},
+		tgbotapi.BotCommand{
 			Command:     "mode",
 			Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.mode.description", nil),
 		},
@@ -135,6 +139,10 @@ func CreateBot(ctx context.Context) *tgbotapi.BotAPI {
 		},
 		tgbotapi.BotCommand{
 			Command:     "rec_type",
+			Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.mode.description", nil),
+		},
+		tgbotapi.BotCommand{
+			Command:     "tts_type",
 			Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.mode.description", nil),
 		},
 		tgbotapi.BotCommand{
@@ -402,6 +410,12 @@ func (t *TelegramRobot) changeType(ty string) {
 				tgbotapi.NewInlineKeyboardButtonData(k, k),
 			))
 		}
+	case "tts_type", "/tts_type":
+		for _, k := range utils.GetAvailTTSType() {
+			inlineButton = append(inlineButton, tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonData(k, k),
+			))
+		}
 	}
 	
 	chatID, msgId, _ := t.Robot.GetChatIdAndMsgIdAndUserID()
@@ -427,20 +441,26 @@ func (t *TelegramRobot) changeModel(ty string) {
 			t.Robot.handleModelUpdate(&RobotModel{ImgModel: t.Prompt})
 			return
 		}
-		t.showImageModel(ty)
+		t.showImageModel()
 	
 	case "video_model", "/video_model":
 		if t.getPrompt() != "" {
 			t.Robot.handleModelUpdate(&RobotModel{VideoModel: t.Prompt})
 			return
 		}
-		t.showVideoModel(ty)
+		t.showVideoModel()
 	case "rec_model", "/rec_model":
 		if t.getPrompt() != "" {
 			t.Robot.handleModelUpdate(&RobotModel{RecModel: t.Prompt})
 			return
 		}
-		t.showRecModel(ty)
+		t.showRecModel()
+	case "tts_model", "/tts_model":
+		if t.getPrompt() != "" {
+			t.Robot.handleModelUpdate(&RobotModel{TTSModel: t.Prompt})
+			return
+		}
+		t.showTTSModel()
 	}
 }
 
@@ -517,7 +537,7 @@ func (t *TelegramRobot) showTxtModel(ty string) {
 		msgId, tgbotapi.ModeMarkdown, &inlineKeyboard)
 }
 
-func (t *TelegramRobot) showImageModel(ty string) {
+func (t *TelegramRobot) showImageModel() {
 	chatID, msgId, _ := t.Robot.GetChatIdAndMsgIdAndUserID()
 	var inlineKeyboard tgbotapi.InlineKeyboardMarkup
 	inlineButton := make([][]tgbotapi.InlineKeyboardButton, 0)
@@ -574,7 +594,7 @@ func (t *TelegramRobot) showImageModel(ty string) {
 		msgId, tgbotapi.ModeMarkdown, &inlineKeyboard)
 }
 
-func (t *TelegramRobot) showVideoModel(ty string) {
+func (t *TelegramRobot) showVideoModel() {
 	chatID, msgId, _ := t.Robot.GetChatIdAndMsgIdAndUserID()
 	var inlineKeyboard tgbotapi.InlineKeyboardMarkup
 	inlineButton := make([][]tgbotapi.InlineKeyboardButton, 0)
@@ -602,8 +622,7 @@ func (t *TelegramRobot) showVideoModel(ty string) {
 		switch utils.GetVideoType(db.GetCtxUserInfo(t.Robot.Ctx).LLMConfigRaw) {
 		case param.AI302:
 			t.Robot.SendMsg(chatID, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
-				"link":    "https://302.ai/",
-				"command": ty,
+				"link": "https://302.ai/",
 			}),
 				msgId, tgbotapi.ModeMarkdown, nil)
 			return
@@ -616,7 +635,7 @@ func (t *TelegramRobot) showVideoModel(ty string) {
 		msgId, tgbotapi.ModeMarkdown, &inlineKeyboard)
 }
 
-func (t *TelegramRobot) showRecModel(ty string) {
+func (t *TelegramRobot) showRecModel() {
 	chatID, msgId, _ := t.Robot.GetChatIdAndMsgIdAndUserID()
 	var inlineKeyboard tgbotapi.InlineKeyboardMarkup
 	inlineButton := make([][]tgbotapi.InlineKeyboardButton, 0)
@@ -648,6 +667,47 @@ func (t *TelegramRobot) showRecModel(ty string) {
 			}),
 				msgId, tgbotapi.ModeMarkdown, nil)
 			return
+		case param.OpenAi:
+			t.Robot.SendMsg(chatID, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
+				"link": "https://platform.openai.com/",
+			}),
+				msgId, tgbotapi.ModeMarkdown, nil)
+			return
+		}
+	}
+	
+	inlineKeyboard = tgbotapi.NewInlineKeyboardMarkup(inlineButton...)
+	
+	t.Robot.SendMsg(chatID, i18n.GetMessage(*conf.BaseConfInfo.Lang, "chat_mode", nil),
+		msgId, tgbotapi.ModeMarkdown, &inlineKeyboard)
+}
+
+func (t *TelegramRobot) showTTSModel() {
+	chatID, msgId, _ := t.Robot.GetChatIdAndMsgIdAndUserID()
+	var inlineKeyboard tgbotapi.InlineKeyboardMarkup
+	inlineButton := make([][]tgbotapi.InlineKeyboardButton, 0)
+	
+	switch utils.GetTTSType(db.GetCtxUserInfo(t.Robot.Ctx).LLMConfigRaw) {
+	case param.Gemini:
+		for k := range param.GeminiTTSModels {
+			inlineButton = append(inlineButton, tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonData(k, k),
+			))
+		}
+	case param.Aliyun:
+		for k := range param.AliyunTTSModels {
+			inlineButton = append(inlineButton, tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonData(k, k),
+			))
+		}
+	case param.Vol:
+		for k := range param.VolTTSModels {
+			inlineButton = append(inlineButton, tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonData(k, k),
+			))
+		}
+	case param.OpenAi:
+		switch utils.GetTTSType(db.GetCtxUserInfo(t.Robot.Ctx).LLMConfigRaw) {
 		case param.OpenAi:
 			t.Robot.SendMsg(chatID, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
 				"link": "https://platform.openai.com/",
@@ -698,10 +758,10 @@ func (t *TelegramRobot) handleCallbackQuery() {
 		t.Update.CallbackQuery.Message.MessageID = t.Update.CallbackQuery.Message.ReplyToMessage.MessageID
 		t.Prompt = t.Update.CallbackQuery.Data
 		switch t.Update.CallbackQuery.Message.ReplyToMessage.Text {
-		case "/txt_type", "/photo_type", "/video_type", "/rec_type":
+		case "/txt_type", "/photo_type", "/video_type", "/rec_type", "/tts_type":
 			t.Robot.changeType(t.Update.CallbackQuery.Message.ReplyToMessage.Text)
 			return
-		case "/txt_model", "/photo_model", "/video_model", "/rec_model":
+		case "/txt_model", "/photo_model", "/video_model", "/rec_model", "/tts_model":
 			t.Robot.changeModel(t.Update.CallbackQuery.Message.ReplyToMessage.Text)
 			return
 		}
