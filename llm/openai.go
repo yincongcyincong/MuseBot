@@ -52,6 +52,28 @@ func (d *OpenAIReq) GetModel(l *LLM) {
 		if userInfo != nil && model != "" && param.AliyunModel[model] {
 			l.Model = model
 		}
+	case param.DeepSeek:
+		l.Model = deepseek.DeepSeekChat
+		if userInfo != nil && model != "" && param.DeepseekModels[model] {
+			logger.InfoCtx(l.Ctx, "User info", "userID", userInfo.UserId, "mode", model)
+			l.Model = model
+		}
+	case param.Vol:
+		l.Model = param.ModelDoubao15VisionPro328
+		if userInfo != nil && model != "" && param.VolModels[model] {
+			logger.InfoCtx(l.Ctx, "User info", "userID", userInfo.UserId, "mode", model)
+			l.Model = model
+		}
+	case param.AI302:
+		l.Model = openai.GPT3Dot5Turbo
+		if userInfo != nil && model != "" {
+			l.Model = model
+		}
+	case param.OpenRouter:
+		l.Model = param.DeepseekDeepseekR1_0528Free
+		if userInfo != nil && model != "" {
+			l.Model = model
+		}
 	}
 	
 	logger.InfoCtx(l.Ctx, "User info", "userID", l.UserId, "mode", l.Model)
@@ -442,18 +464,19 @@ func OpenAITTS(ctx context.Context, content, encoding string) ([]byte, int, int,
 	}
 	
 	start := time.Now()
-	metrics.APIRequestCount.WithLabelValues(*conf.AudioConfInfo.OpenAIAudioModel).Inc()
+	model := utils.GetUsingTTSModel(param.OpenAi, db.GetCtxUserInfo(ctx).LLMConfigRaw.TTSModel)
+	metrics.APIRequestCount.WithLabelValues(model).Inc()
 	
 	client := GetOpenAIClient(ctx, "")
 	resp, err := client.CreateSpeech(ctx, openai.CreateSpeechRequest{
-		Model:          openai.SpeechModel(*conf.AudioConfInfo.OpenAIAudioModel),
+		Model:          openai.SpeechModel(model),
 		Input:          content,
 		Voice:          openai.SpeechVoice(*conf.AudioConfInfo.OpenAIVoiceName),
 		ResponseFormat: openai.SpeechResponseFormat(formatEncoding),
 		Speed:          1.0,
 	})
 	
-	metrics.APIRequestDuration.WithLabelValues(*conf.AudioConfInfo.OpenAIAudioModel).Observe(time.Since(start).Seconds())
+	metrics.APIRequestDuration.WithLabelValues(model).Observe(time.Since(start).Seconds())
 	if err != nil {
 		logger.ErrorCtx(ctx, "decode image error", "err", err)
 		return nil, 0, 0, err
@@ -500,6 +523,18 @@ func GetOpenAIClient(ctx context.Context, clientType string) *openai.Client {
 	case param.ChatAnyWhere:
 		token = *conf.BaseConfInfo.ChatAnyWhereToken
 		specialLLMUrl = "https://api.chatanywhere.tech"
+	case param.DeepSeek:
+		token = *conf.BaseConfInfo.DeepseekToken
+		specialLLMUrl = "https://api.deepseek.com/v1"
+	case param.Vol:
+		token = *conf.BaseConfInfo.VolToken
+		specialLLMUrl = "https://ark.cn-beijing.volces.com/api/v3"
+	case param.OpenRouter:
+		token = *conf.BaseConfInfo.OpenRouterToken
+		specialLLMUrl = "https://openrouter.ai/api/v1"
+	case param.AI302:
+		token = *conf.BaseConfInfo.AI302Token
+		specialLLMUrl = "https://api.302.ai/v1"
 	}
 	
 	openaiConfig := openai.DefaultConfig(token)

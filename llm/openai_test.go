@@ -64,9 +64,12 @@ func TestOpenAIReq_AppendMessages(t *testing.T) {
 
 func TestOpenAIReq_GetModel_Default(t *testing.T) {
 	req := &OpenAIReq{}
-	llmObj := &LLM{
-		UserId: "1",
-	}
+	ctx := context.WithValue(context.Background(), "user_info", &db.User{
+		LLMConfig:    `{"type":"gemini"}`,
+		LLMConfigRaw: &param.LLMConfig{TxtType: param.Gemini},
+	})
+	llmObj := NewLLM(WithChatId("1"), WithMsgId("2"), WithUserId("4"),
+		WithContent("hi"), WithContext(ctx))
 	
 	req.GetModel(llmObj)
 	assert.Equal(t, openai.GPT3Dot5Turbo0125, llmObj.Model)

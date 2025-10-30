@@ -142,9 +142,9 @@ If you use parameter. Please use lower letter and underscore. for example: ./Mus
 | **WECHAT_ACTIVE**                 | Whether to enable WeChat message listening (true/false)                                      | false                                                  |
 | **QQ_APP_ID**                     | QQ Open Platform AppID                                                                       | -                                                      |
 | **QQ_APP_SECRET**                 | QQ Open Platform AppSecret                                                                   | -                                                      |
-| **QQ_NAPCAT_RECEIVE_TOKEN**       | Token for NapCat → MuseBot event messages                                                    | MuseBot                                                |
-| **QQ_NAPCAT_SEND_TOKEN**          | Token for MuseBot → NapCat message sending                                                   | MuseBot                                                |
-| **QQ_NAPCAT_HTTP_SERVER**         | NapCat HTTP server address                                                                   | [http://127.0.0.1:3000](http://127.0.0.1:3000)         |
+| **QQ_ONEBOT_RECEIVE_TOKEN**       | Token for ONEBOT → MuseBot event messages                                                    | MuseBot                                                |
+| **QQ_ONEBOT_SEND_TOKEN**          | Token for MuseBot → ONEBOT message sending                                                   | MuseBot                                                |
+| **QQ_ONEBOT_HTTP_SERVER**         | ONEBOT HTTP server address                                                                   | [http://127.0.0.1:3000](http://127.0.0.1:3000)         |
 | **DEEPSEEK_TOKEN** (required)     | DeepSeek API key                                                                             | -                                                      |
 | **OPENAI_TOKEN**                  | OpenAI API key                                                                               | -                                                      |
 | **GEMINI_TOKEN**                  | Google Gemini API token                                                                      | -                                                      |

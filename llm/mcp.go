@@ -1,10 +1,8 @@
 package llm
 
 import (
-	"context"
 	"encoding/json"
 	"regexp"
-	"time"
 	
 	"github.com/yincongcyincong/MuseBot/conf"
 	"github.com/yincongcyincong/MuseBot/i18n"
@@ -22,9 +20,6 @@ type McpResult struct {
 
 // ExecuteMcp execute mcp request
 func (d *LLMTaskReq) ExecuteMcp() error {
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
-	defer cancel()
-	
 	logger.InfoCtx(d.Ctx, "mcp content", "content", d.Content)
 	taskParam := make(map[string]interface{})
 	taskParam["assign_param"] = make([]map[string]string, 0)
@@ -49,7 +44,7 @@ func (d *LLMTaskReq) ExecuteMcp() error {
 	llm.LLMClient.GetModel(llm)
 	
 	metrics.APIRequestCount.WithLabelValues(llm.Model).Inc()
-	c, err := llm.LLMClient.SyncSend(ctx, llm)
+	c, err := llm.LLMClient.SyncSend(d.Ctx, llm)
 	if err != nil {
 		logger.ErrorCtx(d.Ctx, "get message fail", "err", err)
 		return err
@@ -81,7 +76,7 @@ func (d *LLMTaskReq) ExecuteMcp() error {
 	mcpLLM.LLMClient.GetModel(mcpLLM)
 	
 	metrics.APIRequestCount.WithLabelValues(mcpLLM.Model).Inc()
-	err = mcpLLM.LLMClient.Send(ctx, mcpLLM)
+	err = mcpLLM.LLMClient.Send(d.Ctx, mcpLLM)
 	if err != nil {
 		logger.ErrorCtx(d.Ctx, "execute conversation fail", "err", err)
 		return err

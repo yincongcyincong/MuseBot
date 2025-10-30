@@ -16,6 +16,8 @@ gemini： https://www.bilibili.com/video/BV1D4htz4Ekv/
 chatgpt: https://www.bilibili.com/video/BV1RutxzJEGY/    
 豆包：https://www.bilibili.com/video/BV1QDbEzwE43/    
 怎么使用mcp: https://www.bilibili.com/video/BV1JbtJzVEJd/
+llonebot: https://www.youtube.com/watch?v=jbPGbnBaISE&t=7s
+napcat: https://www.youtube.com/watch?v=vrwcBTy6DeQ
 
 ## 🚀 功能特性
 
@@ -150,9 +152,9 @@ docker pull crpi-i1dsvpjijxpgjgbv.cn-hangzhou.personal.cr.aliyuncs.com/jackyin08
 | **WECHAT_ACTIVE**                 | 是否启用公众号消息监听（true/false）                                                             | false                     |
 | **QQ_APP_ID**                     | QQ 开放平台 AppID                                                                       | -                         |
 | **QQ_APP_SECRET**                 | QQ 开放平台 AppSecret                                                                   | -                         |
-| **QQ_NAPCAT_RECEIVE_TOKEN**       | NapCat → MuseBot 事件推送 token                                                         | MuseBot                   |
-| **QQ_NAPCAT_SEND_TOKEN**          | MuseBot → NapCat 消息发送 token                                                         | MuseBot                   |
-| **QQ_NAPCAT_HTTP_SERVER**         | NapCat HTTP 服务地址                                                                    | http://127.0.0.1:3000     |
+| **QQ_ONEBOT_RECEIVE_TOKEN**       | ONEBOT → MuseBot 事件推送 token                                                         | MuseBot                   |
+| **QQ_ONEBOT_SEND_TOKEN**          | MuseBot → ONEBOT 消息发送 token                                                         | MuseBot                   |
+| **QQ_ONEBOT_HTTP_SERVER**         | ONEBOT HTTP 服务地址                                                                    | http://127.0.0.1:3000     |
 | **DEEPSEEK_TOKEN** (required)     | DeepSeek API Key                                                                    | -                         |
 | **OPENAI_TOKEN**                  | OpenAI API Key                                                                      | -                         |
 | **GEMINI_TOKEN**                  | Google Gemini Token                                                                 | -                         |

@@ -35,9 +35,9 @@ type BaseConf struct {
 	WechatActive            *bool   `json:"wechat_active"`
 	QQAppID                 *string `json:"qq_app_id"`
 	QQAppSecret             *string `json:"qq_app_secret"`
-	QQOneBotReceiveToken    *string `json:"qq_nap_cat_check_token"`
-	QQOneBotSendToken       *string `json:"qq_nap_cat_send_token"`
-	QQOneBotHttpServer      *string `json:"qq_nap_cat_http_server"`
+	QQOneBotReceiveToken    *string `json:"qq_one_bot_check_token"`
+	QQOneBotSendToken       *string `json:"qq_one_bot_send_token"`
+	QQOneBotHttpServer      *string `json:"qq_one_bot_http_server"`
 	
 	DeepseekToken     *string `json:"deepseek_token"`
 	OpenAIToken       *string `json:"openai_token"`

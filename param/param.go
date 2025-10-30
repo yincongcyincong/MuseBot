@@ -97,6 +97,13 @@ const (
 	DoubaoSeedance1_0Pro = "doubao-seedance-1-0-pro-250528"
 	
 	ChatGPT4_0 = "chatgpt-4o-latest"
+	
+	VolTTS = "volcano_tts"
+	VolIcl = "volcano_icl"
+	
+	Qwen3TTSFlash = "qwen3-tts-flash"
+	
+	Gemini2_5FlashPreviewTTS = "gemini-2.5-flash-preview-tts"
 )
 
 var (
@@ -126,6 +133,10 @@ var (
 		ModelGemini20Flash: true,
 	}
 	
+	GeminiTTSModels = map[string]bool{
+		Gemini2_5FlashPreviewTTS: true,
+	}
+	
 	VolImageModels = map[string]bool{
 		DoubaoSeed16VisionPro: true,
 	}
@@ -138,6 +149,11 @@ var (
 		DoubaoSeed16VisionPro: true,
 	}
 	
+	VolTTSModels = map[string]bool{
+		VolTTS: true,
+		VolIcl: true,
+	}
+	
 	AliyunImageModels = map[string]bool{
 		QwenImagePlus: true,
 	}
@@ -148,6 +164,10 @@ var (
 	
 	AliyunRecModels = map[string]bool{
 		QwenVlMax: true,
+	}
+	
+	AliyunTTSModels = map[string]bool{
+		Qwen3TTSFlash: true,
 	}
 	
 	//OpenAIImageModels = map[string]bool{
@@ -254,4 +274,6 @@ type LLMConfig struct {
 	VideoModel string `json:"video_model"`
 	RecType    string `json:"rec_type"`
 	RecModel   string `json:"rec_model"`
+	TTSType    string `json:"tts_type"`
+	TTSModel   string `json:"tts_model"`
 }

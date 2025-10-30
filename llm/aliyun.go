@@ -362,8 +362,9 @@ type TTSResponse struct {
 func AliyunTTS(ctx context.Context, text, encoding string) ([]byte, int, int, error) {
 	url := "https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation"
 	
+	model := utils.GetUsingTTSModel(param.Aliyun, db.GetCtxUserInfo(ctx).LLMConfigRaw.TTSModel)
 	payload := map[string]interface{}{
-		"model": *conf.AudioConfInfo.AliyunAudioModel,
+		"model": model,
 		"input": map[string]interface{}{
 			"text":          text,
 			"voice":         *conf.AudioConfInfo.AliyunAudioVoice,
@@ -386,9 +387,9 @@ func AliyunTTS(ctx context.Context, text, encoding string) ([]byte, int, int, er
 	
 	client := utils.GetLLMProxyClient()
 	start := time.Now()
-	metrics.APIRequestCount.WithLabelValues(*conf.AudioConfInfo.AliyunAudioModel).Inc()
+	metrics.APIRequestCount.WithLabelValues(model).Inc()
 	resp, err := client.Do(req)
-	metrics.APIRequestDuration.WithLabelValues(*conf.AudioConfInfo.AliyunAudioModel).Observe(time.Since(start).Seconds())
+	metrics.APIRequestDuration.WithLabelValues(model).Observe(time.Since(start).Seconds())
 	if err != nil {
 		return nil, 0, 0, fmt.Errorf("request error: %w", err)
 	}

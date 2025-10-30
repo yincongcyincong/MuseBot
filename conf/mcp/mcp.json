@@ -1,3 +1,15 @@
 {
-  "mcpServers": {}
+  "mcpServers": {
+    "amap": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@amap/amap-maps-mcp-server"
+      ],
+      "env": {
+        "AMAP_MAPS_API_KEY": "29572e42530ac949d37a7d00e5d51f4a"
+      },
+      "description": "get geo info from amap service"
+    }
+  }
 }

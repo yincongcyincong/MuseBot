@@ -136,9 +136,9 @@ chatgpt: [https://www.youtube.com/watch?v=G\_DZYMvd5Ug](https://www.youtube.com/
 | **WECHAT\_ACTIVE** | Включить ли прослушивание сообщений WeChat (true/false)                                                 | false                                                  |
 | **QQ\_APP\_ID** | AppID открытой платформы QQ                                                                             | -                                                      |
 | **QQ\_APP\_SECRET** | AppSecret открытой платформы QQ                                                                         | -                                                      |
-| **QQ\_NAPCAT\_RECEIVE\_TOKEN** | Токен для сообщений о событиях NapCat → MuseBot                                                         | MuseBot                                                |
-| **QQ\_NAPCAT\_SEND\_TOKEN** | Токен для отправки сообщений MuseBot → NapCat                                                           | MuseBot                                                |
-| **QQ\_NAPCAT\_HTTP\_SERVER** | Адрес HTTP-сервера NapCat                                                                               | [http://127.0.0.1:3000](http://127.0.0.1:3000)         |
+| **QQ\_ONEBOT\_RECEIVE\_TOKEN** | Токен для сообщений о событиях ONEBOT → MuseBot                                                         | MuseBot                                                |
+| **QQ\_ONEBOT\_SEND\_TOKEN** | Токен для отправки сообщений MuseBot → ONEBOT                                                           | MuseBot                                                |
+| **QQ\_ONEBOT\_HTTP\_SERVER** | Адрес HTTP-сервера ONEBOT                                                                               | [http://127.0.0.1:3000](http://127.0.0.1:3000)         |
 | **DEEPSEEK\_TOKEN** (обязательно)     | Ключ API DeepSeek                                                                                       | -                                                      |
 | **OPENAI\_TOKEN** | Ключ API OpenAI                                                                                         | -                                                      |
 | **GEMINI\_TOKEN** | Токен API Google Gemini                                                                                 | -                                                      |

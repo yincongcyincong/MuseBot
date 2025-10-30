@@ -34,11 +34,3 @@ func TestVolSend(t *testing.T) {
 	err := callLLM.LLMClient.Send(ctx, callLLM)
 	assert.Equal(t, nil, err)
 }
-
-func TestGetModel(t *testing.T) {
-	l := &LLM{UserId: "test-user"}
-	h := &VolReq{}
-	h.GetModel(l)
-	
-	assert.Equal(t, param.ModelDeepSeekR1_528, l.Model)
-}

@@ -488,21 +488,20 @@ func GeminiTTS(ctx context.Context, content, encoding string) ([]byte, int, int,
 	}
 	
 	start := time.Now()
-	metrics.APIRequestCount.WithLabelValues(*conf.AudioConfInfo.GeminiAudioModel).Inc()
+	model := utils.GetUsingTTSModel(param.Gemini, db.GetCtxUserInfo(ctx).LLMConfigRaw.TTSModel)
+	metrics.APIRequestCount.WithLabelValues(model).Inc()
 	
 	parts := []*genai.Part{
 		genai.NewPartFromText(i18n.GetMessage(*conf.BaseConfInfo.Lang, "audio_create_prompt", map[string]interface{}{
 			"content": content,
 		})),
 	}
-	
 	contents := []*genai.Content{
 		genai.NewContentFromParts(parts, genai.RoleUser),
 	}
-	
 	response, err := client.Models.GenerateContent(
 		ctx,
-		*conf.AudioConfInfo.GeminiAudioModel,
+		model,
 		contents,
 		&genai.GenerateContentConfig{
 			ResponseModalities: []string{
@@ -518,7 +517,7 @@ func GeminiTTS(ctx context.Context, content, encoding string) ([]byte, int, int,
 		},
 	)
 	
-	metrics.APIRequestDuration.WithLabelValues(*conf.AudioConfInfo.GeminiAudioModel).Observe(time.Since(start).Seconds())
+	metrics.APIRequestDuration.WithLabelValues(model).Observe(time.Since(start).Seconds())
 	
 	if err != nil {
 		logger.ErrorCtx(ctx, "generate audio fail", "err", err)
