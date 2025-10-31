@@ -13,6 +13,7 @@ import (
 )
 
 func TestGeminiSend(t *testing.T) {
+	conf.InitConf()
 	messageChan := make(chan *param.MsgInfo)
 	
 	go func() {

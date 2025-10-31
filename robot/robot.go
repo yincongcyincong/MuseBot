@@ -163,6 +163,10 @@ func (r *RobotInfo) AddUserInfo() bool {
 		}
 	}
 	
+	if userInfo.LLMConfigRaw == nil {
+		userInfo.LLMConfigRaw = new(param.LLMConfig)
+	}
+	
 	r.Ctx = context.WithValue(r.Ctx, "user_info", userInfo)
 	return true
 	
@@ -627,7 +631,10 @@ func (r *RobotInfo) GetAudioContent(audioContent []byte) (string, error) {
 	var answer string
 	var err error
 	var token = param.AudioTokenUsage
-	switch utils.GetRecType(db.GetCtxUserInfo(r.Ctx).LLMConfigRaw) {
+	llmConf := db.GetCtxUserInfo(r.Ctx).LLMConfigRaw
+	t := utils.GetRecType(llmConf)
+	logger.InfoCtx(r.Ctx, "recognize audio", "type", t, "model", utils.GetUsingRecModel(t, llmConf.RecModel))
+	switch t {
 	case param.Vol:
 		answer, err = utils.FileRecognize(audioContent)
 	case param.OpenAi:
@@ -659,7 +666,10 @@ func (r *RobotInfo) GetImageContent(imageContent []byte, content string) (string
 	var answer string
 	var err error
 	var token int
-	switch utils.GetRecType(db.GetCtxUserInfo(r.Ctx).LLMConfigRaw) {
+	llmConf := db.GetCtxUserInfo(r.Ctx).LLMConfigRaw
+	t := utils.GetRecType(llmConf)
+	logger.InfoCtx(r.Ctx, "recognize audio", "type", t, "model", utils.GetUsingRecModel(t, llmConf.RecModel))
+	switch t {
 	case param.Vol:
 		answer, token, err = llm.GetVolImageContent(r.Ctx, imageContent, content)
 	case param.Gemini:
@@ -1496,8 +1506,10 @@ func (r *RobotInfo) CreatePhoto(prompt string, lastImageContent []byte) ([]byte,
 	var imageContent []byte
 	var totalToken int
 	var err error
-	mediaType := utils.GetImgType(db.GetCtxUserInfo(r.Ctx).LLMConfigRaw)
-	logger.InfoCtx(r.Ctx, "create image", "mediaType", mediaType, "mediaModel", utils.GetImgModel(mediaType), "lastImageContent", len(lastImageContent))
+	llmConf := db.GetCtxUserInfo(r.Ctx).LLMConfigRaw
+	mediaType := utils.GetImgType(llmConf)
+	logger.InfoCtx(r.Ctx, "create image", "mediaType", mediaType, "mediaModel",
+		utils.GetUsingRecModel(mediaType, llmConf.ImgModel), "lastImageContent", len(lastImageContent))
 	switch mediaType {
 	case param.Vol:
 		imageUrl, totalToken, err = llm.GenerateVolImg(r.Ctx, prompt, lastImageContent)
@@ -1536,7 +1548,8 @@ func (r *RobotInfo) CreateVideo(prompt string, lastImageContent []byte) ([]byte,
 	var totalToken int
 	llmConf := db.GetCtxUserInfo(r.Ctx).LLMConfigRaw
 	mediaType := utils.GetVideoType(llmConf)
-	logger.InfoCtx(r.Ctx, "create video", "mediaType", mediaType, "mediaModel", utils.GetUsingVideoModel(mediaType, llmConf.VideoModel), "lastImageContent", len(lastImageContent))
+	logger.InfoCtx(r.Ctx, "create video", "mediaType", mediaType, "mediaModel",
+		utils.GetUsingVideoModel(mediaType, llmConf.VideoModel), "lastImageContent", len(lastImageContent))
 	switch mediaType {
 	case param.Vol:
 		videoUrl, totalToken, err = llm.GenerateVolVideo(r.Ctx, prompt, lastImageContent)

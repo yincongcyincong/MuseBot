@@ -89,8 +89,13 @@ const (
 	
 	DoubaoSeed16VisionPro = "doubao-seed-1-6-250615"
 	
-	QwenImagePlus = "qwen-image-plus"
-	QwenVlMax     = "qwen-vl-max-latest"
+	QwenImagePlus   = "qwen-image-plus"
+	QwenVlMaxLatest = "qwen-vl-max-latest"
+	QwenVlMax       = "qwen-vl-max"
+	QVQMax          = "qvq-max"
+	QVQMaxLatest    = "qvq-max-latest"
+	
+	QwenAudioTurbo = "qwen-audio-turbo-latest"
 	
 	Wan2_5T2VPreview = "wan2.5-t2v-preview"
 	
@@ -163,7 +168,11 @@ var (
 	}
 	
 	AliyunRecModels = map[string]bool{
-		QwenVlMax: true,
+		QwenVlMax:       true,
+		QwenAudioTurbo:  true,
+		QwenVlMaxLatest: true,
+		QVQMax:          true,
+		QVQMaxLatest:    true,
 	}
 	
 	AliyunTTSModels = map[string]bool{

@@ -54,6 +54,8 @@ type DingRobot struct {
 	Prompt       string
 	BotName      string
 	OriginPrompt string
+	ImageContent []byte
+	AudioContent []byte
 }
 
 type DingResp struct {
@@ -159,21 +161,7 @@ func (d *DingRobot) sendImg() {
 			return
 		}
 		
-		var lastImageContent []byte
-		if d.Message.Msgtype == "richText" {
-			cMap := d.Message.Content.(map[string]interface{})
-			for _, c := range cMap["richText"].([]interface{}) {
-				if cMap, ok := c.(map[string]interface{}); ok {
-					if _, ok := cMap["downloadCode"].(string); ok {
-						lastImageContent, err = d.GetImageContent(accessToken, cMap)
-						if err != nil {
-							logger.Warn("get last image record fail", "err", err)
-						}
-					}
-				}
-			}
-		}
-		
+		lastImageContent := d.ImageContent
 		if len(lastImageContent) == 0 && strings.Contains(d.Command, "edit_photo") {
 			lastImageContent, err = d.Robot.GetLastImageContent()
 			if err != nil {
@@ -250,21 +238,7 @@ func (d *DingRobot) sendVideo() {
 			return
 		}
 		
-		var imageContent []byte
-		if d.Message.Msgtype == "richText" {
-			cMap := d.Message.Content.(map[string]interface{})
-			for _, c := range cMap["richText"].([]interface{}) {
-				if cMap, ok := c.(map[string]interface{}); ok {
-					if _, ok := cMap["downloadCode"].(string); ok {
-						imageContent, err = d.GetImageContent(accessToken, cMap)
-						if err != nil {
-							logger.Warn("get last image record fail", "err", err)
-						}
-					}
-				}
-			}
-		}
-		
+		imageContent := d.ImageContent
 		videoContent, totalToken, err := d.Robot.CreateVideo(prompt, imageContent)
 		if err != nil {
 			logger.Warn("generate video fail", "err", err)
@@ -429,42 +403,19 @@ func (d *DingRobot) executeLLM() {
 
 func (d *DingRobot) getContent(content string) (string, error) {
 	msgType := d.Message.Msgtype
+	var err error
 	switch msgType {
 	case "picture":
-		if c, ok := d.Message.Content.(map[string]interface{}); ok {
-			accessToken, err := d.GetAccessToken()
-			if err != nil {
-				logger.Error("get access token failed", "err", err)
-				return "", err
-			}
-			
-			data, err := d.GetImageContent(accessToken, c)
-			if err != nil {
-				logger.Error("get image content fail", "err", err)
-				return "", err
-			}
-			
-			content, err = d.Robot.GetImageContent(data, content)
+		if d.ImageContent != nil {
+			content, err = d.Robot.GetImageContent(d.ImageContent, content)
 			if err != nil {
 				logger.Warn("generate text from audio failed", "err", err)
 				return "", err
 			}
 		}
 	case "audio":
-		if c, ok := d.Message.Content.(map[string]interface{}); ok {
-			accessToken, err := d.GetAccessToken()
-			if err != nil {
-				logger.Error("get access token failed", "err", err)
-				return "", err
-			}
-			
-			data, err := d.GetImageContent(accessToken, c)
-			if err != nil {
-				logger.Error("get image content fail", "err", err)
-				return "", err
-			}
-			
-			content, err = d.Robot.GetAudioContent(data)
+		if d.AudioContent != nil {
+			content, err = d.Robot.GetAudioContent(d.AudioContent)
 			if err != nil {
 				logger.Warn("generate text from audio failed", "err", err)
 				return "", err
@@ -485,6 +436,11 @@ func (d *DingRobot) GetMessageContent() (bool, error) {
 		return false, errors.New("callback data is nil")
 	}
 	
+	accessToken, err := d.GetAccessToken()
+	if err != nil {
+		logger.Error("get access token failed", "err", err)
+		return false, err
+	}
 	botAt := false
 	content := d.Message.Text.Content
 	if content == "" && d.Message.Msgtype == "richText" {
@@ -495,6 +451,29 @@ func (d *DingRobot) GetMessageContent() (bool, error) {
 					content = txt
 					break
 				}
+				if _, ok := cMap["downloadCode"].(string); ok {
+					d.ImageContent, err = d.GetImageContent(accessToken, cMap)
+					if err != nil {
+						logger.Warn("get last image record fail", "err", err)
+					}
+				}
+			}
+		}
+	} else if d.Message.Msgtype == "picture" {
+		if c, ok := d.Message.Content.(map[string]interface{}); ok {
+			d.ImageContent, err = d.GetImageContent(accessToken, c)
+			if err != nil {
+				logger.Error("get image content fail", "err", err)
+				return false, err
+			}
+		}
+		
+	} else if d.Message.Msgtype == "audio" {
+		if c, ok := d.Message.Content.(map[string]interface{}); ok {
+			d.AudioContent, err = d.GetImageContent(accessToken, c)
+			if err != nil {
+				logger.Error("get image content fail", "err", err)
+				return false, err
 			}
 		}
 	}

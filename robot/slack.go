@@ -40,6 +40,9 @@ type SlackRobot struct {
 	Command string
 	Prompt  string
 	BotName string
+	
+	ImageContent []byte
+	VoiceContent []byte
 }
 
 func StartSlackRobot(ctx context.Context) {
@@ -179,7 +182,32 @@ func (s *SlackRobot) checkValid() bool {
 	}
 	
 	s.Command, s.Prompt = ParseCommand(strings.ReplaceAll(s.Event.Text, atRobot, ""))
+	s.getMessageContent()
 	return true
+}
+
+func (s *SlackRobot) getMessageContent() {
+	if s.Event != nil && s.Event.Message.Files != nil && len(s.Event.Message.Files) > 0 {
+		file := s.Event.Message.Files[0]
+		var err error
+		
+		switch file.Mimetype {
+		case "image/jpeg", "image/png", "image/gif", "image/webp":
+			s.ImageContent, err = s.downloadSlackFile(file.URLPrivateDownload)
+			if err != nil {
+				logger.Error("download image failed", "err", err)
+				return
+			}
+		
+		case "audio/mpeg", "audio/wav", "audio/ogg", "audio/mp4":
+			// 下载音频
+			s.VoiceContent, err = s.downloadSlackFile(file.URLPrivateDownload)
+			if err != nil {
+				logger.Error("download audio failed", "err", err)
+				return
+			}
+		}
+	}
 }
 
 func (s *SlackRobot) getMsgContent() string {
@@ -228,31 +256,18 @@ func (s *SlackRobot) getContent(content string) (string, error) {
 	}
 	
 	file := s.Event.Message.Files[0]
-	var bs []byte
 	var err error
 	
 	switch file.Mimetype {
 	case "image/jpeg", "image/png", "image/gif", "image/webp":
-		bs, err = s.downloadSlackFile(file.URLPrivateDownload)
-		if err != nil {
-			logger.Error("download image failed", "err", err)
-			return "", err
-		}
-		content, err = s.Robot.GetImageContent(bs, content)
+		content, err = s.Robot.GetImageContent(s.ImageContent, content)
 		if err != nil {
 			logger.Warn("generate text from image failed", "err", err)
 			return "", err
 		}
 	
 	case "audio/mpeg", "audio/wav", "audio/ogg", "audio/mp4":
-		// 下载音频
-		bs, err = s.downloadSlackFile(file.URLPrivateDownload)
-		if err != nil {
-			logger.Error("download audio failed", "err", err)
-			return "", err
-		}
-		// 调用语音转文字
-		content, err = s.Robot.GetAudioContent(bs)
+		content, err = s.Robot.GetAudioContent(s.VoiceContent)
 		if err != nil {
 			logger.Warn("generate text from audio failed", "err", err)
 			return "", err
@@ -304,14 +319,7 @@ func (s *SlackRobot) sendImg() {
 		thinkingMsg := s.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "thinking", nil), msgId, "", nil)
 		
 		var err error
-		var lastImageContent []byte
-		if s.Event != nil && s.Event.Message.Files != nil && len(s.Event.Message.Files) > 0 {
-			file := s.Event.Message.Files[0]
-			lastImageContent, err = s.downloadSlackFile(file.URLPrivateDownload)
-			if err != nil {
-				logger.Error("download image failed", "err", err)
-			}
-		}
+		lastImageContent := s.ImageContent
 		if len(lastImageContent) == 0 && strings.Contains(s.Command, "edit_photo") {
 			lastImageContent, err = s.Robot.GetLastImageContent()
 			if err != nil {
@@ -385,15 +393,7 @@ func (s *SlackRobot) sendVideo() {
 		thinkingMsg := s.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "thinking", nil), replyToMessageID, "", nil)
 		
 		var err error
-		var lastImageContent []byte
-		if s.Event != nil && s.Event.Message.Files != nil && len(s.Event.Message.Files) > 0 {
-			file := s.Event.Message.Files[0]
-			lastImageContent, err = s.downloadSlackFile(file.URLPrivateDownload)
-			if err != nil {
-				logger.Error("download image failed", "err", err)
-			}
-		}
-		
+		lastImageContent := s.ImageContent
 		videoContent, totalToken, err := s.Robot.CreateVideo(prompt, lastImageContent)
 		if err != nil {
 			logger.Warn("generate video failed", "err", err)
@@ -515,6 +515,7 @@ func submissionHandler(callback *slack.InteractionCallback) {
 	s.Callback.Channel.ID = callback.View.CallbackID
 	
 	s.Robot.AddUserInfo()
+	s.getMessageContent()
 	s.Robot.ExecCmd(s.Command, nil, nil, nil)
 	
 }

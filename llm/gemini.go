@@ -445,7 +445,7 @@ func GetGeminiImageContent(ctx context.Context, imageContent []byte, content str
 	}
 	
 	start := time.Now()
-	model := utils.GetUsingImgModel(param.Gemini, db.GetCtxUserInfo(ctx).LLMConfigRaw.ImgModel)
+	model := utils.GetUsingRecModel(param.Gemini, db.GetCtxUserInfo(ctx).LLMConfigRaw.RecModel)
 	metrics.APIRequestCount.WithLabelValues(model).Inc()
 	
 	contentPrompt := content

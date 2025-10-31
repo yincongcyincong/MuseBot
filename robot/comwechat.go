@@ -39,6 +39,7 @@ type ComWechatRobot struct {
 	Prompt       string
 	OriginPrompt string
 	ImageContent []byte
+	VoiceContent []byte
 	TextMsg      *serverModel.MessageText
 	VoiceMsg     *serverModel.MessageVoice
 	ImageMsg     *serverModel.MessageImage
@@ -109,6 +110,8 @@ func NewComWechatRobot(event contract.EventInterface) *ComWechatRobot {
 }
 
 func (c *ComWechatRobot) checkValid() bool {
+	chatId, msgId, userId := c.Robot.GetChatIdAndMsgIdAndUserID()
+	var err error
 	if c.Event.GetMsgType() == models.CALLBACK_MSG_TYPE_TEXT {
 		c.OriginPrompt = c.TextMsg.Content
 		c.Command, c.Prompt = ParseCommand(c.TextMsg.Content)
@@ -116,7 +119,12 @@ func (c *ComWechatRobot) checkValid() bool {
 	}
 	
 	if c.Event.GetMsgType() == models.CALLBACK_MSG_TYPE_IMAGE {
-		_, msgId, userId := c.Robot.GetChatIdAndMsgIdAndUserID()
+		c.ImageContent, err = c.getMedia()
+		if err != nil {
+			logger.ErrorCtx(c.Robot.Ctx, "get media fail", "err", err)
+			c.Robot.SendMsg(chatId, "get media fail", msgId, tgbotapi.ModeMarkdown, nil)
+			return false
+		}
 		if msgInfoInter, ok := TencentMsgMap.Load(userId); ok {
 			if msgInfo, ok := msgInfoInter.(*TencentWechatMessage); ok {
 				if msgInfo.Status == msgChangePhoto || msgInfo.Status == msgRecognizePhoto {
@@ -129,7 +137,12 @@ func (c *ComWechatRobot) checkValid() bool {
 	}
 	
 	if c.Event.GetMsgType() == models.CALLBACK_MSG_TYPE_VOICE {
-		_, msgId, userId := c.Robot.GetChatIdAndMsgIdAndUserID()
+		c.VoiceContent, err = c.getMedia()
+		if err != nil {
+			logger.ErrorCtx(c.Robot.Ctx, "get media fail", "err", err)
+			c.Robot.SendMsg(chatId, "get media fail", msgId, tgbotapi.ModeMarkdown, nil)
+			return false
+		}
 		if msgInfoInter, ok := TencentMsgMap.Load(userId); ok {
 			if msgInfo, ok := msgInfoInter.(*TencentWechatMessage); ok {
 				if msgInfo.Status == msgSaveVoice {
@@ -365,20 +378,10 @@ func (c *ComWechatRobot) getContent(content string) (string, error) {
 	
 	switch msgType {
 	case models.CALLBACK_MSG_TYPE_IMAGE:
-		data, err := c.getMedia()
-		if err != nil {
-			return "", err
-		}
-		return c.Robot.GetImageContent(data, content)
+		return c.Robot.GetImageContent(c.ImageContent, content)
 	
 	case models.CALLBACK_MSG_TYPE_VOICE:
-		data, err := c.getMedia()
-		if err != nil {
-			logger.ErrorCtx(c.Robot.Ctx, "read media fail", "err", err)
-			return "", err
-		}
-		
-		data, err = utils.AmrToOgg(data)
+		data, err := utils.AmrToOgg(c.VoiceContent)
 		if err != nil {
 			logger.ErrorCtx(c.Robot.Ctx, "convert amr to wav fail", "err", err)
 			return "", err
@@ -438,13 +441,6 @@ func (c *ComWechatRobot) passiveExecCmd() {
 					switch msgInfo.Status {
 					case msgChangePhoto:
 						c.Prompt = msgInfo.Msg
-						data, err := c.getMedia()
-						if err != nil {
-							logger.ErrorCtx(c.Robot.Ctx, "get media fail", "err", err)
-							c.Robot.SendMsg(chatId, "get media fail", msgId, tgbotapi.ModeMarkdown, nil)
-							return
-						}
-						c.ImageContent = data
 						c.sendImg()
 					case msgRecognizePhoto:
 						c.Prompt = msgInfo.Msg

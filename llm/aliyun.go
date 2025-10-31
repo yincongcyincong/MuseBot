@@ -276,12 +276,29 @@ func GenerateAliyunVideo(ctx context.Context, prompt string, image []byte) (stri
 }
 
 func GenerateAliyunText(ctx context.Context, audioContent []byte) (string, int, error) {
+	audioType := utils.DetectAudioFormat(audioContent)
+	var err error
+	switch audioType {
+	case "mp4":
+		audioType = "mp3"
+		audioContent, err = utils.MP4ToMP3(audioContent)
+		if err != nil {
+			return "", 0, err
+		}
+	case "ogg":
+		audioType = "mp3"
+		audioContent, err = utils.OGGToMP3(audioContent)
+		if err != nil {
+			return "", 0, err
+		}
+	}
+	
 	audioBase64 := base64.StdEncoding.EncodeToString(audioContent)
-	audioDataURL := "data:;base64," + audioBase64
+	audioDataURL := fmt.Sprintf("data:audio/%s;base64,%s", audioType, audioBase64)
 	
 	recModel := utils.GetUsingRecModel(param.Aliyun, db.GetCtxUserInfo(ctx).LLMConfigRaw.RecModel)
 	payload := map[string]interface{}{
-		"model": recModel,
+		"model": "qwen-audio-turbo-latest",
 		"input": map[string]interface{}{
 			"messages": []map[string]interface{}{
 				{

@@ -53,6 +53,7 @@ type QQRobot struct {
 	BotName      string
 	OriginPrompt string
 	ImageContent []byte
+	AudioContent []byte
 }
 
 func StartQQRobot(ctx context.Context) {
@@ -146,6 +147,8 @@ func NewQQRobot(event *dto.WSPayload, c2cMessage *dto.WSC2CMessageData,
 }
 
 func (q *QQRobot) checkValid() bool {
+	chatId, msgId, userId := q.Robot.GetChatIdAndMsgIdAndUserID()
+	var err error
 	if q.C2CMessage != nil {
 		q.Command, q.Prompt = ParseCommand(q.C2CMessage.Content)
 	}
@@ -157,7 +160,12 @@ func (q *QQRobot) checkValid() bool {
 	}
 	
 	if q.GetAttachment() != nil && strings.Contains(q.GetAttachment().ContentType, "image") {
-		_, msgId, userId := q.Robot.GetChatIdAndMsgIdAndUserID()
+		q.ImageContent, err = utils.DownloadFile(q.GetAttachment().URL)
+		if err != nil {
+			q.Robot.SendMsg(chatId, "get media fail", msgId, tgbotapi.ModeMarkdown, nil)
+			logger.ErrorCtx(q.Robot.Ctx, "download image fail", "err", err)
+			return false
+		}
 		if msgInfoInter, ok := TencentMsgMap.Load(userId); ok {
 			if msgInfo, ok := msgInfoInter.(*TencentWechatMessage); ok {
 				if msgInfo.Status == msgChangePhoto || msgInfo.Status == msgRecognizePhoto {
@@ -170,7 +178,12 @@ func (q *QQRobot) checkValid() bool {
 	}
 	
 	if q.GetAttachment() != nil && strings.Contains(q.GetAttachment().ContentType, "voice") {
-		_, msgId, userId := q.Robot.GetChatIdAndMsgIdAndUserID()
+		q.AudioContent, err = utils.DownloadFile(q.GetAttachment().URL)
+		if err != nil {
+			q.Robot.SendMsg(chatId, "get media fail", msgId, tgbotapi.ModeMarkdown, nil)
+			logger.ErrorCtx(q.Robot.Ctx, "get image content fail", "err", err)
+			return false
+		}
 		if msgInfoInter, ok := TencentMsgMap.Load(userId); ok {
 			if msgInfo, ok := msgInfoInter.(*TencentWechatMessage); ok {
 				if msgInfo.Status == msgSaveVoice {
@@ -208,17 +221,7 @@ func (q *QQRobot) sendImg() {
 		}
 		
 		var err error
-		var lastImageContent []byte
-		attachment := q.GetAttachment()
-		if attachment != nil {
-			lastImageContent, err = utils.DownloadFile(attachment.URL)
-			if err != nil {
-				logger.Warn("download image fail", "err", err)
-				q.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
-				return
-			}
-		}
-		
+		lastImageContent := q.ImageContent
 		if len(lastImageContent) == 0 && strings.Contains(q.Command, "edit_photo") {
 			lastImageContent, err = q.Robot.GetLastImageContent()
 			if err != nil {
@@ -394,28 +397,17 @@ func (q *QQRobot) getContent(content string) (string, error) {
 		return content, nil
 	}
 	
+	var err error
 	switch {
 	case strings.Contains(attachment.ContentType, "image"):
-		data, err := utils.DownloadFile(attachment.URL)
-		if err != nil {
-			logger.Error("get image content fail", "err", err)
-			return "", err
-		}
-		
-		content, err = q.Robot.GetImageContent(data, content)
+		content, err = q.Robot.GetImageContent(q.ImageContent, content)
 		if err != nil {
 			logger.Warn("generate text from audio failed", "err", err)
 			return "", err
 		}
 	
 	case strings.Contains(attachment.ContentType, "voice"):
-		data, err := utils.DownloadFile(attachment.URL)
-		if err != nil {
-			logger.Error("get image content fail", "err", err)
-			return "", err
-		}
-		
-		data, err = utils.SilkToWav(data)
+		data, err := utils.SilkToWav(q.AudioContent)
 		if err != nil {
 			logger.Error("silk to wav fail", "err", err)
 			return "", err
@@ -649,14 +641,7 @@ func (q *QQRobot) passiveExecCmd() {
 				if msgInfo, ok := msgInfoInter.(*TencentWechatMessage); ok {
 					switch msgInfo.Status {
 					case msgChangePhoto:
-						data, err := utils.DownloadFile(attachment.URL)
-						if err != nil {
-							logger.Error("get image content fail", "err", err)
-							q.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
-							return
-						}
 						q.Prompt = msgInfo.Msg
-						q.ImageContent = data
 						q.sendImg()
 					case msgRecognizePhoto:
 						q.Prompt = msgInfo.Msg
@@ -673,14 +658,7 @@ func (q *QQRobot) passiveExecCmd() {
 				if msgInfo, ok := msgInfoInter.(*TencentWechatMessage); ok {
 					switch msgInfo.Status {
 					case msgSaveVoice:
-						data, err := utils.DownloadFile(attachment.URL)
-						if err != nil {
-							logger.Error("get image content fail", "err", err)
-							q.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
-							return
-						}
-						
-						data, err = utils.SilkToMp3(data)
+						data, err := utils.SilkToMp3(q.AudioContent)
 						if err != nil {
 							logger.Error("silk to wav fail", "err", err)
 							q.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
