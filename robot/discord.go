@@ -49,9 +49,11 @@ type DiscordRobot struct {
 	Msg     *discordgo.MessageCreate
 	Inter   *discordgo.InteractionCreate
 	
-	Robot   *RobotInfo
-	Prompt  string
-	Command string
+	Robot        *RobotInfo
+	Prompt       string
+	Command      string
+	ImageContent []byte
+	AudioContent []byte
 }
 
 func StartDiscordRobot(ctx context.Context) {
@@ -102,7 +104,8 @@ func (d *DiscordRobot) checkValid() bool {
 			logger.WarnCtx(d.Robot.Ctx, "skip this msg", "msgId", msgId, "chat", chatId, "content", d.Msg.Content)
 			return false
 		}
-		d.Prompt = d.Msg.Content
+		d.Command, d.Prompt = ParseCommand(d.Msg.Content)
+		d.getMessageContent()
 		return true
 	}
 	
@@ -126,6 +129,41 @@ func (d *DiscordRobot) getMsgContent() string {
 		return d.Msg.Content
 	}
 	return ""
+}
+
+func (d *DiscordRobot) getMessageContent() {
+	var err error
+	if d.Inter != nil && d.Inter.ApplicationCommandData().GetOption("image") != nil {
+		if attachment, ok := d.Inter.ApplicationCommandData().GetOption("image").Value.(string); ok {
+			d.ImageContent, err = utils.DownloadFile(d.Inter.ApplicationCommandData().Resolved.Attachments[attachment].URL)
+			if err != nil {
+				logger.WarnCtx(d.Robot.Ctx, "download image fail", "err", err)
+			}
+		}
+	}
+	
+	if d.Msg != nil {
+		attachments := d.Msg.Attachments
+		if len(attachments) > 0 {
+			for _, att := range attachments {
+				if strings.HasPrefix(att.ContentType, "audio/") {
+					d.AudioContent, err = utils.DownloadFile(att.URL)
+					if d.AudioContent == nil || err != nil {
+						logger.ErrorCtx(d.Robot.Ctx, "audio url empty", "url", att.URL, "err", err)
+						return
+					}
+				}
+				
+				if strings.HasPrefix(att.ContentType, "image/") {
+					d.ImageContent, err = utils.DownloadFile(att.URL)
+					if d.ImageContent == nil || err != nil {
+						logger.ErrorCtx(d.Robot.Ctx, "image url empty", "url", att.URL, "err", err)
+						return
+					}
+				}
+			}
+		}
+	}
 }
 
 func (d *DiscordRobot) requestLLM(content string) {
@@ -239,63 +277,22 @@ func (d *DiscordRobot) sendText(messageChan *MsgChan) {
 	}
 }
 
-func (d *DiscordRobot) getContent(defaultText string) (string, error) {
-	var content string
-	var attachments []*discordgo.MessageAttachment
+func (d *DiscordRobot) getContent(content string) (string, error) {
 	
-	if d.Msg != nil {
-		content = strings.TrimSpace(d.Msg.Content)
-		attachments = d.Msg.Attachments
-	} else if d.Inter != nil {
-		if d.Inter.Type == discordgo.InteractionApplicationCommand {
-			if len(d.Inter.ApplicationCommandData().Options) > 0 {
-				content = strings.TrimSpace(d.Inter.ApplicationCommandData().Options[0].StringValue())
-			}
-			if d.Inter.ApplicationCommandData().GetOption("image") != nil {
-				if imageId, ok := d.Inter.ApplicationCommandData().GetOption("image").Value.(string); ok {
-					attachments = append(attachments, d.Inter.ApplicationCommandData().Resolved.Attachments[imageId])
-				}
-			}
+	var err error
+	if d.AudioContent != nil {
+		content, err = d.Robot.GetAudioContent(d.AudioContent)
+		if err != nil {
+			logger.WarnCtx(d.Robot.Ctx, "get audio content err", "err", err)
+			return "", err
 		}
 	}
 	
-	if content == "" {
-		content = strings.TrimSpace(defaultText)
-	}
-	
-	if content == "" && len(attachments) > 0 {
-		for _, att := range attachments {
-			if strings.HasPrefix(att.ContentType, "audio/") {
-				audioContent, err := utils.DownloadFile(att.URL)
-				if audioContent == nil || err != nil {
-					logger.WarnCtx(d.Robot.Ctx, "audio url empty", "url", att.URL, "err", err)
-					return "", errors.New("audio url empty")
-				}
-				content, err = d.Robot.GetAudioContent(audioContent)
-				if err != nil {
-					logger.WarnCtx(d.Robot.Ctx, "get audio content err", "err", err)
-					return "", err
-				}
-				break
-			}
-		}
-	}
-	
-	if len(attachments) > 0 {
-		for _, att := range attachments {
-			if strings.HasPrefix(att.ContentType, "image/") {
-				image, err := utils.DownloadFile(att.URL)
-				if image == nil || err != nil {
-					logger.WarnCtx(d.Robot.Ctx, "image url empty", "url", att.URL, "err", err)
-					return "", errors.New("image url empty")
-				}
-				content, err = d.Robot.GetImageContent(image, content)
-				if err != nil {
-					logger.WarnCtx(d.Robot.Ctx, "get image content err", "err", err)
-					return "", err
-				}
-				break
-			}
+	if d.ImageContent != nil {
+		content, err = d.Robot.GetImageContent(d.ImageContent, content)
+		if err != nil {
+			logger.WarnCtx(d.Robot.Ctx, "get image content err", "err", err)
+			return "", err
 		}
 	}
 	
@@ -380,10 +377,10 @@ func registerSlashCommands(s *discordgo.Session) {
 		{Name: "retry", Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.retry.description", nil)},
 		{Name: "photo", Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.photo.description", nil), Options: []*discordgo.ApplicationCommandOption{
 			{Type: discordgo.ApplicationCommandOptionString, Name: "prompt", Description: "Prompt", Required: true},
-			{Type: discordgo.ApplicationCommandOptionAttachment, Name: "image", Description: "upload a image", Required: false},
 		}},
 		{Name: "edit_photo", Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.photo.description", nil), Options: []*discordgo.ApplicationCommandOption{
 			{Type: discordgo.ApplicationCommandOptionString, Name: "prompt", Description: "Prompt", Required: true},
+			{Type: discordgo.ApplicationCommandOptionAttachment, Name: "image", Description: "upload a image", Required: false},
 		}},
 		{Name: "video", Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.video.description", nil), Options: []*discordgo.ApplicationCommandOption{
 			{Type: discordgo.ApplicationCommandOptionString, Name: "prompt", Description: "Prompt", Required: true},
@@ -441,18 +438,8 @@ func (d *DiscordRobot) sendImg() {
 		d.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "thinking", nil),
 			msgId, tgbotapi.ModeMarkdown, nil)
 		
-		var lastImageContent []byte
+		var lastImageContent = d.ImageContent
 		var err error
-		
-		if d.Inter != nil && d.Inter.ApplicationCommandData().GetOption("image") != nil {
-			if attachment, ok := d.Inter.ApplicationCommandData().GetOption("image").Value.(string); ok {
-				lastImageContent, err = utils.DownloadFile(d.Inter.ApplicationCommandData().Resolved.Attachments[attachment].URL)
-				if err != nil {
-					logger.WarnCtx(d.Robot.Ctx, "download image fail", "err", err)
-				}
-			}
-		}
-		
 		if len(lastImageContent) == 0 && strings.Contains(d.Command, "edit_photo") {
 			lastImageContent, err = d.Robot.GetLastImageContent()
 			if err != nil {
@@ -534,17 +521,7 @@ func (d *DiscordRobot) sendVideo() {
 		d.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "thinking", nil),
 			msgId, tgbotapi.ModeMarkdown, nil)
 		
-		var imageContent []byte
-		var err error
-		if d.Inter != nil && d.Inter.ApplicationCommandData().GetOption("image") != nil {
-			if attachment, ok := d.Inter.ApplicationCommandData().GetOption("image").Value.(string); ok {
-				imageContent, err = utils.DownloadFile(d.Inter.ApplicationCommandData().Resolved.Attachments[attachment].URL)
-				if err != nil {
-					logger.WarnCtx(d.Robot.Ctx, "download image fail", "err", err)
-				}
-			}
-		}
-		
+		var imageContent = d.ImageContent
 		videoContent, totalToken, err := d.Robot.CreateVideo(prompt, imageContent)
 		if err != nil {
 			logger.WarnCtx(d.Robot.Ctx, "generate video fail", "err", err)

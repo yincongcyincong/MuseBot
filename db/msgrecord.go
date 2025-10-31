@@ -24,11 +24,12 @@ type UserRecords struct {
 }
 
 type AQ struct {
-	Question string `json:"question"`
-	Answer   string `json:"answer"`
-	Content  string `json:"content"`
-	Token    int    `json:"token"`
-	Mode     string `json:"mode"`
+	Question   string `json:"question"`
+	Answer     string `json:"answer"`
+	Content    string `json:"content"`
+	Token      int    `json:"token"`
+	Mode       string `json:"mode"`
+	CreateTime int64  `json:"create_time"`
 }
 
 type Record struct {
@@ -108,9 +109,10 @@ func InsertRecord() {
 		for i := len(records) - 1; i >= 0; i-- {
 			record := records[i]
 			InsertMsgRecord(user.UserId, &AQ{
-				Question: record.Question,
-				Answer:   record.Answer,
-				Content:  record.Content,
+				Question:   record.Question,
+				Answer:     record.Answer,
+				Content:    record.Content,
+				CreateTime: record.CreateTime,
 			}, false)
 		}
 	}

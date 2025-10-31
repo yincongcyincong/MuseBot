@@ -27,9 +27,11 @@ type TelegramRobot struct {
 	Update tgbotapi.Update
 	Bot    *tgbotapi.BotAPI
 	
-	Robot   *RobotInfo
-	Prompt  string
-	Command string
+	Robot        *RobotInfo
+	Prompt       string
+	Command      string
+	ImageContent []byte
+	AudioContent []byte
 }
 
 func NewTelegramRobot(update tgbotapi.Update, bot *tgbotapi.BotAPI) *TelegramRobot {
@@ -194,18 +196,25 @@ func (t *TelegramRobot) checkValid() bool {
 	}
 	
 	if t.Update.Message != nil {
+		if t.skipThisMsg() {
+			logger.WarnCtx(t.Robot.Ctx, "skip this msg", "msgId", msgId, "chat", chatId, "type", t.getMessage().Chat.Type, "content", t.getMsgContent())
+			return false
+		}
+		
 		t.Command, t.Prompt = ParseCommand(t.getMsgContent())
 		if t.Update.Message.IsCommand() {
 			t.Command = t.Update.Message.Command()
 		}
 		
-		if t.skipThisMsg() {
-			logger.WarnCtx(t.Robot.Ctx, "skip this msg", "msgId", msgId, "chat", chatId, "type", t.getMessage().Chat.Type, "content", t.getMsgContent())
-			return false
-		}
+		t.GetMessageContent()
 	}
 	
 	return true
+}
+
+func (t *TelegramRobot) GetMessageContent() {
+	t.ImageContent = t.GetPhotoContent()
+	t.AudioContent = t.GetAudioContent()
 }
 
 func (t *TelegramRobot) getMsgContent() string {
@@ -785,8 +794,7 @@ func (t *TelegramRobot) sendVideo() {
 			return
 		}
 		
-		lastImageContent := t.GetPhotoContent()
-		
+		lastImageContent := t.ImageContent
 		thinkingMsgId := t.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "thinking", nil),
 			replyToMessageID, tgbotapi.ModeMarkdown, nil)
 		
@@ -859,7 +867,7 @@ func (t *TelegramRobot) sendImg() {
 			return
 		}
 		
-		lastImageContent := t.GetPhotoContent()
+		lastImageContent := t.ImageContent
 		if len(lastImageContent) == 0 && strings.Contains(t.Command, "edit_photo") {
 			lastImageContent, err = t.Robot.GetLastImageContent()
 			if err != nil {
@@ -965,7 +973,7 @@ func (t *TelegramRobot) ExecuteForceReply() {
 func (t *TelegramRobot) getContent(content string) (string, error) {
 	var err error
 	if content == "" && t.Update.Message.Voice != nil {
-		audioContent := t.GetAudioContent()
+		audioContent := t.AudioContent
 		if audioContent == nil {
 			logger.WarnCtx(t.Robot.Ctx, "audio url empty")
 			return "", errors.New("audio url empty")
@@ -980,7 +988,7 @@ func (t *TelegramRobot) getContent(content string) (string, error) {
 	}
 	
 	if t.Update.Message.Photo != nil {
-		content, err = t.Robot.GetImageContent(t.GetPhotoContent(), content)
+		content, err = t.Robot.GetImageContent(t.ImageContent, content)
 		if err != nil {
 			logger.WarnCtx(t.Robot.Ctx, "get image content err", "err", err)
 			return "", err

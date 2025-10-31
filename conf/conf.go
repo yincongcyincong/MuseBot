@@ -38,7 +38,6 @@ type BaseConf struct {
 	QQOneBotReceiveToken    *string `json:"qq_one_bot_check_token"`
 	QQOneBotSendToken       *string `json:"qq_one_bot_send_token"`
 	QQOneBotHttpServer      *string `json:"qq_one_bot_http_server"`
-	SmartMode               *bool   `json:"smart_mode"`
 	
 	DeepseekToken     *string `json:"deepseek_token"`
 	OpenAIToken       *string `json:"openai_token"`
@@ -51,24 +50,26 @@ type BaseConf struct {
 	ErnieAK           *string `json:"ernie_ak"`
 	ErnieSK           *string `json:"ernie_sk"`
 	
-	BotName      *string `json:"bot_name"`
-	Type         *string `json:"type"`
-	MediaType    *string `json:"media_type"`
-	CustomUrl    *string `json:"custom_url"`
-	CustomPath   *string `json:"custom_path"`
-	VolcAK       *string `json:"volc_ak"`
-	VolcSK       *string `json:"volc_sk"`
-	DBType       *string `json:"db_type"`
-	DBConf       *string `json:"db_conf"`
-	LLMProxy     *string `json:"llm_proxy"`
-	RobotProxy   *string `json:"robot_proxy"`
-	Lang         *string `json:"lang"`
-	TokenPerUser *int    `json:"token_per_user"`
-	MaxUserChat  *int    `json:"max_user_chat"`
-	HTTPHost     *string `json:"http_host"`
-	UseTools     *bool   `json:"use_tools"`
-	MaxQAPair    *int    `json:"max_qa_pari"`
-	Character    *string `json:"character"`
+	BotName           *string `json:"bot_name"`
+	Type              *string `json:"type"`
+	MediaType         *string `json:"media_type"`
+	CustomUrl         *string `json:"custom_url"`
+	CustomPath        *string `json:"custom_path"`
+	VolcAK            *string `json:"volc_ak"`
+	VolcSK            *string `json:"volc_sk"`
+	DBType            *string `json:"db_type"`
+	DBConf            *string `json:"db_conf"`
+	LLMProxy          *string `json:"llm_proxy"`
+	RobotProxy        *string `json:"robot_proxy"`
+	Lang              *string `json:"lang"`
+	TokenPerUser      *int    `json:"token_per_user"`
+	MaxUserChat       *int    `json:"max_user_chat"`
+	HTTPHost          *string `json:"http_host"`
+	UseTools          *bool   `json:"use_tools"`
+	MaxQAPair         *int    `json:"max_qa_pari"`
+	Character         *string `json:"character"`
+	SmartMode         *bool   `json:"smart_mode"`
+	ContextExpireTime *int    `json:"context_expire_time"`
 	
 	CrtFile *string `json:"crt_file"`
 	KeyFile *string `json:"key_file"`
@@ -110,6 +111,7 @@ func InitConf() {
 	BaseConfInfo.QQOneBotSendToken = flag.String("qq_onebot_send_token", "MuseBot", "onebot send token")
 	BaseConfInfo.QQOneBotHttpServer = flag.String("qq_onebot_http_server", "http://127.0.0.1:3000", "onebot http server")
 	BaseConfInfo.SmartMode = flag.Bool("smart_mode", false, "Smart mode")
+	BaseConfInfo.ContextExpireTime = flag.Int("context_expire_time", 86400, "Context expire time")
 	
 	BaseConfInfo.DeepseekToken = flag.String("deepseek_token", "", "deepseek auth token")
 	BaseConfInfo.OpenAIToken = flag.String("openai_token", "", "openai auth token")
@@ -394,6 +396,10 @@ func InitConf() {
 	
 	if os.Getenv("SMART_MODE") != "" {
 		*BaseConfInfo.SmartMode = os.Getenv("SMART_MODE") == "true"
+	}
+	
+	if os.Getenv("CONTEXT_EXPIRE_TIME") == "" {
+		*BaseConfInfo.ContextExpireTime, _ = strconv.Atoi(os.Getenv("CONTEXT_EXPIRE_TIME"))
 	}
 	
 	for _, userIdStr := range strings.Split(*allowedUserIds, ",") {

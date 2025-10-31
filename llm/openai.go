@@ -75,9 +75,6 @@ func (d *OpenAIReq) GetModel(l *LLM) {
 			l.Model = model
 		}
 	}
-	
-	logger.InfoCtx(l.Ctx, "User info", "userID", l.UserId, "mode", l.Model)
-	
 }
 
 func (d *OpenAIReq) Send(ctx context.Context, l *LLM) error {

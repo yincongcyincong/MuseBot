@@ -48,6 +48,7 @@ type WechatRobot struct {
 	Prompt       string
 	OriginPrompt string
 	ImageContent []byte
+	VoiceContent []byte
 	
 	TextMsg  *serverModel.MessageText
 	VoiceMsg *serverModel.MessageVoice
@@ -152,6 +153,8 @@ func NewWechatRobot(event contract.EventInterface) (*WechatRobot, bool) {
 }
 
 func (w *WechatRobot) checkValid() bool {
+	chatId, msgId, userId := w.Robot.GetChatIdAndMsgIdAndUserID()
+	var err error
 	if w.Event.GetMsgType() == models.CALLBACK_MSG_TYPE_TEXT {
 		w.OriginPrompt = w.TextMsg.Content
 		w.Command, w.Prompt = ParseCommand(w.TextMsg.Content)
@@ -159,7 +162,12 @@ func (w *WechatRobot) checkValid() bool {
 	}
 	
 	if w.Event.GetMsgType() == models.CALLBACK_MSG_TYPE_IMAGE {
-		_, msgId, userId := w.Robot.GetChatIdAndMsgIdAndUserID()
+		w.ImageContent, err = w.getMedia()
+		if err != nil {
+			logger.Error("read media fail", "err", err)
+			w.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
+			return false
+		}
 		if msgInfoInter, ok := TencentMsgMap.Load(userId); ok {
 			if msgInfo, ok := msgInfoInter.(*TencentWechatMessage); ok {
 				if msgInfo.Status == msgChangePhoto || msgInfo.Status == msgRecognizePhoto {
@@ -172,7 +180,12 @@ func (w *WechatRobot) checkValid() bool {
 	}
 	
 	if w.Event.GetMsgType() == models.CALLBACK_MSG_TYPE_VOICE {
-		_, msgId, userId := w.Robot.GetChatIdAndMsgIdAndUserID()
+		w.VoiceContent, err = w.getMedia()
+		if err != nil {
+			logger.Error("read media fail", "err", err)
+			w.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
+			return false
+		}
 		if msgInfoInter, ok := TencentMsgMap.Load(userId); ok {
 			if msgInfo, ok := msgInfoInter.(*TencentWechatMessage); ok {
 				if msgInfo.Status == msgSaveVoice {
@@ -388,20 +401,10 @@ func (w *WechatRobot) getContent(content string) (string, error) {
 	
 	switch msgType {
 	case models.CALLBACK_MSG_TYPE_IMAGE:
-		data, err := w.getMedia()
-		if err != nil {
-			return "", err
-		}
-		return w.Robot.GetImageContent(data, content)
+		return w.Robot.GetImageContent(w.ImageContent, content)
 	
 	case models.CALLBACK_MSG_TYPE_VOICE:
-		data, err := w.getMedia()
-		if err != nil {
-			logger.Error("read media fail", "err", err)
-			return "", err
-		}
-		
-		data, err = utils.AmrToOgg(data)
+		data, err := utils.AmrToOgg(w.VoiceContent)
 		if err != nil {
 			logger.Error("convert amr to wav fail", "err", err)
 			return "", err
@@ -483,14 +486,7 @@ func (w *WechatRobot) passiveExecCmd() {
 				if msgInfo, ok := msgInfoInter.(*TencentWechatMessage); ok {
 					switch msgInfo.Status {
 					case msgChangePhoto:
-						data, err := w.getMedia()
-						if err != nil {
-							logger.Error("read media fail", "err", err)
-							w.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
-							return
-						}
 						w.Prompt = msgInfo.Msg
-						w.ImageContent = data
 						w.sendImg()
 					case msgRecognizePhoto:
 						w.Prompt = msgInfo.Msg
@@ -507,13 +503,7 @@ func (w *WechatRobot) passiveExecCmd() {
 				if msgInfo, ok := msgInfoInter.(*TencentWechatMessage); ok {
 					switch msgInfo.Status {
 					case msgSaveVoice:
-						data, err := w.getMedia()
-						if err != nil {
-							logger.Error("read media fail", "err", err)
-							w.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
-							return
-						}
-						data, err = utils.AmrToMp3(data)
+						data, err := utils.AmrToMp3(w.VoiceContent)
 						if err != nil {
 							logger.Error("convert amr to wav fail", "err", err)
 							w.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)

@@ -193,16 +193,18 @@ func (l *LLM) OverLoop() bool {
 func (l *LLM) InsertOrUpdate() error {
 	if l.RecordId == 0 {
 		db.InsertMsgRecord(l.UserId, &db.AQ{
-			Question: l.Content,
-			Answer:   l.WholeContent,
-			Token:    l.Token,
+			Question:   l.Content,
+			Answer:     l.WholeContent,
+			Token:      l.Token,
+			CreateTime: time.Now().Unix(),
 		}, true)
 		return nil
 	}
 	
 	db.InsertMsgRecord(l.UserId, &db.AQ{
-		Question: l.Content,
-		Answer:   l.WholeContent,
+		Question:   l.Content,
+		Answer:     l.WholeContent,
+		CreateTime: time.Now().Unix(),
 	}, false)
 	err := db.UpdateRecordInfo(&db.Record{
 		ID:     l.RecordId,
@@ -223,7 +225,7 @@ func (l *LLM) GetMessages(userId string, prompt string) {
 	if msgRecords != nil {
 		aqs := db.FilterByMaxContextFromLatest(msgRecords.AQs, param.DefaultContextToken)
 		for i, record := range aqs {
-			if record.Question != "" && record.Answer != "" {
+			if record.Question != "" && record.Answer != "" && record.CreateTime > time.Now().Unix()-int64(*conf.BaseConfInfo.ContextExpireTime) {
 				logger.InfoCtx(l.Ctx, "context content", "dialog", i, "question:", record.Question, "answer:", record.Answer)
 				l.LLMClient.GetUserMessage(record.Question)
 				l.LLMClient.GetAssistantMessage(record.Answer)

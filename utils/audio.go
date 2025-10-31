@@ -380,6 +380,27 @@ func AmrToOgg(amrData []byte) ([]byte, error) {
 	return out.Bytes(), nil
 }
 
+func OGGToMP3(oggBytes []byte) ([]byte, error) {
+	cmd := exec.Command("ffmpeg",
+		"-i", "pipe:0",
+		"-acodec", "libmp3lame",
+		"-f", "mp3",
+		"pipe:1",
+	)
+	
+	cmd.Stdin = bytes.NewReader(oggBytes)
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	
+	if err := cmd.Run(); err != nil {
+		return nil, fmt.Errorf("ffmpeg error: %v, %s", err, stderr.String())
+	}
+	
+	return out.Bytes(), nil
+}
+
 func PCMToAMR(pcmData []byte, sampleRate int, channels int) ([]byte, error) {
 	cmd := exec.Command("ffmpeg",
 		"-f", "s16le",
@@ -471,6 +492,28 @@ func PCMToMP3(pcmBytes []byte, sampleRate int, channels int) ([]byte, error) {
 	)
 	
 	cmd.Stdin = bytes.NewReader(pcmBytes)
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	
+	if err := cmd.Run(); err != nil {
+		return nil, fmt.Errorf("ffmpeg error: %v, %s", err, stderr.String())
+	}
+	
+	return out.Bytes(), nil
+}
+
+func MP4ToMP3(mp4Bytes []byte) ([]byte, error) {
+	cmd := exec.Command("ffmpeg",
+		"-i", "pipe:0",
+		"-vn",
+		"-acodec", "libmp3lame",
+		"-f", "mp3",
+		"pipe:1",
+	)
+	
+	cmd.Stdin = bytes.NewReader(mp4Bytes)
 	var out bytes.Buffer
 	cmd.Stdout = &out
 	var stderr bytes.Buffer
