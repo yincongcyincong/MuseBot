@@ -52,10 +52,6 @@ func NewWeb(command string, userId int64, realUserId, prompt, originalPrompt str
 	return web
 }
 
-func (web *Web) checkValid() bool {
-	return true
-}
-
 func (web *Web) getMsgContent() string {
 	return web.Command
 }

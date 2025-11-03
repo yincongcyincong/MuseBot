@@ -135,7 +135,7 @@ func (r *RobotInfo) Exec() {
 		return
 	}
 	
-	if r.Robot.checkValid() && r.AddUserInfo() {
+	if r.AddUserInfo() && r.Robot.checkValid() {
 		r.smartMode()
 		r.Robot.requestLLM(r.Robot.getMsgContent())
 	}
@@ -1662,7 +1662,7 @@ func (r *RobotInfo) InsertRecord() {
 	
 	id, err := db.InsertRecordInfo(&db.Record{
 		UserId:     userId,
-		Question:   r.Robot.getPrompt(),
+		Question:   "/" + strings.TrimLeft(r.Robot.getCommand(), "/") + " " + r.Robot.getPrompt(),
 		RecordType: param.TextRecordType,
 		Token:      r.Token,
 	})

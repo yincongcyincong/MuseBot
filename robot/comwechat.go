@@ -152,6 +152,21 @@ func (c *ComWechatRobot) checkValid() bool {
 				}
 			}
 		}
+		if c.VoiceContent != nil {
+			data, err := utils.AmrToOgg(c.VoiceContent)
+			if err != nil {
+				logger.ErrorCtx(c.Robot.Ctx, "convert amr to wav fail", "err", err)
+				c.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
+				
+				return false
+			}
+			c.Prompt, err = c.Robot.GetAudioContent(data)
+			if err != nil {
+				logger.ErrorCtx(c.Robot.Ctx, "get audio content fail", "err", err)
+				c.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
+				return false
+			}
+		}
 	}
 	
 	return true
@@ -379,15 +394,6 @@ func (c *ComWechatRobot) getContent(content string) (string, error) {
 	switch msgType {
 	case models.CALLBACK_MSG_TYPE_IMAGE:
 		return c.Robot.GetImageContent(c.ImageContent, content)
-	
-	case models.CALLBACK_MSG_TYPE_VOICE:
-		data, err := utils.AmrToOgg(c.VoiceContent)
-		if err != nil {
-			logger.ErrorCtx(c.Robot.Ctx, "convert amr to wav fail", "err", err)
-			return "", err
-		}
-		return c.Robot.GetAudioContent(data)
-		
 	}
 	
 	if content == "" {

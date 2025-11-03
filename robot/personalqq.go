@@ -313,14 +313,6 @@ func (q *PersonalQQRobot) getContent(content string) (string, error) {
 		}
 	}
 	
-	if q.AudioContent != nil {
-		content, err = q.Robot.GetAudioContent(q.AudioContent)
-		if err != nil {
-			logger.Warn("generate text from audio failed", "err", err)
-			return "", err
-		}
-	}
-	
 	if content == "" {
 		logger.Warn("content extraction returned empty")
 		return "", errors.New("content is empty")
@@ -459,6 +451,7 @@ func (q *PersonalQQRobot) GetMessageContent() (bool, error) {
 		switch v.Type {
 		case "text":
 			prompt += v.Data.Text
+			q.Command, q.Prompt = ParseCommand(prompt)
 		case "image":
 			q.ImageContent, err = utils.DownloadFile(v.Data.Url)
 			if err != nil {
@@ -469,11 +462,15 @@ func (q *PersonalQQRobot) GetMessageContent() (bool, error) {
 			if err != nil {
 				return false, err
 			}
+			q.Prompt, err = q.Robot.GetAudioContent(q.AudioContent)
+			if err != nil {
+				logger.Warn("generate text from audio failed", "err", err)
+				return false, err
+			}
 		case "at":
 			isAt = v.Data.QQ == strconv.Itoa(int(q.Msg.SelfID))
 		}
 	}
-	q.Command, q.Prompt = ParseCommand(prompt)
 	if q.Command == "" && q.Prompt == "" && q.ImageContent == nil && q.AudioContent == nil {
 		return false, fmt.Errorf("no content")
 	}

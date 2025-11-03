@@ -182,21 +182,19 @@ func (s *SlackRobot) checkValid() bool {
 	}
 	
 	s.Command, s.Prompt = ParseCommand(strings.ReplaceAll(s.Event.Text, atRobot, ""))
-	s.getMessageContent()
-	return true
+	return s.getMessageContent()
 }
 
-func (s *SlackRobot) getMessageContent() {
+func (s *SlackRobot) getMessageContent() bool {
 	if s.Event != nil && s.Event.Message.Files != nil && len(s.Event.Message.Files) > 0 {
 		file := s.Event.Message.Files[0]
 		var err error
-		
 		switch file.Mimetype {
 		case "image/jpeg", "image/png", "image/gif", "image/webp":
 			s.ImageContent, err = s.downloadSlackFile(file.URLPrivateDownload)
 			if err != nil {
 				logger.Error("download image failed", "err", err)
-				return
+				return false
 			}
 		
 		case "audio/mpeg", "audio/wav", "audio/ogg", "audio/mp4":
@@ -204,10 +202,18 @@ func (s *SlackRobot) getMessageContent() {
 			s.VoiceContent, err = s.downloadSlackFile(file.URLPrivateDownload)
 			if err != nil {
 				logger.Error("download audio failed", "err", err)
-				return
+				return false
+			}
+			
+			s.Prompt, err = s.Robot.GetAudioContent(s.VoiceContent)
+			if err != nil {
+				logger.Warn("generate text from audio failed", "err", err)
+				return false
 			}
 		}
 	}
+	
+	return true
 }
 
 func (s *SlackRobot) getMsgContent() string {
@@ -263,13 +269,6 @@ func (s *SlackRobot) getContent(content string) (string, error) {
 		content, err = s.Robot.GetImageContent(s.ImageContent, content)
 		if err != nil {
 			logger.Warn("generate text from image failed", "err", err)
-			return "", err
-		}
-	
-	case "audio/mpeg", "audio/wav", "audio/ogg", "audio/mp4":
-		content, err = s.Robot.GetAudioContent(s.VoiceContent)
-		if err != nil {
-			logger.Warn("generate text from audio failed", "err", err)
 			return "", err
 		}
 	default:

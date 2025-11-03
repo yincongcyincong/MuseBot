@@ -65,8 +65,8 @@ func TestOpenAIReq_AppendMessages(t *testing.T) {
 func TestOpenAIReq_GetModel_Default(t *testing.T) {
 	req := &OpenAIReq{}
 	ctx := context.WithValue(context.Background(), "user_info", &db.User{
-		LLMConfig:    `{"type":"gemini"}`,
-		LLMConfigRaw: &param.LLMConfig{TxtType: param.Gemini},
+		LLMConfig:    `{"type":"openai"}`,
+		LLMConfigRaw: &param.LLMConfig{TxtType: param.OpenAi},
 	})
 	llmObj := NewLLM(WithChatId("1"), WithMsgId("2"), WithUserId("4"),
 		WithContent("hi"), WithContext(ctx))

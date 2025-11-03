@@ -413,14 +413,6 @@ func (d *DingRobot) getContent(content string) (string, error) {
 				return "", err
 			}
 		}
-	case "audio":
-		if d.AudioContent != nil {
-			content, err = d.Robot.GetAudioContent(d.AudioContent)
-			if err != nil {
-				logger.Warn("generate text from audio failed", "err", err)
-				return "", err
-			}
-		}
 	}
 	
 	if content == "" {
@@ -436,9 +428,12 @@ func (d *DingRobot) GetMessageContent() (bool, error) {
 		return false, errors.New("callback data is nil")
 	}
 	
+	chatId, msgId, _ := d.Robot.GetChatIdAndMsgIdAndUserID()
+	
 	accessToken, err := d.GetAccessToken()
 	if err != nil {
 		logger.Error("get access token failed", "err", err)
+		d.Robot.SendMsg(chatId, err.Error(), msgId, "", nil)
 		return false, err
 	}
 	botAt := false
@@ -464,6 +459,7 @@ func (d *DingRobot) GetMessageContent() (bool, error) {
 			d.ImageContent, err = d.GetImageContent(accessToken, c)
 			if err != nil {
 				logger.Error("get image content fail", "err", err)
+				d.Robot.SendMsg(chatId, err.Error(), msgId, "", nil)
 				return false, err
 			}
 		}
@@ -473,6 +469,13 @@ func (d *DingRobot) GetMessageContent() (bool, error) {
 			d.AudioContent, err = d.GetImageContent(accessToken, c)
 			if err != nil {
 				logger.Error("get image content fail", "err", err)
+				d.Robot.SendMsg(chatId, err.Error(), msgId, "", nil)
+				return false, err
+			}
+			content, err = d.Robot.GetAudioContent(d.AudioContent)
+			if err != nil {
+				logger.Warn("generate text from audio failed", "err", err)
+				d.Robot.SendMsg(chatId, err.Error(), msgId, "", nil)
 				return false, err
 			}
 		}

@@ -133,6 +133,7 @@ func (d *DiscordRobot) getMsgContent() string {
 
 func (d *DiscordRobot) getMessageContent() {
 	var err error
+	chatId, msgId, _ := d.Robot.GetChatIdAndMsgIdAndUserID()
 	if d.Inter != nil && d.Inter.ApplicationCommandData().GetOption("image") != nil {
 		if attachment, ok := d.Inter.ApplicationCommandData().GetOption("image").Value.(string); ok {
 			d.ImageContent, err = utils.DownloadFile(d.Inter.ApplicationCommandData().Resolved.Attachments[attachment].URL)
@@ -150,7 +151,16 @@ func (d *DiscordRobot) getMessageContent() {
 					d.AudioContent, err = utils.DownloadFile(att.URL)
 					if d.AudioContent == nil || err != nil {
 						logger.ErrorCtx(d.Robot.Ctx, "audio url empty", "url", att.URL, "err", err)
+						d.Robot.SendMsg(chatId, err.Error(), msgId, "", nil)
 						return
+					}
+					if d.AudioContent != nil {
+						d.Prompt, err = d.Robot.GetAudioContent(d.AudioContent)
+						if err != nil {
+							logger.WarnCtx(d.Robot.Ctx, "get audio content err", "err", err)
+							d.Robot.SendMsg(chatId, err.Error(), msgId, "", nil)
+							return
+						}
 					}
 				}
 				
@@ -158,6 +168,7 @@ func (d *DiscordRobot) getMessageContent() {
 					d.ImageContent, err = utils.DownloadFile(att.URL)
 					if d.ImageContent == nil || err != nil {
 						logger.ErrorCtx(d.Robot.Ctx, "image url empty", "url", att.URL, "err", err)
+						d.Robot.SendMsg(chatId, err.Error(), msgId, "", nil)
 						return
 					}
 				}
@@ -280,14 +291,6 @@ func (d *DiscordRobot) sendText(messageChan *MsgChan) {
 func (d *DiscordRobot) getContent(content string) (string, error) {
 	
 	var err error
-	if d.AudioContent != nil {
-		content, err = d.Robot.GetAudioContent(d.AudioContent)
-		if err != nil {
-			logger.WarnCtx(d.Robot.Ctx, "get audio content err", "err", err)
-			return "", err
-		}
-	}
-	
 	if d.ImageContent != nil {
 		content, err = d.Robot.GetImageContent(d.ImageContent, content)
 		if err != nil {
