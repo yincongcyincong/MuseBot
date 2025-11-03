@@ -273,7 +273,7 @@ func GetAvailRecType() []string {
 	if *conf.BaseConfInfo.GeminiToken != "" {
 		res = append(res, param.Gemini)
 	}
-	if *conf.BaseConfInfo.OpenRouterToken != "" {
+	if *conf.BaseConfInfo.OpenAIToken != "" {
 		res = append(res, param.OpenAi)
 	}
 	if *conf.BaseConfInfo.AliyunToken != "" {
@@ -284,9 +284,6 @@ func GetAvailRecType() []string {
 	}
 	if *conf.BaseConfInfo.VolToken != "" {
 		res = append(res, param.Vol)
-	}
-	if *conf.BaseConfInfo.OpenAIToken != "" {
-		res = append(res, param.OpenAi)
 	}
 	
 	return res

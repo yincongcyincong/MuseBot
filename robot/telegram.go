@@ -206,15 +206,20 @@ func (t *TelegramRobot) checkValid() bool {
 			t.Command = t.Update.Message.Command()
 		}
 		
-		t.GetMessageContent()
+		t.ImageContent = t.GetPhotoContent()
+		t.AudioContent = t.GetAudioContent()
+		var err error
+		if t.AudioContent != nil {
+			t.Prompt, err = t.Robot.GetAudioContent(t.AudioContent)
+			if err != nil {
+				logger.WarnCtx(t.Robot.Ctx, "convert audio to text fail", "err", err)
+				t.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
+				return false
+			}
+		}
 	}
 	
 	return true
-}
-
-func (t *TelegramRobot) GetMessageContent() {
-	t.ImageContent = t.GetPhotoContent()
-	t.AudioContent = t.GetAudioContent()
 }
 
 func (t *TelegramRobot) getMsgContent() string {
@@ -350,10 +355,9 @@ func (t *TelegramRobot) handleCommand() {
 // sendChatMessage response chat command to telegram
 func (t *TelegramRobot) sendChatMessage() {
 	chatId, msgID, _ := t.Robot.GetChatIdAndMsgIdAndUserID()
-	messageText := ""
+	messageText := t.Prompt
 	var err error
 	if t.Update.Message != nil {
-		messageText = t.getMsgContent()
 		if messageText == "" {
 			messageText = t.Update.Message.Caption
 		}
@@ -940,7 +944,7 @@ func (t *TelegramRobot) sendImg() {
 			Content:    originImageURI,
 			IsDeleted:  0,
 			RecordType: param.ImageRecordType,
-			Mode:       utils.GetVideoType(db.GetCtxUserInfo(t.Robot.Ctx).LLMConfigRaw),
+			Mode:       utils.GetImgType(db.GetCtxUserInfo(t.Robot.Ctx).LLMConfigRaw),
 		})
 	})
 }
@@ -972,21 +976,6 @@ func (t *TelegramRobot) ExecuteForceReply() {
 
 func (t *TelegramRobot) getContent(content string) (string, error) {
 	var err error
-	if content == "" && t.Update.Message.Voice != nil {
-		audioContent := t.AudioContent
-		if audioContent == nil {
-			logger.WarnCtx(t.Robot.Ctx, "audio url empty")
-			return "", errors.New("audio url empty")
-		}
-		
-		content, err = t.Robot.GetAudioContent(audioContent)
-		if err != nil {
-			logger.WarnCtx(t.Robot.Ctx, "generate text fail", "err", err)
-			return "", err
-		}
-		
-	}
-	
 	if t.Update.Message.Photo != nil {
 		content, err = t.Robot.GetImageContent(t.ImageContent, content)
 		if err != nil {

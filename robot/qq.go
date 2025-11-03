@@ -193,6 +193,19 @@ func (q *QQRobot) checkValid() bool {
 				}
 			}
 		}
+		data, err := utils.SilkToWav(q.AudioContent)
+		if err != nil {
+			logger.ErrorCtx(q.Robot.Ctx, "silk to wav fail", "err", err)
+			q.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
+			return false
+		}
+		
+		q.Prompt, err = q.Robot.GetAudioContent(data)
+		if err != nil {
+			logger.ErrorCtx(q.Robot.Ctx, "generate text from audio failed", "err", err)
+			q.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
+			return false
+		}
 	}
 	
 	return true
@@ -401,19 +414,6 @@ func (q *QQRobot) getContent(content string) (string, error) {
 	switch {
 	case strings.Contains(attachment.ContentType, "image"):
 		content, err = q.Robot.GetImageContent(q.ImageContent, content)
-		if err != nil {
-			logger.Warn("generate text from audio failed", "err", err)
-			return "", err
-		}
-	
-	case strings.Contains(attachment.ContentType, "voice"):
-		data, err := utils.SilkToWav(q.AudioContent)
-		if err != nil {
-			logger.Error("silk to wav fail", "err", err)
-			return "", err
-		}
-		
-		content, err = q.Robot.GetAudioContent(data)
 		if err != nil {
 			logger.Warn("generate text from audio failed", "err", err)
 			return "", err

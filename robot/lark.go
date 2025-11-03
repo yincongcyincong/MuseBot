@@ -407,35 +407,6 @@ func (l *LarkRobot) getContent(content string) (string, error) {
 			logger.Warn("generate text from audio failed", "err", err)
 			return "", err
 		}
-	case larkim.MsgTypeAudio:
-		msgAudio := new(larkim.MessageAudio)
-		err = json.Unmarshal([]byte(larkcore.StringValue(l.Message.Event.Message.Content)), msgAudio)
-		if err != nil {
-			logger.Warn("unmarshal message audio failed", "err", err)
-			return "", err
-		}
-		resp, err := l.Client.Im.V1.MessageResource.Get(l.Robot.Ctx,
-			larkim.NewGetMessageResourceReqBuilder().
-				MessageId(msgId).
-				FileKey(msgAudio.FileKey).
-				Type("file").
-				Build())
-		if err != nil || !resp.Success() {
-			logger.Error("get image failed", "err", err, "resp", resp)
-			return "", err
-		}
-		
-		bs, err := io.ReadAll(resp.File)
-		if err != nil {
-			logger.Error("read image failed", "err", err)
-			return "", err
-		}
-		
-		content, err = l.Robot.GetAudioContent(bs)
-		if err != nil {
-			logger.Warn("generate text from audio failed", "err", err)
-			return "", err
-		}
 	case larkim.MsgTypePost:
 		if len(l.ImageContent) != 0 {
 			content, err = l.Robot.GetImageContent(l.ImageContent, content)
@@ -566,6 +537,35 @@ func (l *LarkRobot) GetMessageContent() (bool, error) {
 					
 				}
 			}
+		}
+	} else if msgType == larkim.MsgTypeAudio {
+		msgAudio := new(larkim.MessageAudio)
+		err := json.Unmarshal([]byte(larkcore.StringValue(l.Message.Event.Message.Content)), msgAudio)
+		if err != nil {
+			logger.Warn("unmarshal message audio failed", "err", err)
+			return false, err
+		}
+		resp, err := l.Client.Im.V1.MessageResource.Get(l.Robot.Ctx,
+			larkim.NewGetMessageResourceReqBuilder().
+				MessageId(msgId).
+				FileKey(msgAudio.FileKey).
+				Type("file").
+				Build())
+		if err != nil || !resp.Success() {
+			logger.Error("get image failed", "err", err, "resp", resp)
+			return false, err
+		}
+		
+		bs, err := io.ReadAll(resp.File)
+		if err != nil {
+			logger.Error("read image failed", "err", err)
+			return false, err
+		}
+		
+		l.Prompt, err = l.Robot.GetAudioContent(bs)
+		if err != nil {
+			logger.Warn("generate text from audio failed", "err", err)
+			return false, err
 		}
 	}
 	
