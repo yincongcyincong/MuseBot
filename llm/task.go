@@ -61,7 +61,7 @@ func (d *LLMTaskReq) ExecuteTask() error {
 		return true
 	})
 	
-	prompt := i18n.GetMessage(*conf.BaseConfInfo.Lang, "assign_task_prompt", taskParam)
+	prompt := i18n.GetMessage("assign_task_prompt", taskParam)
 	llm := NewLLM(WithUserId(d.UserId), WithChatId(d.ChatId), WithMsgId(d.MsgId),
 		WithMessageChan(d.MessageChan), WithContent(prompt), WithHTTPMsgChan(d.HTTPMsgChan),
 		WithPerMsgLen(d.PerMsgLen), WithContext(d.Ctx))
@@ -116,7 +116,7 @@ func (d *LLMTaskReq) ExecuteTask() error {
 	// summary
 	summaryParam := make(map[string]interface{})
 	summaryParam["user_task"] = d.Content
-	summaryPrompt := i18n.GetMessage(*conf.BaseConfInfo.Lang, "summary_task_prompt", summaryParam)
+	summaryPrompt := i18n.GetMessage("summary_task_prompt", summaryParam)
 	llm.LLMClient.GetUserMessage(summaryPrompt)
 	llm.Content = summaryPrompt
 	
@@ -171,7 +171,7 @@ func (d *LLMTaskReq) loopTask(ctx context.Context, plans *TaskInfo, lastPlan str
 		"last_plan":      lastPlan,
 	}
 	
-	llm.LLMClient.GetUserMessage(i18n.GetMessage(*conf.BaseConfInfo.Lang, "loop_task_prompt", taskParam))
+	llm.LLMClient.GetUserMessage(i18n.GetMessage("loop_task_prompt", taskParam))
 	llm.LLMClient.GetModel(llm)
 	
 	metrics.APIRequestCount.WithLabelValues(llm.Model).Inc()

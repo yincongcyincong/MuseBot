@@ -35,7 +35,7 @@ type BaseConf struct {
 	WechatActive            *bool   `json:"wechat_active"`
 	QQAppID                 *string `json:"qq_app_id"`
 	QQAppSecret             *string `json:"qq_app_secret"`
-	QQOneBotReceiveToken    *string `json:"qq_one_bot_check_token"`
+	QQOneBotReceiveToken    *string `json:"qq_one_bot_receive_token"`
 	QQOneBotSendToken       *string `json:"qq_one_bot_send_token"`
 	QQOneBotHttpServer      *string `json:"qq_one_bot_http_server"`
 	
@@ -70,6 +70,7 @@ type BaseConf struct {
 	Character         *string `json:"character"`
 	SmartMode         *bool   `json:"smart_mode"`
 	ContextExpireTime *int    `json:"context_expire_time"`
+	Powered           *string `json:"powered"`
 	
 	CrtFile *string `json:"crt_file"`
 	KeyFile *string `json:"key_file"`
@@ -142,6 +143,7 @@ func InitConf() {
 	BaseConfInfo.UseTools = flag.Bool("use_tools", false, "use function tools")
 	BaseConfInfo.MaxQAPair = flag.Int("max_qa_pari", 100, "max qa pair")
 	BaseConfInfo.Character = flag.String("character", "", "ai's character")
+	BaseConfInfo.Powered = flag.String("powered", "", "powered by")
 	
 	BaseConfInfo.CrtFile = flag.String("crt_file", "", "public key file")
 	BaseConfInfo.KeyFile = flag.String("key_file", "", "secret key file")
@@ -398,8 +400,12 @@ func InitConf() {
 		*BaseConfInfo.SmartMode = os.Getenv("SMART_MODE") == "true"
 	}
 	
-	if os.Getenv("CONTEXT_EXPIRE_TIME") == "" {
+	if os.Getenv("CONTEXT_EXPIRE_TIME") != "" {
 		*BaseConfInfo.ContextExpireTime, _ = strconv.Atoi(os.Getenv("CONTEXT_EXPIRE_TIME"))
+	}
+	
+	if os.Getenv("POWERED") != "" {
+		*BaseConfInfo.Powered = os.Getenv("POWERED")
 	}
 	
 	for _, userIdStr := range strings.Split(*allowedUserIds, ",") {
@@ -475,6 +481,9 @@ func InitConf() {
 	logger.Info("CONF", "BotName", *BaseConfInfo.BotName)
 	logger.Info("CONF", "MaxQAPair", *BaseConfInfo.MaxQAPair)
 	logger.Info("CONF", "SmartMode", *BaseConfInfo.SmartMode)
+	logger.Info("CONF", "Powered", *BaseConfInfo.Powered)
+	logger.Info("CONF", "Character", *BaseConfInfo.Character)
+	logger.Info("CONF", "ContextExpireTime", *BaseConfInfo.ContextExpireTime)
 	
 	EnvAudioConf()
 	EnvRagConf()

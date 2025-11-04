@@ -89,11 +89,11 @@ func (web *Web) Exec() {
 }
 
 func (web *Web) sendHelpConfigurationOptions() {
-	web.SendMsg(i18n.GetMessage(*conf.BaseConfInfo.Lang, "help_text", nil))
+	web.SendMsg(i18n.GetMessage("help_text", nil))
 	db.InsertRecordInfo(&db.Record{
 		UserId:     web.RealUserId,
 		Question:   web.OriginalPrompt,
-		Answer:     i18n.GetMessage(*conf.BaseConfInfo.Lang, "help_text", nil),
+		Answer:     i18n.GetMessage("help_text", nil),
 		Token:      0, // llm already calculate it
 		IsDeleted:  0,
 		RecordType: param.WEBRecordType,
@@ -168,19 +168,19 @@ func (web *Web) changeModel(t string) {
 	case param.OpenRouter, param.AI302, param.Ollama, param.OpenAi:
 		switch utils.GetTxtType(db.GetCtxUserInfo(web.Robot.Ctx).LLMConfigRaw) {
 		case param.OpenAi:
-			web.SendMsg(i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
+			web.SendMsg(i18n.GetMessage("mix_mode_choose", map[string]interface{}{
 				"link": "https://platform.openai.com/",
 			}))
 		case param.AI302:
-			web.SendMsg(i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
+			web.SendMsg(i18n.GetMessage("mix_mode_choose", map[string]interface{}{
 				"link": "https://302.ai/",
 			}))
 		case param.OpenRouter:
-			web.SendMsg(i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
+			web.SendMsg(i18n.GetMessage("mix_mode_choose", map[string]interface{}{
 				"link": "https://openrouteweb.ai/",
 			}))
 		case param.Ollama:
-			web.SendMsg(i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
+			web.SendMsg(i18n.GetMessage("mix_mode_choose", map[string]interface{}{
 				"link": "https://ollama.com/",
 			}))
 		}
@@ -237,7 +237,7 @@ func (web *Web) showStateInfo() {
 		logger.WarnCtx(web.Robot.Ctx, "get week token fail", "err", err)
 	}
 	
-	template := i18n.GetMessage(*conf.BaseConfInfo.Lang, "state_content", nil)
+	template := i18n.GetMessage("state_content", nil)
 	msgContent := fmt.Sprintf(template, userInfo.Token, todayTokey, weekToken, monthToken)
 	web.SendMsg(msgContent)
 	
@@ -255,7 +255,7 @@ func (web *Web) showStateInfo() {
 func (web *Web) clearAllRecord() {
 	userId := web.RealUserId
 	db.DeleteMsgRecord(userId)
-	deleteSuccMsg := i18n.GetMessage(*conf.BaseConfInfo.Lang, "delete_succ", nil)
+	deleteSuccMsg := i18n.GetMessage("delete_succ", nil)
 	web.SendMsg(deleteSuccMsg)
 	
 	db.InsertRecordInfo(&db.Record{
@@ -278,7 +278,7 @@ func (web *Web) retryLastQuestion() {
 		web.Prompt = records.AQs[len(records.AQs)-1].Question
 		web.sendChatMessage()
 	} else {
-		web.SendMsg(i18n.GetMessage(*conf.BaseConfInfo.Lang, "last_question_fail", nil))
+		web.SendMsg(i18n.GetMessage("last_question_fail", nil))
 	}
 	
 	return
@@ -290,7 +290,7 @@ func (web *Web) sendMultiAgent(agentType string) {
 	prompt := strings.TrimSpace(web.Prompt)
 	if prompt == "" {
 		logger.WarnCtx(web.Robot.Ctx, "prompt is empty")
-		web.SendMsg(i18n.GetMessage(*conf.BaseConfInfo.Lang, "photo_empty_content", nil))
+		web.SendMsg(i18n.GetMessage("photo_empty_content", nil))
 		return
 	}
 	
@@ -349,7 +349,7 @@ func (web *Web) sendImg() {
 	prompt := strings.TrimSpace(web.Prompt)
 	if prompt == "" {
 		logger.WarnCtx(web.Robot.Ctx, "prompt is empty")
-		web.SendMsg(i18n.GetMessage(*conf.BaseConfInfo.Lang, "photo_empty_content", nil))
+		web.SendMsg(i18n.GetMessage("photo_empty_content", nil))
 		return
 	}
 	
@@ -417,7 +417,7 @@ func (web *Web) sendVideo() {
 	prompt := strings.TrimSpace(web.Prompt)
 	if prompt == "" {
 		logger.WarnCtx(web.Robot.Ctx, "prompt is empty")
-		web.SendMsg(i18n.GetMessage(*conf.BaseConfInfo.Lang, "video_empty_content", nil))
+		web.SendMsg(i18n.GetMessage("video_empty_content", nil))
 		return
 	}
 	

@@ -151,11 +151,11 @@ func (l *LarkRobot) sendImg() {
 		prompt := strings.TrimSpace(l.Prompt)
 		if prompt == "" {
 			logger.Warn("prompt is empty")
-			l.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "photo_empty_content", nil), msgId, tgbotapi.ModeMarkdown, nil)
+			l.Robot.SendMsg(chatId, i18n.GetMessage("photo_empty_content", nil), msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
 		
-		originalMsgID := l.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "thinking", nil),
+		originalMsgID := l.Robot.SendMsg(chatId, i18n.GetMessage("thinking", nil),
 			msgId, "", nil)
 		
 		lastImageContent := l.ImageContent
@@ -240,11 +240,11 @@ func (l *LarkRobot) sendVideo() {
 		prompt := strings.TrimSpace(l.Prompt)
 		if prompt == "" {
 			logger.Warn("prompt is empty")
-			l.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "video_empty_content", nil), msgId, tgbotapi.ModeMarkdown, nil)
+			l.Robot.SendMsg(chatId, i18n.GetMessage("video_empty_content", nil), msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
 		
-		originalMsgID := l.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "thinking", nil),
+		originalMsgID := l.Robot.SendMsg(chatId, i18n.GetMessage("thinking", nil),
 			msgId, "", nil)
 		
 		videoContent, totalToken, err := l.Robot.CreateVideo(prompt, l.ImageContent)
@@ -633,4 +633,8 @@ func (l *LarkRobot) setCommand(command string) {
 
 func (l *LarkRobot) getCommand() string {
 	return l.Command
+}
+
+func (l *LarkRobot) getUserName() string {
+	return l.UserName
 }

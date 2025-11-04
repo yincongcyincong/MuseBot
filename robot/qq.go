@@ -242,7 +242,7 @@ func (q *QQRobot) sendImg() {
 		prompt := strings.TrimSpace(q.Prompt)
 		if prompt == "" {
 			logger.Warn("prompt is empty")
-			q.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "photo_empty_content", nil), msgId, tgbotapi.ModeMarkdown, nil)
+			q.Robot.SendMsg(chatId, i18n.GetMessage("photo_empty_content", nil), msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
 		
@@ -309,7 +309,7 @@ func (q *QQRobot) sendVideo() {
 		prompt := strings.TrimSpace(q.Prompt)
 		if prompt == "" {
 			logger.Warn("prompt is empty")
-			q.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "video_empty_content", nil), msgId, tgbotapi.ModeMarkdown, nil)
+			q.Robot.SendMsg(chatId, i18n.GetMessage("video_empty_content", nil), msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
 		
@@ -644,7 +644,7 @@ func (q *QQRobot) passiveExecCmd() {
 				Status:    status,
 				StartTime: time.Now(),
 			})
-			q.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "set_pre_prompt_success", nil),
+			q.Robot.SendMsg(chatId, i18n.GetMessage("set_pre_prompt_success", nil),
 				msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
@@ -686,7 +686,7 @@ func (q *QQRobot) passiveExecCmd() {
 							return
 						}
 						
-						q.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "save_audio_success", map[string]interface{}{
+						q.Robot.SendMsg(chatId, i18n.GetMessage("save_audio_success", map[string]interface{}{
 							"filename": fileName,
 						}), msgId, tgbotapi.ModeMarkdown, nil)
 					}
@@ -748,4 +748,8 @@ func (q *QQRobot) setCommand(command string) {
 
 func (q *QQRobot) getCommand() string {
 	return q.Command
+}
+
+func (q *QQRobot) getUserName() string {
+	return q.UserName
 }

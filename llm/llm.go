@@ -1,8 +1,10 @@
 package llm
 
 import (
+	"bytes"
 	"context"
 	"errors"
+	"html/template"
 	"time"
 	
 	godeepseek "github.com/cohesion-org/deepseek-go"
@@ -39,10 +41,11 @@ type LLM struct {
 	Token       int
 	RecordId    int64
 	
-	ChatId    string
-	UserId    string
-	MsgId     string
-	PerMsgLen int
+	ChatId           string
+	UserId           string
+	MsgId            string
+	PerMsgLen        int
+	ContentParameter map[string]string
 	
 	LLMClient LLMClient
 	
@@ -74,10 +77,11 @@ type LLMClient interface {
 
 func (l *LLM) CallLLM() error {
 	
-	l.GetMessages(l.UserId, l.GetContent(l.Content))
+	totalContent := l.GetContent(l.Ctx, l.Content)
+	l.GetMessages(l.UserId, totalContent)
 	l.LLMClient.GetModel(l)
 	
-	logger.InfoCtx(l.Ctx, "msg receive", "userID", l.UserId, "prompt", l.Content, "type",
+	logger.InfoCtx(l.Ctx, "msg receive", "userID", l.UserId, "prompt", totalContent, "type",
 		utils.GetTxtType(db.GetCtxUserInfo(l.Ctx).LLMConfigRaw), "model", l.Model)
 	
 	metrics.APIRequestCount.WithLabelValues(l.Model).Inc()
@@ -96,9 +100,26 @@ func (l *LLM) CallLLM() error {
 	return nil
 }
 
-func (l *LLM) GetContent(content string) string {
+func (l *LLM) GetContent(ctx context.Context, content string) string {
 	if *conf.BaseConfInfo.Character != "" {
-		content = *conf.BaseConfInfo.Character + "\n\n" + content
+		if l.ContentParameter != nil {
+			tmpl, err := template.New("character").Parse(*conf.BaseConfInfo.Character)
+			if err != nil {
+				logger.ErrorCtx(ctx, "parse template fail", "err", err)
+				return content
+			}
+			
+			var buf bytes.Buffer
+			err = tmpl.Execute(&buf, l.ContentParameter)
+			if err != nil {
+				logger.ErrorCtx(ctx, "exec template fail", "err", err)
+				return content
+			}
+			
+			return buf.String() + "\n\n" + content
+		}
+		
+		return *conf.BaseConfInfo.Character + "\n\n" + content
 	}
 	
 	return content
@@ -318,6 +339,12 @@ func WithContext(ctx context.Context) Option {
 	}
 }
 
+func WithContentParameter(contentParameter map[string]string) Option {
+	return func(p *LLM) {
+		p.ContentParameter = contentParameter
+	}
+}
+
 func (l *LLM) ExecMcpReq(ctx context.Context, funcName string, property map[string]interface{}) (string, error) {
 	mc, err := clients.GetMCPClientByToolName(funcName)
 	if err != nil {
@@ -337,7 +364,7 @@ func (l *LLM) ExecMcpReq(ctx context.Context, funcName string, property map[stri
 	metrics.MCPRequestDuration.WithLabelValues(mc.Conf.Name, funcName).Observe(time.Since(startTime).Seconds())
 	
 	logger.InfoCtx(ctx, "get mcp fail", "function", funcName, "argument", property, "res", toolsData)
-	l.DirectSendMsg(i18n.GetMessage(*conf.BaseConfInfo.Lang, "send_mcp_info", map[string]interface{}{
+	l.DirectSendMsg(i18n.GetMessage("send_mcp_info", map[string]interface{}{
 		"function_name": funcName,
 		"request_args":  property,
 		"response":      toolsData,

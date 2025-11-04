@@ -151,6 +151,9 @@ func (d *OpenAIReq) Send(ctx context.Context, l *LLM) error {
 	}
 	
 	if l.MessageChan != nil && len(strings.TrimRightFunc(msgInfoContent.Content, unicode.IsSpace)) > 0 {
+		if *conf.BaseConfInfo.Powered != "" {
+			msgInfoContent.Content = msgInfoContent.Content + "\n\n" + *conf.BaseConfInfo.Powered
+		}
 		l.MessageChan <- msgInfoContent
 	}
 	if hasTools && len(d.CurrentToolMessage) != 0 {
@@ -409,7 +412,7 @@ func GetOpenAIImageContent(ctx context.Context, imageContent []byte, content str
 	
 	contentPrompt := content
 	if content == "" {
-		contentPrompt = i18n.GetMessage(*conf.BaseConfInfo.Lang, "photo_handle_prompt", nil)
+		contentPrompt = i18n.GetMessage("photo_handle_prompt", nil)
 	}
 	
 	llmConfig := db.GetCtxUserInfo(ctx).LLMConfigRaw

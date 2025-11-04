@@ -122,7 +122,7 @@ func InsertRecord() {
 // getRecordsByUserId get latest 10 records by user_id
 func getRecordsByUserId(userId string) ([]Record, error) {
 	// construct SQL statements
-	query := fmt.Sprintf("SELECT id, user_id, question, answer, content, mode FROM records WHERE user_id =  ? " +
+	query := fmt.Sprintf("SELECT id, user_id, question, answer, content, mode, create_time FROM records WHERE user_id =  ? " +
 		"and is_deleted = 0 and record_type = 0 order by create_time desc limit ?")
 	
 	// execute query
@@ -135,7 +135,7 @@ func getRecordsByUserId(userId string) ([]Record, error) {
 	var records []Record
 	for rows.Next() {
 		var record Record
-		err := rows.Scan(&record.ID, &record.UserId, &record.Question, &record.Answer, &record.Content, &record.Mode)
+		err := rows.Scan(&record.ID, &record.UserId, &record.Question, &record.Answer, &record.Content, &record.Mode, &record.CreateTime)
 		if err != nil {
 			return nil, err
 		}

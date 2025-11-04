@@ -201,7 +201,7 @@ func (c *ComWechatRobot) sendImg() {
 		prompt := strings.TrimSpace(c.Prompt)
 		if prompt == "" {
 			logger.Warn("prompt is empty")
-			c.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "photo_empty_content", nil), msgId, tgbotapi.ModeMarkdown, nil)
+			c.Robot.SendMsg(chatId, i18n.GetMessage("photo_empty_content", nil), msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
 		
@@ -285,7 +285,7 @@ func (c *ComWechatRobot) sendVideo() {
 		prompt := strings.TrimSpace(c.Prompt)
 		if prompt == "" {
 			logger.Warn("prompt is empty")
-			c.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "photo_empty_content", nil), msgId, tgbotapi.ModeMarkdown, nil)
+			c.Robot.SendMsg(chatId, i18n.GetMessage("photo_empty_content", nil), msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
 		
@@ -440,7 +440,7 @@ func (c *ComWechatRobot) passiveExecCmd() {
 				Status:    status,
 				StartTime: time.Now(),
 			})
-			c.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "set_pre_prompt_success", nil),
+			c.Robot.SendMsg(chatId, i18n.GetMessage("set_pre_prompt_success", nil),
 				msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
@@ -488,7 +488,7 @@ func (c *ComWechatRobot) passiveExecCmd() {
 							return
 						}
 						
-						c.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "save_audio_success", map[string]interface{}{
+						c.Robot.SendMsg(chatId, i18n.GetMessage("save_audio_success", map[string]interface{}{
 							"filename": fileName,
 						}), msgId, tgbotapi.ModeMarkdown, nil)
 						

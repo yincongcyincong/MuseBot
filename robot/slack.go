@@ -319,11 +319,11 @@ func (s *SlackRobot) sendImg() {
 		prompt = utils.ReplaceCommand(prompt, "/photo", s.BotName)
 		if prompt == "" {
 			logger.Warn("prompt is empty")
-			s.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "photo_empty_content", nil), msgId, tgbotapi.ModeMarkdown, nil)
+			s.Robot.SendMsg(chatId, i18n.GetMessage("photo_empty_content", nil), msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
 		
-		thinkingMsg := s.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "thinking", nil), msgId, "", nil)
+		thinkingMsg := s.Robot.SendMsg(chatId, i18n.GetMessage("thinking", nil), msgId, "", nil)
 		
 		var err error
 		lastImageContent := s.ImageContent
@@ -392,12 +392,12 @@ func (s *SlackRobot) sendVideo() {
 		prompt = utils.ReplaceCommand(prompt, "/video", s.BotName)
 		if prompt == "" {
 			logger.Warn("prompt is empty")
-			s.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "video_empty_content", nil),
+			s.Robot.SendMsg(chatId, i18n.GetMessage("video_empty_content", nil),
 				replyToMessageID, tgbotapi.ModeMarkdown, nil)
 			return
 		}
 		
-		thinkingMsg := s.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "thinking", nil), replyToMessageID, "", nil)
+		thinkingMsg := s.Robot.SendMsg(chatId, i18n.GetMessage("thinking", nil), replyToMessageID, "", nil)
 		
 		var err error
 		lastImageContent := s.ImageContent
@@ -567,4 +567,8 @@ func (s *SlackRobot) setCommand(command string) {
 
 func (s *SlackRobot) getCommand() string {
 	return s.Command
+}
+
+func (s *SlackRobot) getUserName() string {
+	return s.UserName
 }

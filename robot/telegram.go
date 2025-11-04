@@ -106,87 +106,87 @@ func CreateBot(ctx context.Context) *tgbotapi.BotAPI {
 	cmdCfg := tgbotapi.NewSetMyCommands(
 		tgbotapi.BotCommand{
 			Command:     "help",
-			Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.help.description", nil),
+			Description: i18n.GetMessage("commands.help.description", nil),
 		},
 		tgbotapi.BotCommand{
 			Command:     "clear",
-			Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.clear.description", nil),
+			Description: i18n.GetMessage("commands.clear.description", nil),
 		},
 		tgbotapi.BotCommand{
 			Command:     "retry",
-			Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.retry.description", nil),
+			Description: i18n.GetMessage("commands.retry.description", nil),
 		},
 		tgbotapi.BotCommand{
 			Command:     "txt_model",
-			Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.mode.description", nil),
+			Description: i18n.GetMessage("commands.mode.description", nil),
 		},
 		tgbotapi.BotCommand{
 			Command:     "photo_model",
-			Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.mode.description", nil),
+			Description: i18n.GetMessage("commands.mode.description", nil),
 		},
 		tgbotapi.BotCommand{
 			Command:     "rec_model",
-			Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.mode.description", nil),
+			Description: i18n.GetMessage("commands.mode.description", nil),
 		},
 		tgbotapi.BotCommand{
 			Command:     "tts_model",
-			Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.mode.description", nil),
+			Description: i18n.GetMessage("commands.mode.description", nil),
 		},
 		tgbotapi.BotCommand{
 			Command:     "mode",
-			Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.mode.description", nil),
+			Description: i18n.GetMessage("commands.mode.description", nil),
 		},
 		tgbotapi.BotCommand{
 			Command:     "video_model",
-			Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.mode.description", nil),
+			Description: i18n.GetMessage("commands.mode.description", nil),
 		},
 		tgbotapi.BotCommand{
 			Command:     "photo_type",
-			Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.mode.description", nil),
+			Description: i18n.GetMessage("commands.mode.description", nil),
 		},
 		tgbotapi.BotCommand{
 			Command:     "video_type",
-			Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.mode.description", nil),
+			Description: i18n.GetMessage("commands.mode.description", nil),
 		},
 		tgbotapi.BotCommand{
 			Command:     "rec_type",
-			Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.mode.description", nil),
+			Description: i18n.GetMessage("commands.mode.description", nil),
 		},
 		tgbotapi.BotCommand{
 			Command:     "tts_type",
-			Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.mode.description", nil),
+			Description: i18n.GetMessage("commands.mode.description", nil),
 		},
 		tgbotapi.BotCommand{
 			Command:     "txt_type",
-			Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.mode.description", nil),
+			Description: i18n.GetMessage("commands.mode.description", nil),
 		},
 		tgbotapi.BotCommand{
 			Command:     "state",
-			Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.state.description", nil),
+			Description: i18n.GetMessage("commands.state.description", nil),
 		},
 		tgbotapi.BotCommand{
 			Command:     "photo",
-			Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.photo.description", nil),
+			Description: i18n.GetMessage("commands.photo.description", nil),
 		},
 		tgbotapi.BotCommand{
 			Command:     "edit_photo",
-			Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.edit_photo.description", nil),
+			Description: i18n.GetMessage("commands.edit_photo.description", nil),
 		},
 		tgbotapi.BotCommand{
 			Command:     "video",
-			Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.video.description", nil),
+			Description: i18n.GetMessage("commands.video.description", nil),
 		},
 		tgbotapi.BotCommand{
 			Command:     "chat",
-			Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.chat.description", nil),
+			Description: i18n.GetMessage("commands.chat.description", nil),
 		},
 		tgbotapi.BotCommand{
 			Command:     "task",
-			Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.task.description", nil),
+			Description: i18n.GetMessage("commands.task.description", nil),
 		},
 		tgbotapi.BotCommand{
 			Command:     "mcp",
-			Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.mcp.description", nil),
+			Description: i18n.GetMessage("commands.mcp.description", nil),
 		},
 	)
 	bot.Send(cmdCfg)
@@ -438,7 +438,7 @@ func (t *TelegramRobot) changeType(ty string) {
 	chatID, msgId, _ := t.Robot.GetChatIdAndMsgIdAndUserID()
 	
 	inlineKeyboard = tgbotapi.NewInlineKeyboardMarkup(inlineButton...)
-	t.Robot.SendMsg(chatID, i18n.GetMessage(*conf.BaseConfInfo.Lang, "chat_mode", nil),
+	t.Robot.SendMsg(chatID, i18n.GetMessage("chat_mode", nil),
 		msgId, tgbotapi.ModeMarkdown, &inlineKeyboard)
 }
 
@@ -512,25 +512,25 @@ func (t *TelegramRobot) showTxtModel(ty string) {
 		}
 		switch utils.GetTxtType(db.GetCtxUserInfo(t.Robot.Ctx).LLMConfigRaw) {
 		case param.OpenAi:
-			t.Robot.SendMsg(chatID, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
+			t.Robot.SendMsg(chatID, i18n.GetMessage("mix_mode_choose", map[string]interface{}{
 				"link":    "https://platform.openai.com/",
 				"command": ty,
 			}),
 				msgId, tgbotapi.ModeMarkdown, nil)
 		case param.AI302:
-			t.Robot.SendMsg(chatID, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
+			t.Robot.SendMsg(chatID, i18n.GetMessage("mix_mode_choose", map[string]interface{}{
 				"link":    "https://302.ai/",
 				"command": ty,
 			}),
 				msgId, tgbotapi.ModeMarkdown, nil)
 		case param.OpenRouter:
-			t.Robot.SendMsg(chatID, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
+			t.Robot.SendMsg(chatID, i18n.GetMessage("mix_mode_choose", map[string]interface{}{
 				"link":    "https://openrouter.ai/",
 				"command": ty,
 			}),
 				msgId, tgbotapi.ModeMarkdown, nil)
 		case param.Ollama:
-			t.Robot.SendMsg(chatID, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
+			t.Robot.SendMsg(chatID, i18n.GetMessage("mix_mode_choose", map[string]interface{}{
 				"link":    "https://ollama.com/",
 				"command": ty,
 			}),
@@ -550,7 +550,7 @@ func (t *TelegramRobot) showTxtModel(ty string) {
 	
 	inlineKeyboard = tgbotapi.NewInlineKeyboardMarkup(inlineButton...)
 	
-	t.Robot.SendMsg(chatID, i18n.GetMessage(*conf.BaseConfInfo.Lang, "chat_mode", nil),
+	t.Robot.SendMsg(chatID, i18n.GetMessage("chat_mode", nil),
 		msgId, tgbotapi.ModeMarkdown, &inlineKeyboard)
 }
 
@@ -575,22 +575,22 @@ func (t *TelegramRobot) showImageModel() {
 	case param.OpenRouter, param.AI302, param.Ollama, param.OpenAi:
 		switch utils.GetImgType(db.GetCtxUserInfo(t.Robot.Ctx).LLMConfigRaw) {
 		case param.AI302:
-			t.Robot.SendMsg(chatID, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
+			t.Robot.SendMsg(chatID, i18n.GetMessage("mix_mode_choose", map[string]interface{}{
 				"link": "https://302.ai/",
 			}),
 				msgId, tgbotapi.ModeMarkdown, nil)
 		case param.OpenRouter:
-			t.Robot.SendMsg(chatID, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
+			t.Robot.SendMsg(chatID, i18n.GetMessage("mix_mode_choose", map[string]interface{}{
 				"link": "https://openrouter.ai/",
 			}),
 				msgId, tgbotapi.ModeMarkdown, nil)
 		case param.Ollama:
-			t.Robot.SendMsg(chatID, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
+			t.Robot.SendMsg(chatID, i18n.GetMessage("mix_mode_choose", map[string]interface{}{
 				"link": "https://ollama.com/",
 			}),
 				msgId, tgbotapi.ModeMarkdown, nil)
 		case param.OpenAi:
-			t.Robot.SendMsg(chatID, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
+			t.Robot.SendMsg(chatID, i18n.GetMessage("mix_mode_choose", map[string]interface{}{
 				"link": "https://platform.openai.com/",
 			}),
 				msgId, tgbotapi.ModeMarkdown, nil)
@@ -607,7 +607,7 @@ func (t *TelegramRobot) showImageModel() {
 	
 	inlineKeyboard = tgbotapi.NewInlineKeyboardMarkup(inlineButton...)
 	
-	t.Robot.SendMsg(chatID, i18n.GetMessage(*conf.BaseConfInfo.Lang, "chat_mode", nil),
+	t.Robot.SendMsg(chatID, i18n.GetMessage("chat_mode", nil),
 		msgId, tgbotapi.ModeMarkdown, &inlineKeyboard)
 }
 
@@ -638,7 +638,7 @@ func (t *TelegramRobot) showVideoModel() {
 	case param.AI302:
 		switch utils.GetVideoType(db.GetCtxUserInfo(t.Robot.Ctx).LLMConfigRaw) {
 		case param.AI302:
-			t.Robot.SendMsg(chatID, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
+			t.Robot.SendMsg(chatID, i18n.GetMessage("mix_mode_choose", map[string]interface{}{
 				"link": "https://302.ai/",
 			}),
 				msgId, tgbotapi.ModeMarkdown, nil)
@@ -648,7 +648,7 @@ func (t *TelegramRobot) showVideoModel() {
 	
 	inlineKeyboard = tgbotapi.NewInlineKeyboardMarkup(inlineButton...)
 	
-	t.Robot.SendMsg(chatID, i18n.GetMessage(*conf.BaseConfInfo.Lang, "chat_mode", nil),
+	t.Robot.SendMsg(chatID, i18n.GetMessage("chat_mode", nil),
 		msgId, tgbotapi.ModeMarkdown, &inlineKeyboard)
 }
 
@@ -679,13 +679,13 @@ func (t *TelegramRobot) showRecModel() {
 	case param.AI302, param.OpenAi:
 		switch utils.GetRecType(db.GetCtxUserInfo(t.Robot.Ctx).LLMConfigRaw) {
 		case param.AI302:
-			t.Robot.SendMsg(chatID, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
+			t.Robot.SendMsg(chatID, i18n.GetMessage("mix_mode_choose", map[string]interface{}{
 				"link": "https://302.ai/",
 			}),
 				msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		case param.OpenAi:
-			t.Robot.SendMsg(chatID, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
+			t.Robot.SendMsg(chatID, i18n.GetMessage("mix_mode_choose", map[string]interface{}{
 				"link": "https://platform.openai.com/",
 			}),
 				msgId, tgbotapi.ModeMarkdown, nil)
@@ -695,7 +695,7 @@ func (t *TelegramRobot) showRecModel() {
 	
 	inlineKeyboard = tgbotapi.NewInlineKeyboardMarkup(inlineButton...)
 	
-	t.Robot.SendMsg(chatID, i18n.GetMessage(*conf.BaseConfInfo.Lang, "chat_mode", nil),
+	t.Robot.SendMsg(chatID, i18n.GetMessage("chat_mode", nil),
 		msgId, tgbotapi.ModeMarkdown, &inlineKeyboard)
 }
 
@@ -726,7 +726,7 @@ func (t *TelegramRobot) showTTSModel() {
 	case param.OpenAi:
 		switch utils.GetTTSType(db.GetCtxUserInfo(t.Robot.Ctx).LLMConfigRaw) {
 		case param.OpenAi:
-			t.Robot.SendMsg(chatID, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
+			t.Robot.SendMsg(chatID, i18n.GetMessage("mix_mode_choose", map[string]interface{}{
 				"link": "https://platform.openai.com/",
 			}),
 				msgId, tgbotapi.ModeMarkdown, nil)
@@ -736,7 +736,7 @@ func (t *TelegramRobot) showTTSModel() {
 	
 	inlineKeyboard = tgbotapi.NewInlineKeyboardMarkup(inlineButton...)
 	
-	t.Robot.SendMsg(chatID, i18n.GetMessage(*conf.BaseConfInfo.Lang, "chat_mode", nil),
+	t.Robot.SendMsg(chatID, i18n.GetMessage("chat_mode", nil),
 		msgId, tgbotapi.ModeMarkdown, &inlineKeyboard)
 }
 
@@ -760,7 +760,7 @@ func (t *TelegramRobot) sendHelpConfigurationOptions() {
 		),
 	)
 	
-	t.Robot.SendMsg(chatID, i18n.GetMessage(*conf.BaseConfInfo.Lang, "command_notice", nil),
+	t.Robot.SendMsg(chatID, i18n.GetMessage("command_notice", nil),
 		msgId, tgbotapi.ModeMarkdown, &inlineKeyboard)
 }
 
@@ -804,7 +804,7 @@ func (t *TelegramRobot) sendVideo() {
 		}
 		
 		lastImageContent := t.ImageContent
-		thinkingMsgId := t.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "thinking", nil),
+		thinkingMsgId := t.Robot.SendMsg(chatId, i18n.GetMessage("thinking", nil),
 			replyToMessageID, tgbotapi.ModeMarkdown, nil)
 		
 		videoContent, totalToken, err := t.Robot.CreateVideo(prompt, lastImageContent)
@@ -884,7 +884,7 @@ func (t *TelegramRobot) sendImg() {
 			}
 		}
 		
-		thinkingMsgId := t.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "thinking", nil),
+		thinkingMsgId := t.Robot.SendMsg(chatId, i18n.GetMessage("thinking", nil),
 			replyToMessageID, tgbotapi.ModeMarkdown, nil)
 		
 		var photo tgbotapi.InputMediaPhoto
@@ -963,18 +963,18 @@ func (t *TelegramRobot) ExecuteForceReply() {
 	}()
 	
 	switch t.getMessage().ReplyToMessage.Text {
-	case i18n.GetMessage(*conf.BaseConfInfo.Lang, "chat_empty_content", nil):
+	case i18n.GetMessage("chat_empty_content", nil):
 		t.sendChatMessage()
-	case i18n.GetMessage(*conf.BaseConfInfo.Lang, "photo_empty_content", nil):
+	case i18n.GetMessage("photo_empty_content", nil):
 		t.sendImg()
-	case i18n.GetMessage(*conf.BaseConfInfo.Lang, "edit_photo_empty_content", nil):
+	case i18n.GetMessage("edit_photo_empty_content", nil):
 		t.Command = "edit_photo"
 		t.sendImg()
-	case i18n.GetMessage(*conf.BaseConfInfo.Lang, "video_empty_content", nil):
+	case i18n.GetMessage("video_empty_content", nil):
 		t.sendVideo()
-	case i18n.GetMessage(*conf.BaseConfInfo.Lang, "task_empty_content", nil):
+	case i18n.GetMessage("task_empty_content", nil):
 		t.Robot.sendMultiAgent("task_empty_content", t.sendForceReply("task_empty_content"))
-	case i18n.GetMessage(*conf.BaseConfInfo.Lang, "mcp_empty_content", nil):
+	case i18n.GetMessage("mcp_empty_content", nil):
 		t.Robot.sendMultiAgent("task_empty_content", t.sendForceReply("mcp_empty_content"))
 	}
 }
@@ -1081,7 +1081,7 @@ func (t *TelegramRobot) getPerMsgLen() int {
 }
 
 func ForceReply(chatId int64, msgId int, i18MsgId string, bot *tgbotapi.BotAPI) error {
-	msg := tgbotapi.NewMessage(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, i18MsgId, nil))
+	msg := tgbotapi.NewMessage(chatId, i18n.GetMessage(i18MsgId, nil))
 	msg.ReplyMarkup = tgbotapi.ForceReply{
 		ForceReply: true,
 		Selective:  true,
@@ -1168,4 +1168,8 @@ func (t *TelegramRobot) setCommand(command string) {
 
 func (t *TelegramRobot) getCommand() string {
 	return t.Command
+}
+
+func (t *TelegramRobot) getUserName() string {
+	return t.UserName
 }
