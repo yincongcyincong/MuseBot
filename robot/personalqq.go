@@ -162,7 +162,7 @@ func (q *PersonalQQRobot) sendImg() {
 		prompt := strings.TrimSpace(q.Prompt)
 		if prompt == "" {
 			logger.Warn("prompt is empty")
-			q.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "photo_empty_content", nil), msgId, tgbotapi.ModeMarkdown, nil)
+			q.Robot.SendMsg(chatId, i18n.GetMessage("photo_empty_content", nil), msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
 		
@@ -222,7 +222,7 @@ func (q *PersonalQQRobot) sendVideo() {
 		prompt := strings.TrimSpace(q.Prompt)
 		if prompt == "" {
 			logger.Warn("prompt is empty")
-			q.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "video_empty_content", nil), msgId, tgbotapi.ModeMarkdown, nil)
+			q.Robot.SendMsg(chatId, i18n.GetMessage("video_empty_content", nil), msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
 		
@@ -491,4 +491,8 @@ func (q *PersonalQQRobot) setCommand(command string) {
 
 func (q *PersonalQQRobot) getCommand() string {
 	return q.Command
+}
+
+func (q *PersonalQQRobot) getUserName() string {
+	return q.UserName
 }

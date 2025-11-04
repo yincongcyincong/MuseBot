@@ -61,7 +61,7 @@ func (h *GeminiReq) Send(ctx context.Context, l *LLM) error {
 	metrics.APIRequestDuration.WithLabelValues(l.Model).Observe(time.Since(start).Seconds())
 	
 	hasTools := false
-	for response, err := range chat.SendMessageStream(ctx, *genai.NewPartFromText(l.GetContent(l.Content))) {
+	for response, err := range chat.SendMessageStream(ctx, *genai.NewPartFromText(l.GetContent(ctx, l.Content))) {
 		if errors.Is(err, io.EOF) {
 			logger.InfoCtx(l.Ctx, "stream finished", "updateMsgID", l.MsgId)
 			break
@@ -95,6 +95,9 @@ func (h *GeminiReq) Send(ctx context.Context, l *LLM) error {
 	}
 	
 	if l.MessageChan != nil && len(strings.TrimRightFunc(msgInfoContent.Content, unicode.IsSpace)) > 0 {
+		if *conf.BaseConfInfo.Powered != "" {
+			msgInfoContent.Content = msgInfoContent.Content + "\n\n" + *conf.BaseConfInfo.Powered
+		}
 		l.MessageChan <- msgInfoContent
 	}
 	
@@ -350,14 +353,10 @@ func GenerateGeminiVideo(ctx context.Context, prompt string, image []byte) ([]by
 		}
 	}
 	
-	duration := int32(*conf.VideoConfInfo.Duration)
 	operation, err := client.Models.GenerateVideos(ctx,
 		model, prompt,
 		geminiImage,
-		&genai.GenerateVideosConfig{
-			AspectRatio:     *conf.VideoConfInfo.Radio,
-			DurationSeconds: &duration,
-		})
+		&genai.GenerateVideosConfig{})
 	if err != nil {
 		logger.ErrorCtx(ctx, "generate video fail", "err", err)
 		return nil, 0, err
@@ -450,7 +449,7 @@ func GetGeminiImageContent(ctx context.Context, imageContent []byte, content str
 	
 	contentPrompt := content
 	if content == "" {
-		contentPrompt = i18n.GetMessage(*conf.BaseConfInfo.Lang, "photo_handle_prompt", nil)
+		contentPrompt = i18n.GetMessage("photo_handle_prompt", nil)
 	}
 	
 	parts := []*genai.Part{
@@ -492,7 +491,7 @@ func GeminiTTS(ctx context.Context, content, encoding string) ([]byte, int, int,
 	metrics.APIRequestCount.WithLabelValues(model).Inc()
 	
 	parts := []*genai.Part{
-		genai.NewPartFromText(i18n.GetMessage(*conf.BaseConfInfo.Lang, "audio_create_prompt", map[string]interface{}{
+		genai.NewPartFromText(i18n.GetMessage("audio_create_prompt", map[string]interface{}{
 			"content": content,
 		})),
 	}

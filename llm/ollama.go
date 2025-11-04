@@ -121,6 +121,9 @@ func (o OllamaReq) Send(ctx context.Context, l *LLM) error {
 	}
 	
 	if l.MessageChan != nil && len(strings.TrimRightFunc(msgInfoContent.Content, unicode.IsSpace)) > 0 {
+		if *conf.BaseConfInfo.Powered != "" {
+			msgInfoContent.Content = msgInfoContent.Content + "\n\n" + *conf.BaseConfInfo.Powered
+		}
 		l.MessageChan <- msgInfoContent
 	}
 	

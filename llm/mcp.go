@@ -38,7 +38,7 @@ func (d *LLMTaskReq) ExecuteMcp() error {
 		WithMessageChan(d.MessageChan), WithContent(d.Content), WithHTTPMsgChan(d.HTTPMsgChan),
 		WithPerMsgLen(d.PerMsgLen), WithContext(d.Ctx))
 	
-	prompt := i18n.GetMessage(*conf.BaseConfInfo.Lang, "mcp_prompt", taskParam)
+	prompt := i18n.GetMessage("mcp_prompt", taskParam)
 	llm.LLMClient.GetUserMessage(prompt)
 	llm.Content = prompt
 	llm.LLMClient.GetModel(llm)

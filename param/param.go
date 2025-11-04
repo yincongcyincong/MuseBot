@@ -82,8 +82,8 @@ const (
 	GeminiImageGenV2_5    = "gemini-2.5-flash-image"
 	ImagenModel           = "imagen-3.0-generate-001"
 	
-	GeminiVideoVeo2 = "veo-2.0-generate-001"
-	GeminiVideoVeo3 = "veo-3.0-generate-001"
+	GeminiVideoVeo3_1Preview     = "veo-3.1-generate-preview"
+	GeminiVideoVeo3_1FastPreview = "veo-3.1-fast-generate-preview"
 	
 	ModelImageGPT = "gpt-image-1"
 	
@@ -189,8 +189,8 @@ var (
 	//}
 	//
 	GeminiVideoModels = map[string]bool{
-		GeminiVideoVeo2: true,
-		GeminiVideoVeo3: true,
+		GeminiVideoVeo3_1Preview:     true,
+		GeminiVideoVeo3_1FastPreview: true,
 	}
 	
 	GeminiImageModels = map[string]bool{

@@ -174,7 +174,7 @@ func GetVolImageContent(ctx context.Context, imageContent []byte, content string
 	
 	contentPrompt := content
 	if content == "" {
-		contentPrompt = i18n.GetMessage(*conf.BaseConfInfo.Lang, "photo_handle_prompt", nil)
+		contentPrompt = i18n.GetMessage("photo_handle_prompt", nil)
 	}
 	
 	req := model.ChatCompletionRequest{

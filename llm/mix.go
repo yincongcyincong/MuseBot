@@ -243,7 +243,7 @@ func Generate302AIVideo(ctx context.Context, prompt string, image []byte) (strin
 func GetMixImageContent(ctx context.Context, imageContent []byte, content string) (string, int, error) {
 	contentPrompt := content
 	if content == "" {
-		contentPrompt = i18n.GetMessage(*conf.BaseConfInfo.Lang, "photo_handle_prompt", nil)
+		contentPrompt = i18n.GetMessage("photo_handle_prompt", nil)
 	}
 	
 	start := time.Now()

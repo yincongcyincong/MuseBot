@@ -99,6 +99,8 @@ type Robot interface {
 	setCommand(command string)
 	
 	getCommand() string
+	
+	getUserName() string
 }
 
 type TencentRobot interface {
@@ -130,7 +132,7 @@ func (r *RobotInfo) Exec() {
 	
 	if !r.checkUserAllow(userId) && !r.checkGroupAllow(chatId) {
 		logger.WarnCtx(r.Ctx, "user/group not allow to use this bot", "userID", userId, "chat", chatId)
-		r.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "valid_user_group", nil),
+		r.SendMsg(chatId, i18n.GetMessage("valid_user_group", nil),
 			msgId, tgbotapi.ModeMarkdown, nil)
 		return
 	}
@@ -608,7 +610,7 @@ func (r *RobotInfo) checkUserTokenExceed(chatId string, msgId string, userId str
 	}
 	
 	if userInfo.Token >= userInfo.AvailToken {
-		tpl := i18n.GetMessage(*conf.BaseConfInfo.Lang, "token_exceed", nil)
+		tpl := i18n.GetMessage("token_exceed", nil)
 		content := fmt.Sprintf(tpl, userInfo.Token, userInfo.AvailToken-userInfo.Token, userInfo.AvailToken)
 		r.SendMsg(chatId, content, msgId, tgbotapi.ModeMarkdown, nil)
 		return true
@@ -702,7 +704,7 @@ func (r *RobotInfo) GetImageContent(imageContent []byte, content string) (string
 		"question": content,
 		"answer":   answer,
 	}
-	prompt := i18n.GetMessage(*conf.BaseConfInfo.Lang, "photo_export_prompt", param)
+	prompt := i18n.GetMessage("photo_export_prompt", param)
 	return prompt, nil
 }
 
@@ -753,7 +755,7 @@ func (r *RobotInfo) TalkingPreCheck(f func()) {
 	
 	// check user chat exceed max count
 	if utils.CheckUserChatExceed(userId) {
-		r.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "chat_exceed", nil),
+		r.SendMsg(chatId, i18n.GetMessage("chat_exceed", nil),
 			msgId, tgbotapi.ModeMarkdown, nil)
 		return
 	}
@@ -819,13 +821,13 @@ func (r *RobotInfo) handleModelUpdate(rm *RobotModel) {
 		err := db.UpdateUserLLMConfig(userId, string(mode))
 		if err != nil {
 			logger.WarnCtx(r.Ctx, "update user fail", "userID", userId, "err", err)
-			r.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "set_mode", nil),
+			r.SendMsg(chatId, i18n.GetMessage("set_mode", nil),
 				msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
 	}
 	
-	totalContent := i18n.GetMessage(*conf.BaseConfInfo.Lang, "mode_choose", nil) + r.Robot.getPrompt()
+	totalContent := i18n.GetMessage("mode_choose", nil) + r.Robot.getPrompt()
 	r.SendMsg(chatId, totalContent, msgId, "", nil)
 }
 
@@ -910,7 +912,7 @@ func (r *RobotInfo) showMode() {
 	videoType := utils.GetVideoType(llmConf)
 	recType := utils.GetRecType(llmConf)
 	ttsType := utils.GetTTSType(llmConf)
-	r.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mode_info", map[string]interface{}{
+	r.SendMsg(chatId, i18n.GetMessage("mode_info", map[string]interface{}{
 		"txt_type":    txtType,
 		"photo_type":  photoType,
 		"video_type":  videoType,
@@ -1045,22 +1047,22 @@ func (r *RobotInfo) showTxtModel() {
 	case param.OpenRouter, param.AI302, param.Ollama, param.OpenAi:
 		switch utils.GetTxtType(db.GetCtxUserInfo(r.Ctx).LLMConfigRaw) {
 		case param.OpenAi:
-			r.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
+			r.SendMsg(chatId, i18n.GetMessage("mix_mode_choose", map[string]interface{}{
 				"link": "https://platform.openai.com/",
 			}),
 				msgId, tgbotapi.ModeMarkdown, nil)
 		case param.AI302:
-			r.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
+			r.SendMsg(chatId, i18n.GetMessage("mix_mode_choose", map[string]interface{}{
 				"link": "https://302.ai/",
 			}),
 				msgId, tgbotapi.ModeMarkdown, nil)
 		case param.OpenRouter:
-			r.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
+			r.SendMsg(chatId, i18n.GetMessage("mix_mode_choose", map[string]interface{}{
 				"link": "https://openrouter.ai/",
 			}),
 				msgId, tgbotapi.ModeMarkdown, nil)
 		case param.Ollama:
-			r.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
+			r.SendMsg(chatId, i18n.GetMessage("mix_mode_choose", map[string]interface{}{
 				"link": "https://ollama.com/",
 			}),
 				msgId, tgbotapi.ModeMarkdown, nil)
@@ -1098,22 +1100,22 @@ func (r *RobotInfo) showImageModel() {
 	case param.OpenRouter, param.AI302, param.Ollama, param.OpenAi:
 		switch utils.GetTxtType(db.GetCtxUserInfo(r.Ctx).LLMConfigRaw) {
 		case param.OpenAi:
-			r.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
+			r.SendMsg(chatId, i18n.GetMessage("mix_mode_choose", map[string]interface{}{
 				"link": "https://platform.openai.com/",
 			}),
 				msgId, tgbotapi.ModeMarkdown, nil)
 		case param.AI302:
-			r.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
+			r.SendMsg(chatId, i18n.GetMessage("mix_mode_choose", map[string]interface{}{
 				"link": "https://302.ai/",
 			}),
 				msgId, tgbotapi.ModeMarkdown, nil)
 		case param.OpenRouter:
-			r.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
+			r.SendMsg(chatId, i18n.GetMessage("mix_mode_choose", map[string]interface{}{
 				"link": "https://openrouter.ai/",
 			}),
 				msgId, tgbotapi.ModeMarkdown, nil)
 		case param.Ollama:
-			r.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
+			r.SendMsg(chatId, i18n.GetMessage("mix_mode_choose", map[string]interface{}{
 				"link": "https://ollama.com/",
 			}),
 				msgId, tgbotapi.ModeMarkdown, nil)
@@ -1150,7 +1152,7 @@ func (r *RobotInfo) showVideoModel() {
 	case param.AI302:
 		switch utils.GetTxtType(db.GetCtxUserInfo(r.Ctx).LLMConfigRaw) {
 		case param.AI302:
-			r.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
+			r.SendMsg(chatId, i18n.GetMessage("mix_mode_choose", map[string]interface{}{
 				"link": "https://302.ai/",
 			}),
 				msgId, tgbotapi.ModeMarkdown, nil)
@@ -1191,13 +1193,13 @@ func (r *RobotInfo) showRecModel() {
 	case param.AI302, param.OpenAi:
 		switch utils.GetRecType(db.GetCtxUserInfo(r.Ctx).LLMConfigRaw) {
 		case param.AI302:
-			r.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
+			r.SendMsg(chatId, i18n.GetMessage("mix_mode_choose", map[string]interface{}{
 				"link": "https://302.ai/",
 			}),
 				msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		case param.OpenAi:
-			r.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
+			r.SendMsg(chatId, i18n.GetMessage("mix_mode_choose", map[string]interface{}{
 				"link": "https://platform.openai.com/",
 			}),
 				msgId, tgbotapi.ModeMarkdown, nil)
@@ -1234,7 +1236,7 @@ func (r *RobotInfo) showTTSModel() {
 	case param.OpenAi:
 		switch utils.GetTTSType(db.GetCtxUserInfo(r.Ctx).LLMConfigRaw) {
 		case param.OpenAi:
-			r.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "mix_mode_choose", map[string]interface{}{
+			r.SendMsg(chatId, i18n.GetMessage("mix_mode_choose", map[string]interface{}{
 				"link": "https://platform.openai.com/",
 			}),
 				msgId, tgbotapi.ModeMarkdown, nil)
@@ -1336,6 +1338,9 @@ func (r *RobotInfo) ExecLLM(msgContent string, msgChan *MsgChan) {
 		llm.WithPerMsgLen(perMsgLen),
 		llm.WithRecordId(r.RecordID),
 		llm.WithContext(r.Ctx),
+		llm.WithContentParameter(map[string]string{
+			"username": r.Robot.getUserName(),
+		}),
 	)
 	
 	err = llmClient.CallLLM()
@@ -1377,7 +1382,7 @@ func (r *RobotInfo) showStateInfo() {
 		logger.WarnCtx(r.Ctx, "get week token fail", "err", err)
 	}
 	
-	template := i18n.GetMessage(*conf.BaseConfInfo.Lang, "state_content", nil)
+	template := i18n.GetMessage("state_content", nil)
 	msgContent := fmt.Sprintf(template, userInfo.Token, todayTokey, weekToken, monthToken)
 	r.SendMsg(chatId, msgContent, msgId, tgbotapi.ModeMarkdown, nil)
 	
@@ -1386,7 +1391,7 @@ func (r *RobotInfo) showStateInfo() {
 func (r *RobotInfo) clearAllRecord() {
 	chatId, msgId, userId := r.GetChatIdAndMsgIdAndUserID()
 	db.DeleteMsgRecord(userId)
-	deleteSuccMsg := i18n.GetMessage(*conf.BaseConfInfo.Lang, "delete_succ", nil)
+	deleteSuccMsg := i18n.GetMessage("delete_succ", nil)
 	r.SendMsg(chatId, deleteSuccMsg,
 		msgId, tgbotapi.ModeMarkdown, nil)
 	return
@@ -1400,7 +1405,7 @@ func (r *RobotInfo) retryLastQuestion() {
 	if records != nil && len(records.AQs) > 0 {
 		r.Robot.requestLLM(records.AQs[len(records.AQs)-1].Question)
 	} else {
-		r.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "last_question_fail", nil),
+		r.SendMsg(chatId, i18n.GetMessage("last_question_fail", nil),
 			msgId, tgbotapi.ModeMarkdown, nil)
 	}
 	
@@ -1419,7 +1424,7 @@ func (r *RobotInfo) sendMultiAgent(agentType string, emptyPromptFunc func()) {
 				emptyPromptFunc()
 			} else {
 				logger.WarnCtx(r.Ctx, "prompt is empty")
-				r.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "photo_empty_content", nil), msgId, tgbotapi.ModeMarkdown, nil)
+				r.SendMsg(chatId, i18n.GetMessage("photo_empty_content", nil), msgId, tgbotapi.ModeMarkdown, nil)
 			}
 			return
 		}
@@ -1648,7 +1653,7 @@ func (r *RobotInfo) InsertRecord() {
 
 func (r *RobotInfo) sendHelpConfigurationOptions() {
 	chatId, msgId, _ := r.GetChatIdAndMsgIdAndUserID()
-	r.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "help_text", nil),
+	r.SendMsg(chatId, i18n.GetMessage("help_text", nil),
 		msgId, tgbotapi.ModeMarkdown, nil)
 }
 
@@ -1667,7 +1672,7 @@ func (r *RobotInfo) smartMode() {
 		llm.WithChatId(chatId),
 		llm.WithUserId(userId),
 		llm.WithMsgId(msgId),
-		llm.WithContent(i18n.GetMessage(*conf.BaseConfInfo.Lang, "smart_mode_prompt", map[string]interface{}{
+		llm.WithContent(i18n.GetMessage("smart_mode_prompt", map[string]interface{}{
 			"prompt": r.Robot.getPrompt(),
 		})),
 		llm.WithContext(r.Ctx),

@@ -305,7 +305,7 @@ func GenerateAliyunText(ctx context.Context, audioContent []byte) (string, int, 
 					"role": "user",
 					"content": []map[string]interface{}{
 						{"audio": audioDataURL},
-						{"text": i18n.GetMessage(*conf.BaseConfInfo.Lang, "audio_rec_prompt", nil)},
+						{"text": i18n.GetMessage("audio_rec_prompt", nil)},
 					},
 				},
 			},

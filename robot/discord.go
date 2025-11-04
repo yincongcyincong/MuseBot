@@ -234,7 +234,7 @@ func (d *DiscordRobot) sendText(messageChan *MsgChan) {
 	if d.Msg != nil {
 		channelID = d.Msg.ChannelID
 		
-		thinkingMsg, err := d.Session.ChannelMessageSend(channelID, i18n.GetMessage(*conf.BaseConfInfo.Lang, "thinking", nil))
+		thinkingMsg, err := d.Session.ChannelMessageSend(channelID, i18n.GetMessage("thinking", nil))
 		if err != nil {
 			logger.WarnCtx(d.Robot.Ctx, "Sending thinking message failed", "err", err)
 		} else {
@@ -362,47 +362,47 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 func registerSlashCommands(s *discordgo.Session) {
 	commands := []*discordgo.ApplicationCommand{
-		{Name: "chat", Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.chat.description", nil), Options: []*discordgo.ApplicationCommandOption{
+		{Name: "chat", Description: i18n.GetMessage("commands.chat.description", nil), Options: []*discordgo.ApplicationCommandOption{
 			{Type: discordgo.ApplicationCommandOptionString, Name: "prompt", Description: "Prompt", Required: true},
 			{Type: discordgo.ApplicationCommandOptionAttachment, Name: "image", Description: "upload a image", Required: false},
 		}},
-		{Name: "txt_type", Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.mode.description", nil), Options: []*discordgo.ApplicationCommandOption{
+		{Name: "txt_type", Description: i18n.GetMessage("commands.mode.description", nil), Options: []*discordgo.ApplicationCommandOption{
 			{Type: discordgo.ApplicationCommandOptionString, Name: "type", Description: "Type", Required: false},
 		}},
-		{Name: "photo_type", Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.mode.description", nil), Options: []*discordgo.ApplicationCommandOption{
+		{Name: "photo_type", Description: i18n.GetMessage("commands.mode.description", nil), Options: []*discordgo.ApplicationCommandOption{
 			{Type: discordgo.ApplicationCommandOptionString, Name: "type", Description: "Type", Required: false},
 		}},
-		{Name: "video_type", Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.mode.description", nil), Options: []*discordgo.ApplicationCommandOption{
+		{Name: "video_type", Description: i18n.GetMessage("commands.mode.description", nil), Options: []*discordgo.ApplicationCommandOption{
 			{Type: discordgo.ApplicationCommandOptionString, Name: "type", Description: "Type", Required: false},
 		}},
-		{Name: "txt_model", Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.mode.description", nil), Options: []*discordgo.ApplicationCommandOption{
+		{Name: "txt_model", Description: i18n.GetMessage("commands.mode.description", nil), Options: []*discordgo.ApplicationCommandOption{
 			{Type: discordgo.ApplicationCommandOptionString, Name: "type", Description: "Type", Required: false},
 		}},
-		{Name: "photo_model", Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.mode.description", nil), Options: []*discordgo.ApplicationCommandOption{
+		{Name: "photo_model", Description: i18n.GetMessage("commands.mode.description", nil), Options: []*discordgo.ApplicationCommandOption{
 			{Type: discordgo.ApplicationCommandOptionString, Name: "type", Description: "Type", Required: false},
 		}},
-		{Name: "video_model", Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.mode.description", nil), Options: []*discordgo.ApplicationCommandOption{
+		{Name: "video_model", Description: i18n.GetMessage("commands.mode.description", nil), Options: []*discordgo.ApplicationCommandOption{
 			{Type: discordgo.ApplicationCommandOptionString, Name: "type", Description: "Type", Required: false},
 		}},
-		{Name: "talk", Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.talk.description", nil)},
-		{Name: "state", Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.state.description", nil)},
-		{Name: "clear", Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.clear.description", nil)},
-		{Name: "retry", Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.retry.description", nil)},
-		{Name: "photo", Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.photo.description", nil), Options: []*discordgo.ApplicationCommandOption{
+		{Name: "talk", Description: i18n.GetMessage("commands.talk.description", nil)},
+		{Name: "state", Description: i18n.GetMessage("commands.state.description", nil)},
+		{Name: "clear", Description: i18n.GetMessage("commands.clear.description", nil)},
+		{Name: "retry", Description: i18n.GetMessage("commands.retry.description", nil)},
+		{Name: "photo", Description: i18n.GetMessage("commands.photo.description", nil), Options: []*discordgo.ApplicationCommandOption{
 			{Type: discordgo.ApplicationCommandOptionString, Name: "prompt", Description: "Prompt", Required: true},
 		}},
-		{Name: "edit_photo", Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.photo.description", nil), Options: []*discordgo.ApplicationCommandOption{
+		{Name: "edit_photo", Description: i18n.GetMessage("commands.photo.description", nil), Options: []*discordgo.ApplicationCommandOption{
 			{Type: discordgo.ApplicationCommandOptionString, Name: "prompt", Description: "Prompt", Required: true},
 			{Type: discordgo.ApplicationCommandOptionAttachment, Name: "image", Description: "upload a image", Required: false},
 		}},
-		{Name: "video", Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.video.description", nil), Options: []*discordgo.ApplicationCommandOption{
+		{Name: "video", Description: i18n.GetMessage("commands.video.description", nil), Options: []*discordgo.ApplicationCommandOption{
 			{Type: discordgo.ApplicationCommandOptionString, Name: "prompt", Description: "Prompt", Required: true},
 		}},
-		{Name: "help", Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.help.description", nil)},
-		{Name: "task", Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.task.description", nil), Options: []*discordgo.ApplicationCommandOption{
+		{Name: "help", Description: i18n.GetMessage("commands.help.description", nil)},
+		{Name: "task", Description: i18n.GetMessage("commands.task.description", nil), Options: []*discordgo.ApplicationCommandOption{
 			{Type: discordgo.ApplicationCommandOptionString, Name: "prompt", Description: "Prompt", Required: true},
 		}},
-		{Name: "mcp", Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.mcp.description", nil), Options: []*discordgo.ApplicationCommandOption{
+		{Name: "mcp", Description: i18n.GetMessage("commands.mcp.description", nil), Options: []*discordgo.ApplicationCommandOption{
 			{Type: discordgo.ApplicationCommandOptionString, Name: "prompt", Description: "Prompt", Required: true},
 		}},
 	}
@@ -443,12 +443,12 @@ func (d *DiscordRobot) sendImg() {
 		
 		prompt := strings.TrimSpace(d.getPrompt())
 		if prompt == "" {
-			d.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "video_empty_content", nil),
+			d.Robot.SendMsg(chatId, i18n.GetMessage("video_empty_content", nil),
 				msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
 		
-		d.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "thinking", nil),
+		d.Robot.SendMsg(chatId, i18n.GetMessage("thinking", nil),
 			msgId, tgbotapi.ModeMarkdown, nil)
 		
 		var lastImageContent = d.ImageContent
@@ -526,12 +526,12 @@ func (d *DiscordRobot) sendVideo() {
 		
 		prompt := strings.TrimSpace(d.getPrompt())
 		if prompt == "" {
-			d.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "video_empty_content", nil),
+			d.Robot.SendMsg(chatId, i18n.GetMessage("video_empty_content", nil),
 				msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
 		
-		d.Robot.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "thinking", nil),
+		d.Robot.SendMsg(chatId, i18n.GetMessage("thinking", nil),
 			msgId, tgbotapi.ModeMarkdown, nil)
 		
 		var imageContent = d.ImageContent
@@ -628,13 +628,13 @@ func (d *DiscordRobot) Talk() {
 		cid, replyToMessageID, userId := d.Robot.GetChatIdAndMsgIdAndUserID()
 		
 		if gid == "" || cid == "" {
-			d.Robot.SendMsg(cid, i18n.GetMessage(*conf.BaseConfInfo.Lang, "talk_param_error", nil),
+			d.Robot.SendMsg(cid, i18n.GetMessage("talk_param_error", nil),
 				replyToMessageID, tgbotapi.ModeMarkdown, nil)
 			return
 		}
 		
 		if len(d.Session.VoiceConnections) != 0 {
-			d.Robot.SendMsg(cid, i18n.GetMessage(*conf.BaseConfInfo.Lang, "bot_talking", nil),
+			d.Robot.SendMsg(cid, i18n.GetMessage("bot_talking", nil),
 				replyToMessageID, tgbotapi.ModeMarkdown, nil)
 			return
 		}
