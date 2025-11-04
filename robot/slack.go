@@ -43,6 +43,7 @@ type SlackRobot struct {
 	
 	ImageContent []byte
 	VoiceContent []byte
+	UserName     string
 }
 
 func StartSlackRobot(ctx context.Context) {
@@ -117,12 +118,19 @@ func StartSlackRobot(ctx context.Context) {
 func NewSlackRobot(message *slackevents.MessageEvent, command *slack.SlashCommand,
 	callback *slack.InteractionCallback) *SlackRobot {
 	metrics.AppRequestCount.WithLabelValues("slack").Inc()
-	return &SlackRobot{
+	sr := &SlackRobot{
 		Event:    message,
 		CmdEvent: command,
 		Callback: callback,
 		Client:   slackClient,
 	}
+	if message != nil {
+		sr.UserName = message.User
+	}
+	if callback != nil {
+		sr.UserName = callback.User.Name
+	}
+	return sr
 }
 
 func SlackButtonHandler(callback *slack.InteractionCallback) {
@@ -444,34 +452,6 @@ func (s *SlackRobot) sendVideo() {
 			Mode:       utils.GetVideoType(db.GetCtxUserInfo(s.Robot.Ctx).LLMConfigRaw),
 		})
 	})
-}
-
-func (s *SlackRobot) sendHelpConfigurationOptions() {
-	chatId, _, _ := s.Robot.GetChatIdAndMsgIdAndUserID()
-	
-	blocks := []slack.Block{
-		slack.NewActionBlock("action_block",
-			slack.NewButtonBlockElement("mode", "mode", slack.NewTextBlockObject("plain_text", "mode", false, false)),
-			slack.NewButtonBlockElement("clear", "clear", slack.NewTextBlockObject("plain_text", "clear", false, false)),
-		),
-		slack.NewActionBlock("action_block2",
-			slack.NewButtonBlockElement("balance", "balance", slack.NewTextBlockObject("plain_text", "balance", false, false)),
-			slack.NewButtonBlockElement("state", "state", slack.NewTextBlockObject("plain_text", "state", false, false)),
-		),
-		slack.NewActionBlock("action_block3",
-			slack.NewButtonBlockElement("retry", "retry", slack.NewTextBlockObject("plain_text", "retry", false, false)),
-			slack.NewButtonBlockElement("chat", "chat", slack.NewTextBlockObject("plain_text", "chat", false, false)),
-		),
-		slack.NewActionBlock("action_block4",
-			slack.NewButtonBlockElement("photo", "photo", slack.NewTextBlockObject("plain_text", "photo", false, false)),
-			slack.NewButtonBlockElement("video", "video", slack.NewTextBlockObject("plain_text", "video", false, false)),
-		),
-	}
-	
-	_, _, err := s.Client.PostMessage(chatId, slack.MsgOptionBlocks(blocks...))
-	if err != nil {
-		logger.Error("post message failed", "err", err)
-	}
 }
 
 func (s *SlackRobot) openModal(triggerID, actionID string) {

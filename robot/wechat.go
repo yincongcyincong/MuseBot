@@ -53,6 +53,7 @@ type WechatRobot struct {
 	TextMsg  *serverModel.MessageText
 	VoiceMsg *serverModel.MessageVoice
 	ImageMsg *serverModel.MessageImage
+	UserName string
 }
 
 func StartWechatRobot() {
@@ -116,6 +117,7 @@ func NewWechatRobot(event contract.EventInterface) (*WechatRobot, bool) {
 		}
 		w.TextMsg = msg
 		msgId = msg.MsgID
+		w.UserName = msg.FromUserName
 	case models.CALLBACK_MSG_TYPE_IMAGE:
 		msg := &serverModel.MessageImage{}
 		err := event.ReadMessage(msg)
@@ -125,6 +127,7 @@ func NewWechatRobot(event contract.EventInterface) (*WechatRobot, bool) {
 		}
 		w.ImageMsg = msg
 		msgId = msg.MsgID
+		w.UserName = msg.FromUserName
 	case models.CALLBACK_MSG_TYPE_VOICE:
 		msg := &serverModel.MessageVoice{}
 		err := event.ReadMessage(msg)
@@ -134,6 +137,7 @@ func NewWechatRobot(event contract.EventInterface) (*WechatRobot, bool) {
 		}
 		w.VoiceMsg = msg
 		msgId = msg.MsgID
+		w.UserName = msg.FromUserName
 	}
 	
 	if _, ok := TencentMsgMap.Load(msgId); !ok {

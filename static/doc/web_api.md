@@ -12,7 +12,7 @@
 ```
 
 | Parameter | Type   | Required | Description                    |
-| --------- | ------ | -------- | ------------------------------ |
+|-----------|--------|----------|--------------------------------|
 | user\_id  | string | Yes      | Unique identifier for the user |
 | token     | int    | Yes      | Number of tokens to add        |
 
@@ -35,7 +35,7 @@
 * **Query Parameters**:
 
 | Parameter  | Type   | Required | Description                           |
-| ---------- | ------ | -------- | ------------------------------------- |
+|------------|--------|----------|---------------------------------------|
 | page       | int    | No       | Page number (default 1)               |
 | page\_size | int    | No       | Number of items per page (default 10) |
 | user\_id   | string | No       | Filter by user ID                     |
@@ -71,7 +71,7 @@
 * **Request Parameters** (Form):
 
 | Parameter | Type   | Required | Description            |
-| --------- | ------ | -------- | ---------------------- |
+|-----------|--------|----------|------------------------|
 | user\_id  | string | Yes      | Unique user identifier |
 | mode      | string | Yes      | New mode to set        |
 
@@ -94,7 +94,7 @@
 * **Query Parameters**:
 
 | Parameter | Type   | Required | Description                                                           |
-| --------- | ------ | -------- | --------------------------------------------------------------------- |
+|-----------|--------|----------|-----------------------------------------------------------------------|
 | page      | int    | No       | Page number (default 1)                                               |
 | pageSize  | int    | No       | Items per page (default 10)                                           |
 | isDeleted | int    | No       | Filter by deletion status (0 = not deleted, 1 = deleted, default all) |
@@ -132,7 +132,7 @@
 ### ✅ User Object Fields
 
 | Field        | Type   | Description            |
-| ------------ | ------ | ---------------------- |
+|--------------|--------|------------------------|
 | id           | int64  | User primary key ID    |
 | user\_id     | string | Unique user identifier |
 | mode         | string | Current mode           |
@@ -145,7 +145,7 @@
 ### ✅ Record Object Fields
 
 | Field        | Type   | Description                                   |
-| ------------ | ------ | --------------------------------------------- |
+|--------------|--------|-----------------------------------------------|
 | id           | int    | Record ID                                     |
 | user\_id     | string | Associated user ID                            |
 | question     | string | User question content                         |
@@ -162,7 +162,8 @@
 
 * **Endpoint**: `POST /communicate`
 
-* **Description**: Real-time client request handling via Server-Sent Events (SSE), supporting text chat, image/video generation, multi-agent tasks, and various commands.
+* **Description**: Real-time client request handling via Server-Sent Events (SSE), supporting text chat, image/video
+  generation, multi-agent tasks, and various commands.
 
 * **Request Method**: `POST`
 
@@ -173,9 +174,9 @@
 * **Query Parameters**:
 
 | Parameter | Type   | Required | Description                                                           |
-| --------- | ------ | -------- | --------------------------------------------------------------------- |
+|-----------|--------|----------|-----------------------------------------------------------------------|
 | prompt    | string | Yes      | Request content, can include commands starting with `/` or plain text |
-| user_id  | string | Yes      | User unique identifier (numeric string)                               |
+| user_id   | string | Yes      | User unique identifier (numeric string)                               |
 
 * **Request Body**:
 
@@ -185,56 +186,58 @@
 
 ### Supported Commands
 
-| Command    | Description                                             |
-| ---------- | ------------------------------------------------------- |
-| `/chat`    | Start a normal chat session                             |
-| `/mode`    | Set the LLM mode                                        |
-| `/balance` | Check current balance (tokens or credits)               |
-| `/state`   | View current session state and settings                 |
-| `/clear`   | Clear all conversation history                          |
-| `/retry`   | Retry last question                                     |
-| `/photo`   | Generate image based on prompt or uploaded image        |
-| `/video`   | Generate video based on prompt                          |
-| `/task`    | Let multiple agents collaborate on a task               |
-| `/mcp`     | Use multi-agent control panel for complex task planning |
-| `/help`    | Show this help message (list of commands)               |
+| Command  | Description                                             |
+|----------|---------------------------------------------------------|
+| `/chat`  | Start a normal chat session                             |
+| `/mode`  | Set the LLM mode                                        |
+| `/state` | View current session state and settings                 |
+| `/clear` | Clear all conversation history                          |
+| `/retry` | Retry last question                                     |
+| `/photo` | Generate image based on prompt or uploaded image        |
+| `/video` | Generate video based on prompt                          |
+| `/task`  | Let multiple agents collaborate on a task               |
+| `/mcp`   | Use multi-agent control panel for complex task planning |
+| `/help`  | Show this help message (list of commands)               |
 
 #### /chat
+
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/be9043ff-513b-4cb3-a8c5-53678ada3fc7" />
 
 #### /mode
+
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/5a2cead9-5064-41f9-bfab-335efc83e360" />
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/1a135dbb-2367-4ce0-836e-fe367c0e0ea5" />
 
-#### /balance
-<img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/b7dd73f6-adef-4367-90ea-96d0cb5ba692" />
-
 #### /state
+
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/c85224b9-ed70-4c24-bc30-1c3c57174670" />
 
-
 #### /clear
+
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/40b7ce66-6a58-4367-800e-9c909658f4ea" />
 
 #### /retry
+
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/71c3611f-9087-4e76-9502-b928e4af3137" />
 
-
 #### /photo
+
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/14424e36-169c-41c6-a58c-63f3625fd0a3" />
 
-
 #### /video
+
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/e07a1ce3-2dae-44a9-b7ba-804649f24f05" />
 
-
 #### /task
+
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/f58adc7c-4436-4908-baf9-0a7aed8b140c" />
 
 #### /mcp
+
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/9c5db063-23b5-41c2-989c-4eda48b7440c" />
 
 #### /help
+
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/f2734a79-9d82-4716-8916-86a01865ed97" />
 
 
@@ -255,7 +258,7 @@
 * **Error Responses**:
 
 | Status Code | Description                                        | Response Text                                        |
-| ----------- | -------------------------------------------------- | ---------------------------------------------------- |
+|-------------|----------------------------------------------------|------------------------------------------------------|
 | 400         | Missing required `prompt` param                    | Missing prompt parameter                             |
 | 500         | Request body read failure or unsupported streaming | Error reading request body or Streaming unsupported! |
 
@@ -275,7 +278,8 @@ Content-Type: application/octet-stream
 ## 6. Get Current Startup Command Line Arguments
 
 * **Endpoint**: `GET /command/get`
-* **Description**: Return the current command-line parameters that differ from the config struct defaults, formatted as CLI flags.
+* **Description**: Return the current command-line parameters that differ from the config struct defaults, formatted as
+  CLI flags.
 * **Request Parameters**: None
 * **Response Example**:
 
@@ -301,12 +305,24 @@ Content-Type: application/octet-stream
   "code": 0,
   "msg": "success",
   "data": {
-    "base": { ... },
-    "audio": { ... },
-    "llm": { ... },
-    "photo": { ... },
-    "rag": { ... },
-    "video": { ... }
+    "base": {
+      ...
+    },
+    "audio": {
+      ...
+    },
+    "llm": {
+      ...
+    },
+    "photo": {
+      ...
+    },
+    "rag": {
+      ...
+    },
+    "video": {
+      ...
+    }
   }
 }
 ```
@@ -328,7 +344,7 @@ Content-Type: application/octet-stream
 ```
 
 | Parameter | Type   | Required | Description                 |
-| --------- | ------ | -------- | --------------------------- |
+|-----------|--------|----------|-----------------------------|
 | type      | string | Yes      | Config type, e.g., `"base"` |
 | key       | string | Yes      | Struct field's JSON tag     |
 | value     | any    | Yes      | New value for the field     |
@@ -363,8 +379,12 @@ Content-Type: application/octet-stream
   "msg": "success",
   "data": {
     "McpServers": {
-      "server1": { ... },
-      "server2": { ... }
+      "server1": {
+        ...
+      },
+      "server2": {
+        ...
+      }
     },
     ...
   }
@@ -473,7 +493,11 @@ Content-Type: application/octet-stream
 {
   "code": 0,
   "msg": "success",
-  "data": <response data or empty string>
+  "data": <response
+  data
+  or
+  empty
+  string>
 }
 ```
 
@@ -481,8 +505,10 @@ Content-Type: application/octet-stream
 
 ```json
 {
-  "code": <error code>,
-  "msg": <error message>,
+  "code": <error
+  code>,
+  "msg": <error
+  message>,
   "data": null
 }
 ```

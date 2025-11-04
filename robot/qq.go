@@ -54,6 +54,7 @@ type QQRobot struct {
 	OriginPrompt string
 	ImageContent []byte
 	AudioContent []byte
+	UserName     string
 }
 
 func StartQQRobot(ctx context.Context) {
@@ -134,7 +135,7 @@ func QQATMessageEventHandler(event *dto.WSPayload, atMessage *dto.WSATMessageDat
 func NewQQRobot(event *dto.WSPayload, c2cMessage *dto.WSC2CMessageData,
 	atGroupMessage *dto.WSGroupATMessageData, atMessage *dto.WSATMessageData) *QQRobot {
 	metrics.AppRequestCount.WithLabelValues("qq").Inc()
-	return &QQRobot{
+	qr := &QQRobot{
 		QQApi:          QQApi,
 		QQTokenSource:  QQTokenSource,
 		RobotInfo:      QQRobotInfo,
@@ -144,6 +145,18 @@ func NewQQRobot(event *dto.WSPayload, c2cMessage *dto.WSC2CMessageData,
 		event:          event,
 		BotName:        BotName,
 	}
+	
+	if c2cMessage != nil {
+		qr.UserName = c2cMessage.Author.Username
+	}
+	if atGroupMessage != nil {
+		qr.UserName = atGroupMessage.Author.Username
+	}
+	if atMessage != nil {
+		qr.UserName = atMessage.Author.Username
+	}
+	
+	return qr
 }
 
 func (q *QQRobot) checkValid() bool {

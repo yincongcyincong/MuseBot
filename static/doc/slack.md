@@ -1,6 +1,6 @@
 # ✨ Slack Bot
 
-This project is a cross-platform chatbot powered by the **LLM**, supporting **Slack**. It comes with a variety of built-in commands, including image and video generation, balance checking, conversation clearing, and more.
+This project is a cross-platform chatbot powered by the **LLM**, supporting **Slack**. It comes with a variety of built-in commands, including image and video generation, conversation clearing, and more.
 
 ## 🚀 Starting in Slack Mode
 
@@ -55,9 +55,6 @@ Supported commands:
 
 * `/video`: Generate a video.
 <img width="400" alt="image" src="https://github.com/user-attachments/assets/6db607d1-3a73-4a50-a0b9-81899e19f4f6" />
-
-* `/balance`: Check the remaining quota of your DeepSeek Token
-<img width="400" alt="image" src="https://github.com/user-attachments/assets/845d4cff-4180-4200-aaf6-dca376d2259c" />
 
 * `/state`: View the current chat state (including model info and system prompts)    
 <img width="400" alt="image" src="https://github.com/user-attachments/assets/9c336a10-9250-41a3-9406-4e385fe8d9db" />

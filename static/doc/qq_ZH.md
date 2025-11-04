@@ -52,10 +52,6 @@
 
   <img width="400" alt="image" src="https://github.com/user-attachments/assets/8e895453-6e2d-49b0-a3f8-a625404d136e" />
 
-* `/balance`：查询 DeepSeek Token 剩余额度
-
-  <img width="400" alt="image" src="https://github.com/user-attachments/assets/4bff7083-05c4-4645-8c0f-83d53c601eec" />
-
 * `/state`：查看当前会话状态（包括模型信息和系统提示）
 
   <img width="400" alt="image" src="https://github.com/user-attachments/assets/c6bf87b0-706f-40dc-9aa1-20790af94923" />

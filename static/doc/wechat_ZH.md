@@ -63,8 +63,6 @@
 
 * `/video`：生成视频 <img width="400" alt="image" src="https://github.com/user-attachments/assets/8332c9f0-08aa-4f72-a037-6c94c4a97f60" />
 
-* `/balance`：查看 DeepSeek Token 的剩余额度 <img width="400" alt="image" src="https://github.com/user-attachments/assets/1f51e14c-346c-4a6d-a57d-ae06a1b7f4a5" />
-
 * `/state`：查看当前会话token消耗状态 <img width="400" alt="image" src="https://github.com/user-attachments/assets/e7e2260e-d279-4660-962a-99dbc0e7d1f9" />
 
 * `/clear`：清理当前会话上下文 <img width="400" alt="image" src="https://github.com/user-attachments/assets/6c53c15c-7f2a-41ea-8e53-103c1e8c1e24" />

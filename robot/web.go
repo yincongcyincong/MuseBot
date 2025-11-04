@@ -66,8 +66,6 @@ func (web *Web) Exec() {
 		web.changeType(web.Command)
 	case "txt_model", "/txt_model", "photo_model", "/photo_model", "video_model", "/video_model":
 		web.changeModel(web.Command)
-	case "/balance":
-		web.showBalanceInfo()
 	case "/state":
 		web.showStateInfo()
 	case "/clear":
@@ -203,37 +201,6 @@ func (web *Web) changeModel(t string) {
 	web.SendMsg(totalContent)
 }
 
-func (web *Web) showBalanceInfo() {
-	if utils.GetTxtType(db.GetCtxUserInfo(web.Robot.Ctx).LLMConfigRaw) != param.DeepSeek {
-		web.SendMsg(i18n.GetMessage(*conf.BaseConfInfo.Lang, "not_deepseek", nil))
-		return
-	}
-	
-	balance := llm.GetBalanceInfo(web.Robot.Ctx)
-	
-	// handle balance info msg
-	msgContent := fmt.Sprintf(i18n.GetMessage(*conf.BaseConfInfo.Lang, "balance_title", nil), balance.IsAvailable)
-	
-	template := i18n.GetMessage(*conf.BaseConfInfo.Lang, "balance_content", nil)
-	
-	for _, bInfo := range balance.BalanceInfos {
-		msgContent += fmt.Sprintf(template, bInfo.Currency, bInfo.TotalBalance,
-			bInfo.ToppedUpBalance, bInfo.GrantedBalance)
-	}
-	
-	web.SendMsg(msgContent)
-	
-	db.InsertRecordInfo(&db.Record{
-		UserId:     web.RealUserId,
-		Question:   web.OriginalPrompt,
-		Answer:     msgContent,
-		Token:      0, // llm already calculate it
-		IsDeleted:  0,
-		RecordType: param.WEBRecordType,
-	})
-	
-}
-
 func (web *Web) showStateInfo() {
 	userId := web.RealUserId
 	userInfo, err := db.GetUserByID(userId)
@@ -264,7 +231,6 @@ func (web *Web) showStateInfo() {
 		logger.WarnCtx(web.Robot.Ctx, "get week token fail", "err", err)
 	}
 	
-	// handle balance info msg
 	startOf30DaysAgo := now.AddDate(0, 0, -30).Truncate(24 * time.Hour)
 	monthToken, err := db.GetTokenByUserIdAndTime(userId, startOf30DaysAgo.Unix(), endOfDay.Unix())
 	if err != nil {
