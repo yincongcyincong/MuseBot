@@ -315,21 +315,6 @@ func GetDeepseekClient(ctx context.Context) *deepseek.Client {
 	return client
 }
 
-// GetBalanceInfo get balance info
-func GetBalanceInfo(ctx context.Context) *deepseek.BalanceResponse {
-	client := GetDeepseekClient(ctx)
-	balance, err := deepseek.GetBalance(client, ctx)
-	if err != nil {
-		logger.ErrorCtx(ctx, "Error getting balance", "err", err)
-	}
-	
-	if balance == nil || len(balance.BalanceInfos) == 0 {
-		logger.ErrorCtx(ctx, "No balance information returned")
-	}
-	
-	return balance
-}
-
 type Stream struct {
 	resp   *http.Response
 	reader *bufio.Reader

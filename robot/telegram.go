@@ -32,6 +32,7 @@ type TelegramRobot struct {
 	Command      string
 	ImageContent []byte
 	AudioContent []byte
+	UserName     string
 }
 
 func NewTelegramRobot(update tgbotapi.Update, bot *tgbotapi.BotAPI) *TelegramRobot {
@@ -40,6 +41,14 @@ func NewTelegramRobot(update tgbotapi.Update, bot *tgbotapi.BotAPI) *TelegramRob
 		Update: update,
 		Bot:    bot,
 	}
+	
+	if update.Message != nil && update.Message.From != nil {
+		t.UserName = update.Message.From.UserName
+	}
+	if update.CallbackQuery != nil && update.CallbackQuery.From != nil {
+		t.UserName = update.CallbackQuery.From.UserName
+	}
+	
 	return t
 }
 
@@ -150,10 +159,6 @@ func CreateBot(ctx context.Context) *tgbotapi.BotAPI {
 		tgbotapi.BotCommand{
 			Command:     "txt_type",
 			Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.mode.description", nil),
-		},
-		tgbotapi.BotCommand{
-			Command:     "balance",
-			Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.balance.description", nil),
 		},
 		tgbotapi.BotCommand{
 			Command:     "state",

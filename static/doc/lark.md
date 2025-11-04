@@ -2,7 +2,7 @@
 # ✨ Lark (Feishu) DeepSeek Bot
 
 This project is a cross-platform chatbot powered by the **DeepSeek LLM**, supporting **Telegram**, **Slack**, **Discord**, and **Lark (Feishu)**.
-It comes with a variety of built-in commands, including image and video generation, balance checking, conversation clearing, and more.
+It comes with a variety of built-in commands, including image and video generation, conversation clearing, and more.
 
 ## 🚀 Starting in Lark Mode
 
@@ -55,11 +55,6 @@ Supported commands:
 
 * `/video`: Generate a video.    
 <img width="400" alt="image" src="https://github.com/user-attachments/assets/2d903781-2ad8-4e1a-9b34-dd99dc398688" />
-
-
-* `/balance`: Check the remaining quota of your DeepSeek Token    
-<img width="400" alt="image" src="https://github.com/user-attachments/assets/b0c193ba-9005-4fec-893e-c78c3a77947a" />
-
 
 * `/state`: View the current chat state (including model info and system prompts)    
 <img width="400" alt="image" src="https://github.com/user-attachments/assets/50cb16f8-f94e-459b-85a0-c25dec10afaa" />

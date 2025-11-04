@@ -192,7 +192,6 @@
 |------------|-------------------|
 | `/chat`    | 开启普通聊天会话          |
 | `/mode`    | 设置 LLM 模式         |
-| `/balance` | 查询当前余额（token 或积分） |
 | `/state`   | 查看当前会话状态和设置       |
 | `/clear`   | 清除所有对话历史          |
 | `/retry`   | 重试上一次提问           |
@@ -208,9 +207,6 @@
 #### /mode
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/5a2cead9-5064-41f9-bfab-335efc83e360" />
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/1a135dbb-2367-4ce0-836e-fe367c0e0ea5" />
-
-#### /balance
-<img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/b7dd73f6-adef-4367-90ea-96d0cb5ba692" />
 
 #### /state
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/c85224b9-ed70-4c24-bc30-1c3c57174670" />

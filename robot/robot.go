@@ -845,8 +845,6 @@ func ParseCommand(prompt string) (command string, args string) {
 
 func (r *RobotInfo) ExecCmd(cmd string, defaultFunc func(), modeFunc func(string), typesFunc func(string)) {
 	switch cmd {
-	case "balance", "/balance", "$balance":
-		r.showBalanceInfo()
 	case "state", "/state", "$state":
 		r.showStateInfo()
 	case "clear", "/clear", "$clear":
@@ -1348,31 +1346,6 @@ func (r *RobotInfo) ExecLLM(msgContent string, msgChan *MsgChan) {
 	
 }
 
-func (r *RobotInfo) showBalanceInfo() {
-	chatId, msgId, _ := r.GetChatIdAndMsgIdAndUserID()
-	
-	if utils.GetTxtType(db.GetCtxUserInfo(r.Ctx).LLMConfigRaw) != param.DeepSeek {
-		r.SendMsg(chatId, i18n.GetMessage(*conf.BaseConfInfo.Lang, "not_deepseek", nil),
-			msgId, tgbotapi.ModeMarkdown, nil)
-		return
-	}
-	
-	balance := llm.GetBalanceInfo(r.Ctx)
-	
-	// handle balance info msg
-	msgContent := fmt.Sprintf(i18n.GetMessage(*conf.BaseConfInfo.Lang, "balance_title", nil), balance.IsAvailable)
-	
-	template := i18n.GetMessage(*conf.BaseConfInfo.Lang, "balance_content", nil)
-	
-	for _, bInfo := range balance.BalanceInfos {
-		msgContent += fmt.Sprintf(template, bInfo.Currency, bInfo.TotalBalance,
-			bInfo.ToppedUpBalance, bInfo.GrantedBalance)
-	}
-	
-	r.SendMsg(chatId, msgContent, msgId, tgbotapi.ModeMarkdown, nil)
-	
-}
-
 func (r *RobotInfo) showStateInfo() {
 	chatId, msgId, userId := r.GetChatIdAndMsgIdAndUserID()
 	userInfo, err := db.GetUserByID(userId)
@@ -1398,7 +1371,6 @@ func (r *RobotInfo) showStateInfo() {
 		logger.WarnCtx(r.Ctx, "get week token fail", "err", err)
 	}
 	
-	// handle balance info msg
 	startOf30DaysAgo := now.AddDate(0, 0, -30).Truncate(24 * time.Hour)
 	monthToken, err := db.GetTokenByUserIdAndTime(userId, startOf30DaysAgo.Unix(), endOfDay.Unix())
 	if err != nil {
@@ -1509,7 +1481,7 @@ func (r *RobotInfo) CreatePhoto(prompt string, lastImageContent []byte) ([]byte,
 	llmConf := db.GetCtxUserInfo(r.Ctx).LLMConfigRaw
 	mediaType := utils.GetImgType(llmConf)
 	logger.InfoCtx(r.Ctx, "create image", "mediaType", mediaType, "mediaModel",
-		utils.GetUsingRecModel(mediaType, llmConf.ImgModel), "lastImageContent", len(lastImageContent))
+		utils.GetUsingRecModel(mediaType, llmConf.ImgModel), "lastImageContent", len(lastImageContent), "prompt", prompt)
 	switch mediaType {
 	case param.Vol:
 		imageUrl, totalToken, err = llm.GenerateVolImg(r.Ctx, prompt, lastImageContent)
@@ -1549,7 +1521,7 @@ func (r *RobotInfo) CreateVideo(prompt string, lastImageContent []byte) ([]byte,
 	llmConf := db.GetCtxUserInfo(r.Ctx).LLMConfigRaw
 	mediaType := utils.GetVideoType(llmConf)
 	logger.InfoCtx(r.Ctx, "create video", "mediaType", mediaType, "mediaModel",
-		utils.GetUsingVideoModel(mediaType, llmConf.VideoModel), "lastImageContent", len(lastImageContent))
+		utils.GetUsingVideoModel(mediaType, llmConf.VideoModel), "lastImageContent", len(lastImageContent), "prompt", prompt)
 	switch mediaType {
 	case param.Vol:
 		videoUrl, totalToken, err = llm.GenerateVolVideo(r.Ctx, prompt, lastImageContent)

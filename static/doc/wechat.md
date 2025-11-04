@@ -1,7 +1,7 @@
 # ✨ WeChat DeepSeek Bot
 
 This project is a cross-platform chatbot powered by the **LLM**, supporting **WeChat**.
-It comes with a variety of built-in commands, including image and video generation, balance checking, conversation clearing, and more.
+It comes with a variety of built-in commands, including image and video generation, conversation clearing, and more.
 
 ---
 
@@ -61,9 +61,6 @@ Supported commands:
 * `/video`: Generate a video.    
 <img width="400" alt="image" src="https://github.com/user-attachments/assets/8332c9f0-08aa-4f72-a037-6c94c4a97f60" />
 
-* `/balance`: Check the remaining quota of your DeepSeek Token.    
-  <img width="400" alt="image" src="https://github.com/user-attachments/assets/1f51e14c-346c-4a6d-a57d-ae06a1b7f4a5" />
-  
 * `/state`: View the current chat state (including model info and system prompts).    
 <img width="400" alt="image" src="https://github.com/user-attachments/assets/e7e2260e-d279-4660-962a-99dbc0e7d1f9" />
 

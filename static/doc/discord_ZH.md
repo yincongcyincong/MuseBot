@@ -40,10 +40,7 @@
 * `/video`：生成视频。⚠️ 需要配置 `volc_ak` 和 `volc_sk`
 <img width="400" alt="image" src="https://github.com/user-attachments/assets/24bdde29-685c-4af7-8834-873dbc14b84f" />
 <img width="400" alt="image" src="https://github.com/user-attachments/assets/b9e85a58-58fe-4e45-ab44-52b73bcaea59" />
-  
-* `/balance`：查看当前 DeepSeek Token 剩余额度
-<img width="400" alt="image" src="https://github.com/user-attachments/assets/bb20e8fd-470f-4c70-b584-abc1fb5855d2" />
-  
+
 * `/state`：查看当前会话状态（包括模型、角色设定等）
 <img width="400" alt="image" src="https://github.com/user-attachments/assets/bf57f0fa-add1-4cb2-8e82-7bd484a880b8" />
   

@@ -16,6 +16,7 @@ import (
 	larkcore "github.com/larksuite/oapi-sdk-go/v3/core"
 	"github.com/larksuite/oapi-sdk-go/v3/event/dispatcher"
 	larkapplication "github.com/larksuite/oapi-sdk-go/v3/service/application/v6"
+	larkcontact "github.com/larksuite/oapi-sdk-go/v3/service/contact/v3"
 	larkim "github.com/larksuite/oapi-sdk-go/v3/service/im/v1"
 	larkws "github.com/larksuite/oapi-sdk-go/v3/ws"
 	"github.com/yincongcyincong/MuseBot/conf"
@@ -46,6 +47,7 @@ type LarkRobot struct {
 	Prompt       string
 	BotName      string
 	ImageContent []byte
+	UserName     string
 }
 
 func StartLarkRobot(ctx context.Context) {
@@ -89,6 +91,14 @@ func NewLarkRobot(message *larkim.P2MessageReceiveV1) *LarkRobot {
 func LarkMessageHandler(ctx context.Context, message *larkim.P2MessageReceiveV1) error {
 	l := NewLarkRobot(message)
 	l.Robot = NewRobot(WithRobot(l), WithContext(ctx))
+	userInfo, err := botClient.Contact.V3.User.Get(l.Robot.Ctx, larkcontact.NewGetUserReqBuilder().
+		UserId(*message.Event.Sender.SenderId.UserId).Build())
+	if err != nil {
+		logger.Error("get user info error", "err", err)
+		return err
+	}
+	l.UserName = *userInfo.Data.User.Name
+	
 	go func() {
 		defer func() {
 			if err := recover(); err != nil {

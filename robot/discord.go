@@ -54,6 +54,7 @@ type DiscordRobot struct {
 	Command      string
 	ImageContent []byte
 	AudioContent []byte
+	UserName     string
 }
 
 func StartDiscordRobot(ctx context.Context) {
@@ -89,11 +90,21 @@ func StartDiscordRobot(ctx context.Context) {
 
 func NewDiscordRobot(s *discordgo.Session, msg *discordgo.MessageCreate, i *discordgo.InteractionCreate) *DiscordRobot {
 	metrics.AppRequestCount.WithLabelValues("discord").Inc()
-	return &DiscordRobot{
+	dr := &DiscordRobot{
 		Session: s,
 		Msg:     msg,
 		Inter:   i,
 	}
+	
+	if msg != nil {
+		dr.UserName = msg.Author.Username
+	}
+	
+	if i != nil {
+		dr.UserName = i.Member.User.Username
+	}
+	
+	return dr
 }
 
 func (d *DiscordRobot) checkValid() bool {
@@ -373,8 +384,7 @@ func registerSlashCommands(s *discordgo.Session) {
 		{Name: "video_model", Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.mode.description", nil), Options: []*discordgo.ApplicationCommandOption{
 			{Type: discordgo.ApplicationCommandOptionString, Name: "type", Description: "Type", Required: false},
 		}},
-		{Name: "balance", Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.balance.description", nil)},
-		{Name: "talk", Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.balance.talk", nil)},
+		{Name: "talk", Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.talk.description", nil)},
 		{Name: "state", Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.state.description", nil)},
 		{Name: "clear", Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.clear.description", nil)},
 		{Name: "retry", Description: i18n.GetMessage(*conf.BaseConfInfo.Lang, "commands.retry.description", nil)},
@@ -930,4 +940,8 @@ func (d *DiscordRobot) setCommand(command string) {
 
 func (d *DiscordRobot) getCommand() string {
 	return d.Command
+}
+
+func (d *DiscordRobot) getUserName() string {
+	return d.UserName
 }

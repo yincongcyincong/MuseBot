@@ -3,7 +3,7 @@
 # ✨ DingTalk Bot
 
 This project is a cross-platform chatbot that supports **DingTalk** in both private and group chats.
-It is powered by the **LLM**, with built-in commands for image and video generation, balance checking, conversation clearing, and more.
+It is powered by the **LLM**, with built-in commands for image and video generation, conversation clearing, and more.
 
 ---
 
@@ -45,9 +45,6 @@ Supported commands:
 
 * `/video` — Generate a video    
 <img width="400" alt="image" src="https://github.com/user-attachments/assets/ba39278d-83e8-4db0-9a72-b4f0d8c0785b" />
-  
-* `/balance` — Check your DeepSeek Token balance    
-<img width="400" alt="image" src="https://github.com/user-attachments/assets/fd2ec827-a876-4bad-8e68-a762385b064f" />
 
 * `/state` — View the current conversation state (including model info and system prompts)
  <img width="400" alt="image" src="https://github.com/user-attachments/assets/adfc9015-6d2b-4663-80fa-34491a6f9a8a" /> 

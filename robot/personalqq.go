@@ -105,6 +105,7 @@ type PersonalQQRobot struct {
 	OriginPrompt string
 	ImageContent []byte
 	AudioContent []byte
+	UserName     string
 }
 
 func NewPersonalQQRobot(ctx context.Context, msgContent []byte) *PersonalQQRobot {
@@ -116,8 +117,9 @@ func NewPersonalQQRobot(ctx context.Context, msgContent []byte) *PersonalQQRobot
 	}
 	
 	q := &PersonalQQRobot{
-		Msg: msg,
-		Ctx: ctx,
+		Msg:      msg,
+		Ctx:      ctx,
+		UserName: msg.Sender.Nickname,
 	}
 	
 	q.Robot = NewRobot(WithRobot(q))

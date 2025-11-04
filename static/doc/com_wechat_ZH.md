@@ -56,8 +56,6 @@
 
 * `/video` — 生成视频 <img width="400" alt="image" src="https://github.com/user-attachments/assets/f5d7185b-060e-4894-917d-91d6766e46b1" />
 
-* `/balance` — 查询 DeepSeek Token 余额 <img width="400" alt="image" src="https://github.com/user-attachments/assets/f94e420a-1259-4565-b2aa-757b758f6553" />
-
 * `/state` — 查看当前对话状态（包括模型信息和系统提示） <img width="400" alt="image" src="https://github.com/user-attachments/assets/adfc9015-6d2b-4663-80fa-34491a6f9a8a" />
 
 * `/clear` — 清理当前对话上下文 <img width="400" alt="image" src="https://github.com/user-attachments/assets/70b79d5e-c429-40c5-bf90-6a56fbcd99d8" />

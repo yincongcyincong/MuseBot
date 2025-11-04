@@ -56,6 +56,7 @@ type DingRobot struct {
 	OriginPrompt string
 	ImageContent []byte
 	AudioContent []byte
+	UserName     string
 }
 
 type DingResp struct {
@@ -101,9 +102,10 @@ func OnChatReceive(ctx context.Context, message *chatbot.BotCallbackDataModel) (
 func NewDingRobot(message *chatbot.BotCallbackDataModel) *DingRobot {
 	metrics.AppRequestCount.WithLabelValues("dingding").Inc()
 	return &DingRobot{
-		Message: message,
-		Client:  dingBotClient,
-		BotName: BotName,
+		Message:  message,
+		Client:   dingBotClient,
+		BotName:  BotName,
+		UserName: message.SenderNick,
 	}
 }
 
@@ -766,4 +768,8 @@ func (d *DingRobot) setCommand(command string) {
 
 func (d *DingRobot) getCommand() string {
 	return d.Command
+}
+
+func (d *DingRobot) getUserName() string {
+	return d.UserName
 }

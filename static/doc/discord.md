@@ -1,6 +1,6 @@
 # ✨ Discord DeepSeek Bot
 
-This project is a cross-platform chatbot powered by the **LLM**, supporting **Discord**. It comes with a variety of built-in commands, including image and video generation, balance checking, conversation clearing, and more.
+This project is a cross-platform chatbot powered by the **LLM**, supporting **Discord**. It comes with a variety of built-in commands, including image and video generation, conversation clearing, and more.
 
 ## 🚀 Starting in Discord Mode
 
@@ -42,10 +42,6 @@ Supported commands:
 * `/video`: Generate a video.
 <img width="400" alt="image" src="https://github.com/user-attachments/assets/24bdde29-685c-4af7-8834-873dbc14b84f" />
 <img width="400" alt="image" src="https://github.com/user-attachments/assets/b9e85a58-58fe-4e45-ab44-52b73bcaea59" />
-  
-* `/balance`: Check the remaining quota of your DeepSeek Token
-<img width="400" alt="image" src="https://github.com/user-attachments/assets/bb20e8fd-470f-4c70-b584-abc1fb5855d2" />
-
   
 * `/state`: View the current chat state (including model info and system prompts)
 <img width="400" alt="image" src="https://github.com/user-attachments/assets/bf57f0fa-add1-4cb2-8e82-7bd484a880b8" />

@@ -177,7 +177,7 @@ If you use parameter. Please use lower letter and underscore. for example: ./Mus
 | **ALLOWED_GROUP_IDS**             | Comma-separated group IDs allowed to use the bot; empty = all allowed; 0 = all banned        | -                                                      |
 | **BOT_NAME**                      | Bot name                                                                                     | MuseBot                                                |
 | **CHAT_ANY_WHERE_TOKEN**          | ChatAnyWhere platform token                                                                  | -                                                      |
-| **SMART_MODE**                    | Automatically check what you want to generate (txt/photo/video)                              | false                                                  |
+| **SMART_MODE**                    | Automatically check what you want to generate (txt/photo/video)                              | true                                                   |
 
 ### CUSTOM_URL
 
@@ -235,10 +235,6 @@ choose txt/photo/video/recognize model.
 
 show current model type and model.    
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/47fb4043-7385-4f81-b8f9-83f8352b81f9" />
-
-### /balance $balance
-
-<img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/23048b44-a3af-457f-b6ce-3678b6776410" />
 
 ### /state $state
 

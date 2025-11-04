@@ -1,7 +1,7 @@
 # ✨ QQ Bot
 
 This project is a cross-platform chatbot powered by **LLM**, supporting **QQ**.
-It comes with a variety of built-in commands, including image and video generation, balance checking, conversation clearing, and more.
+It comes with a variety of built-in commands, including image and video generation, conversation clearing, and more.
 
 ## 🚀 Starting in QQ Mode
 
@@ -49,11 +49,6 @@ Supported commands:
 
 * `/video`: Generate a video.    
 <img width="400" alt="image" src="https://github.com/user-attachments/assets/8e895453-6e2d-49b0-a3f8-a625404d136e" />
-
-
-* `/balance`: Check the remaining quota of your DeepSeek Token.    
-<img width="400" alt="image" src="https://github.com/user-attachments/assets/4bff7083-05c4-4645-8c0f-83d53c601eec" />
-
 
 * `/state`: View the current chat state (including model info and system prompts).    
 <img width="400" alt="image" src="https://github.com/user-attachments/assets/c6bf87b0-706f-40dc-9aa1-20790af94923" />

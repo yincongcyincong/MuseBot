@@ -43,6 +43,7 @@ type ComWechatRobot struct {
 	TextMsg      *serverModel.MessageText
 	VoiceMsg     *serverModel.MessageVoice
 	ImageMsg     *serverModel.MessageImage
+	UserName     string
 }
 
 func StartComWechatRobot(ctx context.Context) {
@@ -88,6 +89,7 @@ func NewComWechatRobot(event contract.EventInterface) *ComWechatRobot {
 			return nil
 		}
 		c.TextMsg = msg
+		c.UserName = c.TextMsg.FromUserName
 	case models.CALLBACK_MSG_TYPE_IMAGE:
 		msg := &serverModel.MessageImage{}
 		err := event.ReadMessage(msg)
@@ -96,6 +98,7 @@ func NewComWechatRobot(event contract.EventInterface) *ComWechatRobot {
 			return nil
 		}
 		c.ImageMsg = msg
+		c.UserName = c.ImageMsg.FromUserName
 	case models.CALLBACK_MSG_TYPE_VOICE:
 		msg := &serverModel.MessageVoice{}
 		err := event.ReadMessage(msg)
@@ -104,6 +107,7 @@ func NewComWechatRobot(event contract.EventInterface) *ComWechatRobot {
 			return nil
 		}
 		c.VoiceMsg = msg
+		c.UserName = c.VoiceMsg.FromUserName
 	}
 	
 	return c
@@ -562,4 +566,8 @@ func (c *ComWechatRobot) setCommand(command string) {
 
 func (c *ComWechatRobot) getCommand() string {
 	return c.Command
+}
+
+func (c *ComWechatRobot) getUserName() string {
+	return c.UserName
 }

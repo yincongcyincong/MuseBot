@@ -55,9 +55,6 @@ Send messages directly to the bot in Enterprise WeChat private chat. The bot wil
   <img width="400" alt="image" src="https://github.com/user-attachments/assets/f5d7185b-060e-4894-917d-91d6766e46b1" />
 
   
-* `/balance` — Check your DeepSeek Token balance    
-  <img width="400" alt="image" src="https://github.com/user-attachments/assets/f94e420a-1259-4565-b2aa-757b758f6553" />
-
 * `/state` — View the current conversation state (including model info and system prompts)    
   <img width="400" alt="image" src="https://github.com/user-attachments/assets/adfc9015-6d2b-4663-80fa-34491a6f9a8a" />
   
