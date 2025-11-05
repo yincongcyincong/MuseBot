@@ -3,7 +3,6 @@ package robot
 import (
 	"bytes"
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -27,7 +26,6 @@ import (
 	dingLogger "github.com/open-dingtalk/dingtalk-stream-sdk-go/logger"
 	dingUtils "github.com/open-dingtalk/dingtalk-stream-sdk-go/utils"
 	"github.com/yincongcyincong/MuseBot/conf"
-	"github.com/yincongcyincong/MuseBot/db"
 	"github.com/yincongcyincong/MuseBot/i18n"
 	"github.com/yincongcyincong/MuseBot/logger"
 	"github.com/yincongcyincong/MuseBot/metrics"
@@ -76,7 +74,7 @@ func StartDingRobot(ctx context.Context) {
 	
 	err := dingBotClient.Start(ctx)
 	if err != nil {
-		logger.Error("start dingbot fail", "err", err)
+		logger.ErrorCtx(ctx, "start dingbot fail", "err", err)
 		return
 	}
 	
@@ -89,7 +87,7 @@ func OnChatReceive(ctx context.Context, message *chatbot.BotCallbackDataModel) (
 	go func() {
 		defer func() {
 			if err := recover(); err != nil {
-				logger.Error("ding exec panic", "err", err, "stack", string(debug.Stack()))
+				logger.ErrorCtx(ctx, "ding exec panic", "err", err, "stack", string(debug.Stack()))
 			}
 		}()
 		
@@ -113,20 +111,20 @@ func (d *DingRobot) checkValid() bool {
 	chatId, msgId, _ := d.Robot.GetChatIdAndMsgIdAndUserID()
 	_, err := d.GetAccessToken()
 	if err != nil {
-		logger.Error("get access token error", "err", err)
+		logger.ErrorCtx(d.Robot.Ctx, "get access token error", "err", err)
 		return false
 	}
 	
 	// group need to at bot
 	atBot, err := d.GetMessageContent()
 	if err != nil {
-		logger.Error("get message content error", "err", err)
+		logger.ErrorCtx(d.Robot.Ctx, "get message content error", "err", err)
 		d.Robot.SendMsg(chatId, err.Error(), msgId, "", nil)
 		return false
 	}
 	if d.Message.ConversationType == "2" {
 		if !atBot {
-			logger.Warn("no at bot")
+			logger.WarnCtx(d.Robot.Ctx, "no at bot")
 			return false
 		}
 	}
@@ -147,18 +145,18 @@ func (d *DingRobot) requestLLM(content string) {
 
 func (d *DingRobot) sendImg() {
 	d.Robot.TalkingPreCheck(func() {
-		chatId, msgId, userId := d.Robot.GetChatIdAndMsgIdAndUserID()
+		chatId, msgId, _ := d.Robot.GetChatIdAndMsgIdAndUserID()
 		
 		prompt := strings.TrimSpace(d.Prompt)
 		if prompt == "" {
-			logger.Warn("prompt is empty")
+			logger.ErrorCtx(d.Robot.Ctx, "prompt is empty")
 			d.Robot.SendMsg(chatId, i18n.GetMessage("photo_empty_content", nil), msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
 		
 		accessToken, err := d.GetAccessToken()
 		if err != nil {
-			logger.Warn("get access token fail", "err", err)
+			logger.ErrorCtx(d.Robot.Ctx, "get access token fail", "err", err)
 			d.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
@@ -167,13 +165,13 @@ func (d *DingRobot) sendImg() {
 		if len(lastImageContent) == 0 && strings.Contains(d.Command, "edit_photo") {
 			lastImageContent, err = d.Robot.GetLastImageContent()
 			if err != nil {
-				logger.Warn("get last image record fail", "err", err)
+				logger.ErrorCtx(d.Robot.Ctx, "get last image record fail", "err", err)
 			}
 		}
 		
 		imageContent, totalToken, err := d.Robot.CreatePhoto(prompt, lastImageContent)
 		if err != nil {
-			logger.Warn("generate image fail", "err", err)
+			logger.ErrorCtx(d.Robot.Ctx, "generate image fail", "err", err)
 			d.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
@@ -182,60 +180,37 @@ func (d *DingRobot) sendImg() {
 		
 		mediaId, err := d.UploadFileWithType(accessToken, "image", "image."+format, imageContent)
 		if err != nil {
-			logger.Warn("upload file fail", "err", err)
+			logger.ErrorCtx(d.Robot.Ctx, "upload file fail", "err", err)
 			d.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
 		
 		_, err = d.SimpleReplyMarkdown(d.Robot.Ctx, []byte(fmt.Sprintf("![image](%s)", mediaId)))
 		if err != nil {
-			logger.Warn("send image fail", "err", err)
+			logger.ErrorCtx(d.Robot.Ctx, "send image fail", "err", err)
 			d.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
 		
-		// 构建 base64 图片
-		base64Content := base64.StdEncoding.EncodeToString(imageContent)
-		
-		dataURI := fmt.Sprintf("data:image/%s;base64,%s", format, base64Content)
-		
-		originImageURI := ""
-		
-		if len(lastImageContent) > 0 {
-			base64Content = base64.StdEncoding.EncodeToString(lastImageContent)
-			format = utils.DetectImageFormat(lastImageContent)
-			originImageURI = fmt.Sprintf("data:image/%s;base64,%s", format, base64Content)
-		}
-		
-		// save data record
-		db.InsertRecordInfo(&db.Record{
-			UserId:     userId,
-			Question:   d.Prompt,
-			Answer:     dataURI,
-			Content:    originImageURI,
-			Token:      totalToken,
-			IsDeleted:  0,
-			RecordType: param.ImageRecordType,
-			Mode:       utils.GetImgType(db.GetCtxUserInfo(d.Robot.Ctx).LLMConfigRaw),
-		})
+		d.Robot.saveRecord(imageContent, lastImageContent, param.ImageRecordType, totalToken)
 	})
 }
 
 func (d *DingRobot) sendVideo() {
 	// 检查 prompt
 	d.Robot.TalkingPreCheck(func() {
-		chatId, msgId, userId := d.Robot.GetChatIdAndMsgIdAndUserID()
+		chatId, msgId, _ := d.Robot.GetChatIdAndMsgIdAndUserID()
 		
 		prompt := strings.TrimSpace(d.Prompt)
 		if prompt == "" {
-			logger.Warn("prompt is empty")
+			logger.ErrorCtx(d.Robot.Ctx, "prompt is empty")
 			d.Robot.SendMsg(chatId, i18n.GetMessage("video_empty_content", nil), msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
 		
 		accessToken, err := d.GetAccessToken()
 		if err != nil {
-			logger.Warn("get access token fail", "err", err)
+			logger.ErrorCtx(d.Robot.Ctx, "get access token fail", "err", err)
 			d.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
@@ -243,7 +218,7 @@ func (d *DingRobot) sendVideo() {
 		imageContent := d.ImageContent
 		videoContent, totalToken, err := d.Robot.CreateVideo(prompt, imageContent)
 		if err != nil {
-			logger.Warn("generate video fail", "err", err)
+			logger.ErrorCtx(d.Robot.Ctx, "generate video fail", "err", err)
 			d.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
@@ -251,37 +226,19 @@ func (d *DingRobot) sendVideo() {
 		format := utils.DetectVideoMimeType(videoContent)
 		mediaId, err := d.UploadFileWithType(accessToken, "video", "video."+format, videoContent)
 		if err != nil {
-			logger.Warn("upload file fail", "err", err)
+			logger.ErrorCtx(d.Robot.Ctx, "upload file fail", "err", err)
 			d.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
 		
 		_, err = d.VideoReplyMarkdown(d.Robot.Ctx, mediaId, format)
 		if err != nil {
-			logger.Warn("send image fail", "err", err)
+			logger.ErrorCtx(d.Robot.Ctx, "send image fail", "err", err)
 			d.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
 		}
 		
-		base64Content := base64.StdEncoding.EncodeToString(videoContent)
-		dataURI := fmt.Sprintf("data:video/%s;base64,%s", format, base64Content)
+		d.Robot.saveRecord(videoContent, imageContent, param.VideoRecordType, totalToken)
 		
-		originImageURI := ""
-		if len(imageContent) > 0 {
-			base64Content = base64.StdEncoding.EncodeToString(imageContent)
-			format = utils.DetectImageFormat(imageContent)
-			originImageURI = fmt.Sprintf("data:image/%s;base64,%s", format, base64Content)
-		}
-		
-		db.InsertRecordInfo(&db.Record{
-			UserId:     userId,
-			Question:   d.Prompt,
-			Answer:     dataURI,
-			Content:    originImageURI,
-			Token:      totalToken,
-			IsDeleted:  0,
-			RecordType: param.VideoRecordType,
-			Mode:       utils.GetVideoType(db.GetCtxUserInfo(d.Robot.Ctx).LLMConfigRaw),
-		})
 	})
 	
 }
@@ -310,7 +267,7 @@ func (d *DingRobot) executeChain() {
 func (d *DingRobot) sendText(messageChan *MsgChan) {
 	defer func() {
 		if err := recover(); err != nil {
-			logger.Error("handleUpdate panic err", "err", err, "stack", string(debug.Stack()))
+			logger.ErrorCtx(d.Robot.Ctx, "handleUpdate panic err", "err", err, "stack", string(debug.Stack()))
 		}
 	}()
 	
@@ -330,68 +287,6 @@ func (d *DingRobot) sendText(messageChan *MsgChan) {
 		d.Robot.SendMsg(chatId, msg.Content, messageId, "", nil)
 	}
 }
-
-//func (d *DingRobot) handleUpdate(messageChan chan *param.MsgInfo) {
-//	defer func() {
-//		if err := recover(); err != nil {
-//			logger.Error("handleUpdate panic err", "err", err, "stack", string(debug.Stack()))
-//		}
-//	}()
-//
-//	var msg *param.MsgInfo
-//
-//	interClient, err := d.CreateDingInteractClient()
-//	if err != nil {
-//		logger.Error("create ding interact client failed", "err", err)
-//		return
-//	}
-//
-//	accessToken, _ := d.GetAccessToken()
-//
-//	prepareRequest := &dingtalkaiinteraction.PrepareRequest{
-//		OpenConversationId: tea.String(d.Message.ConversationId),
-//		ContentType:        tea.String("ai_card"),
-//		Content:            tea.String(GetAIContent("")),
-//	}
-//
-//	resp, err := interClient.PrepareWithOptions(prepareRequest, &dingtalkaiinteraction.PrepareHeaders{
-//		XAcsDingtalkAccessToken: tea.String(accessToken),
-//	}, &teaUtil.RuntimeOptions{})
-//	if err != nil {
-//		logger.Error("prepare failed", "err", err, "resp", resp)
-//		return
-//	}
-//
-//	for msg = range messageChan {
-//		if msg == nil || len(msg.Content) == 0 {
-//			msg.Content = "get nothing from llm!"
-//		}
-//
-//		updateHeaders := &dingtalkaiinteraction.UpdateHeaders{}
-//		updateHeaders.XAcsDingtalkAccessToken = tea.String(accessToken)
-//		updateRequest := &dingtalkaiinteraction.UpdateRequest{
-//			ConversationToken: tea.String(d.Message.ConversationId),
-//			ContentType:       tea.String("ai_card"),
-//			Content:           tea.String(GetAIContent(msg.Content)),
-//		}
-//		updateRsp, err := interClient.UpdateWithOptions(updateRequest, updateHeaders, &teaUtil.RuntimeOptions{})
-//		if err != nil {
-//			logger.Error("send message failed", "err", err, "updateRsp", updateRsp)
-//		}
-//	}
-//
-//	finishRequest := &dingtalkaiinteraction.FinishRequest{
-//		ConversationToken: tea.String(d.Message.ConversationId),
-//	}
-//	finishRsp, err := interClient.FinishWithOptions(finishRequest, &dingtalkaiinteraction.FinishHeaders{
-//		XAcsDingtalkAccessToken: tea.String(accessToken),
-//	}, &teaUtil.RuntimeOptions{})
-//	if err != nil {
-//		logger.Error("prepare failed", "err", err, "resp", finishRsp)
-//		return
-//	}
-//
-//}
 
 func (d *DingRobot) executeLLM() {
 	messageChan := &MsgChan{
@@ -434,7 +329,7 @@ func (d *DingRobot) GetMessageContent() (bool, error) {
 	
 	accessToken, err := d.GetAccessToken()
 	if err != nil {
-		logger.Error("get access token failed", "err", err)
+		logger.ErrorCtx(d.Robot.Ctx, "get access token failed", "err", err)
 		d.Robot.SendMsg(chatId, err.Error(), msgId, "", nil)
 		return false, err
 	}
@@ -460,7 +355,7 @@ func (d *DingRobot) GetMessageContent() (bool, error) {
 		if c, ok := d.Message.Content.(map[string]interface{}); ok {
 			d.ImageContent, err = d.GetImageContent(accessToken, c)
 			if err != nil {
-				logger.Error("get image content fail", "err", err)
+				logger.ErrorCtx(d.Robot.Ctx, "get image content fail", "err", err)
 				d.Robot.SendMsg(chatId, err.Error(), msgId, "", nil)
 				return false, err
 			}
@@ -470,7 +365,7 @@ func (d *DingRobot) GetMessageContent() (bool, error) {
 		if c, ok := d.Message.Content.(map[string]interface{}); ok {
 			d.AudioContent, err = d.GetImageContent(accessToken, c)
 			if err != nil {
-				logger.Error("get image content fail", "err", err)
+				logger.ErrorCtx(d.Robot.Ctx, "get image content fail", "err", err)
 				d.Robot.SendMsg(chatId, err.Error(), msgId, "", nil)
 				return false, err
 			}
@@ -704,7 +599,7 @@ func (d *DingRobot) UploadFileWithType(accessToken, fileType, filePath string, f
 func (d *DingRobot) GetImageContent(accessToken string, c map[string]interface{}) ([]byte, error) {
 	dingClient, err := d.CreateDingRobotClient()
 	if err != nil {
-		logger.Error("create ding client failed", "err", err)
+		logger.ErrorCtx(d.Robot.Ctx, "create ding client failed", "err", err)
 		return nil, err
 	}
 	
@@ -718,13 +613,13 @@ func (d *DingRobot) GetImageContent(accessToken string, c map[string]interface{}
 			XAcsDingtalkAccessToken: tea.String(accessToken),
 		}, &teaUtil.RuntimeOptions{})
 		if err != nil {
-			logger.Error("download file failed", "err", err)
+			logger.ErrorCtx(d.Robot.Ctx, "download file failed", "err", err)
 			return nil, err
 		}
 		
 		data, err := utils.DownloadFile(tea.StringValue(resp.Body.DownloadUrl))
 		if err != nil {
-			logger.Error("download file failed", "err", err)
+			logger.ErrorCtx(d.Robot.Ctx, "download file failed", "err", err)
 			return nil, err
 		}
 		
@@ -743,19 +638,19 @@ func (d *DingRobot) sendVoiceContent(voiceContent []byte, duration int) error {
 	
 	accessToken, err := d.GetAccessToken()
 	if err != nil {
-		logger.Warn("get access token fail", "err", err)
+		logger.ErrorCtx(d.Robot.Ctx, "get access token fail", "err", err)
 		return err
 	}
 	
 	mediaId, err := d.UploadFileWithType(accessToken, "voice", "voice."+format, voiceContent)
 	if err != nil {
-		logger.Error("upload file fail", "err", err)
+		logger.ErrorCtx(d.Robot.Ctx, "upload file fail", "err", err)
 		return err
 	}
 	
 	_, err = d.VoiceReplyMarkdown(d.Robot.Ctx, mediaId, duration)
 	if err != nil {
-		logger.Error("send voice fail", "err", err)
+		logger.ErrorCtx(d.Robot.Ctx, "send voice fail", "err", err)
 		return err
 	}
 	

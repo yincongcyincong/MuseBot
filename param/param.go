@@ -84,6 +84,9 @@ const (
 	
 	GeminiVideoVeo3_1Preview     = "veo-3.1-generate-preview"
 	GeminiVideoVeo3_1FastPreview = "veo-3.1-fast-generate-preview"
+	GeminiVideoVeo2              = "veo-2.0-generate-001"
+	GeminiVideoVeo3              = "veo-3.0-generate-001"
+	GeminiVideoFastVeo3          = "veo-3.0-fast-generate-001"
 	
 	ModelImageGPT = "gpt-image-1"
 	
@@ -191,6 +194,9 @@ var (
 	GeminiVideoModels = map[string]bool{
 		GeminiVideoVeo3_1Preview:     true,
 		GeminiVideoVeo3_1FastPreview: true,
+		GeminiVideoFastVeo3:          true,
+		GeminiVideoVeo3:              true,
+		GeminiVideoVeo2:              true,
 	}
 	
 	GeminiImageModels = map[string]bool{

@@ -13,7 +13,6 @@ import (
 	
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/yincongcyincong/MuseBot/conf"
-	"github.com/yincongcyincong/MuseBot/db"
 	"github.com/yincongcyincong/MuseBot/i18n"
 	"github.com/yincongcyincong/MuseBot/logger"
 	"github.com/yincongcyincong/MuseBot/param"
@@ -157,7 +156,7 @@ func (q *PersonalQQRobot) requestLLM(content string) {
 
 func (q *PersonalQQRobot) sendImg() {
 	q.Robot.TalkingPreCheck(func() {
-		chatId, msgId, userId := q.Robot.GetChatIdAndMsgIdAndUserID()
+		chatId, msgId, _ := q.Robot.GetChatIdAndMsgIdAndUserID()
 		
 		prompt := strings.TrimSpace(q.Prompt)
 		if prompt == "" {
@@ -182,9 +181,6 @@ func (q *PersonalQQRobot) sendImg() {
 			return
 		}
 		
-		format := utils.DetectImageFormat(imageContent)
-		base64Content := base64.StdEncoding.EncodeToString(imageContent)
-		
 		_, err = q.SendMsg("", imageContent, nil, nil)
 		if err != nil {
 			logger.Warn("send image fail", "err", err)
@@ -192,32 +188,14 @@ func (q *PersonalQQRobot) sendImg() {
 			return
 		}
 		
-		dataURI := fmt.Sprintf("data:image/%s;base64,%s", format, base64Content)
-		originImageURI := ""
-		if len(lastImageContent) > 0 {
-			base64Content = base64.StdEncoding.EncodeToString(lastImageContent)
-			format = utils.DetectImageFormat(lastImageContent)
-			originImageURI = fmt.Sprintf("data:image/%s;base64,%s", format, base64Content)
-		}
-		
-		// save data record
-		db.InsertRecordInfo(&db.Record{
-			UserId:     userId,
-			Question:   q.Prompt,
-			Answer:     dataURI,
-			Content:    originImageURI,
-			Token:      totalToken,
-			IsDeleted:  0,
-			RecordType: param.ImageRecordType,
-			Mode:       utils.GetImgType(db.GetCtxUserInfo(q.Robot.Ctx).LLMConfigRaw),
-		})
+		q.Robot.saveRecord(imageContent, lastImageContent, param.ImageRecordType, totalToken)
 	})
 }
 
 func (q *PersonalQQRobot) sendVideo() {
 	// 检查 prompt
 	q.Robot.TalkingPreCheck(func() {
-		chatId, msgId, userId := q.Robot.GetChatIdAndMsgIdAndUserID()
+		chatId, msgId, _ := q.Robot.GetChatIdAndMsgIdAndUserID()
 		
 		prompt := strings.TrimSpace(q.Prompt)
 		if prompt == "" {
@@ -240,27 +218,7 @@ func (q *PersonalQQRobot) sendVideo() {
 			return
 		}
 		
-		format := utils.DetectVideoMimeType(videoContent)
-		base64Content := base64.StdEncoding.EncodeToString(videoContent)
-		dataURI := fmt.Sprintf("data:video/%s;base64,%s", format, base64Content)
-		
-		originImageURI := ""
-		if len(q.ImageContent) > 0 {
-			base64Content = base64.StdEncoding.EncodeToString(q.ImageContent)
-			format = utils.DetectImageFormat(q.ImageContent)
-			originImageURI = fmt.Sprintf("data:image/%s;base64,%s", format, base64Content)
-		}
-		
-		db.InsertRecordInfo(&db.Record{
-			UserId:     userId,
-			Question:   q.Prompt,
-			Answer:     dataURI,
-			Token:      totalToken,
-			Content:    originImageURI,
-			IsDeleted:  0,
-			RecordType: param.VideoRecordType,
-			Mode:       utils.GetVideoType(db.GetCtxUserInfo(q.Robot.Ctx).LLMConfigRaw),
-		})
+		q.Robot.saveRecord(videoContent, q.ImageContent, param.VideoRecordType, totalToken)
 	})
 	
 }

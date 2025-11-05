@@ -1701,3 +1701,40 @@ func (r *RobotInfo) smartMode() {
 	}
 	r.Token = llmClient.Token
 }
+
+func (r *RobotInfo) saveRecord(content, imageContent []byte, recordType, totalToken int) {
+	_, _, userId := r.GetChatIdAndMsgIdAndUserID()
+	
+	base64Content := base64.StdEncoding.EncodeToString(content)
+	format := utils.DetectImageFormat(content)
+	dataURI := fmt.Sprintf("data:image/%s;base64,%s", format, base64Content)
+	
+	originImageURI := ""
+	if len(imageContent) > 0 {
+		base64Content = base64.StdEncoding.EncodeToString(imageContent)
+		format = utils.DetectImageFormat(imageContent)
+		originImageURI = fmt.Sprintf("data:image/%s;base64,%s", format, base64Content)
+	}
+	
+	mode := ""
+	if recordType == param.ImageRecordType {
+		mode = utils.GetImgType(db.GetCtxUserInfo(r.Ctx).LLMConfigRaw)
+	} else {
+		mode = utils.GetVideoType(db.GetCtxUserInfo(r.Ctx).LLMConfigRaw)
+	}
+	
+	// save data record
+	_, err := db.InsertRecordInfo(&db.Record{
+		UserId:     userId,
+		Question:   r.Robot.getCommand() + " " + r.Robot.getPrompt(),
+		Answer:     dataURI,
+		Content:    originImageURI,
+		Token:      totalToken,
+		IsDeleted:  0,
+		RecordType: recordType,
+		Mode:       mode,
+	})
+	if err != nil {
+		logger.ErrorCtx(r.Ctx, "insert record fail", "err", err)
+	}
+}

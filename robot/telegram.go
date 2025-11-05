@@ -3,9 +3,7 @@ package robot
 import (
 	"bytes"
 	"context"
-	"encoding/base64"
 	"errors"
-	"fmt"
 	"image"
 	"runtime/debug"
 	"strconv"
@@ -790,9 +788,8 @@ func (t *TelegramRobot) handleCallbackQuery() {
 
 // sendVideo send video to telegram
 func (t *TelegramRobot) sendVideo() {
-	
 	t.Robot.TalkingPreCheck(func() {
-		chatId, replyToMessageID, userId := t.Robot.GetChatIdAndMsgIdAndUserID()
+		chatId, replyToMessageID, _ := t.Robot.GetChatIdAndMsgIdAndUserID()
 		
 		prompt := t.Prompt
 		if len(prompt) == 0 {
@@ -803,11 +800,11 @@ func (t *TelegramRobot) sendVideo() {
 			return
 		}
 		
-		lastImageContent := t.ImageContent
+		imageContent := t.ImageContent
 		thinkingMsgId := t.Robot.SendMsg(chatId, i18n.GetMessage("thinking", nil),
 			replyToMessageID, tgbotapi.ModeMarkdown, nil)
 		
-		videoContent, totalToken, err := t.Robot.CreateVideo(prompt, lastImageContent)
+		videoContent, totalToken, err := t.Robot.CreateVideo(prompt, imageContent)
 		
 		video := tgbotapi.NewInputMediaVideo(tgbotapi.FileBytes{
 			Name:  "video." + utils.DetectVideoMimeType(videoContent),
@@ -829,33 +826,14 @@ func (t *TelegramRobot) sendVideo() {
 			return
 		}
 		
-		base64Content := base64.StdEncoding.EncodeToString(videoContent)
-		dataURI := fmt.Sprintf("data:video/%s;base64,%s", utils.DetectVideoMimeType(videoContent), base64Content)
-		
-		originImageURI := ""
-		if len(lastImageContent) > 0 {
-			base64Content = base64.StdEncoding.EncodeToString(lastImageContent)
-			format := utils.DetectImageFormat(lastImageContent)
-			originImageURI = fmt.Sprintf("data:image/%s;base64,%s", format, base64Content)
-		}
-		
-		db.InsertRecordInfo(&db.Record{
-			UserId:     userId,
-			Question:   prompt,
-			Answer:     dataURI,
-			Content:    originImageURI,
-			Token:      totalToken,
-			IsDeleted:  0,
-			RecordType: param.VideoRecordType,
-			Mode:       utils.GetImgType(db.GetCtxUserInfo(t.Robot.Ctx).LLMConfigRaw),
-		})
+		t.Robot.saveRecord(videoContent, imageContent, param.VideoRecordType, totalToken)
 	})
 }
 
 // sendImg send img to telegram
 func (t *TelegramRobot) sendImg() {
 	t.Robot.TalkingPreCheck(func() {
-		chatId, replyToMessageID, userId := t.Robot.GetChatIdAndMsgIdAndUserID()
+		chatId, replyToMessageID, _ := t.Robot.GetChatIdAndMsgIdAndUserID()
 		
 		prompt := t.Prompt
 		if prompt == "" && t.Update.Message != nil && len(t.Update.Message.Photo) > 0 {
@@ -931,26 +909,7 @@ func (t *TelegramRobot) sendImg() {
 			return
 		}
 		
-		base64Content := base64.StdEncoding.EncodeToString(imageContent)
-		dataURI := fmt.Sprintf("data:image/%s;base64,%s", utils.DetectImageFormat(imageContent), base64Content)
-		
-		originImageURI := ""
-		if len(lastImageContent) > 0 {
-			base64Content = base64.StdEncoding.EncodeToString(lastImageContent)
-			format := utils.DetectImageFormat(lastImageContent)
-			originImageURI = fmt.Sprintf("data:image/%s;base64,%s", format, base64Content)
-		}
-		
-		db.InsertRecordInfo(&db.Record{
-			UserId:     userId,
-			Question:   prompt,
-			Answer:     dataURI,
-			Token:      totalToken,
-			Content:    originImageURI,
-			IsDeleted:  0,
-			RecordType: param.ImageRecordType,
-			Mode:       utils.GetImgType(db.GetCtxUserInfo(t.Robot.Ctx).LLMConfigRaw),
-		})
+		t.Robot.saveRecord(imageContent, lastImageContent, param.ImageRecordType, totalToken)
 	})
 }
 

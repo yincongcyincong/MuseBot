@@ -232,6 +232,7 @@ func (l *LLM) InsertOrUpdate() error {
 		Answer: l.WholeContent,
 		Token:  l.Token,
 		UserId: l.UserId,
+		Mode:   utils.GetTxtType(db.GetCtxUserInfo(l.Ctx).LLMConfigRaw),
 	})
 	if err != nil {
 		logger.ErrorCtx(l.Ctx, "update record fail", "err", err)

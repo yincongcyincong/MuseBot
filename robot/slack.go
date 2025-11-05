@@ -3,7 +3,6 @@ package robot
 import (
 	"bytes"
 	"context"
-	"encoding/base64"
 	"errors"
 	"fmt"
 	"io"
@@ -16,7 +15,6 @@ import (
 	"github.com/slack-go/slack/slackevents"
 	"github.com/slack-go/slack/socketmode"
 	"github.com/yincongcyincong/MuseBot/conf"
-	"github.com/yincongcyincong/MuseBot/db"
 	"github.com/yincongcyincong/MuseBot/i18n"
 	"github.com/yincongcyincong/MuseBot/logger"
 	"github.com/yincongcyincong/MuseBot/metrics"
@@ -313,7 +311,7 @@ func (s *SlackRobot) downloadSlackFile(url string) ([]byte, error) {
 
 func (s *SlackRobot) sendImg() {
 	s.Robot.TalkingPreCheck(func() {
-		chatId, msgId, userId := s.Robot.GetChatIdAndMsgIdAndUserID()
+		chatId, msgId, _ := s.Robot.GetChatIdAndMsgIdAndUserID()
 		
 		prompt := s.Prompt
 		prompt = utils.ReplaceCommand(prompt, "/photo", s.BotName)
@@ -363,30 +361,13 @@ func (s *SlackRobot) sendImg() {
 			}
 		}
 		
-		originImageURI := ""
-		if len(lastImageContent) > 0 {
-			base64Content := base64.StdEncoding.EncodeToString(lastImageContent)
-			format := utils.DetectImageFormat(lastImageContent)
-			originImageURI = fmt.Sprintf("data:image/%s;base64,%s", format, base64Content)
-		}
-		
-		dataURI := "data:image/jpeg;base64," + base64.StdEncoding.EncodeToString(imageContent)
-		db.InsertRecordInfo(&db.Record{
-			UserId:     userId,
-			Question:   prompt,
-			Answer:     dataURI,
-			Content:    originImageURI,
-			Token:      totalToken,
-			IsDeleted:  0,
-			RecordType: param.ImageRecordType,
-			Mode:       utils.GetImgType(db.GetCtxUserInfo(s.Robot.Ctx).LLMConfigRaw),
-		})
+		s.Robot.saveRecord(imageContent, lastImageContent, param.ImageRecordType, totalToken)
 	})
 }
 
 func (s *SlackRobot) sendVideo() {
 	s.Robot.TalkingPreCheck(func() {
-		chatId, replyToMessageID, userID := s.Robot.GetChatIdAndMsgIdAndUserID()
+		chatId, replyToMessageID, _ := s.Robot.GetChatIdAndMsgIdAndUserID()
 		
 		prompt := s.Prompt
 		prompt = utils.ReplaceCommand(prompt, "/video", s.BotName)
@@ -400,8 +381,8 @@ func (s *SlackRobot) sendVideo() {
 		thinkingMsg := s.Robot.SendMsg(chatId, i18n.GetMessage("thinking", nil), replyToMessageID, "", nil)
 		
 		var err error
-		lastImageContent := s.ImageContent
-		videoContent, totalToken, err := s.Robot.CreateVideo(prompt, lastImageContent)
+		imageContent := s.ImageContent
+		videoContent, totalToken, err := s.Robot.CreateVideo(prompt, imageContent)
 		if err != nil {
 			logger.Warn("generate video failed", "err", err)
 			s.Robot.SendMsg(chatId, err.Error(), replyToMessageID, tgbotapi.ModeMarkdown, nil)
@@ -430,27 +411,7 @@ func (s *SlackRobot) sendVideo() {
 			}
 		}
 		
-		// 记录到数据库
-		base64Content := base64.StdEncoding.EncodeToString(videoContent)
-		dataURI := fmt.Sprintf("data:video/%s;base64,%s", utils.DetectVideoMimeType(videoContent), base64Content)
-		
-		originImageURI := ""
-		if len(lastImageContent) > 0 {
-			base64Content = base64.StdEncoding.EncodeToString(lastImageContent)
-			format := utils.DetectImageFormat(lastImageContent)
-			originImageURI = fmt.Sprintf("data:image/%s;base64,%s", format, base64Content)
-		}
-		
-		db.InsertRecordInfo(&db.Record{
-			UserId:     userID,
-			Question:   prompt,
-			Answer:     dataURI,
-			Content:    originImageURI,
-			Token:      totalToken,
-			IsDeleted:  0,
-			RecordType: param.VideoRecordType,
-			Mode:       utils.GetVideoType(db.GetCtxUserInfo(s.Robot.Ctx).LLMConfigRaw),
-		})
+		s.Robot.saveRecord(videoContent, imageContent, param.VideoRecordType, totalToken)
 	})
 }
 
