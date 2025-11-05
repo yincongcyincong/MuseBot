@@ -3,10 +3,8 @@ package robot
 import (
 	"bytes"
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"runtime/debug"
 	"strings"
@@ -20,7 +18,6 @@ import (
 	larkim "github.com/larksuite/oapi-sdk-go/v3/service/im/v1"
 	larkws "github.com/larksuite/oapi-sdk-go/v3/ws"
 	"github.com/yincongcyincong/MuseBot/conf"
-	"github.com/yincongcyincong/MuseBot/db"
 	"github.com/yincongcyincong/MuseBot/i18n"
 	"github.com/yincongcyincong/MuseBot/logger"
 	"github.com/yincongcyincong/MuseBot/metrics"
@@ -91,13 +88,6 @@ func NewLarkRobot(message *larkim.P2MessageReceiveV1) *LarkRobot {
 func LarkMessageHandler(ctx context.Context, message *larkim.P2MessageReceiveV1) error {
 	l := NewLarkRobot(message)
 	l.Robot = NewRobot(WithRobot(l), WithContext(ctx))
-	userInfo, err := botClient.Contact.V3.User.Get(l.Robot.Ctx, larkcontact.NewGetUserReqBuilder().
-		UserId(*message.Event.Sender.SenderId.UserId).Build())
-	if err != nil {
-		logger.Error("get user info error", "err", err)
-		return err
-	}
-	l.UserName = *userInfo.Data.User.Name
 	
 	go func() {
 		defer func() {
@@ -105,6 +95,14 @@ func LarkMessageHandler(ctx context.Context, message *larkim.P2MessageReceiveV1)
 				logger.Error("exec panic", "err", err, "stack", string(debug.Stack()))
 			}
 		}()
+		userInfo, err := botClient.Contact.V3.User.Get(l.Robot.Ctx, larkcontact.NewGetUserReqBuilder().
+			UserId(*message.Event.Sender.SenderId.UserId).UserIdType("user_id").Build())
+		if err != nil || userInfo.Code != 0 {
+			logger.Error("get user info error", "err", err, "user_info", userInfo)
+		} else {
+			l.UserName = *userInfo.Data.User.Name
+		}
+		
 		l.Robot.Exec()
 	}()
 	
@@ -146,7 +144,7 @@ func (l *LarkRobot) requestLLM(content string) {
 
 func (l *LarkRobot) sendImg() {
 	l.Robot.TalkingPreCheck(func() {
-		chatId, msgId, userId := l.Robot.GetChatIdAndMsgIdAndUserID()
+		chatId, msgId, _ := l.Robot.GetChatIdAndMsgIdAndUserID()
 		
 		prompt := strings.TrimSpace(l.Prompt)
 		if prompt == "" {
@@ -172,18 +170,6 @@ func (l *LarkRobot) sendImg() {
 			logger.Warn("generate image fail", "err", err)
 			l.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
 			return
-		}
-		
-		base64Content := base64.StdEncoding.EncodeToString(imageContent)
-		format := utils.DetectImageFormat(imageContent)
-		dataURI := fmt.Sprintf("data:image/%s;base64,%s", format, base64Content)
-		
-		originImageURI := ""
-		
-		if len(l.ImageContent) > 0 {
-			base64Content = base64.StdEncoding.EncodeToString(l.ImageContent)
-			format = utils.DetectImageFormat(l.ImageContent)
-			originImageURI = fmt.Sprintf("data:image/%s;base64,%s", format, base64Content)
 		}
 		
 		resp, err := l.Client.Im.V1.Image.Create(l.Robot.Ctx, larkim.NewCreateImageReqBuilder().
@@ -218,24 +204,14 @@ func (l *LarkRobot) sendImg() {
 			return
 		}
 		
-		// save data record
-		db.InsertRecordInfo(&db.Record{
-			UserId:     userId,
-			Question:   l.Prompt,
-			Answer:     dataURI,
-			Content:    originImageURI,
-			Token:      totalToken,
-			IsDeleted:  0,
-			RecordType: param.ImageRecordType,
-			Mode:       utils.GetImgType(db.GetCtxUserInfo(l.Robot.Ctx).LLMConfigRaw),
-		})
+		l.Robot.saveRecord(imageContent, lastImageContent, param.ImageRecordType, totalToken)
 	})
 }
 
 func (l *LarkRobot) sendVideo() {
 	// 检查 prompt
 	l.Robot.TalkingPreCheck(func() {
-		chatId, msgId, userId := l.Robot.GetChatIdAndMsgIdAndUserID()
+		chatId, msgId, _ := l.Robot.GetChatIdAndMsgIdAndUserID()
 		
 		prompt := strings.TrimSpace(l.Prompt)
 		if prompt == "" {
@@ -289,26 +265,7 @@ func (l *LarkRobot) sendVideo() {
 			return
 		}
 		
-		base64Content := base64.StdEncoding.EncodeToString(videoContent)
-		dataURI := fmt.Sprintf("data:video/%s;base64,%s", utils.DetectVideoMimeType(videoContent), base64Content)
-		
-		originImageURI := ""
-		if len(l.ImageContent) > 0 {
-			base64Content = base64.StdEncoding.EncodeToString(l.ImageContent)
-			format := utils.DetectImageFormat(l.ImageContent)
-			originImageURI = fmt.Sprintf("data:image/%s;base64,%s", format, base64Content)
-		}
-		
-		db.InsertRecordInfo(&db.Record{
-			UserId:     userId,
-			Question:   l.Prompt,
-			Answer:     dataURI,
-			Token:      totalToken,
-			Content:    originImageURI,
-			IsDeleted:  0,
-			RecordType: param.VideoRecordType,
-			Mode:       utils.GetVideoType(db.GetCtxUserInfo(l.Robot.Ctx).LLMConfigRaw),
-		})
+		l.Robot.saveRecord(videoContent, l.ImageContent, param.VideoRecordType, totalToken)
 	})
 	
 }

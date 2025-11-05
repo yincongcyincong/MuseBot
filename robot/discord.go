@@ -3,10 +3,8 @@ package robot
 import (
 	"bytes"
 	"context"
-	"encoding/base64"
 	"encoding/binary"
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -439,7 +437,7 @@ func (d *DiscordRobot) sendChatMessage() {
 
 func (d *DiscordRobot) sendImg() {
 	d.Robot.TalkingPreCheck(func() {
-		chatId, msgId, userId := d.Robot.GetChatIdAndMsgIdAndUserID()
+		chatId, msgId, _ := d.Robot.GetChatIdAndMsgIdAndUserID()
 		
 		prompt := strings.TrimSpace(d.getPrompt())
 		if prompt == "" {
@@ -497,32 +495,13 @@ func (d *DiscordRobot) sendImg() {
 			return
 		}
 		
-		base64Content := base64.StdEncoding.EncodeToString(imageContent)
-		dataURI := fmt.Sprintf("data:image/%s;base64,%s", utils.DetectImageFormat(imageContent), base64Content)
-		
-		originImageURI := ""
-		if len(lastImageContent) > 0 {
-			base64Content = base64.StdEncoding.EncodeToString(lastImageContent)
-			format := utils.DetectImageFormat(lastImageContent)
-			originImageURI = fmt.Sprintf("data:image/%s;base64,%s", format, base64Content)
-		}
-		
-		db.InsertRecordInfo(&db.Record{
-			UserId:     userId,
-			Question:   prompt,
-			Answer:     dataURI,
-			Content:    originImageURI,
-			Token:      totalToken,
-			IsDeleted:  0,
-			RecordType: param.ImageRecordType,
-			Mode:       utils.GetImgType(db.GetCtxUserInfo(d.Robot.Ctx).LLMConfigRaw),
-		})
+		d.Robot.saveRecord(imageContent, lastImageContent, param.ImageRecordType, totalToken)
 	})
 }
 
 func (d *DiscordRobot) sendVideo() {
 	d.Robot.TalkingPreCheck(func() {
-		chatId, msgId, userId := d.Robot.GetChatIdAndMsgIdAndUserID()
+		chatId, msgId, _ := d.Robot.GetChatIdAndMsgIdAndUserID()
 		
 		prompt := strings.TrimSpace(d.getPrompt())
 		if prompt == "" {
@@ -572,26 +551,7 @@ func (d *DiscordRobot) sendVideo() {
 			return
 		}
 		
-		base64Content := base64.StdEncoding.EncodeToString(videoContent)
-		dataURI := fmt.Sprintf("data:video/%s;base64,%s", utils.DetectVideoMimeType(videoContent), base64Content)
-		
-		originImageURI := ""
-		if len(imageContent) > 0 {
-			base64Content = base64.StdEncoding.EncodeToString(imageContent)
-			format := utils.DetectImageFormat(imageContent)
-			originImageURI = fmt.Sprintf("data:image/%s;base64,%s", format, base64Content)
-		}
-		
-		db.InsertRecordInfo(&db.Record{
-			UserId:     userId,
-			Question:   prompt,
-			Answer:     dataURI,
-			Token:      totalToken,
-			Content:    originImageURI,
-			IsDeleted:  0,
-			RecordType: param.VideoRecordType,
-			Mode:       utils.GetVideoType(db.GetCtxUserInfo(d.Robot.Ctx).LLMConfigRaw),
-		})
+		d.Robot.saveRecord(videoContent, imageContent, param.VideoRecordType, totalToken)
 	})
 }
 

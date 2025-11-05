@@ -1,9 +1,7 @@
 package robot
 
 import (
-	"encoding/base64"
 	"errors"
-	"fmt"
 	"io"
 	"os"
 	"runtime/debug"
@@ -17,7 +15,6 @@ import (
 	serverModel "github.com/ArtisanCloud/PowerWeChat/v3/src/work/server/handlers/models"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/yincongcyincong/MuseBot/conf"
-	"github.com/yincongcyincong/MuseBot/db"
 	"github.com/yincongcyincong/MuseBot/i18n"
 	"github.com/yincongcyincong/MuseBot/logger"
 	"github.com/yincongcyincong/MuseBot/metrics"
@@ -239,7 +236,7 @@ func (w *WechatRobot) requestLLM(content string) {
 
 func (w *WechatRobot) sendImg() {
 	w.Robot.TalkingPreCheck(func() {
-		chatId, msgId, userId := w.Robot.GetChatIdAndMsgIdAndUserID()
+		chatId, msgId, _ := w.Robot.GetChatIdAndMsgIdAndUserID()
 		if !*conf.BaseConfInfo.WechatActive {
 			logger.Warn("only wechat_active is true can generate image")
 			w.Robot.SendMsg(chatId, "only wechat_active is true can generate image", msgId, tgbotapi.ModeMarkdown, nil)
@@ -269,11 +266,7 @@ func (w *WechatRobot) sendImg() {
 			return
 		}
 		
-		base64Content := base64.StdEncoding.EncodeToString(imageContent)
-		format := utils.DetectImageFormat(imageContent)
-		dataURI := fmt.Sprintf("data:image/%s;base64,%s", format, base64Content)
-		
-		fileName := utils.GetAbsPath("data/" + utils.RandomFilename(format))
+		fileName := utils.GetAbsPath("data/" + utils.RandomFilename(utils.DetectImageFormat(imageContent)))
 		err = os.WriteFile(fileName, imageContent, 0666)
 		if err != nil {
 			logger.Error("save image fail", "err", err)
@@ -295,31 +288,13 @@ func (w *WechatRobot) sendImg() {
 			return
 		}
 		
-		originImageURI := ""
-		if len(lastImageContent) > 0 {
-			base64Content = base64.StdEncoding.EncodeToString(lastImageContent)
-			format = utils.DetectImageFormat(lastImageContent)
-			originImageURI = fmt.Sprintf("data:image/%s;base64,%s", format, base64Content)
-		}
-		
-		// save data record
-		db.InsertRecordInfo(&db.Record{
-			UserId:     userId,
-			Question:   w.Prompt,
-			Answer:     dataURI,
-			Content:    originImageURI,
-			Token:      totalToken,
-			IsDeleted:  0,
-			RecordType: param.ImageRecordType,
-			Mode:       utils.GetImgType(db.GetCtxUserInfo(w.Robot.Ctx).LLMConfigRaw),
-		})
+		w.Robot.saveRecord(imageContent, lastImageContent, param.ImageRecordType, totalToken)
 	})
 }
 
 func (w *WechatRobot) sendVideo() {
-	// 检查 prompt
 	w.Robot.TalkingPreCheck(func() {
-		chatId, msgId, userId := w.Robot.GetChatIdAndMsgIdAndUserID()
+		chatId, msgId, _ := w.Robot.GetChatIdAndMsgIdAndUserID()
 		if !*conf.BaseConfInfo.WechatActive {
 			logger.Warn("only wechat_active is true can generate video")
 			w.Robot.SendMsg(chatId, "only wechat_active is true can generate video", msgId, tgbotapi.ModeMarkdown, nil)
@@ -340,11 +315,7 @@ func (w *WechatRobot) sendVideo() {
 			return
 		}
 		
-		base64Content := base64.StdEncoding.EncodeToString(videoContent)
-		format := utils.DetectVideoMimeType(videoContent)
-		dataURI := fmt.Sprintf("data:video/%s;base64,%s", format, base64Content)
-		
-		fileName := utils.GetAbsPath("data/" + utils.RandomFilename(format))
+		fileName := utils.GetAbsPath("data/" + utils.RandomFilename(utils.DetectVideoMimeType(videoContent)))
 		err = os.WriteFile(fileName, videoContent, 0666)
 		if err != nil {
 			logger.Error("save image fail", "err", err)
@@ -364,23 +335,7 @@ func (w *WechatRobot) sendVideo() {
 			return
 		}
 		
-		originImageURI := ""
-		if len(w.ImageContent) > 0 {
-			base64Content = base64.StdEncoding.EncodeToString(w.ImageContent)
-			format := utils.DetectImageFormat(w.ImageContent)
-			originImageURI = fmt.Sprintf("data:image/%s;base64,%s", format, base64Content)
-		}
-		
-		db.InsertRecordInfo(&db.Record{
-			UserId:     userId,
-			Question:   w.Prompt,
-			Answer:     dataURI,
-			Content:    originImageURI,
-			Token:      totalToken,
-			IsDeleted:  0,
-			RecordType: param.VideoRecordType,
-			Mode:       utils.GetVideoType(db.GetCtxUserInfo(w.Robot.Ctx).LLMConfigRaw),
-		})
+		w.Robot.saveRecord(videoContent, w.ImageContent, param.VideoRecordType, totalToken)
 	})
 	
 }
