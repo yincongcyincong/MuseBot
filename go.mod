@@ -27,6 +27,7 @@ require (
 	github.com/open-dingtalk/dingtalk-stream-sdk-go v0.9.1
 	github.com/prometheus/client_golang v1.17.0
 	github.com/revrost/go-openrouter v0.1.6
+	github.com/robfig/cron/v3 v3.0.1
 	github.com/rs/zerolog v1.34.0
 	github.com/sashabaranov/go-openai v1.40.5
 	github.com/satori/go.uuid v1.2.0

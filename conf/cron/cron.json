@@ -1,0 +1,9 @@
+[
+  {
+    "type": "telegram",
+    "user_ids": "5542540980",
+    "cron": "0 0 0 * * *",
+    "command": "",
+    "prompt": "hi"
+  }
+]

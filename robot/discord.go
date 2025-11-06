@@ -881,7 +881,7 @@ func CloseTalk(vc *discordgo.VoiceConnection) {
 	if err == nil {
 		vc.Disconnect()
 		volDialog.Cancel()
-		db.InsertRecordInfo(&db.Record{
+		db.InsertRecordInfo(context.Background(), &db.Record{
 			UserId:     volDialog.CallUserId,
 			Question:   "discord talk",
 			Answer:     "",

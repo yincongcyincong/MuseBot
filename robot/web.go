@@ -90,7 +90,7 @@ func (web *Web) Exec() {
 
 func (web *Web) sendHelpConfigurationOptions() {
 	web.SendMsg(i18n.GetMessage("help_text", nil))
-	db.InsertRecordInfo(&db.Record{
+	db.InsertRecordInfo(web.Robot.Ctx, &db.Record{
 		UserId:     web.RealUserId,
 		Question:   web.OriginalPrompt,
 		Answer:     i18n.GetMessage("help_text", nil),
@@ -241,7 +241,7 @@ func (web *Web) showStateInfo() {
 	msgContent := fmt.Sprintf(template, userInfo.Token, todayTokey, weekToken, monthToken)
 	web.SendMsg(msgContent)
 	
-	db.InsertRecordInfo(&db.Record{
+	db.InsertRecordInfo(web.Robot.Ctx, &db.Record{
 		UserId:     web.RealUserId,
 		Question:   web.OriginalPrompt,
 		Answer:     msgContent,
@@ -254,11 +254,11 @@ func (web *Web) showStateInfo() {
 
 func (web *Web) clearAllRecord() {
 	userId := web.RealUserId
-	db.DeleteMsgRecord(userId)
+	db.DeleteMsgRecord(web.Robot.Ctx, userId)
 	deleteSuccMsg := i18n.GetMessage("delete_succ", nil)
 	web.SendMsg(deleteSuccMsg)
 	
-	db.InsertRecordInfo(&db.Record{
+	db.InsertRecordInfo(web.Robot.Ctx, &db.Record{
 		UserId:     web.RealUserId,
 		Question:   web.OriginalPrompt,
 		Answer:     deleteSuccMsg,
@@ -334,7 +334,7 @@ func (web *Web) sendMultiAgent(agentType string) {
 		web.Flusher.Flush()
 	}
 	
-	db.InsertRecordInfo(&db.Record{
+	db.InsertRecordInfo(web.Robot.Ctx, &db.Record{
 		UserId:     web.RealUserId,
 		Question:   web.OriginalPrompt,
 		Answer:     totalContent,
@@ -386,7 +386,7 @@ func (web *Web) sendImg() {
 	}
 	
 	// save message record
-	db.InsertRecordInfo(&db.Record{
+	db.InsertRecordInfo(web.Robot.Ctx, &db.Record{
 		UserId:     web.RealUserId,
 		Question:   web.OriginalPrompt,
 		Answer:     dataURI,
@@ -398,7 +398,7 @@ func (web *Web) sendImg() {
 	})
 	
 	// save data record
-	db.InsertRecordInfo(&db.Record{
+	db.InsertRecordInfo(web.Robot.Ctx, &db.Record{
 		UserId:     web.RealUserId,
 		Question:   web.OriginalPrompt,
 		Answer:     dataURI,
@@ -434,7 +434,7 @@ func (web *Web) sendVideo() {
 	fmt.Fprintf(web.W, "%s", dataURI)
 	web.Flusher.Flush()
 	
-	db.InsertRecordInfo(&db.Record{
+	db.InsertRecordInfo(web.Robot.Ctx, &db.Record{
 		UserId:     web.RealUserId,
 		Question:   web.OriginalPrompt,
 		Answer:     dataURI,
@@ -444,7 +444,7 @@ func (web *Web) sendVideo() {
 		Mode:       utils.GetVideoType(db.GetCtxUserInfo(web.Robot.Ctx).LLMConfigRaw),
 	})
 	
-	db.InsertRecordInfo(&db.Record{
+	db.InsertRecordInfo(web.Robot.Ctx, &db.Record{
 		UserId:     web.RealUserId,
 		Question:   web.OriginalPrompt,
 		Answer:     dataURI,
@@ -500,7 +500,7 @@ func (web *Web) sendChatMessage() {
 		originDataURI = fmt.Sprintf("data:audio/%s;base64,%s", format, base64Content)
 	}
 	
-	db.InsertRecordInfo(&db.Record{
+	db.InsertRecordInfo(web.Robot.Ctx, &db.Record{
 		UserId:     web.RealUserId,
 		Question:   web.OriginalPrompt,
 		Answer:     totalContent,
@@ -551,7 +551,7 @@ func (web *Web) SendMsg(msgContent string) {
 }
 
 func (web *Web) InsertRecord() {
-	id, err := db.InsertRecordInfo(&db.Record{
+	id, err := db.InsertRecordInfo(web.Robot.Ctx, &db.Record{
 		UserId:     web.RealUserId,
 		Question:   web.Prompt,
 		RecordType: param.TextRecordType,

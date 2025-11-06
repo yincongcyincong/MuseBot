@@ -65,17 +65,17 @@ func StartQQRobot(ctx context.Context) {
 			AppSecret: *conf.BaseConfInfo.QQAppSecret,
 		})
 	if err = token.StartRefreshAccessToken(ctx, QQTokenSource); err != nil {
-		logger.Error("start refresh access token error", "err", err)
+		logger.ErrorCtx(ctx, "start refresh access token error", "err", err)
 		return
 	}
 	
 	QQApi = botgo.NewOpenAPI(*conf.BaseConfInfo.QQAppID, QQTokenSource).WithTimeout(5 * time.Second).SetDebug(false)
 	QQRobotInfo, err = QQApi.Me(ctx)
 	if err != nil {
-		logger.Error("get me error", "err", err)
+		logger.ErrorCtx(ctx, "get me error", "err", err)
 		return
 	}
-	logger.Info("QQRobot Info", "username", QQRobotInfo.Username)
+	logger.InfoCtx(ctx, "QQRobot Info", "username", QQRobotInfo.Username)
 	
 	event.RegisterHandlers(
 		event.GroupATMessageEventHandler(QQGroupATMessageEventHandler),
@@ -90,7 +90,7 @@ func C2CMessageEventHandler(event *dto.WSPayload, message *dto.WSC2CMessageData)
 	go func() {
 		defer func() {
 			if err := recover(); err != nil {
-				logger.Error("QQ exec panic", "err", err, "stack", string(debug.Stack()))
+				logger.ErrorCtx(d.Robot.Ctx, "QQ exec panic", "err", err, "stack", string(debug.Stack()))
 			}
 		}()
 		
@@ -105,7 +105,7 @@ func QQGroupATMessageEventHandler(event *dto.WSPayload, atMessage *dto.WSGroupAT
 	go func() {
 		defer func() {
 			if err := recover(); err != nil {
-				logger.Error("QQ exec panic", "err", err, "stack", string(debug.Stack()))
+				logger.ErrorCtx(d.Robot.Ctx, "QQ exec panic", "err", err, "stack", string(debug.Stack()))
 			}
 		}()
 		
@@ -121,7 +121,7 @@ func QQATMessageEventHandler(event *dto.WSPayload, atMessage *dto.WSATMessageDat
 	go func() {
 		defer func() {
 			if err := recover(); err != nil {
-				logger.Error("QQ exec panic", "err", err, "stack", string(debug.Stack()))
+				logger.ErrorCtx(d.Robot.Ctx, "QQ exec panic", "err", err, "stack", string(debug.Stack()))
 			}
 		}()
 		
@@ -240,7 +240,7 @@ func (q *QQRobot) sendImg() {
 		
 		prompt := strings.TrimSpace(q.Prompt)
 		if prompt == "" {
-			logger.Warn("prompt is empty")
+			logger.ErrorCtx(q.Robot.Ctx, "prompt is empty")
 			q.Robot.SendMsg(chatId, i18n.GetMessage("photo_empty_content", nil), msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
@@ -250,13 +250,13 @@ func (q *QQRobot) sendImg() {
 		if len(lastImageContent) == 0 && strings.Contains(q.Command, "edit_photo") {
 			lastImageContent, err = q.Robot.GetLastImageContent()
 			if err != nil {
-				logger.Warn("get last image record fail", "err", err)
+				logger.ErrorCtx(q.Robot.Ctx, "get last image record fail", "err", err)
 			}
 		}
 		
 		imageContent, totalToken, err := q.Robot.CreatePhoto(prompt, lastImageContent)
 		if err != nil {
-			logger.Warn("generate image fail", "err", err)
+			logger.ErrorCtx(q.Robot.Ctx, "generate image fail", "err", err)
 			q.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
@@ -264,14 +264,14 @@ func (q *QQRobot) sendImg() {
 		base64Content := base64.StdEncoding.EncodeToString(imageContent)
 		data, err := q.UploadFile(base64Content, 1)
 		if err != nil {
-			logger.Warn("upload file fail", "err", err)
+			logger.ErrorCtx(q.Robot.Ctx, "upload file fail", "err", err)
 			q.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
 		
 		err = q.PostRichMediaMessage(data)
 		if err != nil {
-			logger.Warn("post rich media msg fail", "err", err)
+			logger.ErrorCtx(q.Robot.Ctx, "post rich media msg fail", "err", err)
 			q.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
@@ -287,7 +287,7 @@ func (q *QQRobot) sendVideo() {
 		
 		prompt := strings.TrimSpace(q.Prompt)
 		if prompt == "" {
-			logger.Warn("prompt is empty")
+			logger.ErrorCtx(q.Robot.Ctx, "prompt is empty")
 			q.Robot.SendMsg(chatId, i18n.GetMessage("video_empty_content", nil), msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
@@ -298,7 +298,7 @@ func (q *QQRobot) sendVideo() {
 		if attachment != nil {
 			imageContent, err = utils.DownloadFile(attachment.URL)
 			if err != nil {
-				logger.Warn("download image fail", "err", err)
+				logger.ErrorCtx(q.Robot.Ctx, "download image fail", "err", err)
 				q.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
 				return
 			}
@@ -306,7 +306,7 @@ func (q *QQRobot) sendVideo() {
 		
 		videoContent, totalToken, err := q.Robot.CreateVideo(prompt, imageContent)
 		if err != nil {
-			logger.Warn("generate video fail", "err", err)
+			logger.ErrorCtx(q.Robot.Ctx, "generate video fail", "err", err)
 			q.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
@@ -314,14 +314,14 @@ func (q *QQRobot) sendVideo() {
 		base64Content := base64.StdEncoding.EncodeToString(videoContent)
 		data, err := q.UploadFile(base64Content, 2)
 		if err != nil {
-			logger.Warn("upload file fail", "err", err)
+			logger.ErrorCtx(q.Robot.Ctx, "upload file fail", "err", err)
 			q.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
 		
 		err = q.PostRichMediaMessage(data)
 		if err != nil {
-			logger.Warn("post rich media msg fail", "err", err)
+			logger.ErrorCtx(q.Robot.Ctx, "post rich media msg fail", "err", err)
 			q.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
@@ -388,13 +388,13 @@ func (q *QQRobot) getContent(content string) (string, error) {
 	case strings.Contains(attachment.ContentType, "image"):
 		content, err = q.Robot.GetImageContent(q.ImageContent, content)
 		if err != nil {
-			logger.Warn("generate text from audio failed", "err", err)
+			logger.ErrorCtx(q.Robot.Ctx, "generate text from audio failed", "err", err)
 			return "", err
 		}
 	}
 	
 	if content == "" {
-		logger.Warn("content extraction returned empty")
+		logger.ErrorCtx(q.Robot.Ctx, "content extraction returned empty")
 		return "", errors.New("content is empty")
 	}
 	
@@ -582,7 +582,7 @@ func (q *QQRobot) passiveExecCmd() {
 	q.Robot.TalkingPreCheck(func() {
 		chatId, msgId, userId := q.Robot.GetChatIdAndMsgIdAndUserID()
 		if !*conf.BaseConfInfo.WechatActive {
-			logger.Warn("only wechat_active is true can generate image")
+			logger.WarnCtx(q.Robot.Ctx, "only wechat_active is true can generate image")
 			q.Robot.SendMsg(chatId, "only wechat_active is true can generate image", msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
@@ -633,7 +633,7 @@ func (q *QQRobot) passiveExecCmd() {
 					case msgSaveVoice:
 						data, err := utils.SilkToMp3(q.AudioContent)
 						if err != nil {
-							logger.Error("silk to wav fail", "err", err)
+							logger.ErrorCtx(q.Robot.Ctx, "silk to wav fail", "err", err)
 							q.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
 							return
 						}
@@ -641,7 +641,7 @@ func (q *QQRobot) passiveExecCmd() {
 						fileName := utils.GetAbsPath("data/" + utils.RandomFilename(utils.DetectAudioFormat(data)))
 						err = os.WriteFile(fileName, data, 0666)
 						if err != nil {
-							logger.Error("save image fail", "err", err)
+							logger.ErrorCtx(q.Robot.Ctx, "save image fail", "err", err)
 							q.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
 							return
 						}
@@ -679,14 +679,14 @@ func (q *QQRobot) sendText(messageChan *MsgChan) {
 		for msg := range messageChan.StrMessageChan {
 			id, err = q.PostStreamMessage(1, idx, id, msg)
 			if err != nil {
-				logger.Warn("send stream msg fail", "err", err)
+				logger.ErrorCtx(q.Robot.Ctx, "send stream msg fail", "err", err)
 			}
 			idx++
 		}
 		
 		_, err = q.PostStreamMessage(10, idx, id, " ")
 		if err != nil {
-			logger.Warn("send stream msg fail", "err", err)
+			logger.ErrorCtx(q.Robot.Ctx, "send stream msg fail", "err", err)
 		}
 	}
 }
@@ -695,7 +695,7 @@ func (q *QQRobot) sendVoiceContent(voiceContent []byte, duration int) error {
 	base64Content := base64.StdEncoding.EncodeToString(voiceContent)
 	data, err := q.UploadFile(base64Content, 3)
 	if err != nil {
-		logger.Warn("upload file fail", "err", err)
+		logger.ErrorCtx(q.Robot.Ctx, "upload file fail", "err", err)
 		return err
 	}
 	

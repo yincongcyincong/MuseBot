@@ -64,7 +64,7 @@ func StartLarkRobot(ctx context.Context) {
 	resp, err := botClient.Application.Application.Get(ctx, larkapplication.NewGetApplicationReqBuilder().
 		AppId(*conf.BaseConfInfo.LarkAPPID).Lang("zh_cn").Build())
 	if err != nil {
-		logger.Error("get robot name error", "error", err)
+		logger.ErrorCtx(ctx, "get robot name error", "error", err)
 		return
 	}
 	BotName = larkcore.StringValue(resp.Data.App.AppName)
@@ -72,7 +72,7 @@ func StartLarkRobot(ctx context.Context) {
 	
 	err = cli.Start(ctx)
 	if err != nil {
-		logger.Error("start larkbot fail", "err", err)
+		logger.ErrorCtx(ctx, "start larkbot fail", "err", err)
 	}
 }
 
@@ -92,13 +92,13 @@ func LarkMessageHandler(ctx context.Context, message *larkim.P2MessageReceiveV1)
 	go func() {
 		defer func() {
 			if err := recover(); err != nil {
-				logger.Error("exec panic", "err", err, "stack", string(debug.Stack()))
+				logger.ErrorCtx(ctx, "exec panic", "err", err, "stack", string(debug.Stack()))
 			}
 		}()
 		userInfo, err := botClient.Contact.V3.User.Get(l.Robot.Ctx, larkcontact.NewGetUserReqBuilder().
 			UserId(*message.Event.Sender.SenderId.UserId).UserIdType("user_id").Build())
 		if err != nil || userInfo.Code != 0 {
-			logger.Error("get user info error", "err", err, "user_info", userInfo)
+			logger.ErrorCtx(ctx, "get user info error", "err", err, "user_info", userInfo)
 		} else {
 			l.UserName = *userInfo.Data.User.Name
 		}
@@ -115,7 +115,7 @@ func (l *LarkRobot) checkValid() bool {
 	// group need to at bot
 	atBot, err := l.GetMessageContent()
 	if err != nil {
-		logger.Error("get message content error", "err", err)
+		logger.ErrorCtx(l.Robot.Ctx, "get message content error", "err", err)
 		l.Robot.SendMsg(chatId, err.Error(), msgId, "", nil)
 		return false
 	}
@@ -359,33 +359,33 @@ func (l *LarkRobot) getContent(content string) (string, error) {
 				Type("image").
 				Build())
 		if err != nil || !resp.Success() {
-			logger.Error("get image failed", "err", err, "resp", resp)
+			logger.ErrorCtx(l.Robot.Ctx, "get image failed", "err", err, "resp", resp)
 			return "", err
 		}
 		
 		bs, err := io.ReadAll(resp.File)
 		if err != nil {
-			logger.Error("read image failed", "err", err)
+			logger.ErrorCtx(l.Robot.Ctx, "read image failed", "err", err)
 			return "", err
 		}
 		
 		content, err = l.Robot.GetImageContent(bs, content)
 		if err != nil {
-			logger.Warn("generate text from audio failed", "err", err)
+			logger.ErrorCtx(l.Robot.Ctx, "generate text from audio failed", "err", err)
 			return "", err
 		}
 	case larkim.MsgTypePost:
 		if len(l.ImageContent) != 0 {
 			content, err = l.Robot.GetImageContent(l.ImageContent, content)
 			if err != nil {
-				logger.Warn("generate text from audio failed", "err", err)
+				logger.ErrorCtx(l.Robot.Ctx, "generate text from audio failed", "err", err)
 				return "", err
 			}
 		}
 	}
 	
 	if content == "" {
-		logger.Warn("content extraction returned empty")
+		logger.ErrorCtx(l.Robot.Ctx, "content extraction returned empty")
 		return "", errors.New("content is empty")
 	}
 	
@@ -442,7 +442,7 @@ func (l *LarkRobot) GetMessageContent() (bool, error) {
 		textMsg := new(MessageText)
 		err := json.Unmarshal([]byte(larkcore.StringValue(l.Message.Event.Message.Content)), textMsg)
 		if err != nil {
-			logger.Error("unmarshal text message error", "error", err)
+			logger.ErrorCtx(l.Robot.Ctx, "unmarshal text message error", "error", err)
 			return false, err
 		}
 		l.Command, l.Prompt = ParseCommand(textMsg.Text)
@@ -464,7 +464,7 @@ func (l *LarkRobot) GetMessageContent() (bool, error) {
 		postMsg := new(MessagePostContent)
 		err := json.Unmarshal([]byte(larkcore.StringValue(l.Message.Event.Message.Content)), postMsg)
 		if err != nil {
-			logger.Error("unmarshal text message error", "error", err)
+			logger.ErrorCtx(l.Robot.Ctx, "unmarshal text message error", "error", err)
 			return false, err
 		}
 		
@@ -487,13 +487,13 @@ func (l *LarkRobot) GetMessageContent() (bool, error) {
 							Type("image").
 							Build())
 					if err != nil || !resp.Success() {
-						logger.Error("get image failed", "err", err, "resp", resp)
+						logger.ErrorCtx(l.Robot.Ctx, "get image failed", "err", err, "resp", resp)
 						return false, err
 					}
 					
 					bs, err := io.ReadAll(resp.File)
 					if err != nil {
-						logger.Error("read image failed", "err", err)
+						logger.ErrorCtx(l.Robot.Ctx, "read image failed", "err", err)
 						return false, err
 					}
 					l.ImageContent = bs
@@ -519,13 +519,13 @@ func (l *LarkRobot) GetMessageContent() (bool, error) {
 				Type("file").
 				Build())
 		if err != nil || !resp.Success() {
-			logger.Error("get image failed", "err", err, "resp", resp)
+			logger.ErrorCtx(l.Robot.Ctx, "get image failed", "err", err, "resp", resp)
 			return false, err
 		}
 		
 		bs, err := io.ReadAll(resp.File)
 		if err != nil {
-			logger.Error("read image failed", "err", err)
+			logger.ErrorCtx(l.Robot.Ctx, "read image failed", "err", err)
 			return false, err
 		}
 		

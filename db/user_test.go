@@ -48,11 +48,6 @@ func TestInsertAndGetUser(t *testing.T) {
 		t.Fatalf("UpdateUserMode failed: %v", err)
 	}
 	
-	err = UpdateUserUpdateTime(user.UserId, 111)
-	if err != nil {
-		t.Fatalf("UpdateUserUpdateTime failed: %v", err)
-	}
-	
 	err = AddAvailToken(user.UserId, 1000)
 	if err != nil {
 		t.Fatalf("UpdateUserUpdateTime failed: %v", err)

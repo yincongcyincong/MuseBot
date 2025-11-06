@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -144,7 +145,7 @@ func InitTable() {
 		}
 	}
 	
-	InsertRecord()
+	InsertRecord(context.Background())
 	
 	logger.Info("db initialize successfully")
 }

@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"strings"
@@ -48,7 +49,7 @@ type Record struct {
 
 var MsgRecord = sync.Map{}
 
-func InsertMsgRecord(userId string, aq *AQ, insertDB bool) {
+func InsertMsgRecord(ctx context.Context, userId string, aq *AQ, insertDB bool) {
 	var msgRecord *MsgRecordInfo
 	msgRecordInter, ok := MsgRecord.Load(userId)
 	if !ok {
@@ -67,7 +68,7 @@ func InsertMsgRecord(userId string, aq *AQ, insertDB bool) {
 	MsgRecord.Store(userId, msgRecord)
 	
 	if insertDB {
-		go InsertRecordInfo(&Record{
+		go InsertRecordInfo(ctx, &Record{
 			UserId:     userId,
 			Question:   aq.Question,
 			Answer:     aq.Answer,
@@ -87,18 +88,18 @@ func GetMsgRecord(userId string) *MsgRecordInfo {
 	return msgRecord.(*MsgRecordInfo)
 }
 
-func DeleteMsgRecord(userId string) {
+func DeleteMsgRecord(ctx context.Context, userId string) {
 	MsgRecord.Delete(userId)
 	err := DeleteRecord(userId)
 	if err != nil {
-		logger.Error("Error deleting record", "err", err)
+		logger.ErrorCtx(ctx, "Error deleting record", "err", err)
 	}
 }
 
-func InsertRecord() {
+func InsertRecord(ctx context.Context) {
 	users, err := GetUsers()
 	if err != nil {
-		logger.Error("InsertRecord GetUsers err", "err", err)
+		logger.ErrorCtx(ctx, "InsertRecord GetUsers err", "err", err)
 	}
 	
 	for _, user := range users {
@@ -108,7 +109,7 @@ func InsertRecord() {
 		}
 		for i := len(records) - 1; i >= 0; i-- {
 			record := records[i]
-			InsertMsgRecord(user.UserId, &AQ{
+			InsertMsgRecord(ctx, user.UserId, &AQ{
 				Question:   record.Question,
 				Answer:     record.Answer,
 				Content:    record.Content,
@@ -146,17 +147,17 @@ func getRecordsByUserId(userId string) ([]Record, error) {
 }
 
 // InsertRecordInfo insert record
-func InsertRecordInfo(record *Record) (int64, error) {
+func InsertRecordInfo(ctx context.Context, record *Record) (int64, error) {
 	query := `INSERT INTO records (user_id, question, answer, content, token, create_time, is_deleted, record_type, mode, from_bot) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 	result, err := DB.Exec(query, record.UserId, record.Question, record.Answer, record.Content, record.Token, time.Now().Unix(), record.IsDeleted, record.RecordType, record.Mode, *conf.BaseConfInfo.BotName)
 	if err != nil {
-		logger.Error("insertRecord err", "err", err)
+		logger.ErrorCtx(ctx, "insertRecord err", "err", err)
 		return 0, err
 	}
 	
 	err = AddToken(record.UserId, record.Token)
 	if err != nil {
-		logger.Error("Error update token by user", "err", err)
+		logger.ErrorCtx(ctx, "Error update token by user", "err", err)
 	}
 	
 	return result.LastInsertId()
@@ -399,20 +400,20 @@ func UpdateRecordInfo(record *Record) error {
 	return nil
 }
 
-func AddRecordToken(recordID int64, userId string, token int) error {
+func AddRecordToken(ctx context.Context, recordID int64, userId string, token int) error {
 	query := `UPDATE records
 			  SET token = token + ?, update_time = ?
 			  WHERE id = ?`
 	
 	_, err := DB.Exec(query, token, time.Now().Unix(), recordID)
 	if err != nil {
-		logger.Error("addRecordToken err", "err", err)
+		logger.ErrorCtx(ctx, "addRecordToken err", "err", err)
 		return err
 	}
 	
 	err = AddToken(userId, token)
 	if err != nil {
-		logger.Error("add token fail", "err", err)
+		logger.ErrorCtx(ctx, "add token fail", "err", err)
 		return err
 	}
 	

@@ -132,7 +132,7 @@ func InsertUserRecords(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	for _, aq := range userRecords.Records {
-		db.InsertMsgRecord(userRecords.UserId, aq, false)
+		db.InsertMsgRecord(ctx, userRecords.UserId, aq, false)
 	}
 	
 	utils.Success(ctx, w, r, "success")

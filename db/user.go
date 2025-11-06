@@ -100,15 +100,8 @@ func GetUsers() ([]User, error) {
 
 // UpdateUserLLMConfig update user llm config
 func UpdateUserLLMConfig(userId string, llmConfig string) error {
-	updateSQL := `UPDATE users SET llm_config = ? WHERE user_id = ?`
-	_, err := DB.Exec(updateSQL, llmConfig, userId)
-	return err
-}
-
-// UpdateUserUpdateTime update user updateTime
-func UpdateUserUpdateTime(userId string, updateTime int64) error {
-	updateSQL := `UPDATE users SET update_time = ? WHERE user_id = ?`
-	_, err := DB.Exec(updateSQL, updateTime, userId)
+	updateSQL := `UPDATE users SET llm_config = ?, update_time = ? WHERE user_id = ?`
+	_, err := DB.Exec(updateSQL, llmConfig, time.Now().Unix(), userId)
 	return err
 }
 
