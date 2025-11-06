@@ -112,6 +112,16 @@ const (
 	Qwen3TTSFlash = "qwen3-tts-flash"
 	
 	Gemini2_5FlashPreviewTTS = "gemini-2.5-flash-preview-tts"
+	
+	ComWechat  = "com_wechat"
+	Ding       = "ding"
+	Discord    = "discord"
+	Lark       = "lark"
+	PersonalQQ = "personal_qq"
+	QQ         = "qq"
+	Slack      = "slack"
+	Telegram   = "telegram"
+	Wechat     = "wechat"
 )
 
 var (

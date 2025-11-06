@@ -21,6 +21,8 @@ import (
 	"github.com/yincongcyincong/MuseBot/utils"
 )
 
+var TelegramBot *tgbotapi.BotAPI
+
 type TelegramRobot struct {
 	Update tgbotapi.Update
 	Bot    *tgbotapi.BotAPI
@@ -52,11 +54,10 @@ func NewTelegramRobot(update tgbotapi.Update, bot *tgbotapi.BotAPI) *TelegramRob
 
 // StartTelegramRobot start listen robot callback
 func StartTelegramRobot(ctx context.Context) {
-	var bot *tgbotapi.BotAPI
 	
 	defer func() {
-		if bot != nil {
-			bot.StopReceivingUpdates()
+		if TelegramBot != nil {
+			TelegramBot.StopReceivingUpdates()
 		}
 		if err := recover(); err != nil {
 			logger.ErrorCtx(ctx, "StartTelegramRobot panic", "err", err, "stack", string(debug.Stack()))
@@ -65,19 +66,19 @@ func StartTelegramRobot(ctx context.Context) {
 	}()
 	
 	for {
-		bot = CreateBot(ctx)
-		logger.InfoCtx(ctx, "telegramBot Info", "username", bot.Self.UserName)
+		TelegramBot = CreateBot(ctx)
+		logger.InfoCtx(ctx, "telegramBot Info", "username", TelegramBot.Self.UserName)
 		
 		u := tgbotapi.NewUpdate(0)
 		u.Timeout = 60
 		
-		updates := bot.GetUpdatesChan(u)
+		updates := TelegramBot.GetUpdatesChan(u)
 		for {
 			select {
 			case <-ctx.Done():
 				return
 			case update := <-updates:
-				t := NewTelegramRobot(update, bot)
+				t := NewTelegramRobot(update, TelegramBot)
 				t.Robot = NewRobot(WithRobot(t))
 				t.Robot.Exec()
 			}
@@ -200,7 +201,8 @@ func (t *TelegramRobot) checkValid() bool {
 	
 	if t.Update.Message != nil {
 		if t.skipThisMsg() {
-			logger.WarnCtx(t.Robot.Ctx, "skip this msg", "msgId", msgId, "chat", chatId, "type", t.getMessage().Chat.Type, "content", t.getMsgContent())
+			logger.WarnCtx(t.Robot.Ctx, "skip this msg", "msgId", msgId, "chat", chatId,
+				"type", t.getMessage().Chat.Type, "content", t.getMsgContent())
 			return false
 		}
 		
@@ -312,6 +314,10 @@ func (t *TelegramRobot) handleCommandAndCallback() bool {
 
 // skipThisMsg check if msg trigger llm
 func (t *TelegramRobot) skipThisMsg() bool {
+	if t.Robot.SkipCheck {
+		return false
+	}
+	
 	if t.Update.Message.ReplyToMessage != nil && t.Update.Message.ReplyToMessage.From != nil &&
 		t.Update.Message.ReplyToMessage.From.UserName == t.Bot.Self.UserName {
 		return false

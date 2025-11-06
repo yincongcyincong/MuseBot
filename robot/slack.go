@@ -60,7 +60,7 @@ func StartSlackRobot(ctx context.Context) {
 	
 	authResp, err := slackClient.AuthTest()
 	if err != nil {
-		logger.Error("Slack auth failed", "err", err)
+		logger.ErrorCtx(ctx, "Slack auth failed", "err", err)
 		return
 	}
 	slackUserId = authResp.UserID
@@ -109,7 +109,7 @@ func StartSlackRobot(ctx context.Context) {
 	logger.Info("SlackBot Info", "username", authResp.User)
 	err = socketClient.RunContext(ctx)
 	if err != nil {
-		logger.Error("SlackBot Run failed", "err", err)
+		logger.ErrorCtx(ctx, "SlackBot Run failed", "err", err)
 	}
 }
 
@@ -154,7 +154,7 @@ func SlackCmdHandler(command *slack.SlashCommand) {
 	go func() {
 		defer func() {
 			if err := recover(); err != nil {
-				logger.Error("Slack exec panic", "err", err, "stack", string(debug.Stack()))
+				logger.ErrorCtx(s.Robot.Ctx, "Slack exec panic", "err", err, "stack", string(debug.Stack()))
 			}
 		}()
 		
@@ -172,7 +172,7 @@ func SlackMessageHandler(message *slackevents.MessageEvent) {
 	go func() {
 		defer func() {
 			if err := recover(); err != nil {
-				logger.Error("Slack exec panic", "err", err, "stack", string(debug.Stack()))
+				logger.ErrorCtx(r.Robot.Ctx, "Slack exec panic", "err", err, "stack", string(debug.Stack()))
 			}
 		}()
 		r.Robot.Exec()
@@ -199,7 +199,7 @@ func (s *SlackRobot) getMessageContent() bool {
 		case "image/jpeg", "image/png", "image/gif", "image/webp":
 			s.ImageContent, err = s.downloadSlackFile(file.URLPrivateDownload)
 			if err != nil {
-				logger.Error("download image failed", "err", err)
+				logger.ErrorCtx(s.Robot.Ctx, "download image failed", "err", err)
 				return false
 			}
 		
@@ -207,7 +207,7 @@ func (s *SlackRobot) getMessageContent() bool {
 			// 下载音频
 			s.VoiceContent, err = s.downloadSlackFile(file.URLPrivateDownload)
 			if err != nil {
-				logger.Error("download audio failed", "err", err)
+				logger.ErrorCtx(s.Robot.Ctx, "download audio failed", "err", err)
 				return false
 			}
 			
@@ -438,7 +438,7 @@ func (s *SlackRobot) openModal(triggerID, actionID string) {
 	
 	_, err := s.Client.OpenView(triggerID, modalRequest)
 	if err != nil {
-		logger.Error("open modal failed", "err", err)
+		logger.ErrorCtx(s.Robot.Ctx, "open modal failed", "err", err)
 	}
 }
 
@@ -483,7 +483,7 @@ func (s *SlackRobot) sendText(messageChan *MsgChan) {
 				slack.MsgOptionTS(messageId),
 			)
 			if err != nil {
-				logger.Error("send new message failed", "err", err)
+				logger.ErrorCtx(s.Robot.Ctx, "send new message failed", "err", err)
 				continue
 			}
 			msg.MsgId = newMsgTimestamp
@@ -495,7 +495,7 @@ func (s *SlackRobot) sendText(messageChan *MsgChan) {
 				slack.MsgOptionTS(messageId),
 			)
 			if err != nil {
-				logger.Error("update message failed", "err", err)
+				logger.ErrorCtx(s.Robot.Ctx, "update message failed", "err", err)
 				continue
 			}
 		}

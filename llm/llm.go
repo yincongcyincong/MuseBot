@@ -116,10 +116,10 @@ func (l *LLM) GetContent(ctx context.Context, content string) string {
 				return content
 			}
 			
-			return buf.String() + "\n\n" + content
+			logger.InfoCtx(ctx, "character", "character", buf.String())
+			l.LLMClient.GetAssistantMessage(buf.String())
 		}
 		
-		return *conf.BaseConfInfo.Character + "\n\n" + content
 	}
 	
 	return content
@@ -213,7 +213,7 @@ func (l *LLM) OverLoop() bool {
 
 func (l *LLM) InsertOrUpdate() error {
 	if l.RecordId == 0 {
-		db.InsertMsgRecord(l.UserId, &db.AQ{
+		db.InsertMsgRecord(l.Ctx, l.UserId, &db.AQ{
 			Question:   l.Content,
 			Answer:     l.WholeContent,
 			Token:      l.Token,
@@ -222,7 +222,7 @@ func (l *LLM) InsertOrUpdate() error {
 		return nil
 	}
 	
-	db.InsertMsgRecord(l.UserId, &db.AQ{
+	db.InsertMsgRecord(l.Ctx, l.UserId, &db.AQ{
 		Question:   l.Content,
 		Answer:     l.WholeContent,
 		CreateTime: time.Now().Unix(),

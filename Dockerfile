@@ -57,6 +57,8 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends nodejs && \
     rm -rf /var/lib/apt/lists/*
 
+ENV PATH="/usr/share/nodejs/corepack/shims:$PATH"
+
 # Create required directories
 RUN mkdir -p ./conf/i18n ./conf/mcp
 
