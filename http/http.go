@@ -77,6 +77,12 @@ func (p *HTTPServer) Start() {
 		mux.HandleFunc("/qq", QQBotComm)
 		mux.HandleFunc("/onebot", OneBot)
 		
+		mux.HandleFunc("/cron/create", CreateCron)
+		mux.HandleFunc("/cron/update", UpdateCron)
+		mux.HandleFunc("/cron/update_status", UpdateCronStatus)
+		mux.HandleFunc("/cron/delete", DeleteCron)
+		mux.HandleFunc("/cron/list", GetCrons)
+		
 		wrappedMux := WithRequestContext(mux)
 		
 		var err error

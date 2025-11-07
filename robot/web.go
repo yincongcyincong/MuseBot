@@ -26,7 +26,7 @@ type Web struct {
 	RealUserId string
 	Prompt     string
 	BodyData   []byte
-	RecordId   int64
+	cs         *param.ContextState
 	
 	OriginalPrompt string
 	
@@ -47,6 +47,7 @@ func NewWeb(command string, userId int64, realUserId, prompt, originalPrompt str
 		BodyData:       bodyData,
 		W:              w,
 		Flusher:        flusher,
+		cs:             &param.ContextState{},
 	}
 	web.Robot = NewRobot()
 	return web
@@ -473,7 +474,7 @@ func (web *Web) sendChatMessage() {
 		llm.WithHTTPMsgChan(messageChan),
 		llm.WithContent(prompt),
 		llm.WithPerMsgLen(1000000),
-		llm.WithRecordId(web.RecordId),
+		llm.WithCS(web.cs),
 		llm.WithContext(web.Robot.Ctx),
 	)
 	go func() {
@@ -561,7 +562,7 @@ func (web *Web) InsertRecord() {
 		return
 	}
 	
-	web.RecordId = id
+	web.cs.RecordID = id
 }
 
 func (web *Web) AddUserInfo() bool {

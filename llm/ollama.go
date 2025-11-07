@@ -116,7 +116,7 @@ func (o OllamaReq) Send(ctx context.Context, l *LLM) error {
 		}
 		
 		if response.Usage != nil {
-			l.Token += response.Usage.TotalTokens
+			l.Cs.Token += response.Usage.TotalTokens
 		}
 	}
 	
@@ -211,7 +211,7 @@ func (o OllamaReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 		return "", errors.New("response is empty")
 	}
 	
-	l.Token += response.Usage.TotalTokens
+	l.Cs.Token += response.Usage.TotalTokens
 	if len(response.Choices[0].Message.ToolCalls) > 0 {
 		o.GetAssistantMessage("")
 		o.OllamaMsgs[len(o.OllamaMsgs)-1].ToolCalls = response.Choices[0].Message.ToolCalls

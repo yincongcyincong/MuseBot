@@ -38,8 +38,7 @@ type LLM struct {
 	HTTPMsgChan chan string
 	Content     string // question from user
 	Model       string
-	Token       int
-	RecordId    int64
+	Cs          *param.ContextState
 	
 	ChatId           string
 	UserId           string
@@ -128,8 +127,8 @@ func (l *LLM) InsertCharacter(ctx context.Context) {
 }
 
 func NewLLM(opts ...Option) *LLM {
-	
 	l := new(LLM)
+	l.Cs = new(param.ContextState)
 	for _, opt := range opts {
 		opt(l)
 	}
@@ -214,11 +213,11 @@ func (l *LLM) OverLoop() bool {
 }
 
 func (l *LLM) InsertOrUpdate() error {
-	if l.RecordId == 0 {
+	if l.Cs.RecordID == 0 {
 		db.InsertMsgRecord(l.Ctx, l.UserId, &db.AQ{
 			Question:   l.Content,
 			Answer:     l.WholeContent,
-			Token:      l.Token,
+			Token:      l.Cs.Token,
 			CreateTime: time.Now().Unix(),
 		}, true)
 		return nil
@@ -230,9 +229,9 @@ func (l *LLM) InsertOrUpdate() error {
 		CreateTime: time.Now().Unix(),
 	}, false)
 	err := db.UpdateRecordInfo(&db.Record{
-		ID:     l.RecordId,
+		ID:     l.Cs.RecordID,
 		Answer: l.WholeContent,
-		Token:  l.Token,
+		Token:  l.Cs.Token,
 		UserId: l.UserId,
 		Mode:   utils.GetTxtType(db.GetCtxUserInfo(l.Ctx).LLMConfigRaw),
 	})
@@ -312,9 +311,9 @@ func WithMsgId(msgId string) Option {
 	}
 }
 
-func WithRecordId(recordId int64) Option {
+func WithCS(cs *param.ContextState) Option {
 	return func(p *LLM) {
-		p.RecordId = recordId
+		p.Cs = cs
 	}
 }
 

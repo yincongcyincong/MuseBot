@@ -327,3 +327,9 @@ type LLMConfig struct {
 	TTSType    string `json:"tts_type"`
 	TTSModel   string `json:"tts_model"`
 }
+
+type ContextState struct {
+	Token     int
+	RecordID  int64
+	SkipCheck bool
+}

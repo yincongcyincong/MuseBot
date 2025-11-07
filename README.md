@@ -1,7 +1,7 @@
 # Thanks
 
 感谢阮一峰老师的weekly，很荣幸能登榜：https://github.com/ruanyf/weekly      
-感谢linux.do 社区，佬友们很给力，给一个我的介绍贴链接：https://linux.do/t/topic/1128110
+感谢linux.do 社区，佬友们很给力，给一个我的介绍贴链接：https://linux.do/t/topic/1128110        
 Thanks to the Reddit community as well, even though a few of my subreddits got banned 😅: https://www.reddit.com/
 
 # MuseBot

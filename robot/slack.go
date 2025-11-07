@@ -477,16 +477,7 @@ func (s *SlackRobot) sendText(messageChan *MsgChan) {
 		}
 		
 		if msg.MsgId == "" {
-			_, newMsgTimestamp, err := s.Client.PostMessage(
-				chatId,
-				slack.MsgOptionText(msg.Content, false),
-				slack.MsgOptionTS(messageId),
-			)
-			if err != nil {
-				logger.ErrorCtx(s.Robot.Ctx, "send new message failed", "err", err)
-				continue
-			}
-			msg.MsgId = newMsgTimestamp
+			msg.MsgId = s.Robot.SendMsg(chatId, msg.Content, messageId, tgbotapi.ModeMarkdown, nil)
 		} else {
 			_, _, _, err := s.Client.UpdateMessage(
 				chatId,
