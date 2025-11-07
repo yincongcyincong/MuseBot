@@ -146,7 +146,7 @@ func (d *OpenAIReq) Send(ctx context.Context, l *LLM) error {
 		}
 		
 		if response.Usage != nil {
-			l.Token += response.Usage.TotalTokens
+			l.Cs.Token += response.Usage.TotalTokens
 		}
 	}
 	
@@ -241,7 +241,7 @@ func (d *OpenAIReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 		return "", errors.New("response is empty")
 	}
 	
-	l.Token += response.Usage.TotalTokens
+	l.Cs.Token += response.Usage.TotalTokens
 	if len(response.Choices[0].Message.ToolCalls) > 0 {
 		d.GetAssistantMessage("")
 		d.OpenAIMsgs[len(d.OpenAIMsgs)-1].ToolCalls = response.Choices[0].Message.ToolCalls

@@ -314,7 +314,7 @@ func (t *TelegramRobot) handleCommandAndCallback() bool {
 
 // skipThisMsg check if msg trigger llm
 func (t *TelegramRobot) skipThisMsg() bool {
-	if t.Robot.SkipCheck {
+	if t.Robot.cs.SkipCheck {
 		return false
 	}
 	

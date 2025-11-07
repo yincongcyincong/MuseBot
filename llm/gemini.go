@@ -89,7 +89,7 @@ func (h *GeminiReq) Send(ctx context.Context, l *LLM) error {
 		}
 		
 		if response.UsageMetadata != nil {
-			l.Token += int(response.UsageMetadata.TotalTokenCount)
+			l.Cs.Token += int(response.UsageMetadata.TotalTokenCount)
 		}
 		
 	}
@@ -185,7 +185,7 @@ func (h *GeminiReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 	
 	metrics.APIRequestDuration.WithLabelValues(l.Model).Observe(time.Since(start).Seconds())
 	
-	l.Token += int(response.UsageMetadata.TotalTokenCount)
+	l.Cs.Token += int(response.UsageMetadata.TotalTokenCount)
 	if len(response.FunctionCalls()) > 0 {
 		h.requestOneToolsCall(ctx, response.FunctionCalls(), l)
 	}

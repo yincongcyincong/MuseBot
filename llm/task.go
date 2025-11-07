@@ -75,7 +75,7 @@ func (d *LLMTaskReq) ExecuteTask() error {
 		return err
 	}
 	
-	d.Token += llm.Token
+	d.Token += llm.Cs.Token
 	
 	matches := jsonRe.FindAllString(c, -1)
 	plans := new(TaskInfo)
@@ -159,7 +159,7 @@ func (d *LLMTaskReq) loopTask(ctx context.Context, plans *TaskInfo, lastPlan str
 		if err != nil {
 			return err
 		}
-		d.Token += taskLLM.Token
+		d.Token += taskLLM.Cs.Token
 		completeTasks[plan.Description] = true
 	}
 	
@@ -186,7 +186,7 @@ func (d *LLMTaskReq) loopTask(ctx context.Context, plans *TaskInfo, lastPlan str
 		return errors.New("response is emtpy")
 	}
 	
-	d.Token += llm.Token
+	d.Token += llm.Cs.Token
 	
 	matches := jsonRe.FindAllString(c, -1)
 	plans = new(TaskInfo)

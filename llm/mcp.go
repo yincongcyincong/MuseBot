@@ -70,7 +70,7 @@ func (d *LLMTaskReq) ExecuteMcp() error {
 	mcpLLM := NewLLM(WithChatId(d.ChatId), WithMsgId(d.MsgId), WithUserId(d.UserId),
 		WithMessageChan(d.MessageChan), WithContent(d.Content), WithTaskTools(taskTool),
 		WithPerMsgLen(d.PerMsgLen), WithContext(d.Ctx))
-	mcpLLM.Token += llm.Token
+	mcpLLM.Cs.Token += llm.Cs.Token
 	mcpLLM.Content = d.Content
 	mcpLLM.LLMClient.GetUserMessage(d.Content)
 	mcpLLM.LLMClient.GetModel(mcpLLM)

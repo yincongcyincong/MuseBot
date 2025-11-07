@@ -22,7 +22,7 @@
   },
   {
     "type": "com_wechat",
-    "target_ids": "ogP2wvghk2_DbYPoLo2PfEAmkCjs",
+    "target_ids": "YinCong",
     "cron": "0 0 0 * * *",
     "command": "",
     "prompt": "hi"
@@ -36,8 +36,8 @@
   },
   {
     "type": "slack",
-    "target_ids": "U0973P0AZ0R",
-    "cron": "0 0 0 * * *",
+    "target_ids": "D097CUTBRA4",
+    "cron": "0 * * * * *",
     "command": "",
     "prompt": "hi"
   },
