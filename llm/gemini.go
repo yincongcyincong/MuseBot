@@ -61,7 +61,7 @@ func (h *GeminiReq) Send(ctx context.Context, l *LLM) error {
 	metrics.APIRequestDuration.WithLabelValues(l.Model).Observe(time.Since(start).Seconds())
 	
 	hasTools := false
-	for response, err := range chat.SendMessageStream(ctx, *genai.NewPartFromText(l.GetContent(ctx, l.Content))) {
+	for response, err := range chat.SendMessageStream(ctx, *genai.NewPartFromText(l.GetContent(l.Content))) {
 		if errors.Is(err, io.EOF) {
 			logger.InfoCtx(l.Ctx, "stream finished", "updateMsgID", l.MsgId)
 			break
@@ -278,7 +278,6 @@ func (h *GeminiReq) GetModel(l *LLM) {
 	l.Model = param.ModelGemini20Flash
 	userInfo := db.GetCtxUserInfo(l.Ctx)
 	if userInfo != nil && userInfo.LLMConfigRaw != nil && param.GeminiModels[userInfo.LLMConfigRaw.TxtModel] {
-		logger.InfoCtx(l.Ctx, "User info", "userID", userInfo.UserId, "mode", userInfo.LLMConfigRaw.TxtModel)
 		l.Model = userInfo.LLMConfigRaw.TxtModel
 	}
 }

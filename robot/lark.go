@@ -30,9 +30,9 @@ type MessageText struct {
 }
 
 var (
-	cli       *larkws.Client
-	BotName   string
-	botClient *lark.Client
+	cli           *larkws.Client
+	BotName       string
+	LarkBotClient *lark.Client
 )
 
 type LarkRobot struct {
@@ -57,11 +57,11 @@ func StartLarkRobot(ctx context.Context) {
 		larkws.WithLogger(logger.Logger),
 	)
 	
-	botClient = lark.NewClient(*conf.BaseConfInfo.LarkAPPID, *conf.BaseConfInfo.LarkAppSecret,
+	LarkBotClient = lark.NewClient(*conf.BaseConfInfo.LarkAPPID, *conf.BaseConfInfo.LarkAppSecret,
 		lark.WithHttpClient(utils.GetRobotProxyClient()))
 	
 	// get bot name
-	resp, err := botClient.Application.Application.Get(ctx, larkapplication.NewGetApplicationReqBuilder().
+	resp, err := LarkBotClient.Application.Application.Get(ctx, larkapplication.NewGetApplicationReqBuilder().
 		AppId(*conf.BaseConfInfo.LarkAPPID).Lang("zh_cn").Build())
 	if err != nil {
 		logger.ErrorCtx(ctx, "get robot name error", "error", err)
@@ -80,7 +80,7 @@ func NewLarkRobot(message *larkim.P2MessageReceiveV1) *LarkRobot {
 	metrics.AppRequestCount.WithLabelValues("lark").Inc()
 	return &LarkRobot{
 		Message: message,
-		Client:  botClient,
+		Client:  LarkBotClient,
 		BotName: BotName,
 	}
 }
@@ -95,7 +95,7 @@ func LarkMessageHandler(ctx context.Context, message *larkim.P2MessageReceiveV1)
 				logger.ErrorCtx(ctx, "exec panic", "err", err, "stack", string(debug.Stack()))
 			}
 		}()
-		userInfo, err := botClient.Contact.V3.User.Get(l.Robot.Ctx, larkcontact.NewGetUserReqBuilder().
+		userInfo, err := LarkBotClient.Contact.V3.User.Get(l.Robot.Ctx, larkcontact.NewGetUserReqBuilder().
 			UserId(*message.Event.Sender.SenderId.UserId).UserIdType("user_id").Build())
 		if err != nil || userInfo.Code != 0 {
 			logger.ErrorCtx(ctx, "get user info error", "err", err, "user_info", userInfo)
@@ -125,8 +125,6 @@ func (l *LarkRobot) checkValid() bool {
 			return false
 		}
 	}
-	
-	logger.Info("lark exec cmd", "cmd", l.Command, "prompt", l.Prompt)
 	
 	return true
 }
@@ -292,25 +290,15 @@ func (l *LarkRobot) executeChain() {
 
 func (l *LarkRobot) sendText(messageChan *MsgChan) {
 	var msg *param.MsgInfo
-	_, messageId, _ := l.Robot.GetChatIdAndMsgIdAndUserID()
+	chatId, messageId, _ := l.Robot.GetChatIdAndMsgIdAndUserID()
 	for msg = range messageChan.NormalMessageChan {
 		if len(msg.Content) == 0 {
 			msg.Content = "get nothing from llm!"
 		}
 		
 		if msg.MsgId == "" {
-			resp, err := l.Client.Im.Message.Reply(l.Robot.Ctx, larkim.NewReplyMessageReqBuilder().
-				MessageId(messageId).
-				Body(larkim.NewReplyMessageReqBodyBuilder().
-					MsgType(larkim.MsgTypePost).
-					Content(GetMarkdownContent(msg.Content)).
-					Build()).
-				Build())
-			if err != nil || !resp.Success() {
-				logger.Warn("send message fail", "err", err, "resp", resp)
-				continue
-			}
-			msg.MsgId = larkcore.StringValue(resp.Data.MessageId)
+			msgId := l.Robot.SendMsg(chatId, msg.Content, messageId, tgbotapi.ModeMarkdown, nil)
+			msg.MsgId = msgId
 		} else {
 			
 			resp, err := l.Client.Im.Message.Update(l.Robot.Ctx, larkim.NewUpdateMessageReqBuilder().

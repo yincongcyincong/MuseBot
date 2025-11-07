@@ -104,87 +104,87 @@ func CreateBot(ctx context.Context) *tgbotapi.BotAPI {
 	// set command
 	cmdCfg := tgbotapi.NewSetMyCommands(
 		tgbotapi.BotCommand{
-			Command:     "help",
+			Command:     param.Help,
 			Description: i18n.GetMessage("commands.help.description", nil),
 		},
 		tgbotapi.BotCommand{
-			Command:     "clear",
+			Command:     param.Clear,
 			Description: i18n.GetMessage("commands.clear.description", nil),
 		},
 		tgbotapi.BotCommand{
-			Command:     "retry",
+			Command:     param.Retry,
 			Description: i18n.GetMessage("commands.retry.description", nil),
 		},
 		tgbotapi.BotCommand{
-			Command:     "txt_model",
+			Command:     param.TxtModel,
 			Description: i18n.GetMessage("commands.mode.description", nil),
 		},
 		tgbotapi.BotCommand{
-			Command:     "photo_model",
+			Command:     param.PhotoModel,
 			Description: i18n.GetMessage("commands.mode.description", nil),
 		},
 		tgbotapi.BotCommand{
-			Command:     "rec_model",
+			Command:     param.RecModel,
 			Description: i18n.GetMessage("commands.mode.description", nil),
 		},
 		tgbotapi.BotCommand{
-			Command:     "tts_model",
+			Command:     param.TtsModel,
 			Description: i18n.GetMessage("commands.mode.description", nil),
 		},
 		tgbotapi.BotCommand{
-			Command:     "mode",
+			Command:     param.Mode,
 			Description: i18n.GetMessage("commands.mode.description", nil),
 		},
 		tgbotapi.BotCommand{
-			Command:     "video_model",
+			Command:     param.VideoModel,
 			Description: i18n.GetMessage("commands.mode.description", nil),
 		},
 		tgbotapi.BotCommand{
-			Command:     "photo_type",
+			Command:     param.PhotoType,
 			Description: i18n.GetMessage("commands.mode.description", nil),
 		},
 		tgbotapi.BotCommand{
-			Command:     "video_type",
+			Command:     param.VideoType,
 			Description: i18n.GetMessage("commands.mode.description", nil),
 		},
 		tgbotapi.BotCommand{
-			Command:     "rec_type",
+			Command:     param.RecType,
 			Description: i18n.GetMessage("commands.mode.description", nil),
 		},
 		tgbotapi.BotCommand{
-			Command:     "tts_type",
+			Command:     param.TtsType,
 			Description: i18n.GetMessage("commands.mode.description", nil),
 		},
 		tgbotapi.BotCommand{
-			Command:     "txt_type",
+			Command:     param.TxtType,
 			Description: i18n.GetMessage("commands.mode.description", nil),
 		},
 		tgbotapi.BotCommand{
-			Command:     "state",
+			Command:     param.State,
 			Description: i18n.GetMessage("commands.state.description", nil),
 		},
 		tgbotapi.BotCommand{
-			Command:     "photo",
+			Command:     param.Photo,
 			Description: i18n.GetMessage("commands.photo.description", nil),
 		},
 		tgbotapi.BotCommand{
-			Command:     "edit_photo",
+			Command:     param.EditPhoto,
 			Description: i18n.GetMessage("commands.edit_photo.description", nil),
 		},
 		tgbotapi.BotCommand{
-			Command:     "video",
+			Command:     param.Video,
 			Description: i18n.GetMessage("commands.video.description", nil),
 		},
 		tgbotapi.BotCommand{
-			Command:     "chat",
+			Command:     param.Chat,
 			Description: i18n.GetMessage("commands.chat.description", nil),
 		},
 		tgbotapi.BotCommand{
-			Command:     "task",
+			Command:     param.Task,
 			Description: i18n.GetMessage("commands.task.description", nil),
 		},
 		tgbotapi.BotCommand{
-			Command:     "mcp",
+			Command:     param.Mcp,
 			Description: i18n.GetMessage("commands.mcp.description", nil),
 		},
 	)
@@ -356,8 +356,6 @@ func (t *TelegramRobot) handleCommand() {
 		t.Command = t.Update.Message.Command()
 	}
 	
-	_, _, userID := t.Robot.GetChatIdAndMsgIdAndUserID()
-	logger.InfoCtx(t.Robot.Ctx, "command info", "userID", userID, "cmd", t.Command)
 	t.Robot.ExecCmd(t.Command, t.sendChatMessage, t.changeModel, t.changeType)
 }
 
@@ -365,16 +363,12 @@ func (t *TelegramRobot) handleCommand() {
 func (t *TelegramRobot) sendChatMessage() {
 	chatId, msgID, _ := t.Robot.GetChatIdAndMsgIdAndUserID()
 	messageText := t.Prompt
-	var err error
 	if t.Update.Message != nil {
 		if messageText == "" {
 			messageText = t.Update.Message.Caption
 		}
-		messageText, err = t.getContent(messageText)
-		if err != nil {
-			logger.WarnCtx(t.Robot.Ctx, "getContent error", "err", err)
-			return
-		}
+		// ignore error, show force reply
+		messageText, _ = t.getContent(messageText)
 	} else {
 		t.Update.Message = new(tgbotapi.Message)
 	}
@@ -405,33 +399,33 @@ func (t *TelegramRobot) changeType(ty string) {
 	var inlineKeyboard tgbotapi.InlineKeyboardMarkup
 	inlineButton := make([][]tgbotapi.InlineKeyboardButton, 0)
 	switch ty {
-	case "txt_type", "/txt_type":
+	case param.TxtType, "/" + param.TxtType:
 		for _, k := range utils.GetAvailTxtType() {
 			inlineButton = append(inlineButton, tgbotapi.NewInlineKeyboardRow(
 				tgbotapi.NewInlineKeyboardButtonData(k, k),
 			))
 		}
 	
-	case "photo_type", "/photo_type":
+	case param.PhotoType, "/" + param.PhotoType:
 		for _, k := range utils.GetAvailImgType() {
 			inlineButton = append(inlineButton, tgbotapi.NewInlineKeyboardRow(
 				tgbotapi.NewInlineKeyboardButtonData(k, k),
 			))
 		}
 	
-	case "video_type", "/video_type":
+	case param.VideoType, "/" + param.VideoType:
 		for _, k := range utils.GetAvailVideoType() {
 			inlineButton = append(inlineButton, tgbotapi.NewInlineKeyboardRow(
 				tgbotapi.NewInlineKeyboardButtonData(k, k),
 			))
 		}
-	case "rec_type", "/rec_type":
+	case param.RecType, "/" + param.RecType:
 		for _, k := range utils.GetAvailRecType() {
 			inlineButton = append(inlineButton, tgbotapi.NewInlineKeyboardRow(
 				tgbotapi.NewInlineKeyboardButtonData(k, k),
 			))
 		}
-	case "tts_type", "/tts_type":
+	case param.TtsType, "/" + param.TtsType:
 		for _, k := range utils.GetAvailTTSType() {
 			inlineButton = append(inlineButton, tgbotapi.NewInlineKeyboardRow(
 				tgbotapi.NewInlineKeyboardButtonData(k, k),
@@ -450,33 +444,33 @@ func (t *TelegramRobot) changeType(ty string) {
 func (t *TelegramRobot) changeModel(ty string) {
 	
 	switch ty {
-	case "txt_model", "/txt_model":
+	case param.TxtModel, "/" + param.TxtModel:
 		if t.getPrompt() != "" {
 			t.Robot.handleModelUpdate(&RobotModel{TxtModel: t.Prompt})
 			return
 		}
 		t.showTxtModel(ty)
 	
-	case "photo_model", "/photo_model":
+	case param.PhotoModel, "/" + param.PhotoModel:
 		if t.getPrompt() != "" {
 			t.Robot.handleModelUpdate(&RobotModel{ImgModel: t.Prompt})
 			return
 		}
 		t.showImageModel()
 	
-	case "video_model", "/video_model":
+	case param.VideoModel, "/" + param.VideoModel:
 		if t.getPrompt() != "" {
 			t.Robot.handleModelUpdate(&RobotModel{VideoModel: t.Prompt})
 			return
 		}
 		t.showVideoModel()
-	case "rec_model", "/rec_model":
+	case param.RecModel, "/" + param.RecModel:
 		if t.getPrompt() != "" {
 			t.Robot.handleModelUpdate(&RobotModel{RecModel: t.Prompt})
 			return
 		}
 		t.showRecModel()
-	case "tts_model", "/tts_model":
+	case param.TtsModel, "/" + param.TtsModel:
 		if t.getPrompt() != "" {
 			t.Robot.handleModelUpdate(&RobotModel{TTSModel: t.Prompt})
 			return
@@ -780,10 +774,10 @@ func (t *TelegramRobot) handleCallbackQuery() {
 		t.Prompt = t.Update.CallbackQuery.Data
 		cmd := strings.TrimSpace(strings.ReplaceAll(t.Update.CallbackQuery.Message.ReplyToMessage.Text, "@"+t.Bot.Self.UserName, ""))
 		switch cmd {
-		case "/txt_type", "/photo_type", "/video_type", "/rec_type", "/tts_type":
+		case "/" + param.TxtType, "/" + param.PhotoType, "/" + param.VideoType, "/" + param.RecType, "/" + param.TtsType:
 			t.Robot.changeType(cmd)
 			return
-		case "/txt_model", "/photo_model", "/video_model", "/rec_model", "/tts_model":
+		case "/" + param.TxtModel, "/" + param.PhotoModel, "/" + param.VideoModel, "/" + param.RecModel, "/" + param.TtsModel:
 			t.Robot.changeModel(cmd)
 			return
 		}
@@ -933,7 +927,7 @@ func (t *TelegramRobot) ExecuteForceReply() {
 	case i18n.GetMessage("photo_empty_content", nil):
 		t.sendImg()
 	case i18n.GetMessage("edit_photo_empty_content", nil):
-		t.Command = "edit_photo"
+		t.Command = param.EditPhoto
 		t.sendImg()
 	case i18n.GetMessage("video_empty_content", nil):
 		t.sendVideo()

@@ -23,7 +23,7 @@ import (
 )
 
 var (
-	slackClient  *slack.Client
+	SlackClient  *slack.Client
 	socketClient *socketmode.Client
 	slackUserId  string
 )
@@ -49,16 +49,16 @@ func StartSlackRobot(ctx context.Context) {
 		return
 	}
 	
-	slackClient = slack.New(
+	SlackClient = slack.New(
 		*conf.BaseConfInfo.SlackBotToken,
 		slack.OptionDebug(false),
 		slack.OptionAppLevelToken(*conf.BaseConfInfo.SlackAppToken),
 		slack.OptionLog(logger.Logger),
 		slack.OptionHTTPClient(utils.GetRobotProxyClient()),
 	)
-	socketClient = socketmode.New(slackClient)
+	socketClient = socketmode.New(SlackClient)
 	
-	authResp, err := slackClient.AuthTest()
+	authResp, err := SlackClient.AuthTest()
 	if err != nil {
 		logger.ErrorCtx(ctx, "Slack auth failed", "err", err)
 		return
@@ -120,7 +120,7 @@ func NewSlackRobot(message *slackevents.MessageEvent, command *slack.SlashComman
 		Event:    message,
 		CmdEvent: command,
 		Callback: callback,
-		Client:   slackClient,
+		Client:   SlackClient,
 	}
 	if message != nil {
 		sr.UserName = message.User
@@ -192,7 +192,7 @@ func (s *SlackRobot) checkValid() bool {
 }
 
 func (s *SlackRobot) getMessageContent() bool {
-	if s.Event != nil && s.Event.Message.Files != nil && len(s.Event.Message.Files) > 0 {
+	if s.Event != nil && s.Event.Message != nil && s.Event.Message.Files != nil && len(s.Event.Message.Files) > 0 {
 		file := s.Event.Message.Files[0]
 		var err error
 		switch file.Mimetype {
@@ -263,7 +263,7 @@ func (s *SlackRobot) executeLLM(content string) {
 }
 
 func (s *SlackRobot) getContent(content string) (string, error) {
-	if len(s.Event.Message.Files) == 0 {
+	if s.Event.Message == nil || len(s.Event.Message.Files) == 0 {
 		return content, nil
 	}
 	

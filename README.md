@@ -1,3 +1,9 @@
+# Thanks
+
+感谢阮一峰老师的weekly，很荣幸能登榜：https://github.com/ruanyf/weekly      
+感谢linux.do 社区，佬友们很给力，给一个我的介绍贴链接：https://linux.do/t/topic/1128110
+Thanks to the Reddit community as well, even though a few of my subreddits got banned 😅: https://www.reddit.com/
+
 # MuseBot
 
 This repository provides a **Chat bot** (Telegram, Discord, Slack, Lark（飞书），钉钉, 企业微信, QQ, 微信) that integrates
@@ -118,66 +124,66 @@ You can configure the bot via environment variables:
 Here’s the **English version** of your environment variable table:
 If you use parameter. Please use lower letter and underscore. for example: ./MuseBot -telegram_bot_token=xxx
 
-| Variable Name                     | Description                                                                                  | Default Value                                          |
-|-----------------------------------|----------------------------------------------------------------------------------------------|--------------------------------------------------------|
-| **TELEGRAM_BOT_TOKEN** (required) | Telegram bot token                                                                           | -                                                      |
-| **DISCORD_BOT_TOKEN**             | Discord bot token                                                                            | -                                                      |
-| **SLACK_BOT_TOKEN**               | Slack bot token                                                                              | -                                                      |
-| **SLACK_APP_TOKEN**               | Slack app-level token                                                                        | -                                                      |
-| **LARK_APP_ID**                   | Lark (Feishu) App ID                                                                         | -                                                      |
-| **LARK_APP_SECRET**               | Lark (Feishu) App Secret                                                                     | -                                                      |
-| **DING_CLIENT_ID**                | DingTalk App Key / Client ID                                                                 | -                                                      |
-| **DING_CLIENT_SECRET**            | DingTalk App Secret                                                                          | -                                                      |
-| **DING_TEMPLATE_ID**              | DingTalk template message ID                                                                 | -                                                      |
-| **COM_WECHAT_TOKEN**              | WeCom (Enterprise WeChat) token                                                              | -                                                      |
-| **COM_WECHAT_ENCODING_AES_KEY**   | WeCom EncodingAESKey                                                                         | -                                                      |
-| **COM_WECHAT_CORP_ID**            | WeCom CorpID                                                                                 | -                                                      |
-| **COM_WECHAT_SECRET**             | WeCom App Secret                                                                             | -                                                      |
-| **COM_WECHAT_AGENT_ID**           | WeCom Agent ID                                                                               | -                                                      |
-| **WECHAT_APP_ID**                 | WeChat Official Account AppID                                                                | -                                                      |
-| **WECHAT_APP_SECRET**             | WeChat Official Account AppSecret                                                            | -                                                      |
-| **WECHAT_ENCODING_AES_KEY**       | WeChat Official Account EncodingAESKey                                                       | -                                                      |
-| **WECHAT_TOKEN**                  | WeChat Official Account Token                                                                | -                                                      |
-| **WECHAT_ACTIVE**                 | Whether to enable WeChat message listening (true/false)                                      | false                                                  |
-| **QQ_APP_ID**                     | QQ Open Platform AppID                                                                       | -                                                      |
-| **QQ_APP_SECRET**                 | QQ Open Platform AppSecret                                                                   | -                                                      |
-| **QQ_ONEBOT_RECEIVE_TOKEN**       | Token for ONEBOT → MuseBot event messages                                                    | MuseBot                                                |
-| **QQ_ONEBOT_SEND_TOKEN**          | Token for MuseBot → ONEBOT message sending                                                   | MuseBot                                                |
-| **QQ_ONEBOT_HTTP_SERVER**         | ONEBOT HTTP server address                                                                   | [http://127.0.0.1:3000](http://127.0.0.1:3000)         |
-| **DEEPSEEK_TOKEN** (required)     | DeepSeek API key                                                                             | -                                                      |
-| **OPENAI_TOKEN**                  | OpenAI API key                                                                               | -                                                      |
-| **GEMINI_TOKEN**                  | Google Gemini API token                                                                      | -                                                      |
-| **OPEN_ROUTER_TOKEN**             | OpenRouter token [doc](https://openrouter.ai/docs/quickstart)                                | -                                                      |
-| **ALIYUN_TOKEN**                  | Aliyun Bailian token [doc](https://bailian.console.aliyun.com/#/doc/?type=model&url=2840915) | -                                                      |
-| **AI_302_TOKEN**                  | 302.AI token [doc](https://302.ai/)                                                          | -                                                      |
-| **VOL_TOKEN**                     | Volcano Engine general token [doc](https://www.volcengine.com/docs/82379/1399008#b00dee71)   | -                                                      |
-| **VOLC_AK**                       | Volcano Engine multimedia access key [doc](https://www.volcengine.com/docs/6444/1340578)     | -                                                      |
-| **VOLC_SK**                       | Volcano Engine multimedia secret key [doc](https://www.volcengine.com/docs/6444/1340578)     | -                                                      |
-| **ERNIE_AK**                      | Baidu ERNIE large model AK [doc](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Sly8bm96d)     | -                                                      |
-| **ERNIE_SK**                      | Baidu ERNIE large model SK [doc](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Sly8bm96d)     | -                                                      |
-| **CUSTOM_URL**                    | Custom DeepSeek API endpoint                                                                 | [https://api.deepseek.com/](https://api.deepseek.com/) |
-| **TYPE**                          | LLM type (deepseek/openai/gemini/openrouter/vol/302-ai/chatanywhere)                         | deepseek                                               |
-| **MEDIA_TYPE**                    | Media generation source (openai/gemini/vol/openrouter/aliyun/302-ai)                         | vol                                                    |
-| **DB_TYPE**                       | Database type (sqlite3/mysql)                                                                | sqlite3                                                |
-| **DB_CONF**                       | Database config path or connection string                                                    | ./data/muse_bot.db                                     |
-| **LLM_PROXY**                     | LLM network proxy (e.g. [http://127.0.0.1:7890](http://127.0.0.1:7890))                      | -                                                      |
-| **ROBOT_PROXY**                   | Bot network proxy (e.g. [http://127.0.0.1:7890](http://127.0.0.1:7890))                      | -                                                      |
-| **LANG**                          | Language (en/zh)                                                                             | en                                                     |
-| **TOKEN_PER_USER**                | Max tokens allowed per user                                                                  | 10000                                                  |
-| **MAX_USER_CHAT**                 | Maximum concurrent chats per user                                                            | 2                                                      |
-| **HTTP_HOST**                     | MuseBot HTTP server port                                                                     | :36060                                                 |
-| **USE_TOOLS**                     | Enable function-calling tools (true/false)                                                   | false                                                  |
-| **MAX_QA_PAIR**                   | Max number of question-answer pairs to keep as context                                       | 100                                                    |
-| **CHARACTER**                     | AI personality description                                                                   | -                                                      |
-| **CRT_FILE**                      | HTTPS certificate file path                                                                  | -                                                      |
-| **KEY_FILE**                      | HTTPS private key file path                                                                  | -                                                      |
-| **CA_FILE**                       | HTTPS CA certificate file path                                                               | -                                                      |
-| **ADMIN_USER_IDS**                | Comma-separated list of admin user IDs                                                       | -                                                      |
-| **ALLOWED_USER_IDS**              | Comma-separated user IDs allowed to use the bot; empty = all allowed; 0 = all banned         | -                                                      |
-| **ALLOWED_GROUP_IDS**             | Comma-separated group IDs allowed to use the bot; empty = all allowed; 0 = all banned        | -                                                      |
-| **BOT_NAME**                      | Bot name                                                                                     | MuseBot                                                |
-| **CHAT_ANY_WHERE_TOKEN**          | ChatAnyWhere platform token                                                                  | -                                                      |
-| **SMART_MODE**                    | Automatically check what you want to generate (txt/photo/video)                              | true                                                   |
+| Variable Name                   | Description                                                                                  | Default Value                                          |
+|---------------------------------|----------------------------------------------------------------------------------------------|--------------------------------------------------------|
+| **TELEGRAM_BOT_TOKEN**          | Telegram bot token                                                                           | -                                                      |
+| **DISCORD_BOT_TOKEN**           | Discord bot token                                                                            | -                                                      |
+| **SLACK_BOT_TOKEN**             | Slack bot token                                                                              | -                                                      |
+| **SLACK_APP_TOKEN**             | Slack app-level token                                                                        | -                                                      |
+| **LARK_APP_ID**                 | Lark (Feishu) App ID                                                                         | -                                                      |
+| **LARK_APP_SECRET**             | Lark (Feishu) App Secret                                                                     | -                                                      |
+| **DING_CLIENT_ID**              | DingTalk App Key / Client ID                                                                 | -                                                      |
+| **DING_CLIENT_SECRET**          | DingTalk App Secret                                                                          | -                                                      |
+| **DING_TEMPLATE_ID**            | DingTalk template message ID                                                                 | -                                                      |
+| **COM_WECHAT_TOKEN**            | WeCom (Enterprise WeChat) token                                                              | -                                                      |
+| **COM_WECHAT_ENCODING_AES_KEY** | WeCom EncodingAESKey                                                                         | -                                                      |
+| **COM_WECHAT_CORP_ID**          | WeCom CorpID                                                                                 | -                                                      |
+| **COM_WECHAT_SECRET**           | WeCom App Secret                                                                             | -                                                      |
+| **COM_WECHAT_AGENT_ID**         | WeCom Agent ID                                                                               | -                                                      |
+| **WECHAT_APP_ID**               | WeChat Official Account AppID                                                                | -                                                      |
+| **WECHAT_APP_SECRET**           | WeChat Official Account AppSecret                                                            | -                                                      |
+| **WECHAT_ENCODING_AES_KEY**     | WeChat Official Account EncodingAESKey                                                       | -                                                      |
+| **WECHAT_TOKEN**                | WeChat Official Account Token                                                                | -                                                      |
+| **WECHAT_ACTIVE**               | Whether to enable WeChat message listening (true/false)                                      | false                                                  |
+| **QQ_APP_ID**                   | QQ Open Platform AppID                                                                       | -                                                      |
+| **QQ_APP_SECRET**               | QQ Open Platform AppSecret                                                                   | -                                                      |
+| **QQ_ONEBOT_RECEIVE_TOKEN**     | Token for ONEBOT → MuseBot event messages                                                    | MuseBot                                                |
+| **QQ_ONEBOT_SEND_TOKEN**        | Token for MuseBot → ONEBOT message sending                                                   | MuseBot                                                |
+| **QQ_ONEBOT_HTTP_SERVER**       | ONEBOT HTTP server address                                                                   | [http://127.0.0.1:3000](http://127.0.0.1:3000)         |
+| **DEEPSEEK_TOKEN**              | DeepSeek API key                                                                             | -                                                      |
+| **OPENAI_TOKEN**                | OpenAI API key                                                                               | -                                                      |
+| **GEMINI_TOKEN**                | Google Gemini API token                                                                      | -                                                      |
+| **OPEN_ROUTER_TOKEN**           | OpenRouter token [doc](https://openrouter.ai/docs/quickstart)                                | -                                                      |
+| **ALIYUN_TOKEN**                | Aliyun Bailian token [doc](https://bailian.console.aliyun.com/#/doc/?type=model&url=2840915) | -                                                      |
+| **AI_302_TOKEN**                | 302.AI token [doc](https://302.ai/)                                                          | -                                                      |
+| **VOL_TOKEN**                   | Volcano Engine general token [doc](https://www.volcengine.com/docs/82379/1399008#b00dee71)   | -                                                      |
+| **VOLC_AK**                     | Volcano Engine multimedia access key [doc](https://www.volcengine.com/docs/6444/1340578)     | -                                                      |
+| **VOLC_SK**                     | Volcano Engine multimedia secret key [doc](https://www.volcengine.com/docs/6444/1340578)     | -                                                      |
+| **ERNIE_AK**                    | Baidu ERNIE large model AK [doc](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Sly8bm96d)     | -                                                      |
+| **ERNIE_SK**                    | Baidu ERNIE large model SK [doc](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Sly8bm96d)     | -                                                      |
+| **CUSTOM_URL**                  | Custom DeepSeek API endpoint                                                                 | [https://api.deepseek.com/](https://api.deepseek.com/) |
+| **TYPE**                        | LLM type (deepseek/openai/gemini/openrouter/vol/302-ai/chatanywhere)                         | deepseek                                               |
+| **MEDIA_TYPE**                  | Media generation source (openai/gemini/vol/openrouter/aliyun/302-ai)                         | vol                                                    |
+| **DB_TYPE**                     | Database type (sqlite3/mysql)                                                                | sqlite3                                                |
+| **DB_CONF**                     | Database config path or connection string                                                    | ./data/muse_bot.db                                     |
+| **LLM_PROXY**                   | LLM network proxy (e.g. [http://127.0.0.1:7890](http://127.0.0.1:7890))                      | -                                                      |
+| **ROBOT_PROXY**                 | Bot network proxy (e.g. [http://127.0.0.1:7890](http://127.0.0.1:7890))                      | -                                                      |
+| **LANG**                        | Language (en/zh)                                                                             | en                                                     |
+| **TOKEN_PER_USER**              | Max tokens allowed per user                                                                  | 10000                                                  |
+| **MAX_USER_CHAT**               | Maximum concurrent chats per user                                                            | 2                                                      |
+| **HTTP_HOST**                   | MuseBot HTTP server port                                                                     | :36060                                                 |
+| **USE_TOOLS**                   | Enable function-calling tools (true/false)                                                   | false                                                  |
+| **MAX_QA_PAIR**                 | Max number of question-answer pairs to keep as context                                       | 100                                                    |
+| **CHARACTER**                   | AI personality description                                                                   | -                                                      |
+| **CRT_FILE**                    | HTTPS certificate file path                                                                  | -                                                      |
+| **KEY_FILE**                    | HTTPS private key file path                                                                  | -                                                      |
+| **CA_FILE**                     | HTTPS CA certificate file path                                                               | -                                                      |
+| **ADMIN_USER_IDS**              | Comma-separated list of admin user IDs                                                       | -                                                      |
+| **ALLOWED_USER_IDS**            | Comma-separated user IDs allowed to use the bot; empty = all allowed; 0 = all banned         | -                                                      |
+| **ALLOWED_GROUP_IDS**           | Comma-separated group IDs allowed to use the bot; empty = all allowed; 0 = all banned        | -                                                      |
+| **BOT_NAME**                    | Bot name                                                                                     | MuseBot                                                |
+| **CHAT_ANY_WHERE_TOKEN**        | ChatAnyWhere platform token                                                                  | -                                                      |
+| **SMART_MODE**                  | Automatically check what you want to generate (txt/photo/video)                              | true                                                   |
 
 ### CUSTOM_URL
 

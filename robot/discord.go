@@ -40,6 +40,8 @@ var (
 	volDialog = &VolDialog{
 		Audio: make([]byte, 0),
 	}
+	
+	DiscordSession *discordgo.Session
 )
 
 type DiscordRobot struct {
@@ -56,33 +58,34 @@ type DiscordRobot struct {
 }
 
 func StartDiscordRobot(ctx context.Context) {
-	dg, err := discordgo.New("Bot " + *conf.BaseConfInfo.DiscordBotToken)
+	var err error
+	DiscordSession, err = discordgo.New("Bot " + *conf.BaseConfInfo.DiscordBotToken)
 	if err != nil {
 		logger.ErrorCtx(ctx, "create discord bot", "err", err)
 		return
 	}
-	dg.Client = utils.GetRobotProxyClient()
+	DiscordSession.Client = utils.GetRobotProxyClient()
 	
 	// 添加消息处理函数
-	dg.AddHandler(messageCreate)
-	dg.AddHandler(onInteractionCreate)
+	DiscordSession.AddHandler(messageCreate)
+	DiscordSession.AddHandler(onInteractionCreate)
 	// 监听语音状态更新事件
-	dg.AddHandler(voiceStateUpdate)
+	DiscordSession.AddHandler(voiceStateUpdate)
 	
 	// 打开连接
-	err = dg.Open()
+	err = DiscordSession.Open()
 	if err != nil {
 		logger.ErrorCtx(ctx, "connect fail", "err", err)
 		return
 	}
 	
-	logger.InfoCtx(ctx, "discordBot Info", "username", dg.State.User.Username)
+	logger.InfoCtx(ctx, "discordBot Info", "username", DiscordSession.State.User.Username)
 	
-	registerSlashCommands(dg)
+	registerSlashCommands(DiscordSession)
 	
 	select {
 	case <-ctx.Done():
-		dg.Close()
+		DiscordSession.Close()
 	}
 }
 
@@ -321,7 +324,8 @@ func (d *DiscordRobot) getContent(content string) (string, error) {
 }
 
 func (d *DiscordRobot) skipThisMsg() bool {
-	if d.Msg.Author.ID == d.Session.State.User.ID {
+	if d.Msg == nil || d.Msg.Author == nil ||
+		d.Session == nil || d.Msg.Author.ID == d.Session.State.User.ID {
 		return true
 	}
 	
