@@ -392,7 +392,7 @@ func (r *RobotInfo) SendMsg(chatId string, msgContent string, replyToMessageID s
 					Build()).
 				Build())
 			if err != nil || !resp.Success() {
-				logger.WarnCtx(r.Ctx, "send message fail", "err", err)
+				logger.WarnCtx(r.Ctx, "send message fail", "err", err, "resp", resp)
 				return ""
 			}
 			
@@ -853,55 +853,58 @@ func ParseCommand(prompt string) (command string, args string) {
 }
 
 func (r *RobotInfo) ExecCmd(cmd string, defaultFunc func(), modeFunc func(string), typesFunc func(string)) {
+	_, _, userID := r.GetChatIdAndMsgIdAndUserID()
+	logger.InfoCtx(r.Ctx, "command info", "userID", userID, "cmd", cmd)
+	
 	switch cmd {
-	case "state", "/state", "$state":
+	case param.State, "/" + param.State, "$" + param.State:
 		r.showStateInfo()
-	case "clear", "/clear", "$clear":
+	case param.Clear, "/" + param.Clear, "$" + param.Clear:
 		r.clearAllRecord()
-	case "retry", "/retry", "$retry":
+	case param.Retry, "/" + param.Retry, "$" + param.Retry:
 		r.retryLastQuestion()
-	case "chat", "/chat", "$chat":
+	case param.Chat, "/" + param.Chat, "$" + param.Chat:
 		r.Robot.sendChatMessage()
-	case "txt_type", "/txt_type", "$txt_type", "photo_type", "/photo_type", "$photo_type", "video_type",
-		"/video_type", "$video_type", "rec_type", "/rec_type", "$rec_type", "tts_type", "/tts_type", "$tts_type":
+	case param.TxtType, "/" + param.TxtType, "$" + param.TxtType, param.PhotoType, "/" + param.PhotoType, "$" + param.PhotoType, param.VideoType,
+		"/" + param.VideoType, "$" + param.VideoType, param.RecType, "/" + param.RecType, "$" + param.RecType, param.TtsType, "/" + param.TtsType, "$" + param.TtsType:
 		if typesFunc != nil {
 			typesFunc(cmd)
 		} else {
 			r.changeType(cmd)
 		}
-	case "txt_model", "/txt_model", "$txt_model", "photo_model", "/photo_model", "$photo_model",
-		"video_model", "/video_model", "$video_model", "rec_model", "/rec_model", "$rec_model", "tts_model", "/tts_model", "$tts_model":
+	case param.TxtModel, "/" + param.TxtModel, "$" + param.TxtModel, param.PhotoModel, "/" + param.PhotoModel, "$" + param.PhotoModel,
+		param.VideoModel, "/" + param.VideoModel, "$" + param.VideoModel, param.RecModel, "/" + param.RecModel, "$" + param.RecModel, param.TtsModel, "/" + param.TtsModel, "$" + param.TtsModel:
 		if modeFunc != nil {
 			modeFunc(cmd)
 		} else {
 			r.changeModel(cmd)
 		}
-	case "photo", "/photo", "$photo", "edit_photo", "/edit_photo", "$edit_photo":
+	case param.Photo, "/" + param.Photo, "$" + param.Photo, param.EditPhoto, "/" + param.EditPhoto, "$" + param.EditPhoto:
 		r.Robot.sendImg()
-	case "video", "/video", "$video":
+	case param.Video, "/" + param.Video, "$" + param.Video:
 		r.Robot.sendVideo()
-	case "help", "/help", "$help":
+	case param.Help, "/" + param.Help, "$" + param.Help:
 		r.sendHelpConfigurationOptions()
-	case "change_photo", "/change_photo", "$change_photo", "rec_photo", "/rec_photo", "$rec_photo",
-		"save_voice", "/save_voice", "$save_voice":
+	case param.ChangePhoto, "/" + param.ChangePhoto, "$" + param.ChangePhoto, param.RecPhoto, "/" + param.RecPhoto, "$" + param.RecPhoto,
+		param.SaveVoice, "/" + param.SaveVoice, "$" + param.SaveVoice:
 		if r.TencentRobot != nil {
 			r.TencentRobot.passiveExecCmd()
 		} else {
 			defaultFunc()
 		}
-	case "task", "/task", "$task":
+	case param.Task, "/" + param.Task, "$" + param.Task:
 		var emptyPromptFunc func()
 		if t, ok := r.Robot.(*TelegramRobot); ok {
 			emptyPromptFunc = t.sendForceReply("task_empty_content")
 		}
 		r.sendMultiAgent("task_empty_content", emptyPromptFunc)
-	case "mcp", "/mcp", "$mcp":
+	case param.Mcp, "/" + param.Mcp, "$" + param.Mcp:
 		var emptyPromptFunc func()
 		if t, ok := r.Robot.(*TelegramRobot); ok {
 			emptyPromptFunc = t.sendForceReply("mcp_empty_content")
 		}
 		r.sendMultiAgent("mcp_empty_content", emptyPromptFunc)
-	case "mode", "/mode", "$mode":
+	case param.Mode, "/" + param.Mode, "$" + param.Mode:
 		r.showMode()
 	default:
 		defaultFunc()

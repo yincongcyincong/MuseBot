@@ -64,7 +64,7 @@ func StartComWechatRobot(ctx context.Context) {
 	
 	resp, err := ComWechatApp.Agent.Get(ctx, utils.ParseInt(*conf.BaseConfInfo.ComWechatAgentID))
 	if err != nil {
-		logger.ErrorCtx(ctx, "ComWechatApp get agent error: ", err)
+		logger.ErrorCtx(ctx, "ComWechatApp get agent error: ", "err", err)
 		return
 	}
 	logger.InfoCtx(ctx, "ComWechatbot", "username", resp.Name)

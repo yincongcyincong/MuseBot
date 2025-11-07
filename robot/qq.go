@@ -37,7 +37,6 @@ var (
 )
 
 type QQRobot struct {
-	event         *dto.WSPayload
 	Robot         *RobotInfo
 	QQApi         openapi.OpenAPI
 	QQTokenSource oauth2.TokenSource
@@ -85,7 +84,7 @@ func StartQQRobot(ctx context.Context) {
 }
 
 func C2CMessageEventHandler(event *dto.WSPayload, message *dto.WSC2CMessageData) error {
-	d := NewQQRobot(event, message, nil, nil)
+	d := NewQQRobot(message, nil, nil)
 	d.Robot = NewRobot(WithRobot(d), WithTencentRobot(d))
 	go func() {
 		defer func() {
@@ -100,7 +99,7 @@ func C2CMessageEventHandler(event *dto.WSPayload, message *dto.WSC2CMessageData)
 }
 
 func QQGroupATMessageEventHandler(event *dto.WSPayload, atMessage *dto.WSGroupATMessageData) error {
-	d := NewQQRobot(event, nil, atMessage, nil)
+	d := NewQQRobot(nil, atMessage, nil)
 	d.Robot = NewRobot(WithRobot(d), WithTencentRobot(d))
 	go func() {
 		defer func() {
@@ -116,7 +115,7 @@ func QQGroupATMessageEventHandler(event *dto.WSPayload, atMessage *dto.WSGroupAT
 }
 
 func QQATMessageEventHandler(event *dto.WSPayload, atMessage *dto.WSATMessageData) error {
-	d := NewQQRobot(event, nil, nil, atMessage)
+	d := NewQQRobot(nil, nil, atMessage)
 	d.Robot = NewRobot(WithRobot(d), WithTencentRobot(d))
 	go func() {
 		defer func() {
@@ -131,7 +130,7 @@ func QQATMessageEventHandler(event *dto.WSPayload, atMessage *dto.WSATMessageDat
 	return nil
 }
 
-func NewQQRobot(event *dto.WSPayload, c2cMessage *dto.WSC2CMessageData,
+func NewQQRobot(c2cMessage *dto.WSC2CMessageData,
 	atGroupMessage *dto.WSGroupATMessageData, atMessage *dto.WSATMessageData) *QQRobot {
 	metrics.AppRequestCount.WithLabelValues("qq").Inc()
 	qr := &QQRobot{
@@ -141,7 +140,6 @@ func NewQQRobot(event *dto.WSPayload, c2cMessage *dto.WSC2CMessageData,
 		C2CMessage:     c2cMessage,
 		ATMessage:      atMessage,
 		GroupAtMessage: atGroupMessage,
-		event:          event,
 		BotName:        BotName,
 	}
 	

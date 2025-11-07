@@ -77,8 +77,9 @@ type LLMClient interface {
 
 func (l *LLM) CallLLM() error {
 	
-	totalContent := l.GetContent(l.Ctx, l.Content)
+	totalContent := l.GetContent(l.Content)
 	l.GetMessages(l.UserId, totalContent)
+	l.InsertCharacter(l.Ctx)
 	l.LLMClient.GetModel(l)
 	
 	logger.InfoCtx(l.Ctx, "msg receive", "userID", l.UserId, "prompt", totalContent, "type",
@@ -100,29 +101,30 @@ func (l *LLM) CallLLM() error {
 	return nil
 }
 
-func (l *LLM) GetContent(ctx context.Context, content string) string {
+func (l *LLM) GetContent(content string) string {
+	return content
+}
+
+func (l *LLM) InsertCharacter(ctx context.Context) {
 	if *conf.BaseConfInfo.Character != "" {
 		if l.ContentParameter != nil {
 			tmpl, err := template.New("character").Parse(*conf.BaseConfInfo.Character)
 			if err != nil {
 				logger.ErrorCtx(ctx, "parse template fail", "err", err)
-				return content
+				return
 			}
 			
 			var buf bytes.Buffer
 			err = tmpl.Execute(&buf, l.ContentParameter)
 			if err != nil {
 				logger.ErrorCtx(ctx, "exec template fail", "err", err)
-				return content
+				return
 			}
 			
 			logger.InfoCtx(ctx, "character", "character", buf.String())
 			l.LLMClient.GetAssistantMessage(buf.String())
 		}
-		
 	}
-	
-	return content
 }
 
 func NewLLM(opts ...Option) *LLM {

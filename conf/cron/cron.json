@@ -1,7 +1,49 @@
 [
   {
     "type": "telegram",
-    "user_ids": "5542540980",
+    "target_ids": "5542540980",
+    "cron": "0 0 0 * * *",
+    "command": "",
+    "prompt": "hi"
+  },
+  {
+    "type": "personal_qq",
+    "target_ids": "648588267",
+    "cron": "0 0 0 * * *",
+    "command": "",
+    "prompt": "hi"
+  },
+  {
+    "type": "wechat",
+    "target_ids": "ogP2wvghk2_DbYPoLo2PfEAmkCjs",
+    "cron": "0 0 0 * * *",
+    "command": "",
+    "prompt": "hi"
+  },
+  {
+    "type": "com_wechat",
+    "target_ids": "ogP2wvghk2_DbYPoLo2PfEAmkCjs",
+    "cron": "0 0 0 * * *",
+    "command": "",
+    "prompt": "hi"
+  },
+  {
+    "type": "ding",
+    "target_ids": "$:LWCP_v1:$rJKuChRP8WsGdYpcmQra6fdGdLDq2lgD",
+    "cron": "0 0 0 * * *",
+    "command": "",
+    "prompt": "hi"
+  },
+  {
+    "type": "slack",
+    "target_ids": "U0973P0AZ0R",
+    "cron": "0 0 0 * * *",
+    "command": "",
+    "prompt": "hi"
+  },
+  {
+    "type": "lark",
+    "target_ids": "oc_d878281761610b1f48308e500b0fb6cd",
     "cron": "0 0 0 * * *",
     "command": "",
     "prompt": "hi"

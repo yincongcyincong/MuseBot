@@ -66,6 +66,7 @@ RUN mkdir -p ./conf/i18n ./conf/mcp
 COPY --from=builder /app/MuseBot .
 COPY --from=builder /app/conf/i18n/ ./conf/i18n/
 COPY --from=builder /app/conf/mcp/ ./conf/mcp/
+COPY --from=builder /app/conf/cron/ ./conf/cron/
 
 # Copy FFmpeg binaries
 COPY --from=ffmpeg-builder /usr/local/bin/ffmpeg /usr/local/bin/ffmpeg

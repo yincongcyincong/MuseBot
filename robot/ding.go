@@ -34,7 +34,7 @@ import (
 )
 
 var (
-	dingBotClient   *client.StreamClient
+	DingBotClient   *client.StreamClient
 	accessTokenInfo = new(AccessToken)
 )
 
@@ -64,7 +64,7 @@ type DingResp struct {
 
 func StartDingRobot(ctx context.Context) {
 	dingLogger.SetLogger(logger.Logger)
-	dingBotClient = client.NewStreamClient(
+	DingBotClient = client.NewStreamClient(
 		client.WithAppCredential(client.NewAppCredentialConfig(*conf.BaseConfInfo.DingClientId, *conf.BaseConfInfo.DingClientSecret)),
 		client.WithUserAgent(client.NewDingtalkGoSDKUserAgent()),
 		client.WithProxy(*conf.BaseConfInfo.RobotProxy),
@@ -72,13 +72,13 @@ func StartDingRobot(ctx context.Context) {
 			chatbot.NewDefaultChatBotFrameHandler(OnChatReceive).OnEventReceived),
 	)
 	
-	err := dingBotClient.Start(ctx)
+	err := DingBotClient.Start(ctx)
 	if err != nil {
 		logger.ErrorCtx(ctx, "start dingbot fail", "err", err)
 		return
 	}
 	
-	logger.Info("DingRobot Info", "username", dingBotClient.UserAgent)
+	logger.Info("DingRobot Info", "username", DingBotClient.UserAgent)
 }
 
 func OnChatReceive(ctx context.Context, message *chatbot.BotCallbackDataModel) ([]byte, error) {
@@ -101,7 +101,7 @@ func NewDingRobot(message *chatbot.BotCallbackDataModel) *DingRobot {
 	metrics.AppRequestCount.WithLabelValues("dingding").Inc()
 	return &DingRobot{
 		Message:  message,
-		Client:   dingBotClient,
+		Client:   DingBotClient,
 		BotName:  BotName,
 		UserName: message.SenderNick,
 	}

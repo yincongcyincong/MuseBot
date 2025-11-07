@@ -41,12 +41,14 @@ type QQMessage struct {
 }
 
 type MessageItem struct {
-	Data struct {
-		Text string `json:"text"`
-		Url  string `json:"url"`
-		QQ   string `json:"qq"`
-	} `json:"data"`
-	Type string `json:"type"`
+	Data MessageItemData `json:"data"`
+	Type string          `json:"type"`
+}
+
+type MessageItemData struct {
+	Text string `json:"text"`
+	Url  string `json:"url"`
+	QQ   string `json:"qq"`
 }
 
 type SenderInfo struct {
