@@ -7,6 +7,14 @@
 
 ---
 
+## 钉钉配置
+1. 设置stream模式    
+![image](https://github.com/user-attachments/assets/9af2185b-f129-49b7-91e2-30a3608e7c23)
+
+2. 权限开通
+![image](https://github.com/user-attachments/assets/47014a94-a696-442f-b7fb-559c70dc4223)
+
+
 ## 🚀 在钉钉模式启动
 
 你可以使用以下命令启动钉钉模式的机器人：
