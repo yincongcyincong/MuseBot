@@ -86,7 +86,7 @@ chatgpt: https://www.bilibili.com/video/BV1RutxzJEGY/
 
 1. **克隆仓库**
    ```sh
-   git clone git@github.com:yincongcyincong/MuseBot.git
+   git clone https://github.com/yincongcyincong/MuseBot.git
    cd MuseBot
    ```
 
@@ -115,7 +115,8 @@ go run main.go -telegram_bot_token=telegram-bot-token -deepseek_token=deepseek-a
 
 ```sh
 docker pull jackyin0822/musebot:latest
-docker run -d -v /home/user/data:/app/data -e TELEGRAM_BOT_TOKEN="你的Telegram Bot Token" -e DEEPSEEK_TOKEN="你的DeepSeek API密钥" --name my-telegram-bot jackyin0822/musebot:latest
+chmod 777 /home/user/data
+docker run -d -v /home/user/data:/app/data -e TELEGRAM_BOT_TOKEN="你的Telegram Bot Token" -e DEEPSEEK_TOKEN="你的DeepSeek API密钥" --name my-bot jackyin0822/musebot:latest
 ```
 
 ```sh

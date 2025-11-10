@@ -93,7 +93,9 @@ i18n
                     rag_manage: "RAG Management",
                     add_file: "Add File",
                     file_name: "File Name",
-                    rich_text: "Rich Text"
+                    rich_text: "Rich Text",
+
+                    cron: "Cron",
                 }
             },
             zh: {
@@ -182,7 +184,9 @@ i18n
                     rag_manage: "RAG 管理",
                     add_file: "添加文件",
                     file_name: "文件名",
-                    rich_text: "富文本"
+                    rich_text: "富文本",
+
+                    cron: "定时任务",
                 }
             }
         },

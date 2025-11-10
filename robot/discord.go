@@ -102,7 +102,7 @@ func NewDiscordRobot(s *discordgo.Session, msg *discordgo.MessageCreate, i *disc
 	}
 	
 	if i != nil {
-		dr.UserName = i.Member.User.Username
+		dr.UserName = i.User.Username
 	}
 	
 	return dr
