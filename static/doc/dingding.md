@@ -1,16 +1,16 @@
----
-
-# ✨ DingTalk Bot
-
-This project is a cross-platform chatbot that supports **DingTalk** in both private and group chats.
-It is powered by the **LLM**, with built-in commands for image and video generation, conversation clearing, and more.
-
----
-
-
 ## 🚀 Starting in DingTalk Mode
 
 You can launch the bot in DingTalk mode with the following command:
+
+## DingTalk Configuration
+go to platform: https://open-dev.dingtalk.com/      
+
+1. **Enable Stream Mode**
+   ![image](https://github.com/user-attachments/assets/9af2185b-f129-49b7-91e2-30a3608e7c23)
+
+2. **Grant Permissions**
+   ![image](https://github.com/user-attachments/assets/47014a94-a696-442f-b7fb-559c70dc4223)
+
 
 ```bash
 ./MuseBot-darwin-amd64 \

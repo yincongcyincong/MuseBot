@@ -22,7 +22,6 @@ type BaseConf struct {
 	LarkAppSecret           *string `json:"lark_app_secret"`
 	DingClientId            *string `json:"ding_client_id"`
 	DingClientSecret        *string `json:"ding_client_secret"`
-	DingTemplateId          *string `json:"ding_template_id"`
 	ComWechatToken          *string `json:"com_wechat_token"`
 	ComWechatEncodingAESKey *string `json:"com_wechat_encoding_aes_key"`
 	ComWechatCorpID         *string `json:"com_wechat_corp_id"`
@@ -95,7 +94,6 @@ func InitConf() {
 	BaseConfInfo.LarkAppSecret = flag.String("lark_app_secret", "", "Lark app secret")
 	BaseConfInfo.DingClientId = flag.String("ding_client_id", "", "Dingding client id")
 	BaseConfInfo.DingClientSecret = flag.String("ding_client_secret", "", "Dingding app secret")
-	BaseConfInfo.DingTemplateId = flag.String("ding_template_id", "", "Dingding template id")
 	BaseConfInfo.ComWechatToken = flag.String("com_wechat_token", "", "ComWechat token")
 	BaseConfInfo.ComWechatEncodingAESKey = flag.String("com_wechat_encoding_aes_key", "", "ComWechat encoding aes key")
 	BaseConfInfo.ComWechatCorpID = flag.String("com_wechat_corp_id", "", "ComWechat corp id")
@@ -202,10 +200,6 @@ func InitConf() {
 	
 	if os.Getenv("DING_CLIENT_SECRET") != "" {
 		*BaseConfInfo.DingClientSecret = os.Getenv("DING_CLIENT_SECRET")
-	}
-	
-	if os.Getenv("DING_TEMPLATE_ID") != "" {
-		*BaseConfInfo.DingTemplateId = os.Getenv("DING_TEMPLATE_ID")
 	}
 	
 	if os.Getenv("COM_WECHAT_TOKEN") != "" {
@@ -434,7 +428,6 @@ func InitConf() {
 	logger.Info("CONF", "LarkAppSecret", *BaseConfInfo.LarkAppSecret)
 	logger.Info("CONF", "DingClientId", *BaseConfInfo.DingClientId)
 	logger.Info("CONF", "DingClientSecret", *BaseConfInfo.DingClientSecret)
-	logger.Info("CONF", "DingTemplateId", *BaseConfInfo.DingTemplateId)
 	logger.Info("CONF", "ComWechatToken", *BaseConfInfo.ComWechatToken)
 	logger.Info("CONF", "ComWechatEncodingAESKey", *BaseConfInfo.ComWechatEncodingAESKey)
 	logger.Info("CONF", "ComWechatCorpID", *BaseConfInfo.ComWechatCorpID)

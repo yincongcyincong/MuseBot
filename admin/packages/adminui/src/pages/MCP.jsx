@@ -262,7 +262,7 @@ function BotMcpListPage() {
                 <div className="space-y-4">
                     <div>
                         <label className="block text-sm font-medium text-gray-700">
-                            Service Name
+                            {t("service_name")}
                         </label>
                         <input
                             type="text"
@@ -305,8 +305,8 @@ function BotMcpListPage() {
             <Modal visible={showPrepareModal} title="Prepared MCP Services" onClose={() => setShowPrepareModal(false)}>
                 <div className="max-h-[80vh] overflow-y-auto">
                     <div className="flex space-x-4 mb-4 border-b">
-                        <button className={`pb-2 ${prepareTab === "list" ? "border-b-2 border-blue-500 font-semibold" : "text-gray-500"}`} onClick={() => setPrepareTab("list")}>Service List</button>
-                        <button className={`pb-2 ${prepareTab === "json" ? "border-b-2 border-blue-500 font-semibold" : "text-gray-500"}`} onClick={() => setPrepareTab("json")}>JSON Edit</button>
+                        <button className={`pb-2 ${prepareTab === "list" ? "border-b-2 border-blue-500 font-semibold" : "text-gray-500"}`} onClick={() => setPrepareTab("list")}>{t("service_list")}</button>
+                        <button className={`pb-2 ${prepareTab === "json" ? "border-b-2 border-blue-500 font-semibold" : "text-gray-500"}`} onClick={() => setPrepareTab("json")}>{t("json_edit")}</button>
                     </div>
 
                     {prepareTab === "list" && (
@@ -323,9 +323,9 @@ function BotMcpListPage() {
                             <table className="min-w-full bg-white divide-y divide-gray-200">
                                 <thead className="bg-gray-50">
                                 <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t("name")}</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t('description')}</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t('action')}</th>
                                 </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100">
@@ -356,7 +356,7 @@ function BotMcpListPage() {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700">Config JSON</label>
+                                <label className="block text-sm font-medium text-gray-700">{t("config_json")}</label>
                                 <div className="border rounded">
                                     <Editor
                                         height="300px"

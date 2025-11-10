@@ -8,6 +8,8 @@
 ---
 
 ## 钉钉配置
+去平台：https://open-dev.dingtalk.com/      
+
 1. 设置stream模式    
 ![image](https://github.com/user-attachments/assets/9af2185b-f129-49b7-91e2-30a3608e7c23)
 

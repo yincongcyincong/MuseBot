@@ -6,6 +6,8 @@ import ConfirmModal from "../components/ConfirmModal.jsx";
 import Editor from "@monaco-editor/react";
 import { useTranslation } from "react-i18next";
 import Pagination from "../components/Pagination.jsx";
+import InputField from "../components/InputField.jsx";
+import TextareaField from "../components/TextAreaField.jsx";
 
 // 对应后端的 db.Cron 结构体（简化版用于前端）
 const initialNewCronTask = {
@@ -15,36 +17,8 @@ const initialNewCronTask = {
     group_id: "",
     command: "",
     prompt: "",
+    type: "",
 };
-
-// 任务输入框组件 (简化代码)
-const InputField = ({ label, name, value, onChange, readOnly = false }) => (
-    <div>
-        <label className="block text-sm font-medium text-gray-700">{label}</label>
-        <input
-            type="text"
-            name={name}
-            value={value || ""}
-            onChange={onChange}
-            readOnly={readOnly}
-            className={`w-full px-3 py-2 border border-gray-300 rounded ${readOnly ? 'bg-gray-100' : 'bg-white'} text-gray-700`}
-        />
-    </div>
-);
-
-const TextareaField = ({ label, name, value, onChange, placeholder }) => (
-    <div>
-        <label className="block text-sm font-medium text-gray-700">{label}</label>
-        <textarea
-            name={name}
-            value={value || ""}
-            onChange={onChange}
-            placeholder={placeholder}
-            rows="3"
-            className="w-full px-3 py-2 border border-gray-300 rounded bg-white text-gray-700"
-        />
-    </div>
-);
 
 function Cron() {
     const [botId, setBotId] = useState(null);
@@ -101,6 +75,7 @@ function Cron() {
             data.data.list.forEach((task) => {
                 task.cron_spec = task.cron
             });
+            console.log(data.data.list);
 
             setCronTasks(data.data.list || []);
             setTotal(data.data.total || 0);
@@ -149,6 +124,7 @@ function Cron() {
             group_id: task.group_id,
             command: task.command,
             prompt: task.prompt,
+            type: task.type,
         });
         setShowEditModal(true);
     };
@@ -281,7 +257,7 @@ function Cron() {
                     />
                 </div>
                 <div className="flex-1 min-w-[200px]">
-                    <label className="block font-medium text-gray-700 mb-1">{t("search_cron_name")}:</label>
+                    <label className="block font-medium text-gray-700 mb-1">{t("cron_name")}:</label>
                     <input
                         type="text"
                         onChange={(e) => {
@@ -300,8 +276,9 @@ function Cron() {
                     <tr>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t("name")}</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t("type")}</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t("cron_spec")}</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t("target")}</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t("target_id")}</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t("status")}</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t("action")}</th>
                     </tr>
@@ -311,6 +288,7 @@ function Cron() {
                         cronTasks.map((task) => (
                             <tr key={task.id} className="hover:bg-gray-50">
                                 <td className="px-6 py-4 text-sm text-gray-800">{task.id}</td>
+                                <td className="px-6 py-4 text-sm text-gray-800">{task.type}</td>
                                 <td className="px-6 py-4 text-sm text-gray-800">{task.cron_name}</td>
                                 <td className="px-6 py-4 text-sm text-gray-800">{task.cron_spec}</td>
                                 <td className="px-6 py-4 text-sm text-gray-800">{task.target_id}</td>
@@ -348,9 +326,9 @@ function Cron() {
             >
                 <div className="space-y-4">
                     <InputField label={t("name")} name="cron_name" value={editingTask.cron_name} onChange={handleEditFormChange} placeholder="daily-report" readOnly={!showCreateModal} />
+                    <InputField label={t("type")} name="type" value={editingTask.type} onChange={handleEditFormChange} placeholder="telegram/wechat/personal_qq ..." />
                     <InputField label={t("cron_spec")} name="cron_spec" value={editingTask.cron_spec} onChange={handleEditFormChange} placeholder="0 0 10 * * *" />
 
-                    {/* 目标ID和群组ID - 对应 TargetID 和 GroupID */}
                     <div className="flex space-x-4">
                         <div className="flex-1">
                             <InputField label={t("target_id")} name="target_id" value={editingTask.target_id} onChange={handleEditFormChange} placeholder="QQ/WeChat User ID" />

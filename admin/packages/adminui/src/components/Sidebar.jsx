@@ -40,7 +40,7 @@ export default function Sidebar() {
                 collapsed ? "w-20" : "w-60"
             }`}
         >
-            <div className="flex justify-center mb-6">
+            <div className="flex justify-center">
                 <button
                     onClick={() => setCollapsed(!collapsed)}
                     className="text-white p-1 rounded hover:bg-indigo-600 transition"

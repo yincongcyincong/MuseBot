@@ -520,17 +520,6 @@ func (d *DingRobot) GetAccessToken() (string, error) {
 	return accessTokenInfo.AccessToken, nil
 }
 
-func (d *DingRobot) GetAIContent(content string) string {
-	data := map[string]interface{}{
-		"templateId": *conf.BaseConfInfo.DingTemplateId,
-		"cardData": map[string]interface{}{
-			"content": content,
-		},
-	}
-	dataByte, _ := json.Marshal(data)
-	return string(dataByte)
-}
-
 type uploadResp struct {
 	ErrCode  int    `json:"errcode"`
 	ErrMsg   string `json:"errmsg"`

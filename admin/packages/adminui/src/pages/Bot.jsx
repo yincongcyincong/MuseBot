@@ -290,6 +290,12 @@ function Bots() {
                                 {!isRegister && (
                                     <>
                                         <button
+                                            onClick={() => handleEditClick(bot)}
+                                            className="text-blue-600 hover:underline"
+                                        >
+                                            {t("edit")}
+                                        </button>
+                                        <button
                                             onClick={() => handleDeleteClick(bot.id)}
                                             className="text-red-600 hover:underline"
                                         >
