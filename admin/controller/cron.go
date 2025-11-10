@@ -94,8 +94,6 @@ func UpdateCron(w http.ResponseWriter, r *http.Request) {
 	
 	// 构造目标 URL：/cron/update
 	targetURL := strings.TrimSuffix(botInfo.Address, "/") + "/cron/update"
-	
-	// 使用 r.Body 作为请求体（原样转发客户端的 JSON POST 数据）
 	resp, err := adminUtils.GetCrtClient(botInfo).Do(GetRequest(ctx, http.MethodPost, targetURL, r.Body))
 	if err != nil {
 		logger.ErrorCtx(ctx, "request update cron error", "err", err)

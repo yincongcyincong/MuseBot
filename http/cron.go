@@ -55,11 +55,13 @@ func CreateCron(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	err = AddCron(cronInfo)
-	if err != nil {
-		logger.ErrorCtx(ctx, "add cron error", "err", err)
-		utils.Failure(ctx, w, r, param.CodeServerFail, param.MsgServerFail, err)
-		return
+	if cronInfo.CronSpec != "" && cronInfo.Status == 1 && cronInfo.Type != "" && cronInfo.TargetID != "" && cronInfo.Prompt != "" {
+		err = AddCron(cronInfo)
+		if err != nil {
+			logger.ErrorCtx(ctx, "add cron error", "err", err)
+			utils.Failure(ctx, w, r, param.CodeServerFail, param.MsgServerFail, err)
+			return
+		}
 	}
 	
 	utils.Success(ctx, w, r, map[string]int64{"id": id})
@@ -95,12 +97,15 @@ func UpdateCron(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	cron.Cron.Remove(cronC.EntryID(cronInfo.CronJobId))
-	err = AddCron(cronInfo)
-	if err != nil {
-		logger.ErrorCtx(ctx, "add cron error", "err", err)
-		utils.Failure(ctx, w, r, param.CodeServerFail, param.MsgServerFail, err)
-		return
+	if cronInfo.CronSpec != "" && cronInfo.Status == 1 && cronInfo.Type != "" && cronInfo.TargetID != "" && cronInfo.Prompt != "" {
+		cron.Cron.Remove(cronC.EntryID(cronInfo.CronJobId))
+		err = AddCron(cronInfo)
+		if err != nil {
+			logger.ErrorCtx(ctx, "add cron error", "err", err)
+			utils.Failure(ctx, w, r, param.CodeServerFail, param.MsgServerFail, err)
+			return
+		}
+		
 	}
 	
 	utils.Success(ctx, w, r, nil)
@@ -126,15 +131,14 @@ func UpdateCronStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	// 1. 查询当前任务获取 Job ID
-	cronTask, err := db.GetCronByID(req.ID)
+	cronInfo, err := db.GetCronByID(req.ID)
 	if err != nil {
 		logger.ErrorCtx(ctx, "get cron task error", "err", err)
 		utils.Failure(ctx, w, r, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
 		return
 	}
 	
-	if cronTask.Status == req.Status {
+	if cronInfo.Status == req.Status {
 		utils.Success(ctx, w, r, nil)
 		return
 	}
@@ -147,14 +151,16 @@ func UpdateCronStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	if req.Status == 0 {
-		cron.Cron.Remove(cronC.EntryID(cronTask.CronJobId))
-	} else {
-		err = AddCron(cronTask)
-		if err != nil {
-			logger.ErrorCtx(ctx, "add cron error", "err", err)
-			utils.Failure(ctx, w, r, param.CodeServerFail, param.MsgServerFail, err)
-			return
+	if cronInfo.CronSpec != "" && cronInfo.Status == 1 && cronInfo.Type != "" && cronInfo.TargetID != "" && cronInfo.Prompt != "" {
+		if req.Status == 0 {
+			cron.Cron.Remove(cronC.EntryID(cronInfo.CronJobId))
+		} else {
+			err = AddCron(cronInfo)
+			if err != nil {
+				logger.ErrorCtx(ctx, "add cron error", "err", err)
+				utils.Failure(ctx, w, r, param.CodeServerFail, param.MsgServerFail, err)
+				return
+			}
 		}
 	}
 	
@@ -176,15 +182,13 @@ func DeleteCron(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	// 1. 查询当前任务获取 Job ID
-	cronTask, err := db.GetCronByID(int64(id))
+	cronInfo, err := db.GetCronByID(int64(id))
 	if err != nil {
 		logger.ErrorCtx(ctx, "get cron task error", "err", err)
 		utils.Failure(ctx, w, r, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
 		return
 	}
 	
-	// 2. 软删除数据库记录
 	err = db.DeleteCronByID(int64(id))
 	if err != nil {
 		logger.ErrorCtx(ctx, "delete cron error", "err", err)
@@ -192,7 +196,9 @@ func DeleteCron(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	cron.Cron.Remove(cronC.EntryID(cronTask.CronJobId))
+	if cronInfo.CronSpec != "" && cronInfo.Status == 1 && cronInfo.Type != "" && cronInfo.TargetID != "" && cronInfo.Prompt != "" {
+		cron.Cron.Remove(cronC.EntryID(cronInfo.CronJobId))
+	}
 	
 	utils.Success(ctx, w, r, nil)
 }

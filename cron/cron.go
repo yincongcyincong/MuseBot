@@ -53,6 +53,8 @@ func InitCron() {
 }
 
 func Exec(c *db.Cron) {
+	logger.Info("exec cron", "cron", c.CronName, "cronSpec",
+		c.CronSpec, "type", c.Type, "targetId", c.TargetID, "groupId", c.GroupID)
 	switch c.Type {
 	case param.Wechat:
 		ExecWechat(c)
@@ -144,12 +146,12 @@ func ExecLark(c *db.Cron) {
 }
 
 func ExecPersonalQQ(c *db.Cron) {
-	for _, targetId := range strings.Split(c.TargetID, ",") {
+	for _, groupId := range strings.Split(c.GroupID, ",") {
 		t := &robot.PersonalQQRobot{
 			Msg: &robot.QQMessage{
-				GroupId:     int64(utils.ParseInt(targetId)),
+				GroupId:     int64(utils.ParseInt(groupId)),
 				MessageType: "group",
-				UserID:      int64(utils.ParseInt(targetId)),
+				UserID:      int64(utils.ParseInt(groupId)),
 				Message: []robot.MessageItem{
 					{
 						Type: "text",
@@ -164,7 +166,7 @@ func ExecPersonalQQ(c *db.Cron) {
 		t.Robot.Exec()
 	}
 	
-	for _, targetId := range strings.Split(c.GroupID, ",") {
+	for _, targetId := range strings.Split(c.TargetID, ",") {
 		t := &robot.PersonalQQRobot{
 			Msg: &robot.QQMessage{
 				MessageType: "private",

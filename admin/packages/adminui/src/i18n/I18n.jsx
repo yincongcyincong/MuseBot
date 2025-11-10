@@ -96,6 +96,18 @@ i18n
                     rich_text: "Rich Text",
 
                     cron: "Cron",
+                    prompt: "Prompt",
+                    cron_task_manage: "Cron Task Management",
+                    add_cron_task: "Add Cron Task",
+                    cron_name: "Cron Name",
+                    cron_spec: "Cron Spec",
+                    target_id: "Target ID",
+                    group_id: "Group ID",
+
+                    service_list: "Service List",
+                    json_edit: "Json Edit",
+                    service_name: "Service Name",
+                    config_json: "Config Json",
                 }
             },
             zh: {
@@ -187,6 +199,19 @@ i18n
                     rich_text: "富文本",
 
                     cron: "定时任务",
+                    prompt: "提示词",
+                    cron_task_manage: "定时任务管理",
+                    add_cron_task: "添加定时任务",
+                    cron_name: "任务名称",
+                    cron_spec: "Cron 表达式",
+                    target_id: "目标ID",
+                    group_id: "群组ID",
+
+                    service_list: "服务列表",
+                    json_edit: "json编辑",
+                    service_name: "服务名称",
+                    config_json: "配置json",
+
                 }
             }
         },

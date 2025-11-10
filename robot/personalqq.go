@@ -320,10 +320,13 @@ func (q *PersonalQQRobot) SendMsg(txt string, image []byte, video []byte, voice 
 	msgArray := []map[string]interface{}{}
 	
 	if txt != "" {
-		msgArray = append(msgArray, map[string]interface{}{
-			"type": "reply",
-			"data": map[string]string{"id": msgId},
-		})
+		if msgId != "" {
+			msgArray = append(msgArray, map[string]interface{}{
+				"type": "reply",
+				"data": map[string]string{"id": msgId},
+			})
+		}
+		
 		msgArray = append(msgArray, map[string]interface{}{
 			"type": "text",
 			"data": map[string]string{"text": txt},
@@ -331,10 +334,12 @@ func (q *PersonalQQRobot) SendMsg(txt string, image []byte, video []byte, voice 
 	}
 	
 	if len(image) > 0 {
-		msgArray = append(msgArray, map[string]interface{}{
-			"type": "reply",
-			"data": map[string]string{"id": msgId},
-		})
+		if msgId != "" {
+			msgArray = append(msgArray, map[string]interface{}{
+				"type": "reply",
+				"data": map[string]string{"id": msgId},
+			})
+		}
 		
 		encoded := "base64://" + base64.StdEncoding.EncodeToString(image)
 		msgArray = append(msgArray, map[string]interface{}{

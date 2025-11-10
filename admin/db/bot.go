@@ -44,6 +44,12 @@ func UpdateBotAddress(id int, newAddress, name, crtFile, secretFile, caFile, com
 	return err
 }
 
+func UpdateBotCommand(id int, command string) error {
+	now := time.Now().Unix()
+	_, err := DB.Exec(`UPDATE bot SET update_time = ?, command = ? WHERE id = ?`, now, command, id)
+	return err
+}
+
 func SoftDeleteBot(id int) error {
 	_, err := DB.Exec(`UPDATE bot SET is_deleted = 1 WHERE id = ?`, id)
 	return err

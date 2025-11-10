@@ -116,12 +116,15 @@ go run main.go -telegram_bot_token=telegram-bot-token -deepseek_token=deepseek-a
 ```sh
 docker pull jackyin0822/musebot:latest
 chmod 777 /home/user/data
-docker run -d -v /home/user/data:/app/data -e TELEGRAM_BOT_TOKEN="你的Telegram Bot Token" -e DEEPSEEK_TOKEN="你的DeepSeek API密钥" --name my-bot jackyin0822/musebot:latest
+docker run -d -v /home/user/data:/app/data -e TELEGRAM_BOT_TOKEN="你的Telegram Bot Token" -e DEEPSEEK_TOKEN="你的DeepSeek API密钥" -p 36060:36060  --name my-bot jackyin0822/musebot:latest
 ```
 
 ```sh
 阿里云:
 docker pull crpi-i1dsvpjijxpgjgbv.cn-hangzhou.personal.cr.aliyuncs.com/jackyin0822/musebot:latest
+chmod 777 /home/user/data
+docker run -d -v /home/user/data:/app/data -e TELEGRAM_BOT_TOKEN="telegram-bot-token" -e DEEPSEEK_TOKEN="deepseek-auth-token" -p 36060:36060 --name my-bot  crpi-i1dsvpjijxpgjgbv.cn-hangzhou.personal.cr.aliyuncs.com/jackyin0822/musebot:latest
+  
 ```
 
 命令介绍: (文档)[https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/param_conf_ZH.md]

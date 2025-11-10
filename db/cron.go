@@ -181,8 +181,8 @@ func GetCronsCount(name string) (int, error) {
 func UpdateCron(id int64, cronName, cronSpec, targetID, groupID, command, prompt, t string) error {
 	updateSQL := `
         UPDATE cron
-        SET cron_name = ?, cron = ?, target_id = ?, group_id = ?, command = ?, prompt = ?, update_time = ?
-        WHERE id = ? AND is_deleted = 0 AND from_bot = ? AND type = ?`
+        SET cron_name = ?, cron = ?, target_id = ?, group_id = ?, command = ?, prompt = ?, type = ?, update_time = ?
+        WHERE id = ? AND is_deleted = 0 AND from_bot = ? `
 	
 	_, err := DB.Exec(updateSQL,
 		cronName,
@@ -191,10 +191,10 @@ func UpdateCron(id int64, cronName, cronSpec, targetID, groupID, command, prompt
 		groupID,
 		command,
 		prompt,
+		t,
 		time.Now().Unix(),
 		id,
 		*conf.BaseConfInfo.BotName,
-		t,
 	)
 	return err
 }

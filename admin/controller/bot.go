@@ -619,14 +619,25 @@ func GetBotCommand(w http.ResponseWriter, r *http.Request) {
 		utils.Failure(ctx, w, r, param.CodeServerFail, param.MsgServerFail, err)
 		return
 	}
-	
 	defer resp.Body.Close()
-	_, err = io.Copy(w, resp.Body)
+	
+	realRsp := new(utils.Response)
+	err = json.NewDecoder(resp.Body).Decode(realRsp)
 	if err != nil {
-		logger.ErrorCtx(ctx, "copy response body error", "err", err)
+		logger.ErrorCtx(ctx, "get bot conf error", "err", err)
 		utils.Failure(ctx, w, r, param.CodeServerFail, param.MsgServerFail, err)
 		return
 	}
+	id := utils.ParseInt(r.URL.Query().Get("id"))
+	err = db.UpdateBotCommand(id, realRsp.Data.(string))
+	if err != nil {
+		logger.ErrorCtx(ctx, "get bot conf error", "err", err)
+		utils.Failure(ctx, w, r, param.CodeServerFail, param.MsgServerFail, err)
+		return
+	}
+	
+	utils.Success(ctx, w, r, realRsp.Data)
+	
 }
 
 func GetBotMCPConf(w http.ResponseWriter, r *http.Request) {
