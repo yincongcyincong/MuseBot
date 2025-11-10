@@ -60,6 +60,11 @@ func main() {
 	mux.HandleFunc("/bot/rag/delete", controller.RequireLogin(controller.DeleteRagFile))
 	mux.HandleFunc("/bot/rag/create", controller.RequireLogin(controller.CreateRagFile))
 	mux.HandleFunc("/bot/rag/get", controller.RequireLogin(controller.GetRagFile))
+	mux.HandleFunc("/bot/cron/list", controller.RequireLogin(controller.ListCrons))
+	mux.HandleFunc("/bot/cron/delete", controller.RequireLogin(controller.DeleteCron))
+	mux.HandleFunc("/bot/cron/create", controller.RequireLogin(controller.CreateCron))
+	mux.HandleFunc("/bot/cron/update/status", controller.RequireLogin(controller.UpdateCronStatus))
+	mux.HandleFunc("/bot/cron/update", controller.RequireLogin(controller.UpdateCron))
 	
 	mux.HandleFunc("/user/login", controller.UserLogin)
 	mux.HandleFunc("/user/me", controller.RequireLogin(controller.GetCurrentUserHandler))

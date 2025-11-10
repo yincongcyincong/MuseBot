@@ -889,7 +889,7 @@ func (r *RobotInfo) ExecCmd(cmd string, defaultFunc func(), modeFunc func(string
 	case param.Video, "/" + param.Video, "$" + param.Video:
 		r.Robot.sendVideo()
 	case param.Help, "/" + param.Help, "$" + param.Help:
-		r.sendHelpConfigurationOptions()
+		r.sendHelpInfo()
 	case param.ChangePhoto, "/" + param.ChangePhoto, "$" + param.ChangePhoto, param.RecPhoto, "/" + param.RecPhoto, "$" + param.RecPhoto,
 		param.SaveVoice, "/" + param.SaveVoice, "$" + param.SaveVoice:
 		if r.TencentRobot != nil {
@@ -1666,9 +1666,13 @@ func (r *RobotInfo) InsertRecord() {
 	r.cs.RecordID = id
 }
 
-func (r *RobotInfo) sendHelpConfigurationOptions() {
+func (r *RobotInfo) sendHelpInfo() {
 	chatId, msgId, _ := r.GetChatIdAndMsgIdAndUserID()
-	r.SendMsg(chatId, i18n.GetMessage("help_text", nil),
+	helpTxt := i18n.GetMessage("help_text", nil)
+	if _, ok := r.Robot.(*TelegramRobot); !ok {
+		helpTxt = strings.ReplaceAll(helpTxt, "\\_", "_")
+	}
+	r.SendMsg(chatId, helpTxt,
 		msgId, tgbotapi.ModeMarkdown, nil)
 }
 

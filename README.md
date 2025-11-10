@@ -107,7 +107,8 @@ Use docker
 
    ```sh
      docker pull jackyin0822/musebot:latest
-     docker run -d -v /home/user/data:/app/data -e TELEGRAM_BOT_TOKEN="telegram-bot-token" -e DEEPSEEK_TOKEN="deepseek-auth-token" --name my-telegram-bot  jackyin0822/MuseBot:latest
+     chmod 777 /home/user/data
+     docker run -d -v /home/user/data:/app/data -e TELEGRAM_BOT_TOKEN="telegram-bot-token" -e DEEPSEEK_TOKEN="deepseek-auth-token" --name my-bot  jackyin0822/MuseBot:latest
    ```
 
    ```sh

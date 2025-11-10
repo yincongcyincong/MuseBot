@@ -17,6 +17,12 @@ import (
 	"github.com/yincongcyincong/MuseBot/metrics"
 )
 
+var (
+	FilterPath = map[string]bool{
+		"/pong": true,
+	}
+)
+
 type HTTPServer struct {
 	Addr string
 }
@@ -159,7 +165,9 @@ func WithRequestContext(next http.Handler) http.Handler {
 		
 		r = r.WithContext(ctx)
 		
-		logger.InfoCtx(ctx, "request start", "path", r.URL.Path)
+		if !FilterPath[r.URL.Path] {
+			logger.InfoCtx(ctx, "request start", "path", r.URL.Path)
+		}
 		
 		next.ServeHTTP(w, r)
 		

@@ -3,6 +3,7 @@ package cron
 import (
 	"encoding/json"
 	"strings"
+	"time"
 	
 	"github.com/ArtisanCloud/PowerWeChat/v3/src/kernel/models"
 	serverModel "github.com/ArtisanCloud/PowerWeChat/v3/src/work/server/handlers/models"
@@ -24,6 +25,7 @@ var (
 )
 
 func InitCron() {
+	time.Sleep(10 * time.Second)
 	cronJobs, err := db.GetCronsByPage(1, 10000, "")
 	if err != nil {
 		logger.Error("get crons error", "err", err)
@@ -142,8 +144,27 @@ func ExecLark(c *db.Cron) {
 }
 
 func ExecPersonalQQ(c *db.Cron) {
-	
 	for _, targetId := range strings.Split(c.TargetID, ",") {
+		t := &robot.PersonalQQRobot{
+			Msg: &robot.QQMessage{
+				GroupId:     int64(utils.ParseInt(targetId)),
+				MessageType: "group",
+				UserID:      int64(utils.ParseInt(targetId)),
+				Message: []robot.MessageItem{
+					{
+						Type: "text",
+						Data: robot.MessageItemData{
+							Text: c.Command + " " + c.Prompt,
+						},
+					},
+				},
+			},
+		}
+		t.Robot = robot.NewRobot(robot.WithRobot(t), robot.WithSkipCheck(true))
+		t.Robot.Exec()
+	}
+	
+	for _, targetId := range strings.Split(c.GroupID, ",") {
 		t := &robot.PersonalQQRobot{
 			Msg: &robot.QQMessage{
 				MessageType: "private",
@@ -164,7 +185,6 @@ func ExecPersonalQQ(c *db.Cron) {
 	
 }
 
-// fail
 func ExecSlack(c *db.Cron) {
 	if robot.SlackClient == nil {
 		logger.Error("slack client is nil")
@@ -233,6 +253,25 @@ func ExecComWechat(c *db.Cron) {
 }
 
 func ExecTelegram(c *db.Cron) {
+	for _, targetId := range strings.Split(c.TargetID, ",") {
+		t := &robot.TelegramRobot{
+			Bot: robot.TelegramBot,
+			Update: tgbotapi.Update{
+				Message: &tgbotapi.Message{
+					From: &tgbotapi.User{
+						ID: int64(utils.ParseInt(targetId)),
+					},
+					Chat: &tgbotapi.Chat{
+						ID: int64(utils.ParseInt(targetId)),
+					},
+					Text: c.Command + " " + c.Prompt,
+				},
+			},
+		}
+		t.Robot = robot.NewRobot(robot.WithRobot(t), robot.WithSkipCheck(true))
+		t.Robot.Exec()
+	}
+	
 	for _, targetId := range strings.Split(c.TargetID, ",") {
 		t := &robot.TelegramRobot{
 			Bot: robot.TelegramBot,
