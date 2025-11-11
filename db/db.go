@@ -74,7 +74,7 @@ var (
 			is_deleted INTEGER NOT NULL DEFAULT '0',
 			from_bot VARCHAR(255) NOT NULL DEFAULT '',
 		    type VARCHAR(255) NOT NULL DEFAULT '',
-		    create_by VARCHAR(255) NOT NULL DEFAULT '',
+		    create_by VARCHAR(255) NOT NULL DEFAULT ''
 		);
 	`,
 	}
