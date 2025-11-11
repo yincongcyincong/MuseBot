@@ -143,8 +143,7 @@ func (r *RobotInfo) Exec() {
 		return
 	}
 	
-	if r.AddUserInfo() && r.Robot.checkValid() {
-		r.smartMode()
+	if r.AddUserInfo() && r.Robot.checkValid() && r.smartMode() {
 		r.Robot.requestLLM(r.Robot.getMsgContent())
 	}
 }
@@ -1680,9 +1679,9 @@ type SmartModeResult struct {
 	Command string `json:"command"`
 }
 
-func (r *RobotInfo) smartMode() {
+func (r *RobotInfo) smartMode() bool {
 	if r.Robot.getCommand() != "" || r.Robot.getPrompt() == "" || !*conf.BaseConfInfo.SmartMode {
-		return
+		return true
 	}
 	
 	chatId, msgId, userId := r.GetChatIdAndMsgIdAndUserID()
@@ -1701,7 +1700,7 @@ func (r *RobotInfo) smartMode() {
 	content, err := llmClient.LLMClient.SyncSend(r.Ctx, llmClient)
 	if err != nil {
 		logger.ErrorCtx(r.Ctx, "get content fail", "err", err)
-		return
+		return true
 	}
 	
 	matches := smartModeReg.FindAllString(content, -1)
@@ -1718,6 +1717,7 @@ func (r *RobotInfo) smartMode() {
 		r.Robot.setCommand(smartResult.Command)
 	}
 	r.cs.Token = llmClient.Cs.Token
+	return true
 }
 
 func (r *RobotInfo) saveRecord(content, imageContent []byte, recordType, totalToken int) {
