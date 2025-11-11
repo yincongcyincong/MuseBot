@@ -103,6 +103,11 @@ i18n
                     cron_spec: "Cron Spec",
                     target_id: "Target ID",
                     group_id: "Group ID",
+                    no_cron_tasks: "No Cron Tasks",
+                    create_cron_task: "Create Cron Task",
+                    edit_cron_task: "Edit Cron Task",
+                    fields_required: "Fields are required",
+                    request_error: "Request Error",
 
                     service_list: "Service List",
                     json_edit: "Json Edit",
@@ -206,11 +211,16 @@ i18n
                     cron_spec: "Cron 表达式",
                     target_id: "目标ID",
                     group_id: "群组ID",
+                    create_cron_task: "创建定时任务",
+                    edit_cron_task: "编辑定时任务",
+                    fields_required: "必填字段",
+                    request_error: "请求错误",
 
                     service_list: "服务列表",
                     json_edit: "json编辑",
                     service_name: "服务名称",
                     config_json: "配置json",
+                    no_cron_tasks: "没有定时任务",
 
                 }
             }

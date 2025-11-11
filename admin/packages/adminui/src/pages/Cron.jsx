@@ -1,13 +1,13 @@
-import React, { useEffect, useState } from "react";
+import React, {useEffect, useState} from "react";
 import Toast from "../components/Toast";
 import Modal from "../components/Modal";
 import BotSelector from "../components/BotSelector"; // 保留 BotSelector
 import ConfirmModal from "../components/ConfirmModal.jsx";
-import Editor from "@monaco-editor/react";
-import { useTranslation } from "react-i18next";
+import {useTranslation} from "react-i18next";
 import Pagination from "../components/Pagination.jsx";
 import InputField from "../components/InputField.jsx";
 import TextareaField from "../components/TextAreaField.jsx";
+import {useUser} from "../context/UserContext.jsx";
 
 // 对应后端的 db.Cron 结构体（简化版用于前端）
 const initialNewCronTask = {
@@ -18,6 +18,7 @@ const initialNewCronTask = {
     command: "",
     prompt: "",
     type: "",
+    create_by: "",
 };
 
 function Cron() {
@@ -29,6 +30,8 @@ function Cron() {
     // 用于新增或编辑任务的表单数据
     const [editingTask, setEditingTask] = useState(initialNewCronTask);
 
+    const {user} = useUser();
+
     // 分页状态 (从原代码推断需要分页)
     const [page, setPage] = useState(1);
     const [pageSize] = useState(10);
@@ -37,12 +40,12 @@ function Cron() {
 
     const [CRONToDelete, setCRONToDelete] = useState(null);
     const [confirmVisible, setConfirmVisible] = useState(false);
-    const [toast, setToast] = useState({ show: false, message: "", type: "error" });
+    const [toast, setToast] = useState({show: false, message: "", type: "error"});
 
-    const { t } = useTranslation();
+    const {t} = useTranslation();
 
     const showToast = (message, type = "error") => {
-        setToast({ show: true, message, type });
+        setToast({show: true, message, type});
     };
 
     useEffect(() => {
@@ -72,10 +75,9 @@ function Cron() {
 
             if (data.code !== 0) return showToast(data.message || t("failed_to_fetch_tasks"));
 
-            data.data.list.forEach((task) => {
+            data.data?.list?.forEach((task) => {
                 task.cron_spec = task.cron
             });
-            console.log(data.data.list);
 
             setCronTasks(data.data.list || []);
             setTotal(data.data.total || 0);
@@ -92,21 +94,23 @@ function Cron() {
 
     // 处理提交新增任务
     const handleSubmitNewCron = async () => {
-        if (!editingTask.cron_name || !editingTask.cron_spec || !editingTask.target_id) {
+        if (!editingTask.cron_name || !editingTask.cron_spec) {
             return showToast(t("fields_required"));
         }
 
         try {
+            let negative_user_id = user.user_id * -1;
+            editingTask.create_by = negative_user_id.toString();
             const res = await fetch(`/bot/cron/create?id=${botId}`, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: {"Content-Type": "application/json"},
                 body: JSON.stringify(editingTask),
             });
 
             const data = await res.json();
-            if (data.code !== 0) return showToast(data.message || t("failed_to_add_cron"));
+            if (data.code !== 0) return showToast(data.message || "failed to add cron");
 
-            showToast(t("cron_added"), "success");
+            showToast("success", "success");
             setShowCreateModal(false);
             await fetchCronTasks();
         } catch (err) {
@@ -131,21 +135,21 @@ function Cron() {
 
     // 处理更新任务
     const handleUpdateCron = async () => {
-        if (!editingTask.id || !editingTask.cron_name || !editingTask.cron_spec || !editingTask.target_id) {
+        if (!editingTask.id || !editingTask.cron_name || !editingTask.cron_spec) {
             return showToast(t("fields_required"));
         }
 
         try {
             const res = await fetch(`/bot/cron/update?id=${botId}`, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: {"Content-Type": "application/json"},
                 body: JSON.stringify(editingTask),
             });
 
             const data = await res.json();
             if (data.code !== 0) return showToast(data.message || t("failed_to_update_cron"));
 
-            showToast(t("cron_updated"), "success");
+            showToast("success", "success");
             setShowEditModal(false);
             await fetchCronTasks();
         } catch (err) {
@@ -159,8 +163,8 @@ function Cron() {
         try {
             const res = await fetch(`/bot/cron/update/status?id=${botId}`, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ id: id, status: newStatus }),
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({id: id, status: newStatus}),
             });
 
             const data = await res.json();
@@ -189,14 +193,14 @@ function Cron() {
     const confirmDelete = async () => {
         if (!CRONToDelete) return;
         try {
-            const res = await fetch(`/bot/cron/delete?id=${botId}&cron_id=${CRONToDelete}`, { method: "GET" });
+            const res = await fetch(`/bot/cron/delete?id=${botId}&cron_id=${CRONToDelete}`, {method: "GET"});
             const data = await res.json();
 
             if (data.code !== 0) {
                 showToast(data.message || t("failed_to_delete_cron"));
                 return;
             }
-            showToast(t("cron_deleted"), "success");
+            showToast("success", "success");
             setConfirmVisible(false);
             setCRONToDelete(null);
             await fetchCronTasks();
@@ -211,7 +215,8 @@ function Cron() {
 
     // 任务状态显示
     const renderStatus = (status) => {
-        return status === 1 ? <span className="text-green-600 font-semibold">{t("enable")}</span> : <span className="text-red-600">{t("disable")}</span>;
+        return status === 1 ? <span className="text-green-600 font-semibold">{t("enable")}</span> :
+            <span className="text-red-600">{t("disable")}</span>;
     };
 
     const totalPages = Math.ceil(total / pageSize);
@@ -223,14 +228,14 @@ function Cron() {
     };
 
     const handleEditFormChange = (e) => {
-        const { name, value } = e.target;
-        setEditingTask(prev => ({ ...prev, [name]: value }));
+        const {name, value} = e.target;
+        setEditingTask(prev => ({...prev, [name]: value}));
     };
 
     return (
         <div className="p-6 bg-gray-100 min-h-screen">
             {toast.show && (
-                <Toast message={toast.message} type={toast.type} onClose={() => setToast({ ...toast, show: false })} />
+                <Toast message={toast.message} type={toast.type} onClose={() => setToast({...toast, show: false})}/>
             )}
 
             <div className="flex justify-between items-center mb-6">
@@ -262,9 +267,8 @@ function Cron() {
                         type="text"
                         onChange={(e) => {
                             setSearchName(e.target.value);
-                            setPage(1); // 搜索时重置分页
+                            setPage(1);
                         }}
-                        placeholder={t("user_id_placeholder")}
                         className="w-full px-4 py-2 border border-gray-300 rounded shadow-sm focus:outline-none focus:ring focus:border-blue-400"
                     />
                 </div>
@@ -279,6 +283,7 @@ function Cron() {
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t("type")}</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t("cron_spec")}</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t("target_id")}</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t("group_id")}</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t("status")}</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t("action")}</th>
                     </tr>
@@ -288,32 +293,38 @@ function Cron() {
                         cronTasks.map((task) => (
                             <tr key={task.id} className="hover:bg-gray-50">
                                 <td className="px-6 py-4 text-sm text-gray-800">{task.id}</td>
-                                <td className="px-6 py-4 text-sm text-gray-800">{task.type}</td>
                                 <td className="px-6 py-4 text-sm text-gray-800">{task.cron_name}</td>
+                                <td className="px-6 py-4 text-sm text-gray-800">{task.type}</td>
                                 <td className="px-6 py-4 text-sm text-gray-800">{task.cron_spec}</td>
                                 <td className="px-6 py-4 text-sm text-gray-800">{task.target_id}</td>
+                                <td className="px-6 py-4 text-sm text-gray-800">{task.group_id}</td>
                                 <td className="px-6 py-4 text-sm text-gray-800">{renderStatus(task.status)}</td>
                                 <td className="px-6 py-4 text-sm space-x-3">
-                                    <button onClick={() => openEditModal(task)} className="text-blue-600 hover:underline">{t("edit")}</button>
+                                    <button onClick={() => openEditModal(task)}
+                                            className="text-blue-600 hover:underline">{t("edit")}</button>
                                     {task.status === 1 ? (
-                                        <button onClick={() => toggleDisableService(task.id, 1)} className="text-yellow-600 hover:underline">{t("disable")}</button>
+                                        <button onClick={() => toggleDisableService(task.id, 1)}
+                                                className="text-yellow-600 hover:underline">{t("disable")}</button>
                                     ) : (
-                                        <button onClick={() => toggleDisableService(task.id, 0)} className="text-green-600 hover:underline">{t("enable")}</button>
+                                        <button onClick={() => toggleDisableService(task.id, 0)}
+                                                className="text-green-600 hover:underline">{t("enable")}</button>
                                     )}
-                                    <button onClick={() => handleDeleteClick(task.id)} className="text-red-600 hover:underline">{t("delete")}</button>
+                                    <button onClick={() => handleDeleteClick(task.id)}
+                                            className="text-red-600 hover:underline">{t("delete")}</button>
                                 </td>
                             </tr>
                         ))
                     ) : (
                         <tr>
-                            <td colSpan="6" className="px-6 py-4 text-center text-sm text-gray-500">{t("no_cron_tasks")}</td>
+                            <td colSpan="6"
+                                className="px-6 py-4 text-center text-sm text-gray-500">{t("no_cron_tasks")}</td>
                         </tr>
                     )}
                     </tbody>
                 </table>
             </div>
 
-            <Pagination page={page} pageSize={pageSize} total={total} onPageChange={handlePageChange} />
+            <Pagination page={page} pageSize={pageSize} total={total} onPageChange={handlePageChange}/>
 
             {/* 编辑/新增任务模态框 (统一使用一个结构，通过 showEditModal/showCreateModal 控制显示) */}
             <Modal
@@ -325,22 +336,29 @@ function Cron() {
                 }}
             >
                 <div className="space-y-4">
-                    <InputField label={t("name")} name="cron_name" value={editingTask.cron_name} onChange={handleEditFormChange} placeholder="daily-report" readOnly={!showCreateModal} />
-                    <InputField label={t("type")} name="type" value={editingTask.type} onChange={handleEditFormChange} placeholder="telegram/wechat/personal_qq ..." />
-                    <InputField label={t("cron_spec")} name="cron_spec" value={editingTask.cron_spec} onChange={handleEditFormChange} placeholder="0 0 10 * * *" />
+                    <InputField label={t("name")} name="cron_name" value={editingTask.cron_name}
+                                onChange={handleEditFormChange} placeholder="daily-report"/>
+                    <InputField label={t("type")} name="type" value={editingTask.type} onChange={handleEditFormChange}
+                                placeholder="telegram/wechat/personal_qq ..."/>
+                    <InputField label={t("cron_spec")} name="cron_spec" value={editingTask.cron_spec}
+                                onChange={handleEditFormChange} placeholder="0 0 10 * * *"/>
 
                     <div className="flex space-x-4">
                         <div className="flex-1">
-                            <InputField label={t("target_id")} name="target_id" value={editingTask.target_id} onChange={handleEditFormChange} placeholder="QQ/WeChat User ID" />
+                            <InputField label={t("target_id")} name="target_id" value={editingTask.target_id}
+                                        onChange={handleEditFormChange} placeholder="QQ/WeChat User ID"/>
                         </div>
                         <div className="flex-1">
-                            <InputField label={t("group_id")} name="group_id" value={editingTask.group_id} onChange={handleEditFormChange} placeholder="QQ/WeChat Group ID (Optional)" />
+                            <InputField label={t("group_id")} name="group_id" value={editingTask.group_id}
+                                        onChange={handleEditFormChange} placeholder="QQ/WeChat Group ID (Optional)"/>
                         </div>
                     </div>
 
                     {/* Command 和 Prompt */}
-                    <InputField label={t("command")} name="command" value={editingTask.command} onChange={handleEditFormChange} placeholder="/photo (for bot command)" />
-                    <TextareaField label={t("prompt")} name="prompt" value={editingTask.prompt} onChange={handleEditFormChange} placeholder="Generate yesterday's sales report." />
+                    <InputField label={t("command")} name="command" value={editingTask.command}
+                                onChange={handleEditFormChange} placeholder="/photo (for bot command)"/>
+                    <TextareaField label={t("prompt")} name="prompt" value={editingTask.prompt}
+                                   onChange={handleEditFormChange} placeholder="Generate yesterday's sales report."/>
 
                     <div className="text-right pt-4">
                         <button
@@ -356,7 +374,7 @@ function Cron() {
 
             <ConfirmModal
                 visible={confirmVisible}
-                message={t("confirm_delete_cron")}
+                message={t("delete")}
                 onConfirm={confirmDelete}
                 onCancel={cancelDelete}
             />

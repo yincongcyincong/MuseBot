@@ -439,10 +439,7 @@ func (d *DingRobot) ReplyMessage(ctx context.Context, requestBody map[string]int
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "*/*")
 	
-	httpClient := &http.Client{
-		Transport: http.DefaultTransport,
-		Timeout:   5 * time.Second,
-	}
+	httpClient := utils.GetRobotProxyClient()
 	
 	resp, err := httpClient.Do(req)
 	if err != nil {

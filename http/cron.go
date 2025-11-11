@@ -11,9 +11,6 @@ import (
 	"github.com/yincongcyincong/MuseBot/utils"
 )
 
-// ... (省略原有导入和代码)
-
-// CronRequest 定义了创建和更新定时任务的请求体结构
 type CronRequest struct {
 	ID       int64  `json:"id"`
 	CronName string `json:"cron_name"`
@@ -23,6 +20,7 @@ type CronRequest struct {
 	Command  string `json:"command"`
 	Prompt   string `json:"prompt"`
 	Type     string `json:"type"`
+	CreateBy string `json:"create_by"`
 }
 
 func CreateCron(w http.ResponseWriter, r *http.Request) {
@@ -36,12 +34,13 @@ func CreateCron(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	// 简单参数校验
-	if req.CronName == "" || req.CronSpec == "" || req.TargetID == "" {
-		utils.Failure(ctx, w, r, param.CodeParamError, "CronName, CronSpec, and TargetID are required", nil)
+	if req.CronName == "" || req.CronSpec == "" {
+		utils.Failure(ctx, w, r, param.CodeParamError, "CronName and CronSpec are required", nil)
 		return
 	}
 	
-	id, err := db.InsertCron(req.CronName, req.CronSpec, req.TargetID, req.GroupID, req.Command, req.Prompt, req.Type)
+	id, err := db.InsertCron(req.CronName, req.CronSpec, req.TargetID, req.GroupID, req.Command,
+		req.Prompt, req.Type, req.CreateBy)
 	if err != nil {
 		logger.ErrorCtx(ctx, "insert cron error", "err", err)
 		utils.Failure(ctx, w, r, param.CodeDBWriteFail, param.MsgDBWriteFail, err)
@@ -55,7 +54,8 @@ func CreateCron(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	if cronInfo.CronSpec != "" && cronInfo.Status == 1 && cronInfo.Type != "" && cronInfo.TargetID != "" && cronInfo.Prompt != "" {
+	if cronInfo.CronSpec != "" && cronInfo.Status == 1 && cronInfo.Type != "" &&
+		cronInfo.TargetID != "" && cronInfo.Prompt != "" && cron.Cron != nil {
 		err = AddCron(cronInfo)
 		if err != nil {
 			logger.ErrorCtx(ctx, "add cron error", "err", err)
@@ -97,7 +97,7 @@ func UpdateCron(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	if cronInfo.CronSpec != "" && cronInfo.Status == 1 && cronInfo.Type != "" && cronInfo.TargetID != "" && cronInfo.Prompt != "" {
+	if cronInfo.CronSpec != "" && cronInfo.Status == 1 && cronInfo.Type != "" && cronInfo.Prompt != "" && cron.Cron != nil {
 		cron.Cron.Remove(cronC.EntryID(cronInfo.CronJobId))
 		err = AddCron(cronInfo)
 		if err != nil {
@@ -151,7 +151,7 @@ func UpdateCronStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	if cronInfo.CronSpec != "" && cronInfo.Status == 1 && cronInfo.Type != "" && cronInfo.TargetID != "" && cronInfo.Prompt != "" {
+	if cronInfo.CronSpec != "" && cronInfo.Type != "" && cronInfo.Prompt != "" && cron.Cron != nil {
 		if req.Status == 0 {
 			cron.Cron.Remove(cronC.EntryID(cronInfo.CronJobId))
 		} else {
@@ -196,7 +196,7 @@ func DeleteCron(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	if cronInfo.CronSpec != "" && cronInfo.Status == 1 && cronInfo.Type != "" && cronInfo.TargetID != "" && cronInfo.Prompt != "" {
+	if cronInfo.CronSpec != "" && cronInfo.Status == 1 && cronInfo.Type != "" && cronInfo.Prompt != "" && cron.Cron != nil {
 		cron.Cron.Remove(cronC.EntryID(cronInfo.CronJobId))
 	}
 	

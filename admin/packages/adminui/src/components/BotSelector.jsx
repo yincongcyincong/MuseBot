@@ -1,6 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
+// 定义用于 localStorage 存储 botId 的键
+const CACHE_BOT_ID_KEY = "lastSelectedBotId";
+
 function BotSelector({ value, onChange }) {
     const [bots, setBots] = useState([]);
     const [filteredBots, setFilteredBots] = useState([]);
@@ -44,24 +47,66 @@ function BotSelector({ value, onChange }) {
         try {
             const res = await fetch("/bot/online");
             const data = await res.json();
+
             if (data.data && data.data.length > 0) {
-                setBots(data.data);
-                setFilteredBots(data.data);
-                const defaultBot = data.data[0];
+                const fetchedBots = data.data;
+                setBots(fetchedBots);
+                setFilteredBots(fetchedBots);
+
+                // --- ⭐️ 核心修改逻辑：优先 value，value 为空时才走缓存 ---
+                let defaultBot = null;
+
+                // 1. 优先使用传入的 value prop (如果 value 是 bot object 且存在于列表中)
+                if (value && value.id) {
+                    const botFromValue = fetchedBots.find(bot => bot.id === value.id);
+                    if (botFromValue) {
+                        defaultBot = botFromValue;
+                    }
+                }
+
+                // 2. 只有当 value 为空或无效时，才检查缓存
+                if (!defaultBot) {
+                    const cachedBotId = localStorage.getItem(CACHE_BOT_ID_KEY);
+                    if (cachedBotId) {
+                        const botFromCache = fetchedBots.find(bot => String(bot.id) === cachedBotId);
+                        if (botFromCache) {
+                            defaultBot = botFromCache; // 缓存命中
+                        } else {
+                            // 缓存失效或 bot 已下线，清理缓存
+                            localStorage.removeItem(CACHE_BOT_ID_KEY);
+                        }
+                    }
+                }
+
+                // 3. 最后的 fallback：列表中的第一个 bot
+                if (!defaultBot) {
+                    defaultBot = fetchedBots[0];
+                }
+                // --- ⭐️ 结束核心修改逻辑 ---
+
                 setSelectedBot(defaultBot);
-                setSearchText(""); // 👈 不把默认值当作搜索条件
-                onChange(defaultBot);
+                setSearchText("");
+                onChange(defaultBot); // 触发父组件的 onChange
+            } else {
+                // 如果没有获取到 bot 列表，清除缓存
+                localStorage.removeItem(CACHE_BOT_ID_KEY);
             }
         } catch (err) {
             console.error("Failed to fetch bots:", err);
+            // 失败时也清除缓存
+            localStorage.removeItem(CACHE_BOT_ID_KEY);
         }
     };
 
     const handleSelectBot = (bot) => {
+        // --- 存储 botId 到缓存 (保持) ---
+        localStorage.setItem(CACHE_BOT_ID_KEY, String(bot.id));
+        // --- 结束存储 ---
+
         setSelectedBot(bot);
-        setSearchText(""); // 👈 选中后清空搜索
+        setSearchText("");
         setDropdownOpen(false);
-        onChange(bot);
+        onChange(bot); // 触发父组件的 onChange
     };
 
     return (
@@ -69,6 +114,7 @@ function BotSelector({ value, onChange }) {
             <label className="block font-medium text-gray-700 mb-1">{t("bot_choose")}:</label>
             <input
                 type="text"
+                // 使用 selectedBot 来显示当前值
                 value={searchText || (selectedBot?.name || selectedBot?.address || "")}
                 onChange={(e) => {
                     setSearchText(e.target.value);

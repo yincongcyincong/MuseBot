@@ -73,7 +73,8 @@ var (
 			update_time INTEGER NOT NULL DEFAULT '0',
 			is_deleted INTEGER NOT NULL DEFAULT '0',
 			from_bot VARCHAR(255) NOT NULL DEFAULT '',
-		    type VARCHAR(255) NOT NULL DEFAULT ''
+		    type VARCHAR(255) NOT NULL DEFAULT '',
+		    create_by VARCHAR(255) NOT NULL DEFAULT '',
 		);
 	`,
 	}
@@ -143,7 +144,8 @@ var (
           update_time INT(10) NOT NULL DEFAULT 0,
           is_deleted INT(10) NOT NULL DEFAULT 0,
           from_bot VARCHAR(255) NOT NULL DEFAULT '',
-          type VARCHAR(255) NOT NULL DEFAULT ''
+          type VARCHAR(255) NOT NULL DEFAULT '',
+    	  create_by VARCHAR(255) NOT NULL DEFAULT ''
        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 	`,
 	}

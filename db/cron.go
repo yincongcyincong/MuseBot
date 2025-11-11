@@ -23,14 +23,15 @@ type Cron struct {
 	FromBot    string `json:"from_bot"`
 	Status     int    `json:"status"`      // 0:disable 1:enable
 	CronJobId  int64  `json:"cron_job_id"` // 定时任务在调度器中的 ID
+	CreateBy   string `json:"create_by"`
 }
 
 // --- ➕ 增加 (Create/Insert) ---
 
 // InsertCron 插入一条新的定时任务记录，默认状态为 1 (启用)，CronJobId 为 0
-func InsertCron(cronName, cronSpec, targetID, groupID, command, prompt, t string) (int64, error) {
+func InsertCron(cronName, cronSpec, targetID, groupID, command, prompt, t, createBy string) (int64, error) {
 	insertSQL := `INSERT INTO cron (cron_name, cron, target_id, group_id, command, prompt, create_time, update_time, is_deleted, from_bot, status,
-                  cron_job_id, type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+                  cron_job_id, type, create_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 	
 	now := time.Now().Unix()
 	result, err := DB.Exec(insertSQL,
@@ -47,6 +48,7 @@ func InsertCron(cronName, cronSpec, targetID, groupID, command, prompt, t string
 		1, // 默认 status 为 1 (启用)
 		0, // 默认 cron_job_id 为 0
 		t,
+		createBy,
 	)
 	if err != nil {
 		return 0, fmt.Errorf("insert cron error: %w", err)
@@ -60,14 +62,15 @@ func InsertCron(cronName, cronSpec, targetID, groupID, command, prompt, t string
 	return id, nil
 }
 
-const cronSelectFields = "id, cron_name, type, cron, target_id, group_id, command, prompt, create_time, update_time, is_deleted, from_bot, status, cron_job_id"
+const cronSelectFields = "id, cron_name, type, cron, target_id, group_id, command, prompt, create_time, update_time, is_deleted, from_bot, status, cron_job_id, create_by"
 
 func GetCronByID(id int64) (*Cron, error) {
 	querySQL := fmt.Sprintf("SELECT %s FROM cron WHERE id = ? and is_deleted = 0 and from_bot = ?", cronSelectFields)
 	
 	var c Cron
 	err := DB.QueryRow(querySQL, id, *conf.BaseConfInfo.BotName).Scan(
-		&c.ID, &c.CronName, &c.Type, &c.CronSpec, &c.TargetID, &c.GroupID, &c.Command, &c.Prompt, &c.CreateTime, &c.UpdateTime, &c.IsDeleted, &c.FromBot, &c.Status, &c.CronJobId,
+		&c.ID, &c.CronName, &c.Type, &c.CronSpec, &c.TargetID, &c.GroupID, &c.Command, &c.Prompt,
+		&c.CreateTime, &c.UpdateTime, &c.IsDeleted, &c.FromBot, &c.Status, &c.CronJobId, &c.CreateBy,
 	)
 	
 	if err != nil {
@@ -90,7 +93,8 @@ func GetActiveCrons() ([]*Cron, error) {
 	for rows.Next() {
 		var c Cron
 		if err := rows.Scan(
-			&c.ID, &c.CronName, &c.Type, &c.CronSpec, &c.TargetID, &c.GroupID, &c.Command, &c.Prompt, &c.CreateTime, &c.UpdateTime, &c.IsDeleted, &c.FromBot, &c.Status, &c.CronJobId,
+			&c.ID, &c.CronName, &c.Type, &c.CronSpec, &c.TargetID, &c.GroupID, &c.Command,
+			&c.Prompt, &c.CreateTime, &c.UpdateTime, &c.IsDeleted, &c.FromBot, &c.Status, &c.CronJobId, &c.CreateBy,
 		); err != nil {
 			return nil, fmt.Errorf("scan cron row error: %w", err)
 		}
@@ -143,7 +147,8 @@ func GetCronsByPage(page, pageSize int, name string) ([]Cron, error) {
 	for rows.Next() {
 		var c Cron
 		if err := rows.Scan(
-			&c.ID, &c.CronName, &c.Type, &c.CronSpec, &c.TargetID, &c.GroupID, &c.Command, &c.Prompt, &c.CreateTime, &c.UpdateTime, &c.IsDeleted, &c.FromBot, &c.Status, &c.CronJobId,
+			&c.ID, &c.CronName, &c.Type, &c.CronSpec, &c.TargetID, &c.GroupID, &c.Command, &c.Prompt,
+			&c.CreateTime, &c.UpdateTime, &c.IsDeleted, &c.FromBot, &c.Status, &c.CronJobId, &c.CreateBy,
 		); err != nil {
 			return nil, fmt.Errorf("scan cron row error: %w", err)
 		}

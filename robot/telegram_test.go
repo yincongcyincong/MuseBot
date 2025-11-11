@@ -5,6 +5,7 @@ import (
 	"testing"
 	
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/yincongcyincong/MuseBot/conf"
 )
 
 func makeFakeUpdateWithText(text string, botUserName string, chatType string) tgbotapi.Update {
@@ -24,7 +25,7 @@ func makeFakeUpdateWithText(text string, botUserName string, chatType string) tg
 
 func TestSkipThisMsg(t *testing.T) {
 	fakeBotUserName := "TestBot"
-	
+	*conf.BaseConfInfo.BotName = "TestBot"
 	updatePrivate := makeFakeUpdateWithText("hello", fakeBotUserName, "private")
 	tel := NewTelegramRobot(updatePrivate, &tgbotapi.BotAPI{
 		Self: tgbotapi.User{UserName: fakeBotUserName},
