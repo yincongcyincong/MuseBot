@@ -138,6 +138,10 @@ func (q *PersonalQQRobot) checkValid() bool {
 		return false
 	}
 	
+	if q.Robot.cs.SkipCheck {
+		return true
+	}
+	
 	if !atBot && q.Msg.MessageType == "group" {
 		return false
 	}

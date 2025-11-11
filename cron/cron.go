@@ -12,7 +12,6 @@ import (
 	"github.com/open-dingtalk/dingtalk-stream-sdk-go/chatbot"
 	"github.com/robfig/cron/v3"
 	"github.com/slack-go/slack/slackevents"
-	"github.com/tencent-connect/botgo/dto"
 	"github.com/yincongcyincong/MuseBot/db"
 	"github.com/yincongcyincong/MuseBot/logger"
 	"github.com/yincongcyincong/MuseBot/param"
@@ -21,7 +20,7 @@ import (
 )
 
 var (
-	Cron = cron.New(cron.WithSeconds())
+	Cron *cron.Cron
 )
 
 func InitCron() {
@@ -32,8 +31,9 @@ func InitCron() {
 		return
 	}
 	
+	Cron = cron.New(cron.WithSeconds())
 	for _, c := range cronJobs {
-		if c.CronSpec != "" && c.Status == 1 && c.Type != "" && c.TargetID != "" && c.Prompt != "" {
+		if c.CronSpec != "" && c.Status == 1 && c.Type != "" && c.Prompt != "" {
 			cronID, err := Cron.AddFunc(c.CronSpec, func() {
 				Exec(&c)
 			})
@@ -62,14 +62,14 @@ func Exec(c *db.Cron) {
 		ExecTelegram(c)
 	case param.ComWechat:
 		ExecComWechat(c)
-	case param.Ding:
-		ExecDing(c)
 	case param.Lark:
 		ExecLark(c)
 	case param.PersonalQQ:
 		ExecPersonalQQ(c)
 	case param.Slack:
 		ExecSlack(c)
+	case param.Ding:
+		ExecDing(c)
 	}
 }
 
@@ -82,26 +82,12 @@ func ExecDing(c *db.Cron) {
 	for _, targetId := range strings.Split(c.TargetID, ",") {
 		t := &robot.DingRobot{
 			Message: &chatbot.BotCallbackDataModel{
-				SenderId: targetId,
+				SenderId: c.CreateBy,
 				Text: chatbot.BotCallbackDataTextModel{
-					Content: c.Prompt,
+					Content: c.Command + " " + c.Prompt,
 				},
-				Msgtype: "text",
-			},
-			Client: robot.DingBotClient,
-		}
-		t.Robot = robot.NewRobot(robot.WithRobot(t), robot.WithSkipCheck(true))
-		t.Robot.Exec()
-	}
-	
-	for _, targetId := range strings.Split(c.GroupID, ",") {
-		t := &robot.DingRobot{
-			Message: &chatbot.BotCallbackDataModel{
-				SenderId: targetId,
-				Text: chatbot.BotCallbackDataTextModel{
-					Content: c.Prompt,
-				},
-				Msgtype: "text",
+				Msgtype:        "text",
+				SessionWebhook: targetId,
 			},
 			Client: robot.DingBotClient,
 		}
@@ -118,6 +104,10 @@ func ExecLark(c *db.Cron) {
 	}
 	
 	for _, targetId := range strings.Split(c.TargetID, ",") {
+		targetId = strings.TrimSpace(targetId)
+		if targetId == "" {
+			continue
+		}
 		contentStr := robot.MessageText{
 			Text: c.Command + " " + c.Prompt,
 		}
@@ -133,7 +123,7 @@ func ExecLark(c *db.Cron) {
 						ChatId:      &targetId,
 					},
 					Sender: &larkim.EventSender{
-						SenderId: &larkim.UserId{UserId: &targetId},
+						SenderId: &larkim.UserId{UserId: &c.CreateBy},
 					},
 				},
 			},
@@ -147,11 +137,15 @@ func ExecLark(c *db.Cron) {
 
 func ExecPersonalQQ(c *db.Cron) {
 	for _, groupId := range strings.Split(c.GroupID, ",") {
+		groupId = strings.TrimSpace(groupId)
+		if groupId == "" {
+			continue
+		}
 		t := &robot.PersonalQQRobot{
 			Msg: &robot.QQMessage{
 				GroupId:     int64(utils.ParseInt(groupId)),
 				MessageType: "group",
-				UserID:      int64(utils.ParseInt(groupId)),
+				UserID:      int64(utils.ParseInt(c.CreateBy)),
 				Message: []robot.MessageItem{
 					{
 						Type: "text",
@@ -167,6 +161,10 @@ func ExecPersonalQQ(c *db.Cron) {
 	}
 	
 	for _, targetId := range strings.Split(c.TargetID, ",") {
+		targetId = strings.TrimSpace(targetId)
+		if targetId == "" {
+			continue
+		}
 		t := &robot.PersonalQQRobot{
 			Msg: &robot.QQMessage{
 				MessageType: "private",
@@ -194,36 +192,17 @@ func ExecSlack(c *db.Cron) {
 	}
 	
 	for _, targetId := range strings.Split(c.TargetID, ",") {
+		targetId = strings.TrimSpace(targetId)
+		if targetId == "" {
+			continue
+		}
 		t := &robot.SlackRobot{
 			Event: &slackevents.MessageEvent{
-				User:    targetId,
+				User:    c.CreateBy,
 				Channel: targetId,
 				Text:    c.Command + " " + c.Prompt,
 			},
 			Client: robot.SlackClient,
-		}
-		t.Robot = robot.NewRobot(robot.WithRobot(t), robot.WithSkipCheck(true))
-		t.Robot.Exec()
-	}
-	
-}
-
-// fail
-func ExecQQ(c *db.Cron) {
-	if robot.QQApi == nil {
-		logger.Warn("qq api is nil")
-		return
-	}
-	
-	for _, targetId := range strings.Split(c.TargetID, ",") {
-		t := &robot.QQRobot{
-			RobotInfo: robot.QQRobotInfo,
-			C2CMessage: &dto.WSC2CMessageData{
-				Author: &dto.User{
-					ID: targetId,
-				},
-				Content: c.Command + " " + c.Prompt,
-			},
 		}
 		t.Robot = robot.NewRobot(robot.WithRobot(t), robot.WithSkipCheck(true))
 		t.Robot.Exec()
@@ -238,6 +217,10 @@ func ExecComWechat(c *db.Cron) {
 	}
 	
 	for _, targetId := range strings.Split(c.TargetID, ",") {
+		targetId = strings.TrimSpace(targetId)
+		if targetId == "" {
+			continue
+		}
 		t := &robot.ComWechatRobot{
 			Event: models.CallbackMessageHeader{
 				FromUserName: targetId,
@@ -256,6 +239,10 @@ func ExecComWechat(c *db.Cron) {
 
 func ExecTelegram(c *db.Cron) {
 	for _, targetId := range strings.Split(c.TargetID, ",") {
+		targetId = strings.TrimSpace(targetId)
+		if targetId == "" {
+			continue
+		}
 		t := &robot.TelegramRobot{
 			Bot: robot.TelegramBot,
 			Update: tgbotapi.Update{
@@ -274,16 +261,20 @@ func ExecTelegram(c *db.Cron) {
 		t.Robot.Exec()
 	}
 	
-	for _, targetId := range strings.Split(c.TargetID, ",") {
+	for _, groupId := range strings.Split(c.GroupID, ",") {
+		groupId = strings.TrimSpace(groupId)
+		if groupId == "" {
+			continue
+		}
 		t := &robot.TelegramRobot{
 			Bot: robot.TelegramBot,
 			Update: tgbotapi.Update{
 				Message: &tgbotapi.Message{
 					From: &tgbotapi.User{
-						ID: int64(utils.ParseInt(targetId)),
+						ID: int64(utils.ParseInt(c.CreateBy)),
 					},
 					Chat: &tgbotapi.Chat{
-						ID: int64(utils.ParseInt(targetId)),
+						ID: int64(utils.ParseInt(groupId)),
 					},
 					Text: c.Command + " " + c.Prompt,
 				},
@@ -302,6 +293,10 @@ func ExecWechat(c *db.Cron) {
 	}
 	
 	for _, targetId := range strings.Split(c.TargetID, ",") {
+		targetId = strings.TrimSpace(targetId)
+		if targetId == "" {
+			continue
+		}
 		w := &robot.WechatRobot{
 			Event: models.CallbackMessageHeader{
 				FromUserName: targetId,

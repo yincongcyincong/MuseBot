@@ -342,15 +342,10 @@ func (q *QQRobot) sendChatMessage() {
 
 func (q *QQRobot) executeChain() {
 	var msgChan *MsgChan
-	if q.C2CMessage != nil {
-		msgChan = &MsgChan{
-			StrMessageChan: make(chan string),
-		}
-	} else {
-		msgChan = &MsgChan{
-			NormalMessageChan: make(chan *param.MsgInfo),
-		}
+	msgChan = &MsgChan{
+		NormalMessageChan: make(chan *param.MsgInfo),
 	}
+	
 	go q.Robot.ExecChain(q.Prompt, msgChan)
 	
 	// send response message
@@ -359,14 +354,8 @@ func (q *QQRobot) executeChain() {
 
 func (q *QQRobot) executeLLM() {
 	var msgChan *MsgChan
-	if q.C2CMessage != nil && *conf.AudioConfInfo.TTSType == "" {
-		msgChan = &MsgChan{
-			StrMessageChan: make(chan string),
-		}
-	} else {
-		msgChan = &MsgChan{
-			NormalMessageChan: make(chan *param.MsgInfo),
-		}
+	msgChan = &MsgChan{
+		NormalMessageChan: make(chan *param.MsgInfo),
 	}
 	
 	go q.Robot.HandleUpdate(msgChan, "silk")
