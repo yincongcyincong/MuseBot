@@ -3,6 +3,7 @@
 This document details the key identifiers and support status required for configuring scheduled tasks to actively push messages across different messaging platforms.
 
 ## 🚀 Platforms Supporting Active Push and Configuration Methods
+![image](https://github.com/user-attachments/assets/0bb26106-51ea-4f91-aacc-eddd3f16ec99)    
 
 The following platforms support actively pushing messages via scheduled tasks, with the required configuration identifiers listed:
 
