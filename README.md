@@ -164,7 +164,7 @@ If you use parameter. Please use lower letter and underscore. for example: ./Mus
 | **VOLC_SK**                     | Volcano Engine multimedia secret key [doc](https://www.volcengine.com/docs/6444/1340578)     | -                                                      |
 | **ERNIE_AK**                    | Baidu ERNIE large model AK [doc](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Sly8bm96d)     | -                                                      |
 | **ERNIE_SK**                    | Baidu ERNIE large model SK [doc](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Sly8bm96d)     | -                                                      |
-| **CUSTOM_URL**                  | Custom DeepSeek API endpoint                                                                 | [https://api.deepseek.com/](https://api.deepseek.com/) |
+| **CUSTOM_URL**                  | Custom LLM API endpoint                                                                      | [https://api.deepseek.com/](https://api.deepseek.com/) |
 | **TYPE**                        | LLM type (deepseek/openai/gemini/openrouter/vol/302-ai/chatanywhere)                         | deepseek                                               |
 | **MEDIA_TYPE**                  | Media generation source (openai/gemini/vol/openrouter/aliyun/302-ai)                         | vol                                                    |
 | **DB_TYPE**                     | Database type (sqlite3/mysql)                                                                | sqlite3                                                |
@@ -172,7 +172,7 @@ If you use parameter. Please use lower letter and underscore. for example: ./Mus
 | **LLM_PROXY**                   | LLM network proxy (e.g. [http://127.0.0.1:7890](http://127.0.0.1:7890))                      | -                                                      |
 | **ROBOT_PROXY**                 | Bot network proxy (e.g. [http://127.0.0.1:7890](http://127.0.0.1:7890))                      | -                                                      |
 | **LANG**                        | Language (en/zh)                                                                             | en                                                     |
-| **TOKEN_PER_USER**              | Max tokens allowed per user                                                                  | 10000                                                  |
+| **TOKEN_PER_USER**              | Max tokens allowed per user, 0 means no limit                                                | 10000                                                  |
 | **MAX_USER_CHAT**               | Maximum concurrent chats per user                                                            | 2                                                      |
 | **HTTP_HOST**                   | MuseBot HTTP server port                                                                     | :36060                                                 |
 | **USE_TOOLS**                   | Enable function-calling tools (true/false)                                                   | false                                                  |
@@ -190,12 +190,7 @@ If you use parameter. Please use lower letter and underscore. for example: ./Mus
 
 ### CUSTOM_URL
 
-If you are using a self-deployed DeepSeek, you can set CUSTOM_URL to route requests to your self-deployed DeepSeek.
-
-### DEEPSEEK_TYPE
-
-deepseek: directly use deepseek service. but it's not very stable
-others: see [doc](https://www.volcengine.com/docs/82379/1463946)
+If you are using a self-deployed llm, you can set CUSTOM_URL to route requests to your self-deployed llm.
 
 ### DB_TYPE
 

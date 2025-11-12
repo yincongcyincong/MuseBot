@@ -364,49 +364,54 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 func registerSlashCommands(s *discordgo.Session) {
 	commands := []*discordgo.ApplicationCommand{
-		{Name: "chat", Description: i18n.GetMessage("commands.chat.description", nil), Options: []*discordgo.ApplicationCommandOption{
+		{Name: param.Chat, Description: i18n.GetMessage("commands.chat.description", nil), Options: []*discordgo.ApplicationCommandOption{
 			{Type: discordgo.ApplicationCommandOptionString, Name: "prompt", Description: "Prompt", Required: true},
 			{Type: discordgo.ApplicationCommandOptionAttachment, Name: "image", Description: "upload a image", Required: false},
 		}},
-		{Name: "txt_type", Description: i18n.GetMessage("commands.mode.description", nil), Options: []*discordgo.ApplicationCommandOption{
+		{Name: param.TxtType, Description: i18n.GetMessage("commands.mode.description", nil), Options: []*discordgo.ApplicationCommandOption{
 			{Type: discordgo.ApplicationCommandOptionString, Name: "type", Description: "Type", Required: false},
 		}},
-		{Name: "photo_type", Description: i18n.GetMessage("commands.mode.description", nil), Options: []*discordgo.ApplicationCommandOption{
+		{Name: param.PhotoType, Description: i18n.GetMessage("commands.mode.description", nil), Options: []*discordgo.ApplicationCommandOption{
 			{Type: discordgo.ApplicationCommandOptionString, Name: "type", Description: "Type", Required: false},
 		}},
-		{Name: "video_type", Description: i18n.GetMessage("commands.mode.description", nil), Options: []*discordgo.ApplicationCommandOption{
+		{Name: param.VideoType, Description: i18n.GetMessage("commands.mode.description", nil), Options: []*discordgo.ApplicationCommandOption{
 			{Type: discordgo.ApplicationCommandOptionString, Name: "type", Description: "Type", Required: false},
 		}},
-		{Name: "txt_model", Description: i18n.GetMessage("commands.mode.description", nil), Options: []*discordgo.ApplicationCommandOption{
+		{Name: param.TxtModel, Description: i18n.GetMessage("commands.mode.description", nil), Options: []*discordgo.ApplicationCommandOption{
 			{Type: discordgo.ApplicationCommandOptionString, Name: "type", Description: "Type", Required: false},
 		}},
-		{Name: "photo_model", Description: i18n.GetMessage("commands.mode.description", nil), Options: []*discordgo.ApplicationCommandOption{
+		{Name: param.PhotoModel, Description: i18n.GetMessage("commands.mode.description", nil), Options: []*discordgo.ApplicationCommandOption{
 			{Type: discordgo.ApplicationCommandOptionString, Name: "type", Description: "Type", Required: false},
 		}},
-		{Name: "video_model", Description: i18n.GetMessage("commands.mode.description", nil), Options: []*discordgo.ApplicationCommandOption{
+		{Name: param.VideoModel, Description: i18n.GetMessage("commands.mode.description", nil), Options: []*discordgo.ApplicationCommandOption{
 			{Type: discordgo.ApplicationCommandOptionString, Name: "type", Description: "Type", Required: false},
 		}},
 		{Name: "talk", Description: i18n.GetMessage("commands.talk.description", nil)},
-		{Name: "state", Description: i18n.GetMessage("commands.state.description", nil)},
-		{Name: "clear", Description: i18n.GetMessage("commands.clear.description", nil)},
-		{Name: "retry", Description: i18n.GetMessage("commands.retry.description", nil)},
-		{Name: "photo", Description: i18n.GetMessage("commands.photo.description", nil), Options: []*discordgo.ApplicationCommandOption{
+		{Name: param.State, Description: i18n.GetMessage("commands.state.description", nil)},
+		{Name: param.Clear, Description: i18n.GetMessage("commands.clear.description", nil)},
+		{Name: param.Retry, Description: i18n.GetMessage("commands.retry.description", nil)},
+		{Name: param.Photo, Description: i18n.GetMessage("commands.photo.description", nil), Options: []*discordgo.ApplicationCommandOption{
 			{Type: discordgo.ApplicationCommandOptionString, Name: "prompt", Description: "Prompt", Required: true},
 		}},
-		{Name: "edit_photo", Description: i18n.GetMessage("commands.photo.description", nil), Options: []*discordgo.ApplicationCommandOption{
+		{Name: param.EditPhoto, Description: i18n.GetMessage("commands.photo.description", nil), Options: []*discordgo.ApplicationCommandOption{
 			{Type: discordgo.ApplicationCommandOptionString, Name: "prompt", Description: "Prompt", Required: true},
 			{Type: discordgo.ApplicationCommandOptionAttachment, Name: "image", Description: "upload a image", Required: false},
 		}},
-		{Name: "video", Description: i18n.GetMessage("commands.video.description", nil), Options: []*discordgo.ApplicationCommandOption{
+		{Name: param.Video, Description: i18n.GetMessage("commands.video.description", nil), Options: []*discordgo.ApplicationCommandOption{
 			{Type: discordgo.ApplicationCommandOptionString, Name: "prompt", Description: "Prompt", Required: true},
 		}},
-		{Name: "help", Description: i18n.GetMessage("commands.help.description", nil)},
-		{Name: "task", Description: i18n.GetMessage("commands.task.description", nil), Options: []*discordgo.ApplicationCommandOption{
+		{Name: param.Help, Description: i18n.GetMessage("commands.help.description", nil)},
+		{Name: param.Task, Description: i18n.GetMessage("commands.task.description", nil), Options: []*discordgo.ApplicationCommandOption{
 			{Type: discordgo.ApplicationCommandOptionString, Name: "prompt", Description: "Prompt", Required: true},
 		}},
-		{Name: "mcp", Description: i18n.GetMessage("commands.mcp.description", nil), Options: []*discordgo.ApplicationCommandOption{
+		{Name: param.Mcp, Description: i18n.GetMessage("commands.mcp.description", nil), Options: []*discordgo.ApplicationCommandOption{
 			{Type: discordgo.ApplicationCommandOptionString, Name: "prompt", Description: "Prompt", Required: true},
 		}},
+		{Name: param.CronDel, Description: i18n.GetMessage("commands.cron.description", nil), Options: []*discordgo.ApplicationCommandOption{
+			{Type: discordgo.ApplicationCommandOptionString, Name: "id", Description: "id", Required: true},
+		}},
+		{Name: param.CronClear, Description: i18n.GetMessage("commands.cron.description", nil)},
+		{Name: param.CronDel, Description: i18n.GetMessage("commands.cron.description", nil)},
 	}
 	
 	for _, cmd := range commands {

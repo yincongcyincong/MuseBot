@@ -187,6 +187,18 @@ func CreateBot(ctx context.Context) *tgbotapi.BotAPI {
 			Command:     param.Mcp,
 			Description: i18n.GetMessage("commands.mcp.description", nil),
 		},
+		tgbotapi.BotCommand{
+			Command:     param.CronList,
+			Description: i18n.GetMessage("commands.cron.description", nil),
+		},
+		tgbotapi.BotCommand{
+			Command:     param.CronDel,
+			Description: i18n.GetMessage("commands.cron.description", nil),
+		},
+		tgbotapi.BotCommand{
+			Command:     param.CronDel,
+			Description: i18n.GetMessage("commands.cron.description", nil),
+		},
 	)
 	bot.Send(cmdCfg)
 	

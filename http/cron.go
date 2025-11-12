@@ -4,10 +4,10 @@ import (
 	"net/http"
 	
 	cronC "github.com/robfig/cron/v3"
-	"github.com/yincongcyincong/MuseBot/cron"
 	"github.com/yincongcyincong/MuseBot/db"
 	"github.com/yincongcyincong/MuseBot/logger"
 	"github.com/yincongcyincong/MuseBot/param"
+	"github.com/yincongcyincong/MuseBot/robot"
 	"github.com/yincongcyincong/MuseBot/utils"
 )
 
@@ -55,8 +55,8 @@ func CreateCron(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	if cronInfo.CronSpec != "" && cronInfo.Status == 1 && cronInfo.Type != "" &&
-		cronInfo.TargetID != "" && cronInfo.Prompt != "" && cron.Cron != nil {
-		err = AddCron(cronInfo)
+		cronInfo.TargetID != "" && cronInfo.Prompt != "" && robot.Cron != nil {
+		err = robot.AddCron(cronInfo)
 		if err != nil {
 			logger.ErrorCtx(ctx, "add cron error", "err", err)
 			utils.Failure(ctx, w, r, param.CodeServerFail, param.MsgServerFail, err)
@@ -97,9 +97,10 @@ func UpdateCron(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	if cronInfo.CronSpec != "" && cronInfo.Status == 1 && cronInfo.Type != "" && cronInfo.Prompt != "" && cron.Cron != nil {
-		cron.Cron.Remove(cronC.EntryID(cronInfo.CronJobId))
-		err = AddCron(cronInfo)
+	if cronInfo.CronSpec != "" && cronInfo.Status == 1 && cronInfo.Type != "" &&
+		cronInfo.Prompt != "" && robot.Cron != nil {
+		robot.Cron.Remove(cronC.EntryID(cronInfo.CronJobId))
+		err = robot.AddCron(cronInfo)
 		if err != nil {
 			logger.ErrorCtx(ctx, "add cron error", "err", err)
 			utils.Failure(ctx, w, r, param.CodeServerFail, param.MsgServerFail, err)
@@ -151,11 +152,11 @@ func UpdateCronStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	if cronInfo.CronSpec != "" && cronInfo.Type != "" && cronInfo.Prompt != "" && cron.Cron != nil {
+	if cronInfo.CronSpec != "" && cronInfo.Type != "" && cronInfo.Prompt != "" && robot.Cron != nil {
 		if req.Status == 0 {
-			cron.Cron.Remove(cronC.EntryID(cronInfo.CronJobId))
+			robot.Cron.Remove(cronC.EntryID(cronInfo.CronJobId))
 		} else {
-			err = AddCron(cronInfo)
+			err = robot.AddCron(cronInfo)
 			if err != nil {
 				logger.ErrorCtx(ctx, "add cron error", "err", err)
 				utils.Failure(ctx, w, r, param.CodeServerFail, param.MsgServerFail, err)
@@ -196,8 +197,9 @@ func DeleteCron(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	if cronInfo.CronSpec != "" && cronInfo.Status == 1 && cronInfo.Type != "" && cronInfo.Prompt != "" && cron.Cron != nil {
-		cron.Cron.Remove(cronC.EntryID(cronInfo.CronJobId))
+	if cronInfo.CronSpec != "" && cronInfo.Status == 1 && cronInfo.Type != "" &&
+		cronInfo.Prompt != "" && robot.Cron != nil {
+		robot.Cron.Remove(cronC.EntryID(cronInfo.CronJobId))
 	}
 	
 	utils.Success(ctx, w, r, nil)
@@ -241,7 +243,7 @@ func GetCrons(w http.ResponseWriter, r *http.Request) {
 	name := r.FormValue("name")
 	
 	// 1. 查询列表数据
-	cronTasks, err := db.GetCronsByPage(page, pageSize, name)
+	cronTasks, err := db.GetCronsByPage(page, pageSize, name, "")
 	if err != nil {
 		logger.ErrorCtx(ctx, "get cron tasks error", "err", err)
 		utils.Failure(ctx, w, r, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
@@ -261,21 +263,4 @@ func GetCrons(w http.ResponseWriter, r *http.Request) {
 		"total": total,
 	}
 	utils.Success(ctx, w, r, result)
-}
-
-func AddCron(cronInfo *db.Cron) error {
-	cronJobId, err := cron.Cron.AddFunc(cronInfo.CronSpec, func() {
-		cron.Exec(cronInfo)
-	})
-	if err != nil {
-		return err
-	}
-	
-	err = db.UpdateCronJobId(cronInfo.ID, int(cronJobId))
-	if err != nil {
-		return err
-	}
-	
-	return nil
-	
 }

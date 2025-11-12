@@ -11,6 +11,7 @@
   "commands.chat.description": "允许机器人通过 /chat 命令在群组中聊天，无需将机器人设为群组管理员。",
   "commands.task.description": "多个智能体互相协作，获取最终结果。",
   "commands.mcp.description": "基于 MCP 服务器，多个智能体互相协作，获取最终结果。",
+  "commands.cron.description": "定时任务操作",
   "state_content": "🟣 您的总 Token 使用量：%d\n\n🟣 您今天的 Token 使用量：%d\n\n🟣 您本周的 Token 使用量：%d\n\n🟣 您本月的 Token 使用量：%d",
   "chat_mode": "🚀**选择聊天模式**",
   "set_mode": "设置模式失败！",
@@ -36,7 +37,7 @@
   "loop_task_prompt": "**主要任务：** {{.user_task}}\n\n**已完成的子任务：**\n{{range $task, $res := .complete_tasks}}\n\t- 子任务：{{$task}}\n{{end}}\n\n**当前任务计划：**\n{{.last_plan}}\n\n请根据以上信息创建或更新任务计划。如果任务已完成，请返回一个空的计划列表。\n\n**注意：**\n- 仔细分析上次完成的子任务的完成状态，以确定下一个任务计划。\n- 适当且合理地补充细节，以确保工作代理或工具拥有足够的执行任务的信息。\n- 扩展后的描述不得偏离子任务的主要目标。",
   "summary_task_prompt": "---\n\n**主要任务：**\n{{.user_task}}\n\n根据问题，用纯文本格式总结搜索结果和其他参考信息中的要点。\n\n主要任务：\n{{.user_task}}",
   "mcp_prompt": "请选择您的角色来处理以下任务：\n\n**角色选择：专业深度研究员**\n\n作为一名**专业的深度研究员**，您的核心职责是利用一支由专业智能代理组成的团队，为“输出专家”收集充分且必要的信息，从而规划和执行任务。\n\n**您的具体职责包括：**\n\n1.  **分析任务需求**：深入分析主要任务，明确输出专家为生成最终可交付成果（如文档、电子表格、图像、音频等）所需的所有数据和信息。\n2. \t**挑选代理进行工作**：根据代理的相关描述，选择一个最合适的代理进行工作。\n3.  **直接处理简单任务**：如果任务简单且可以直接处理（例如，编写代码、创意写作、基本数据分析或预测），您可以立即使用 `llm_tool`，无需进一步的规划。\n\n**可用的工作代理包括：**\n{{range $i, $tool := .assign_param}}- **代理名称**：{{$tool.tool_name}}\n - **代理描述**：{{$tool.tool_desc}}\n{{end}}\n\n**当前主要任务：**\n{{.user_task}}\n\n**您的输出将采用以下JSON格式：**\n\n```json\n{\n  \"agent\": \"任务所需的代理名称\"\n}\n```",
-  "help_text": "可用命令:\n\n/chat   - 允许机器人在群聊中通过 /chat 命令聊天，无需管理员权限。\n\n/mode   - 显示当前的模型类型和所使用的模型。\n\n/state  - 计算并查看当前用户的令牌使用情况。\n\n/clear  - 清除所有会话记录，以重置上下文。\n\n/retry  - 重试上一个问题。\n\n/txt\\_type /photo\\_type /video\\_type /rec\\_type - 选择文本/图片/视频/识别模型类型。\n\n/txt\\_model /img\\_model /video\\_model /rec\\_model - 选择文本/图片/视频/识别模型。\n\n/photo  - 使用图片模型创建图片。\n\n/edit\\_photo - 编辑已发送的图片或上次生成的图片。\n\n/video  - 根据提示生成视频。\n\n/task   - 启动多智能体协作任务。\n\n/mcp    - 打开多智能体控制面板，用于复杂任务规划。\n\n/change\\_photo - （仅限腾讯应用，如微信、QQ、企业微信）根据提示修改图片。\n\n/rec\\_photo - （仅限腾讯应用，如微信、QQ、企业微信）识别图片内容。\n\n/save\\_voice - （仅限腾讯应用，如微信、QQ、企业微信）保存语音到电脑。\n\n/help   - 显示此帮助信息。",
+  "help_text": "可用命令:\n\n/chat   - 允许机器人在没有管理员权限的群组中聊天。\n\n/mode   - 显示当前模型类型和模型名称。\n\n/state  - 计算并查看您当前的 Token 使用量。\n\n/clear  - 清除所有通信记录，重置上下文。\n\n/retry  - 重试您的上一个问题。\n\n/txt\\_type /photo\\_type /video\\_type /rec\\_type - 选择文本/图片/视频/识别的模型类型。\n\n/txt\\_model /photo\\_model /video\\_model /rec\\_model - 选择文本/图片/视频/识别的模型名称。\n\n/photo  - 创建图片。\n\n/edit\\_photo - 编辑发送的或上次生成的图片。\n\n/video  - 生成视频。\n\n/task   - 多智能体协作完成任务。\n\n/mcp    - 使用多智能体控制面板进行复杂的任务规划。\n\n/cron\\_list - 显示所有已设置的定时任务列表。\n\n/cron\\_del <id> - 根据 ID 删除特定的定时任务。\n\n/cron\\_clear - 删除所有已设置的定时任务。\n\n/change\\_photo - (仅限腾讯应用) 根据您的提示更改图片。\n\n/rec\\_photo - (仅限腾讯应用) 根据您的提示识别图片内容。\n\n/save\\_voice - (仅限腾讯应用) 将您的语音保存到电脑。\n\n/help   - 显示此帮助信息",
   "photo_handle_prompt": "给我找出图片里面的全部文字，仅返回文字。",
   "photo_export_prompt": "我对这张图片有一个疑问：\n\n {{.question}} \n\n 这是识别后的图片内容：{{.answer}}\n\n 请进行总结",
   "set_pre_prompt_success": "🚀 已成功设置命令，请在5分钟内上传图片/语音。",
@@ -47,6 +48,10 @@
   "talk_param_error": "交谈参数不全",
   "bot_talking": "机器人正在交谈中",
   "audio_rec_prompt": "获取语音中的内容，只返回内容",
-  "mode_info": "模型信息 \n文本类型: {{.txt_type}} \n文本模型: {{.txt_model}} \n\n图片类型: {{.photo_type}} \n图片模型: {{.photo_model}} \n\n视频类型: {{.video_type}} \n视频模型: {{.video_model}} \n\n识别类型: {{.rec_type}} \n识别模型: {{.rec_model}}\n\nTTS Type: {{.tts_type}} \nTTS Model: {{.tts_model}}",
-  "smart_mode_prompt": "你是一个智能分类器。你的任务是根据用户输入的文字，判断用户想要执行的操作类型。 \n\n操作类型共有四种：\n1. 生成视频 —— 用户想让AI创建或生成视频内容。\n   输出：{\"command\":\"/video\"}\n\n2. 生成图片 —— 用户想让AI创建或生成图片。\n   输出：{\"command\":\"/photo\"}\n\n3. 修改图片 —— 用户提供了一张或多张图片，并希望AI修改、编辑、优化或转换它们。\n   输出：{\"command\":\"/edit_photo\"}\n\n4. 普通文字交流 —— 用户只是进行普通对话、提问或聊天。\n   输出：{\"command\":\"/chat\"}\n\n请你只返回JSON格式的结果，不要输出任何其他文字或解释。\n\n用户的输入的文字是:{{.prompt}} \n\n---\n\n示例：\n\n输入：\"帮我生成一段关于猫咪在海边奔跑的视频\"\n输出：{\"command\":\"/video\"}\n\n输入：\"画一张可爱的二次元女孩\"\n输出：{\"command\":\"/photo\"}\n\n输入：\"把这张图变成油画风格\"\n输出：{\"command\":\"/edit_photo\"}\n\n输入：\"你今天怎么样？\"\n输出：{\"command\":\"/chat\"}\n"
+  "smart_mode_prompt": "你是一个智能分类器。你的任务是根据用户的输入文本，判断用户想要执行的操作类型。\n\n共有五种操作类型：\n1. 生成视频 (Generate Video) — 用户想要AI创建或生成视频。\n   输出: {\"command\":\"/video\"}\n\n2. 生成图片 (Generate Image) — 用户想要AI创建或生成图片。\n   输出: {\"command\":\"/photo\"}\n\n3. 编辑图片 (Edit Image) — 用户提供一张或多张图片，并希望AI对其进行修改、编辑、增强或转换。\n   输出: {\"command\":\"/edit_photo\"}\n\n4. **定时任务 (Cron Job)** — 用户正在设置一个重复的定时任务。输出必须包含识别到的**秒级 (second-level) cron 表达式**和原始的 **prompt** 内容。\n   输出: {\"cron\": \"<cron_expression>\", \"prompt\": \"<user_prompt>\", \"command\":\"/cron\"}\n\n5. 文本对话 (Text Conversation) — 用户只是进行正常的对话、提问或聊天。\n   输出: {\"command\":\"/chat\"}\n\n你必须只返回 JSON 格式的结果。不要包含任何其他文本或解释。\n\n用户的输入文本是: {{.prompt}}\n\n---\n\n示例:\n\n输入: \"生成一个猫在海滩上奔跑的视频\"\n输出: {\"command\":\"/video\"}\n\n输入: \"画一个可爱的动漫女孩\"\n输出: {\"command\":\"/photo\"}\n\n输入: \"让这张图片看起来像一幅油画\"\n输出: {\"command\":\"/edit_photo\"}\n\n输入: \"**我希望每天早上 8 点提醒我'买牛奶'**\"\n输出: {\"cron\": \"0 0 8 * * *\", \"prompt\": \"买牛奶\", \"command\":\"/cron\"} \n// 注意：cron 表达式使用 6 个字段的秒级格式：秒(0) 分(0) 时(8) 月份中的日 月份 星期几\n\n输入: \"你今天怎么样?\"\n输出: {\"command\":\"/chat\"}\n",
+  "set_cron_success": "已成功设置定时任务",
+  "del_cron_success": "已成功删除定时任务",
+  "clear_cron_success": "已成功清除所有定时任务",
+  "cron_list_item": "ID: {{.id}} | CRON: {{.cron_spec}} | 目标: {{.target_id}} | 群组: {{.group_id}} | 提示: {{.prompt}}\n",
+  "cron_list_header": "已设置的定时任务 (Cron) 列表:\n\n"
 }

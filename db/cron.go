@@ -108,7 +108,7 @@ func GetActiveCrons() ([]*Cron, error) {
 	return crons, nil
 }
 
-func GetCronsByPage(page, pageSize int, name string) ([]Cron, error) {
+func GetCronsByPage(page, pageSize int, name string, userId string) ([]Cron, error) {
 	if page < 1 {
 		page = 1
 	}
@@ -126,6 +126,11 @@ func GetCronsByPage(page, pageSize int, name string) ([]Cron, error) {
 		// 模糊匹配 cron_name
 		whereSQL += " AND cron_name LIKE ?"
 		args = append(args, "%"+name+"%")
+	}
+	
+	if userId != "" {
+		whereSQL += " AND create_by = ?"
+		args = append(args, userId)
 	}
 	
 	// 查询数据，使用了 cronSelectFields
@@ -238,9 +243,20 @@ func UpdateCronJobId(id int64, cronJobID int) error {
 
 // DeleteCronByID 对定时任务进行软删除（将 is_deleted 设为 1）
 func DeleteCronByID(id int64) error {
-	// 软删除：将 is_deleted 字段设置为 1
 	deleteSQL := `UPDATE cron SET is_deleted = 1, update_time = ? WHERE id = ? AND from_bot = ?`
 	
 	_, err := DB.Exec(deleteSQL, time.Now().Unix(), id, *conf.BaseConfInfo.BotName)
+	return err
+}
+
+func DeleteCronByCreateBy(createBy string, id string) error {
+	deleteSQL := `UPDATE cron SET is_deleted = 1, update_time = ? WHERE create_by = ? AND from_bot = ?`
+	if id != "" {
+		deleteSQL += " AND id = ?"
+		_, err := DB.Exec(deleteSQL, time.Now().Unix(), createBy, *conf.BaseConfInfo.BotName, id)
+		return err
+	}
+	
+	_, err := DB.Exec(deleteSQL, time.Now().Unix(), createBy, *conf.BaseConfInfo.BotName)
 	return err
 }

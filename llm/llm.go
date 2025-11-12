@@ -245,7 +245,7 @@ func (l *LLM) InsertOrUpdate() error {
 
 func (l *LLM) GetMessages(userId string, prompt string) {
 	msgRecords := db.GetMsgRecord(userId)
-	if msgRecords != nil {
+	if msgRecords != nil && l.Cs.UseRecord {
 		aqs := db.FilterByMaxContextFromLatest(msgRecords.AQs, param.DefaultContextToken)
 		for i, record := range aqs {
 			if record.Question != "" && record.Answer != "" && record.CreateTime > time.Now().Unix()-int64(*conf.BaseConfInfo.ContextExpireTime) {

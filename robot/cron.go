@@ -1,4 +1,4 @@
-package cron
+package robot
 
 import (
 	"encoding/json"
@@ -15,17 +15,12 @@ import (
 	"github.com/yincongcyincong/MuseBot/db"
 	"github.com/yincongcyincong/MuseBot/logger"
 	"github.com/yincongcyincong/MuseBot/param"
-	"github.com/yincongcyincong/MuseBot/robot"
 	"github.com/yincongcyincong/MuseBot/utils"
-)
-
-var (
-	Cron *cron.Cron
 )
 
 func InitCron() {
 	time.Sleep(10 * time.Second)
-	cronJobs, err := db.GetCronsByPage(1, 10000, "")
+	cronJobs, err := db.GetCronsByPage(1, 10000, "", "")
 	if err != nil {
 		logger.Error("get crons error", "err", err)
 		return
@@ -35,7 +30,7 @@ func InitCron() {
 	for _, c := range cronJobs {
 		if c.CronSpec != "" && c.Status == 1 && c.Type != "" && c.Prompt != "" {
 			cronID, err := Cron.AddFunc(c.CronSpec, func() {
-				Exec(&c)
+				ExecCron(&c)
 			})
 			if err != nil {
 				logger.Error("crontab parse error", "err", err)
@@ -52,7 +47,7 @@ func InitCron() {
 	Cron.Start()
 }
 
-func Exec(c *db.Cron) {
+func ExecCron(c *db.Cron) {
 	logger.Info("exec cron", "cron", c.CronName, "cronSpec",
 		c.CronSpec, "type", c.Type, "targetId", c.TargetID, "groupId", c.GroupID)
 	switch c.Type {
@@ -74,13 +69,13 @@ func Exec(c *db.Cron) {
 }
 
 func ExecDing(c *db.Cron) {
-	if robot.DingBotClient == nil {
+	if DingBotClient == nil {
 		logger.Error("dingbot client is nil")
 		return
 	}
 	
 	for _, targetId := range strings.Split(c.TargetID, ",") {
-		t := &robot.DingRobot{
+		t := &DingRobot{
 			Message: &chatbot.BotCallbackDataModel{
 				SenderId: c.CreateBy,
 				Text: chatbot.BotCallbackDataTextModel{
@@ -89,16 +84,17 @@ func ExecDing(c *db.Cron) {
 				Msgtype:        "text",
 				SessionWebhook: targetId,
 			},
-			Client: robot.DingBotClient,
+			Client: DingBotClient,
 		}
-		t.Robot = robot.NewRobot(robot.WithRobot(t), robot.WithSkipCheck(true))
+		t.Robot = NewRobot(WithRobot(t),
+			WithSkipCheck(true), WithUseRecord(false))
 		t.Robot.Exec()
 	}
 	
 }
 
 func ExecLark(c *db.Cron) {
-	if robot.LarkBotClient == nil {
+	if LarkBotClient == nil {
 		logger.Error("larkbot client is nil")
 		return
 	}
@@ -108,13 +104,13 @@ func ExecLark(c *db.Cron) {
 		if targetId == "" {
 			continue
 		}
-		contentStr := robot.MessageText{
+		contentStr := MessageText{
 			Text: c.Command + " " + c.Prompt,
 		}
 		contentByte, _ := json.Marshal(contentStr)
 		content := string(contentByte)
 		msgType := larkim.MsgTypeText
-		t := &robot.LarkRobot{
+		t := &LarkRobot{
 			Message: &larkim.P2MessageReceiveV1{
 				Event: &larkim.P2MessageReceiveV1Data{
 					Message: &larkim.EventMessage{
@@ -127,9 +123,9 @@ func ExecLark(c *db.Cron) {
 					},
 				},
 			},
-			Client: robot.LarkBotClient,
+			Client: LarkBotClient,
 		}
-		t.Robot = robot.NewRobot(robot.WithRobot(t), robot.WithSkipCheck(true))
+		t.Robot = NewRobot(WithRobot(t), WithSkipCheck(true), WithUseRecord(false))
 		t.Robot.Exec()
 	}
 	
@@ -141,22 +137,23 @@ func ExecPersonalQQ(c *db.Cron) {
 		if groupId == "" {
 			continue
 		}
-		t := &robot.PersonalQQRobot{
-			Msg: &robot.QQMessage{
+		t := &PersonalQQRobot{
+			Msg: &QQMessage{
 				GroupId:     int64(utils.ParseInt(groupId)),
 				MessageType: "group",
 				UserID:      int64(utils.ParseInt(c.CreateBy)),
-				Message: []robot.MessageItem{
+				Message: []MessageItem{
 					{
 						Type: "text",
-						Data: robot.MessageItemData{
+						Data: MessageItemData{
 							Text: c.Command + " " + c.Prompt,
 						},
 					},
 				},
 			},
 		}
-		t.Robot = robot.NewRobot(robot.WithRobot(t), robot.WithSkipCheck(true))
+		t.Robot = NewRobot(WithRobot(t),
+			WithSkipCheck(true), WithUseRecord(false))
 		t.Robot.Exec()
 	}
 	
@@ -165,28 +162,29 @@ func ExecPersonalQQ(c *db.Cron) {
 		if targetId == "" {
 			continue
 		}
-		t := &robot.PersonalQQRobot{
-			Msg: &robot.QQMessage{
+		t := &PersonalQQRobot{
+			Msg: &QQMessage{
 				MessageType: "private",
 				UserID:      int64(utils.ParseInt(targetId)),
-				Message: []robot.MessageItem{
+				Message: []MessageItem{
 					{
 						Type: "text",
-						Data: robot.MessageItemData{
+						Data: MessageItemData{
 							Text: c.Command + " " + c.Prompt,
 						},
 					},
 				},
 			},
 		}
-		t.Robot = robot.NewRobot(robot.WithRobot(t), robot.WithSkipCheck(true))
+		t.Robot = NewRobot(WithRobot(t),
+			WithSkipCheck(true), WithUseRecord(false))
 		t.Robot.Exec()
 	}
 	
 }
 
 func ExecSlack(c *db.Cron) {
-	if robot.SlackClient == nil {
+	if SlackClient == nil {
 		logger.Error("slack client is nil")
 		return
 	}
@@ -196,22 +194,22 @@ func ExecSlack(c *db.Cron) {
 		if targetId == "" {
 			continue
 		}
-		t := &robot.SlackRobot{
+		t := &SlackRobot{
 			Event: &slackevents.MessageEvent{
 				User:    c.CreateBy,
 				Channel: targetId,
 				Text:    c.Command + " " + c.Prompt,
 			},
-			Client: robot.SlackClient,
+			Client: SlackClient,
 		}
-		t.Robot = robot.NewRobot(robot.WithRobot(t), robot.WithSkipCheck(true))
+		t.Robot = NewRobot(WithRobot(t), WithSkipCheck(true), WithUseRecord(false))
 		t.Robot.Exec()
 	}
 	
 }
 
 func ExecComWechat(c *db.Cron) {
-	if robot.ComWechatApp == nil {
+	if ComWechatApp == nil {
 		logger.Warn("com wechat app is nil")
 		return
 	}
@@ -221,17 +219,17 @@ func ExecComWechat(c *db.Cron) {
 		if targetId == "" {
 			continue
 		}
-		t := &robot.ComWechatRobot{
+		t := &ComWechatRobot{
 			Event: models.CallbackMessageHeader{
 				FromUserName: targetId,
 				MsgType:      models.CALLBACK_MSG_TYPE_TEXT,
 			},
-			App: robot.ComWechatApp,
+			App: ComWechatApp,
 			TextMsg: &serverModel.MessageText{
 				Content: c.Command + " " + c.Prompt,
 			},
 		}
-		t.Robot = robot.NewRobot(robot.WithRobot(t), robot.WithSkipCheck(true))
+		t.Robot = NewRobot(WithRobot(t), WithSkipCheck(true), WithUseRecord(false))
 		t.Robot.Exec()
 	}
 	
@@ -243,8 +241,8 @@ func ExecTelegram(c *db.Cron) {
 		if targetId == "" {
 			continue
 		}
-		t := &robot.TelegramRobot{
-			Bot: robot.TelegramBot,
+		t := &TelegramRobot{
+			Bot: TelegramBot,
 			Update: tgbotapi.Update{
 				Message: &tgbotapi.Message{
 					From: &tgbotapi.User{
@@ -257,7 +255,7 @@ func ExecTelegram(c *db.Cron) {
 				},
 			},
 		}
-		t.Robot = robot.NewRobot(robot.WithRobot(t), robot.WithSkipCheck(true))
+		t.Robot = NewRobot(WithRobot(t), WithSkipCheck(true), WithUseRecord(false))
 		t.Robot.Exec()
 	}
 	
@@ -266,8 +264,8 @@ func ExecTelegram(c *db.Cron) {
 		if groupId == "" {
 			continue
 		}
-		t := &robot.TelegramRobot{
-			Bot: robot.TelegramBot,
+		t := &TelegramRobot{
+			Bot: TelegramBot,
 			Update: tgbotapi.Update{
 				Message: &tgbotapi.Message{
 					From: &tgbotapi.User{
@@ -280,14 +278,14 @@ func ExecTelegram(c *db.Cron) {
 				},
 			},
 		}
-		t.Robot = robot.NewRobot(robot.WithRobot(t), robot.WithSkipCheck(true))
+		t.Robot = NewRobot(WithRobot(t), WithSkipCheck(true), WithUseRecord(false))
 		t.Robot.Exec()
 	}
 	
 }
 
 func ExecWechat(c *db.Cron) {
-	if robot.OfficialAccountApp == nil {
+	if OfficialAccountApp == nil {
 		logger.Warn("official account app is nil", "type", c.Type, "userId", c.TargetID, "prompt", c.Prompt)
 		return
 	}
@@ -297,19 +295,36 @@ func ExecWechat(c *db.Cron) {
 		if targetId == "" {
 			continue
 		}
-		w := &robot.WechatRobot{
+		w := &WechatRobot{
 			Event: models.CallbackMessageHeader{
 				FromUserName: targetId,
 				MsgType:      models.CALLBACK_MSG_TYPE_TEXT,
 			},
-			App: robot.OfficialAccountApp,
+			App: OfficialAccountApp,
 			TextMsg: &serverModel.MessageText{
 				Content: c.Command + " " + c.Prompt,
 			},
 		}
-		w.Robot = robot.NewRobot(robot.WithRobot(w), robot.WithTencentRobot(w),
-			robot.WithSkipCheck(true))
+		w.Robot = NewRobot(WithRobot(w), WithTencentRobot(w),
+			WithSkipCheck(true), WithUseRecord(false))
 		w.Robot.Exec()
 	}
+	
+}
+
+func AddCron(cronInfo *db.Cron) error {
+	cronJobId, err := Cron.AddFunc(cronInfo.CronSpec, func() {
+		ExecCron(cronInfo)
+	})
+	if err != nil {
+		return err
+	}
+	
+	err = db.UpdateCronJobId(cronInfo.ID, int(cronJobId))
+	if err != nil {
+		return err
+	}
+	
+	return nil
 	
 }

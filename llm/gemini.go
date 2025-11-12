@@ -322,7 +322,7 @@ func GenerateGeminiImg(ctx context.Context, prompt string, imageContent []byte) 
 		return nil, 0, err
 	}
 	
-	if len(response.Candidates) > 0 {
+	if len(response.Candidates) > 0 && response.Candidates[0].Content != nil {
 		for _, part := range response.Candidates[0].Content.Parts {
 			if part.InlineData != nil {
 				return part.InlineData.Data, int(response.UsageMetadata.TotalTokenCount), nil

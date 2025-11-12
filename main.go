@@ -8,7 +8,6 @@ import (
 	"syscall"
 	
 	"github.com/yincongcyincong/MuseBot/conf"
-	"github.com/yincongcyincong/MuseBot/cron"
 	"github.com/yincongcyincong/MuseBot/db"
 	"github.com/yincongcyincong/MuseBot/http"
 	"github.com/yincongcyincong/MuseBot/i18n"
@@ -30,7 +29,7 @@ func main() {
 	metrics.RegisterMetrics()
 	robot.StartRobot()
 	register.InitRegister()
-	cron.InitCron()
+	robot.InitCron()
 	
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)

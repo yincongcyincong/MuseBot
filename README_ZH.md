@@ -1,7 +1,8 @@
 # 感谢
+
 感谢阮一峰老师的weekly，很荣幸能登榜：https://github.com/ruanyf/weekly      
 感谢linux.do 社区，佬友们很给力，给一个我的介绍贴链接：https://linux.do/t/topic/1128110        
-感谢reddit社区，虽然封了我几个subreddit：https://www.reddit.com/     
+感谢reddit社区，虽然封了我几个subreddit：https://www.reddit.com/
 
 # MuseBot
 
@@ -175,7 +176,7 @@ docker run -d -v /home/user/data:/app/data -e TELEGRAM_BOT_TOKEN="telegram-bot-t
 | **ALIYUN_TOKEN**                | 阿里云大模型 Token                                                                        | -                         |
 | **AI_302_TOKEN**                | 302.AI 平台 Token                                                                     | -                         |
 | **OPEN_ROUTER_TOKEN**           | OpenRouter API Key                                                                  | -                         |
-| **CUSTOM_URL**                  | 自定义 DeepSeek API 地址                                                                 | https://api.deepseek.com/ |
+| **CUSTOM_URL**                  | 自定义 LLM API 地址                                                                      | https://api.deepseek.com/ |
 | **TYPE**                        | LLM 类型（deepseek/openai/gemini/openrouter/vol/302-ai/chatanywhere）                   | deepseek                  |
 | **MEDIA_TYPE**                  | 图片/视频生成模型来源（openai/gemini/vol/openrouter/aliyun/302-ai）                             | vol                       |
 | **DB_TYPE**                     | 数据库类型（sqlite3/mysql）                                                                | sqlite3                   |
@@ -183,7 +184,7 @@ docker run -d -v /home/user/data:/app/data -e TELEGRAM_BOT_TOKEN="telegram-bot-t
 | **LLM_PROXY**                   | LLM 网络代理（如 http://127.0.0.1:7890）                                                   | -                         |
 | **ROBOT_PROXY**                 | 机器人访问代理（如 http://127.0.0.1:7890）                                                    | -                         |
 | **LANG**                        | 语言（en/zh）                                                                           | en                        |
-| **TOKEN_PER_USER**              | 每个用户可用的最大 token 数                                                                   | 10000                     |
+| **TOKEN_PER_USER**              | 每个用户可用的最大 token 数，0为不限制token                                                        | 10000                     |
 | **MAX_USER_CHAT**               | 每个用户可同时存在的最大对话数                                                                     | 2                         |
 | **HTTP_HOST**                   | MuseBot HTTP 服务监听端口                                                                 | :36060                    |
 | **USE_TOOLS**                   | 是否启用 Function Call 工具（true/false）                                                   | false                     |

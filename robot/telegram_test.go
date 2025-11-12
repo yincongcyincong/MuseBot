@@ -25,7 +25,7 @@ func makeFakeUpdateWithText(text string, botUserName string, chatType string) tg
 
 func TestSkipThisMsg(t *testing.T) {
 	fakeBotUserName := "TestBot"
-	*conf.BaseConfInfo.BotName = "TestBot"
+	conf.BaseConfInfo.BotName = &fakeBotUserName
 	updatePrivate := makeFakeUpdateWithText("hello", fakeBotUserName, "private")
 	tel := NewTelegramRobot(updatePrivate, &tgbotapi.BotAPI{
 		Self: tgbotapi.User{UserName: fakeBotUserName},
@@ -39,6 +39,7 @@ func TestSkipThisMsg(t *testing.T) {
 	tel = NewTelegramRobot(updateGroup, &tgbotapi.BotAPI{
 		Self: tgbotapi.User{UserName: fakeBotUserName},
 	})
+	tel.Robot = NewRobot(WithRobot(tel))
 	if skip := tel.skipThisMsg(); !skip {
 		t.Error("group message without mention should be skipped")
 	}
@@ -47,6 +48,7 @@ func TestSkipThisMsg(t *testing.T) {
 	tel = NewTelegramRobot(updateGroupMention, &tgbotapi.BotAPI{
 		Self: tgbotapi.User{UserName: fakeBotUserName},
 	})
+	tel.Robot = NewRobot(WithRobot(tel))
 	if skip := tel.skipThisMsg(); skip {
 		t.Error("group message with mention should not be skipped")
 	}
