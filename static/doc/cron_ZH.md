@@ -4,6 +4,9 @@
 
 ## 🚀 支持主动推送的平台及配置方式
 
+![image](https://github.com/user-attachments/assets/ddedb6fd-ea6c-4e48-91b5-256d5bdcd232)
+
+
 以下平台支持通过定时任务主动推送消息，并列出了所需的配置标识：
 
 | 平台                     | 个人消息配置项           | 群组/频道消息配置项               | 备注                  |
