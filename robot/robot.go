@@ -21,6 +21,7 @@ import (
 	"github.com/google/uuid"
 	larkcore "github.com/larksuite/oapi-sdk-go/v3/core"
 	larkim "github.com/larksuite/oapi-sdk-go/v3/service/im/v1"
+	cron "github.com/robfig/cron/v3"
 	"github.com/slack-go/slack"
 	"github.com/tencent-connect/botgo/dto"
 	"github.com/yincongcyincong/MuseBot/conf"
@@ -40,7 +41,8 @@ const (
 )
 
 var (
-	smartModeReg = regexp.MustCompile(`\{\s*"command"\s*:\s*"[^\"]*"\s*\}`)
+	smartModeReg = regexp.MustCompile(`\{\s*(?:"cron"\s*:\s*".*?"\s*,\s*"prompt"\s*:\s*".*?"\s*,\s*)?"command"\s*:\s*".*?"\s*\}`)
+	Cron         *cron.Cron
 )
 
 type MsgChan struct {
@@ -111,6 +113,7 @@ type botOption func(r *RobotInfo)
 func NewRobot(options ...botOption) *RobotInfo {
 	r := new(RobotInfo)
 	r.cs = new(param.ContextState)
+	r.cs.UseRecord = true
 	for _, o := range options {
 		o(r)
 	}
@@ -526,6 +529,12 @@ func WithSkipCheck(skipCheck bool) func(*RobotInfo) {
 	}
 }
 
+func WithUseRecord(userRecord bool) func(*RobotInfo) {
+	return func(r *RobotInfo) {
+		r.cs.UseRecord = userRecord
+	}
+}
+
 func StartRobot() {
 	ctx, cancel := context.WithCancel(context.Background())
 	RobotControl.Cancel = cancel
@@ -610,7 +619,7 @@ func (r *RobotInfo) checkGroupAllow(chatId string) bool {
 
 // checkUserTokenExceed check use token exceeded
 func (r *RobotInfo) checkUserTokenExceed(chatId string, msgId string, userId string) bool {
-	if *conf.BaseConfInfo.TokenPerUser == 0 {
+	if *conf.BaseConfInfo.TokenPerUser <= 0 {
 		return false
 	}
 	
@@ -877,7 +886,8 @@ func (r *RobotInfo) ExecCmd(cmd string, defaultFunc func(), modeFunc func(string
 			r.changeType(cmd)
 		}
 	case param.TxtModel, "/" + param.TxtModel, "$" + param.TxtModel, param.PhotoModel, "/" + param.PhotoModel, "$" + param.PhotoModel,
-		param.VideoModel, "/" + param.VideoModel, "$" + param.VideoModel, param.RecModel, "/" + param.RecModel, "$" + param.RecModel, param.TtsModel, "/" + param.TtsModel, "$" + param.TtsModel:
+		param.VideoModel, "/" + param.VideoModel, "$" + param.VideoModel, param.RecModel, "/" + param.RecModel, "$" + param.RecModel,
+		param.TtsModel, "/" + param.TtsModel, "$" + param.TtsModel:
 		if modeFunc != nil {
 			modeFunc(cmd)
 		} else {
@@ -910,9 +920,60 @@ func (r *RobotInfo) ExecCmd(cmd string, defaultFunc func(), modeFunc func(string
 		r.sendMultiAgent("mcp_empty_content", emptyPromptFunc)
 	case param.Mode, "/" + param.Mode, "$" + param.Mode:
 		r.showMode()
+	case param.CronList, "/" + param.CronList, "$" + param.CronList:
+		r.cronList()
+	case param.CronDel, "/" + param.CronDel, "$" + param.CronDel:
+		r.cronDel()
+	case param.CronClear, "/" + param.CronClear, "$" + param.CronClear:
+		r.cronClear()
 	default:
 		defaultFunc()
 	}
+}
+
+func (r *RobotInfo) cronList() {
+	chatId, msgId, userId := r.GetChatIdAndMsgIdAndUserID()
+	crons, err := db.GetCronsByPage(1, 10, "", userId)
+	if err != nil {
+		logger.ErrorCtx(r.Ctx, "get crons failed", "err", err)
+		r.SendMsg(chatId, err.Error(), msgId, "", nil)
+		return
+	}
+	
+	txt := i18n.GetMessage("cron_list_header", nil)
+	for _, c := range crons {
+		txt += i18n.GetMessage("cron_list_item", map[string]interface{}{
+			"id":        c.ID,
+			"cron_spec": c.CronSpec,
+			"prompt":    c.Prompt,
+			"target":    c.TargetID,
+			"group_id":  c.GroupID,
+		})
+	}
+	r.SendMsg(chatId, txt, msgId, "", nil)
+	
+}
+
+func (r *RobotInfo) cronDel() {
+	chatId, msgId, userId := r.GetChatIdAndMsgIdAndUserID()
+	err := db.DeleteCronByCreateBy(userId, r.Robot.getPrompt())
+	if err != nil {
+		logger.ErrorCtx(r.Ctx, "delete cron failed", "err", err)
+		r.SendMsg(chatId, err.Error(), msgId, "", nil)
+		return
+	}
+	r.SendMsg(chatId, i18n.GetMessage("del_cron_success", nil), msgId, "", nil)
+}
+
+func (r *RobotInfo) cronClear() {
+	chatId, msgId, userId := r.GetChatIdAndMsgIdAndUserID()
+	err := db.DeleteCronByCreateBy(userId, "")
+	if err != nil {
+		logger.ErrorCtx(r.Ctx, "clear cron failed", "err", err)
+		r.SendMsg(chatId, err.Error(), msgId, "", nil)
+		return
+	}
+	r.SendMsg(chatId, i18n.GetMessage("clear_cron_success", nil), msgId, "", nil)
 }
 
 func (r *RobotInfo) showMode() {
@@ -1007,31 +1068,31 @@ func (r *RobotInfo) changeType(t string) {
 
 func (r *RobotInfo) changeModel(ty string) {
 	switch ty {
-	case "txt_model", "/txt_model", "$txt_model":
+	case param.TxtModel, "/" + param.TxtModel, "$" + param.TxtModel:
 		if r.Robot.getPrompt() != "" {
 			r.handleModelUpdate(&RobotModel{TxtModel: r.Robot.getPrompt()})
 			return
 		}
 		r.showTxtModel()
-	case "photo_model", "/photo_model", "$photo_model":
+	case param.PhotoModel, "/" + param.PhotoModel, "$" + param.PhotoModel:
 		if r.Robot.getPrompt() != "" {
 			r.handleModelUpdate(&RobotModel{ImgModel: r.Robot.getPrompt()})
 			return
 		}
 		r.showImageModel()
-	case "video_model", "/video_model", "$video_model":
+	case param.VideoModel, "/" + param.VideoModel, "$" + param.VideoModel:
 		if r.Robot.getPrompt() != "" {
 			r.handleModelUpdate(&RobotModel{VideoModel: r.Robot.getPrompt()})
 			return
 		}
 		r.showVideoModel()
-	case "rec_model", "/rec_model", "$rec_model":
+	case param.RecModel, "/" + param.RecModel, "$" + param.RecModel:
 		if r.Robot.getPrompt() != "" {
 			r.handleModelUpdate(&RobotModel{RecModel: r.Robot.getPrompt()})
 			return
 		}
 		r.showRecModel()
-	case "tts_model", "/tts_model", "$tts_model":
+	case param.TtsModel, "/" + param.TtsModel, "$" + param.TtsModel:
 		if r.Robot.getPrompt() != "" {
 			r.handleModelUpdate(&RobotModel{TTSModel: r.Robot.getPrompt()})
 			return
@@ -1677,6 +1738,8 @@ func (r *RobotInfo) sendHelpInfo() {
 
 type SmartModeResult struct {
 	Command string `json:"command"`
+	Prompt  string `json:"prompt"`
+	Cron    string `json:"cron"`
 }
 
 func (r *RobotInfo) smartMode() bool {
@@ -1700,6 +1763,7 @@ func (r *RobotInfo) smartMode() bool {
 	content, err := llmClient.LLMClient.SyncSend(r.Ctx, llmClient)
 	if err != nil {
 		logger.ErrorCtx(r.Ctx, "get content fail", "err", err)
+		r.SendMsg(chatId, err.Error(), msgId, "", nil)
 		return true
 	}
 	
@@ -1713,9 +1777,23 @@ func (r *RobotInfo) smartMode() bool {
 	}
 	
 	logger.InfoCtx(r.Ctx, "smart mode result", "result", smartResult)
-	if smartResult.Command != "" {
-		r.Robot.setCommand(smartResult.Command)
+	
+	switch smartResult.Command {
+	case "/cron":
+		r.cs.Token = llmClient.Cs.Token
+		err = r.InsertCron(smartResult.Cron, smartResult.Prompt)
+		if err != nil {
+			r.SendMsg(chatId, err.Error(), msgId, "", nil)
+		} else {
+			r.SendMsg(chatId, i18n.GetMessage("set_cron_success", nil), msgId, "", nil)
+		}
+		return false
+	default:
+		if smartResult.Command != "" {
+			r.Robot.setCommand(smartResult.Command)
+		}
 	}
+	
 	r.cs.Token = llmClient.Cs.Token
 	return true
 }
@@ -1755,4 +1833,40 @@ func (r *RobotInfo) saveRecord(content, imageContent []byte, recordType, totalTo
 	if err != nil {
 		logger.ErrorCtx(r.Ctx, "insert record fail", "err", err)
 	}
+}
+
+func (r *RobotInfo) InsertCron(cron, prompt string) error {
+	var err error
+	var id int64
+	switch r.Robot.(type) {
+	case *PersonalQQRobot:
+		q := r.Robot.(*PersonalQQRobot)
+		q.Robot.GetChatIdAndMsgIdAndUserID()
+		userId := strconv.Itoa(int(q.Msg.UserID))
+		targetId := userId
+		if q.Msg.MessageType == "group" {
+			targetId = ""
+		}
+		groupId := ""
+		if q.Msg.GroupId != 0 {
+			groupId = strconv.Itoa(int(q.Msg.GroupId))
+		}
+		id, err = db.InsertCron(fmt.Sprintf("%s cron task", r.Robot.getUserName()), cron, targetId,
+			groupId, "", prompt, "personal_qq", userId)
+	case *WechatRobot:
+	case *TelegramRobot:
+	}
+	
+	if err != nil {
+		logger.ErrorCtx(r.Ctx, "insert cron fail", "err", err)
+		return err
+	}
+	
+	cronInfo, err := db.GetCronByID(id)
+	if err != nil {
+		logger.ErrorCtx(r.Ctx, "get cron by id fail", "err", err)
+		return err
+	}
+	
+	return AddCron(cronInfo)
 }

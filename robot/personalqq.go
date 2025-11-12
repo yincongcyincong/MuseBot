@@ -407,7 +407,7 @@ func (q *PersonalQQRobot) SendMsg(txt string, image []byte, video []byte, voice 
 	}
 	
 	if result.Status != "ok" && result.MessageID == "" {
-		logger.ErrorCtx(q.Ctx, "send message failed", "err", err, "result", result)
+		logger.ErrorCtx(q.Ctx, "send message failed", "err", err, "req", data, "result", result)
 		return "", fmt.Errorf("send fail: %v", result)
 	}
 	

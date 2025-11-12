@@ -147,6 +147,9 @@ const (
 	ChangePhoto = "change_photo"
 	RecPhoto    = "rec_photo"
 	SaveVoice   = "save_voice"
+	CronList    = "cron_list"
+	CronDel     = "cron_del"
+	CronClear   = "cron_clear"
 )
 
 var (
@@ -332,4 +335,5 @@ type ContextState struct {
 	Token     int
 	RecordID  int64
 	SkipCheck bool
+	UseRecord bool
 }

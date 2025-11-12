@@ -47,7 +47,9 @@ func NewWeb(command string, userId int64, realUserId, prompt, originalPrompt str
 		BodyData:       bodyData,
 		W:              w,
 		Flusher:        flusher,
-		cs:             &param.ContextState{},
+		cs: &param.ContextState{
+			UseRecord: true,
+		},
 	}
 	web.Robot = NewRobot()
 	return web
