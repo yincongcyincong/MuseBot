@@ -70,6 +70,7 @@ type BaseConf struct {
 	SmartMode         *bool   `json:"smart_mode"`
 	ContextExpireTime *int    `json:"context_expire_time"`
 	Powered           *string `json:"powered"`
+	SendMcpRes        *bool   `json:"send_mcp_res"`
 	
 	CrtFile *string `json:"crt_file"`
 	KeyFile *string `json:"key_file"`
@@ -146,6 +147,7 @@ func InitConf() {
 	BaseConfInfo.CrtFile = flag.String("crt_file", "", "public key file")
 	BaseConfInfo.KeyFile = flag.String("key_file", "", "secret key file")
 	BaseConfInfo.CaFile = flag.String("ca_file", "", "ca file")
+	BaseConfInfo.SendMcpRes = flag.Bool("send_mcp_res", false, "send mcp res")
 	
 	adminUserIds := flag.String("admin_user_ids", "", "admin user ids")
 	allowedUserIds := flag.String("allowed_user_ids", "", "allowed user ids")
@@ -402,6 +404,10 @@ func InitConf() {
 		*BaseConfInfo.Powered = os.Getenv("POWERED")
 	}
 	
+	if os.Getenv("SEND_MCP_RES") != "" {
+		*BaseConfInfo.SendMcpRes = os.Getenv("SEND_MCP_RES") == "true"
+	}
+	
 	for _, userIdStr := range strings.Split(*allowedUserIds, ",") {
 		if userIdStr == "" {
 			continue
@@ -477,6 +483,7 @@ func InitConf() {
 	logger.Info("CONF", "Powered", *BaseConfInfo.Powered)
 	logger.Info("CONF", "Character", *BaseConfInfo.Character)
 	logger.Info("CONF", "ContextExpireTime", *BaseConfInfo.ContextExpireTime)
+	logger.Info("CONF", "SendMcpRes", *BaseConfInfo.SendMcpRes)
 	
 	EnvAudioConf()
 	EnvRagConf()

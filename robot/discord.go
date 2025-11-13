@@ -227,75 +227,70 @@ func (d *DiscordRobot) executeLLM(content string) {
 }
 
 func (d *DiscordRobot) sendText(messageChan *MsgChan) {
-	
-	var originalMsgID string
-	var channelID string
-	var err error
-	
-	if d.Msg != nil {
-		channelID = d.Msg.ChannelID
-		
-		thinkingMsg, err := d.Session.ChannelMessageSend(channelID, i18n.GetMessage("thinking", nil))
-		if err != nil {
-			logger.WarnCtx(d.Robot.Ctx, "Sending thinking message failed", "err", err)
-		} else {
-			originalMsgID = thinkingMsg.ID
-		}
-		
-	} else if d.Inter != nil {
-		channelID = d.Inter.ChannelID
-		
-		err = d.Session.InteractionRespond(d.Inter.Interaction, &discordgo.InteractionResponse{
+	var msg *param.MsgInfo
+	if d.Inter != nil {
+		err := d.Session.InteractionRespond(d.Inter.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseDeferredChannelMessageWithSource,
 		})
 		if err != nil {
 			logger.WarnCtx(d.Robot.Ctx, "Failed to defer interaction response", "err", err)
 		}
-	} else {
-		logger.Error("Unknown Discord message type")
-		return
 	}
 	
-	var msg *param.MsgInfo
 	for msg = range messageChan.NormalMessageChan {
 		if len(msg.Content) == 0 {
 			msg.Content = "get nothing from llm!"
 		}
 		
-		if msg.MsgId == "" && originalMsgID != "" {
-			msg.MsgId = originalMsgID
+		if msg.Finished {
+			d.SendMsg(msg)
 		}
-		
-		if d.Msg != nil {
-			if msg.MsgId == "" && originalMsgID == "" {
-				_, err = d.Session.ChannelMessageSend(channelID, msg.Content)
-				if err != nil {
-					logger.WarnCtx(d.Robot.Ctx, "Sending message failed", "err", err)
-				}
-			} else {
-				_, err = d.Session.ChannelMessageEdit(channelID, msg.MsgId, msg.Content)
-				if err != nil {
-					logger.WarnCtx(d.Robot.Ctx, "Editing message failed", "msgID", msg.MsgId, "err", err)
-				}
-				originalMsgID = ""
-			}
-		} else if d.Inter != nil {
-			if msg.MsgId == "" && originalMsgID == "" {
-				_, err = d.Session.InteractionResponseEdit(d.Inter.Interaction, &discordgo.WebhookEdit{
-					Content: &msg.Content,
-				})
-				if err != nil {
-					logger.WarnCtx(d.Robot.Ctx, "Sending interaction response failed", "err", err)
-				}
-			} else {
-				_, err = d.Session.FollowupMessageCreate(d.Inter.Interaction, true, &discordgo.WebhookParams{
-					Content: msg.Content,
-				})
-				if err != nil {
-					logger.WarnCtx(d.Robot.Ctx, "Editing followup interaction message failed", "err", err)
-				}
-				originalMsgID = ""
-			}
+	}
+	
+	if msg != nil {
+		d.SendMsg(msg)
+	}
+}
+
+func (d *DiscordRobot) SendMsg(msg *param.MsgInfo) {
+	msgBlocks := utils.ExtractContentBlocks(msg.Content)
+	embeds := make([]*discordgo.MessageEmbed, 0)
+	for _, b := range msgBlocks {
+		switch b.Type {
+		case "text":
+			embeds = append(embeds, &discordgo.MessageEmbed{
+				Type:        discordgo.EmbedTypeRich,
+				Description: b.Content,
+			})
+		case "image":
+			embeds = append(embeds, &discordgo.MessageEmbed{
+				Type: discordgo.EmbedTypeImage,
+				Image: &discordgo.MessageEmbedImage{
+					URL: b.Media.URL,
+				},
+			})
+		case "video":
+			embeds = append(embeds, &discordgo.MessageEmbed{
+				Type: discordgo.EmbedTypeImage,
+				Video: &discordgo.MessageEmbedVideo{
+					URL: b.Media.URL,
+				},
+			})
+		}
+	}
+	
+	if d.Msg != nil {
+		channelID := d.Msg.ChannelID
+		_, err := d.Session.ChannelMessageSendEmbeds(channelID, embeds)
+		if err != nil {
+			logger.ErrorCtx(d.Robot.Ctx, "Sending message failed", "err", err)
+		}
+	} else if d.Inter != nil {
+		_, err := d.Session.InteractionResponseEdit(d.Inter.Interaction, &discordgo.WebhookEdit{
+			Embeds: &embeds,
+		})
+		if err != nil {
+			logger.ErrorCtx(d.Robot.Ctx, "Editing followup interaction message failed", "err", err)
 		}
 	}
 }

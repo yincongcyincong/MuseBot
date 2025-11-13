@@ -331,10 +331,28 @@ func (q *PersonalQQRobot) SendMsg(txt string, image []byte, video []byte, voice 
 			})
 		}
 		
-		msgArray = append(msgArray, map[string]interface{}{
-			"type": "text",
-			"data": map[string]string{"text": txt},
-		})
+		markdowns := utils.ExtractContentBlocks(txt)
+		for _, m := range markdowns {
+			switch m.Type {
+			case "text":
+				msgArray = append(msgArray, map[string]interface{}{
+					"type": m.Type,
+					"data": map[string]string{"text": m.Content},
+				})
+			case "image", "video":
+				mediaData, err := utils.DownloadFile(m.Media.URL)
+				if err != nil {
+					logger.ErrorCtx(q.Ctx, "send message failed", "err", err)
+					return "", err
+				}
+				msgArray = append(msgArray, map[string]interface{}{
+					"type": m.Type,
+					"data": map[string]string{"file": "base64://" + base64.StdEncoding.EncodeToString(mediaData)},
+				})
+			}
+			
+		}
+		
 	}
 	
 	if len(image) > 0 {

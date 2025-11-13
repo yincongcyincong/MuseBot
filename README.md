@@ -1,8 +1,18 @@
-# Thanks
+<div align="center" id="MuseBot">
 
-感谢阮一峰老师的weekly，很荣幸能登榜：https://github.com/ruanyf/weekly      
-感谢linux.do 社区，佬友们很给力，给一个我的介绍贴链接：https://linux.do/t/topic/1128110        
-Thanks to the Reddit community as well, even though a few of my subreddits got banned 😅: https://www.reddit.com/
+<a href="https://github.com/yincongcyincong/MuseBot" title="TrendRadar">
+  <img src="/static/logo.png" alt="MuseBot Banner" width="50%">
+</a>
+
+🚀 Connect your communication app to AI in just one minute
+
+[![GitHub Stars](https://img.shields.io/github/stars/yincongcyincong/MuseBot?style=flat-square&logo=github&color=yellow)](https://github.com/yincongcyincong/MuseBot/stargazers)
+[![GitHub Forks](https://img.shields.io/github/forks/yincongcyincong/MuseBot?style=flat-square&logo=github&color=blue)](https://github.com/yincongcyincong/MuseBot/network/members)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](https://github.com/yincongcyincong/MuseBot/blob/main/LICENSE)
+[![Docker](https://img.shields.io/badge/Docker-deploy-2496ED?style=flat-square&logo=docker&logoColor=white)](https://hub.docker.com/search?q=musebot)
+[![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-auto-2088FF?style=flat-square&logo=github-actions&logoColor=white)](https://github.com/yincongcyincong/MuseBot/actions)
+
+</div>
 
 # MuseBot
 
@@ -13,12 +23,11 @@ more natural and dynamic.
 [中文文档](https://github.com/yincongcyincong/MuseBot/blob/main/README_ZH.md)       
 [Китайская документация](https://github.com/yincongcyincong/MuseBot/blob/main/README_RU.md)
 
-## Usage Video
+# Thanks
+感谢阮一峰老师的weekly，很荣幸能登榜：https://github.com/ruanyf/weekly      
+感谢linux.do 社区，佬友们很给力，给一个我的介绍贴链接：https://linux.do/t/topic/1128110        
+Thanks to the Reddit community as well, even though a few of my subreddits got banned 😅: https://www.reddit.com/
 
-easiest way to use: https://www.youtube.com/watch?v=4UHoKRMfNZg     
-deepseek: https://www.youtube.com/watch?v=kPtNdLjKVn0   
-gemini: https://www.youtube.com/watch?v=7mV9RYvdE6I    
-chatgpt: https://www.youtube.com/watch?v=G_DZYMvd5Ug
 
 ## 🚀 Features
 
@@ -39,6 +48,16 @@ chatgpt: https://www.youtube.com/watch?v=G_DZYMvd5Ug
   registration center [doc](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/register.md)
 - 🌈 **Metrics**: Support Metrics for monitoring,
   see [doc](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/metrics.md).
+- 🐶 **Cron**: Support Cron to trigger LLM,
+    see [doc](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/cron.md).
+
+
+## Usage Video
+
+easiest way to use: https://www.youtube.com/watch?v=4UHoKRMfNZg     
+deepseek: https://www.youtube.com/watch?v=kPtNdLjKVn0   
+gemini: https://www.youtube.com/watch?v=7mV9RYvdE6I    
+chatgpt: https://www.youtube.com/watch?v=G_DZYMvd5Ug
 
 ## 📸 Support Platform
 

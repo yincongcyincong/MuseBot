@@ -267,7 +267,7 @@ func (q *QQRobot) sendImg() {
 			return
 		}
 		
-		err = q.PostRichMediaMessage(data)
+		err = q.PostRichMediaMessage(data, "")
 		if err != nil {
 			logger.ErrorCtx(q.Robot.Ctx, "post rich media msg fail", "err", err)
 			q.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
@@ -317,7 +317,7 @@ func (q *QQRobot) sendVideo() {
 			return
 		}
 		
-		err = q.PostRichMediaMessage(data)
+		err = q.PostRichMediaMessage(data, "")
 		if err != nil {
 			logger.ErrorCtx(q.Robot.Ctx, "post rich media msg fail", "err", err)
 			q.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
@@ -482,36 +482,44 @@ func (q *QQRobot) GetAttachment() *dto.MessageAttachment {
 	return nil
 }
 
-func (q *QQRobot) PostRichMediaMessage(data []byte) error {
+func (q *QQRobot) PostRichMediaMessage(data []byte, content string) error {
 	_, msgId, _ := q.Robot.GetChatIdAndMsgIdAndUserID()
+	msgType := dto.TextMsg
+	if len(data) > 0 {
+		msgType = dto.RichMediaMsg
+	}
+	
 	var err error
 	if q.C2CMessage != nil {
 		_, err = q.QQApi.PostC2CMessage(q.Robot.Ctx, q.C2CMessage.Author.ID, &dto.MessageToCreate{
-			MsgType: dto.RichMediaMsg,
+			MsgType: msgType,
 			MsgID:   msgId,
 			Media: &dto.MediaInfo{
 				FileInfo: data,
 			},
+			Content: content,
 		})
 	}
 	
 	if q.ATMessage != nil {
 		_, err = q.QQApi.PostMessage(q.Robot.Ctx, q.ATMessage.GuildID, &dto.MessageToCreate{
-			MsgType: dto.RichMediaMsg,
+			MsgType: msgType,
 			MsgID:   msgId,
 			Media: &dto.MediaInfo{
 				FileInfo: data,
 			},
+			Content: content,
 		})
 	}
 	
 	if q.GroupAtMessage != nil {
 		_, err = q.QQApi.PostGroupMessage(q.Robot.Ctx, q.GroupAtMessage.GroupID, &dto.MessageToCreate{
-			MsgType: dto.RichMediaMsg,
+			MsgType: msgType,
 			MsgID:   msgId,
 			Media: &dto.MediaInfo{
 				FileInfo: data,
 			},
+			Content: content,
 		})
 	}
 	
@@ -579,11 +587,11 @@ func (q *QQRobot) passiveExecCmd() {
 		if attachment == nil {
 			status := msgChangePhoto
 			switch q.Command {
-			case "/change_photo", "change_photo", "$change_photo":
+			case "/" + param.ChangePhoto, param.ChangePhoto, "$" + param.ChangePhoto:
 				status = msgChangePhoto
-			case "/rec_photo", "rec_photo", "$rec_photo":
+			case "/" + param.RecPhoto, param.RecPhoto, "$" + param.RecPhoto:
 				status = msgRecognizePhoto
-			case "/save_voice", "save_voice", "$save_voice":
+			case "/" + param.SaveVoice, param.SaveVoice, "$" + param.SaveVoice:
 				status = msgSaveVoice
 			}
 			TencentMsgMap.Store(userId, &TencentWechatMessage{
@@ -646,17 +654,16 @@ func (q *QQRobot) passiveExecCmd() {
 }
 
 func (q *QQRobot) sendText(messageChan *MsgChan) {
-	chatId, msgId, _ := q.Robot.GetChatIdAndMsgIdAndUserID()
 	if messageChan.NormalMessageChan != nil {
 		var msg *param.MsgInfo
 		for msg = range messageChan.NormalMessageChan {
 			if msg.Finished {
-				q.Robot.SendMsg(chatId, msg.Content, msgId, "", nil)
+				q.sendMsg(msg)
 			}
 		}
 		
 		if msg != nil {
-			q.Robot.SendMsg(chatId, msg.Content, msgId, "", nil)
+			q.sendMsg(msg)
 		}
 	} else {
 		var id string
@@ -678,6 +685,42 @@ func (q *QQRobot) sendText(messageChan *MsgChan) {
 	}
 }
 
+func (q *QQRobot) sendMsg(msg *param.MsgInfo) {
+	var err error
+	var file []byte
+	blocks := utils.ExtractContentBlocks(msg.Content)
+	con := ""
+	
+	for _, b := range blocks {
+		switch b.Type {
+		case "text":
+			con += b.Content
+		case "video", "image":
+			if len(file) == 0 {
+				fileType := 1
+				if b.Type == "video" {
+					fileType = 2
+				}
+				fileContent, err := utils.DownloadFile(b.Media.URL)
+				if err != nil {
+					logger.ErrorCtx(q.Robot.Ctx, "download file fail", "err", err)
+					continue
+				}
+				file, err = q.UploadFile(base64.StdEncoding.EncodeToString(fileContent), fileType)
+				if err != nil {
+					logger.ErrorCtx(q.Robot.Ctx, "upload file fail", "err", err)
+					continue
+				}
+			}
+		}
+	}
+	
+	err = q.PostRichMediaMessage(file, con)
+	if err != nil {
+		logger.ErrorCtx(q.Robot.Ctx, "post msg fail", "err", err)
+	}
+}
+
 func (q *QQRobot) sendVoiceContent(voiceContent []byte, duration int) error {
 	base64Content := base64.StdEncoding.EncodeToString(voiceContent)
 	data, err := q.UploadFile(base64Content, 3)
@@ -686,7 +729,7 @@ func (q *QQRobot) sendVoiceContent(voiceContent []byte, duration int) error {
 		return err
 	}
 	
-	return q.PostRichMediaMessage(data)
+	return q.PostRichMediaMessage(data, "")
 }
 
 func (q *QQRobot) setCommand(command string) {
