@@ -40,6 +40,7 @@ require (
 	github.com/weaviate/weaviate-go-client/v4 v4.13.1
 	github.com/yincongcyincong/langchaingo v0.0.3
 	github.com/yincongcyincong/mcp-client-go v0.0.25
+	github.com/yuin/goldmark v1.4.13
 	go.etcd.io/etcd/client/v3 v3.5.0
 	golang.org/x/oauth2 v0.25.0
 	golang.org/x/text v0.29.0

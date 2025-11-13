@@ -399,7 +399,7 @@ func (r *RobotInfo) SendMsg(chatId string, msgContent string, replyToMessageID s
 					Build()).
 				Build())
 			if err != nil || !resp.Success() {
-				logger.WarnCtx(r.Ctx, "send message fail", "err", err, "resp", resp)
+				logger.ErrorCtx(r.Ctx, "send message fail", "err", err, "resp", resp)
 				return ""
 			}
 			
@@ -1838,25 +1838,46 @@ func (r *RobotInfo) saveRecord(content, imageContent []byte, recordType, totalTo
 func (r *RobotInfo) InsertCron(cron, prompt string) error {
 	var err error
 	var id int64
+	chatId, _, userId := r.GetChatIdAndMsgIdAndUserID()
+	targetId, groupId, t := "", "", ""
 	switch r.Robot.(type) {
 	case *PersonalQQRobot:
 		q := r.Robot.(*PersonalQQRobot)
 		q.Robot.GetChatIdAndMsgIdAndUserID()
-		userId := strconv.Itoa(int(q.Msg.UserID))
-		targetId := userId
-		if q.Msg.MessageType == "group" {
-			targetId = ""
-		}
-		groupId := ""
-		if q.Msg.GroupId != 0 {
+		if q.Msg.MessageType != "group" {
+			targetId = userId
+		} else {
 			groupId = strconv.Itoa(int(q.Msg.GroupId))
 		}
-		id, err = db.InsertCron(fmt.Sprintf("%s cron task", r.Robot.getUserName()), cron, targetId,
-			groupId, "", prompt, "personal_qq", userId)
-	case *WechatRobot:
+		t = param.PersonalQQ
 	case *TelegramRobot:
+		te := r.Robot.(*TelegramRobot)
+		if te.Update.Message.Chat.Type == "private" {
+			targetId = userId
+		} else {
+			groupId = strconv.Itoa(int(te.Update.Message.Chat.ID))
+		}
+		t = param.Telegram
+	case *LarkRobot:
+		targetId = chatId
+		t = param.Lark
+	case *SlackRobot:
+		targetId = chatId
+		t = param.Slack
+	case *WechatRobot:
+		targetId = chatId
+		t = param.Wechat
+	case *ComWechatRobot:
+		targetId = chatId
+		t = param.ComWechat
 	}
 	
+	if t == "" {
+		return errors.New("unsupported robot type")
+	}
+	
+	id, err = db.InsertCron(fmt.Sprintf("%s cron task", r.Robot.getUserName()), cron, targetId,
+		groupId, "", prompt, t, userId)
 	if err != nil {
 		logger.ErrorCtx(r.Ctx, "insert cron fail", "err", err)
 		return err

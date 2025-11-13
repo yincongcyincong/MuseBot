@@ -321,8 +321,6 @@ func (s *SlackRobot) sendImg() {
 			return
 		}
 		
-		thinkingMsg := s.Robot.SendMsg(chatId, i18n.GetMessage("thinking", nil), msgId, "", nil)
-		
 		var err error
 		lastImageContent := s.ImageContent
 		if len(lastImageContent) == 0 && strings.Contains(s.Command, "edit_photo") {
@@ -352,13 +350,6 @@ func (s *SlackRobot) sendImg() {
 			logger.Warn("upload image to slack fail", "err", err)
 			s.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
 			return
-		}
-		
-		if thinkingMsg != "" {
-			_, _, err := s.Client.DeleteMessage(chatId, thinkingMsg)
-			if err != nil {
-				logger.Warn("delete thinking message fail", "err", err)
-			}
 		}
 		
 		s.Robot.saveRecord(imageContent, lastImageContent, param.ImageRecordType, totalToken)
