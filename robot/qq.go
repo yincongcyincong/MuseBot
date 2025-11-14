@@ -10,7 +10,6 @@ import (
 	"hash/crc32"
 	"io"
 	"net/http"
-	"os"
 	"runtime/debug"
 	"strings"
 	"time"
@@ -85,7 +84,7 @@ func StartQQRobot(ctx context.Context) {
 
 func C2CMessageEventHandler(event *dto.WSPayload, message *dto.WSC2CMessageData) error {
 	d := NewQQRobot(message, nil, nil)
-	d.Robot = NewRobot(WithRobot(d), WithTencentRobot(d))
+	d.Robot = NewRobot(WithRobot(d))
 	go func() {
 		defer func() {
 			if err := recover(); err != nil {
@@ -100,7 +99,7 @@ func C2CMessageEventHandler(event *dto.WSPayload, message *dto.WSC2CMessageData)
 
 func QQGroupATMessageEventHandler(event *dto.WSPayload, atMessage *dto.WSGroupATMessageData) error {
 	d := NewQQRobot(nil, atMessage, nil)
-	d.Robot = NewRobot(WithRobot(d), WithTencentRobot(d))
+	d.Robot = NewRobot(WithRobot(d))
 	go func() {
 		defer func() {
 			if err := recover(); err != nil {
@@ -116,7 +115,7 @@ func QQGroupATMessageEventHandler(event *dto.WSPayload, atMessage *dto.WSGroupAT
 
 func QQATMessageEventHandler(event *dto.WSPayload, atMessage *dto.WSATMessageData) error {
 	d := NewQQRobot(nil, nil, atMessage)
-	d.Robot = NewRobot(WithRobot(d), WithTencentRobot(d))
+	d.Robot = NewRobot(WithRobot(d))
 	go func() {
 		defer func() {
 			if err := recover(); err != nil {
@@ -157,7 +156,7 @@ func NewQQRobot(c2cMessage *dto.WSC2CMessageData,
 }
 
 func (q *QQRobot) checkValid() bool {
-	chatId, msgId, userId := q.Robot.GetChatIdAndMsgIdAndUserID()
+	chatId, msgId, _ := q.Robot.GetChatIdAndMsgIdAndUserID()
 	var err error
 	if q.C2CMessage != nil {
 		q.Command, q.Prompt = ParseCommand(q.C2CMessage.Content)
@@ -176,15 +175,6 @@ func (q *QQRobot) checkValid() bool {
 			logger.ErrorCtx(q.Robot.Ctx, "download image fail", "err", err)
 			return false
 		}
-		if msgInfoInter, ok := TencentMsgMap.Load(userId); ok {
-			if msgInfo, ok := msgInfoInter.(*TencentWechatMessage); ok {
-				if msgInfo.Status == msgChangePhoto || msgInfo.Status == msgRecognizePhoto {
-					logger.Info("ComWechatRobot handle photo msg", "msgId", msgId, "userId", userId)
-					q.passiveExecCmd()
-					return false
-				}
-			}
-		}
 	}
 	
 	if q.GetAttachment() != nil && strings.Contains(q.GetAttachment().ContentType, "voice") {
@@ -193,15 +183,6 @@ func (q *QQRobot) checkValid() bool {
 			q.Robot.SendMsg(chatId, "get media fail", msgId, tgbotapi.ModeMarkdown, nil)
 			logger.ErrorCtx(q.Robot.Ctx, "get image content fail", "err", err)
 			return false
-		}
-		if msgInfoInter, ok := TencentMsgMap.Load(userId); ok {
-			if msgInfo, ok := msgInfoInter.(*TencentWechatMessage); ok {
-				if msgInfo.Status == msgSaveVoice {
-					logger.Info("ComWechatRobot handle voice msg", "msgId", msgId, "userId", userId)
-					q.passiveExecCmd()
-					return false
-				}
-			}
 		}
 		data, err := utils.SilkToWav(q.AudioContent)
 		if err != nil {
@@ -378,11 +359,6 @@ func (q *QQRobot) getContent(content string) (string, error) {
 			logger.ErrorCtx(q.Robot.Ctx, "generate text from audio failed", "err", err)
 			return "", err
 		}
-	}
-	
-	if content == "" {
-		logger.ErrorCtx(q.Robot.Ctx, "content extraction returned empty")
-		return "", errors.New("content is empty")
 	}
 	
 	return content, nil
@@ -573,86 +549,6 @@ func (q *QQRobot) getPerMsgLen() int {
 	return 1800
 }
 
-func (q *QQRobot) passiveExecCmd() {
-	q.Robot.TalkingPreCheck(func() {
-		chatId, msgId, userId := q.Robot.GetChatIdAndMsgIdAndUserID()
-		if !*conf.BaseConfInfo.WechatActive {
-			logger.WarnCtx(q.Robot.Ctx, "only wechat_active is true can generate image")
-			q.Robot.SendMsg(chatId, "only wechat_active is true can generate image", msgId, tgbotapi.ModeMarkdown, nil)
-			return
-		}
-		
-		attachment := q.GetAttachment()
-		
-		if attachment == nil {
-			status := msgChangePhoto
-			switch q.Command {
-			case "/" + param.ChangePhoto, param.ChangePhoto, "$" + param.ChangePhoto:
-				status = msgChangePhoto
-			case "/" + param.RecPhoto, param.RecPhoto, "$" + param.RecPhoto:
-				status = msgRecognizePhoto
-			case "/" + param.SaveVoice, param.SaveVoice, "$" + param.SaveVoice:
-				status = msgSaveVoice
-			}
-			TencentMsgMap.Store(userId, &TencentWechatMessage{
-				Msg:       q.Prompt,
-				Status:    status,
-				StartTime: time.Now(),
-			})
-			q.Robot.SendMsg(chatId, i18n.GetMessage("set_pre_prompt_success", nil),
-				msgId, tgbotapi.ModeMarkdown, nil)
-			return
-		}
-		
-		if strings.Contains(attachment.ContentType, "image") {
-			if msgInfoInter, ok := TencentMsgMap.Load(userId); ok {
-				if msgInfo, ok := msgInfoInter.(*TencentWechatMessage); ok {
-					switch msgInfo.Status {
-					case msgChangePhoto:
-						q.Prompt = msgInfo.Msg
-						q.sendImg()
-					case msgRecognizePhoto:
-						q.Prompt = msgInfo.Msg
-						q.executeLLM()
-					}
-					
-					TencentMsgMap.Delete(userId)
-				}
-			}
-		}
-		
-		if strings.Contains(attachment.ContentType, "voice") {
-			if msgInfoInter, ok := TencentMsgMap.Load(userId); ok {
-				if msgInfo, ok := msgInfoInter.(*TencentWechatMessage); ok {
-					switch msgInfo.Status {
-					case msgSaveVoice:
-						data, err := utils.SilkToMp3(q.AudioContent)
-						if err != nil {
-							logger.ErrorCtx(q.Robot.Ctx, "silk to wav fail", "err", err)
-							q.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
-							return
-						}
-						
-						fileName := utils.GetAbsPath("data/" + utils.RandomFilename(utils.DetectAudioFormat(data)))
-						err = os.WriteFile(fileName, data, 0666)
-						if err != nil {
-							logger.ErrorCtx(q.Robot.Ctx, "save image fail", "err", err)
-							q.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
-							return
-						}
-						
-						q.Robot.SendMsg(chatId, i18n.GetMessage("save_audio_success", map[string]interface{}{
-							"filename": fileName,
-						}), msgId, tgbotapi.ModeMarkdown, nil)
-					}
-					
-					TencentMsgMap.Delete(userId)
-				}
-			}
-		}
-	})
-}
-
 func (q *QQRobot) sendText(messageChan *MsgChan) {
 	if messageChan.NormalMessageChan != nil {
 		var msg *param.MsgInfo
@@ -742,4 +638,16 @@ func (q *QQRobot) getCommand() string {
 
 func (q *QQRobot) getUserName() string {
 	return q.UserName
+}
+
+func (q *QQRobot) setPrompt(prompt string) {
+	q.Prompt = prompt
+}
+
+func (q *QQRobot) getAudio() []byte {
+	return q.AudioContent
+}
+
+func (q *QQRobot) getImage() []byte {
+	return q.ImageContent
 }

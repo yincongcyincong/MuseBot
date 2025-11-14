@@ -55,10 +55,9 @@ type RobotController struct {
 }
 
 type RobotInfo struct {
-	Ctx          context.Context
-	Cancel       context.CancelFunc
-	Robot        Robot
-	TencentRobot TencentRobot
+	Ctx    context.Context
+	Cancel context.CancelFunc
+	Robot  Robot
 	
 	cs *param.ContextState
 }
@@ -89,6 +88,8 @@ type Robot interface {
 	
 	getPrompt() string
 	
+	setPrompt(prompt string)
+	
 	getContent(content string) (string, error)
 	
 	getPerMsgLen() int
@@ -102,10 +103,10 @@ type Robot interface {
 	getCommand() string
 	
 	getUserName() string
-}
-
-type TencentRobot interface {
-	passiveExecCmd()
+	
+	executeLLM()
+	
+	getImage() []byte
 }
 
 type botOption func(r *RobotInfo)
@@ -511,12 +512,6 @@ func WithRobot(robot Robot) func(*RobotInfo) {
 	}
 }
 
-func WithTencentRobot(robot TencentRobot) func(*RobotInfo) {
-	return func(r *RobotInfo) {
-		r.TencentRobot = robot
-	}
-}
-
 func WithContext(ctx context.Context) func(*RobotInfo) {
 	return func(r *RobotInfo) {
 		r.Ctx = ctx
@@ -685,12 +680,17 @@ func (r *RobotInfo) GetAudioContent(audioContent []byte) (string, error) {
 }
 
 func (r *RobotInfo) GetImageContent(imageContent []byte, content string) (string, error) {
+	if content == "" {
+		r.saveRecord(imageContent, imageContent, param.ImageRecordType, 0)
+		return "", nil
+	}
+	
 	var answer string
 	var err error
 	var token int
 	llmConf := db.GetCtxUserInfo(r.Ctx).LLMConfigRaw
 	t := utils.GetRecType(llmConf)
-	logger.InfoCtx(r.Ctx, "recognize audio", "type", t, "model", utils.GetUsingRecModel(t, llmConf.RecModel))
+	logger.InfoCtx(r.Ctx, "recognize image", "type", t, "model", utils.GetUsingRecModel(t, llmConf.RecModel))
 	switch t {
 	case param.Vol:
 		answer, token, err = llm.GetVolImageContent(r.Ctx, imageContent, content)
@@ -899,13 +899,8 @@ func (r *RobotInfo) ExecCmd(cmd string, defaultFunc func(), modeFunc func(string
 		r.Robot.sendVideo()
 	case param.Help, "/" + param.Help, "$" + param.Help:
 		r.sendHelpInfo()
-	case param.ChangePhoto, "/" + param.ChangePhoto, "$" + param.ChangePhoto, param.RecPhoto, "/" + param.RecPhoto, "$" + param.RecPhoto,
-		param.SaveVoice, "/" + param.SaveVoice, "$" + param.SaveVoice:
-		if r.TencentRobot != nil {
-			r.TencentRobot.passiveExecCmd()
-		} else {
-			defaultFunc()
-		}
+	case param.RecPhoto, "/" + param.RecPhoto, "$" + param.RecPhoto:
+		r.recPhoto()
 	case param.Task, "/" + param.Task, "$" + param.Task:
 		var emptyPromptFunc func()
 		if t, ok := r.Robot.(*TelegramRobot); ok {
@@ -1336,6 +1331,13 @@ func (r *RobotInfo) ExecChain(msgContent string, msgChan *MsgChan) {
 			if err := recover(); err != nil {
 				logger.ErrorCtx(r.Ctx, "panic", "err", err, "stack", string(debug.Stack()))
 			}
+			if msgChan.NormalMessageChan != nil {
+				close(msgChan.NormalMessageChan)
+			}
+			
+			if msgChan.StrMessageChan != nil {
+				close(msgChan.StrMessageChan)
+			}
 		}()
 		
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
@@ -1347,6 +1349,11 @@ func (r *RobotInfo) ExecChain(msgContent string, msgChan *MsgChan) {
 		if err != nil {
 			logger.ErrorCtx(r.Ctx, "get content fail", "err", err)
 			r.SendMsg(chatId, err.Error(), msgId, "", nil)
+			return
+		}
+		
+		if len(msgContent) == 0 {
+			logger.InfoCtx(r.Ctx, "content is empty")
 			return
 		}
 		
@@ -1398,6 +1405,11 @@ func (r *RobotInfo) ExecLLM(msgContent string, msgChan *MsgChan) {
 		return
 	}
 	
+	if len(content) == 0 {
+		logger.InfoCtx(r.Ctx, "content is empty")
+		return
+	}
+	
 	perMsgLen := r.Robot.getPerMsgLen()
 	if *conf.AudioConfInfo.TTSType != "" {
 		perMsgLen = AudioMsgLen
@@ -1415,6 +1427,12 @@ func (r *RobotInfo) ExecLLM(msgContent string, msgChan *MsgChan) {
 		llm.WithContext(r.Ctx),
 		llm.WithContentParameter(map[string]string{
 			"username": r.Robot.getUserName(),
+		}),
+		llm.WithTaskTools(&conf.AgentInfo{
+			DeepseekTool: conf.DeepseekTools,
+			VolTool:      conf.VolTools,
+			OpenAITools:  conf.OpenAITools,
+			GeminiTools:  conf.GeminiTools,
 		}),
 	)
 	
@@ -1743,7 +1761,7 @@ type SmartModeResult struct {
 }
 
 func (r *RobotInfo) smartMode() bool {
-	if r.Robot.getCommand() != "" || r.Robot.getPrompt() == "" || !*conf.BaseConfInfo.SmartMode {
+	if r.Robot.getCommand() != "" || r.Robot.getPrompt() == "" || r.Robot.getImage() != nil || !*conf.BaseConfInfo.SmartMode {
 		return true
 	}
 	
@@ -1890,4 +1908,19 @@ func (r *RobotInfo) InsertCron(cron, prompt string) error {
 	}
 	
 	return AddCron(cronInfo)
+}
+
+func (r *RobotInfo) recPhoto() {
+	lastImageContent, err := r.GetLastImageContent()
+	if err != nil {
+		logger.ErrorCtx(r.Ctx, "get last image record fail", "err", err)
+		return
+	}
+	imageContent, err := r.GetImageContent(lastImageContent, r.Robot.getPrompt())
+	if err != nil {
+		logger.ErrorCtx(r.Ctx, "generate text from image fail", "err", err)
+		return
+	}
+	r.Robot.setPrompt(imageContent)
+	r.Robot.executeLLM()
 }

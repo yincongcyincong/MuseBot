@@ -44,6 +44,7 @@ type LarkRobot struct {
 	Prompt       string
 	BotName      string
 	ImageContent []byte
+	AudioContent []byte
 	UserName     string
 }
 
@@ -63,8 +64,8 @@ func StartLarkRobot(ctx context.Context) {
 	// get bot name
 	resp, err := LarkBotClient.Application.Application.Get(ctx, larkapplication.NewGetApplicationReqBuilder().
 		AppId(*conf.BaseConfInfo.LarkAPPID).Lang("zh_cn").Build())
-	if err != nil {
-		logger.ErrorCtx(ctx, "get robot name error", "error", err)
+	if err != nil || !resp.Success() {
+		logger.ErrorCtx(ctx, "get robot name error", "error", err, "resp", resp)
 		return
 	}
 	BotName = larkcore.StringValue(resp.Data.App.AppName)
@@ -551,6 +552,7 @@ func (l *LarkRobot) GetMessageContent() (bool, error) {
 			logger.ErrorCtx(l.Robot.Ctx, "read image failed", "err", err)
 			return false, err
 		}
+		l.AudioContent = bs
 		
 		l.Prompt, err = l.Robot.GetAudioContent(bs)
 		if err != nil {
@@ -650,4 +652,16 @@ func (l *LarkRobot) getImageInfo(imageContent []byte) (string, error) {
 	}
 	
 	return larkcore.StringValue(resp.Data.ImageKey), nil
+}
+
+func (l *LarkRobot) setPrompt(prompt string) {
+	l.Prompt = prompt
+}
+
+func (l *LarkRobot) getAudio() []byte {
+	return l.AudioContent
+}
+
+func (l *LarkRobot) getImage() []byte {
+	return l.ImageContent
 }

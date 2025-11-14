@@ -447,12 +447,8 @@ func GetGeminiImageContent(ctx context.Context, imageContent []byte, content str
 	metrics.APIRequestCount.WithLabelValues(model).Inc()
 	
 	contentPrompt := content
-	if content == "" {
-		contentPrompt = i18n.GetMessage("photo_handle_prompt", nil)
-	}
-	
 	parts := []*genai.Part{
-		genai.NewPartFromBytes(imageContent, "image/jpeg"),
+		genai.NewPartFromBytes(imageContent, "image/"+utils.DetectImageFormat(imageContent)),
 		genai.NewPartFromText(contentPrompt),
 	}
 	

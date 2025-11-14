@@ -654,3 +654,15 @@ func (d *DingRobot) getCommand() string {
 func (d *DingRobot) getUserName() string {
 	return d.UserName
 }
+
+func (d *DingRobot) setPrompt(prompt string) {
+	d.Prompt = prompt
+}
+
+func (d *DingRobot) getAudio() []byte {
+	return d.AudioContent
+}
+
+func (d *DingRobot) getImage() []byte {
+	return d.ImageContent
+}

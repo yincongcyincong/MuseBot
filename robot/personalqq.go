@@ -342,7 +342,7 @@ func (q *PersonalQQRobot) SendMsg(txt string, image []byte, video []byte, voice 
 			case "image", "video":
 				mediaData, err := utils.DownloadFile(m.Media.URL)
 				if err != nil {
-					logger.ErrorCtx(q.Ctx, "send message failed", "err", err)
+					logger.ErrorCtx(q.Ctx, "send message failed", "err", err, "url", m.Media.URL)
 					return "", err
 				}
 				msgArray = append(msgArray, map[string]interface{}{
@@ -482,4 +482,16 @@ func (q *PersonalQQRobot) getCommand() string {
 
 func (q *PersonalQQRobot) getUserName() string {
 	return q.UserName
+}
+
+func (q *PersonalQQRobot) setPrompt(prompt string) {
+	q.Prompt = prompt
+}
+
+func (q *PersonalQQRobot) getAudio() []byte {
+	return q.AudioContent
+}
+
+func (q *PersonalQQRobot) getImage() []byte {
+	return q.ImageContent
 }
