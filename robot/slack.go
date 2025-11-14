@@ -236,28 +236,28 @@ func (s *SlackRobot) requestLLM(content string) {
 func (s *SlackRobot) sendChatMessage() {
 	s.Robot.TalkingPreCheck(func() {
 		if conf.RagConfInfo.Store != nil {
-			s.executeChain(s.Prompt)
+			s.executeChain()
 		} else {
-			s.executeLLM(s.Prompt)
+			s.executeLLM()
 		}
 	})
 	
 }
 
-func (s *SlackRobot) executeChain(content string) {
+func (s *SlackRobot) executeChain() {
 	messageChan := &MsgChan{
 		NormalMessageChan: make(chan *param.MsgInfo),
 	}
-	go s.Robot.ExecChain(content, messageChan)
+	go s.Robot.ExecChain(s.Prompt, messageChan)
 	
 	go s.Robot.HandleUpdate(messageChan, "mp3")
 }
 
-func (s *SlackRobot) executeLLM(content string) {
+func (s *SlackRobot) executeLLM() {
 	messageChan := &MsgChan{
 		NormalMessageChan: make(chan *param.MsgInfo),
 	}
-	go s.Robot.ExecLLM(content, messageChan)
+	go s.Robot.ExecLLM(s.Prompt, messageChan)
 	
 	go s.Robot.HandleUpdate(messageChan, "mp3")
 }
@@ -514,4 +514,16 @@ func (s *SlackRobot) getCommand() string {
 
 func (s *SlackRobot) getUserName() string {
 	return s.UserName
+}
+
+func (s *SlackRobot) setPrompt(prompt string) {
+	s.Prompt = prompt
+}
+
+func (s *SlackRobot) getAudio() []byte {
+	return s.VoiceContent
+}
+
+func (s *SlackRobot) getImage() []byte {
+	return s.ImageContent
 }

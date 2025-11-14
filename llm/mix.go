@@ -16,7 +16,6 @@ import (
 	openrouter "github.com/revrost/go-openrouter"
 	"github.com/yincongcyincong/MuseBot/conf"
 	"github.com/yincongcyincong/MuseBot/db"
-	"github.com/yincongcyincong/MuseBot/i18n"
 	"github.com/yincongcyincong/MuseBot/logger"
 	"github.com/yincongcyincong/MuseBot/metrics"
 	"github.com/yincongcyincong/MuseBot/param"
@@ -242,10 +241,6 @@ func Generate302AIVideo(ctx context.Context, prompt string, image []byte) (strin
 
 func GetMixImageContent(ctx context.Context, imageContent []byte, content string) (string, int, error) {
 	contentPrompt := content
-	if content == "" {
-		contentPrompt = i18n.GetMessage("photo_handle_prompt", nil)
-	}
-	
 	start := time.Now()
 	llmConfig := db.GetCtxUserInfo(ctx).LLMConfigRaw
 	mediaType := utils.GetRecType(llmConfig)

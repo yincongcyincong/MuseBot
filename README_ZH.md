@@ -266,24 +266,6 @@ docker run -d -v /home/user/data:/app/data -e TELEGRAM_BOT_TOKEN="telegram-bot-t
 
 <img width="400" src="https://github.com/user-attachments/assets/869e0207-388b-49ca-b26a-378f71d58818"  alt=""/>
 
-### /change_photo
-
-对腾讯系的app起作用：qq，微信 ，企业微信     
-输入一段prompt用户修改图片        
-<img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/81e1eb85-ddb6-4a2b-b6bd-73da0d276036" />
-
-### /rec_photo
-
-对腾讯系的app起作用：qq，微信 ，企业微信     
-输入一段prompt用户识别图片        
-<img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/b67a2be2-cc5e-4985-90f3-d72c7a9bf4c1" />
-
-### /save_voice
-
-仅适用于腾讯应用（微信、QQ、企业微信）
-将你的语音保存到电脑。
-<img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/74499d85-4405-43d3-836e-2977de08cb31" />
-
 
 ---
 

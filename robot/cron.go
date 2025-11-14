@@ -305,8 +305,7 @@ func ExecWechat(c *db.Cron) {
 				Content: c.Command + " " + c.Prompt,
 			},
 		}
-		w.Robot = NewRobot(WithRobot(w), WithTencentRobot(w),
-			WithSkipCheck(true), WithUseRecord(false))
+		w.Robot = NewRobot(WithRobot(w), WithSkipCheck(true), WithUseRecord(false))
 		w.Robot.Exec()
 	}
 	

@@ -1,7 +1,6 @@
 package robot
 
 import (
-	"errors"
 	"io"
 	"os"
 	"runtime/debug"
@@ -144,7 +143,7 @@ func NewWechatRobot(event contract.EventInterface) (*WechatRobot, bool) {
 			StartTime: time.Now(),
 		})
 		
-		w.Robot = NewRobot(WithRobot(w), WithTencentRobot(w))
+		w.Robot = NewRobot(WithRobot(w))
 		return w, true
 	}
 	
@@ -154,7 +153,7 @@ func NewWechatRobot(event contract.EventInterface) (*WechatRobot, bool) {
 }
 
 func (w *WechatRobot) checkValid() bool {
-	chatId, msgId, userId := w.Robot.GetChatIdAndMsgIdAndUserID()
+	chatId, msgId, _ := w.Robot.GetChatIdAndMsgIdAndUserID()
 	var err error
 	if w.Event.GetMsgType() == models.CALLBACK_MSG_TYPE_TEXT {
 		w.OriginPrompt = w.TextMsg.Content
@@ -169,15 +168,7 @@ func (w *WechatRobot) checkValid() bool {
 			w.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
 			return false
 		}
-		if msgInfoInter, ok := TencentMsgMap.Load(userId); ok {
-			if msgInfo, ok := msgInfoInter.(*TencentWechatMessage); ok {
-				if msgInfo.Status == msgChangePhoto || msgInfo.Status == msgRecognizePhoto {
-					logger.InfoCtx(w.Robot.Ctx, "WechatRobot handle photo msg", "msgId", msgId, "userId", userId)
-					w.passiveExecCmd()
-					return false
-				}
-			}
-		}
+		
 	}
 	
 	if w.Event.GetMsgType() == models.CALLBACK_MSG_TYPE_VOICE {
@@ -186,15 +177,6 @@ func (w *WechatRobot) checkValid() bool {
 			logger.Error("read media fail", "err", err)
 			w.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
 			return false
-		}
-		if msgInfoInter, ok := TencentMsgMap.Load(userId); ok {
-			if msgInfo, ok := msgInfoInter.(*TencentWechatMessage); ok {
-				if msgInfo.Status == msgSaveVoice {
-					logger.InfoCtx(w.Robot.Ctx, "WechatRobot handle voice msg", "msgId", msgId, "userId", userId)
-					w.passiveExecCmd()
-					return false
-				}
-			}
 		}
 		
 		if w.VoiceContent != nil {
@@ -378,11 +360,6 @@ func (w *WechatRobot) getContent(content string) (string, error) {
 		return w.Robot.GetImageContent(w.ImageContent, content)
 	}
 	
-	if content == "" {
-		logger.Warn("content extraction returned empty")
-		return "", errors.New("content is empty")
-	}
-	
 	return content, nil
 }
 
@@ -415,85 +392,6 @@ func WechatMsgSent(msgId string) {
 
 func (w *WechatRobot) getPerMsgLen() int {
 	return 1800
-}
-
-func (w *WechatRobot) passiveExecCmd() {
-	w.Robot.TalkingPreCheck(func() {
-		chatId, msgId, userId := w.Robot.GetChatIdAndMsgIdAndUserID()
-		if !*conf.BaseConfInfo.WechatActive {
-			logger.Warn("only wechat_active is true can generate image")
-			w.Robot.SendMsg(chatId, "only wechat_active is true can generate image", msgId, tgbotapi.ModeMarkdown, nil)
-			return
-		}
-		
-		if w.TextMsg != nil {
-			status := msgChangePhoto
-			switch w.Command {
-			case "/change_photo", "change_photo", "$change_photo":
-				status = msgChangePhoto
-			case "/rec_photo", "rec_photo", "$rec_photo":
-				status = msgRecognizePhoto
-			case "/save_voice", "save_voice", "$save_voice":
-				status = msgSaveVoice
-			}
-			TencentMsgMap.Store(userId, &TencentWechatMessage{
-				Msg:       w.Prompt,
-				Status:    status,
-				StartTime: time.Now(),
-			})
-			w.Robot.SendMsg(chatId, i18n.GetMessage("set_pre_prompt_success", nil),
-				msgId, tgbotapi.ModeMarkdown, nil)
-			return
-		}
-		
-		if w.ImageMsg != nil {
-			if msgInfoInter, ok := TencentMsgMap.Load(userId); ok {
-				if msgInfo, ok := msgInfoInter.(*TencentWechatMessage); ok {
-					switch msgInfo.Status {
-					case msgChangePhoto:
-						w.Prompt = msgInfo.Msg
-						w.sendImg()
-					case msgRecognizePhoto:
-						w.Prompt = msgInfo.Msg
-						w.executeLLM()
-					}
-					
-					TencentMsgMap.Delete(userId)
-				}
-			}
-		}
-		
-		if w.VoiceMsg != nil {
-			if msgInfoInter, ok := TencentMsgMap.Load(userId); ok {
-				if msgInfo, ok := msgInfoInter.(*TencentWechatMessage); ok {
-					switch msgInfo.Status {
-					case msgSaveVoice:
-						data, err := utils.AmrToMp3(w.VoiceContent)
-						if err != nil {
-							logger.Error("convert amr to wav fail", "err", err)
-							w.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
-							return
-						}
-						
-						fileName := utils.GetAbsPath("data/" + utils.RandomFilename(utils.DetectAudioFormat(data)))
-						err = os.WriteFile(fileName, data, 0666)
-						if err != nil {
-							logger.Error("save image fail", "err", err)
-							w.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
-							return
-						}
-						
-						w.Robot.SendMsg(chatId, i18n.GetMessage("save_audio_success", map[string]interface{}{
-							"filename": fileName,
-						}), msgId, tgbotapi.ModeMarkdown, nil)
-						
-					}
-					
-					TencentMsgMap.Delete(userId)
-				}
-			}
-		}
-	})
 }
 
 func (w *WechatRobot) getMedia() ([]byte, error) {
@@ -572,4 +470,16 @@ func (w *WechatRobot) getCommand() string {
 
 func (w *WechatRobot) getUserName() string {
 	return w.UserName
+}
+
+func (w *WechatRobot) setPrompt(prompt string) {
+	w.Prompt = prompt
+}
+
+func (w *WechatRobot) getAudio() []byte {
+	return w.VoiceContent
+}
+
+func (w *WechatRobot) getImage() []byte {
+	return w.ImageContent
 }

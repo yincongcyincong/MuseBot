@@ -206,22 +206,22 @@ func (d *DiscordRobot) requestLLM(content string) {
 	}()
 }
 
-func (d *DiscordRobot) executeChain(content string) {
+func (d *DiscordRobot) executeChain() {
 	messageChan := &MsgChan{
 		NormalMessageChan: make(chan *param.MsgInfo),
 	}
 	
-	go d.Robot.ExecChain(content, messageChan)
+	go d.Robot.ExecChain(d.Prompt, messageChan)
 	
 	go d.Robot.HandleUpdate(messageChan, "mp3")
 }
 
-func (d *DiscordRobot) executeLLM(content string) {
+func (d *DiscordRobot) executeLLM() {
 	messageChan := &MsgChan{
 		NormalMessageChan: make(chan *param.MsgInfo),
 	}
 	
-	go d.Robot.ExecLLM(content, messageChan)
+	go d.Robot.ExecLLM(d.Prompt, messageChan)
 	
 	go d.Robot.HandleUpdate(messageChan, "mp3")
 }
@@ -432,9 +432,9 @@ func onInteractionCreate(s *discordgo.Session, i *discordgo.InteractionCreate) {
 func (d *DiscordRobot) sendChatMessage() {
 	d.Robot.TalkingPreCheck(func() {
 		if conf.RagConfInfo.Store != nil {
-			d.executeChain(d.Prompt)
+			d.executeChain()
 		} else {
-			d.executeLLM(d.Prompt)
+			d.executeLLM()
 		}
 	})
 }
@@ -908,4 +908,16 @@ func (d *DiscordRobot) getCommand() string {
 
 func (d *DiscordRobot) getUserName() string {
 	return d.UserName
+}
+
+func (d *DiscordRobot) setPrompt(prompt string) {
+	d.Prompt = prompt
+}
+
+func (d *DiscordRobot) getAudio() []byte {
+	return d.AudioContent
+}
+
+func (d *DiscordRobot) getImage() []byte {
+	return d.ImageContent
 }

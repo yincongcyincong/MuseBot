@@ -265,12 +265,12 @@ func (t *TelegramRobot) requestLLM(content string) {
 }
 
 // executeChain use langchain to interact llm
-func (t *TelegramRobot) executeChain(content string) {
+func (t *TelegramRobot) executeChain() {
 	messageChan := &MsgChan{
 		NormalMessageChan: make(chan *param.MsgInfo),
 	}
 	
-	go t.Robot.ExecChain(content, messageChan)
+	go t.Robot.ExecChain(t.Prompt, messageChan)
 	
 	// send response message
 	go t.Robot.HandleUpdate(messageChan, "ogg_opus")
@@ -278,11 +278,11 @@ func (t *TelegramRobot) executeChain(content string) {
 }
 
 // executeLLM directly interact llm
-func (t *TelegramRobot) executeLLM(content string) {
+func (t *TelegramRobot) executeLLM() {
 	messageChan := &MsgChan{
 		NormalMessageChan: make(chan *param.MsgInfo),
 	}
-	go t.Robot.ExecLLM(content, messageChan)
+	go t.Robot.ExecLLM(t.Prompt, messageChan)
 	
 	// send response message
 	go t.Robot.HandleUpdate(messageChan, "ogg_opus")
@@ -379,8 +379,6 @@ func (t *TelegramRobot) sendChatMessage() {
 		if messageText == "" {
 			messageText = t.Update.Message.Caption
 		}
-		// ignore error, show force reply
-		messageText, _ = t.getContent(messageText)
 	} else {
 		t.Update.Message = new(tgbotapi.Message)
 	}
@@ -388,8 +386,12 @@ func (t *TelegramRobot) sendChatMessage() {
 	// Remove /chat and /chat@botUserName from the message
 	content := utils.ReplaceCommand(messageText, "/chat", t.Bot.Self.UserName)
 	t.Update.Message.Text = content
+	t.Prompt = content
 	
 	if len(content) == 0 {
+		if t.ImageContent != nil {
+			t.Robot.saveRecord(t.ImageContent, t.ImageContent, param.ImageRecordType, 0)
+		}
 		err := ForceReply(int64(utils.ParseInt(chatId)), utils.ParseInt(msgID), "chat_empty_content", t.Bot)
 		if err != nil {
 			logger.WarnCtx(t.Robot.Ctx, "force reply fail", "err", err)
@@ -400,9 +402,9 @@ func (t *TelegramRobot) sendChatMessage() {
 	// Reply to the chat content
 	t.Robot.TalkingPreCheck(func() {
 		if conf.RagConfInfo.Store != nil {
-			t.executeChain(content)
+			t.executeChain()
 		} else {
-			t.executeLLM(content)
+			t.executeLLM()
 		}
 	})
 }
@@ -1143,4 +1145,16 @@ func (t *TelegramRobot) getCommand() string {
 
 func (t *TelegramRobot) getUserName() string {
 	return t.UserName
+}
+
+func (t *TelegramRobot) setPrompt(prompt string) {
+	t.Prompt = prompt
+}
+
+func (t *TelegramRobot) getAudio() []byte {
+	return t.AudioContent
+}
+
+func (t *TelegramRobot) getImage() []byte {
+	return t.ImageContent
 }

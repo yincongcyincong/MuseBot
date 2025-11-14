@@ -17,7 +17,6 @@ import (
 	"github.com/volcengine/volcengine-go-sdk/service/arkruntime/model"
 	"github.com/yincongcyincong/MuseBot/conf"
 	"github.com/yincongcyincong/MuseBot/db"
-	"github.com/yincongcyincong/MuseBot/i18n"
 	"github.com/yincongcyincong/MuseBot/logger"
 	"github.com/yincongcyincong/MuseBot/metrics"
 	"github.com/yincongcyincong/MuseBot/param"
@@ -173,10 +172,6 @@ func GetVolImageContent(ctx context.Context, imageContent []byte, content string
 	metrics.APIRequestCount.WithLabelValues(modelStr).Inc()
 	
 	contentPrompt := content
-	if content == "" {
-		contentPrompt = i18n.GetMessage("photo_handle_prompt", nil)
-	}
-	
 	req := model.ChatCompletionRequest{
 		Model: modelStr,
 		Messages: []*model.ChatCompletionMessage{
