@@ -24,10 +24,10 @@ more natural and dynamic.
 [Китайская документация](https://github.com/yincongcyincong/MuseBot/blob/main/README_RU.md)
 
 # Thanks
+
 感谢阮一峰老师的weekly，很荣幸能登榜：https://github.com/ruanyf/weekly      
 感谢linux.do 社区，佬友们很给力，给一个我的介绍贴链接：https://linux.do/t/topic/1128110        
 Thanks to the Reddit community as well, even though a few of my subreddits got banned 😅: https://www.reddit.com/
-
 
 ## 🚀 Features
 
@@ -49,8 +49,7 @@ Thanks to the Reddit community as well, even though a few of my subreddits got b
 - 🌈 **Metrics**: Support Metrics for monitoring,
   see [doc](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/metrics.md).
 - 🐶 **Cron**: Support Cron to trigger LLM,
-    see [doc](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/cron.md).
-
+  see [doc](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/cron.md).
 
 ## Usage Video
 
@@ -206,6 +205,8 @@ If you use parameter. Please use lower letter and underscore. for example: ./Mus
 | **BOT_NAME**                    | Bot name                                                                                     | MuseBot                                                |
 | **CHAT_ANY_WHERE_TOKEN**        | ChatAnyWhere platform token                                                                  | -                                                      |
 | **SMART_MODE**                  | Automatically check what you want to generate (txt/photo/video)                              | true                                                   |
+| **SEND_MCP_RES**                | send mcp result to user                                                                      | false                                                  |
+| **DEFAULT_MODEL**               | default txt model                                                                            | -                                                      |
 
 ### CUSTOM_URL
 

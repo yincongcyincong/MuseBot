@@ -1781,7 +1781,6 @@ func (r *RobotInfo) smartMode() bool {
 	content, err := llmClient.LLMClient.SyncSend(r.Ctx, llmClient)
 	if err != nil {
 		logger.ErrorCtx(r.Ctx, "get content fail", "err", err)
-		r.SendMsg(chatId, err.Error(), msgId, "", nil)
 		return true
 	}
 	

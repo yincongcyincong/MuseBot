@@ -343,12 +343,12 @@ func (q *PersonalQQRobot) SendMsg(txt string, image []byte, video []byte, voice 
 				mediaData, err := utils.DownloadFile(m.Media.URL)
 				if err != nil {
 					logger.ErrorCtx(q.Ctx, "send message failed", "err", err, "url", m.Media.URL)
-					return "", err
+				} else {
+					msgArray = append(msgArray, map[string]interface{}{
+						"type": m.Type,
+						"data": map[string]string{"file": "base64://" + base64.StdEncoding.EncodeToString(mediaData)},
+					})
 				}
-				msgArray = append(msgArray, map[string]interface{}{
-					"type": m.Type,
-					"data": map[string]string{"file": "base64://" + base64.StdEncoding.EncodeToString(mediaData)},
-				})
 			}
 			
 		}
