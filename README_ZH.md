@@ -201,6 +201,8 @@ docker run -d -v /home/user/data:/app/data -e TELEGRAM_BOT_TOKEN="telegram-bot-t
 | **BOT_NAME**                    | Bot 名称                                                                              | MuseBot               |
 | **CHAT_ANY_WHERE_TOKEN**        | ChatAnyWhere 平台 Token                                                               | -                     |
 | **SMART_MODE**                  | 自动检测你想生成什么样的内容                                                                      | true                  |
+| **SEND_MCP_RES**                | 是否发送mcp的请求结果                                                                        | false                 |
+| **DEFAULT_MODEL**               | 用户默认使用的文本模型                                                                         | -                     |
 
 ### 其他配置
 

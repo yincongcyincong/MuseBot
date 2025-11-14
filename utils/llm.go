@@ -150,6 +150,10 @@ func GetTTSModel(t string) string {
 }
 
 func GetTxtModel(t string) string {
+	if *conf.BaseConfInfo.DefaultModel != "" {
+		return *conf.BaseConfInfo.DefaultModel
+	}
+	
 	switch t {
 	case param.DeepSeek:
 		return godeepseek.DeepSeekChat
