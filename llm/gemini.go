@@ -94,7 +94,7 @@ func (h *GeminiReq) Send(ctx context.Context, l *LLM) error {
 		
 	}
 	
-	if l.MessageChan != nil && len(strings.TrimRightFunc(msgInfoContent.Content, unicode.IsSpace)) > 0 {
+	if l.MessageChan != nil && len(strings.TrimRightFunc(msgInfoContent.Content, unicode.IsSpace)) > 0 || (hasTools && *conf.BaseConfInfo.SendMcpRes) {
 		if *conf.BaseConfInfo.Powered != "" {
 			msgInfoContent.Content = msgInfoContent.Content + "\n\n" + *conf.BaseConfInfo.Powered
 		}
@@ -290,7 +290,8 @@ func GenerateGeminiImg(ctx context.Context, prompt string, imageContent []byte) 
 	}
 	
 	start := time.Now()
-	metrics.APIRequestCount.WithLabelValues(*conf.PhotoConfInfo.GeminiImageModel).Inc()
+	model := utils.GetUsingImgModel(param.Gemini, db.GetCtxUserInfo(ctx).LLMConfigRaw.ImgModel)
+	metrics.APIRequestCount.WithLabelValues(model).Inc()
 	
 	geminiContent := genai.Text(prompt)
 	if len(imageContent) > 0 {
@@ -309,14 +310,14 @@ func GenerateGeminiImg(ctx context.Context, prompt string, imageContent []byte) 
 	
 	response, err := client.Models.GenerateContent(
 		ctx,
-		*conf.PhotoConfInfo.GeminiImageModel,
+		model,
 		geminiContent,
 		&genai.GenerateContentConfig{
 			ResponseModalities: []string{"TEXT", "IMAGE"},
 		},
 	)
 	
-	metrics.APIRequestDuration.WithLabelValues(*conf.PhotoConfInfo.GeminiImageModel).Observe(time.Since(start).Seconds())
+	metrics.APIRequestDuration.WithLabelValues(model).Observe(time.Since(start).Seconds())
 	if err != nil {
 		logger.ErrorCtx(ctx, "generate image fail", "err", err)
 		return nil, 0, err

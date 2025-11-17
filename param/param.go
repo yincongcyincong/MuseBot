@@ -78,9 +78,11 @@ const (
 	
 	DefaultContextToken = 128000
 	
-	GeminiImageGenPreview = "gemini-2.0-flash-preview-image-generation"
-	GeminiImageGenV2_5    = "gemini-2.5-flash-image"
-	ImagenModel           = "imagen-3.0-generate-001"
+	Gemini2_5FlashPreview    = "gemini-2.5-flash-image-preview"
+	GeminiImageGenV2_5       = "gemini-2.5-flash-image"
+	Imagen3_0Generate002     = "imagen-3.0-generate-002"
+	Imagen4_0Generate001     = "imagen-4.0-generate-001"
+	Imagen4_0FastGenerate002 = "imagen-4.0-fast-generate-001"
 	
 	GeminiVideoVeo3_1Preview     = "veo-3.1-generate-preview"
 	GeminiVideoVeo3_1FastPreview = "veo-3.1-fast-generate-preview"
@@ -238,9 +240,11 @@ var (
 	}
 	
 	GeminiImageModels = map[string]bool{
-		GeminiImageGenPreview: true,
-		GeminiImageGenV2_5:    true,
-		ImagenModel:           true,
+		Imagen4_0FastGenerate002: true,
+		GeminiImageGenV2_5:       true,
+		Imagen3_0Generate002:     true,
+		Imagen4_0Generate001:     true,
+		Gemini2_5FlashPreview:    true,
 	}
 	
 	DeepseekModels = map[string]bool{

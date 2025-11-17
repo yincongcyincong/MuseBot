@@ -365,7 +365,7 @@ func (l *LLM) ExecMcpReq(ctx context.Context, funcName string, property map[stri
 	
 	metrics.MCPRequestDuration.WithLabelValues(mc.Conf.Name, funcName).Observe(time.Since(startTime).Seconds())
 	
-	logger.InfoCtx(ctx, "get mcp fail", "function", funcName, "argument", property, "res", toolsData)
+	logger.InfoCtx(ctx, "get mcp", "function", funcName, "argument", property, "res", toolsData)
 	
 	if *conf.BaseConfInfo.SendMcpRes {
 		l.DirectSendMsg(i18n.GetMessage("send_mcp_info", map[string]interface{}{

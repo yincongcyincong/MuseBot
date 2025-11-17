@@ -882,7 +882,7 @@ func (t *TelegramRobot) sendImg() {
 		var photo tgbotapi.InputMediaPhoto
 		imageContent, totalToken, err := t.Robot.CreatePhoto(prompt, lastImageContent)
 		if err != nil {
-			logger.WarnCtx(t.Robot.Ctx, "generate image fail", "err", err)
+			logger.ErrorCtx(t.Robot.Ctx, "generate image fail", "err", err)
 			t.Robot.SendMsg(chatId, err.Error(), replyToMessageID, "", nil)
 			return
 		}
