@@ -1596,7 +1596,7 @@ func (r *RobotInfo) CreatePhoto(prompt string, lastImageContent []byte) ([]byte,
 	}
 	
 	if err != nil {
-		logger.WarnCtx(r.Ctx, "generate image fail", "err", err)
+		logger.ErrorCtx(r.Ctx, "generate image fail", "err", err)
 		return nil, 0, err
 	}
 	
@@ -1761,7 +1761,7 @@ type SmartModeResult struct {
 }
 
 func (r *RobotInfo) smartMode() bool {
-	if r.Robot.getCommand() != "" || r.Robot.getPrompt() == "" || r.Robot.getImage() != nil || !*conf.BaseConfInfo.SmartMode {
+	if r.Robot.getCommand() != "" || r.Robot.getPrompt() == "" || !*conf.BaseConfInfo.SmartMode {
 		return true
 	}
 	
@@ -1910,11 +1910,16 @@ func (r *RobotInfo) InsertCron(cron, prompt string) error {
 }
 
 func (r *RobotInfo) recPhoto() {
-	lastImageContent, err := r.GetLastImageContent()
-	if err != nil {
-		logger.ErrorCtx(r.Ctx, "get last image record fail", "err", err)
-		return
+	lastImageContent := r.Robot.getImage()
+	var err error
+	if lastImageContent == nil {
+		lastImageContent, err = r.GetLastImageContent()
+		if err != nil {
+			logger.ErrorCtx(r.Ctx, "get last image record fail", "err", err)
+			return
+		}
 	}
+	
 	imageContent, err := r.GetImageContent(lastImageContent, r.Robot.getPrompt())
 	if err != nil {
 		logger.ErrorCtx(r.Ctx, "generate text from image fail", "err", err)
