@@ -226,6 +226,80 @@ func (d *DiscordRobot) executeLLM() {
 	go d.Robot.HandleUpdate(messageChan, "mp3")
 }
 
+func (d *DiscordRobot) sendTextStream(messageChan *MsgChan) {
+	
+	var originalMsgID string
+	var channelID string
+	var err error
+	
+	if d.Msg != nil {
+		channelID = d.Msg.ChannelID
+		
+		thinkingMsg, err := d.Session.ChannelMessageSend(channelID, i18n.GetMessage("thinking", nil))
+		if err != nil {
+			logger.WarnCtx(d.Robot.Ctx, "Sending thinking message failed", "err", err)
+		} else {
+			originalMsgID = thinkingMsg.ID
+		}
+		
+	} else if d.Inter != nil {
+		channelID = d.Inter.ChannelID
+		
+		err = d.Session.InteractionRespond(d.Inter.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseDeferredChannelMessageWithSource,
+		})
+		if err != nil {
+			logger.WarnCtx(d.Robot.Ctx, "Failed to defer interaction response", "err", err)
+		}
+	} else {
+		logger.Error("Unknown Discord message type")
+		return
+	}
+	
+	var msg *param.MsgInfo
+	for msg = range messageChan.NormalMessageChan {
+		if len(msg.Content) == 0 {
+			msg.Content = "get nothing from llm!"
+		}
+		
+		if msg.MsgId == "" && originalMsgID != "" {
+			msg.MsgId = originalMsgID
+		}
+		
+		if d.Msg != nil {
+			if msg.MsgId == "" && originalMsgID == "" {
+				_, err = d.Session.ChannelMessageSend(channelID, msg.Content)
+				if err != nil {
+					logger.WarnCtx(d.Robot.Ctx, "Sending message failed", "err", err)
+				}
+			} else {
+				_, err = d.Session.ChannelMessageEdit(channelID, msg.MsgId, msg.Content)
+				if err != nil {
+					logger.WarnCtx(d.Robot.Ctx, "Editing message failed", "msgID", msg.MsgId, "err", err)
+				}
+				originalMsgID = ""
+			}
+		} else if d.Inter != nil {
+			if msg.MsgId == "" && originalMsgID == "" {
+				_, err = d.Session.InteractionResponseEdit(d.Inter.Interaction, &discordgo.WebhookEdit{
+					Content: &msg.Content,
+				})
+				if err != nil {
+					logger.WarnCtx(d.Robot.Ctx, "Sending interaction response failed", "err", err)
+				}
+			} else {
+				_, err = d.Session.FollowupMessageCreate(d.Inter.Interaction, true, &discordgo.WebhookParams{
+					Content: msg.Content,
+				})
+				if err != nil {
+					logger.WarnCtx(d.Robot.Ctx, "Editing followup interaction message failed", "err", err)
+				}
+				originalMsgID = ""
+			}
+		}
+	}
+}
+
 func (d *DiscordRobot) sendText(messageChan *MsgChan) {
 	var msg *param.MsgInfo
 	if d.Inter != nil {

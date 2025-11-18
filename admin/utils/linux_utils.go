@@ -24,8 +24,9 @@ func StartDetachedProcess(argsStr string) error {
 	var args []string
 	for _, l := range lines {
 		trimmed := strings.TrimSpace(l)
+		kvs := strings.SplitN(l, "=", 2)
 		if trimmed != "" {
-			args = append(args, trimmed)
+			args = append(args, kvs[0]+"='"+escapeForAppleScript(kvs[1])+"'")
 		}
 	}
 	
@@ -50,4 +51,13 @@ end tell`, cmdStr)
 		cmd.Stderr = nil
 		return cmd.Start()
 	}
+}
+
+func escapeForAppleScript(s string) string {
+	s = strings.ReplaceAll(s, `\`, `\\`)
+	s = strings.ReplaceAll(s, `'`, `\'`)
+	s = strings.ReplaceAll(s, `"`, `\"`)
+	s = strings.ReplaceAll(s, "\n", " ")
+	s = strings.ReplaceAll(s, "\r", "")
+	return s
 }

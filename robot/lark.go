@@ -276,6 +276,34 @@ func (l *LarkRobot) executeChain() {
 	go l.Robot.HandleUpdate(messageChan, "opus")
 }
 
+func (l *LarkRobot) sendTextStream(messageChan *MsgChan) {
+	var msg *param.MsgInfo
+	chatId, messageId, _ := l.Robot.GetChatIdAndMsgIdAndUserID()
+	for msg = range messageChan.NormalMessageChan {
+		if len(msg.Content) == 0 {
+			msg.Content = "get nothing from llm!"
+		}
+		
+		if msg.MsgId == "" {
+			msgId := l.Robot.SendMsg(chatId, msg.Content, messageId, tgbotapi.ModeMarkdown, nil)
+			msg.MsgId = msgId
+		} else {
+			
+			resp, err := l.Client.Im.Message.Update(l.Robot.Ctx, larkim.NewUpdateMessageReqBuilder().
+				MessageId(msg.MsgId).
+				Body(larkim.NewUpdateMessageReqBodyBuilder().
+					MsgType(larkim.MsgTypePost).
+					Content(GetMarkdownContent(msg.Content)).
+					Build()).
+				Build())
+			if err != nil || !resp.Success() {
+				logger.Warn("send message fail", "err", err, "resp", resp)
+				continue
+			}
+		}
+	}
+}
+
 func (l *LarkRobot) sendText(messageChan *MsgChan) {
 	var msg *param.MsgInfo
 	for msg = range messageChan.NormalMessageChan {

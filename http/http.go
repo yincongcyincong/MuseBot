@@ -28,6 +28,7 @@ type HTTPServer struct {
 }
 
 func InitHTTP() {
+	initImg()
 	pprofServer := NewHTTPServer(fmt.Sprintf("%s", *conf.BaseConfInfo.HTTPHost))
 	pprofServer.Start()
 }
@@ -88,6 +89,8 @@ func (p *HTTPServer) Start() {
 		mux.HandleFunc("/cron/update_status", UpdateCronStatus)
 		mux.HandleFunc("/cron/delete", DeleteCron)
 		mux.HandleFunc("/cron/list", GetCrons)
+		
+		mux.HandleFunc("/image", imageHandler)
 		
 		wrappedMux := WithRequestContext(mux)
 		

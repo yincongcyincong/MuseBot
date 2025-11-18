@@ -13,3 +13,4 @@ data
 go_build_*
 output
 MusebotAdmin*
+img/*

@@ -927,6 +927,35 @@ func (t *TelegramRobot) sendImg() {
 	})
 }
 
+func (t *TelegramRobot) SendMedia(mediaContent []byte, contentType, sType string) error {
+	chatId, _, _ := t.Robot.GetChatIdAndMsgIdAndUserID()
+	
+	if sType == "image" {
+		photo := tgbotapi.NewPhoto(int64(utils.ParseInt(chatId)), tgbotapi.FileBytes{
+			Name:  "image." + contentType,
+			Bytes: mediaContent,
+		})
+		resp, err := t.Bot.Request(photo)
+		if err != nil {
+			logger.ErrorCtx(t.Robot.Ctx, "send image fail", "req", photo, "resp", resp)
+			return err
+		}
+	} else {
+		video := tgbotapi.NewVideo(int64(utils.ParseInt(chatId)), tgbotapi.FileBytes{
+			Name:  "video." + utils.DetectVideoMimeType(mediaContent),
+			Bytes: mediaContent,
+		})
+		
+		resp, err := t.Bot.Request(video)
+		if err != nil {
+			logger.ErrorCtx(t.Robot.Ctx, "send image fail", "req", video, "resp", resp)
+			return err
+		}
+	}
+	
+	return nil
+}
+
 // ExecuteForceReply use force reply interact with user
 func (t *TelegramRobot) ExecuteForceReply() {
 	defer func() {
@@ -1066,6 +1095,19 @@ func ForceReply(chatId int64, msgId int, i18MsgId string, bot *tgbotapi.BotAPI) 
 
 func (t *TelegramRobot) sendText(messageChan *MsgChan) {
 	var msg *param.MsgInfo
+	for msg = range messageChan.NormalMessageChan {
+		if msg.Finished {
+			t.SendMsg(msg)
+		}
+	}
+	
+	if msg != nil {
+		t.SendMsg(msg)
+	}
+}
+
+func (t *TelegramRobot) sendTextStream(messageChan *MsgChan) {
+	var msg *param.MsgInfo
 	chatIdStr, msgIdStr, _ := t.Robot.GetChatIdAndMsgIdAndUserID()
 	msgId := utils.ParseInt(msgIdStr)
 	chatId := int64(utils.ParseInt(chatIdStr))
@@ -1116,6 +1158,34 @@ func (t *TelegramRobot) sendText(messageChan *MsgChan) {
 			}
 		}
 		
+	}
+}
+
+func (t *TelegramRobot) SendMsg(msg *param.MsgInfo) {
+	chatId, _, _ := t.Robot.GetChatIdAndMsgIdAndUserID()
+	blocks := utils.ExtractContentBlocks(msg.Content)
+	for _, b := range blocks {
+		switch b.Type {
+		case "text":
+			t.Robot.SendMsg(chatId, strings.TrimSpace(b.Content), "", tgbotapi.ModeMarkdown, nil)
+		case "video", "image":
+			content, err := utils.DownloadFile(b.Media.URL)
+			if err != nil {
+				logger.ErrorCtx(t.Robot.Ctx, "download file fail", "err", err)
+				continue
+			}
+			contentType := ""
+			if b.Type == "video" {
+				contentType = utils.DetectVideoMimeType(content)
+			} else {
+				contentType = utils.DetectImageFormat(content)
+			}
+			
+			err = t.SendMedia(content, contentType, b.Type)
+			if err != nil {
+				logger.ErrorCtx(t.Robot.Ctx, "send media fail", "err", err)
+			}
+		}
 	}
 }
 

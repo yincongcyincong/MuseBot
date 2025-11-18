@@ -561,23 +561,25 @@ func (q *QQRobot) sendText(messageChan *MsgChan) {
 		if msg != nil {
 			q.sendMsg(msg)
 		}
-	} else {
-		var id string
-		var err error
-		idx := int32(0)
-		
-		for msg := range messageChan.StrMessageChan {
-			id, err = q.PostStreamMessage(1, idx, id, msg)
-			if err != nil {
-				logger.ErrorCtx(q.Robot.Ctx, "send stream msg fail", "err", err)
-			}
-			idx++
-		}
-		
-		_, err = q.PostStreamMessage(10, idx, id, " ")
+	}
+}
+
+func (q *QQRobot) sendTextStream(messageChan *MsgChan) {
+	var id string
+	var err error
+	idx := int32(0)
+	
+	for msg := range messageChan.StrMessageChan {
+		id, err = q.PostStreamMessage(1, idx, id, msg)
 		if err != nil {
 			logger.ErrorCtx(q.Robot.Ctx, "send stream msg fail", "err", err)
 		}
+		idx++
+	}
+	
+	_, err = q.PostStreamMessage(10, idx, id, " ")
+	if err != nil {
+		logger.ErrorCtx(q.Robot.Ctx, "send stream msg fail", "err", err)
 	}
 }
 
