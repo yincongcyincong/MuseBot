@@ -20,6 +20,7 @@ COPY . .
 
 # Build the Go application
 RUN go build -ldflags="-s -w" -o MuseBot main.go
+RUN go build -ldflags="-s -w" -o MuseBotAdmin admin/main.go
 
 
 # ----------------------
@@ -64,8 +65,10 @@ RUN mkdir -p ./conf/i18n ./conf/mcp
 
 # Copy compiled Go application
 COPY --from=builder /app/MuseBot .
+COPY --from=builder /app/MuseBotAdmin .
 COPY --from=builder /app/conf/i18n/ ./conf/i18n/
 COPY --from=builder /app/conf/mcp/ ./conf/mcp/
+COPY --from=builder /app/conf/img/ ./conf/img/
 
 # Copy FFmpeg binaries
 COPY --from=ffmpeg-builder /usr/local/bin/ffmpeg /usr/local/bin/ffmpeg
@@ -78,6 +81,7 @@ USER appuser
 
 # Expose application port
 EXPOSE 36060
+EXPOSE 18080
 
 # Set entrypoint
-ENTRYPOINT ["./MuseBot"]
+ENTRYPOINT ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf", "-n"]

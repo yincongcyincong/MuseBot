@@ -113,7 +113,6 @@ func NewWechatRobot(event contract.EventInterface) (*WechatRobot, bool) {
 		}
 		w.TextMsg = msg
 		msgId = msg.MsgID
-		w.UserName = msg.FromUserName
 	case models.CALLBACK_MSG_TYPE_IMAGE:
 		msg := &serverModel.MessageImage{}
 		err := event.ReadMessage(msg)
@@ -123,7 +122,6 @@ func NewWechatRobot(event contract.EventInterface) (*WechatRobot, bool) {
 		}
 		w.ImageMsg = msg
 		msgId = msg.MsgID
-		w.UserName = msg.FromUserName
 	case models.CALLBACK_MSG_TYPE_VOICE:
 		msg := &serverModel.MessageVoice{}
 		err := event.ReadMessage(msg)
@@ -133,7 +131,6 @@ func NewWechatRobot(event contract.EventInterface) (*WechatRobot, bool) {
 		}
 		w.VoiceMsg = msg
 		msgId = msg.MsgID
-		w.UserName = msg.FromUserName
 	}
 	
 	if _, ok := TencentMsgMap.Load(msgId); !ok {
@@ -248,30 +245,38 @@ func (w *WechatRobot) sendImg() {
 			return
 		}
 		
-		fileName := utils.GetAbsPath("data/" + utils.RandomFilename(utils.DetectImageFormat(imageContent)))
-		err = os.WriteFile(fileName, imageContent, 0666)
+		err = w.sendMedia(imageContent, utils.DetectImageFormat(imageContent), "image")
 		if err != nil {
-			logger.Error("save image fail", "err", err)
-			w.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
-			return
-		}
-		
-		mediaResp, err := w.App.Media.UploadImage(w.Robot.Ctx, fileName)
-		if err != nil {
-			logger.Error("upload image fail", "err", err)
-			w.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
-			return
-		}
-		resp, err := w.App.CustomerService.Message(w.Robot.Ctx, messages.NewMedia(mediaResp.MediaID, "image", nil)).
-			SetTo(w.Event.GetFromUserName()).SetBy(w.Event.GetToUserName()).Send(w.Robot.Ctx)
-		if err != nil {
-			logger.Error("send image fail", "err", err, "resp", resp)
+			logger.ErrorCtx(w.Robot.Ctx, "save image fail", "err", err)
 			w.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
 		
 		w.Robot.saveRecord(imageContent, lastImageContent, param.ImageRecordType, totalToken)
 	})
+}
+
+func (w *WechatRobot) sendMedia(mediaContent []byte, contentType, sType string) error {
+	fileName := utils.GetAbsPath("data/" + utils.RandomFilename(contentType))
+	err := os.WriteFile(fileName, mediaContent, 0666)
+	if err != nil {
+		logger.Error("save image fail", "err", err)
+		return err
+	}
+	
+	mediaResp, err := w.App.Media.UploadImage(w.Robot.Ctx, fileName)
+	if err != nil {
+		logger.Error("upload image fail", "err", err)
+		return err
+	}
+	resp, err := w.App.CustomerService.Message(w.Robot.Ctx, messages.NewMedia(mediaResp.MediaID, sType, nil)).
+		SetTo(w.Event.GetFromUserName()).SetBy(w.Event.GetToUserName()).Send(w.Robot.Ctx)
+	if err != nil {
+		logger.Error("send image fail", "err", err, "resp", resp)
+		return err
+	}
+	
+	return nil
 }
 
 func (w *WechatRobot) sendVideo() {
@@ -297,22 +302,9 @@ func (w *WechatRobot) sendVideo() {
 			return
 		}
 		
-		fileName := utils.GetAbsPath("data/" + utils.RandomFilename(utils.DetectVideoMimeType(videoContent)))
-		err = os.WriteFile(fileName, videoContent, 0666)
+		err = w.sendMedia(videoContent, utils.DetectVideoMimeType(videoContent), "video")
 		if err != nil {
-			logger.Error("save image fail", "err", err)
-			return
-		}
-		mediaResp, err := w.App.Media.UploadVideo(w.Robot.Ctx, fileName)
-		if err != nil {
-			logger.Error("upload image fail", "err", err)
-			return
-		}
-		
-		resp, err := w.App.CustomerService.Message(w.Robot.Ctx, messages.NewMedia(mediaResp.MediaID, "video", nil)).
-			SetTo(w.Event.GetFromUserName()).Send(w.Robot.Ctx)
-		if err != nil {
-			logger.Error("send image fail", "err", err, "resp", resp)
+			logger.Error("send video fail", "err", err)
 			w.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
@@ -420,21 +412,45 @@ func (w *WechatRobot) getMedia() ([]byte, error) {
 }
 
 func (w *WechatRobot) sendText(messageChan *MsgChan) {
-	chatId, messageId, _ := w.Robot.GetChatIdAndMsgIdAndUserID()
-	
 	var msg *param.MsgInfo
 	for msg = range messageChan.NormalMessageChan {
 		if msg.Finished {
-			w.Robot.SendMsg(chatId, msg.Content, messageId, "", nil)
+			w.SendMsg(msg)
 		}
 	}
 	
-	if msg == nil || len(msg.Content) == 0 {
-		msg = new(param.MsgInfo)
-		return
+	if msg != nil {
+		w.SendMsg(msg)
 	}
 	
-	w.Robot.SendMsg(chatId, msg.Content, messageId, "", nil)
+}
+
+func (w *WechatRobot) SendMsg(msg *param.MsgInfo) {
+	chatId, _, _ := w.Robot.GetChatIdAndMsgIdAndUserID()
+	blocks := utils.ExtractContentBlocks(msg.Content)
+	for _, b := range blocks {
+		switch b.Type {
+		case "text":
+			w.Robot.SendMsg(chatId, strings.TrimSpace(b.Content), "", tgbotapi.ModeMarkdown, nil)
+		case "video", "image":
+			content, err := utils.DownloadFile(b.Media.URL)
+			if err != nil {
+				logger.ErrorCtx(w.Robot.Ctx, "download file fail", "err", err)
+				continue
+			}
+			contentType := ""
+			if b.Type == "video" {
+				contentType = utils.DetectVideoMimeType(content)
+			} else {
+				contentType = utils.DetectImageFormat(content)
+			}
+			
+			err = w.sendMedia(content, contentType, b.Type)
+			if err != nil {
+				logger.ErrorCtx(w.Robot.Ctx, "send media fail", "err", err)
+			}
+		}
+	}
 }
 
 func (w *WechatRobot) sendVoiceContent(voiceContent []byte, duration int) error {

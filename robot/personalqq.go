@@ -341,7 +341,7 @@ func (q *PersonalQQRobot) SendMsg(txt string, image []byte, video []byte, voice 
 				})
 			case "image", "video":
 				mediaData, err := utils.DownloadFile(m.Media.URL)
-				if err != nil {
+				if err != nil || len(mediaData) == 0 {
 					logger.ErrorCtx(q.Ctx, "send message failed", "err", err, "url", m.Media.URL)
 				} else {
 					msgArray = append(msgArray, map[string]interface{}{

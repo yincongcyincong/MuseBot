@@ -332,28 +332,55 @@ func (s *SlackRobot) sendImg() {
 		
 		imageContent, totalToken, err := s.Robot.CreatePhoto(prompt, lastImageContent)
 		if err != nil {
-			logger.Warn("generate image fail", "err", err)
+			logger.ErrorCtx(s.Robot.Ctx, "generate image fail", "err", err)
 			s.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
 		
-		uploadParams := slack.UploadFileV2Parameters{
-			Filename: "image." + utils.DetectImageFormat(imageContent),
-			Reader:   bytes.NewReader(imageContent),
-			Title:    "image",
-			FileSize: len(imageContent),
-			Channel:  chatId,
-		}
-		
-		_, err = s.Client.UploadFileV2(uploadParams)
+		err = s.sendMedia(imageContent, utils.DetectImageFormat(imageContent), "image")
 		if err != nil {
-			logger.Warn("upload image to slack fail", "err", err)
+			logger.ErrorCtx(s.Robot.Ctx, "send image fail", "err", err)
 			s.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
 		
 		s.Robot.saveRecord(imageContent, lastImageContent, param.ImageRecordType, totalToken)
 	})
+}
+
+func (s *SlackRobot) sendMedia(media []byte, contentType, sType string) error {
+	chatId, _, _ := s.Robot.GetChatIdAndMsgIdAndUserID()
+	if sType == "image" {
+		uploadParams := slack.UploadFileV2Parameters{
+			Filename: "image." + contentType,
+			Reader:   bytes.NewReader(media),
+			Title:    "image",
+			FileSize: len(media),
+			Channel:  chatId,
+		}
+		
+		_, err := s.Client.UploadFileV2(uploadParams)
+		if err != nil {
+			logger.ErrorCtx(s.Robot.Ctx, "upload image to slack fail", "err", err)
+			return err
+		}
+	} else {
+		uploadParams := slack.UploadFileV2Parameters{
+			Filename: "video." + contentType,
+			Reader:   bytes.NewReader(media),
+			Title:    "video",
+			FileSize: len(media),
+			Channel:  chatId,
+		}
+		
+		_, err := s.Client.UploadFileV2(uploadParams)
+		if err != nil {
+			logger.ErrorCtx(s.Robot.Ctx, "upload image to slack fail", "err", err)
+			return err
+		}
+	}
+	
+	return nil
 }
 
 func (s *SlackRobot) sendVideo() {
@@ -369,37 +396,20 @@ func (s *SlackRobot) sendVideo() {
 			return
 		}
 		
-		thinkingMsg := s.Robot.SendMsg(chatId, i18n.GetMessage("thinking", nil), replyToMessageID, "", nil)
-		
 		var err error
 		imageContent := s.ImageContent
 		videoContent, totalToken, err := s.Robot.CreateVideo(prompt, imageContent)
 		if err != nil {
-			logger.Warn("generate video failed", "err", err)
+			logger.ErrorCtx(s.Robot.Ctx, "generate video failed", "err", err)
 			s.Robot.SendMsg(chatId, err.Error(), replyToMessageID, tgbotapi.ModeMarkdown, nil)
 			return
 		}
 		
-		uploadParams := slack.UploadFileV2Parameters{
-			Filename: "video." + utils.DetectVideoMimeType(videoContent),
-			Reader:   bytes.NewReader(videoContent),
-			Title:    "video",
-			FileSize: len(videoContent),
-			Channel:  chatId,
-		}
-		
-		_, err = s.Client.UploadFileV2(uploadParams)
+		err = s.sendMedia(videoContent, utils.DetectVideoMimeType(videoContent), "video")
 		if err != nil {
-			logger.Warn("upload image to slack fail", "err", err)
+			logger.ErrorCtx(s.Robot.Ctx, "send video failed", "err", err)
 			s.Robot.SendMsg(chatId, err.Error(), replyToMessageID, tgbotapi.ModeMarkdown, nil)
 			return
-		}
-		
-		if thinkingMsg != "" {
-			_, _, err := s.Client.DeleteMessage(chatId, thinkingMsg)
-			if err != nil {
-				logger.Warn("delete thinking message fail", "err", err)
-			}
 		}
 		
 		s.Robot.saveRecord(videoContent, imageContent, param.VideoRecordType, totalToken)
@@ -459,7 +469,7 @@ func (s *SlackRobot) getPerMsgLen() int {
 	return 1800
 }
 
-func (s *SlackRobot) sendText(messageChan *MsgChan) {
+func (s *SlackRobot) sendTextStream(messageChan *MsgChan) {
 	chatId, messageId, _ := s.Robot.GetChatIdAndMsgIdAndUserID()
 	
 	for msg := range messageChan.NormalMessageChan {
@@ -479,6 +489,50 @@ func (s *SlackRobot) sendText(messageChan *MsgChan) {
 			if err != nil {
 				logger.ErrorCtx(s.Robot.Ctx, "update message failed", "err", err)
 				continue
+			}
+		}
+	}
+}
+
+func (s *SlackRobot) sendText(messageChan *MsgChan) {
+	
+	var msg *param.MsgInfo
+	for msg = range messageChan.NormalMessageChan {
+		if msg.Finished {
+			s.sendMsg(msg)
+		}
+	}
+	
+	if msg != nil {
+		s.sendMsg(msg)
+	}
+	
+}
+
+func (s *SlackRobot) sendMsg(msg *param.MsgInfo) {
+	chatId, msgId, _ := s.Robot.GetChatIdAndMsgIdAndUserID()
+	blocks := utils.ExtractContentBlocks(msg.Content)
+	
+	for _, b := range blocks {
+		switch b.Type {
+		case "text":
+			s.Robot.SendMsg(chatId, b.Content, msgId, tgbotapi.ModeMarkdown, nil)
+		case "video", "image":
+			content, err := utils.DownloadFile(b.Media.URL)
+			if err != nil {
+				logger.ErrorCtx(s.Robot.Ctx, "download file fail", "err", err)
+				continue
+			}
+			contentType := ""
+			if b.Type == "video" {
+				contentType = utils.DetectVideoMimeType(content)
+			} else {
+				contentType = utils.DetectImageFormat(content)
+			}
+			
+			err = s.sendMedia(content, contentType, b.Type)
+			if err != nil {
+				logger.ErrorCtx(s.Robot.Ctx, "send media fail", "err", err)
 			}
 		}
 	}

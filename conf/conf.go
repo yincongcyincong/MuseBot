@@ -13,6 +13,7 @@ import (
 
 type BaseConf struct {
 	StartTime int64 `json:"-"`
+	ImageDay  int   `json:"-"`
 	
 	TelegramBotToken        *string `json:"telegram_bot_token"`
 	DiscordBotToken         *string `json:"discord_bot_token"`
