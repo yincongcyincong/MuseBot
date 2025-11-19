@@ -357,7 +357,16 @@ func (l *LLM) ExecMcpReq(ctx context.Context, funcName string, property map[stri
 	metrics.MCPRequestCount.WithLabelValues(mc.Conf.Name, funcName).Inc()
 	startTime := time.Now()
 	
-	toolsData, err := mc.ExecTools(ctx, funcName, property)
+	var toolsData string
+	for i := 0; i < *conf.BaseConfInfo.LLMRetryTimes; i++ {
+		toolsData, err = mc.ExecTools(ctx, funcName, property)
+		if err != nil {
+			logger.ErrorCtx(ctx, "get mcp fail", "err", err, "function", funcName, "argument", property)
+			continue
+		}
+		break
+	}
+	
 	if err != nil {
 		logger.ErrorCtx(ctx, "get mcp fail", "err", err, "function", funcName, "argument", property)
 		return "", err

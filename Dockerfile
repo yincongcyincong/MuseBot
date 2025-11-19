@@ -53,15 +53,17 @@ WORKDIR /app
 
 # 安装运行时依赖 (证书 + nodejs + opus 运行库)
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends ca-certificates curl libopus0 && \
+    apt-get install -y --no-install-recommends ca-certificates curl libopus0 supervisor && \
     curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
     apt-get install -y --no-install-recommends nodejs && \
     rm -rf /var/lib/apt/lists/*
 
 ENV PATH="/usr/share/nodejs/corepack/shims:$PATH"
 
+COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+
 # Create required directories
-RUN mkdir -p ./conf/i18n ./conf/mcp
+RUN mkdir -p ./conf/i18n ./conf/mcp ./conf/img/ ./adminui
 
 # Copy compiled Go application
 COPY --from=builder /app/MuseBot .
@@ -69,6 +71,7 @@ COPY --from=builder /app/MuseBotAdmin .
 COPY --from=builder /app/conf/i18n/ ./conf/i18n/
 COPY --from=builder /app/conf/mcp/ ./conf/mcp/
 COPY --from=builder /app/conf/img/ ./conf/img/
+COPY --from=builder /app/admin/adminui/ ./conf/adminui/
 
 # Copy FFmpeg binaries
 COPY --from=ffmpeg-builder /usr/local/bin/ffmpeg /usr/local/bin/ffmpeg

@@ -219,6 +219,9 @@ func GetAvailImgType() []string {
 	if *conf.BaseConfInfo.OpenAIToken != "" {
 		res = append(res, param.OpenAi)
 	}
+	if *conf.BaseConfInfo.OpenRouterToken != "" {
+		res = append(res, param.OpenRouter)
+	}
 	if *conf.BaseConfInfo.AliyunToken != "" {
 		res = append(res, param.Aliyun)
 	}

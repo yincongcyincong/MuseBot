@@ -23,7 +23,8 @@ import (
 )
 
 var (
-	pngFetch = regexp.MustCompile(`https?://[^\s)]+\.png[^\s)]*`)
+	pngFetch    = regexp.MustCompile(`https?://[^\s)]+\.png[^\s)]*`)
+	mkBase64Reg = regexp.MustCompile(`!\[.*?\]\((data:image\/[a-zA-Z0-9\+\-\.]*;base64,([a-zA-Z0-9\+\/\=]+))\)`)
 )
 
 // AI302FetchResp fetch response
@@ -52,7 +53,7 @@ type CreateResp struct {
 	TaskID string `json:"task_id"`
 }
 
-func GenerateMixImg(ctx context.Context, prompt string, imageContent []byte) (string, int, error) {
+func GenerateMixImg(ctx context.Context, prompt string, imageContent []byte) ([]byte, int, error) {
 	start := time.Now()
 	llmConfig := db.GetCtxUserInfo(ctx).LLMConfigRaw
 	mediaType := utils.GetImgType(llmConfig)
@@ -87,27 +88,54 @@ func GenerateMixImg(ctx context.Context, prompt string, imageContent []byte) (st
 	}
 	
 	// assign task
-	response, err := client.CreateChatCompletion(ctx, request)
-	
-	metrics.APIRequestDuration.WithLabelValues(model).Observe(time.Since(start).Seconds())
+	var response openrouter.ChatCompletionResponse
+	var err error
+	for i := 0; i < *conf.BaseConfInfo.LLMRetryTimes; i++ {
+		response, err = client.CreateChatCompletion(ctx, request)
+		if err != nil {
+			logger.ErrorCtx(ctx, "create chat completion fail", "err", err)
+			continue
+		}
+		break
+	}
 	
 	if err != nil {
 		logger.ErrorCtx(ctx, "create chat completion fail", "err", err)
-		return "", 0, err
+		return nil, 0, err
 	}
 	
+	metrics.APIRequestDuration.WithLabelValues(model).Observe(time.Since(start).Seconds())
+	
 	if len(response.Choices) != 0 {
-		if mediaType == param.AI302 {
+		if len(response.Choices[0].Message.Content.Multi) != 0 {
+			imageContent, err := utils.DownloadFile(response.Choices[0].Message.Content.Multi[0].ImageURL.URL)
+			if err != nil {
+				logger.ErrorCtx(ctx, "download image fail", "err", err)
+				return nil, 0, err
+			}
+			return imageContent, response.Usage.TotalTokens, nil
+		} else if strings.Contains(response.Choices[0].Message.Content.Text, "http") {
 			pngs := pngFetch.FindAllString(response.Choices[0].Message.Content.Text, -1)
-			return pngs[len(pngs)-1], response.Usage.TotalTokens, nil
-		} else if mediaType == param.OpenRouter {
-			if len(response.Choices[0].Message.Content.Multi) != 0 {
-				return response.Choices[0].Message.Content.Multi[0].ImageURL.URL, response.Usage.TotalTokens, nil
+			imageContent, err := utils.DownloadFile(pngs[len(pngs)-1])
+			if err != nil {
+				logger.ErrorCtx(ctx, "download image fail", "err", err)
+				return nil, 0, err
+			}
+			return imageContent, response.Usage.TotalTokens, nil
+		} else if strings.Contains(response.Choices[0].Message.Content.Text, "data:image") {
+			matches := mkBase64Reg.FindAllStringSubmatch(response.Choices[0].Message.Content.Text, -1)
+			if len(matches) > 0 && len(matches[0]) > 2 {
+				b64, err := base64.StdEncoding.DecodeString(matches[0][2])
+				if err != nil {
+					logger.ErrorCtx(ctx, "decode base64 fail", "err", err)
+					return nil, 0, err
+				}
+				return b64, response.Usage.TotalTokens, nil
 			}
 		}
 	}
 	
-	return "", 0, errors.New("image is empty")
+	return nil, 0, errors.New("image is empty")
 }
 
 func GetMixClient(ctx context.Context, clientType string) *openrouter.Client {
@@ -178,9 +206,18 @@ func Generate302AIVideo(ctx context.Context, prompt string, image []byte) (strin
 	req.Header.Add("Authorization", "Bearer "+*conf.BaseConfInfo.AI302Token)
 	req.Header.Add("Content-Type", "application/json")
 	
-	res, err := httpClient.Do(req)
-	if err != nil {
-		return "", 0, fmt.Errorf("failed to call create API: %w", err)
+	var res *http.Response
+	for i := 0; i < *conf.BaseConfInfo.LLMRetryTimes; i++ {
+		res, err = httpClient.Do(req)
+		if err != nil {
+			logger.ErrorCtx(ctx, "failed to call create API:", "err", err)
+			continue
+		}
+		break
+	}
+	
+	if err != nil || res == nil {
+		return "", 0, fmt.Errorf("failed to call create API: %w %v", err, res)
 	}
 	defer res.Body.Close()
 	
@@ -273,14 +310,23 @@ func GetMixImageContent(ctx context.Context, imageContent []byte, content string
 	}
 	
 	// assign task
-	response, err := client.CreateChatCompletion(ctx, request)
-	
-	metrics.APIRequestDuration.WithLabelValues(model).Observe(time.Since(start).Seconds())
+	var response openrouter.ChatCompletionResponse
+	var err error
+	for i := 0; i < *conf.BaseConfInfo.LLMRetryTimes; i++ {
+		response, err = client.CreateChatCompletion(ctx, request)
+		if err != nil {
+			logger.ErrorCtx(ctx, "create chat completion fail", "err", err)
+			continue
+		}
+		break
+	}
 	
 	if err != nil {
 		logger.ErrorCtx(ctx, "create chat completion fail", "err", err)
 		return "", 0, err
 	}
+	
+	metrics.APIRequestDuration.WithLabelValues(model).Observe(time.Since(start).Seconds())
 	
 	if len(response.Choices) == 0 {
 		logger.ErrorCtx(ctx, "response is emtpy", "response", response)

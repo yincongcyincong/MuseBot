@@ -286,14 +286,6 @@ func SoftDeleteBot(w http.ResponseWriter, r *http.Request) {
 		utils.Failure(ctx, w, r, param.CodeParamError, param.MsgParamError, err)
 		return
 	}
-	
-	botInfo, err := db.GetBotByID(idStr)
-	if err != nil {
-		logger.ErrorCtx(ctx, "get bot error", "reason", "not found", "id", idStr, "err", err)
-		utils.Failure(ctx, w, r, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
-		return
-	}
-	
 	err = db.SoftDeleteBot(id)
 	if err != nil {
 		logger.ErrorCtx(ctx, "soft delete bot error", "reason", "db fail", "id", id, "err", err)
@@ -302,10 +294,6 @@ func SoftDeleteBot(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	checkpoint.BotMap.Delete(id)
-	
-	adminUtils.GetCrtClient(botInfo).Do(GetRequest(ctx, http.MethodGet,
-		strings.TrimSuffix(botInfo.Address, "/")+"/stop", bytes.NewBuffer(nil)))
-	
 	utils.Success(ctx, w, r, "bot deleted")
 }
 

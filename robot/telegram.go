@@ -413,33 +413,33 @@ func (t *TelegramRobot) changeType(ty string) {
 	var inlineKeyboard tgbotapi.InlineKeyboardMarkup
 	inlineButton := make([][]tgbotapi.InlineKeyboardButton, 0)
 	switch ty {
-	case param.TxtType, "/" + param.TxtType:
+	case param.TxtType, "/" + param.TxtType, "$" + param.TxtType:
 		for _, k := range utils.GetAvailTxtType() {
 			inlineButton = append(inlineButton, tgbotapi.NewInlineKeyboardRow(
 				tgbotapi.NewInlineKeyboardButtonData(k, k),
 			))
 		}
 	
-	case param.PhotoType, "/" + param.PhotoType:
+	case param.PhotoType, "/" + param.PhotoType, "$" + param.PhotoType:
 		for _, k := range utils.GetAvailImgType() {
 			inlineButton = append(inlineButton, tgbotapi.NewInlineKeyboardRow(
 				tgbotapi.NewInlineKeyboardButtonData(k, k),
 			))
 		}
 	
-	case param.VideoType, "/" + param.VideoType:
+	case param.VideoType, "/" + param.VideoType, "$" + param.VideoType:
 		for _, k := range utils.GetAvailVideoType() {
 			inlineButton = append(inlineButton, tgbotapi.NewInlineKeyboardRow(
 				tgbotapi.NewInlineKeyboardButtonData(k, k),
 			))
 		}
-	case param.RecType, "/" + param.RecType:
+	case param.RecType, "/" + param.RecType, "$" + param.RecType:
 		for _, k := range utils.GetAvailRecType() {
 			inlineButton = append(inlineButton, tgbotapi.NewInlineKeyboardRow(
 				tgbotapi.NewInlineKeyboardButtonData(k, k),
 			))
 		}
-	case param.TtsType, "/" + param.TtsType:
+	case param.TtsType, "/" + param.TtsType, "$" + param.TtsType:
 		for _, k := range utils.GetAvailTTSType() {
 			inlineButton = append(inlineButton, tgbotapi.NewInlineKeyboardRow(
 				tgbotapi.NewInlineKeyboardButtonData(k, k),
@@ -458,33 +458,33 @@ func (t *TelegramRobot) changeType(ty string) {
 func (t *TelegramRobot) changeModel(ty string) {
 	
 	switch ty {
-	case param.TxtModel, "/" + param.TxtModel:
+	case param.TxtModel, "/" + param.TxtModel, "$" + param.TxtModel:
 		if t.getPrompt() != "" {
 			t.Robot.handleModelUpdate(&RobotModel{TxtModel: t.Prompt})
 			return
 		}
 		t.showTxtModel(ty)
 	
-	case param.PhotoModel, "/" + param.PhotoModel:
+	case param.PhotoModel, "/" + param.PhotoModel, "$" + param.PhotoModel:
 		if t.getPrompt() != "" {
 			t.Robot.handleModelUpdate(&RobotModel{ImgModel: t.Prompt})
 			return
 		}
 		t.showImageModel()
 	
-	case param.VideoModel, "/" + param.VideoModel:
+	case param.VideoModel, "/" + param.VideoModel, "$" + param.VideoModel:
 		if t.getPrompt() != "" {
 			t.Robot.handleModelUpdate(&RobotModel{VideoModel: t.Prompt})
 			return
 		}
 		t.showVideoModel()
-	case param.RecModel, "/" + param.RecModel:
+	case param.RecModel, "/" + param.RecModel, "$" + param.RecModel:
 		if t.getPrompt() != "" {
 			t.Robot.handleModelUpdate(&RobotModel{RecModel: t.Prompt})
 			return
 		}
 		t.showRecModel()
-	case param.TtsModel, "/" + param.TtsModel:
+	case param.TtsModel, "/" + param.TtsModel, "$" + param.TtsModel:
 		if t.getPrompt() != "" {
 			t.Robot.handleModelUpdate(&RobotModel{TTSModel: t.Prompt})
 			return
