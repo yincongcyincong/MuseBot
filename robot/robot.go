@@ -1589,7 +1589,7 @@ func (r *RobotInfo) CreatePhoto(prompt string, lastImageContent []byte) ([]byte,
 	case param.Gemini:
 		imageContent, totalToken, err = llm.GenerateGeminiImg(r.Ctx, prompt, lastImageContent)
 	case param.AI302, param.OpenRouter:
-		imageUrl, totalToken, err = llm.GenerateMixImg(r.Ctx, prompt, lastImageContent)
+		imageContent, totalToken, err = llm.GenerateMixImg(r.Ctx, prompt, lastImageContent)
 	case param.Aliyun:
 		imageUrl, totalToken, err = llm.GenerateAliyunImg(r.Ctx, prompt, lastImageContent)
 	default:

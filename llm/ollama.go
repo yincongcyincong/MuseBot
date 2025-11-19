@@ -74,10 +74,19 @@ func (o OllamaReq) Send(ctx context.Context, l *LLM) error {
 	
 	request.Messages = o.OllamaMsgs
 	
-	stream, err := requestDeepseek(ctx, client, request)
-	if err != nil {
+	var stream *Stream
+	var err error
+	for i := 0; i < *conf.BaseConfInfo.LLMRetryTimes; i++ {
+		stream, err = requestDeepseek(ctx, client, request)
+		if err != nil {
+			logger.ErrorCtx(l.Ctx, "ChatCompletionStream error", "updateMsgID", l.MsgId, "err", err)
+			continue
+		}
+		break
+	}
+	if err != nil || stream == nil {
 		logger.ErrorCtx(l.Ctx, "ChatCompletionStream error", "updateMsgID", l.MsgId, "err", err)
-		return err
+		return fmt.Errorf("request fail %v %v", err, stream)
 	}
 	defer stream.Close()
 	msgInfoContent := &param.MsgInfo{
@@ -199,10 +208,19 @@ func (o OllamaReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 	}
 	
 	// assign task
-	response, err := client.CreateChatCompletion(ctx, request)
-	if err != nil {
+	var response *deepseek.ChatCompletionResponse
+	var err error
+	for i := 0; i < *conf.BaseConfInfo.LLMRetryTimes; i++ {
+		response, err = client.CreateChatCompletion(ctx, request)
+		if err != nil {
+			logger.ErrorCtx(l.Ctx, "ChatCompletionStream error", "updateMsgID", l.MsgId, "err", err)
+			continue
+		}
+		break
+	}
+	if err != nil || response == nil {
 		logger.ErrorCtx(l.Ctx, "ChatCompletionStream error", "updateMsgID", l.MsgId, "err", err)
-		return "", err
+		return "", fmt.Errorf("request fail %v %v", err, response)
 	}
 	metrics.APIRequestDuration.WithLabelValues(l.Model).Observe(time.Since(start).Seconds())
 	

@@ -73,6 +73,7 @@ type BaseConf struct {
 	Powered           *string `json:"powered"`
 	SendMcpRes        *bool   `json:"send_mcp_res"`
 	DefaultModel      *string `json:"default_model"`
+	LLMRetryTimes     *int    `json:"llm_retry_times"`
 	
 	CrtFile *string `json:"crt_file"`
 	KeyFile *string `json:"key_file"`
@@ -151,6 +152,7 @@ func InitConf() {
 	BaseConfInfo.CaFile = flag.String("ca_file", "", "ca file")
 	BaseConfInfo.SendMcpRes = flag.Bool("send_mcp_res", false, "send mcp res")
 	BaseConfInfo.DefaultModel = flag.String("default_model", "", "default model")
+	BaseConfInfo.LLMRetryTimes = flag.Int("llm_retry_times", 3, "llm retry times")
 	
 	adminUserIds := flag.String("admin_user_ids", "", "admin user ids")
 	allowedUserIds := flag.String("allowed_user_ids", "", "allowed user ids")
@@ -415,6 +417,10 @@ func InitConf() {
 		*BaseConfInfo.DefaultModel = os.Getenv("DEFAULT_MODEL")
 	}
 	
+	if os.Getenv("LLM_RETRY_TIMES") != "" {
+		*BaseConfInfo.LLMRetryTimes, _ = strconv.Atoi(os.Getenv("LLM_RETRY_TIMES"))
+	}
+	
 	for _, userIdStr := range strings.Split(*allowedUserIds, ",") {
 		if userIdStr == "" {
 			continue
@@ -492,6 +498,7 @@ func InitConf() {
 	logger.Info("CONF", "ContextExpireTime", *BaseConfInfo.ContextExpireTime)
 	logger.Info("CONF", "SendMcpRes", *BaseConfInfo.SendMcpRes)
 	logger.Info("CONF", "DefaultModel", *BaseConfInfo.DefaultModel)
+	logger.Info("CONF", "LLMRetryTimes", *BaseConfInfo.LLMRetryTimes)
 	
 	EnvAudioConf()
 	EnvRagConf()

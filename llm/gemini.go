@@ -3,6 +3,7 @@ package llm
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -177,10 +178,18 @@ func (h *GeminiReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 		return "", err
 	}
 	
-	response, err := chat.Send(ctx, genai.NewPartFromText(l.Content))
-	if err != nil {
-		logger.ErrorCtx(l.Ctx, "create chat fail", "err", err)
-		return "", err
+	var response *genai.GenerateContentResponse
+	for i := 0; i < *conf.BaseConfInfo.LLMRetryTimes; i++ {
+		response, err = chat.Send(ctx, genai.NewPartFromText(l.Content))
+		if err != nil {
+			logger.ErrorCtx(l.Ctx, "create chat fail", "err", err)
+			continue
+		}
+		break
+	}
+	
+	if err != nil || response == nil {
+		return "", fmt.Errorf("request fail %v %v", err, response)
 	}
 	
 	metrics.APIRequestDuration.WithLabelValues(l.Model).Observe(time.Since(start).Seconds())
@@ -308,20 +317,29 @@ func GenerateGeminiImg(ctx context.Context, prompt string, imageContent []byte) 
 		})
 	}
 	
-	response, err := client.Models.GenerateContent(
-		ctx,
-		model,
-		geminiContent,
-		&genai.GenerateContentConfig{
-			ResponseModalities: []string{"TEXT", "IMAGE"},
-		},
-	)
-	
-	metrics.APIRequestDuration.WithLabelValues(model).Observe(time.Since(start).Seconds())
-	if err != nil {
-		logger.ErrorCtx(ctx, "generate image fail", "err", err)
-		return nil, 0, err
+	var response *genai.GenerateContentResponse
+	for i := 0; i < *conf.BaseConfInfo.LLMRetryTimes; i++ {
+		response, err = client.Models.GenerateContent(
+			ctx,
+			model,
+			geminiContent,
+			&genai.GenerateContentConfig{
+				ResponseModalities: []string{"TEXT", "IMAGE"},
+			},
+		)
+		
+		if err != nil {
+			logger.ErrorCtx(ctx, "generate image fail", "err", err)
+			continue
+		}
+		break
 	}
+	
+	if err != nil || response == nil {
+		logger.ErrorCtx(ctx, "generate image fail", "err", err)
+		return nil, 0, fmt.Errorf("request fail %v %v", err, response)
+	}
+	metrics.APIRequestDuration.WithLabelValues(model).Observe(time.Since(start).Seconds())
 	
 	if len(response.Candidates) > 0 && response.Candidates[0].Content != nil {
 		for _, part := range response.Candidates[0].Content.Parts {
@@ -353,12 +371,21 @@ func GenerateGeminiVideo(ctx context.Context, prompt string, image []byte) ([]by
 		}
 	}
 	
-	operation, err := client.Models.GenerateVideos(ctx,
-		model, prompt,
-		geminiImage,
-		&genai.GenerateVideosConfig{})
-	if err != nil {
-		logger.ErrorCtx(ctx, "generate video fail", "err", err)
+	var operation *genai.GenerateVideosOperation
+	for i := 0; i < *conf.BaseConfInfo.LLMRetryTimes; i++ {
+		operation, err = client.Models.GenerateVideos(ctx,
+			model, prompt,
+			geminiImage,
+			&genai.GenerateVideosConfig{})
+		if err != nil {
+			logger.ErrorCtx(ctx, "generate video fail", "err", err)
+			continue
+		}
+		break
+	}
+	
+	if err != nil || operation == nil {
+		logger.ErrorCtx(ctx, "generate video fail", "err", err, "operation", operation)
 		return nil, 0, err
 	}
 	
@@ -419,20 +446,28 @@ func GenerateGeminiText(ctx context.Context, audioContent []byte) (string, int, 
 		genai.NewContentFromParts(parts, genai.RoleUser),
 	}
 	
-	result, err := client.Models.GenerateContent(
-		ctx,
-		model,
-		contents,
-		nil,
-	)
-	
-	metrics.APIRequestDuration.WithLabelValues(model).Observe(time.Since(start).Seconds())
+	var result *genai.GenerateContentResponse
+	for i := 0; i < *conf.BaseConfInfo.LLMRetryTimes; i++ {
+		result, err = client.Models.GenerateContent(
+			ctx,
+			model,
+			contents,
+			nil,
+		)
+		
+		if err != nil || result == nil {
+			logger.ErrorCtx(ctx, "generate text fail", "err", err)
+			continue
+		}
+		break
+	}
 	
 	if err != nil || result == nil {
 		logger.ErrorCtx(ctx, "generate text fail", "err", err)
 		return "", 0, err
 	}
 	
+	metrics.APIRequestDuration.WithLabelValues(model).Observe(time.Since(start).Seconds())
 	return result.Text(), int(result.UsageMetadata.TotalTokenCount), nil
 }
 
@@ -457,20 +492,28 @@ func GetGeminiImageContent(ctx context.Context, imageContent []byte, content str
 		genai.NewContentFromParts(parts, genai.RoleUser),
 	}
 	
-	result, err := client.Models.GenerateContent(
-		ctx,
-		model,
-		contents,
-		nil,
-	)
-	
-	metrics.APIRequestDuration.WithLabelValues(model).Observe(time.Since(start).Seconds())
+	var result *genai.GenerateContentResponse
+	for i := 0; i < *conf.BaseConfInfo.LLMRetryTimes; i++ {
+		result, err = client.Models.GenerateContent(
+			ctx,
+			model,
+			contents,
+			nil,
+		)
+		
+		if err != nil || result == nil {
+			logger.ErrorCtx(ctx, "generate text fail", "err", err)
+			continue
+		}
+		break
+	}
 	
 	if err != nil || result == nil {
 		logger.ErrorCtx(ctx, "generate text fail", "err", err)
 		return "", 0, err
 	}
 	
+	metrics.APIRequestDuration.WithLabelValues(model).Observe(time.Since(start).Seconds())
 	return result.Text(), int(result.UsageMetadata.TotalTokenCount), nil
 	
 }
@@ -494,31 +537,40 @@ func GeminiTTS(ctx context.Context, content, encoding string) ([]byte, int, int,
 	contents := []*genai.Content{
 		genai.NewContentFromParts(parts, genai.RoleUser),
 	}
-	response, err := client.Models.GenerateContent(
-		ctx,
-		model,
-		contents,
-		&genai.GenerateContentConfig{
-			ResponseModalities: []string{
-				"AUDIO",
-			},
-			SpeechConfig: &genai.SpeechConfig{
-				VoiceConfig: &genai.VoiceConfig{
-					PrebuiltVoiceConfig: &genai.PrebuiltVoiceConfig{
-						VoiceName: *conf.AudioConfInfo.GeminiVoiceName,
+	
+	var response *genai.GenerateContentResponse
+	for i := 0; i < *conf.BaseConfInfo.LLMRetryTimes; i++ {
+		response, err = client.Models.GenerateContent(
+			ctx,
+			model,
+			contents,
+			&genai.GenerateContentConfig{
+				ResponseModalities: []string{
+					"AUDIO",
+				},
+				SpeechConfig: &genai.SpeechConfig{
+					VoiceConfig: &genai.VoiceConfig{
+						PrebuiltVoiceConfig: &genai.PrebuiltVoiceConfig{
+							VoiceName: *conf.AudioConfInfo.GeminiVoiceName,
+						},
 					},
 				},
 			},
-		},
-	)
-	
-	metrics.APIRequestDuration.WithLabelValues(model).Observe(time.Since(start).Seconds())
-	
-	if err != nil {
-		logger.ErrorCtx(ctx, "generate audio fail", "err", err)
-		return nil, 0, 0, err
+		)
+		
+		if err != nil {
+			logger.ErrorCtx(ctx, "generate audio fail", "err", err)
+			continue
+		}
+		break
 	}
 	
+	if err != nil || response == nil {
+		logger.ErrorCtx(ctx, "generate audio fail", "err", err)
+		return nil, 0, 0, fmt.Errorf("request fail %v %v", err, response)
+	}
+	
+	metrics.APIRequestDuration.WithLabelValues(model).Observe(time.Since(start).Seconds())
 	if len(response.Candidates) > 0 {
 		for _, part := range response.Candidates[0].Content.Parts {
 			if part.InlineData != nil {

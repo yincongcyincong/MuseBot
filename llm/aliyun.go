@@ -122,14 +122,22 @@ func GenerateAliyunImg(ctx context.Context, prompt string, imageContent []byte) 
 	start := time.Now()
 	metrics.APIRequestCount.WithLabelValues(model).Inc()
 	
-	resp, err := client.Do(req)
-	metrics.APIRequestDuration.WithLabelValues(model).Observe(time.Since(start).Seconds())
-	if err != nil {
-		logger.ErrorCtx(ctx, "create image fail", "err", err)
-		return "", 0, err
+	var resp *http.Response
+	var err error
+	for i := 0; i < *conf.BaseConfInfo.LLMRetryTimes; i++ {
+		resp, err = client.Do(req)
+		if err != nil {
+			logger.ErrorCtx(ctx, "create image fail", "err", err)
+			continue
+		}
+		break
 	}
-	defer resp.Body.Close()
+	if err != nil || resp == nil {
+		return "", 0, fmt.Errorf("request fail %v %v", err, resp)
+	}
 	
+	defer resp.Body.Close()
+	metrics.APIRequestDuration.WithLabelValues(model).Observe(time.Since(start).Seconds())
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		logger.ErrorCtx(ctx, "read response fail", "err", err)
@@ -220,9 +228,18 @@ func GenerateAliyunVideo(ctx context.Context, prompt string, image []byte) (stri
 		metrics.APIRequestDuration.WithLabelValues(model).Observe(time.Since(start).Seconds())
 	}()
 	
-	resp, err := client.Do(req)
-	if err != nil {
-		return "", 0, err
+	var resp *http.Response
+	for i := 0; i < *conf.BaseConfInfo.LLMRetryTimes; i++ {
+		resp, err = client.Do(req)
+		if err != nil {
+			logger.ErrorCtx(ctx, "create video fail", "err", err)
+			continue
+		}
+		break
+	}
+	
+	if err != nil || resp == nil {
+		return "", 0, fmt.Errorf("request fail %v %v", err, resp)
 	}
 	defer resp.Body.Close()
 	
@@ -232,14 +249,14 @@ func GenerateAliyunVideo(ctx context.Context, prompt string, image []byte) (stri
 	}
 	
 	var vr TaskStatusResponse
-	if err := json.Unmarshal(body, &vr); err != nil {
+	if err = json.Unmarshal(body, &vr); err != nil {
 		return "", 0, err
 	}
 	
 	for i := 0; i < 100; i++ {
 		time.Sleep(5 * time.Second)
 		
-		req, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("https://dashscope.aliyuncs.com/api/v1/tasks/%s", vr.Output.TaskID), nil)
+		req, err = http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("https://dashscope.aliyuncs.com/api/v1/tasks/%s", vr.Output.TaskID), nil)
 		if err != nil {
 			return "", 0, err
 		}
@@ -247,19 +264,19 @@ func GenerateAliyunVideo(ctx context.Context, prompt string, image []byte) (stri
 		req.Header.Set("Authorization", "Bearer "+*conf.BaseConfInfo.AliyunToken)
 		req.Header.Set("Content-Type", "application/json")
 		
-		resp, err := client.Do(req)
+		resp, err = client.Do(req)
 		if err != nil {
 			return "", 0, err
 		}
 		defer resp.Body.Close()
 		
-		body, err := io.ReadAll(resp.Body)
+		body, err = io.ReadAll(resp.Body)
 		if err != nil {
 			return "", 0, err
 		}
 		
 		var vr videoResponse
-		if err := json.Unmarshal(body, &vr); err != nil {
+		if err = json.Unmarshal(body, &vr); err != nil {
 			return "", 0, err
 		}
 		
@@ -330,12 +347,21 @@ func GenerateAliyunText(ctx context.Context, audioContent []byte) (string, int, 
 	client := utils.GetLLMProxyClient()
 	start := time.Now()
 	metrics.APIRequestCount.WithLabelValues(recModel).Inc()
-	resp, err := client.Do(req)
 	
-	metrics.APIRequestDuration.WithLabelValues(recModel).Observe(time.Since(start).Seconds())
-	if err != nil {
-		return "", 0, fmt.Errorf("request failed: %w", err)
+	var resp *http.Response
+	for i := 0; i < *conf.BaseConfInfo.LLMRetryTimes; i++ {
+		resp, err = client.Do(req)
+		if err != nil {
+			logger.ErrorCtx(ctx, "create video fail", "err", err)
+			continue
+		}
+		break
 	}
+	
+	if err != nil || resp == nil {
+		return "", 0, fmt.Errorf("request fail %v %v", err, resp)
+	}
+	metrics.APIRequestDuration.WithLabelValues(recModel).Observe(time.Since(start).Seconds())
 	defer resp.Body.Close()
 	
 	body, err := io.ReadAll(resp.Body)
@@ -405,11 +431,22 @@ func AliyunTTS(ctx context.Context, text, encoding string) ([]byte, int, int, er
 	client := utils.GetLLMProxyClient()
 	start := time.Now()
 	metrics.APIRequestCount.WithLabelValues(model).Inc()
-	resp, err := client.Do(req)
-	metrics.APIRequestDuration.WithLabelValues(model).Observe(time.Since(start).Seconds())
-	if err != nil {
-		return nil, 0, 0, fmt.Errorf("request error: %w", err)
+	
+	var resp *http.Response
+	for i := 0; i < *conf.BaseConfInfo.LLMRetryTimes; i++ {
+		resp, err = client.Do(req)
+		if err != nil {
+			logger.ErrorCtx(ctx, "create video fail", "err", err)
+			continue
+		}
+		break
 	}
+	
+	if err != nil || resp == nil {
+		return nil, 0, 0, fmt.Errorf("request fail %v %v", err, resp)
+	}
+	
+	metrics.APIRequestDuration.WithLabelValues(model).Observe(time.Since(start).Seconds())
 	defer resp.Body.Close()
 	
 	respData, err := io.ReadAll(resp.Body)

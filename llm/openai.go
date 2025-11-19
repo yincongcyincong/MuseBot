@@ -103,9 +103,19 @@ func (d *OpenAIReq) Send(ctx context.Context, l *LLM) error {
 	
 	request.Messages = d.OpenAIMsgs
 	
-	stream, err := client.CreateChatCompletionStream(ctx, request)
-	if err != nil {
-		logger.ErrorCtx(l.Ctx, "ChatCompletionStream error", "updateMsgID", l.MsgId, "err", err)
+	var stream *openai.ChatCompletionStream
+	var err error
+	for i := 0; i < *conf.BaseConfInfo.LLMRetryTimes; i++ {
+		stream, err = client.CreateChatCompletionStream(ctx, request)
+		if err != nil {
+			logger.ErrorCtx(l.Ctx, "ChatCompletionStream error", "updateMsgID", l.MsgId, "err", err)
+			continue
+		}
+		break
+	}
+	
+	if err != nil || stream == nil {
+		logger.ErrorCtx(l.Ctx, "ChatCompletionStream error", "updateMsgID", l.MsgId, "err", err, "stream", stream)
 		return err
 	}
 	defer stream.Close()
@@ -227,13 +237,23 @@ func (d *OpenAIReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 	
 	request.Messages = d.OpenAIMsgs
 	
-	response, err := client.CreateChatCompletion(ctx, request)
+	var response openai.ChatCompletionResponse
+	var err error
+	for i := 0; i < *conf.BaseConfInfo.LLMRetryTimes; i++ {
+		response, err = client.CreateChatCompletion(ctx, request)
+		if err != nil {
+			logger.ErrorCtx(l.Ctx, "ChatCompletionStream error", "updateMsgID", l.MsgId, "err", err)
+			continue
+		}
+		break
+	}
 	
-	metrics.APIRequestDuration.WithLabelValues(l.Model).Observe(time.Since(start).Seconds())
 	if err != nil {
 		logger.ErrorCtx(l.Ctx, "ChatCompletionStream error", "updateMsgID", l.MsgId, "err", err)
 		return "", err
 	}
+	
+	metrics.APIRequestDuration.WithLabelValues(l.Model).Observe(time.Since(start).Seconds())
 	
 	if len(response.Choices) == 0 {
 		logger.ErrorCtx(l.Ctx, "response is emtpy", "response", response)
@@ -329,51 +349,76 @@ func GenerateOpenAIImg(ctx context.Context, prompt string, imageContent []byte) 
 	
 	var respUrl openai.ImageResponse
 	var err error
-	if len(imageContent) != 0 {
-		imageFile, err := utils.ConvertToPNGFile(imageContent)
-		if err != nil {
-			logger.ErrorCtx(ctx, "failed to create temp file:", err)
-			return nil, 0, err
+	for i := 0; i < *conf.BaseConfInfo.LLMRetryTimes; i++ {
+		if len(imageContent) != 0 {
+			imageFile, err := utils.ConvertToPNGFile(imageContent)
+			if err != nil {
+				logger.ErrorCtx(ctx, "failed to create temp file:", err)
+				return nil, 0, err
+			}
+			defer os.Remove(imageFile.Name())
+			defer imageFile.Close()
+			
+			respUrl, err = client.CreateEditImage(ctx, openai.ImageEditRequest{
+				Image:          imageFile,
+				Prompt:         prompt,
+				Model:          model,
+				N:              1,
+				Size:           *conf.PhotoConfInfo.OpenAIImageSize,
+				ResponseFormat: "b64_json",
+			})
+			
+			if err != nil {
+				logger.ErrorCtx(ctx, "CreateImage error", "err", err)
+				continue
+			}
+			break
+		} else {
+			respUrl, err = client.CreateImage(
+				ctx,
+				openai.ImageRequest{
+					Prompt:         prompt,
+					Model:          model,
+					Size:           *conf.PhotoConfInfo.OpenAIImageSize,
+					N:              1,
+					Style:          *conf.PhotoConfInfo.OpenAIImageStyle,
+					ResponseFormat: "b64_json",
+				},
+			)
+			
+			if err != nil {
+				logger.ErrorCtx(ctx, "CreateImage error", "err", err)
+				continue
+			}
+			break
 		}
-		defer os.Remove(imageFile.Name())
-		defer imageFile.Close()
-		
-		respUrl, err = client.CreateEditImage(ctx, openai.ImageEditRequest{
-			Image:  imageFile,
-			Prompt: prompt,
-			Model:  model,
-			N:      1,
-			Size:   *conf.PhotoConfInfo.OpenAIImageSize,
-		})
-	} else {
-		respUrl, err = client.CreateImage(
-			ctx,
-			openai.ImageRequest{
-				Prompt: prompt,
-				Model:  model,
-				Size:   *conf.PhotoConfInfo.OpenAIImageSize,
-				N:      1,
-				Style:  *conf.PhotoConfInfo.OpenAIImageStyle,
-			},
-		)
 	}
-	
-	metrics.APIRequestDuration.WithLabelValues(model).Observe(time.Since(start).Seconds())
 	
 	if err != nil {
 		logger.ErrorCtx(ctx, "CreateImage error", "err", err)
-		return nil, 0, err
+		return nil, 0, fmt.Errorf("CreateImage error: %v", err)
 	}
+	
+	metrics.APIRequestDuration.WithLabelValues(model).Observe(time.Since(start).Seconds())
 	
 	if len(respUrl.Data) == 0 {
 		logger.ErrorCtx(ctx, "response is emtpy", "response", respUrl)
 		return nil, 0, errors.New("response is empty")
 	}
 	
-	imageContentByte, err := base64.StdEncoding.DecodeString(respUrl.Data[0].B64JSON)
-	if err != nil {
-		logger.ErrorCtx(ctx, "decode image error", "err", err)
-		return nil, 0, err
+	var imageContentByte []byte
+	if respUrl.Data[0].B64JSON != "" {
+		imageContentByte, err = base64.StdEncoding.DecodeString(respUrl.Data[0].B64JSON)
+		if err != nil {
+			logger.ErrorCtx(ctx, "decode image error", "err", err)
+			return nil, 0, err
+		}
+	} else {
+		imageContentByte, err = utils.DownloadFile(respUrl.Data[0].URL)
+		if err != nil {
+			logger.ErrorCtx(ctx, "download image error", "err", err)
+			return nil, 0, err
+		}
 	}
 	
 	return imageContentByte, respUrl.Usage.TotalTokens, nil
@@ -393,10 +438,18 @@ func GenerateOpenAIText(ctx context.Context, audioContent []byte) (string, error
 		Format:   "json",
 	}
 	
-	resp, err := client.CreateTranscription(ctx, req)
+	var resp openai.AudioResponse
+	var err error
+	for i := 0; i < *conf.BaseConfInfo.LLMRetryTimes; i++ {
+		resp, err = client.CreateTranscription(ctx, req)
+		if err != nil {
+			logger.ErrorCtx(ctx, "CreateTranscription error", "err", err)
+			continue
+		}
+		break
+	}
 	
 	metrics.APIRequestDuration.WithLabelValues(openai.Whisper1).Observe(time.Since(start).Seconds())
-	
 	if err != nil {
 		logger.ErrorCtx(ctx, "CreateTranscription error", "err", err)
 		return "", err
@@ -441,8 +494,16 @@ func GetOpenAIImageContent(ctx context.Context, imageContent []byte, content str
 		},
 	}
 	
-	resp, err := client.CreateChatCompletion(ctx, req)
-	
+	var resp openai.ChatCompletionResponse
+	var err error
+	for i := 0; i < *conf.BaseConfInfo.LLMRetryTimes; i++ {
+		resp, err = client.CreateChatCompletion(ctx, req)
+		if err != nil {
+			logger.ErrorCtx(ctx, "CreateChatCompletion error", "err", err)
+			continue
+		}
+		break
+	}
 	metrics.APIRequestDuration.WithLabelValues(model).Observe(time.Since(start).Seconds())
 	if err != nil {
 		logger.ErrorCtx(ctx, "CreateChatCompletion error", "err", err)
@@ -464,19 +525,29 @@ func OpenAITTS(ctx context.Context, content, encoding string) ([]byte, int, int,
 	metrics.APIRequestCount.WithLabelValues(model).Inc()
 	
 	client := GetOpenAIClient(ctx, "")
-	resp, err := client.CreateSpeech(ctx, openai.CreateSpeechRequest{
-		Model:          openai.SpeechModel(model),
-		Input:          content,
-		Voice:          openai.SpeechVoice(*conf.AudioConfInfo.OpenAIVoiceName),
-		ResponseFormat: openai.SpeechResponseFormat(formatEncoding),
-		Speed:          1.0,
-	})
 	
-	metrics.APIRequestDuration.WithLabelValues(model).Observe(time.Since(start).Seconds())
+	var resp openai.RawResponse
+	var err error
+	for i := 0; i < *conf.BaseConfInfo.LLMRetryTimes; i++ {
+		resp, err = client.CreateSpeech(ctx, openai.CreateSpeechRequest{
+			Model:          openai.SpeechModel(model),
+			Input:          content,
+			Voice:          openai.SpeechVoice(*conf.AudioConfInfo.OpenAIVoiceName),
+			ResponseFormat: openai.SpeechResponseFormat(formatEncoding),
+			Speed:          1.0,
+		})
+		if err != nil {
+			logger.ErrorCtx(ctx, "CreateSpeech error", "err", err)
+			continue
+		}
+		break
+	}
 	if err != nil {
 		logger.ErrorCtx(ctx, "decode image error", "err", err)
 		return nil, 0, 0, err
 	}
+	metrics.APIRequestDuration.WithLabelValues(model).Observe(time.Since(start).Seconds())
+	
 	data, err := io.ReadAll(resp.ReadCloser)
 	if err != nil {
 		logger.ErrorCtx(ctx, "read response error", "err", err)

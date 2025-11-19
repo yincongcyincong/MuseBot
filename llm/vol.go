@@ -58,10 +58,20 @@ func GenerateVolImg(ctx context.Context, prompt string, imageContent []byte) (st
 		reqBody["binary_data_base64"] = []string{base64.StdEncoding.EncodeToString(imageContent)}
 	}
 	
-	resp, _, err := visual.DefaultInstance.CVProcess(reqBody)
-	if err != nil {
+	var resp map[string]interface{}
+	var err error
+	for i := 0; i < *conf.BaseConfInfo.LLMRetryTimes; i++ {
+		resp, _, err = visual.DefaultInstance.CVProcess(reqBody)
+		if err != nil {
+			logger.ErrorCtx(ctx, "request img api fail", "err", err)
+			continue
+		}
+		break
+	}
+	
+	if err != nil || resp == nil {
 		logger.ErrorCtx(ctx, "request img api fail", "err", err)
-		return "", 0, err
+		return "", 0, fmt.Errorf("request fail %v %v", err, resp)
 	}
 	
 	respByte, _ := json.Marshal(resp)
@@ -119,10 +129,21 @@ func GenerateVolVideo(ctx context.Context, prompt string, imageContent []byte) (
 	llmConfig := db.GetCtxUserInfo(ctx).LLMConfigRaw
 	mediaType := utils.GetVideoType(llmConfig)
 	modelStr := utils.GetUsingVideoModel(mediaType, llmConfig.VideoModel)
-	resp, err := client.CreateContentGenerationTask(ctx, model.CreateContentGenerationTaskRequest{
-		Model:   modelStr,
-		Content: contents,
-	})
+	
+	var resp model.CreateContentGenerationTaskResponse
+	var err error
+	for i := 0; i < *conf.BaseConfInfo.LLMRetryTimes; i++ {
+		resp, err = client.CreateContentGenerationTask(ctx, model.CreateContentGenerationTaskRequest{
+			Model:   modelStr,
+			Content: contents,
+		})
+		if err != nil {
+			logger.ErrorCtx(ctx, "request create video api fail", "err", err)
+			continue
+		}
+		break
+	}
+	
 	if err != nil {
 		logger.ErrorCtx(ctx, "request create video api fail", "err", err)
 		return "", 0, err
@@ -195,12 +216,22 @@ func GetVolImageContent(ctx context.Context, imageContent []byte, content string
 		},
 	}
 	
-	response, err := client.CreateChatCompletion(ctx, req)
-	metrics.APIRequestDuration.WithLabelValues(modelStr).Observe(time.Since(start).Seconds())
+	var response model.ChatCompletionResponse
+	var err error
+	for i := 0; i < *conf.BaseConfInfo.LLMRetryTimes; i++ {
+		response, err = client.CreateChatCompletion(ctx, req)
+		if err != nil {
+			logger.ErrorCtx(ctx, "CreateChatCompletion error", "err", err)
+			continue
+		}
+		break
+	}
+	
 	if err != nil {
 		logger.ErrorCtx(ctx, "CreateChatCompletion error", "err", err)
 		return "", 0, err
 	}
+	metrics.APIRequestDuration.WithLabelValues(modelStr).Observe(time.Since(start).Seconds())
 	
 	if len(response.Choices) == 0 {
 		logger.ErrorCtx(ctx, "response is emtpy", "response", response)
@@ -272,8 +303,18 @@ func VolTTS(ctx context.Context, text, userId, encoding string) ([]byte, int, in
 	}
 	
 	httpClient := utils.GetLLMProxyClient()
-	resp, err := httpClient.Do(req)
-	if err != nil {
+	
+	var resp *http.Response
+	for i := 0; i < *conf.BaseConfInfo.LLMRetryTimes; i++ {
+		resp, err = httpClient.Do(req)
+		if err != nil {
+			logger.ErrorCtx(ctx, "httpClient.Do error", "err", err)
+			continue
+		}
+		break
+	}
+	
+	if err != nil || resp == nil {
 		logger.ErrorCtx(ctx, "httpClient.Do error", "err", err)
 		return nil, 0, 0, err
 	}
