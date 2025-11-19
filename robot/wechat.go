@@ -344,17 +344,6 @@ func (w *WechatRobot) executeLLM() {
 	
 }
 
-func (w *WechatRobot) getContent(content string) (string, error) {
-	msgType := w.Event.GetMsgType()
-	
-	switch msgType {
-	case models.CALLBACK_MSG_TYPE_IMAGE:
-		return w.Robot.GetImageContent(w.ImageContent, content)
-	}
-	
-	return content, nil
-}
-
 func (w *WechatRobot) getPrompt() string {
 	return w.Prompt
 }
@@ -409,20 +398,6 @@ func (w *WechatRobot) getMedia() ([]byte, error) {
 	}
 	
 	return data, nil
-}
-
-func (w *WechatRobot) sendText(messageChan *MsgChan) {
-	var msg *param.MsgInfo
-	for msg = range messageChan.NormalMessageChan {
-		if msg.Finished {
-			w.SendMsg(msg)
-		}
-	}
-	
-	if msg != nil {
-		w.SendMsg(msg)
-	}
-	
 }
 
 func (w *WechatRobot) SendMsg(msg *param.MsgInfo) {
@@ -498,4 +473,8 @@ func (w *WechatRobot) getAudio() []byte {
 
 func (w *WechatRobot) getImage() []byte {
 	return w.ImageContent
+}
+
+func (w *WechatRobot) setImage(image []byte) {
+	w.ImageContent = image
 }

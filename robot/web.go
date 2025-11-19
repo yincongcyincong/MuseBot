@@ -529,14 +529,6 @@ func (web *Web) GetContent(content string) (string, error) {
 		}
 	}
 	
-	if utils.DetectImageFormat(web.BodyData) != "unknown" {
-		content, err = web.Robot.GetImageContent(web.BodyData, content)
-		if err != nil {
-			logger.WarnCtx(web.Robot.Ctx, "get content from image failed", "err", err)
-			return "", err
-		}
-	}
-	
 	if content == "" {
 		logger.WarnCtx(web.Robot.Ctx, "content extraction returned empty")
 		return "", errors.New("content is empty")

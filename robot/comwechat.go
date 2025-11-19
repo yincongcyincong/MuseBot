@@ -2,7 +2,6 @@ package robot
 
 import (
 	"context"
-	"errors"
 	"io"
 	"os"
 	"runtime/debug"
@@ -327,48 +326,6 @@ func (c *ComWechatRobot) executeChain() {
 	go c.Robot.HandleUpdate(messageChan, "amr")
 }
 
-func (c *ComWechatRobot) sendText(messageChan *MsgChan) {
-	var msg *param.MsgInfo
-	for msg = range messageChan.NormalMessageChan {
-		if msg.Finished {
-			c.SendMsg(msg)
-		}
-	}
-	
-	if msg != nil {
-		c.SendMsg(msg)
-	}
-	
-}
-
-func (c *ComWechatRobot) SendMsg(msg *param.MsgInfo) {
-	chatId, _, _ := c.Robot.GetChatIdAndMsgIdAndUserID()
-	blocks := utils.ExtractContentBlocks(msg.Content)
-	for _, b := range blocks {
-		switch b.Type {
-		case "text":
-			c.Robot.SendMsg(chatId, strings.TrimSpace(b.Content), "", tgbotapi.ModeMarkdown, nil)
-		case "video", "image":
-			content, err := utils.DownloadFile(b.Media.URL)
-			if err != nil {
-				logger.ErrorCtx(c.Robot.Ctx, "download file fail", "err", err)
-				continue
-			}
-			contentType := ""
-			if b.Type == "video" {
-				contentType = utils.DetectVideoMimeType(content)
-			} else {
-				contentType = utils.DetectImageFormat(content)
-			}
-			
-			err = c.sendMedia(content, contentType, b.Type)
-			if err != nil {
-				logger.ErrorCtx(c.Robot.Ctx, "send media fail", "err", err)
-			}
-		}
-	}
-}
-
 func (c *ComWechatRobot) executeLLM() {
 	messageChan := &MsgChan{
 		NormalMessageChan: make(chan *param.MsgInfo),
@@ -377,23 +334,6 @@ func (c *ComWechatRobot) executeLLM() {
 	
 	go c.Robot.ExecLLM(c.Prompt, messageChan)
 	
-}
-
-func (c *ComWechatRobot) getContent(content string) (string, error) {
-	
-	msgType := c.Event.GetMsgType()
-	
-	switch msgType {
-	case models.CALLBACK_MSG_TYPE_IMAGE:
-		return c.Robot.GetImageContent(c.ImageContent, content)
-	}
-	
-	if content == "" {
-		logger.Warn("content extraction returned empty")
-		return "", errors.New("content is empty")
-	}
-	
-	return content, nil
 }
 
 func (c *ComWechatRobot) getPrompt() string {
@@ -485,4 +425,8 @@ func (c *ComWechatRobot) getAudio() []byte {
 
 func (c *ComWechatRobot) getImage() []byte {
 	return c.ImageContent
+}
+
+func (c *ComWechatRobot) setImage(image []byte) {
+	c.ImageContent = image
 }

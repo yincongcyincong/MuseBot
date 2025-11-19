@@ -240,23 +240,47 @@ func (q *QQRobot) sendImg() {
 			return
 		}
 		
-		base64Content := base64.StdEncoding.EncodeToString(imageContent)
-		data, err := q.UploadFile(base64Content, 1)
+		err = q.sendMedia(imageContent, utils.DetectImageFormat(imageContent), "image")
 		if err != nil {
-			logger.ErrorCtx(q.Robot.Ctx, "upload file fail", "err", err)
-			q.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
-			return
-		}
-		
-		err = q.PostRichMediaMessage(data, "")
-		if err != nil {
-			logger.ErrorCtx(q.Robot.Ctx, "post rich media msg fail", "err", err)
+			logger.ErrorCtx(q.Robot.Ctx, "send media fail", "err", err)
 			q.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
 		
 		q.Robot.saveRecord(imageContent, lastImageContent, param.ImageRecordType, totalToken)
 	})
+}
+
+func (q *QQRobot) sendMedia(media []byte, contentType, sType string) error {
+	if sType == "image" {
+		base64Content := base64.StdEncoding.EncodeToString(media)
+		data, err := q.UploadFile(base64Content, 1)
+		if err != nil {
+			logger.ErrorCtx(q.Robot.Ctx, "upload file fail", "err", err)
+			return err
+		}
+		
+		err = q.PostRichMediaMessage(data, "")
+		if err != nil {
+			logger.ErrorCtx(q.Robot.Ctx, "post rich media msg fail", "err", err)
+			return err
+		}
+	} else {
+		base64Content := base64.StdEncoding.EncodeToString(media)
+		data, err := q.UploadFile(base64Content, 2)
+		if err != nil {
+			logger.ErrorCtx(q.Robot.Ctx, "upload file fail", "err", err)
+			return err
+		}
+		
+		err = q.PostRichMediaMessage(data, "")
+		if err != nil {
+			logger.ErrorCtx(q.Robot.Ctx, "post rich media msg fail", "err", err)
+			return err
+		}
+	}
+	
+	return nil
 }
 
 func (q *QQRobot) sendVideo() {
@@ -290,17 +314,9 @@ func (q *QQRobot) sendVideo() {
 			return
 		}
 		
-		base64Content := base64.StdEncoding.EncodeToString(videoContent)
-		data, err := q.UploadFile(base64Content, 2)
+		err = q.sendMedia(videoContent, utils.DetectVideoMimeType(videoContent), "video")
 		if err != nil {
-			logger.ErrorCtx(q.Robot.Ctx, "upload file fail", "err", err)
-			q.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
-			return
-		}
-		
-		err = q.PostRichMediaMessage(data, "")
-		if err != nil {
-			logger.ErrorCtx(q.Robot.Ctx, "post rich media msg fail", "err", err)
+			logger.ErrorCtx(q.Robot.Ctx, "send video fail", "err", err)
 			q.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
@@ -343,25 +359,6 @@ func (q *QQRobot) executeLLM() {
 	
 	go q.Robot.ExecLLM(q.Prompt, msgChan)
 	
-}
-
-func (q *QQRobot) getContent(content string) (string, error) {
-	attachment := q.GetAttachment()
-	if attachment == nil {
-		return content, nil
-	}
-	
-	var err error
-	switch {
-	case strings.Contains(attachment.ContentType, "image"):
-		content, err = q.Robot.GetImageContent(q.ImageContent, content)
-		if err != nil {
-			logger.ErrorCtx(q.Robot.Ctx, "generate text from audio failed", "err", err)
-			return "", err
-		}
-	}
-	
-	return content, nil
 }
 
 func (q *QQRobot) getPrompt() string {
@@ -549,21 +546,6 @@ func (q *QQRobot) getPerMsgLen() int {
 	return 1800
 }
 
-func (q *QQRobot) sendText(messageChan *MsgChan) {
-	if messageChan.NormalMessageChan != nil {
-		var msg *param.MsgInfo
-		for msg = range messageChan.NormalMessageChan {
-			if msg.Finished {
-				q.sendMsg(msg)
-			}
-		}
-		
-		if msg != nil {
-			q.sendMsg(msg)
-		}
-	}
-}
-
 func (q *QQRobot) sendTextStream(messageChan *MsgChan) {
 	var id string
 	var err error
@@ -580,42 +562,6 @@ func (q *QQRobot) sendTextStream(messageChan *MsgChan) {
 	_, err = q.PostStreamMessage(10, idx, id, " ")
 	if err != nil {
 		logger.ErrorCtx(q.Robot.Ctx, "send stream msg fail", "err", err)
-	}
-}
-
-func (q *QQRobot) sendMsg(msg *param.MsgInfo) {
-	var err error
-	var file []byte
-	blocks := utils.ExtractContentBlocks(msg.Content)
-	con := ""
-	
-	for _, b := range blocks {
-		switch b.Type {
-		case "text":
-			con += b.Content
-		case "video", "image":
-			if len(file) == 0 {
-				fileType := 1
-				if b.Type == "video" {
-					fileType = 2
-				}
-				fileContent, err := utils.DownloadFile(b.Media.URL)
-				if err != nil {
-					logger.ErrorCtx(q.Robot.Ctx, "download file fail", "err", err)
-					continue
-				}
-				file, err = q.UploadFile(base64.StdEncoding.EncodeToString(fileContent), fileType)
-				if err != nil {
-					logger.ErrorCtx(q.Robot.Ctx, "upload file fail", "err", err)
-					continue
-				}
-			}
-		}
-	}
-	
-	err = q.PostRichMediaMessage(file, con)
-	if err != nil {
-		logger.ErrorCtx(q.Robot.Ctx, "post msg fail", "err", err)
 	}
 }
 
@@ -652,4 +598,8 @@ func (q *QQRobot) getAudio() []byte {
 
 func (q *QQRobot) getImage() []byte {
 	return q.ImageContent
+}
+
+func (q *QQRobot) setImage(image []byte) {
+	q.ImageContent = image
 }

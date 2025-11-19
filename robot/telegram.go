@@ -234,6 +234,8 @@ func (t *TelegramRobot) checkValid() bool {
 				return false
 			}
 		}
+		
+		t.Prompt = strings.ReplaceAll(t.Prompt, "@"+t.Bot.Self.UserName, "")
 	}
 	
 	return true
@@ -927,7 +929,7 @@ func (t *TelegramRobot) sendImg() {
 	})
 }
 
-func (t *TelegramRobot) SendMedia(mediaContent []byte, contentType, sType string) error {
+func (t *TelegramRobot) sendMedia(mediaContent []byte, contentType, sType string) error {
 	chatId, _, _ := t.Robot.GetChatIdAndMsgIdAndUserID()
 	
 	if sType == "image" {
@@ -979,25 +981,6 @@ func (t *TelegramRobot) ExecuteForceReply() {
 	case i18n.GetMessage("mcp_empty_content", nil):
 		t.Robot.sendMultiAgent("task_empty_content", t.sendForceReply("mcp_empty_content"))
 	}
-}
-
-func (t *TelegramRobot) getContent(content string) (string, error) {
-	var err error
-	if t.Update.Message.Photo != nil {
-		content, err = t.Robot.GetImageContent(t.ImageContent, content)
-		if err != nil {
-			logger.WarnCtx(t.Robot.Ctx, "get image content err", "err", err)
-			return "", err
-		}
-	}
-	
-	if content == "" {
-		logger.WarnCtx(t.Robot.Ctx, "content empty")
-		return "", errors.New("content empty")
-	}
-	
-	text := strings.ReplaceAll(content, "@"+t.Bot.Self.UserName, "")
-	return text, nil
 }
 
 func (t *TelegramRobot) GetAudioContent() []byte {
@@ -1093,19 +1076,6 @@ func ForceReply(chatId int64, msgId int, i18MsgId string, bot *tgbotapi.BotAPI) 
 	return err
 }
 
-func (t *TelegramRobot) sendText(messageChan *MsgChan) {
-	var msg *param.MsgInfo
-	for msg = range messageChan.NormalMessageChan {
-		if msg.Finished {
-			t.SendMsg(msg)
-		}
-	}
-	
-	if msg != nil {
-		t.SendMsg(msg)
-	}
-}
-
 func (t *TelegramRobot) sendTextStream(messageChan *MsgChan) {
 	var msg *param.MsgInfo
 	chatIdStr, msgIdStr, _ := t.Robot.GetChatIdAndMsgIdAndUserID()
@@ -1161,34 +1131,6 @@ func (t *TelegramRobot) sendTextStream(messageChan *MsgChan) {
 	}
 }
 
-func (t *TelegramRobot) SendMsg(msg *param.MsgInfo) {
-	chatId, _, _ := t.Robot.GetChatIdAndMsgIdAndUserID()
-	blocks := utils.ExtractContentBlocks(msg.Content)
-	for _, b := range blocks {
-		switch b.Type {
-		case "text":
-			t.Robot.SendMsg(chatId, strings.TrimSpace(b.Content), "", tgbotapi.ModeMarkdown, nil)
-		case "video", "image":
-			content, err := utils.DownloadFile(b.Media.URL)
-			if err != nil {
-				logger.ErrorCtx(t.Robot.Ctx, "download file fail", "err", err)
-				continue
-			}
-			contentType := ""
-			if b.Type == "video" {
-				contentType = utils.DetectVideoMimeType(content)
-			} else {
-				contentType = utils.DetectImageFormat(content)
-			}
-			
-			err = t.SendMedia(content, contentType, b.Type)
-			if err != nil {
-				logger.ErrorCtx(t.Robot.Ctx, "send media fail", "err", err)
-			}
-		}
-	}
-}
-
 func (t *TelegramRobot) sendVoiceContent(voiceContent []byte, duration int) error {
 	chatIdStr, _, _ := t.Robot.GetChatIdAndMsgIdAndUserID()
 	chatId := int64(utils.ParseInt(chatIdStr))
@@ -1227,4 +1169,8 @@ func (t *TelegramRobot) getAudio() []byte {
 
 func (t *TelegramRobot) getImage() []byte {
 	return t.ImageContent
+}
+
+func (t *TelegramRobot) setImage(image []byte) {
+	t.ImageContent = image
 }

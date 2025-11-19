@@ -36,9 +36,11 @@ var (
 type LLM struct {
 	MessageChan chan *param.MsgInfo
 	HTTPMsgChan chan string
-	Content     string // question from user
-	Model       string
-	Cs          *param.ContextState
+	Content     string
+	Images      [][]byte
+	
+	Model string
+	Cs    *param.ContextState
 	
 	ChatId           string
 	UserId           string
@@ -66,6 +68,12 @@ type LLMClient interface {
 	GetUserMessage(msg string)
 	
 	GetAssistantMessage(msg string)
+	
+	GetSystemMessage(msg string)
+	
+	GetImageMessage(image [][]byte, msg string)
+	
+	GetAudioMessage(audio []byte, msg string)
 	
 	AppendMessages(client LLMClient)
 	
@@ -121,7 +129,7 @@ func (l *LLM) InsertCharacter(ctx context.Context) {
 			}
 			
 			logger.InfoCtx(ctx, "character", "character", buf.String())
-			l.LLMClient.GetAssistantMessage(buf.String())
+			l.LLMClient.GetSystemMessage(buf.String())
 		}
 	}
 }
@@ -139,12 +147,6 @@ func NewLLM(opts ...Option) *LLM {
 			ToolCall:           []godeepseek.ToolCall{},
 			ToolMessage:        []godeepseek.ChatCompletionMessage{},
 			CurrentToolMessage: []godeepseek.ChatCompletionMessage{},
-		}
-	case param.Gemini:
-		l.LLMClient = &GeminiReq{
-			ToolCall:           []*genai.FunctionCall{},
-			ToolMessage:        []*genai.Content{},
-			CurrentToolMessage: []*genai.Content{},
 		}
 	default:
 		l.LLMClient = &OpenAIReq{
@@ -256,9 +258,12 @@ func (l *LLM) GetMessages(userId string, prompt string) {
 		}
 	}
 	
-	if utils.GetTxtType(db.GetCtxUserInfo(l.Ctx).LLMConfigRaw) != "gemini" {
+	if len(l.Images) > 0 {
+		l.LLMClient.GetImageMessage(l.Images, prompt)
+	} else {
 		l.LLMClient.GetUserMessage(prompt)
 	}
+	
 }
 
 type Option func(p *LLM)
@@ -314,6 +319,12 @@ func WithMsgId(msgId string) Option {
 func WithCS(cs *param.ContextState) Option {
 	return func(p *LLM) {
 		p.Cs = cs
+	}
+}
+
+func WithImages(images [][]byte) Option {
+	return func(p *LLM) {
+		p.Images = images
 	}
 }
 

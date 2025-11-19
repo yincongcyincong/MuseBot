@@ -90,13 +90,9 @@ type Robot interface {
 	
 	setPrompt(prompt string)
 	
-	getContent(content string) (string, error)
-	
 	getPerMsgLen() int
 	
 	sendVoiceContent(voiceContent []byte, duration int) error
-	
-	sendText(msgChan *MsgChan)
 	
 	setCommand(command string)
 	
@@ -107,6 +103,10 @@ type Robot interface {
 	executeLLM()
 	
 	getImage() []byte
+	
+	setImage(image []byte)
+	
+	sendMedia(media []byte, contentType, sType string) error
 }
 
 type botOption func(r *RobotInfo)
@@ -677,55 +677,6 @@ func (r *RobotInfo) GetAudioContent(audioContent []byte) (string, error) {
 	}
 	
 	return answer, err
-}
-
-func (r *RobotInfo) GetImageContent(imageContent []byte, content string) (string, error) {
-	if content == "" {
-		r.saveRecord(imageContent, imageContent, param.ImageRecordType, 0)
-		return "", nil
-	}
-	
-	var answer string
-	var err error
-	var token int
-	llmConf := db.GetCtxUserInfo(r.Ctx).LLMConfigRaw
-	t := utils.GetRecType(llmConf)
-	logger.InfoCtx(r.Ctx, "recognize image", "type", t, "model", utils.GetUsingRecModel(t, llmConf.RecModel))
-	switch t {
-	case param.Vol:
-		answer, token, err = llm.GetVolImageContent(r.Ctx, imageContent, content)
-	case param.Gemini:
-		answer, token, err = llm.GetGeminiImageContent(r.Ctx, imageContent, content)
-	case param.OpenAi, param.Aliyun:
-		answer, token, err = llm.GetOpenAIImageContent(r.Ctx, imageContent, content)
-	case param.AI302, param.OpenRouter:
-		answer, token, err = llm.GetMixImageContent(r.Ctx, imageContent, content)
-	}
-	
-	if err != nil {
-		return "", err
-	}
-	
-	_, _, userId := r.GetChatIdAndMsgIdAndUserID()
-	err = db.AddRecordToken(r.Ctx, r.cs.RecordID, userId, token)
-	if err != nil {
-		logger.WarnCtx(r.Ctx, "addRecordToken err", "err", err)
-	}
-	err = db.AddRecordContent(r.cs.RecordID, fmt.Sprintf("data:image/%s;base64,%s", utils.DetectImageFormat(imageContent), base64.StdEncoding.EncodeToString(imageContent)))
-	if err != nil {
-		logger.WarnCtx(r.Ctx, "AddRecordContent err", "err", err)
-	}
-	
-	if content == "" {
-		return answer, nil
-	}
-	
-	param := map[string]interface{}{
-		"question": content,
-		"answer":   answer,
-	}
-	prompt := i18n.GetMessage("photo_export_prompt", param)
-	return prompt, nil
 }
 
 func (r *RobotInfo) GetLastImageContent() ([]byte, error) {
@@ -1343,20 +1294,13 @@ func (r *RobotInfo) ExecChain(msgContent string, msgChan *MsgChan) {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 		defer cancel()
 		
-		r.InsertRecord()
-		
-		content, err := r.Robot.getContent(strings.TrimSpace(msgContent))
-		if err != nil {
-			logger.ErrorCtx(r.Ctx, "get content fail", "err", err)
-			r.SendMsg(chatId, err.Error(), msgId, "", nil)
-			return
-		}
-		
+		content := r.Robot.getPrompt()
 		if len(msgContent) == 0 {
 			logger.InfoCtx(r.Ctx, "content is empty")
 			return
 		}
 		
+		r.InsertRecord()
 		perMsgLen := r.Robot.getPerMsgLen()
 		if *conf.AudioConfInfo.TTSType != "" {
 			perMsgLen = AudioMsgLen
@@ -1375,7 +1319,7 @@ func (r *RobotInfo) ExecChain(msgContent string, msgChan *MsgChan) {
 			dpLLM,
 			vectorstores.ToRetriever(conf.RagConfInfo.Store, 3),
 		)
-		_, err = chains.Run(ctx, qaChain, content)
+		_, err := chains.Run(ctx, qaChain, content)
 		if err != nil {
 			r.SendMsg(chatId, err.Error(), msgId, "", nil)
 		}
@@ -1397,22 +1341,24 @@ func (r *RobotInfo) ExecLLM(msgContent string, msgChan *MsgChan) {
 	}()
 	
 	chatId, msgId, userId := r.GetChatIdAndMsgIdAndUserID()
-	r.InsertRecord()
-	content, err := r.Robot.getContent(strings.TrimSpace(msgContent))
-	if err != nil {
-		logger.ErrorCtx(r.Ctx, "get content fail", "err", err)
-		r.SendMsg(chatId, err.Error(), msgId, "", nil)
-		return
-	}
-	
+	content := r.Robot.getPrompt()
 	if len(content) == 0 {
+		if len(r.Robot.getImage()) > 0 {
+			r.saveRecord(r.Robot.getImage(), r.Robot.getImage(), param.ImageRecordType, 0)
+		}
 		logger.InfoCtx(r.Ctx, "content is empty")
 		return
 	}
 	
+	r.InsertRecord()
 	perMsgLen := r.Robot.getPerMsgLen()
 	if *conf.AudioConfInfo.TTSType != "" {
 		perMsgLen = AudioMsgLen
+	}
+	
+	images := make([][]byte, 0)
+	if len(r.Robot.getImage()) > 0 {
+		images = append(images, r.Robot.getImage())
 	}
 	
 	llmClient := llm.NewLLM(
@@ -1435,9 +1381,10 @@ func (r *RobotInfo) ExecLLM(msgContent string, msgChan *MsgChan) {
 			OpenAITools:  conf.OpenAITools,
 			GeminiTools:  conf.GeminiTools,
 		}),
+		llm.WithImages(images),
 	)
 	
-	err = llmClient.CallLLM()
+	err := llmClient.CallLLM()
 	if err != nil {
 		logger.ErrorCtx(r.Ctx, "get content fail", "err", err)
 		r.SendMsg(chatId, err.Error(), msgId, "", nil)
@@ -1723,7 +1670,7 @@ func (r *RobotInfo) HandleUpdate(messageChan *MsgChan, encoding string) {
 	if *conf.AudioConfInfo.TTSType != "" && encoding != "" {
 		r.sendVoice(messageChan, encoding)
 	} else {
-		r.Robot.sendText(messageChan)
+		r.sendText(messageChan)
 	}
 	
 }
@@ -1731,11 +1678,18 @@ func (r *RobotInfo) HandleUpdate(messageChan *MsgChan, encoding string) {
 func (r *RobotInfo) InsertRecord() {
 	_, _, userId := r.GetChatIdAndMsgIdAndUserID()
 	
+	content := ""
+	if len(r.Robot.getImage()) > 0 {
+		content = fmt.Sprintf("data:image/%s;base64,%s", utils.DetectImageFormat(r.Robot.getImage()),
+			base64.StdEncoding.EncodeToString(r.Robot.getImage()))
+	}
+	
 	id, err := db.InsertRecordInfo(r.Ctx, &db.Record{
 		UserId:     userId,
 		Question:   r.Robot.getCommand() + " " + r.Robot.getPrompt(),
 		RecordType: param.TextRecordType,
 		Token:      r.cs.Token,
+		Content:    content,
 	})
 	if err != nil {
 		logger.ErrorCtx(r.Ctx, "insert record fail", "err", err)
@@ -1776,6 +1730,9 @@ func (r *RobotInfo) smartMode() bool {
 			"prompt": r.Robot.getPrompt(),
 		})),
 		llm.WithContext(r.Ctx),
+		llm.WithImages([][]byte{
+			r.Robot.getImage(),
+		}),
 	)
 	llmClient.LLMClient.GetModel(llmClient)
 	llmClient.LLMClient.GetUserMessage(llmClient.Content)
@@ -1911,21 +1868,57 @@ func (r *RobotInfo) InsertCron(cron, prompt string) error {
 }
 
 func (r *RobotInfo) recPhoto() {
-	lastImageContent := r.Robot.getImage()
-	var err error
-	if lastImageContent == nil {
-		lastImageContent, err = r.GetLastImageContent()
+	if len(r.Robot.getImage()) == 0 {
+		lastImageContent, err := r.GetLastImageContent()
 		if err != nil {
 			logger.ErrorCtx(r.Ctx, "get last image record fail", "err", err)
 			return
 		}
+		r.Robot.setImage(lastImageContent)
 	}
 	
-	imageContent, err := r.GetImageContent(lastImageContent, r.Robot.getPrompt())
-	if err != nil {
-		logger.ErrorCtx(r.Ctx, "generate text from image fail", "err", err)
-		return
-	}
-	r.Robot.setPrompt(imageContent)
 	r.Robot.executeLLM()
+}
+
+func (r *RobotInfo) SendMarkdownMsg(msg *param.MsgInfo) {
+	chatId, _, _ := r.GetChatIdAndMsgIdAndUserID()
+	blocks := utils.ExtractContentBlocks(msg.Content)
+	for _, b := range blocks {
+		switch b.Type {
+		case "text":
+			r.SendMsg(chatId, strings.TrimSpace(b.Content), "", tgbotapi.ModeMarkdown, nil)
+		case "video", "image":
+			content, err := utils.DownloadFile(b.Media.URL)
+			if err != nil {
+				logger.ErrorCtx(r.Ctx, "download file fail", "err", err)
+				continue
+			}
+			contentType := ""
+			if b.Type == "video" {
+				contentType = utils.DetectVideoMimeType(content)
+			} else {
+				contentType = utils.DetectImageFormat(content)
+			}
+			
+			err = r.Robot.sendMedia(content, contentType, b.Type)
+			if err != nil {
+				logger.ErrorCtx(r.Ctx, "send media fail", "err", err)
+			}
+		}
+	}
+}
+
+func (r *RobotInfo) sendText(messageChan *MsgChan) {
+	if messageChan.NormalMessageChan != nil {
+		var msg *param.MsgInfo
+		for msg = range messageChan.NormalMessageChan {
+			if msg.Finished {
+				r.SendMarkdownMsg(msg)
+			}
+		}
+		
+		if msg != nil {
+			r.SendMarkdownMsg(msg)
+		}
+	}
 }
