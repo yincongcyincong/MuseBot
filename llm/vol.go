@@ -182,65 +182,6 @@ func GenerateVolVideo(ctx context.Context, prompt string, imageContent []byte) (
 	return "", 0, fmt.Errorf("video generation timeout")
 }
 
-func GetVolImageContent(ctx context.Context, imageContent []byte, content string) (string, int, error) {
-	client := GetVolClient()
-	start := time.Now()
-	
-	llmConfig := db.GetCtxUserInfo(ctx).LLMConfigRaw
-	mediaType := utils.GetRecType(llmConfig)
-	modelStr := utils.GetUsingRecModel(mediaType, llmConfig.RecModel)
-	
-	metrics.APIRequestCount.WithLabelValues(modelStr).Inc()
-	
-	contentPrompt := content
-	req := model.ChatCompletionRequest{
-		Model: modelStr,
-		Messages: []*model.ChatCompletionMessage{
-			{
-				Role: model.ChatMessageRoleUser,
-				Content: &model.ChatCompletionMessageContent{
-					ListValue: []*model.ChatCompletionMessageContentPart{
-						{
-							Type: model.ChatCompletionMessageContentPartTypeImageURL,
-							ImageURL: &model.ChatMessageImageURL{
-								URL: "data:image/" + utils.DetectImageFormat(imageContent) + ";base64," + base64.StdEncoding.EncodeToString(imageContent),
-							},
-						},
-						{
-							Type: model.ChatCompletionMessageContentPartTypeText,
-							Text: contentPrompt,
-						},
-					},
-				},
-			},
-		},
-	}
-	
-	var response model.ChatCompletionResponse
-	var err error
-	for i := 0; i < *conf.BaseConfInfo.LLMRetryTimes; i++ {
-		response, err = client.CreateChatCompletion(ctx, req)
-		if err != nil {
-			logger.ErrorCtx(ctx, "CreateChatCompletion error", "err", err)
-			continue
-		}
-		break
-	}
-	
-	if err != nil {
-		logger.ErrorCtx(ctx, "CreateChatCompletion error", "err", err)
-		return "", 0, err
-	}
-	metrics.APIRequestDuration.WithLabelValues(modelStr).Observe(time.Since(start).Seconds())
-	
-	if len(response.Choices) == 0 {
-		logger.ErrorCtx(ctx, "response is emtpy", "response", response)
-		return "", 0, errors.New("response is empty")
-	}
-	
-	return *response.Choices[0].Message.Content.StringValue, response.Usage.TotalTokens, nil
-}
-
 type TTSServResponse struct {
 	ReqID     string `json:"reqid"`
 	Code      int    `json:"code"`

@@ -152,9 +152,6 @@ func (l *LarkRobot) sendImg() {
 			return
 		}
 		
-		originalMsgID := l.Robot.SendMsg(chatId, i18n.GetMessage("thinking", nil),
-			msgId, "", nil)
-		
 		lastImageContent := l.ImageContent
 		var err error
 		if len(lastImageContent) == 0 && strings.Contains(l.Command, "edit_photo") {
@@ -171,35 +168,58 @@ func (l *LarkRobot) sendImg() {
 			return
 		}
 		
-		imageKey, err := l.getImageInfo(imageContent)
+		err = l.sendMedia(imageContent, utils.DetectImageFormat(imageContent), "image")
 		if err != nil {
-			logger.ErrorCtx(l.Robot.Ctx, "create image fail", "err", err)
-			l.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
-			return
-		}
-		
-		msgContent, _ := larkim.NewMessagePost().ZhCn(larkim.NewMessagePostContent().AppendContent(
-			[]larkim.MessagePostElement{
-				&larkim.MessagePostImage{
-					ImageKey: imageKey,
-				},
-			}).Build()).Build()
-		
-		updateRes, err := l.Client.Im.Message.Update(l.Robot.Ctx, larkim.NewUpdateMessageReqBuilder().
-			MessageId(originalMsgID).
-			Body(larkim.NewUpdateMessageReqBodyBuilder().
-				MsgType(larkim.MsgTypePost).
-				Content(msgContent).
-				Build()).
-			Build())
-		if err != nil || !updateRes.Success() {
-			logger.Warn("send message fail", "err", err, "resp", updateRes)
+			logger.Warn("send image fail", "err", err)
 			l.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
 		
 		l.Robot.saveRecord(imageContent, lastImageContent, param.ImageRecordType, totalToken)
 	})
+}
+
+func (l *LarkRobot) sendMedia(media []byte, contentType, sType string) error {
+	postContent := make([]larkim.MessagePostElement, 0)
+	chatId, _, _ := l.Robot.GetChatIdAndMsgIdAndUserID()
+	if sType == "image" {
+		imageKey, err := l.getImageInfo(media)
+		if err != nil {
+			logger.ErrorCtx(l.Robot.Ctx, "create image fail", "err", err)
+			return err
+		}
+		
+		postContent = append(postContent, &larkim.MessagePostImage{
+			ImageKey: imageKey,
+		})
+		
+	} else {
+		fileKey, err := l.getVideoInfo(media)
+		if err != nil {
+			logger.ErrorCtx(l.Robot.Ctx, "get image info fail", "err", err)
+			return err
+		}
+		
+		postContent = append(postContent, &larkim.MessagePostMedia{
+			FileKey: fileKey,
+		})
+	}
+	
+	msgContent, _ := larkim.NewMessagePost().ZhCn(larkim.NewMessagePostContent().AppendContent(postContent).Build()).Build()
+	res, err := l.Client.Im.Message.Create(l.Robot.Ctx, larkim.NewCreateMessageReqBuilder().
+		ReceiveIdType(larkim.ReceiveIdTypeChatId).
+		Body(larkim.NewCreateMessageReqBodyBuilder().
+			MsgType(larkim.MsgTypePost).
+			ReceiveId(chatId).
+			Content(msgContent).
+			Build()).
+		Build())
+	if err != nil || !res.Success() {
+		logger.Warn("send message fail", "err", err, "resp", res)
+		return err
+	}
+	
+	return nil
 }
 
 func (l *LarkRobot) sendVideo() {
@@ -214,9 +234,6 @@ func (l *LarkRobot) sendVideo() {
 			return
 		}
 		
-		originalMsgID := l.Robot.SendMsg(chatId, i18n.GetMessage("thinking", nil),
-			msgId, "", nil)
-		
 		videoContent, totalToken, err := l.Robot.CreateVideo(prompt, l.ImageContent)
 		if err != nil {
 			logger.Warn("generate video fail", "err", err)
@@ -224,29 +241,9 @@ func (l *LarkRobot) sendVideo() {
 			return
 		}
 		
-		fileKey, err := l.getVideoInfo(videoContent)
+		err = l.sendMedia(videoContent, utils.DetectVideoMimeType(videoContent), "video")
 		if err != nil {
-			logger.Warn("create image fail", "err", err)
-			l.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
-			return
-		}
-		
-		msgContent, _ := larkim.NewMessagePost().ZhCn(larkim.NewMessagePostContent().AppendContent(
-			[]larkim.MessagePostElement{
-				&larkim.MessagePostMedia{
-					FileKey: fileKey,
-				},
-			}).Build()).Build()
-		
-		updateRes, err := l.Client.Im.Message.Update(l.Robot.Ctx, larkim.NewUpdateMessageReqBuilder().
-			MessageId(originalMsgID).
-			Body(larkim.NewUpdateMessageReqBodyBuilder().
-				MsgType(larkim.MsgTypePost).
-				Content(msgContent).
-				Build()).
-			Build())
-		if err != nil || !updateRes.Success() {
-			logger.Warn("send message fail", "err", err, "resp", updateRes)
+			logger.Warn("send video fail", "err", err)
 			l.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
@@ -301,23 +298,6 @@ func (l *LarkRobot) sendTextStream(messageChan *MsgChan) {
 				continue
 			}
 		}
-	}
-}
-
-func (l *LarkRobot) sendText(messageChan *MsgChan) {
-	var msg *param.MsgInfo
-	for msg = range messageChan.NormalMessageChan {
-		if len(msg.Content) == 0 {
-			msg.Content = "get nothing from llm!"
-		}
-		
-		if msg.Finished {
-			l.sendMsg(msg)
-		}
-	}
-	
-	if msg != nil {
-		l.sendMsg(msg)
 	}
 }
 
@@ -388,60 +368,6 @@ func (l *LarkRobot) executeLLM() {
 	
 	go l.Robot.ExecLLM(l.Prompt, messageChan)
 	
-}
-
-func (l *LarkRobot) getContent(content string) (string, error) {
-	var err error
-	msgType := larkcore.StringValue(l.Message.Event.Message.MessageType)
-	_, msgId, _ := l.Robot.GetChatIdAndMsgIdAndUserID()
-	
-	switch msgType {
-	case larkim.MsgTypeImage:
-		msgImage := new(larkim.MessageImage)
-		err = json.Unmarshal([]byte(larkcore.StringValue(l.Message.Event.Message.Content)), msgImage)
-		if err != nil {
-			logger.Warn("unmarshal message image failed", "err", err)
-			return "", err
-		}
-		
-		resp, err := l.Client.Im.V1.MessageResource.Get(l.Robot.Ctx,
-			larkim.NewGetMessageResourceReqBuilder().
-				MessageId(msgId).
-				FileKey(msgImage.ImageKey).
-				Type("image").
-				Build())
-		if err != nil || !resp.Success() {
-			logger.ErrorCtx(l.Robot.Ctx, "get image failed", "err", err, "resp", resp)
-			return "", err
-		}
-		
-		bs, err := io.ReadAll(resp.File)
-		if err != nil {
-			logger.ErrorCtx(l.Robot.Ctx, "read image failed", "err", err)
-			return "", err
-		}
-		
-		content, err = l.Robot.GetImageContent(bs, content)
-		if err != nil {
-			logger.ErrorCtx(l.Robot.Ctx, "generate text from audio failed", "err", err)
-			return "", err
-		}
-	case larkim.MsgTypePost:
-		if len(l.ImageContent) != 0 {
-			content, err = l.Robot.GetImageContent(l.ImageContent, content)
-			if err != nil {
-				logger.ErrorCtx(l.Robot.Ctx, "generate text from audio failed", "err", err)
-				return "", err
-			}
-		}
-	}
-	
-	if content == "" {
-		logger.ErrorCtx(l.Robot.Ctx, "content extraction returned empty")
-		return "", errors.New("content is empty")
-	}
-	
-	return content, nil
 }
 
 func GetMarkdownContent(content string) string {
@@ -587,6 +513,30 @@ func (l *LarkRobot) GetMessageContent() (bool, error) {
 			logger.Warn("generate text from audio failed", "err", err)
 			return false, err
 		}
+	} else if msgType == larkim.MsgTypeImage {
+		msgImage := new(larkim.MessageImage)
+		err := json.Unmarshal([]byte(larkcore.StringValue(l.Message.Event.Message.Content)), msgImage)
+		if err != nil {
+			logger.ErrorCtx(l.Robot.Ctx, "unmarshal message image failed", "err", err)
+			return false, err
+		}
+		
+		resp, err := l.Client.Im.V1.MessageResource.Get(l.Robot.Ctx,
+			larkim.NewGetMessageResourceReqBuilder().
+				MessageId(msgId).
+				FileKey(msgImage.ImageKey).
+				Type("image").
+				Build())
+		if err != nil || !resp.Success() {
+			logger.ErrorCtx(l.Robot.Ctx, "get image failed", "err", err, "resp", resp)
+			return false, err
+		}
+		
+		l.ImageContent, err = io.ReadAll(resp.File)
+		if err != nil {
+			logger.ErrorCtx(l.Robot.Ctx, "read image failed", "err", err)
+			return false, err
+		}
 	}
 	
 	l.Prompt = strings.ReplaceAll(l.Prompt, "@"+l.BotName, "")
@@ -692,4 +642,8 @@ func (l *LarkRobot) getAudio() []byte {
 
 func (l *LarkRobot) getImage() []byte {
 	return l.ImageContent
+}
+
+func (l *LarkRobot) setImage(image []byte) {
+	l.ImageContent = image
 }

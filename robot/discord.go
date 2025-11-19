@@ -117,6 +117,9 @@ func (d *DiscordRobot) checkValid() bool {
 			return false
 		}
 		d.Command, d.Prompt = ParseCommand(d.Msg.Content)
+		if d.Session != nil && d.Session.State != nil && d.Session.State.User != nil {
+			d.Command = strings.ReplaceAll(d.Command, "<@"+d.Session.State.User.ID+">", "")
+		}
 		d.getMessageContent()
 		return true
 	}
@@ -129,6 +132,16 @@ func (d *DiscordRobot) checkValid() bool {
 		
 		if d.Inter != nil && d.Inter.Type == discordgo.InteractionApplicationCommand && len(d.Inter.ApplicationCommandData().Options) > 0 {
 			d.Prompt = d.Inter.ApplicationCommandData().Options[0].StringValue()
+		}
+		if d.Session != nil && d.Session.State != nil && d.Session.State.User != nil {
+			d.Command = strings.ReplaceAll(d.Command, "<@"+d.Session.State.User.ID+">", "")
+		}
+		
+		err := d.Session.InteractionRespond(d.Inter.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseDeferredChannelMessageWithSource,
+		})
+		if err != nil {
+			logger.WarnCtx(d.Robot.Ctx, "Failed to defer interaction response", "err", err)
 		}
 		return true
 	}
@@ -300,98 +313,6 @@ func (d *DiscordRobot) sendTextStream(messageChan *MsgChan) {
 	}
 }
 
-func (d *DiscordRobot) sendText(messageChan *MsgChan) {
-	var msg *param.MsgInfo
-	if d.Inter != nil {
-		err := d.Session.InteractionRespond(d.Inter.Interaction, &discordgo.InteractionResponse{
-			Type: discordgo.InteractionResponseDeferredChannelMessageWithSource,
-		})
-		if err != nil {
-			logger.WarnCtx(d.Robot.Ctx, "Failed to defer interaction response", "err", err)
-		}
-	}
-	
-	for msg = range messageChan.NormalMessageChan {
-		if len(msg.Content) == 0 {
-			msg.Content = "get nothing from llm!"
-		}
-		
-		if msg.Finished {
-			d.SendMsg(msg)
-		}
-	}
-	
-	if msg != nil {
-		d.SendMsg(msg)
-	}
-}
-
-func (d *DiscordRobot) SendMsg(msg *param.MsgInfo) {
-	msgBlocks := utils.ExtractContentBlocks(msg.Content)
-	embeds := make([]*discordgo.MessageEmbed, 0)
-	for _, b := range msgBlocks {
-		switch b.Type {
-		case "text":
-			embeds = append(embeds, &discordgo.MessageEmbed{
-				Type:        discordgo.EmbedTypeRich,
-				Description: b.Content,
-			})
-		case "image":
-			embeds = append(embeds, &discordgo.MessageEmbed{
-				Type: discordgo.EmbedTypeImage,
-				Image: &discordgo.MessageEmbedImage{
-					URL: b.Media.URL,
-				},
-			})
-		case "video":
-			embeds = append(embeds, &discordgo.MessageEmbed{
-				Type: discordgo.EmbedTypeImage,
-				Video: &discordgo.MessageEmbedVideo{
-					URL: b.Media.URL,
-				},
-			})
-		}
-	}
-	
-	if d.Msg != nil {
-		channelID := d.Msg.ChannelID
-		_, err := d.Session.ChannelMessageSendEmbeds(channelID, embeds)
-		if err != nil {
-			logger.ErrorCtx(d.Robot.Ctx, "Sending message failed", "err", err)
-		}
-	} else if d.Inter != nil {
-		_, err := d.Session.InteractionResponseEdit(d.Inter.Interaction, &discordgo.WebhookEdit{
-			Embeds: &embeds,
-		})
-		if err != nil {
-			logger.ErrorCtx(d.Robot.Ctx, "Editing followup interaction message failed", "err", err)
-		}
-	}
-}
-
-func (d *DiscordRobot) getContent(content string) (string, error) {
-	
-	var err error
-	if d.ImageContent != nil {
-		content, err = d.Robot.GetImageContent(d.ImageContent, content)
-		if err != nil {
-			logger.WarnCtx(d.Robot.Ctx, "get image content err", "err", err)
-			return "", err
-		}
-	}
-	
-	if content == "" {
-		logger.WarnCtx(d.Robot.Ctx, "content empty")
-		return "", errors.New("content empty")
-	}
-	
-	if d.Session != nil && d.Session.State != nil && d.Session.State.User != nil {
-		content = strings.ReplaceAll(content, "<@"+d.Session.State.User.ID+">", "")
-	}
-	
-	return content, nil
-}
-
 func (d *DiscordRobot) skipThisMsg() bool {
 	if d.Msg == nil || d.Msg.Author == nil ||
 		d.Session == nil || d.Msg.Author.ID == d.Session.State.User.ID {
@@ -543,15 +464,33 @@ func (d *DiscordRobot) sendImg() {
 			return
 		}
 		
+		if err != nil {
+			logger.WarnCtx(d.Robot.Ctx, "send image fail", "err", err)
+			d.Robot.SendMsg(chatId, err.Error(), msgId, param.DiscordEditMode, nil)
+			return
+		}
+		
+		d.Robot.saveRecord(imageContent, lastImageContent, param.ImageRecordType, totalToken)
+	})
+}
+
+func (d *DiscordRobot) sendMedia(media []byte, contentType, sType string) error {
+	chatId, msgId, _ := d.Robot.GetChatIdAndMsgIdAndUserID()
+	var err error
+	if sType == "image" {
 		file := &discordgo.File{
-			Name:   "image." + utils.DetectImageFormat(imageContent),
-			Reader: bytes.NewReader(imageContent),
+			Name:   "image." + contentType,
+			Reader: bytes.NewReader(media),
 		}
 		
 		if d.Inter != nil {
 			_, err = d.Session.InteractionResponseEdit(d.Inter.Interaction, &discordgo.WebhookEdit{
 				Files: []*discordgo.File{file},
 			})
+			if err != nil {
+				logger.ErrorCtx(d.Robot.Ctx, "Error sending message:", "err", err)
+				return err
+			}
 		} else {
 			messageSend := &discordgo.MessageSend{
 				Reference: &discordgo.MessageReference{
@@ -563,18 +502,40 @@ func (d *DiscordRobot) sendImg() {
 			_, err = d.Session.ChannelMessageSendComplex(chatId, messageSend)
 			if err != nil {
 				logger.ErrorCtx(d.Robot.Ctx, "Error sending message:", "err", err)
-				return
+				return err
 			}
 		}
-		
-		if err != nil {
-			logger.WarnCtx(d.Robot.Ctx, "send image fail", "err", err)
-			d.Robot.SendMsg(chatId, err.Error(), msgId, param.DiscordEditMode, nil)
-			return
+	} else {
+		file := &discordgo.File{
+			Name:   "video." + contentType,
+			Reader: bytes.NewReader(media),
 		}
 		
-		d.Robot.saveRecord(imageContent, lastImageContent, param.ImageRecordType, totalToken)
-	})
+		if d.Inter != nil {
+			_, err = d.Session.InteractionResponseEdit(d.Inter.Interaction, &discordgo.WebhookEdit{
+				Files: []*discordgo.File{file},
+			})
+			if err != nil {
+				logger.ErrorCtx(d.Robot.Ctx, "Error sending message:", "err", err)
+				return err
+			}
+		} else {
+			messageSend := &discordgo.MessageSend{
+				Reference: &discordgo.MessageReference{
+					MessageID: msgId,
+					ChannelID: chatId,
+				},
+				Files: []*discordgo.File{file},
+			}
+			_, err = d.Session.ChannelMessageSendComplex(chatId, messageSend)
+			if err != nil {
+				logger.ErrorCtx(d.Robot.Ctx, "Error sending message:", "err", err)
+				return err
+			}
+		}
+	}
+	
+	return nil
 }
 
 func (d *DiscordRobot) sendVideo() {
@@ -597,30 +558,6 @@ func (d *DiscordRobot) sendVideo() {
 			logger.WarnCtx(d.Robot.Ctx, "generate video fail", "err", err)
 			d.Robot.SendMsg(chatId, err.Error(), msgId, param.DiscordEditMode, nil)
 			return
-		}
-		
-		file := &discordgo.File{
-			Name:   "video." + utils.DetectVideoMimeType(videoContent),
-			Reader: bytes.NewReader(videoContent),
-		}
-		
-		if d.Inter != nil {
-			_, err = d.Session.InteractionResponseEdit(d.Inter.Interaction, &discordgo.WebhookEdit{
-				Files: []*discordgo.File{file},
-			})
-		} else {
-			messageSend := &discordgo.MessageSend{
-				Reference: &discordgo.MessageReference{
-					MessageID: msgId,
-					ChannelID: chatId,
-				},
-				Files: []*discordgo.File{file},
-			}
-			_, err = d.Session.ChannelMessageSendComplex(chatId, messageSend)
-			if err != nil {
-				logger.ErrorCtx(d.Robot.Ctx, "Error sending message:", "err", err)
-				return
-			}
 		}
 		
 		if err != nil {
@@ -994,4 +931,8 @@ func (d *DiscordRobot) getAudio() []byte {
 
 func (d *DiscordRobot) getImage() []byte {
 	return d.ImageContent
+}
+
+func (d *DiscordRobot) setImage(image []byte) {
+	d.ImageContent = image
 }

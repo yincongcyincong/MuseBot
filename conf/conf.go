@@ -74,6 +74,8 @@ type BaseConf struct {
 	SendMcpRes        *bool   `json:"send_mcp_res"`
 	DefaultModel      *string `json:"default_model"`
 	LLMRetryTimes     *int    `json:"llm_retry_times"`
+	LLMOptionParam    *bool   `json:"llm_option_param"`
+	ImagePath         *string `json:"image_path"`
 	
 	CrtFile *string `json:"crt_file"`
 	KeyFile *string `json:"key_file"`
@@ -146,6 +148,7 @@ func InitConf() {
 	BaseConfInfo.MaxQAPair = flag.Int("max_qa_pari", 100, "max qa pair")
 	BaseConfInfo.Character = flag.String("character", "", "ai's character")
 	BaseConfInfo.Powered = flag.String("powered", "", "powered by")
+	BaseConfInfo.ImagePath = flag.String("image_path", "./conf/img/", "image path")
 	
 	BaseConfInfo.CrtFile = flag.String("crt_file", "", "public key file")
 	BaseConfInfo.KeyFile = flag.String("key_file", "", "secret key file")
@@ -153,6 +156,7 @@ func InitConf() {
 	BaseConfInfo.SendMcpRes = flag.Bool("send_mcp_res", false, "send mcp res")
 	BaseConfInfo.DefaultModel = flag.String("default_model", "", "default model")
 	BaseConfInfo.LLMRetryTimes = flag.Int("llm_retry_times", 3, "llm retry times")
+	BaseConfInfo.LLMOptionParam = flag.Bool("llm_option_param", false, "llm option param")
 	
 	adminUserIds := flag.String("admin_user_ids", "", "admin user ids")
 	allowedUserIds := flag.String("allowed_user_ids", "", "allowed user ids")
@@ -421,6 +425,14 @@ func InitConf() {
 		*BaseConfInfo.LLMRetryTimes, _ = strconv.Atoi(os.Getenv("LLM_RETRY_TIMES"))
 	}
 	
+	if os.Getenv("LLM_OPTION_PARAM") != "" {
+		*BaseConfInfo.LLMOptionParam = os.Getenv("LLM_OPTION_PARAM") == "true"
+	}
+	
+	if os.Getenv("IMAGE_PATH") != "" {
+		*BaseConfInfo.ImagePath = os.Getenv("IMAGE_PATH")
+	}
+	
 	for _, userIdStr := range strings.Split(*allowedUserIds, ",") {
 		if userIdStr == "" {
 			continue
@@ -499,6 +511,8 @@ func InitConf() {
 	logger.Info("CONF", "SendMcpRes", *BaseConfInfo.SendMcpRes)
 	logger.Info("CONF", "DefaultModel", *BaseConfInfo.DefaultModel)
 	logger.Info("CONF", "LLMRetryTimes", *BaseConfInfo.LLMRetryTimes)
+	logger.Info("CONF", "LLMOptionParam", *BaseConfInfo.LLMOptionParam)
+	logger.Info("CONF", "ImagePath", *BaseConfInfo.ImagePath)
 	
 	EnvAudioConf()
 	EnvRagConf()

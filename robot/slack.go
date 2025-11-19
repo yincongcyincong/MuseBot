@@ -3,7 +3,6 @@ package robot
 import (
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -262,33 +261,6 @@ func (s *SlackRobot) executeLLM() {
 	go s.Robot.HandleUpdate(messageChan, "mp3")
 }
 
-func (s *SlackRobot) getContent(content string) (string, error) {
-	if s.Event.Message == nil || len(s.Event.Message.Files) == 0 {
-		return content, nil
-	}
-	
-	file := s.Event.Message.Files[0]
-	var err error
-	
-	switch file.Mimetype {
-	case "image/jpeg", "image/png", "image/gif", "image/webp":
-		content, err = s.Robot.GetImageContent(s.ImageContent, content)
-		if err != nil {
-			logger.Warn("generate text from image failed", "err", err)
-			return "", err
-		}
-	default:
-		return "", fmt.Errorf("unsupported file type: %s", file.Mimetype)
-	}
-	
-	if content == "" {
-		logger.Warn("content extraction returned empty")
-		return "", errors.New("content is empty")
-	}
-	
-	return content, nil
-}
-
 func (s *SlackRobot) downloadSlackFile(url string) ([]byte, error) {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -494,21 +466,6 @@ func (s *SlackRobot) sendTextStream(messageChan *MsgChan) {
 	}
 }
 
-func (s *SlackRobot) sendText(messageChan *MsgChan) {
-	
-	var msg *param.MsgInfo
-	for msg = range messageChan.NormalMessageChan {
-		if msg.Finished {
-			s.sendMsg(msg)
-		}
-	}
-	
-	if msg != nil {
-		s.sendMsg(msg)
-	}
-	
-}
-
 func (s *SlackRobot) sendMsg(msg *param.MsgInfo) {
 	chatId, msgId, _ := s.Robot.GetChatIdAndMsgIdAndUserID()
 	blocks := utils.ExtractContentBlocks(msg.Content)
@@ -580,4 +537,8 @@ func (s *SlackRobot) getAudio() []byte {
 
 func (s *SlackRobot) getImage() []byte {
 	return s.ImageContent
+}
+
+func (s *SlackRobot) setImage(image []byte) {
+	s.ImageContent = image
 }

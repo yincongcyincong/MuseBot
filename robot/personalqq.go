@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -268,49 +267,12 @@ func (q *PersonalQQRobot) executeLLM() {
 	
 }
 
-func (q *PersonalQQRobot) getContent(content string) (string, error) {
-	
-	var err error
-	if q.ImageContent != nil {
-		content, err = q.Robot.GetImageContent(q.ImageContent, content)
-		if err != nil {
-			logger.Warn("generate text from audio failed", "err", err)
-			return "", err
-		}
-	}
-	
-	if content == "" {
-		logger.Warn("content extraction returned empty")
-		return "", errors.New("content is empty")
-	}
-	
-	return content, nil
-}
-
 func (q *PersonalQQRobot) getPrompt() string {
 	return q.Prompt
 }
 
 func (q *PersonalQQRobot) getPerMsgLen() int {
 	return 1800
-}
-
-func (q *PersonalQQRobot) sendText(messageChan *MsgChan) {
-	chatId, messageId, _ := q.Robot.GetChatIdAndMsgIdAndUserID()
-	
-	var msg *param.MsgInfo
-	for msg = range messageChan.NormalMessageChan {
-		if msg.Finished {
-			q.Robot.SendMsg(chatId, msg.Content, messageId, "", nil)
-		}
-	}
-	
-	if msg == nil || len(msg.Content) == 0 {
-		msg = new(param.MsgInfo)
-		return
-	}
-	
-	q.Robot.SendMsg(chatId, msg.Content, messageId, "", nil)
 }
 
 type OneBotResult struct {
@@ -331,28 +293,10 @@ func (q *PersonalQQRobot) SendMsg(txt string, image []byte, video []byte, voice 
 			})
 		}
 		
-		markdowns := utils.ExtractContentBlocks(txt)
-		for _, m := range markdowns {
-			switch m.Type {
-			case "text":
-				msgArray = append(msgArray, map[string]interface{}{
-					"type": m.Type,
-					"data": map[string]string{"text": m.Content},
-				})
-			case "image", "video":
-				mediaData, err := utils.DownloadFile(m.Media.URL)
-				if err != nil || len(mediaData) == 0 {
-					logger.ErrorCtx(q.Ctx, "send message failed", "err", err, "url", m.Media.URL)
-				} else {
-					msgArray = append(msgArray, map[string]interface{}{
-						"type": m.Type,
-						"data": map[string]string{"file": "base64://" + base64.StdEncoding.EncodeToString(mediaData)},
-					})
-				}
-			}
-			
-		}
-		
+		msgArray = append(msgArray, map[string]interface{}{
+			"type": "text",
+			"data": map[string]string{"text": txt},
+		})
 	}
 	
 	if len(image) > 0 {
@@ -432,6 +376,16 @@ func (q *PersonalQQRobot) SendMsg(txt string, image []byte, video []byte, voice 
 	return result.MessageID, nil
 }
 
+func (q *PersonalQQRobot) sendMedia(media []byte, contentType, sType string) error {
+	if sType == "image" {
+		_, err := q.SendMsg("", media, nil, nil)
+		return err
+	} else {
+		_, err := q.SendMsg("", nil, media, nil)
+		return err
+	}
+}
+
 func (q *PersonalQQRobot) GetMessageContent() (bool, error) {
 	var err error
 	prompt := ""
@@ -494,4 +448,8 @@ func (q *PersonalQQRobot) getAudio() []byte {
 
 func (q *PersonalQQRobot) getImage() []byte {
 	return q.ImageContent
+}
+
+func (q *PersonalQQRobot) setImage(image []byte) {
+	q.ImageContent = image
 }

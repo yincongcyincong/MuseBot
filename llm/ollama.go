@@ -61,15 +61,18 @@ func (o OllamaReq) Send(ctx context.Context, l *LLM) error {
 		StreamOptions: deepseek.StreamOptions{
 			IncludeUsage: true,
 		},
-		MaxTokens:        *conf.LLMConfInfo.MaxTokens,
-		TopP:             float32(*conf.LLMConfInfo.TopP),
-		FrequencyPenalty: float32(*conf.LLMConfInfo.FrequencyPenalty),
-		TopLogProbs:      *conf.LLMConfInfo.TopLogProbs,
-		LogProbs:         *conf.LLMConfInfo.LogProbs,
-		Stop:             conf.LLMConfInfo.Stop,
-		PresencePenalty:  float32(*conf.LLMConfInfo.PresencePenalty),
-		Temperature:      float32(*conf.LLMConfInfo.Temperature),
-		Tools:            l.DeepseekTools,
+		Tools: l.DeepseekTools,
+	}
+	
+	if *conf.BaseConfInfo.LLMOptionParam {
+		request.MaxTokens = *conf.LLMConfInfo.MaxTokens
+		request.TopP = float32(*conf.LLMConfInfo.TopP)
+		request.FrequencyPenalty = float32(*conf.LLMConfInfo.FrequencyPenalty)
+		request.TopLogProbs = *conf.LLMConfInfo.TopLogProbs
+		request.LogProbs = *conf.LLMConfInfo.LogProbs
+		request.Stop = conf.LLMConfInfo.Stop
+		request.PresencePenalty = float32(*conf.LLMConfInfo.PresencePenalty)
+		request.Temperature = float32(*conf.LLMConfInfo.Temperature)
 	}
 	
 	request.Messages = o.OllamaMsgs
@@ -163,6 +166,14 @@ func (o OllamaReq) GetAssistantMessage(msg string) {
 	o.GetMessage(constants.ChatMessageRoleAssistant, msg)
 }
 
+func (o OllamaReq) GetSystemMessage(msg string) {
+	o.GetMessage(constants.ChatMessageRoleSystem, msg)
+}
+
+func (o OllamaReq) GetImageMessage(image [][]byte, msg string) {}
+
+func (o OllamaReq) GetAudioMessage(audio []byte, msg string) {}
+
 func (o OllamaReq) AppendMessages(client LLMClient) {
 	if len(o.OllamaMsgs) == 0 {
 		o.OllamaMsgs = make([]deepseek.ChatCompletionMessage, 0)
@@ -194,17 +205,20 @@ func (o OllamaReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 	
 	client := GetDeepseekClient(ctx)
 	request := &deepseek.ChatCompletionRequest{
-		Model:            l.Model,
-		MaxTokens:        *conf.LLMConfInfo.MaxTokens,
-		TopP:             float32(*conf.LLMConfInfo.TopP),
-		FrequencyPenalty: float32(*conf.LLMConfInfo.FrequencyPenalty),
-		TopLogProbs:      *conf.LLMConfInfo.TopLogProbs,
-		LogProbs:         *conf.LLMConfInfo.LogProbs,
-		Stop:             conf.LLMConfInfo.Stop,
-		PresencePenalty:  float32(*conf.LLMConfInfo.PresencePenalty),
-		Temperature:      float32(*conf.LLMConfInfo.Temperature),
-		Messages:         o.OllamaMsgs,
-		Tools:            l.DeepseekTools,
+		Model:    l.Model,
+		Messages: o.OllamaMsgs,
+		Tools:    l.DeepseekTools,
+	}
+	
+	if *conf.BaseConfInfo.LLMOptionParam {
+		request.MaxTokens = *conf.LLMConfInfo.MaxTokens
+		request.TopP = float32(*conf.LLMConfInfo.TopP)
+		request.FrequencyPenalty = float32(*conf.LLMConfInfo.FrequencyPenalty)
+		request.TopLogProbs = *conf.LLMConfInfo.TopLogProbs
+		request.LogProbs = *conf.LLMConfInfo.LogProbs
+		request.Stop = conf.LLMConfInfo.Stop
+		request.PresencePenalty = float32(*conf.LLMConfInfo.PresencePenalty)
+		request.Temperature = float32(*conf.LLMConfInfo.Temperature)
 	}
 	
 	// assign task
