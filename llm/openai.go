@@ -191,18 +191,6 @@ func (d *OpenAIReq) Send(ctx context.Context, l *LLM) error {
 	return nil
 }
 
-func (d *OpenAIReq) GetUserMessage(msg string) {
-	d.GetMessage(openai.ChatMessageRoleUser, msg)
-}
-
-func (d *OpenAIReq) GetAssistantMessage(msg string) {
-	d.GetMessage(openai.ChatMessageRoleAssistant, msg)
-}
-
-func (d *OpenAIReq) GetSystemMessage(msg string) {
-	d.GetMessage(openai.ChatMessageRoleSystem, msg)
-}
-
 func (d *OpenAIReq) GetImageMessage(images [][]byte, msg string) {
 	multiContent := []openai.ChatMessagePart{
 		{
@@ -315,7 +303,7 @@ func (d *OpenAIReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 	
 	l.Cs.Token += response.Usage.TotalTokens
 	if len(response.Choices[0].Message.ToolCalls) > 0 {
-		d.GetAssistantMessage("")
+		d.GetMessage(openai.ChatMessageRoleAssistant, "")
 		d.OpenAIMsgs[len(d.OpenAIMsgs)-1].ToolCalls = response.Choices[0].Message.ToolCalls
 		d.requestOneToolsCall(ctx, response.Choices[0].Message.ToolCalls, l)
 		return d.SyncSend(ctx, l)

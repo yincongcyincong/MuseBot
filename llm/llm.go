@@ -65,11 +65,7 @@ type LLM struct {
 type LLMClient interface {
 	Send(ctx context.Context, l *LLM) error
 	
-	GetUserMessage(msg string)
-	
-	GetAssistantMessage(msg string)
-	
-	GetSystemMessage(msg string)
+	GetMessage(role, msg string)
 	
 	GetImageMessage(image [][]byte, msg string)
 	
@@ -129,7 +125,7 @@ func (l *LLM) InsertCharacter(ctx context.Context) {
 			}
 			
 			logger.InfoCtx(ctx, "character", "character", buf.String())
-			l.LLMClient.GetSystemMessage(buf.String())
+			l.LLMClient.GetMessage(openai.ChatMessageRoleSystem, buf.String())
 		}
 	}
 }
@@ -252,8 +248,8 @@ func (l *LLM) GetMessages(userId string, prompt string) {
 		for i, record := range aqs {
 			if record.Question != "" && record.Answer != "" && record.CreateTime > time.Now().Unix()-int64(*conf.BaseConfInfo.ContextExpireTime) {
 				logger.InfoCtx(l.Ctx, "context content", "dialog", i, "question:", record.Question, "answer:", record.Answer)
-				l.LLMClient.GetUserMessage(record.Question)
-				l.LLMClient.GetAssistantMessage(record.Answer)
+				l.LLMClient.GetMessage(openai.ChatMessageRoleUser, record.Question)
+				l.LLMClient.GetMessage(openai.ChatMessageRoleAssistant, record.Answer)
 			}
 		}
 	}
@@ -261,7 +257,7 @@ func (l *LLM) GetMessages(userId string, prompt string) {
 	if len(l.Images) > 0 {
 		l.LLMClient.GetImageMessage(l.Images, prompt)
 	} else {
-		l.LLMClient.GetUserMessage(prompt)
+		l.LLMClient.GetMessage(openai.ChatMessageRoleUser, prompt)
 	}
 	
 }

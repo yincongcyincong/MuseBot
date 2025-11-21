@@ -111,7 +111,7 @@ func CreateBot(w http.ResponseWriter, r *http.Request) {
 	
 	isRuning := false
 	b.Name = commands["bot_name"]
-	b.Address = adminUtils.NormalizeHTTP(commands["http_host"])
+	b.Address = utils.NormalizeHTTP(commands["http_host"])
 	resp, err := adminUtils.GetCrtClient(&db.Bot{
 		CaFile:  b.CaFile,
 		CrtFile: b.CrtFile,
@@ -250,7 +250,7 @@ func UpdateBotAddress(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	b.Address = adminUtils.NormalizeHTTP(commands["http_host"])
+	b.Address = utils.NormalizeHTTP(commands["http_host"])
 	b.Name = commands["bot_name"]
 	err = db.UpdateBotAddress(b.ID, b.Address, b.Name, b.CrtFile, b.KeyFile, b.CaFile, b.Command)
 	if err != nil {

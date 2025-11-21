@@ -68,13 +68,3 @@ func ParseCommand(str string) map[string]string {
 	
 	return m
 }
-
-func NormalizeHTTP(addr string) string {
-	if strings.HasPrefix(addr, ":") {
-		addr = "127.0.0.1" + addr
-	}
-	if !strings.HasPrefix(addr, "http://") {
-		addr = "http://" + addr
-	}
-	return addr
-}

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"regexp"
 	
+	"github.com/sashabaranov/go-openai"
 	"github.com/yincongcyincong/MuseBot/conf"
 	"github.com/yincongcyincong/MuseBot/i18n"
 	"github.com/yincongcyincong/MuseBot/logger"
@@ -65,7 +66,7 @@ func (d *LLMTaskReq) ExecuteTask() error {
 	llm := NewLLM(WithUserId(d.UserId), WithChatId(d.ChatId), WithMsgId(d.MsgId),
 		WithMessageChan(d.MessageChan), WithContent(prompt), WithHTTPMsgChan(d.HTTPMsgChan),
 		WithPerMsgLen(d.PerMsgLen), WithContext(d.Ctx))
-	llm.LLMClient.GetUserMessage(prompt)
+	llm.LLMClient.GetMessage(openai.ChatMessageRoleUser, prompt)
 	llm.LLMClient.GetModel(llm)
 	
 	metrics.APIRequestCount.WithLabelValues(llm.Model).Inc()
@@ -94,7 +95,7 @@ func (d *LLMTaskReq) ExecuteTask() error {
 		finalLLM := NewLLM(WithUserId(d.UserId), WithChatId(d.ChatId), WithMsgId(d.MsgId),
 			WithMessageChan(d.MessageChan), WithContent(d.Content), WithHTTPMsgChan(d.HTTPMsgChan),
 			WithPerMsgLen(d.PerMsgLen), WithContext(d.Ctx))
-		finalLLM.LLMClient.GetUserMessage(c)
+		finalLLM.LLMClient.GetMessage(openai.ChatMessageRoleUser, c)
 		finalLLM.LLMClient.GetModel(finalLLM)
 		
 		metrics.APIRequestCount.WithLabelValues(finalLLM.Model).Inc()
@@ -106,7 +107,7 @@ func (d *LLMTaskReq) ExecuteTask() error {
 	}
 	
 	llm.DirectSendMsg(c)
-	llm.LLMClient.GetAssistantMessage(c)
+	llm.LLMClient.GetMessage(openai.ChatMessageRoleAssistant, c)
 	err = d.loopTask(d.Ctx, plans, c, llm, 0)
 	if err != nil {
 		logger.ErrorCtx(d.Ctx, "loopTask fail", "err", err)
@@ -117,7 +118,7 @@ func (d *LLMTaskReq) ExecuteTask() error {
 	summaryParam := make(map[string]interface{})
 	summaryParam["user_task"] = d.Content
 	summaryPrompt := i18n.GetMessage("summary_task_prompt", summaryParam)
-	llm.LLMClient.GetUserMessage(summaryPrompt)
+	llm.LLMClient.GetMessage(openai.ChatMessageRoleUser, summaryPrompt)
 	llm.Content = summaryPrompt
 	
 	metrics.APIRequestCount.WithLabelValues(llm.Model).Inc()
@@ -151,7 +152,7 @@ func (d *LLMTaskReq) loopTask(ctx context.Context, plans *TaskInfo, lastPlan str
 			tool = toolInter.(*conf.AgentInfo)
 		}
 		WithTaskTools(tool)(taskLLM)
-		taskLLM.LLMClient.GetUserMessage(plan.Description)
+		taskLLM.LLMClient.GetMessage(openai.ChatMessageRoleUser, plan.Description)
 		taskLLM.Content = plan.Description
 		taskLLM.LLMClient.GetModel(taskLLM)
 		logger.InfoCtx(d.Ctx, "execute task", "task", plan.Name, "task desc", plan.Description)
@@ -171,7 +172,7 @@ func (d *LLMTaskReq) loopTask(ctx context.Context, plans *TaskInfo, lastPlan str
 		"last_plan":      lastPlan,
 	}
 	
-	llm.LLMClient.GetUserMessage(i18n.GetMessage("loop_task_prompt", taskParam))
+	llm.LLMClient.GetMessage(openai.ChatMessageRoleUser, i18n.GetMessage("loop_task_prompt", taskParam))
 	llm.LLMClient.GetModel(llm)
 	
 	metrics.APIRequestCount.WithLabelValues(llm.Model).Inc()
@@ -197,7 +198,7 @@ func (d *LLMTaskReq) loopTask(ctx context.Context, plans *TaskInfo, lastPlan str
 		}
 	}
 	
-	llm.LLMClient.GetAssistantMessage(c)
+	llm.LLMClient.GetMessage(openai.ChatMessageRoleAssistant, c)
 	
 	if len(plans.Plan) == 0 {
 		return nil
@@ -217,7 +218,7 @@ func (d *LLMTaskReq) requestTask(ctx context.Context, llm *LLM, plan *Task) erro
 	
 	// llm response merge into msg
 	c += "\n\n" + plan.Name + " is completed"
-	llm.LLMClient.GetAssistantMessage(c)
+	llm.LLMClient.GetMessage(openai.ChatMessageRoleAssistant, c)
 	
 	return nil
 }

@@ -404,3 +404,13 @@ func RandomFilename(ext string) string {
 	
 	return fmt.Sprintf("%d_%s.%s", time.Now().UnixNano(), hex.EncodeToString(b), ext)
 }
+
+func NormalizeHTTP(addr string) string {
+	if strings.HasPrefix(addr, ":") {
+		addr = "127.0.0.1" + addr
+	}
+	if !strings.HasPrefix(addr, "http://") {
+		addr = "http://" + addr
+	}
+	return addr
+}
