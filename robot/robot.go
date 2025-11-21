@@ -22,6 +22,7 @@ import (
 	larkcore "github.com/larksuite/oapi-sdk-go/v3/core"
 	larkim "github.com/larksuite/oapi-sdk-go/v3/service/im/v1"
 	cron "github.com/robfig/cron/v3"
+	"github.com/sashabaranov/go-openai"
 	"github.com/slack-go/slack"
 	"github.com/tencent-connect/botgo/dto"
 	"github.com/yincongcyincong/MuseBot/conf"
@@ -1735,7 +1736,7 @@ func (r *RobotInfo) smartMode() bool {
 		}),
 	)
 	llmClient.LLMClient.GetModel(llmClient)
-	llmClient.LLMClient.GetUserMessage(llmClient.Content)
+	llmClient.LLMClient.GetMessage(openai.ChatMessageRoleUser, llmClient.Content)
 	content, err := llmClient.LLMClient.SyncSend(r.Ctx, llmClient)
 	if err != nil {
 		logger.ErrorCtx(r.Ctx, "get content fail", "err", err)
