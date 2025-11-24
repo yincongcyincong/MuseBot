@@ -27,27 +27,28 @@ type AgentInfo struct {
 	OpenRouterTools []openrouter.Tool `json:"-"`
 }
 
+type ToolsConf struct {
+	McpConfPath *string `json:"mcp_conf_path"`
+}
+
 var (
-	McpConfPath *string
-	
 	DeepseekTools = make([]deepseek.Tool, 0)
 	VolTools      = make([]*model.Tool, 0)
 	OpenAITools   = make([]openai.Tool, 0)
 	GeminiTools   = make([]*genai.Tool, 0)
 	
-	TaskTools = sync.Map{}
+	TaskTools     = sync.Map{}
+	ToolsConfInfo = new(ToolsConf)
 )
 
 func InitToolsConf() {
-	McpConfPath = flag.String("mcp_conf_path", GetAbsPath("conf/mcp/mcp.json"), "mcp conf path")
+	ToolsConfInfo.McpConfPath = flag.String("mcp_conf_path", GetAbsPath("conf/mcp/mcp.json"), "mcp conf path")
 }
 
 func EnvToolsConf() {
 	if os.Getenv("MCP_CONF_PATH") != "" {
-		*McpConfPath = os.Getenv("MCP_CONF_PATH")
+		*ToolsConfInfo.McpConfPath = os.Getenv("MCP_CONF_PATH")
 	}
-	
-	logger.Info("TOOLS_CONF", "McpConfPath", *McpConfPath)
 }
 
 func InitTools() {
@@ -69,7 +70,7 @@ func InitTools() {
 		}
 	}()
 	
-	mcpParams, err := clients.InitByConfFile(*McpConfPath)
+	mcpParams, err := clients.InitByConfFile(*ToolsConfInfo.McpConfPath)
 	if err != nil {
 		logger.Error("init mcp file fail", "err", err)
 	}

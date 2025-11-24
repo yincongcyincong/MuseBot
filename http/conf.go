@@ -39,8 +39,8 @@ func GetCommand(w http.ResponseWriter, r *http.Request) {
 	res += CompareFlagsWithStructTags(conf.VideoConfInfo, useQuota)
 	
 	flagValue := flag.Lookup("mcp_conf_path")
-	if flagValue.DefValue != *conf.McpConfPath {
-		res += fmt.Sprintf("-mcp_conf_path=%s", *conf.McpConfPath)
+	if flagValue.DefValue != *conf.ToolsConfInfo.McpConfPath {
+		res += fmt.Sprintf("-mcp_conf_path=%s", *conf.ToolsConfInfo.McpConfPath)
 	}
 	utils.Success(ctx, w, r, res)
 }
@@ -101,7 +101,7 @@ func GetConf(w http.ResponseWriter, r *http.Request) {
 
 func GetMCPConf(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	data, err := os.ReadFile(*conf.McpConfPath)
+	data, err := os.ReadFile(*conf.ToolsConfInfo.McpConfPath)
 	if err != nil {
 		logger.ErrorCtx(ctx, "read mcp conf error", "err", err)
 		utils.Failure(ctx, w, r, param.CodeConfigError, param.MsgConfigError, err)
@@ -245,7 +245,7 @@ func SyncMCPConf(w http.ResponseWriter, r *http.Request) {
 }
 
 func getMCPConf(ctx context.Context) (*mcpParam.McpClientGoConfig, error) {
-	data, err := os.ReadFile(*conf.McpConfPath)
+	data, err := os.ReadFile(*conf.ToolsConfInfo.McpConfPath)
 	if err != nil {
 		logger.ErrorCtx(ctx, "read mcp conf error", "err", err)
 		return nil, err
@@ -262,7 +262,7 @@ func getMCPConf(ctx context.Context) (*mcpParam.McpClientGoConfig, error) {
 }
 
 func updateMCPConfFile(ctx context.Context, config *mcpParam.McpClientGoConfig) error {
-	file, err := os.OpenFile(*conf.McpConfPath, os.O_RDWR|os.O_TRUNC, 0644)
+	file, err := os.OpenFile(*conf.ToolsConfInfo.McpConfPath, os.O_RDWR|os.O_TRUNC, 0644)
 	if err != nil {
 		logger.ErrorCtx(ctx, "open mcp conf error", "err", err)
 		return err

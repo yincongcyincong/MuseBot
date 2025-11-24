@@ -6,7 +6,6 @@ import (
 	"strconv"
 	
 	"github.com/sashabaranov/go-openai"
-	"github.com/yincongcyincong/MuseBot/logger"
 )
 
 type PhotoConf struct {
@@ -195,34 +194,4 @@ func EnvPhotoConf() {
 	if os.Getenv("ALIYUN_REC_MODEL") != "" {
 		*PhotoConfInfo.AliyunRecModel = os.Getenv("ALIYUN_REC_MODEL")
 	}
-	
-	logger.Info("PHOTO_CONF", "ReqKey", *PhotoConfInfo.ReqKey)
-	logger.Info("PHOTO_CONF", "ModelVersion", *PhotoConfInfo.ModelVersion)
-	logger.Info("PHOTO_CONF", "ReqScheduleConf", *PhotoConfInfo.ReqScheduleConf)
-	logger.Info("PHOTO_CONF", "Seed", *PhotoConfInfo.Seed)
-	logger.Info("PHOTO_CONF", "Width", *PhotoConfInfo.Width)
-	logger.Info("PHOTO_CONF", "Height", *PhotoConfInfo.Height)
-	logger.Info("PHOTO_CONF", "Scale", *PhotoConfInfo.Scale)
-	logger.Info("PHOTO_CONF", "DDIMSteps", *PhotoConfInfo.DDIMSteps)
-	logger.Info("PHOTO_CONF", "UsePreLLM", *PhotoConfInfo.UsePreLLM)
-	logger.Info("PHOTO_CONF", "UseSr", *PhotoConfInfo.UseSr)
-	logger.Info("PHOTO_CONF", "ReturnUrl", *PhotoConfInfo.ReturnUrl)
-	logger.Info("PHOTO_CONF", "AddLogo", *PhotoConfInfo.AddLogo)
-	logger.Info("PHOTO_CONF", "Position", *PhotoConfInfo.Position)
-	logger.Info("PHOTO_CONF", "Language", *PhotoConfInfo.Language)
-	logger.Info("PHOTO_CONF", "Opacity", *PhotoConfInfo.Opacity)
-	logger.Info("PHOTO_CONF", "LogoTextContent", *PhotoConfInfo.LogoTextContent)
-	
-	logger.Info("PHOTO_CONF", "GeminiImageModel", *PhotoConfInfo.GeminiImageModel)
-	logger.Info("PHOTO_CONF", "GeminiRecModel", *PhotoConfInfo.GeminiRecModel)
-	logger.Info("PHOTO_CONF", "OpenAIImageStyle", *PhotoConfInfo.OpenAIImageStyle)
-	logger.Info("PHOTO_CONF", "OpenAIImageModel", *PhotoConfInfo.OpenAIImageModel)
-	logger.Info("PHOTO_CONF", "OpenAIImageSize", *PhotoConfInfo.OpenAIImageSize)
-	logger.Info("PHOTO_CONF", "OpenAIRecModel", *PhotoConfInfo.OpenAIRecModel)
-	logger.Info("PHOTO_CONF", "VolImageModel", *PhotoConfInfo.VolImageModel)
-	logger.Info("PHOTO_CONF", "VolRecModel", *PhotoConfInfo.VolRecModel)
-	logger.Info("PHOTO_CONF", "AI302ImageModel", *PhotoConfInfo.MixRecModel)
-	logger.Info("PHOTO_CONF", "AI302RecModel", *PhotoConfInfo.MixRecModel)
-	logger.Info("PHOTO_CONF", "AliyunImageModel", *PhotoConfInfo.AliyunImageModel)
-	logger.Info("PHOTO_CONF", "AliyunRecModel", *PhotoConfInfo.AliyunRecModel)
 }

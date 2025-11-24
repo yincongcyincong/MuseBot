@@ -635,16 +635,6 @@ func (r *RobotInfo) checkUserTokenExceed(chatId string, msgId string, userId str
 	return false
 }
 
-// checkAdminUser check user is admin
-func (r *RobotInfo) checkAdminUser(userId string) bool {
-	if len(conf.BaseConfInfo.AdminUserIds) == 0 {
-		return false
-	}
-	
-	_, ok := conf.BaseConfInfo.AdminUserIds[userId]
-	return ok
-}
-
 func (r *RobotInfo) GetAudioContent(audioContent []byte) (string, error) {
 	var answer string
 	var err error
