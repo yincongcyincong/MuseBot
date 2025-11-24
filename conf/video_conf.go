@@ -4,8 +4,6 @@ import (
 	"flag"
 	"os"
 	"strconv"
-	
-	"github.com/yincongcyincong/MuseBot/logger"
 )
 
 type VideoConf struct {
@@ -72,14 +70,4 @@ func EnvVideoConf() {
 	if os.Getenv("302_AI_VIDEO_MODEL") != "" {
 		*VideoConfInfo.AI302VideoModel = os.Getenv("302_AI_VIDEO_MODEL")
 	}
-	
-	logger.Info("VIDEO_CONF", "VOL_VIDEO_MODEL", *VideoConfInfo.VolVideoModel)
-	logger.Info("VIDEO_CONF", "RADIO", *VideoConfInfo.Radio)
-	logger.Info("VIDEO_CONF", "DURATION", *VideoConfInfo.Duration)
-	logger.Info("VIDEO_CONF", "FPS", *VideoConfInfo.FPS)
-	logger.Info("VIDEO_CONF", "RESOLUTION", *VideoConfInfo.Resolution)
-	logger.Info("VIDEO_CONF", "WATERMARK", *VideoConfInfo.Watermark)
-	logger.Info("AUDIO_CONF", "GeminiVideoModel", *VideoConfInfo.GeminiVideoModel)
-	logger.Info("AUDIO_CONF", "AI302VideoModel", *VideoConfInfo.AI302VideoModel)
-	logger.Info("AUDIO_CONF", "AliyunVideoModel", *VideoConfInfo.AliyunVideoModel)
 }

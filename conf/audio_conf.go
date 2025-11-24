@@ -4,8 +4,6 @@ import (
 	"flag"
 	"os"
 	"strconv"
-	
-	"github.com/yincongcyincong/MuseBot/logger"
 )
 
 type AudioConf struct {
@@ -131,25 +129,5 @@ func EnvAudioConf() {
 	if os.Getenv("ALIYUN_AUDIO_REC_MODEL") != "" {
 		*AudioConfInfo.AliyunAudioRecModel = os.Getenv("ALIYUN_AUDIO_REC_MODEL")
 	}
-	
-	logger.Info("AUDIO_CONF", "AudioAppID", *AudioConfInfo.VolAudioAppID)
-	logger.Info("AUDIO_CONF", "AudioToken", *AudioConfInfo.VolAudioToken)
-	logger.Info("AUDIO_CONF", "AudioCluster", *AudioConfInfo.VolAudioRecCluster)
-	logger.Info("AUDIO_CONF", "AudioVoiceType", *AudioConfInfo.VolAudioVoiceType)
-	logger.Info("AUDIO_CONF", "AudioTTSCluster", *AudioConfInfo.VolAudioTTSCluster)
-	logger.Info("AUDIO_CONF", "GeminiAudioModel", *AudioConfInfo.GeminiAudioModel)
-	logger.Info("AUDIO_CONF", "GeminiVoiceName", *AudioConfInfo.GeminiVoiceName)
-	logger.Info("AUDIO_CONF", "OpenAIAudioModel", *AudioConfInfo.OpenAIAudioModel)
-	logger.Info("AUDIO_CONF", "OpenAIVoiceName", *AudioConfInfo.OpenAIVoiceName)
-	logger.Info("AUDIO_CONF", "TTSType", *AudioConfInfo.TTSType)
-	
-	logger.Info("AUDIO_CONF", "VolEndSmoothWindow", *AudioConfInfo.VolEndSmoothWindow)
-	logger.Info("AUDIO_CONF", "VolTTSSpeaker", *AudioConfInfo.VolTTSSpeaker)
-	logger.Info("AUDIO_CONF", "VolBotName", *AudioConfInfo.VolBotName)
-	logger.Info("AUDIO_CONF", "VolSystemRole", *AudioConfInfo.VolSystemRole)
-	logger.Info("AUDIO_CONF", "VolSpeakingStyle", *AudioConfInfo.VolSpeakingStyle)
-	logger.Info("AUDIO_CONF", "AliyunAudioModel", *AudioConfInfo.AliyunAudioModel)
-	logger.Info("AUDIO_CONF", "AliyunAudioVoice", *AudioConfInfo.AliyunAudioVoice)
-	logger.Info("AUDIO_CONF", "AliyunAudioRecModel", *AudioConfInfo.AliyunAudioRecModel)
 	
 }
