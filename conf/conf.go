@@ -630,7 +630,8 @@ func loadConf() bool {
 		}
 	}
 	
-	if len(m) > 2 {
+	if !(len(m) == 0 || (len(m) == 1 && (m["bot_name"] != "" || m["http_host"] != "")) ||
+		(len(m) == 2 && m["bot_name"] != "" && m["http_host"] != "")) {
 		return false
 	}
 	
