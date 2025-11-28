@@ -3,14 +3,14 @@ package utils
 import (
 	"strings"
 	"testing"
-
+	
 	"github.com/stretchr/testify/assert"
 )
 
 func TestUtf16len(t *testing.T) {
 	tests := map[string]int{
 		"hello":   5,
-		"你好":      2,
+		"你好":    2,
 		"𠀀":       2, // surrogate pair in utf16
 		"":        0,
 		"abc𠀀def": 8,
@@ -82,4 +82,22 @@ func TestMapKeysToString(t *testing.T) {
 	result := MapKeysToString(m)
 	assert.True(strings.Contains(result, "a"))
 	assert.True(strings.Contains(result, "b"))
+}
+
+// 测试 NormalizeHTTP 函数
+func TestNormalizeHTTP(t *testing.T) {
+	tests := []struct {
+		input, expected string
+	}{
+		{":8080", "http://127.0.0.1:8080"},
+		{"localhost:9090", "http://localhost:9090"},
+		{"http://example.com", "http://example.com"},
+	}
+	
+	for _, tt := range tests {
+		got := NormalizeHTTP(tt.input)
+		if got != tt.expected {
+			t.Errorf("NormalizeHTTP(%q) = %q; want %q", tt.input, got, tt.expected)
+		}
+	}
 }
