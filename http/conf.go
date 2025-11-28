@@ -37,11 +37,8 @@ func GetCommand(w http.ResponseWriter, r *http.Request) {
 	res += CompareFlagsWithStructTags(conf.PhotoConfInfo, useQuota)
 	res += CompareFlagsWithStructTags(conf.RagConfInfo, useQuota)
 	res += CompareFlagsWithStructTags(conf.VideoConfInfo, useQuota)
+	res += CompareFlagsWithStructTags(conf.ToolsConfInfo, useQuota)
 	
-	flagValue := flag.Lookup("mcp_conf_path")
-	if flagValue.DefValue != *conf.ToolsConfInfo.McpConfPath {
-		res += fmt.Sprintf("-mcp_conf_path=%s", *conf.ToolsConfInfo.McpConfPath)
-	}
 	utils.Success(ctx, w, r, res)
 }
 
@@ -344,11 +341,6 @@ func CompareFlagsWithStructTags(cfg interface{}, useQuota bool) string {
 		}
 		
 		flagValue := flag.Lookup(jsonTag)
-		if flagValue == nil {
-			logger.Warn("Flag not found", "jsonTag", jsonTag)
-			continue
-		}
-		
 		structValue := ""
 		switch jsonTag {
 		case "allowed_user_ids", "allowed_group_ids", "admin_user_ids":
@@ -357,13 +349,12 @@ func CompareFlagsWithStructTags(cfg interface{}, useQuota bool) string {
 			structValue = utils.ValueToString(v.Field(i).Interface())
 		}
 		
-		if structValue != flagValue.DefValue || jsonTag == "bot_name" || jsonTag == "http_host" {
+		if flagValue == nil || structValue != flagValue.DefValue || jsonTag == "bot_name" || jsonTag == "http_host" {
 			if useQuota {
 				res += fmt.Sprintf("-%s='%s'\n", jsonTag, structValue)
 			} else {
 				res += fmt.Sprintf("-%s=%s\n", jsonTag, structValue)
 			}
-			
 		}
 	}
 	

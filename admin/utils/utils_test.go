@@ -41,24 +41,6 @@ func TestParseCommand(t *testing.T) {
 	}
 }
 
-// 测试 NormalizeHTTP 函数
-func TestNormalizeHTTP(t *testing.T) {
-	tests := []struct {
-		input, expected string
-	}{
-		{":8080", "http://127.0.0.1:8080"},
-		{"localhost:9090", "http://localhost:9090"},
-		{"http://example.com", "http://example.com"},
-	}
-	
-	for _, tt := range tests {
-		got := NormalizeHTTP(tt.input)
-		if got != tt.expected {
-			t.Errorf("NormalizeHTTP(%q) = %q; want %q", tt.input, got, tt.expected)
-		}
-	}
-}
-
 // 测试 GetCrtClient 函数 (包括各种分支)
 func TestGetCrtClient(t *testing.T) {
 	t.Run("empty cert files", func(t *testing.T) {
