@@ -52,7 +52,7 @@ func InitI18n() {
 // GetMessage function to get localized message
 func GetMessage(messageID string, templateData map[string]interface{}) string {
 	var localizer *i18n.Localizer
-	switch *conf.BaseConfInfo.Lang {
+	switch conf.BaseConfInfo.Lang {
 	case ru:
 		localizer = ruLocalizer
 	case zh:
@@ -66,7 +66,7 @@ func GetMessage(messageID string, templateData map[string]interface{}) string {
 		TemplateData: templateData,
 	})
 	if err != nil {
-		logger.Warn("Failed to localize message", "tag", *conf.BaseConfInfo.Lang, "messageID", messageID, "err", err)
+		logger.Warn("Failed to localize message", "tag", conf.BaseConfInfo.Lang, "messageID", messageID, "err", err)
 		return ""
 	}
 	return msg

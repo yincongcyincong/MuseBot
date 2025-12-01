@@ -10,24 +10,24 @@ import (
 )
 
 type BaseConfig struct {
-	DBType *string `json:"db_type"`
-	DBConf *string `json:"db_conf"`
+	DBType string `json:"db_type"`
+	DBConf string `json:"db_conf"`
 	
-	SessionKey *string `json:"session_key"`
+	SessionKey string `json:"session_key"`
 	
-	AdminPort *string `json:"admin_port"`
+	AdminPort string `json:"admin_port"`
 	
-	CheckBotSec *int `json:"check_bot_sec"`
+	CheckBotSec int `json:"check_bot_sec"`
 }
 
 var BaseConfInfo = new(BaseConfig)
 
 func InitConfig() {
-	BaseConfInfo.DBType = flag.String("db_type", "sqlite3", "db type")
-	BaseConfInfo.DBConf = flag.String("db_conf", botUtils.GetAbsPath("data/muse_bot_admin.db"), "db conf")
-	BaseConfInfo.SessionKey = flag.String("session_key", "muse_bot_session_key", "session key")
-	BaseConfInfo.AdminPort = flag.String("admin_port", "18080", "admin port")
-	BaseConfInfo.CheckBotSec = flag.Int("check_bot_sec", 10, "check bot interval")
+	flag.StringVar(&BaseConfInfo.DBType, "db_type", "sqlite3", "db type")
+	flag.StringVar(&BaseConfInfo.DBConf, "db_conf", botUtils.GetAbsPath("data/muse_bot_admin.db"), "db conf")
+	flag.StringVar(&BaseConfInfo.SessionKey, "session_key", "muse_bot_session_key", "session key")
+	flag.StringVar(&BaseConfInfo.AdminPort, "admin_port", "18080", "admin port")
+	flag.IntVar(&BaseConfInfo.CheckBotSec, "check_bot_sec", 10, "check bot interval")
 	
 	InitRegisterConf()
 	
@@ -35,30 +35,30 @@ func InitConfig() {
 	flag.Parse()
 	
 	if os.Getenv("DB_TYPE") != "" {
-		*BaseConfInfo.DBType = os.Getenv("DB_TYPE")
+		BaseConfInfo.DBType = os.Getenv("DB_TYPE")
 	}
 	
 	if os.Getenv("DB_CONF") != "" {
-		*BaseConfInfo.DBConf = os.Getenv("DB_CONF")
+		BaseConfInfo.DBConf = os.Getenv("DB_CONF")
 	}
 	
 	if os.Getenv("SESSION_KEY") != "" {
-		*BaseConfInfo.SessionKey = os.Getenv("SESSION_KEY")
+		BaseConfInfo.SessionKey = os.Getenv("SESSION_KEY")
 	}
 	
 	if os.Getenv("ADMIN_PORT") != "" {
-		*BaseConfInfo.AdminPort = os.Getenv("ADMIN_PORT")
+		BaseConfInfo.AdminPort = os.Getenv("ADMIN_PORT")
 	}
 	
 	if os.Getenv("CHECK_BOT_SEC") != "" {
-		*BaseConfInfo.CheckBotSec, _ = strconv.Atoi(os.Getenv("CHECK_BOT_SEC"))
+		BaseConfInfo.CheckBotSec, _ = strconv.Atoi(os.Getenv("CHECK_BOT_SEC"))
 	}
 	
-	logger.Info("CONF", "DBType", *BaseConfInfo.DBType)
-	logger.Info("CONF", "DBConf", *BaseConfInfo.DBConf)
-	logger.Info("CONF", "SessionKey", *BaseConfInfo.SessionKey)
-	logger.Info("CONF", "AdminPort", *BaseConfInfo.AdminPort)
-	logger.Info("CONF", "CheckBotSec", *BaseConfInfo.CheckBotSec)
+	logger.Info("CONF", "DBType", BaseConfInfo.DBType)
+	logger.Info("CONF", "DBConf", BaseConfInfo.DBConf)
+	logger.Info("CONF", "SessionKey", BaseConfInfo.SessionKey)
+	logger.Info("CONF", "AdminPort", BaseConfInfo.AdminPort)
+	logger.Info("CONF", "CheckBotSec", BaseConfInfo.CheckBotSec)
 	
 	EnvRegisterConf()
 }

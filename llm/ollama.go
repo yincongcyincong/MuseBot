@@ -64,22 +64,22 @@ func (o OllamaReq) Send(ctx context.Context, l *LLM) error {
 		Tools: l.DeepseekTools,
 	}
 	
-	if *conf.BaseConfInfo.LLMOptionParam {
-		request.MaxTokens = *conf.LLMConfInfo.MaxTokens
-		request.TopP = float32(*conf.LLMConfInfo.TopP)
-		request.FrequencyPenalty = float32(*conf.LLMConfInfo.FrequencyPenalty)
-		request.TopLogProbs = *conf.LLMConfInfo.TopLogProbs
-		request.LogProbs = *conf.LLMConfInfo.LogProbs
+	if conf.BaseConfInfo.LLMOptionParam {
+		request.MaxTokens = conf.LLMConfInfo.MaxTokens
+		request.TopP = float32(conf.LLMConfInfo.TopP)
+		request.FrequencyPenalty = float32(conf.LLMConfInfo.FrequencyPenalty)
+		request.TopLogProbs = conf.LLMConfInfo.TopLogProbs
+		request.LogProbs = conf.LLMConfInfo.LogProbs
 		request.Stop = conf.LLMConfInfo.Stop
-		request.PresencePenalty = float32(*conf.LLMConfInfo.PresencePenalty)
-		request.Temperature = float32(*conf.LLMConfInfo.Temperature)
+		request.PresencePenalty = float32(conf.LLMConfInfo.PresencePenalty)
+		request.Temperature = float32(conf.LLMConfInfo.Temperature)
 	}
 	
 	request.Messages = o.OllamaMsgs
 	
 	var stream *Stream
 	var err error
-	for i := 0; i < *conf.BaseConfInfo.LLMRetryTimes; i++ {
+	for i := 0; i < conf.BaseConfInfo.LLMRetryTimes; i++ {
 		stream, err = requestDeepseek(ctx, client, request)
 		if err != nil {
 			logger.ErrorCtx(l.Ctx, "ChatCompletionStream error", "updateMsgID", l.MsgId, "err", err)
@@ -132,9 +132,9 @@ func (o OllamaReq) Send(ctx context.Context, l *LLM) error {
 		}
 	}
 	
-	if l.MessageChan != nil && len(strings.TrimRightFunc(msgInfoContent.Content, unicode.IsSpace)) > 0 || (hasTools && *conf.BaseConfInfo.SendMcpRes) {
-		if *conf.BaseConfInfo.Powered != "" {
-			msgInfoContent.Content = msgInfoContent.Content + "\n\n" + *conf.BaseConfInfo.Powered
+	if l.MessageChan != nil && len(strings.TrimRightFunc(msgInfoContent.Content, unicode.IsSpace)) > 0 || (hasTools && conf.BaseConfInfo.SendMcpRes) {
+		if conf.BaseConfInfo.Powered != "" {
+			msgInfoContent.Content = msgInfoContent.Content + "\n\n" + conf.BaseConfInfo.Powered
 		}
 		l.MessageChan <- msgInfoContent
 	}
@@ -210,21 +210,21 @@ func (o OllamaReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 		Tools:    l.DeepseekTools,
 	}
 	
-	if *conf.BaseConfInfo.LLMOptionParam {
-		request.MaxTokens = *conf.LLMConfInfo.MaxTokens
-		request.TopP = float32(*conf.LLMConfInfo.TopP)
-		request.FrequencyPenalty = float32(*conf.LLMConfInfo.FrequencyPenalty)
-		request.TopLogProbs = *conf.LLMConfInfo.TopLogProbs
-		request.LogProbs = *conf.LLMConfInfo.LogProbs
+	if conf.BaseConfInfo.LLMOptionParam {
+		request.MaxTokens = conf.LLMConfInfo.MaxTokens
+		request.TopP = float32(conf.LLMConfInfo.TopP)
+		request.FrequencyPenalty = float32(conf.LLMConfInfo.FrequencyPenalty)
+		request.TopLogProbs = conf.LLMConfInfo.TopLogProbs
+		request.LogProbs = conf.LLMConfInfo.LogProbs
 		request.Stop = conf.LLMConfInfo.Stop
-		request.PresencePenalty = float32(*conf.LLMConfInfo.PresencePenalty)
-		request.Temperature = float32(*conf.LLMConfInfo.Temperature)
+		request.PresencePenalty = float32(conf.LLMConfInfo.PresencePenalty)
+		request.Temperature = float32(conf.LLMConfInfo.Temperature)
 	}
 	
 	// assign task
 	var response *deepseek.ChatCompletionResponse
 	var err error
-	for i := 0; i < *conf.BaseConfInfo.LLMRetryTimes; i++ {
+	for i := 0; i < conf.BaseConfInfo.LLMRetryTimes; i++ {
 		response, err = client.CreateChatCompletion(ctx, request)
 		if err != nil {
 			logger.ErrorCtx(l.Ctx, "ChatCompletionStream error", "updateMsgID", l.MsgId, "err", err)
@@ -326,9 +326,9 @@ func GetDeepseekClient(ctx context.Context) *deepseek.Client {
 	httpClient := utils.GetLLMProxyClient()
 	txtType := utils.GetTxtType(db.GetCtxUserInfo(ctx).LLMConfigRaw)
 	if txtType == param.Ollama {
-		*conf.BaseConfInfo.DeepseekToken = "ollama"
+		conf.BaseConfInfo.DeepseekToken = "ollama"
 	}
-	client, err := deepseek.NewClientWithOptions(*conf.BaseConfInfo.DeepseekToken, deepseek.WithHTTPClient(httpClient))
+	client, err := deepseek.NewClientWithOptions(conf.BaseConfInfo.DeepseekToken, deepseek.WithHTTPClient(httpClient))
 	if err != nil {
 		logger.ErrorCtx(ctx, "Error creating deepseek client", "err", err)
 		return nil
@@ -339,12 +339,12 @@ func GetDeepseekClient(ctx context.Context) *deepseek.Client {
 		client.BaseURL = "http://localhost:11434/"
 	}
 	
-	if *conf.BaseConfInfo.CustomUrl != "" {
-		client.BaseURL = *conf.BaseConfInfo.CustomUrl
+	if conf.BaseConfInfo.CustomUrl != "" {
+		client.BaseURL = conf.BaseConfInfo.CustomUrl
 	}
 	
-	if *conf.BaseConfInfo.CustomPath != "" {
-		client.Path = *conf.BaseConfInfo.CustomPath
+	if conf.BaseConfInfo.CustomPath != "" {
+		client.Path = conf.BaseConfInfo.CustomPath
 	}
 	
 	return client

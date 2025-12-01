@@ -56,8 +56,8 @@ func MD5(input string) string {
 func GetRobotProxyClient() *http.Client {
 	transport := &http.Transport{}
 	
-	if *conf.BaseConfInfo.RobotProxy != "" {
-		proxy, err := url.Parse(*conf.BaseConfInfo.RobotProxy)
+	if conf.BaseConfInfo.RobotProxy != "" {
+		proxy, err := url.Parse(conf.BaseConfInfo.RobotProxy)
 		if err != nil {
 			logger.Warn("parse proxy url fail", "err", err)
 		}
@@ -72,8 +72,8 @@ func GetRobotProxyClient() *http.Client {
 func GetLLMProxyClient() *http.Client {
 	transport := &http.Transport{}
 	
-	if *conf.BaseConfInfo.LLMProxy != "" {
-		proxy, err := url.Parse(*conf.BaseConfInfo.LLMProxy)
+	if conf.BaseConfInfo.LLMProxy != "" {
+		proxy, err := url.Parse(conf.BaseConfInfo.LLMProxy)
 		if err != nil {
 			logger.Warn("parse proxy url fail", "err", err)
 		}
@@ -89,9 +89,9 @@ func GetLLMProxyClient() *http.Client {
 func FileRecognize(audioContent []byte) (string, error) {
 	
 	client := BuildAsrClient()
-	client.Appid = *conf.AudioConfInfo.VolAudioAppID
-	client.Token = *conf.AudioConfInfo.VolAudioToken
-	client.Cluster = *conf.AudioConfInfo.VolAudioRecCluster
+	client.Appid = conf.AudioConfInfo.VolAudioAppID
+	client.Token = conf.AudioConfInfo.VolAudioToken
+	client.Cluster = conf.AudioConfInfo.VolAudioRecCluster
 	
 	asrResponse, err := client.RequestAsr(audioContent)
 	if err != nil {

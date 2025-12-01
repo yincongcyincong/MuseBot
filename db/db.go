@@ -172,13 +172,13 @@ func InitTable() {
 		logger.Info("✅ create direction success")
 	}
 	
-	DB, err = sql.Open(*conf.BaseConfInfo.DBType, *conf.BaseConfInfo.DBConf)
+	DB, err = sql.Open(conf.BaseConfInfo.DBType, conf.BaseConfInfo.DBConf)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
 	
 	// init table
-	switch *conf.BaseConfInfo.DBType {
+	switch conf.BaseConfInfo.DBType {
 	case "sqlite3":
 		err = initializeSqlite3Table(DB)
 		if err != nil {

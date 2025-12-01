@@ -89,10 +89,26 @@ func (l *LLM) CallLLM() error {
 		utils.GetTxtType(db.GetCtxUserInfo(l.Ctx).LLMConfigRaw), "model", l.Model)
 	
 	metrics.APIRequestCount.WithLabelValues(l.Model).Inc()
-	err := l.LLMClient.Send(l.Ctx, l)
-	if err != nil {
-		logger.ErrorCtx(l.Ctx, "Error calling LLM API", "err", err)
-		return err
+	
+	var err error
+	if conf.BaseConfInfo.IsStreaming {
+		err = l.LLMClient.Send(l.Ctx, l)
+		if err != nil {
+			logger.ErrorCtx(l.Ctx, "Error calling LLM API", "err", err)
+			return err
+		}
+	} else {
+		content, err := l.LLMClient.SyncSend(l.Ctx, l)
+		if err != nil {
+			logger.ErrorCtx(l.Ctx, "Error calling LLM API", "err", err)
+			return err
+		}
+		
+		l.MessageChan <- &param.MsgInfo{
+			Content:  content,
+			Finished: true,
+		}
+		l.WholeContent = content
 	}
 	
 	err = l.InsertOrUpdate()
@@ -109,9 +125,9 @@ func (l *LLM) GetContent(content string) string {
 }
 
 func (l *LLM) InsertCharacter(ctx context.Context) {
-	if *conf.BaseConfInfo.Character != "" {
+	if conf.BaseConfInfo.Character != "" {
 		if l.ContentParameter != nil {
-			tmpl, err := template.New("character").Parse(*conf.BaseConfInfo.Character)
+			tmpl, err := template.New("character").Parse(conf.BaseConfInfo.Character)
 			if err != nil {
 				logger.ErrorCtx(ctx, "parse template fail", "err", err)
 				return
@@ -246,7 +262,7 @@ func (l *LLM) GetMessages(userId string, prompt string) {
 	if msgRecords != nil && l.Cs.UseRecord {
 		aqs := db.FilterByMaxContextFromLatest(msgRecords.AQs, param.DefaultContextToken)
 		for i, record := range aqs {
-			if record.Question != "" && record.Answer != "" && record.CreateTime > time.Now().Unix()-int64(*conf.BaseConfInfo.ContextExpireTime) {
+			if record.Question != "" && record.Answer != "" && record.CreateTime > time.Now().Unix()-int64(conf.BaseConfInfo.ContextExpireTime) {
 				logger.InfoCtx(l.Ctx, "context content", "dialog", i, "question:", record.Question, "answer:", record.Answer)
 				l.LLMClient.GetMessage(openai.ChatMessageRoleUser, record.Question)
 				l.LLMClient.GetMessage(openai.ChatMessageRoleAssistant, record.Answer)
@@ -365,7 +381,7 @@ func (l *LLM) ExecMcpReq(ctx context.Context, funcName string, property map[stri
 	startTime := time.Now()
 	
 	var toolsData string
-	for i := 0; i < *conf.BaseConfInfo.LLMRetryTimes; i++ {
+	for i := 0; i < conf.BaseConfInfo.LLMRetryTimes; i++ {
 		toolsData, err = mc.ExecTools(ctx, funcName, property)
 		if err != nil {
 			logger.ErrorCtx(ctx, "get mcp fail", "err", err, "function", funcName, "argument", property)
@@ -383,7 +399,7 @@ func (l *LLM) ExecMcpReq(ctx context.Context, funcName string, property map[stri
 	
 	logger.InfoCtx(ctx, "get mcp", "function", funcName, "argument", property, "res", toolsData)
 	
-	if *conf.BaseConfInfo.SendMcpRes {
+	if conf.BaseConfInfo.SendMcpRes {
 		l.DirectSendMsg(i18n.GetMessage("send_mcp_info", map[string]interface{}{
 			"function_name": funcName,
 			"request_args":  property,

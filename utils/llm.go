@@ -11,14 +11,14 @@ import (
 
 func GetDefaultLLMConfig() string {
 	llmConf := param.LLMConfig{
-		TxtType:    *conf.BaseConfInfo.Type,
-		ImgType:    *conf.BaseConfInfo.MediaType,
-		VideoType:  *conf.BaseConfInfo.MediaType,
-		TTSType:    *conf.AudioConfInfo.TTSType,
-		TxtModel:   GetTxtModel(*conf.BaseConfInfo.Type),
-		ImgModel:   GetImgModel(*conf.BaseConfInfo.MediaType),
-		VideoModel: GetVideoModel(*conf.BaseConfInfo.MediaType),
-		TTSModel:   GetTTSModel(*conf.AudioConfInfo.TTSType),
+		TxtType:    conf.BaseConfInfo.Type,
+		ImgType:    conf.BaseConfInfo.MediaType,
+		VideoType:  conf.BaseConfInfo.MediaType,
+		TTSType:    conf.AudioConfInfo.TTSType,
+		TxtModel:   GetTxtModel(conf.BaseConfInfo.Type),
+		ImgModel:   GetImgModel(conf.BaseConfInfo.MediaType),
+		VideoModel: GetVideoModel(conf.BaseConfInfo.MediaType),
+		TTSModel:   GetTTSModel(conf.AudioConfInfo.TTSType),
 	}
 	b, _ := json.Marshal(llmConf)
 	return string(b)
@@ -26,7 +26,7 @@ func GetDefaultLLMConfig() string {
 
 func GetTxtType(llmConf *param.LLMConfig) string {
 	if llmConf == nil {
-		return *conf.BaseConfInfo.Type
+		return conf.BaseConfInfo.Type
 	}
 	
 	aType := GetAvailTxtType()
@@ -40,12 +40,12 @@ func GetTxtType(llmConf *param.LLMConfig) string {
 		return aType[0]
 	}
 	
-	return *conf.BaseConfInfo.Type
+	return conf.BaseConfInfo.Type
 }
 
 func GetImgType(llmConf *param.LLMConfig) string {
 	if llmConf == nil {
-		return *conf.BaseConfInfo.MediaType
+		return conf.BaseConfInfo.MediaType
 	}
 	
 	aType := GetAvailImgType()
@@ -59,12 +59,12 @@ func GetImgType(llmConf *param.LLMConfig) string {
 		return aType[0]
 	}
 	
-	return *conf.BaseConfInfo.MediaType
+	return conf.BaseConfInfo.MediaType
 }
 
 func GetVideoType(llmConf *param.LLMConfig) string {
 	if llmConf == nil {
-		return *conf.BaseConfInfo.MediaType
+		return conf.BaseConfInfo.MediaType
 	}
 	
 	aType := GetAvailVideoType()
@@ -78,12 +78,12 @@ func GetVideoType(llmConf *param.LLMConfig) string {
 		return aType[0]
 	}
 	
-	return *conf.BaseConfInfo.MediaType
+	return conf.BaseConfInfo.MediaType
 }
 
 func GetTTSType(llmConf *param.LLMConfig) string {
 	if llmConf == nil {
-		return *conf.BaseConfInfo.MediaType
+		return conf.BaseConfInfo.MediaType
 	}
 	
 	aType := GetAvailTTSType()
@@ -97,23 +97,23 @@ func GetTTSType(llmConf *param.LLMConfig) string {
 		return aType[0]
 	}
 	
-	return *conf.BaseConfInfo.MediaType
+	return conf.BaseConfInfo.MediaType
 }
 
 func GetImgModel(t string) string {
 	switch t {
 	case param.Gemini:
-		return *conf.PhotoConfInfo.GeminiImageModel
+		return conf.PhotoConfInfo.GeminiImageModel
 	case param.OpenAi:
-		return *conf.PhotoConfInfo.OpenAIImageModel
+		return conf.PhotoConfInfo.OpenAIImageModel
 	case param.Aliyun:
-		return *conf.PhotoConfInfo.AliyunImageModel
+		return conf.PhotoConfInfo.AliyunImageModel
 	case param.AI302:
-		return *conf.PhotoConfInfo.MixImageModel
+		return conf.PhotoConfInfo.MixImageModel
 	case param.Vol:
-		return *conf.PhotoConfInfo.VolImageModel
+		return conf.PhotoConfInfo.VolImageModel
 	case param.ChatAnyWhere:
-		return *conf.PhotoConfInfo.OpenAIImageModel
+		return conf.PhotoConfInfo.OpenAIImageModel
 	}
 	
 	return ""
@@ -122,13 +122,13 @@ func GetImgModel(t string) string {
 func GetVideoModel(t string) string {
 	switch t {
 	case param.Gemini:
-		return *conf.VideoConfInfo.GeminiVideoModel
+		return conf.VideoConfInfo.GeminiVideoModel
 	case param.Aliyun:
-		return *conf.VideoConfInfo.AliyunVideoModel
+		return conf.VideoConfInfo.AliyunVideoModel
 	case param.AI302:
-		return *conf.VideoConfInfo.AI302VideoModel
+		return conf.VideoConfInfo.AI302VideoModel
 	case param.Vol:
-		return *conf.VideoConfInfo.VolVideoModel
+		return conf.VideoConfInfo.VolVideoModel
 	}
 	
 	return ""
@@ -137,21 +137,21 @@ func GetVideoModel(t string) string {
 func GetTTSModel(t string) string {
 	switch t {
 	case param.Gemini:
-		return *conf.AudioConfInfo.GeminiAudioModel
+		return conf.AudioConfInfo.GeminiAudioModel
 	case param.Aliyun:
-		return *conf.AudioConfInfo.AliyunAudioModel
+		return conf.AudioConfInfo.AliyunAudioModel
 	case param.Vol:
-		return *conf.AudioConfInfo.VolAudioTTSCluster
+		return conf.AudioConfInfo.VolAudioTTSCluster
 	case param.OpenAi:
-		return *conf.AudioConfInfo.OpenAIAudioModel
+		return conf.AudioConfInfo.OpenAIAudioModel
 	}
 	
 	return ""
 }
 
 func GetTxtModel(t string) string {
-	if *conf.BaseConfInfo.DefaultModel != "" {
-		return *conf.BaseConfInfo.DefaultModel
+	if conf.BaseConfInfo.DefaultModel != "" {
+		return conf.BaseConfInfo.DefaultModel
 	}
 	
 	switch t {
@@ -180,31 +180,31 @@ func GetTxtModel(t string) string {
 
 func GetAvailTxtType() []string {
 	res := []string{}
-	if *conf.BaseConfInfo.DeepseekToken != "" {
+	if conf.BaseConfInfo.DeepseekToken != "" {
 		res = append(res, param.DeepSeek)
 	}
-	if *conf.BaseConfInfo.GeminiToken != "" {
+	if conf.BaseConfInfo.GeminiToken != "" {
 		res = append(res, param.Gemini)
 	}
-	if *conf.BaseConfInfo.OpenAIToken != "" {
+	if conf.BaseConfInfo.OpenAIToken != "" {
 		res = append(res, param.OpenAi)
 	}
-	if *conf.BaseConfInfo.AliyunToken != "" {
+	if conf.BaseConfInfo.AliyunToken != "" {
 		res = append(res, param.Aliyun)
 	}
-	if *conf.BaseConfInfo.VolToken != "" {
+	if conf.BaseConfInfo.VolToken != "" {
 		res = append(res, param.Vol)
 	}
-	if *conf.BaseConfInfo.ChatAnyWhereToken != "" {
+	if conf.BaseConfInfo.ChatAnyWhereToken != "" {
 		res = append(res, param.ChatAnyWhere)
 	}
-	if *conf.BaseConfInfo.AI302Token != "" {
+	if conf.BaseConfInfo.AI302Token != "" {
 		res = append(res, param.AI302)
 	}
-	if *conf.BaseConfInfo.OpenRouterToken != "" {
+	if conf.BaseConfInfo.OpenRouterToken != "" {
 		res = append(res, param.OpenRouter)
 	}
-	if *conf.BaseConfInfo.Type == param.Ollama {
+	if conf.BaseConfInfo.Type == param.Ollama {
 		res = append(res, param.Ollama)
 	}
 	return res
@@ -213,25 +213,25 @@ func GetAvailTxtType() []string {
 func GetAvailImgType() []string {
 	res := []string{}
 	
-	if *conf.BaseConfInfo.GeminiToken != "" {
+	if conf.BaseConfInfo.GeminiToken != "" {
 		res = append(res, param.Gemini)
 	}
-	if *conf.BaseConfInfo.OpenAIToken != "" {
+	if conf.BaseConfInfo.OpenAIToken != "" {
 		res = append(res, param.OpenAi)
 	}
-	if *conf.BaseConfInfo.OpenRouterToken != "" {
+	if conf.BaseConfInfo.OpenRouterToken != "" {
 		res = append(res, param.OpenRouter)
 	}
-	if *conf.BaseConfInfo.AliyunToken != "" {
+	if conf.BaseConfInfo.AliyunToken != "" {
 		res = append(res, param.Aliyun)
 	}
-	if *conf.BaseConfInfo.AI302Token != "" {
+	if conf.BaseConfInfo.AI302Token != "" {
 		res = append(res, param.AI302)
 	}
-	if *conf.BaseConfInfo.VolToken != "" {
+	if conf.BaseConfInfo.VolToken != "" {
 		res = append(res, param.Vol)
 	}
-	if *conf.BaseConfInfo.ChatAnyWhereToken != "" {
+	if conf.BaseConfInfo.ChatAnyWhereToken != "" {
 		res = append(res, param.ChatAnyWhere)
 	}
 	
@@ -240,16 +240,16 @@ func GetAvailImgType() []string {
 
 func GetAvailVideoType() []string {
 	res := []string{}
-	if *conf.BaseConfInfo.GeminiToken != "" {
+	if conf.BaseConfInfo.GeminiToken != "" {
 		res = append(res, param.Gemini)
 	}
-	if *conf.BaseConfInfo.AliyunToken != "" {
+	if conf.BaseConfInfo.AliyunToken != "" {
 		res = append(res, param.Aliyun)
 	}
-	if *conf.BaseConfInfo.AI302Token != "" {
+	if conf.BaseConfInfo.AI302Token != "" {
 		res = append(res, param.AI302)
 	}
-	if *conf.BaseConfInfo.VolToken != "" {
+	if conf.BaseConfInfo.VolToken != "" {
 		res = append(res, param.Vol)
 	}
 	
@@ -258,16 +258,16 @@ func GetAvailVideoType() []string {
 
 func GetAvailTTSType() []string {
 	res := []string{}
-	if *conf.BaseConfInfo.GeminiToken != "" {
+	if conf.BaseConfInfo.GeminiToken != "" {
 		res = append(res, param.Gemini)
 	}
-	if *conf.BaseConfInfo.AliyunToken != "" {
+	if conf.BaseConfInfo.AliyunToken != "" {
 		res = append(res, param.Aliyun)
 	}
-	if *conf.BaseConfInfo.VolcAK != "" {
+	if conf.BaseConfInfo.VolcAK != "" {
 		res = append(res, param.Vol)
 	}
-	if *conf.BaseConfInfo.OpenAIToken != "" {
+	if conf.BaseConfInfo.OpenAIToken != "" {
 		res = append(res, param.OpenAi)
 	}
 	
@@ -277,19 +277,19 @@ func GetAvailTTSType() []string {
 func GetAvailRecType() []string {
 	res := []string{}
 	
-	if *conf.BaseConfInfo.GeminiToken != "" {
+	if conf.BaseConfInfo.GeminiToken != "" {
 		res = append(res, param.Gemini)
 	}
-	if *conf.BaseConfInfo.OpenAIToken != "" {
+	if conf.BaseConfInfo.OpenAIToken != "" {
 		res = append(res, param.OpenAi)
 	}
-	if *conf.BaseConfInfo.AliyunToken != "" {
+	if conf.BaseConfInfo.AliyunToken != "" {
 		res = append(res, param.Aliyun)
 	}
-	if *conf.BaseConfInfo.AI302Token != "" {
+	if conf.BaseConfInfo.AI302Token != "" {
 		res = append(res, param.AI302)
 	}
-	if *conf.BaseConfInfo.VolToken != "" {
+	if conf.BaseConfInfo.VolToken != "" {
 		res = append(res, param.Vol)
 	}
 	
@@ -298,7 +298,7 @@ func GetAvailRecType() []string {
 
 func GetRecType(llmConf *param.LLMConfig) string {
 	if llmConf == nil {
-		return *conf.BaseConfInfo.MediaType
+		return conf.BaseConfInfo.MediaType
 	}
 	
 	aType := GetAvailRecType()
@@ -312,7 +312,7 @@ func GetRecType(llmConf *param.LLMConfig) string {
 		return aType[0]
 	}
 	
-	return *conf.BaseConfInfo.MediaType
+	return conf.BaseConfInfo.MediaType
 }
 
 func GetUsingImgModel(ty string, model string) string {

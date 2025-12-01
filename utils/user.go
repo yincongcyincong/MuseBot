@@ -2,7 +2,7 @@ package utils
 
 import (
 	"sync"
-
+	
 	"github.com/yincongcyincong/MuseBot/conf"
 )
 
@@ -14,7 +14,7 @@ func CheckUserChatExceed(userId string) bool {
 	times := 1
 	if timeInter, ok := userChatMap.Load(userId); ok {
 		times = timeInter.(int)
-		if times >= *conf.BaseConfInfo.MaxUserChat {
+		if times >= conf.BaseConfInfo.MaxUserChat {
 			return true
 		}
 		times++

@@ -21,7 +21,7 @@ func TestGeminiSend(t *testing.T) {
 		}
 	}()
 	
-	*conf.BaseConfInfo.Type = param.Gemini
+	conf.BaseConfInfo.Type = param.Gemini
 	
 	ctx := context.WithValue(context.Background(), "user_info", &db.User{
 		LLMConfig:    `{"type":"gemini"}`,

@@ -59,15 +59,15 @@ func StartQQRobot(ctx context.Context) {
 	botgo.SetLogger(logger.QQLogger)
 	QQTokenSource = token.NewQQBotTokenSource(
 		&token.QQBotCredentials{
-			AppID:     *conf.BaseConfInfo.QQAppID,
-			AppSecret: *conf.BaseConfInfo.QQAppSecret,
+			AppID:     conf.BaseConfInfo.QQAppID,
+			AppSecret: conf.BaseConfInfo.QQAppSecret,
 		})
 	if err = token.StartRefreshAccessToken(ctx, QQTokenSource); err != nil {
 		logger.ErrorCtx(ctx, "start refresh access token error", "err", err)
 		return
 	}
 	
-	QQApi = botgo.NewOpenAPI(*conf.BaseConfInfo.QQAppID, QQTokenSource).WithTimeout(5 * time.Second).SetDebug(false)
+	QQApi = botgo.NewOpenAPI(conf.BaseConfInfo.QQAppID, QQTokenSource).WithTimeout(5 * time.Second).SetDebug(false)
 	QQRobotInfo, err = QQApi.Me(ctx)
 	if err != nil {
 		logger.ErrorCtx(ctx, "get me error", "err", err)
@@ -339,8 +339,14 @@ func (q *QQRobot) sendChatMessage() {
 
 func (q *QQRobot) executeChain() {
 	var msgChan *MsgChan
-	msgChan = &MsgChan{
-		NormalMessageChan: make(chan *param.MsgInfo),
+	if conf.BaseConfInfo.IsStreaming {
+		msgChan = &MsgChan{
+			StrMessageChan: make(chan string),
+		}
+	} else {
+		msgChan = &MsgChan{
+			NormalMessageChan: make(chan *param.MsgInfo),
+		}
 	}
 	
 	go q.Robot.ExecChain(q.Prompt, msgChan)
@@ -351,10 +357,15 @@ func (q *QQRobot) executeChain() {
 
 func (q *QQRobot) executeLLM() {
 	var msgChan *MsgChan
-	msgChan = &MsgChan{
-		NormalMessageChan: make(chan *param.MsgInfo),
+	if conf.BaseConfInfo.IsStreaming {
+		msgChan = &MsgChan{
+			StrMessageChan: make(chan string),
+		}
+	} else {
+		msgChan = &MsgChan{
+			NormalMessageChan: make(chan *param.MsgInfo),
+		}
 	}
-	
 	go q.Robot.HandleUpdate(msgChan, "silk")
 	
 	go q.Robot.ExecLLM(q.Prompt, msgChan)

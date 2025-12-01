@@ -41,14 +41,14 @@ func TestInsertMsgRecord_ExceedLimit(t *testing.T) {
 	userId := "1"
 	MsgRecord = sync.Map{}
 	
-	for i := 0; i < *conf.BaseConfInfo.MaxQAPair+5; i++ {
+	for i := 0; i < conf.BaseConfInfo.MaxQAPair+5; i++ {
 		aq := &AQ{Question: "Q" + strconv.Itoa(i), Answer: "A" + strconv.Itoa(i)}
 		InsertMsgRecord(context.Background(), userId, aq, false)
 	}
 	
 	record := GetMsgRecord(userId)
 	assert.NotNil(t, record, "Record should not be nil")
-	assert.Equal(t, *conf.BaseConfInfo.MaxQAPair, len(record.AQs), "Should keep max limit AQ pairs")
+	assert.Equal(t, conf.BaseConfInfo.MaxQAPair, len(record.AQs), "Should keep max limit AQ pairs")
 }
 
 func TestDeleteMsgRecord(t *testing.T) {

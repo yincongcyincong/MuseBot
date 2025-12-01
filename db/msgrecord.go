@@ -60,7 +60,7 @@ func InsertMsgRecord(ctx context.Context, userId string, aq *AQ, insertDB bool) 
 	} else {
 		msgRecord = msgRecordInter.(*MsgRecordInfo)
 		msgRecord.AQs = append(msgRecord.AQs, aq)
-		if len(msgRecord.AQs) > *conf.BaseConfInfo.MaxQAPair {
+		if len(msgRecord.AQs) > conf.BaseConfInfo.MaxQAPair {
 			msgRecord.AQs = msgRecord.AQs[1:]
 		}
 		msgRecord.updateTime = time.Now().Unix()
@@ -127,7 +127,7 @@ func getRecordsByUserId(userId string) ([]Record, error) {
 		"and is_deleted = 0 and record_type = 0 order by create_time desc limit ?")
 	
 	// execute query
-	rows, err := DB.Query(query, userId, *conf.BaseConfInfo.MaxQAPair)
+	rows, err := DB.Query(query, userId, conf.BaseConfInfo.MaxQAPair)
 	if err != nil {
 		return nil, err
 	}
@@ -149,7 +149,7 @@ func getRecordsByUserId(userId string) ([]Record, error) {
 // InsertRecordInfo insert record
 func InsertRecordInfo(ctx context.Context, record *Record) (int64, error) {
 	query := `INSERT INTO records (user_id, question, answer, content, token, create_time, is_deleted, record_type, mode, from_bot) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-	result, err := DB.Exec(query, record.UserId, record.Question, record.Answer, record.Content, record.Token, time.Now().Unix(), record.IsDeleted, record.RecordType, record.Mode, *conf.BaseConfInfo.BotName)
+	result, err := DB.Exec(query, record.UserId, record.Question, record.Answer, record.Content, record.Token, time.Now().Unix(), record.IsDeleted, record.RecordType, record.Mode, conf.BaseConfInfo.BotName)
 	if err != nil {
 		logger.ErrorCtx(ctx, "insertRecord err", "err", err)
 		return 0, err
@@ -326,7 +326,7 @@ func GetDailyNewRecords(days int) ([]DailyStat, error) {
 		intervalSeconds = 86400 // 每天
 	}
 	
-	if *conf.BaseConfInfo.DBType == "mysql" {
+	if conf.BaseConfInfo.DBType == "mysql" {
 		query = `
 			SELECT
 				FLOOR(create_time / ?) * ? AS time_group,
@@ -336,7 +336,7 @@ func GetDailyNewRecords(days int) ([]DailyStat, error) {
 			GROUP BY time_group
 			ORDER BY time_group DESC;
 		`
-	} else if *conf.BaseConfInfo.DBType == "sqlite3" {
+	} else if conf.BaseConfInfo.DBType == "sqlite3" {
 		query = `
 			SELECT
 				(create_time / ?) * ? AS time_group,
@@ -347,12 +347,12 @@ func GetDailyNewRecords(days int) ([]DailyStat, error) {
 			ORDER BY time_group DESC;
 		`
 	} else {
-		return nil, fmt.Errorf("unsupported DBType: %s", *conf.BaseConfInfo.DBType)
+		return nil, fmt.Errorf("unsupported DBType: %s", conf.BaseConfInfo.DBType)
 	}
 	
 	var rows *sql.Rows
 	var err error
-	if *conf.BaseConfInfo.DBType == "sqlite3" {
+	if conf.BaseConfInfo.DBType == "sqlite3" {
 		rows, err = DB.Query(query, intervalSeconds, intervalSeconds, -days)
 	} else {
 		rows, err = DB.Query(query, intervalSeconds, intervalSeconds, days)

@@ -29,7 +29,7 @@ func CreateRagFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	path := *conf.RagConfInfo.KnowledgePath + "/" + ragFile.FileName
+	path := conf.RagConfInfo.KnowledgePath + "/" + ragFile.FileName
 	_, err = os.Stat(path)
 	fileNotExist := os.IsNotExist(err)
 	
@@ -68,7 +68,7 @@ func GetRagFileContent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	path := *conf.RagConfInfo.KnowledgePath + "/" + name
+	path := conf.RagConfInfo.KnowledgePath + "/" + name
 	file, err := os.Open(path)
 	if err != nil {
 		logger.ErrorCtx(ctx, "open file error", "err", err)
@@ -101,7 +101,7 @@ func DeleteRagFile(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	fileName := r.FormValue("file_name")
-	err = os.Remove(*conf.RagConfInfo.KnowledgePath + "/" + fileName)
+	err = os.Remove(conf.RagConfInfo.KnowledgePath + "/" + fileName)
 	if err != nil {
 		logger.ErrorCtx(ctx, "delete file error", "err", err)
 		utils.Failure(ctx, w, r, param.CodeServerFail, param.MsgServerFail, err)

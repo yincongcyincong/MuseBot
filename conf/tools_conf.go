@@ -98,7 +98,7 @@ func InsertTools(clientName string) {
 		gmTools := utils.TransToolsToGeminiFunctionCall(c.Tools)
 		orTools := utils.TransToolsToOpenRouterFunctionCall(c.Tools)
 		
-		if *BaseConfInfo.UseTools {
+		if BaseConfInfo.UseTools {
 			DeepseekTools = append(DeepseekTools, dpTools...)
 			VolTools = append(VolTools, volTools...)
 			OpenAITools = append(OpenAITools, oaTools...)

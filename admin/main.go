@@ -78,7 +78,7 @@ func main() {
 	
 	wrappedMux := WithRequestContext(mux)
 	
-	err := http.ListenAndServe(fmt.Sprintf(":%s", *conf.BaseConfInfo.AdminPort), wrappedMux)
+	err := http.ListenAndServe(fmt.Sprintf(":%s", conf.BaseConfInfo.AdminPort), wrappedMux)
 	if err != nil {
 		panic(err)
 	}

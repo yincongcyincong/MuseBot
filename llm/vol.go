@@ -26,31 +26,31 @@ import (
 // GenerateVolImg generate image
 func GenerateVolImg(ctx context.Context, prompt string, imageContent []byte) (string, int, error) {
 	start := time.Now()
-	metrics.APIRequestCount.WithLabelValues(*conf.PhotoConfInfo.ModelVersion).Inc()
+	metrics.APIRequestCount.WithLabelValues(conf.PhotoConfInfo.ModelVersion).Inc()
 	
-	visual.DefaultInstance.Client.SetAccessKey(*conf.BaseConfInfo.VolcAK)
-	visual.DefaultInstance.Client.SetSecretKey(*conf.BaseConfInfo.VolcSK)
+	visual.DefaultInstance.Client.SetAccessKey(conf.BaseConfInfo.VolcAK)
+	visual.DefaultInstance.Client.SetSecretKey(conf.BaseConfInfo.VolcSK)
 	
 	reqBody := map[string]interface{}{
-		"req_key":           *conf.PhotoConfInfo.ReqKey,
+		"req_key":           conf.PhotoConfInfo.ReqKey,
 		"prompt":            prompt,
-		"model_version":     *conf.PhotoConfInfo.ModelVersion,
-		"req_schedule_conf": *conf.PhotoConfInfo.ReqScheduleConf,
-		"llm_seed":          *conf.PhotoConfInfo.Seed,
-		"seed":              *conf.PhotoConfInfo.Seed,
-		"scale":             *conf.PhotoConfInfo.Scale,
-		"ddim_steps":        *conf.PhotoConfInfo.DDIMSteps,
-		"width":             *conf.PhotoConfInfo.Width,
-		"height":            *conf.PhotoConfInfo.Height,
-		"use_pre_llm":       *conf.PhotoConfInfo.UsePreLLM,
-		"use_sr":            *conf.PhotoConfInfo.UseSr,
-		"return_url":        *conf.PhotoConfInfo.ReturnUrl,
+		"model_version":     conf.PhotoConfInfo.ModelVersion,
+		"req_schedule_conf": conf.PhotoConfInfo.ReqScheduleConf,
+		"llm_seed":          conf.PhotoConfInfo.Seed,
+		"seed":              conf.PhotoConfInfo.Seed,
+		"scale":             conf.PhotoConfInfo.Scale,
+		"ddim_steps":        conf.PhotoConfInfo.DDIMSteps,
+		"width":             conf.PhotoConfInfo.Width,
+		"height":            conf.PhotoConfInfo.Height,
+		"use_pre_llm":       conf.PhotoConfInfo.UsePreLLM,
+		"use_sr":            conf.PhotoConfInfo.UseSr,
+		"return_url":        conf.PhotoConfInfo.ReturnUrl,
 		"logo_info": map[string]interface{}{
-			"add_logo":          *conf.PhotoConfInfo.AddLogo,
-			"position":          *conf.PhotoConfInfo.Position,
-			"language":          *conf.PhotoConfInfo.Language,
-			"opacity":           *conf.PhotoConfInfo.Opacity,
-			"logo_text_content": *conf.PhotoConfInfo.LogoTextContent,
+			"add_logo":          conf.PhotoConfInfo.AddLogo,
+			"position":          conf.PhotoConfInfo.Position,
+			"language":          conf.PhotoConfInfo.Language,
+			"opacity":           conf.PhotoConfInfo.Opacity,
+			"logo_text_content": conf.PhotoConfInfo.LogoTextContent,
 		},
 	}
 	
@@ -60,7 +60,7 @@ func GenerateVolImg(ctx context.Context, prompt string, imageContent []byte) (st
 	
 	var resp map[string]interface{}
 	var err error
-	for i := 0; i < *conf.BaseConfInfo.LLMRetryTimes; i++ {
+	for i := 0; i < conf.BaseConfInfo.LLMRetryTimes; i++ {
 		resp, _, err = visual.DefaultInstance.CVProcess(reqBody)
 		if err != nil {
 			logger.ErrorCtx(ctx, "request img api fail", "err", err)
@@ -84,7 +84,7 @@ func GenerateVolImg(ctx context.Context, prompt string, imageContent []byte) (st
 	
 	logger.InfoCtx(ctx, "image response", "respByte", respByte)
 	
-	metrics.APIRequestDuration.WithLabelValues(*conf.PhotoConfInfo.ModelVersion).Observe(time.Since(start).Seconds())
+	metrics.APIRequestDuration.WithLabelValues(conf.PhotoConfInfo.ModelVersion).Observe(time.Since(start).Seconds())
 	
 	if data.Data == nil || len(data.Data.ImageUrls) == 0 {
 		logger.WarnCtx(ctx, "no image generated")
@@ -102,11 +102,11 @@ func GenerateVolVideo(ctx context.Context, prompt string, imageContent []byte) (
 	}
 	
 	start := time.Now()
-	metrics.APIRequestCount.WithLabelValues(*conf.PhotoConfInfo.ModelVersion).Inc()
+	metrics.APIRequestCount.WithLabelValues(conf.PhotoConfInfo.ModelVersion).Inc()
 	
 	client := GetVolClient()
 	videoParam := fmt.Sprintf(" --ratio %s --fps %d  --dur %d --resolution %s --watermark %t",
-		*conf.VideoConfInfo.Radio, *conf.VideoConfInfo.FPS, *conf.VideoConfInfo.Duration, *conf.VideoConfInfo.Resolution, *conf.VideoConfInfo.Watermark)
+		conf.VideoConfInfo.Radio, conf.VideoConfInfo.FPS, conf.VideoConfInfo.Duration, conf.VideoConfInfo.Resolution, conf.VideoConfInfo.Watermark)
 	
 	text := prompt + videoParam
 	contents := make([]*model.CreateContentGenerationContentItem, 0)
@@ -132,7 +132,7 @@ func GenerateVolVideo(ctx context.Context, prompt string, imageContent []byte) (
 	
 	var resp model.CreateContentGenerationTaskResponse
 	var err error
-	for i := 0; i < *conf.BaseConfInfo.LLMRetryTimes; i++ {
+	for i := 0; i < conf.BaseConfInfo.LLMRetryTimes; i++ {
 		resp, err = client.CreateContentGenerationTask(ctx, model.CreateContentGenerationTaskRequest{
 			Model:   modelStr,
 			Content: contents,
@@ -149,7 +149,7 @@ func GenerateVolVideo(ctx context.Context, prompt string, imageContent []byte) (
 		return "", 0, err
 	}
 	
-	metrics.APIRequestDuration.WithLabelValues(*conf.PhotoConfInfo.ModelVersion).Observe(time.Since(start).Seconds())
+	metrics.APIRequestDuration.WithLabelValues(conf.PhotoConfInfo.ModelVersion).Observe(time.Since(start).Seconds())
 	for i := 0; i < 100; i++ {
 		getResp, err := client.GetContentGenerationTask(ctx, model.GetContentGenerationTaskRequest{
 			ID: resp.ID,
@@ -209,15 +209,15 @@ func VolTTS(ctx context.Context, text, userId, encoding string) ([]byte, int, in
 	params := make(map[string]map[string]interface{})
 	params["app"] = make(map[string]interface{})
 	
-	params["app"]["appid"] = *conf.AudioConfInfo.VolAudioAppID
-	params["app"]["token"] = *conf.AudioConfInfo.VolAudioToken
+	params["app"]["appid"] = conf.AudioConfInfo.VolAudioAppID
+	params["app"]["token"] = conf.AudioConfInfo.VolAudioToken
 	params["app"]["cluster"] = model
 	params["user"] = make(map[string]interface{})
 	
 	params["user"]["uid"] = userId
 	params["audio"] = make(map[string]interface{})
 	
-	params["audio"]["voice_type"] = *conf.AudioConfInfo.VolAudioVoiceType
+	params["audio"]["voice_type"] = conf.AudioConfInfo.VolAudioVoiceType
 	params["audio"]["encoding"] = formatEncoding
 	params["audio"]["speed_ratio"] = 1.0
 	params["audio"]["volume_ratio"] = 1.0
@@ -230,7 +230,7 @@ func VolTTS(ctx context.Context, text, userId, encoding string) ([]byte, int, in
 	
 	headers := make(map[string]string)
 	headers["Content-Type"] = "application/json"
-	headers["Authorization"] = fmt.Sprintf("Bearer;%s", *conf.AudioConfInfo.VolAudioToken)
+	headers["Authorization"] = fmt.Sprintf("Bearer;%s", conf.AudioConfInfo.VolAudioToken)
 	
 	url := "https://openspeech.bytedance.com/api/v1/tts"
 	bodyStr, _ := json.Marshal(params)
@@ -246,7 +246,7 @@ func VolTTS(ctx context.Context, text, userId, encoding string) ([]byte, int, in
 	httpClient := utils.GetLLMProxyClient()
 	
 	var resp *http.Response
-	for i := 0; i < *conf.BaseConfInfo.LLMRetryTimes; i++ {
+	for i := 0; i < conf.BaseConfInfo.LLMRetryTimes; i++ {
 		resp, err = httpClient.Do(req)
 		if err != nil {
 			logger.ErrorCtx(ctx, "httpClient.Do error", "err", err)
@@ -294,7 +294,7 @@ func VolTTS(ctx context.Context, text, userId, encoding string) ([]byte, int, in
 func GetVolClient() *arkruntime.Client {
 	httpClient := utils.GetLLMProxyClient()
 	return arkruntime.NewClientWithApiKey(
-		*conf.BaseConfInfo.VolToken,
+		conf.BaseConfInfo.VolToken,
 		arkruntime.WithTimeout(5*time.Minute),
 		arkruntime.WithHTTPClient(httpClient),
 	)
