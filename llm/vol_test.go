@@ -20,7 +20,7 @@ func TestVolSend(t *testing.T) {
 		}
 	}()
 	
-	*conf.BaseConfInfo.Type = param.Vol
+	conf.BaseConfInfo.Type = param.Vol
 	
 	ctx := context.WithValue(context.Background(), "user_info", &db.User{
 		LLMConfig:    `{"type":"vol"}`,

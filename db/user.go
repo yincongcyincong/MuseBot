@@ -34,7 +34,7 @@ func InsertUser(userId string, llmConfig string) (int64, error) {
 	
 	// insert data
 	insertSQL := `INSERT INTO users (user_id, llm_config, update_time, create_time, avail_token, from_bot) VALUES (?, ?, ?, ?, ?, ?)`
-	result, err := DB.Exec(insertSQL, userId, llmConfig, time.Now().Unix(), time.Now().Unix(), *conf.BaseConfInfo.TokenPerUser, *conf.BaseConfInfo.BotName)
+	result, err := DB.Exec(insertSQL, userId, llmConfig, time.Now().Unix(), time.Now().Unix(), conf.BaseConfInfo.TokenPerUser, conf.BaseConfInfo.BotName)
 	if err != nil {
 		return 0, err
 	}
@@ -201,7 +201,7 @@ func GetDailyNewUsers(days int) ([]DailyStat, error) {
 		intervalSeconds = 86400 // 每天
 	}
 	
-	if *conf.BaseConfInfo.DBType == "mysql" {
+	if conf.BaseConfInfo.DBType == "mysql" {
 		query = `
 			SELECT
 				FLOOR(create_time / ?) * ? AS time_group,
@@ -211,7 +211,7 @@ func GetDailyNewUsers(days int) ([]DailyStat, error) {
 			GROUP BY time_group
 			ORDER BY time_group DESC;
 		`
-	} else if *conf.BaseConfInfo.DBType == "sqlite3" {
+	} else if conf.BaseConfInfo.DBType == "sqlite3" {
 		query = `
 			SELECT
 				(create_time / ?) * ? AS time_group,
@@ -222,12 +222,12 @@ func GetDailyNewUsers(days int) ([]DailyStat, error) {
 			ORDER BY time_group DESC;
 		`
 	} else {
-		return nil, fmt.Errorf("unsupported DBType: %s", *conf.BaseConfInfo.DBType)
+		return nil, fmt.Errorf("unsupported DBType: %s", conf.BaseConfInfo.DBType)
 	}
 	
 	var rows *sql.Rows
 	var err error
-	if *conf.BaseConfInfo.DBType == "sqlite3" {
+	if conf.BaseConfInfo.DBType == "sqlite3" {
 		rows, err = DB.Query(query, intervalSeconds, intervalSeconds, -days)
 	} else {
 		rows, err = DB.Query(query, intervalSeconds, intervalSeconds, days)

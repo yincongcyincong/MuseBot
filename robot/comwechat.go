@@ -44,11 +44,11 @@ type ComWechatRobot struct {
 func StartComWechatRobot(ctx context.Context) {
 	var err error
 	ComWechatApp, err = work.NewWork(&work.UserConfig{
-		CorpID:    *conf.BaseConfInfo.ComWechatCorpID,
-		AgentID:   utils.ParseInt(*conf.BaseConfInfo.ComWechatAgentID),
-		Secret:    *conf.BaseConfInfo.ComWechatSecret,
-		Token:     *conf.BaseConfInfo.ComWechatToken,
-		AESKey:    *conf.BaseConfInfo.ComWechatEncodingAESKey,
+		CorpID:    conf.BaseConfInfo.ComWechatCorpID,
+		AgentID:   utils.ParseInt(conf.BaseConfInfo.ComWechatAgentID),
+		Secret:    conf.BaseConfInfo.ComWechatSecret,
+		Token:     conf.BaseConfInfo.ComWechatToken,
+		AESKey:    conf.BaseConfInfo.ComWechatEncodingAESKey,
 		HttpDebug: false,
 		OAuth: work.OAuth{
 			Callback: "https://github.com/yincongcyincong/MuseBot",
@@ -60,7 +60,7 @@ func StartComWechatRobot(ctx context.Context) {
 		return
 	}
 	
-	resp, err := ComWechatApp.Agent.Get(ctx, utils.ParseInt(*conf.BaseConfInfo.ComWechatAgentID))
+	resp, err := ComWechatApp.Agent.Get(ctx, utils.ParseInt(conf.BaseConfInfo.ComWechatAgentID))
 	if err != nil {
 		logger.ErrorCtx(ctx, "ComWechatApp get agent error: ", "err", err)
 		return
@@ -230,7 +230,7 @@ func (c *ComWechatRobot) sendMedia(mediaContent []byte, contentType, sType strin
 			RequestMessageSend: request.RequestMessageSend{
 				ToUser:                 userId,
 				MsgType:                sType,
-				AgentID:                utils.ParseInt(*conf.BaseConfInfo.ComWechatAgentID),
+				AgentID:                utils.ParseInt(conf.BaseConfInfo.ComWechatAgentID),
 				DuplicateCheckInterval: 1800,
 			},
 			Image: &request.RequestImage{
@@ -258,7 +258,7 @@ func (c *ComWechatRobot) sendMedia(mediaContent []byte, contentType, sType strin
 			RequestMessageSend: request.RequestMessageSend{
 				ToUser:                 userId,
 				MsgType:                sType,
-				AgentID:                utils.ParseInt(*conf.BaseConfInfo.ComWechatAgentID),
+				AgentID:                utils.ParseInt(conf.BaseConfInfo.ComWechatAgentID),
 				DuplicateCheckInterval: 1800,
 			},
 			Video: &request.RequestVideo{
@@ -388,7 +388,7 @@ func (c *ComWechatRobot) sendVoiceContent(voiceContent []byte, duration int) err
 		RequestMessageSend: request.RequestMessageSend{
 			ToUser:                 userId,
 			MsgType:                "voice",
-			AgentID:                utils.ParseInt(*conf.BaseConfInfo.ComWechatAgentID),
+			AgentID:                utils.ParseInt(conf.BaseConfInfo.ComWechatAgentID),
 			DuplicateCheckInterval: 1800,
 		},
 		Voice: &request.RequestVoice{

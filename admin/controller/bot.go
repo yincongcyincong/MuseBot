@@ -301,7 +301,7 @@ func ListBots(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	page, pageSize := parsePaginationParams(r)
 	
-	if *adminConf.RegisterConfInfo.Type != "" {
+	if adminConf.RegisterConfInfo.Type != "" {
 		bots := make([]*RegisterBot, 0)
 		
 		var total = 0
@@ -551,7 +551,7 @@ func GetAllOnlineBot(w http.ResponseWriter, r *http.Request) {
 	res := make([]*checkpoint.BotStatus, 0)
 	checkpoint.BotMap.Range(func(key any, value any) bool {
 		status := value.(*checkpoint.BotStatus)
-		if (*adminConf.RegisterConfInfo.Type != "" || status.LastCheck.Add(3*time.Minute).After(time.Now())) &&
+		if (adminConf.RegisterConfInfo.Type != "" || status.LastCheck.Add(3*time.Minute).After(time.Now())) &&
 			status.Status != checkpoint.OfflineStatus {
 			res = append(res, status)
 		}
@@ -936,7 +936,7 @@ func getBot(r *http.Request) (*db.Bot, error) {
 		return nil, param.ErrParamError
 	}
 	
-	if *adminConf.RegisterConfInfo.Type != "" {
+	if adminConf.RegisterConfInfo.Type != "" {
 		return &db.Bot{
 			Address: idStr,
 		}, nil

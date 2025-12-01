@@ -55,10 +55,10 @@ type WechatRobot struct {
 func StartWechatRobot() {
 	var err error
 	OfficialAccountApp, err = officialAccount.NewOfficialAccount(&officialAccount.UserConfig{
-		AppID:  *conf.BaseConfInfo.WechatAppID,
-		Secret: *conf.BaseConfInfo.WechatAppSecret,
-		Token:  *conf.BaseConfInfo.WechatToken,
-		AESKey: *conf.BaseConfInfo.WechatEncodingAESKey,
+		AppID:  conf.BaseConfInfo.WechatAppID,
+		Secret: conf.BaseConfInfo.WechatAppSecret,
+		Token:  conf.BaseConfInfo.WechatToken,
+		AESKey: conf.BaseConfInfo.WechatEncodingAESKey,
 		Log: officialAccount.Log{
 			Level:  "info",
 			File:   "./wechat/info.log",
@@ -216,7 +216,7 @@ func (w *WechatRobot) requestLLM(content string) {
 func (w *WechatRobot) sendImg() {
 	w.Robot.TalkingPreCheck(func() {
 		chatId, msgId, _ := w.Robot.GetChatIdAndMsgIdAndUserID()
-		if !*conf.BaseConfInfo.WechatActive {
+		if !conf.BaseConfInfo.WechatActive {
 			logger.Warn("only wechat_active is true can generate image")
 			w.Robot.SendMsg(chatId, "only wechat_active is true can generate image", msgId, tgbotapi.ModeMarkdown, nil)
 			return
@@ -282,7 +282,7 @@ func (w *WechatRobot) sendMedia(mediaContent []byte, contentType, sType string) 
 func (w *WechatRobot) sendVideo() {
 	w.Robot.TalkingPreCheck(func() {
 		chatId, msgId, _ := w.Robot.GetChatIdAndMsgIdAndUserID()
-		if !*conf.BaseConfInfo.WechatActive {
+		if !conf.BaseConfInfo.WechatActive {
 			logger.Warn("only wechat_active is true can generate video")
 			w.Robot.SendMsg(chatId, "only wechat_active is true can generate video", msgId, tgbotapi.ModeMarkdown, nil)
 			return

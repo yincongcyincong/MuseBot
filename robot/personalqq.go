@@ -240,15 +240,8 @@ func (q *PersonalQQRobot) sendChatMessage() {
 }
 
 func (q *PersonalQQRobot) executeChain() {
-	var msgChan *MsgChan
-	if *conf.AudioConfInfo.TTSType == "" {
-		msgChan = &MsgChan{
-			StrMessageChan: make(chan string),
-		}
-	} else {
-		msgChan = &MsgChan{
-			NormalMessageChan: make(chan *param.MsgInfo),
-		}
+	msgChan := &MsgChan{
+		NormalMessageChan: make(chan *param.MsgInfo),
 	}
 	go q.Robot.ExecChain(q.Prompt, msgChan)
 	
@@ -346,11 +339,11 @@ func (q *PersonalQQRobot) SendMsg(txt string, image []byte, video []byte, voice 
 	}
 	
 	data, _ := json.Marshal(payload)
-	req, _ := http.NewRequest("POST", strings.TrimRight(*conf.BaseConfInfo.QQOneBotHttpServer, "/")+
+	req, _ := http.NewRequest("POST", strings.TrimRight(conf.BaseConfInfo.QQOneBotHttpServer, "/")+
 		path, bytes.NewBuffer(data))
 	req.Header.Set("Content-Type", "application/json")
-	if *conf.BaseConfInfo.QQOneBotSendToken != "" {
-		req.Header.Set("Authorization", "Bearer "+*conf.BaseConfInfo.QQOneBotSendToken)
+	if conf.BaseConfInfo.QQOneBotSendToken != "" {
+		req.Header.Set("Authorization", "Bearer "+conf.BaseConfInfo.QQOneBotSendToken)
 	}
 	
 	client := &http.Client{}

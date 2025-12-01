@@ -155,7 +155,7 @@ func (web *Web) changeModel(t string) {
 	
 	switch utils.GetTxtType(db.GetCtxUserInfo(web.Robot.Ctx).LLMConfigRaw) {
 	case param.DeepSeek:
-		if *conf.BaseConfInfo.CustomUrl == "" || *conf.BaseConfInfo.CustomUrl == "https://api.deepseek.com/" {
+		if conf.BaseConfInfo.CustomUrl == "" || conf.BaseConfInfo.CustomUrl == "https://api.deepseek.com/" {
 			for k := range param.DeepseekModels {
 				modelList = append(modelList, k)
 			}

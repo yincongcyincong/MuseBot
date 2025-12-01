@@ -29,7 +29,7 @@ type HTTPServer struct {
 
 func InitHTTP() {
 	initImg()
-	pprofServer := NewHTTPServer(fmt.Sprintf("%s", *conf.BaseConfInfo.HTTPHost))
+	pprofServer := NewHTTPServer(fmt.Sprintf("%s", conf.BaseConfInfo.HTTPHost))
 	pprofServer.Start()
 }
 
@@ -95,8 +95,7 @@ func (p *HTTPServer) Start() {
 		wrappedMux := WithRequestContext(mux)
 		
 		var err error
-		if conf.BaseConfInfo.CrtFile == nil || conf.BaseConfInfo.KeyFile == nil ||
-			*conf.BaseConfInfo.CrtFile == "" || *conf.BaseConfInfo.KeyFile == "" {
+		if conf.BaseConfInfo.CrtFile == "" || conf.BaseConfInfo.KeyFile == "" {
 			err = http.ListenAndServe(p.Addr, wrappedMux)
 		} else {
 			err = runTLSServer(wrappedMux)
@@ -108,7 +107,7 @@ func (p *HTTPServer) Start() {
 }
 
 func runTLSServer(wrappedMux http.Handler) error {
-	caCert, err := os.ReadFile(*conf.BaseConfInfo.CaFile)
+	caCert, err := os.ReadFile(conf.BaseConfInfo.CaFile)
 	if err != nil {
 		return err
 	}
@@ -116,7 +115,7 @@ func runTLSServer(wrappedMux http.Handler) error {
 	caCertPool := x509.NewCertPool()
 	caCertPool.AppendCertsFromPEM(caCert)
 	
-	cert, err := tls.LoadX509KeyPair(*conf.BaseConfInfo.CrtFile, *conf.BaseConfInfo.KeyFile)
+	cert, err := tls.LoadX509KeyPair(conf.BaseConfInfo.CrtFile, conf.BaseConfInfo.KeyFile)
 	if err != nil {
 		return err
 	}
@@ -129,7 +128,7 @@ func runTLSServer(wrappedMux http.Handler) error {
 	}
 	
 	server := &http.Server{
-		Addr:      fmt.Sprintf("%s", *conf.BaseConfInfo.HTTPHost),
+		Addr:      fmt.Sprintf("%s", conf.BaseConfInfo.HTTPHost),
 		TLSConfig: tlsConfig,
 		Handler:   wrappedMux,
 	}
@@ -160,8 +159,8 @@ func WithRequestContext(next http.Handler) http.Handler {
 		}
 		ctx = context.WithValue(ctx, "log_id", logID)
 		
-		if conf.BaseConfInfo.BotName != nil {
-			ctx = context.WithValue(ctx, "bot_name", *conf.BaseConfInfo.BotName)
+		if conf.BaseConfInfo.BotName != "" {
+			ctx = context.WithValue(ctx, "bot_name", conf.BaseConfInfo.BotName)
 		}
 		
 		ctx = context.WithValue(ctx, "start_time", time.Now())

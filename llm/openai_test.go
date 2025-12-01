@@ -22,8 +22,8 @@ func TestOpenAISend(t *testing.T) {
 		}
 	}()
 	
-	*conf.BaseConfInfo.CustomUrl = os.Getenv("TEST_CUSTOM_URL")
-	*conf.BaseConfInfo.Type = param.OpenAi
+	conf.BaseConfInfo.CustomUrl = os.Getenv("TEST_CUSTOM_URL")
+	conf.BaseConfInfo.Type = param.OpenAi
 	
 	ctx := context.WithValue(context.Background(), "user_info", &db.User{
 		LLMConfig:    `{"type":"openai"}`,
@@ -37,7 +37,7 @@ func TestOpenAISend(t *testing.T) {
 	err := callLLM.LLMClient.Send(ctx, callLLM)
 	assert.Equal(t, nil, err)
 	
-	*conf.BaseConfInfo.CustomUrl = ""
+	conf.BaseConfInfo.CustomUrl = ""
 }
 
 func TestOpenAIReq_GetMessage(t *testing.T) {

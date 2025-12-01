@@ -91,7 +91,7 @@ func CreateBot(ctx context.Context) *tgbotapi.BotAPI {
 	
 	var err error
 	var bot *tgbotapi.BotAPI
-	bot, err = tgbotapi.NewBotAPIWithClient(*conf.BaseConfInfo.TelegramBotToken, tgbotapi.APIEndpoint, client)
+	bot, err = tgbotapi.NewBotAPIWithClient(conf.BaseConfInfo.TelegramBotToken, tgbotapi.APIEndpoint, client)
 	if err != nil {
 		logger.ErrorCtx(ctx, "telegramBot Error", "error", err)
 		return nil

@@ -8,7 +8,7 @@ import (
 	"strings"
 	"sync"
 	"time"
-
+	
 	"github.com/yincongcyincong/MuseBot/admin/conf"
 	"github.com/yincongcyincong/MuseBot/admin/db"
 	"github.com/yincongcyincong/MuseBot/admin/utils"
@@ -32,17 +32,17 @@ type BotStatus struct {
 }
 
 func InitStatusCheck() {
-	if *conf.RegisterConfInfo.Type != "" {
+	if conf.RegisterConfInfo.Type != "" {
 		go func() {
 			InitRegister()
 		}()
-
+		
 	} else {
 		go func() {
 			ManualCheckPoint()
 		}()
 	}
-
+	
 }
 
 func ManualCheckPoint() {
@@ -52,9 +52,9 @@ func ManualCheckPoint() {
 		}
 	}()
 	ScheduleBotChecks()
-	ticker := time.NewTicker(time.Duration(*conf.BaseConfInfo.CheckBotSec) * time.Second)
+	ticker := time.NewTicker(time.Duration(conf.BaseConfInfo.CheckBotSec) * time.Second)
 	defer ticker.Stop()
-
+	
 	for {
 		select {
 		case <-ticker.C:
@@ -72,12 +72,12 @@ func checkBotStatus(bot *db.Bot) string {
 		return "offline" // 请求失败
 	}
 	defer resp.Body.Close()
-
+	
 	if resp.StatusCode != http.StatusOK {
 		logger.Warn("checkpoint request fail", "resp", resp, "address", bot.Address)
 		return OfflineStatus
 	}
-
+	
 	return OnlineStatus
 }
 
@@ -87,16 +87,16 @@ func ScheduleBotChecks() {
 			logger.Error("ScheduleBotChecks panic", "err", err, "stack", string(debug.Stack()))
 		}
 	}()
-
+	
 	bots, _, err := db.ListBots(0, 10000, "")
 	if err != nil {
 		logger.Error("ScheduleBotChecks list bots fail", "err", err)
 		return
 	}
-
-	batchCount := *conf.BaseConfInfo.CheckBotSec
+	
+	batchCount := conf.BaseConfInfo.CheckBotSec
 	batchSize := (len(bots) + batchCount - 1) / batchCount
-
+	
 	var wg sync.WaitGroup
 	for i := 0; i < batchCount; i++ {
 		start := i * batchSize
@@ -107,10 +107,10 @@ func ScheduleBotChecks() {
 		if start >= len(bots) {
 			break
 		}
-
+		
 		batch := bots[start:end]
 		batchIndex := i
-
+		
 		wg.Add(1)
 		go func(batch []*db.Bot, batchIndex int) {
 			defer func() {
@@ -119,10 +119,10 @@ func ScheduleBotChecks() {
 				}
 				wg.Done()
 			}()
-
+			
 			timer := time.NewTimer(time.Duration(batchIndex) * time.Second)
 			<-timer.C
-
+			
 			for _, b := range batch {
 				status := checkBotStatus(b)
 				BotMap.Store(b.ID, &BotStatus{
@@ -135,12 +135,12 @@ func ScheduleBotChecks() {
 			}
 		}(batch, batchIndex)
 	}
-
+	
 	wg.Wait()
 }
 
 func InitRegister() {
-	switch *conf.RegisterConfInfo.Type {
+	switch conf.RegisterConfInfo.Type {
 	case "etcd":
 		InitEtcdRegister()
 	}
@@ -150,34 +150,34 @@ func InitEtcdRegister() {
 	if len(conf.RegisterConfInfo.EtcdURLs) == 0 {
 		return
 	}
-
+	
 	cli, err := clientv3.New(clientv3.Config{
 		Endpoints:   conf.RegisterConfInfo.EtcdURLs,
 		DialTimeout: 5 * time.Second,
-		Username:    *conf.RegisterConfInfo.EtcdUsername,
-		Password:    *conf.RegisterConfInfo.EtcdPassword,
+		Username:    conf.RegisterConfInfo.EtcdUsername,
+		Password:    conf.RegisterConfInfo.EtcdPassword,
 	})
 	if err != nil {
 		logger.Error("register init failed: ", err)
 		return
 	}
 	defer cli.Close()
-
+	
 	ctx := context.Background()
 	prefix := "/services/musebot/"
-
+	
 	resp, err := cli.Get(ctx, prefix, clientv3.WithPrefix())
 	if err != nil {
 		logger.Error("register get failed: ", err)
 		return
 	}
-
+	
 	for _, kv := range resp.Kvs {
 		parts := strings.Split(string(kv.Key), "/")
 		name := parts[len(parts)-1]
-
+		
 		id := utils.NormalizeAddress(string(kv.Value))
-
+		
 		BotMap.Store(name, &BotStatus{
 			Id:        id,
 			Name:      name,
@@ -186,19 +186,19 @@ func InitEtcdRegister() {
 			LastCheck: time.Now(),
 		})
 	}
-
+	
 	rch := cli.Watch(ctx, prefix, clientv3.WithPrefix(), clientv3.WithPrevKV())
-
+	
 	for wresp := range rch {
 		for _, ev := range wresp.Events {
 			key := string(ev.Kv.Key)
 			val := string(ev.Kv.Value)
-
+			
 			switch ev.Type {
 			case clientv3.EventTypePut:
 				parts := strings.Split(key, "/")
 				name := parts[len(parts)-1]
-
+				
 				id := utils.NormalizeAddress(val)
 				BotMap.Store(name, &BotStatus{
 					Id:        id,

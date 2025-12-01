@@ -110,6 +110,10 @@ type Robot interface {
 	sendMedia(media []byte, contentType, sType string) error
 }
 
+type StreamRobot interface {
+	sendTextStream(messageChan *MsgChan)
+}
+
 type botOption func(r *RobotInfo)
 
 func NewRobot(options ...botOption) *RobotInfo {
@@ -127,7 +131,7 @@ func NewRobot(options ...botOption) *RobotInfo {
 	ctx, cancel := context.WithTimeout(r.Ctx, 15*time.Minute)
 	
 	if ctx.Value("bot_name") == nil {
-		ctx = context.WithValue(ctx, "bot_name", *conf.BaseConfInfo.BotName)
+		ctx = context.WithValue(ctx, "bot_name", conf.BaseConfInfo.BotName)
 	}
 	if ctx.Value("log_id") == nil {
 		ctx = context.WithValue(ctx, "log_id", uuid.New().String())
@@ -421,7 +425,7 @@ func (r *RobotInfo) SendMsg(chatId string, msgContent string, replyToMessageID s
 			RequestMessageSend: request.RequestMessageSend{
 				ToUser:                 chatId,
 				MsgType:                "markdown",
-				AgentID:                utils.ParseInt(*conf.BaseConfInfo.ComWechatAgentID),
+				AgentID:                utils.ParseInt(conf.BaseConfInfo.ComWechatAgentID),
 				DuplicateCheckInterval: 1800,
 			},
 			Markdown: &request.RequestMarkdown{
@@ -474,7 +478,7 @@ func (r *RobotInfo) SendMsg(chatId string, msgContent string, replyToMessageID s
 		}
 	case *WechatRobot:
 		w := r.Robot.(*WechatRobot)
-		if *conf.BaseConfInfo.WechatActive {
+		if conf.BaseConfInfo.WechatActive {
 			resp, err := w.App.CustomerService.Message(r.Ctx, messages.NewText(msgContent)).
 				SetTo(w.Event.GetFromUserName()).From(w.Event.GetToUserName()).Send(r.Ctx)
 			if err != nil {
@@ -534,51 +538,51 @@ func WithUseRecord(userRecord bool) func(*RobotInfo) {
 func StartRobot() {
 	ctx, cancel := context.WithCancel(context.Background())
 	RobotControl.Cancel = cancel
-	ctx = context.WithValue(ctx, "bot_name", *conf.BaseConfInfo.BotName)
+	ctx = context.WithValue(ctx, "bot_name", conf.BaseConfInfo.BotName)
 	
-	if *conf.BaseConfInfo.TelegramBotToken != "" {
+	if conf.BaseConfInfo.TelegramBotToken != "" {
 		go func() {
 			StartTelegramRobot(ctx)
 		}()
 	}
 	
-	if *conf.BaseConfInfo.DiscordBotToken != "" {
+	if conf.BaseConfInfo.DiscordBotToken != "" {
 		go func() {
 			StartDiscordRobot(ctx)
 		}()
 	}
 	
-	if *conf.BaseConfInfo.LarkAPPID != "" && *conf.BaseConfInfo.LarkAppSecret != "" {
+	if conf.BaseConfInfo.LarkAPPID != "" && conf.BaseConfInfo.LarkAppSecret != "" {
 		go func() {
 			StartLarkRobot(ctx)
 		}()
 	}
 	
-	if *conf.BaseConfInfo.SlackBotToken != "" && *conf.BaseConfInfo.SlackAppToken != "" {
+	if conf.BaseConfInfo.SlackBotToken != "" && conf.BaseConfInfo.SlackAppToken != "" {
 		go func() {
 			StartSlackRobot(ctx)
 		}()
 	}
 	
-	if *conf.BaseConfInfo.DingClientId != "" && *conf.BaseConfInfo.DingClientSecret != "" {
+	if conf.BaseConfInfo.DingClientId != "" && conf.BaseConfInfo.DingClientSecret != "" {
 		go func() {
 			StartDingRobot(ctx)
 		}()
 	}
 	
-	if *conf.BaseConfInfo.ComWechatSecret != "" && *conf.BaseConfInfo.ComWechatAgentID != "" && *conf.BaseConfInfo.ComWechatEncodingAESKey != "" {
+	if conf.BaseConfInfo.ComWechatSecret != "" && conf.BaseConfInfo.ComWechatAgentID != "" && conf.BaseConfInfo.ComWechatEncodingAESKey != "" {
 		go func() {
 			StartComWechatRobot(ctx)
 		}()
 	}
 	
-	if *conf.BaseConfInfo.QQAppID != "" && *conf.BaseConfInfo.QQAppSecret != "" {
+	if conf.BaseConfInfo.QQAppID != "" && conf.BaseConfInfo.QQAppSecret != "" {
 		go func() {
 			StartQQRobot(ctx)
 		}()
 	}
 	
-	if *conf.BaseConfInfo.WechatAppID != "" && *conf.BaseConfInfo.WechatAppSecret != "" {
+	if conf.BaseConfInfo.WechatAppID != "" && conf.BaseConfInfo.WechatAppSecret != "" {
 		go func() {
 			StartWechatRobot()
 		}()
@@ -615,7 +619,7 @@ func (r *RobotInfo) checkGroupAllow(chatId string) bool {
 
 // checkUserTokenExceed check use token exceeded
 func (r *RobotInfo) checkUserTokenExceed(chatId string, msgId string, userId string) bool {
-	if *conf.BaseConfInfo.TokenPerUser <= 0 {
+	if conf.BaseConfInfo.TokenPerUser <= 0 {
 		return false
 	}
 	
@@ -1293,7 +1297,7 @@ func (r *RobotInfo) ExecChain(msgContent string, msgChan *MsgChan) {
 		
 		r.InsertRecord()
 		perMsgLen := r.Robot.getPerMsgLen()
-		if *conf.AudioConfInfo.TTSType != "" {
+		if conf.AudioConfInfo.TTSType != "" {
 			perMsgLen = AudioMsgLen
 		}
 		
@@ -1343,7 +1347,7 @@ func (r *RobotInfo) ExecLLM(msgContent string, msgChan *MsgChan) {
 	
 	r.InsertRecord()
 	perMsgLen := r.Robot.getPerMsgLen()
-	if *conf.AudioConfInfo.TTSType != "" {
+	if conf.AudioConfInfo.TTSType != "" {
 		perMsgLen = AudioMsgLen
 	}
 	
@@ -1531,7 +1535,7 @@ func (r *RobotInfo) CreatePhoto(prompt string, lastImageContent []byte) ([]byte,
 	case param.Aliyun:
 		imageUrl, totalToken, err = llm.GenerateAliyunImg(r.Ctx, prompt, lastImageContent)
 	default:
-		err = fmt.Errorf("unsupported media type: %s", *conf.BaseConfInfo.MediaType)
+		err = fmt.Errorf("unsupported media type: %s", conf.BaseConfInfo.MediaType)
 	}
 	
 	if err != nil {
@@ -1593,7 +1597,7 @@ func (r *RobotInfo) GetVoiceBaseTTS(content, encoding string) ([]byte, int, erro
 	var err error
 	var duration int
 	var token int
-	switch *conf.AudioConfInfo.TTSType {
+	switch conf.AudioConfInfo.TTSType {
 	case param.Vol:
 		ttsContent, token, duration, err = llm.VolTTS(r.Ctx, content, userId, encoding)
 	case param.Gemini:
@@ -1658,10 +1662,19 @@ func (r *RobotInfo) HandleUpdate(messageChan *MsgChan, encoding string) {
 		}
 	}()
 	
-	if *conf.AudioConfInfo.TTSType != "" && encoding != "" {
+	if conf.AudioConfInfo.TTSType != "" && encoding != "" {
 		r.sendVoice(messageChan, encoding)
 	} else {
-		r.sendText(messageChan)
+		if conf.BaseConfInfo.IsStreaming {
+			if sr, ok := r.Robot.(StreamRobot); ok {
+				sr.sendTextStream(messageChan)
+			} else {
+				r.sendText(messageChan)
+			}
+		} else {
+			r.sendText(messageChan)
+		}
+		
 	}
 	
 }
@@ -1707,7 +1720,7 @@ type SmartModeResult struct {
 }
 
 func (r *RobotInfo) smartMode() bool {
-	if r.Robot.getCommand() != "" || r.Robot.getPrompt() == "" || !*conf.BaseConfInfo.SmartMode {
+	if r.Robot.getCommand() != "" || r.Robot.getPrompt() == "" || !conf.BaseConfInfo.SmartMode {
 		return true
 	}
 	

@@ -65,9 +65,9 @@ type DingResp struct {
 func StartDingRobot(ctx context.Context) {
 	dingLogger.SetLogger(logger.Logger)
 	DingBotClient = client.NewStreamClient(
-		client.WithAppCredential(client.NewAppCredentialConfig(*conf.BaseConfInfo.DingClientId, *conf.BaseConfInfo.DingClientSecret)),
+		client.WithAppCredential(client.NewAppCredentialConfig(conf.BaseConfInfo.DingClientId, conf.BaseConfInfo.DingClientSecret)),
 		client.WithUserAgent(client.NewDingtalkGoSDKUserAgent()),
-		client.WithProxy(*conf.BaseConfInfo.RobotProxy),
+		client.WithProxy(conf.BaseConfInfo.RobotProxy),
 		client.WithSubscription(dingUtils.SubscriptionTypeKCallback, "/v1.0/im/bot/messages/get",
 			chatbot.NewDefaultChatBotFrameHandler(OnChatReceive).OnEventReceived),
 	)
@@ -369,7 +369,7 @@ func (d *DingRobot) VideoReplyMarkdown(ctx context.Context, mediaId, format stri
 	requestBody := map[string]interface{}{
 		"msgtype": "video",
 		"video": map[string]interface{}{
-			"duration":     strconv.Itoa(*conf.VideoConfInfo.Duration),
+			"duration":     strconv.Itoa(conf.VideoConfInfo.Duration),
 			"videoMediaId": mediaId,
 			"videoType":    format,
 			"picMediaId":   "muse-bot",
@@ -457,8 +457,8 @@ func (d *DingRobot) GetAccessToken() (string, error) {
 	}
 	
 	getTokenRequest := &dingtalkoauth2.GetTokenRequest{
-		ClientId:     tea.String(*conf.BaseConfInfo.DingClientId),
-		ClientSecret: tea.String(*conf.BaseConfInfo.DingClientSecret),
+		ClientId:     tea.String(conf.BaseConfInfo.DingClientId),
+		ClientSecret: tea.String(conf.BaseConfInfo.DingClientSecret),
 		GrantType:    tea.String("client_credentials"),
 	}
 	
@@ -552,7 +552,7 @@ func (d *DingRobot) GetImageContent(accessToken string, c map[string]interface{}
 	if dc, ok := c["downloadCode"].(string); ok {
 		robotMessageFileDownloadRequest := &dingtalkrobot.RobotMessageFileDownloadRequest{
 			DownloadCode: tea.String(dc),
-			RobotCode:    tea.String(*conf.BaseConfInfo.DingClientId),
+			RobotCode:    tea.String(conf.BaseConfInfo.DingClientId),
 		}
 		
 		resp, err := dingClient.RobotMessageFileDownloadWithOptions(robotMessageFileDownloadRequest, &dingtalkrobot.RobotMessageFileDownloadHeaders{

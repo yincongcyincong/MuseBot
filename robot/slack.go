@@ -44,14 +44,14 @@ type SlackRobot struct {
 }
 
 func StartSlackRobot(ctx context.Context) {
-	if *conf.BaseConfInfo.SlackAppToken == "" || *conf.BaseConfInfo.SlackBotToken == "" {
+	if conf.BaseConfInfo.SlackAppToken == "" || conf.BaseConfInfo.SlackBotToken == "" {
 		return
 	}
 	
 	SlackClient = slack.New(
-		*conf.BaseConfInfo.SlackBotToken,
+		conf.BaseConfInfo.SlackBotToken,
 		slack.OptionDebug(false),
-		slack.OptionAppLevelToken(*conf.BaseConfInfo.SlackAppToken),
+		slack.OptionAppLevelToken(conf.BaseConfInfo.SlackAppToken),
 		slack.OptionLog(logger.Logger),
 		slack.OptionHTTPClient(utils.GetRobotProxyClient()),
 	)
@@ -266,7 +266,7 @@ func (s *SlackRobot) downloadSlackFile(url string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("Authorization", "Bearer "+*conf.BaseConfInfo.SlackBotToken)
+	req.Header.Set("Authorization", "Bearer "+conf.BaseConfInfo.SlackBotToken)
 	
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {

@@ -17,7 +17,7 @@ var (
 )
 
 func InitSessionStore() {
-	sessionStore = sessions.NewCookieStore([]byte(*conf.BaseConfInfo.SessionKey))
+	sessionStore = sessions.NewCookieStore([]byte(conf.BaseConfInfo.SessionKey))
 }
 
 func UserLogin(w http.ResponseWriter, r *http.Request) {

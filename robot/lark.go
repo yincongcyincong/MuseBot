@@ -52,18 +52,18 @@ func StartLarkRobot(ctx context.Context) {
 	eventHandler := dispatcher.NewEventDispatcher("", "").
 		OnP2MessageReceiveV1(LarkMessageHandler)
 	
-	cli = larkws.NewClient(*conf.BaseConfInfo.LarkAPPID, *conf.BaseConfInfo.LarkAppSecret,
+	cli = larkws.NewClient(conf.BaseConfInfo.LarkAPPID, conf.BaseConfInfo.LarkAppSecret,
 		larkws.WithEventHandler(eventHandler),
 		larkws.WithLogLevel(larkcore.LogLevelInfo),
 		larkws.WithLogger(logger.Logger),
 	)
 	
-	LarkBotClient = lark.NewClient(*conf.BaseConfInfo.LarkAPPID, *conf.BaseConfInfo.LarkAppSecret,
+	LarkBotClient = lark.NewClient(conf.BaseConfInfo.LarkAPPID, conf.BaseConfInfo.LarkAppSecret,
 		lark.WithHttpClient(utils.GetRobotProxyClient()))
 	
 	// get bot name
 	resp, err := LarkBotClient.Application.Application.Get(ctx, larkapplication.NewGetApplicationReqBuilder().
-		AppId(*conf.BaseConfInfo.LarkAPPID).Lang("zh_cn").Build())
+		AppId(conf.BaseConfInfo.LarkAPPID).Lang("zh_cn").Build())
 	if err != nil || !resp.Success() {
 		logger.ErrorCtx(ctx, "get robot name error", "error", err, "resp", resp)
 		return
@@ -605,7 +605,7 @@ func (l *LarkRobot) getVideoInfo(videoContent []byte) (string, error) {
 		Body(larkim.NewCreateFileReqBodyBuilder().
 			FileType(format).
 			FileName(utils.RandomFilename(format)).
-			Duration(*conf.VideoConfInfo.Duration).
+			Duration(conf.VideoConfInfo.Duration).
 			File(bytes.NewReader(videoContent)).
 			Build()).
 		Build())

@@ -9,12 +9,12 @@ import (
 )
 
 type RegisterConf struct {
-	Type         *string  `json:"type"`
+	Type         string   `json:"type"`
 	EtcdURLs     []string `json:"etcd_url"`
-	EtcdUsername *string  `json:"etcd_username"`
-	EtcdPassword *string  `json:"etcd_password"`
+	EtcdUsername string   `json:"etcd_username"`
+	EtcdPassword string   `json:"etcd_password"`
 	
-	etcdURLs *string
+	etcdURLs string
 }
 
 var (
@@ -22,15 +22,16 @@ var (
 )
 
 func InitRegisterConf() {
-	RegisterConfInfo.Type = flag.String("register_type", "", "register type: etcd")
-	RegisterConfInfo.etcdURLs = flag.String("etcd_urls", "", "etcd urls")
-	RegisterConfInfo.EtcdUsername = flag.String("etcd_username", "", "etcd username")
-	RegisterConfInfo.EtcdPassword = flag.String("etcd_password", "", "etcd password")
+	flag.StringVar(&RegisterConfInfo.Type, "register_type", "", "register type: etcd")
+	flag.StringVar(&RegisterConfInfo.etcdURLs, "etcd_urls", "", "etcd urls")
+	flag.StringVar(&RegisterConfInfo.EtcdUsername, "etcd_username", "", "etcd username")
+	flag.StringVar(&RegisterConfInfo.EtcdPassword, "etcd_password", "", "etcd password")
+	
 }
 
 func EnvRegisterConf() {
 	if os.Getenv("REGISTER_TYPE") != "" {
-		*RegisterConfInfo.Type = os.Getenv("REGISTER_TYPE")
+		RegisterConfInfo.Type = os.Getenv("REGISTER_TYPE")
 	}
 	
 	if os.Getenv("ETCD_URLS") != "" {
@@ -38,20 +39,20 @@ func EnvRegisterConf() {
 	}
 	
 	if os.Getenv("ETCD_USERNAME") != "" {
-		*RegisterConfInfo.EtcdUsername = os.Getenv("ETCD_USERNAME")
+		RegisterConfInfo.EtcdUsername = os.Getenv("ETCD_USERNAME")
 	}
 	
 	if os.Getenv("ETCD_PASSWORD") != "" {
-		*RegisterConfInfo.EtcdPassword = os.Getenv("ETCD_PASSWORD")
+		RegisterConfInfo.EtcdPassword = os.Getenv("ETCD_PASSWORD")
 	}
 	
-	if *RegisterConfInfo.Type == "etcd" && *RegisterConfInfo.etcdURLs != "" {
-		RegisterConfInfo.EtcdURLs = strings.Split(*RegisterConfInfo.etcdURLs, ",")
+	if RegisterConfInfo.Type == "etcd" && RegisterConfInfo.etcdURLs != "" {
+		RegisterConfInfo.EtcdURLs = strings.Split(RegisterConfInfo.etcdURLs, ",")
 	}
 	
-	logger.Info("REGISTER_CONF", "Type", *RegisterConfInfo.Type)
+	logger.Info("REGISTER_CONF", "Type", RegisterConfInfo.Type)
 	logger.Info("REGISTER_CONF", "EtcdURLs", RegisterConfInfo.EtcdURLs)
-	logger.Info("REGISTER_CONF", "EtcdUsername", *RegisterConfInfo.EtcdUsername)
-	logger.Info("REGISTER_CONF", "EtcdPassword", *RegisterConfInfo.EtcdPassword)
+	logger.Info("REGISTER_CONF", "EtcdUsername", RegisterConfInfo.EtcdUsername)
+	logger.Info("REGISTER_CONF", "EtcdPassword", RegisterConfInfo.EtcdPassword)
 	
 }

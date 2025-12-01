@@ -110,7 +110,7 @@ func WechatComm(w http.ResponseWriter, r *http.Request) {
 				c.Robot.Exec()
 			}
 			
-			if !*conf.BaseConfInfo.WechatActive {
+			if !conf.BaseConfInfo.WechatActive {
 				_, msgId, _ = c.Robot.GetChatIdAndMsgIdAndUserID()
 				content := c.GetLLMContent()
 				if content == "" {
@@ -152,8 +152,8 @@ func WechatComm(w http.ResponseWriter, r *http.Request) {
 
 func QQBotComm(w http.ResponseWriter, r *http.Request) {
 	webhook.HTTPHandler(w, r, &token.QQBotCredentials{
-		AppSecret: *conf.BaseConfInfo.QQAppSecret,
-		AppID:     *conf.BaseConfInfo.QQAppID,
+		AppSecret: conf.BaseConfInfo.QQAppSecret,
+		AppID:     conf.BaseConfInfo.QQAppID,
 	})
 }
 
@@ -162,7 +162,7 @@ func OneBot(w http.ResponseWriter, r *http.Request) {
 	body, _ := io.ReadAll(r.Body)
 	signature := r.Header.Get("X-Signature")
 	
-	h := hmac.New(sha1.New, []byte(*conf.BaseConfInfo.QQOneBotReceiveToken))
+	h := hmac.New(sha1.New, []byte(conf.BaseConfInfo.QQOneBotReceiveToken))
 	h.Write(body)
 	expectedSign := "sha1=" + hex.EncodeToString(h.Sum(nil))
 	

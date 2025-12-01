@@ -59,7 +59,7 @@ type DiscordRobot struct {
 
 func StartDiscordRobot(ctx context.Context) {
 	var err error
-	DiscordSession, err = discordgo.New("Bot " + *conf.BaseConfInfo.DiscordBotToken)
+	DiscordSession, err = discordgo.New("Bot " + conf.BaseConfInfo.DiscordBotToken)
 	if err != nil {
 		logger.ErrorCtx(ctx, "create discord bot", "err", err)
 		return
@@ -630,9 +630,9 @@ func (d *DiscordRobot) Talk() {
 			wsURL := url.URL{Scheme: "wss", Host: "openspeech.bytedance.com", Path: "/api/v3/realtime/dialogue"}
 			volDialog.VolWsConn, _, err = websocket.DefaultDialer.DialContext(context.Background(), wsURL.String(), http.Header{
 				"X-Api-Resource-Id": []string{"volc.speech.dialog"},
-				"X-Api-Access-Key":  []string{*conf.AudioConfInfo.VolAudioToken},
+				"X-Api-Access-Key":  []string{conf.AudioConfInfo.VolAudioToken},
 				"X-Api-App-Key":     []string{"PlgvMymc7f3tQnJ6"},
-				"X-Api-App-ID":      []string{*conf.AudioConfInfo.VolAudioAppID},
+				"X-Api-App-ID":      []string{conf.AudioConfInfo.VolAudioAppID},
 				"X-Api-Connect-Id":  []string{uuid.New().String()},
 			})
 			if err != nil {
@@ -648,11 +648,11 @@ func (d *DiscordRobot) Talk() {
 			err = utils.StartSession(volDialog.VolWsConn, userId, &utils.StartSessionPayload{
 				ASR: utils.ASRPayload{
 					Extra: map[string]interface{}{
-						"end_smooth_window_ms": *conf.AudioConfInfo.VolEndSmoothWindow,
+						"end_smooth_window_ms": conf.AudioConfInfo.VolEndSmoothWindow,
 					},
 				},
 				TTS: utils.TTSPayload{
-					Speaker: *conf.AudioConfInfo.VolTTSSpeaker,
+					Speaker: conf.AudioConfInfo.VolTTSSpeaker,
 					AudioConfig: utils.AudioConfig{
 						Channel:    2,
 						Format:     "pcm_s16le",
@@ -660,9 +660,9 @@ func (d *DiscordRobot) Talk() {
 					},
 				},
 				Dialog: utils.DialogPayload{
-					BotName:       *conf.AudioConfInfo.VolBotName,
-					SystemRole:    *conf.AudioConfInfo.VolSystemRole,
-					SpeakingStyle: *conf.AudioConfInfo.VolSpeakingStyle,
+					BotName:       conf.AudioConfInfo.VolBotName,
+					SystemRole:    conf.AudioConfInfo.VolSystemRole,
+					SpeakingStyle: conf.AudioConfInfo.VolSpeakingStyle,
 					Extra: map[string]interface{}{
 						"strict_audit":   false,
 						"audit_response": "抱歉这个问题我无法回答，你可以换个其他话题，我会尽力为你提供帮助。",

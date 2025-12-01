@@ -9,7 +9,7 @@ import (
 
 func TestInsertAndGetUser(t *testing.T) {
 	conf.BaseConfInfo.TokenPerUser = new(int)
-	*conf.BaseConfInfo.TokenPerUser = 100
+	conf.BaseConfInfo.TokenPerUser = 100
 	
 	userId := "123456789"
 	mode := `{"txt_type":"gemini","txt_model":"gemini-2.0-flash","img_type":"gemini","img_model":"gemini-2.0-flash-preview-image-generation","video_type":"gemini","video_model":"veo-2.0-generate-001"}`

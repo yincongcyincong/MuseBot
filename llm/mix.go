@@ -90,7 +90,7 @@ func GenerateMixImg(ctx context.Context, prompt string, imageContent []byte) ([]
 	// assign task
 	var response openrouter.ChatCompletionResponse
 	var err error
-	for i := 0; i < *conf.BaseConfInfo.LLMRetryTimes; i++ {
+	for i := 0; i < conf.BaseConfInfo.LLMRetryTimes; i++ {
 		response, err = client.CreateChatCompletion(ctx, request)
 		if err != nil {
 			logger.ErrorCtx(ctx, "create chat completion fail", "err", err)
@@ -155,9 +155,9 @@ func GetMixClient(ctx context.Context, clientType string) *openrouter.Client {
 	specialLLMUrl := ""
 	switch t {
 	case param.OpenRouter:
-		token = *conf.BaseConfInfo.OpenRouterToken
+		token = conf.BaseConfInfo.OpenRouterToken
 	case param.AI302:
-		token = *conf.BaseConfInfo.AI302Token
+		token = conf.BaseConfInfo.AI302Token
 		specialLLMUrl = "https://api.302.ai/"
 	}
 	
@@ -166,8 +166,8 @@ func GetMixClient(ctx context.Context, clientType string) *openrouter.Client {
 	if specialLLMUrl != "" {
 		config.BaseURL = specialLLMUrl
 	}
-	if *conf.BaseConfInfo.CustomUrl != "" {
-		config.BaseURL = *conf.BaseConfInfo.CustomUrl
+	if conf.BaseConfInfo.CustomUrl != "" {
+		config.BaseURL = conf.BaseConfInfo.CustomUrl
 	}
 	return openrouter.NewClientWithConfig(*config)
 }
@@ -185,9 +185,9 @@ func Generate302AIVideo(ctx context.Context, prompt string, image []byte) (strin
 	payloadMap := map[string]interface{}{
 		"model":      model,
 		"prompt":     prompt,
-		"duration":   *conf.VideoConfInfo.Duration,
-		"resolution": *conf.VideoConfInfo.Resolution,
-		"fps":        *conf.VideoConfInfo.FPS,
+		"duration":   conf.VideoConfInfo.Duration,
+		"resolution": conf.VideoConfInfo.Resolution,
+		"fps":        conf.VideoConfInfo.FPS,
 	}
 	
 	payloadBytes, err := json.Marshal(payloadMap)
@@ -203,11 +203,11 @@ func Generate302AIVideo(ctx context.Context, prompt string, image []byte) (strin
 	if err != nil {
 		return "", 0, fmt.Errorf("failed to create request: %w", err)
 	}
-	req.Header.Add("Authorization", "Bearer "+*conf.BaseConfInfo.AI302Token)
+	req.Header.Add("Authorization", "Bearer "+conf.BaseConfInfo.AI302Token)
 	req.Header.Add("Content-Type", "application/json")
 	
 	var res *http.Response
-	for i := 0; i < *conf.BaseConfInfo.LLMRetryTimes; i++ {
+	for i := 0; i < conf.BaseConfInfo.LLMRetryTimes; i++ {
 		res, err = httpClient.Do(req)
 		if err != nil {
 			logger.ErrorCtx(ctx, "failed to call create API:", "err", err)
@@ -241,7 +241,7 @@ func Generate302AIVideo(ctx context.Context, prompt string, image []byte) (strin
 		}
 		
 		req, _ := http.NewRequestWithContext(ctx, "GET", fetchURL, nil)
-		req.Header.Add("Authorization", "Bearer "+*conf.BaseConfInfo.AI302Token)
+		req.Header.Add("Authorization", "Bearer "+conf.BaseConfInfo.AI302Token)
 		
 		res, err := httpClient.Do(req)
 		if err != nil {

@@ -90,9 +90,9 @@ func loadAllImagePaths() error {
 	oneLayerDirPaths = make(map[string][]string)
 	twoLayerDirPaths = make(map[string][][]string)
 	
-	dirs, err := ioutil.ReadDir(*conf.BaseConfInfo.ImagePath)
+	dirs, err := ioutil.ReadDir(conf.BaseConfInfo.ImagePath)
 	if err != nil {
-		logger.Error("Failed to read image directory", "directory", *conf.BaseConfInfo.ImagePath, "error", err)
+		logger.Error("Failed to read image directory", "directory", conf.BaseConfInfo.ImagePath, "error", err)
 		return err
 	}
 	
@@ -102,7 +102,7 @@ func loadAllImagePaths() error {
 		}
 		
 		imageType := dir.Name() // 文件夹名作为 'type'
-		currentDirPath := filepath.Join(*conf.BaseConfInfo.ImagePath, imageType)
+		currentDirPath := filepath.Join(conf.BaseConfInfo.ImagePath, imageType)
 		
 		// 1. 读取当前目录内容以判断结构
 		contents, err := ioutil.ReadDir(currentDirPath)

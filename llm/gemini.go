@@ -52,7 +52,7 @@ func GenerateGeminiImg(ctx context.Context, prompt string, imageContent []byte) 
 	}
 	
 	var response *genai.GenerateContentResponse
-	for i := 0; i < *conf.BaseConfInfo.LLMRetryTimes; i++ {
+	for i := 0; i < conf.BaseConfInfo.LLMRetryTimes; i++ {
 		response, err = client.Models.GenerateContent(
 			ctx,
 			model,
@@ -106,7 +106,7 @@ func GenerateGeminiVideo(ctx context.Context, prompt string, image []byte) ([]by
 	}
 	
 	var operation *genai.GenerateVideosOperation
-	for i := 0; i < *conf.BaseConfInfo.LLMRetryTimes; i++ {
+	for i := 0; i < conf.BaseConfInfo.LLMRetryTimes; i++ {
 		operation, err = client.Models.GenerateVideos(ctx,
 			model, prompt,
 			geminiImage,
@@ -181,7 +181,7 @@ func GenerateGeminiText(ctx context.Context, audioContent []byte) (string, int, 
 	}
 	
 	var result *genai.GenerateContentResponse
-	for i := 0; i < *conf.BaseConfInfo.LLMRetryTimes; i++ {
+	for i := 0; i < conf.BaseConfInfo.LLMRetryTimes; i++ {
 		result, err = client.Models.GenerateContent(
 			ctx,
 			model,
@@ -226,7 +226,7 @@ func GeminiTTS(ctx context.Context, content, encoding string) ([]byte, int, int,
 	}
 	
 	var response *genai.GenerateContentResponse
-	for i := 0; i < *conf.BaseConfInfo.LLMRetryTimes; i++ {
+	for i := 0; i < conf.BaseConfInfo.LLMRetryTimes; i++ {
 		response, err = client.Models.GenerateContent(
 			ctx,
 			model,
@@ -238,7 +238,7 @@ func GeminiTTS(ctx context.Context, content, encoding string) ([]byte, int, int,
 				SpeechConfig: &genai.SpeechConfig{
 					VoiceConfig: &genai.VoiceConfig{
 						PrebuiltVoiceConfig: &genai.PrebuiltVoiceConfig{
-							VoiceName: *conf.AudioConfInfo.GeminiVoiceName,
+							VoiceName: conf.AudioConfInfo.GeminiVoiceName,
 						},
 					},
 				},
@@ -277,15 +277,15 @@ func GeminiTTS(ctx context.Context, content, encoding string) ([]byte, int, int,
 func GetGeminiClient(ctx context.Context) (*genai.Client, error) {
 	httpClient := utils.GetLLMProxyClient()
 	httpOption := genai.HTTPOptions{}
-	if *conf.BaseConfInfo.CustomUrl != "" {
-		httpOption.BaseURL = *conf.BaseConfInfo.CustomUrl
+	if conf.BaseConfInfo.CustomUrl != "" {
+		httpOption.BaseURL = conf.BaseConfInfo.CustomUrl
 		httpOption.Headers = http.Header{
-			"Authorization": []string{"Bearer " + *conf.BaseConfInfo.GeminiToken},
+			"Authorization": []string{"Bearer " + conf.BaseConfInfo.GeminiToken},
 		}
 	}
 	return genai.NewClient(ctx, &genai.ClientConfig{
 		HTTPClient:  httpClient,
-		APIKey:      *conf.BaseConfInfo.GeminiToken,
+		APIKey:      conf.BaseConfInfo.GeminiToken,
 		HTTPOptions: httpOption,
 	})
 }

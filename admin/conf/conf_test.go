@@ -20,24 +20,24 @@ func TestInitConfig_WithEnv(t *testing.T) {
 	
 	InitConfig()
 	
-	if *BaseConfInfo.DBType != "mysql" {
-		t.Errorf("expected DBType = mysql, got %s", *BaseConfInfo.DBType)
+	if BaseConfInfo.DBType != "mysql" {
+		t.Errorf("expected DBType = mysql, got %s", BaseConfInfo.DBType)
 	}
 	
-	if *BaseConfInfo.DBConf != "root:pass@tcp(localhost:3306)/muse" {
-		t.Errorf("expected DBConf = mysql conf, got %s", *BaseConfInfo.DBConf)
+	if BaseConfInfo.DBConf != "root:pass@tcp(localhost:3306)/muse" {
+		t.Errorf("expected DBConf = mysql conf, got %s", BaseConfInfo.DBConf)
 	}
 	
-	if *BaseConfInfo.SessionKey != "env_session_key" {
-		t.Errorf("expected SessionKey = env_session_key, got %s", *BaseConfInfo.SessionKey)
+	if BaseConfInfo.SessionKey != "env_session_key" {
+		t.Errorf("expected SessionKey = env_session_key, got %s", BaseConfInfo.SessionKey)
 	}
 	
-	if *BaseConfInfo.AdminPort != "8080" {
-		t.Errorf("expected AdminPort = 8080, got %s", *BaseConfInfo.AdminPort)
+	if BaseConfInfo.AdminPort != "8080" {
+		t.Errorf("expected AdminPort = 8080, got %s", BaseConfInfo.AdminPort)
 	}
 	
-	if *BaseConfInfo.CheckBotSec != 99 {
-		t.Errorf("expected CheckBotSec = 99, got %d", *BaseConfInfo.CheckBotSec)
+	if BaseConfInfo.CheckBotSec != 99 {
+		t.Errorf("expected CheckBotSec = 99, got %d", BaseConfInfo.CheckBotSec)
 	}
 	
 	if *RegisterConfInfo.Type != "etcd" {

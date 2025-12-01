@@ -116,7 +116,7 @@ func GenerateAliyunImg(ctx context.Context, prompt string, imageContent []byte) 
 	jsonData, _ := json.Marshal(payload)
 	req, _ := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+*conf.BaseConfInfo.AliyunToken)
+	req.Header.Set("Authorization", "Bearer "+conf.BaseConfInfo.AliyunToken)
 	
 	client := utils.GetLLMProxyClient()
 	start := time.Now()
@@ -124,7 +124,7 @@ func GenerateAliyunImg(ctx context.Context, prompt string, imageContent []byte) 
 	
 	var resp *http.Response
 	var err error
-	for i := 0; i < *conf.BaseConfInfo.LLMRetryTimes; i++ {
+	for i := 0; i < conf.BaseConfInfo.LLMRetryTimes; i++ {
 		resp, err = client.Do(req)
 		if err != nil {
 			logger.ErrorCtx(ctx, "create image fail", "err", err)
@@ -217,7 +217,7 @@ func GenerateAliyunVideo(ctx context.Context, prompt string, image []byte) (stri
 		return "", 0, err
 	}
 	
-	req.Header.Set("Authorization", "Bearer "+*conf.BaseConfInfo.AliyunToken)
+	req.Header.Set("Authorization", "Bearer "+conf.BaseConfInfo.AliyunToken)
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("X-DashScope-Async", "enable")
 	
@@ -229,7 +229,7 @@ func GenerateAliyunVideo(ctx context.Context, prompt string, image []byte) (stri
 	}()
 	
 	var resp *http.Response
-	for i := 0; i < *conf.BaseConfInfo.LLMRetryTimes; i++ {
+	for i := 0; i < conf.BaseConfInfo.LLMRetryTimes; i++ {
 		resp, err = client.Do(req)
 		if err != nil {
 			logger.ErrorCtx(ctx, "create video fail", "err", err)
@@ -261,7 +261,7 @@ func GenerateAliyunVideo(ctx context.Context, prompt string, image []byte) (stri
 			return "", 0, err
 		}
 		
-		req.Header.Set("Authorization", "Bearer "+*conf.BaseConfInfo.AliyunToken)
+		req.Header.Set("Authorization", "Bearer "+conf.BaseConfInfo.AliyunToken)
 		req.Header.Set("Content-Type", "application/json")
 		
 		resp, err = client.Do(req)
@@ -341,7 +341,7 @@ func GenerateAliyunText(ctx context.Context, audioContent []byte) (string, int, 
 		return "", 0, fmt.Errorf("failed to create request: %w", err)
 	}
 	
-	req.Header.Set("Authorization", "Bearer "+*conf.BaseConfInfo.AliyunToken)
+	req.Header.Set("Authorization", "Bearer "+conf.BaseConfInfo.AliyunToken)
 	req.Header.Set("Content-Type", "application/json")
 	
 	client := utils.GetLLMProxyClient()
@@ -349,7 +349,7 @@ func GenerateAliyunText(ctx context.Context, audioContent []byte) (string, int, 
 	metrics.APIRequestCount.WithLabelValues(recModel).Inc()
 	
 	var resp *http.Response
-	for i := 0; i < *conf.BaseConfInfo.LLMRetryTimes; i++ {
+	for i := 0; i < conf.BaseConfInfo.LLMRetryTimes; i++ {
 		resp, err = client.Do(req)
 		if err != nil {
 			logger.ErrorCtx(ctx, "create video fail", "err", err)
@@ -410,7 +410,7 @@ func AliyunTTS(ctx context.Context, text, encoding string) ([]byte, int, int, er
 		"model": model,
 		"input": map[string]interface{}{
 			"text":          text,
-			"voice":         *conf.AudioConfInfo.AliyunAudioVoice,
+			"voice":         conf.AudioConfInfo.AliyunAudioVoice,
 			"language_type": "Auto",
 		},
 	}
@@ -425,7 +425,7 @@ func AliyunTTS(ctx context.Context, text, encoding string) ([]byte, int, int, er
 		return nil, 0, 0, fmt.Errorf("new request error: %w", err)
 	}
 	
-	req.Header.Set("Authorization", "Bearer "+*conf.BaseConfInfo.AliyunToken)
+	req.Header.Set("Authorization", "Bearer "+conf.BaseConfInfo.AliyunToken)
 	req.Header.Set("Content-Type", "application/json")
 	
 	client := utils.GetLLMProxyClient()
@@ -433,7 +433,7 @@ func AliyunTTS(ctx context.Context, text, encoding string) ([]byte, int, int, er
 	metrics.APIRequestCount.WithLabelValues(model).Inc()
 	
 	var resp *http.Response
-	for i := 0; i < *conf.BaseConfInfo.LLMRetryTimes; i++ {
+	for i := 0; i < conf.BaseConfInfo.LLMRetryTimes; i++ {
 		resp, err = client.Do(req)
 		if err != nil {
 			logger.ErrorCtx(ctx, "create video fail", "err", err)

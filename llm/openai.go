@@ -99,20 +99,20 @@ func (d *OpenAIReq) Send(ctx context.Context, l *LLM) error {
 		Tools:    l.OpenAITools,
 	}
 	
-	if *conf.BaseConfInfo.LLMOptionParam {
-		request.MaxTokens = *conf.LLMConfInfo.MaxTokens
-		request.TopP = float32(*conf.LLMConfInfo.TopP)
-		request.FrequencyPenalty = float32(*conf.LLMConfInfo.FrequencyPenalty)
-		request.TopLogProbs = *conf.LLMConfInfo.TopLogProbs
-		request.LogProbs = *conf.LLMConfInfo.LogProbs
+	if conf.BaseConfInfo.LLMOptionParam {
+		request.MaxTokens = conf.LLMConfInfo.MaxTokens
+		request.TopP = float32(conf.LLMConfInfo.TopP)
+		request.FrequencyPenalty = float32(conf.LLMConfInfo.FrequencyPenalty)
+		request.TopLogProbs = conf.LLMConfInfo.TopLogProbs
+		request.LogProbs = conf.LLMConfInfo.LogProbs
 		request.Stop = conf.LLMConfInfo.Stop
-		request.PresencePenalty = float32(*conf.LLMConfInfo.PresencePenalty)
-		request.Temperature = float32(*conf.LLMConfInfo.Temperature)
+		request.PresencePenalty = float32(conf.LLMConfInfo.PresencePenalty)
+		request.Temperature = float32(conf.LLMConfInfo.Temperature)
 	}
 	
 	var stream *openai.ChatCompletionStream
 	var err error
-	for i := 0; i < *conf.BaseConfInfo.LLMRetryTimes; i++ {
+	for i := 0; i < conf.BaseConfInfo.LLMRetryTimes; i++ {
 		stream, err = client.CreateChatCompletionStream(ctx, request)
 		if err != nil {
 			logger.ErrorCtx(l.Ctx, "ChatCompletionStream error", "updateMsgID", l.MsgId, "err", err)
@@ -166,9 +166,9 @@ func (d *OpenAIReq) Send(ctx context.Context, l *LLM) error {
 		}
 	}
 	
-	if l.MessageChan != nil && len(strings.TrimRightFunc(msgInfoContent.Content, unicode.IsSpace)) > 0 || (hasTools && *conf.BaseConfInfo.SendMcpRes) {
-		if *conf.BaseConfInfo.Powered != "" {
-			msgInfoContent.Content = msgInfoContent.Content + "\n\n" + *conf.BaseConfInfo.Powered
+	if l.MessageChan != nil && len(strings.TrimRightFunc(msgInfoContent.Content, unicode.IsSpace)) > 0 || (hasTools && conf.BaseConfInfo.SendMcpRes) {
+		if conf.BaseConfInfo.Powered != "" {
+			msgInfoContent.Content = msgInfoContent.Content + "\n\n" + conf.BaseConfInfo.Powered
 		}
 		l.MessageChan <- msgInfoContent
 	}
@@ -267,20 +267,20 @@ func (d *OpenAIReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 		Messages: d.OpenAIMsgs,
 	}
 	
-	if *conf.BaseConfInfo.LLMOptionParam {
-		request.MaxTokens = *conf.LLMConfInfo.MaxTokens
-		request.TopP = float32(*conf.LLMConfInfo.TopP)
-		request.FrequencyPenalty = float32(*conf.LLMConfInfo.FrequencyPenalty)
-		request.TopLogProbs = *conf.LLMConfInfo.TopLogProbs
-		request.LogProbs = *conf.LLMConfInfo.LogProbs
+	if conf.BaseConfInfo.LLMOptionParam {
+		request.MaxTokens = conf.LLMConfInfo.MaxTokens
+		request.TopP = float32(conf.LLMConfInfo.TopP)
+		request.FrequencyPenalty = float32(conf.LLMConfInfo.FrequencyPenalty)
+		request.TopLogProbs = conf.LLMConfInfo.TopLogProbs
+		request.LogProbs = conf.LLMConfInfo.LogProbs
 		request.Stop = conf.LLMConfInfo.Stop
-		request.PresencePenalty = float32(*conf.LLMConfInfo.PresencePenalty)
-		request.Temperature = float32(*conf.LLMConfInfo.Temperature)
+		request.PresencePenalty = float32(conf.LLMConfInfo.PresencePenalty)
+		request.Temperature = float32(conf.LLMConfInfo.Temperature)
 	}
 	
 	var response openai.ChatCompletionResponse
 	var err error
-	for i := 0; i < *conf.BaseConfInfo.LLMRetryTimes; i++ {
+	for i := 0; i < conf.BaseConfInfo.LLMRetryTimes; i++ {
 		response, err = client.CreateChatCompletion(ctx, request)
 		if err != nil {
 			logger.ErrorCtx(l.Ctx, "ChatCompletionStream error", "updateMsgID", l.MsgId, "err", err)
@@ -390,7 +390,7 @@ func GenerateOpenAIImg(ctx context.Context, prompt string, imageContent []byte) 
 	
 	var respUrl openai.ImageResponse
 	var err error
-	for i := 0; i < *conf.BaseConfInfo.LLMRetryTimes; i++ {
+	for i := 0; i < conf.BaseConfInfo.LLMRetryTimes; i++ {
 		if len(imageContent) != 0 {
 			imageFile, err := utils.ConvertToPNGFile(imageContent)
 			if err != nil {
@@ -405,7 +405,7 @@ func GenerateOpenAIImg(ctx context.Context, prompt string, imageContent []byte) 
 				Prompt:         prompt,
 				Model:          model,
 				N:              1,
-				Size:           *conf.PhotoConfInfo.OpenAIImageSize,
+				Size:           conf.PhotoConfInfo.OpenAIImageSize,
 				ResponseFormat: "b64_json",
 			})
 			
@@ -420,9 +420,9 @@ func GenerateOpenAIImg(ctx context.Context, prompt string, imageContent []byte) 
 				openai.ImageRequest{
 					Prompt:         prompt,
 					Model:          model,
-					Size:           *conf.PhotoConfInfo.OpenAIImageSize,
+					Size:           conf.PhotoConfInfo.OpenAIImageSize,
 					N:              1,
-					Style:          *conf.PhotoConfInfo.OpenAIImageStyle,
+					Style:          conf.PhotoConfInfo.OpenAIImageStyle,
 					ResponseFormat: "b64_json",
 				},
 			)
@@ -481,7 +481,7 @@ func GenerateOpenAIText(ctx context.Context, audioContent []byte) (string, error
 	
 	var resp openai.AudioResponse
 	var err error
-	for i := 0; i < *conf.BaseConfInfo.LLMRetryTimes; i++ {
+	for i := 0; i < conf.BaseConfInfo.LLMRetryTimes; i++ {
 		resp, err = client.CreateTranscription(ctx, req)
 		if err != nil {
 			logger.ErrorCtx(ctx, "CreateTranscription error", "err", err)
@@ -514,11 +514,11 @@ func OpenAITTS(ctx context.Context, content, encoding string) ([]byte, int, int,
 	
 	var resp openai.RawResponse
 	var err error
-	for i := 0; i < *conf.BaseConfInfo.LLMRetryTimes; i++ {
+	for i := 0; i < conf.BaseConfInfo.LLMRetryTimes; i++ {
 		resp, err = client.CreateSpeech(ctx, openai.CreateSpeechRequest{
 			Model:          openai.SpeechModel(model),
 			Input:          content,
-			Voice:          openai.SpeechVoice(*conf.AudioConfInfo.OpenAIVoiceName),
+			Voice:          openai.SpeechVoice(conf.AudioConfInfo.OpenAIVoiceName),
 			ResponseFormat: openai.SpeechResponseFormat(formatEncoding),
 			Speed:          1.0,
 		})
@@ -569,27 +569,27 @@ func GetOpenAIClient(ctx context.Context, clientType string) *openai.Client {
 	var specialLLMUrl string
 	switch t {
 	case param.OpenAi:
-		token = *conf.BaseConfInfo.OpenAIToken
+		token = conf.BaseConfInfo.OpenAIToken
 	case param.Aliyun:
-		token = *conf.BaseConfInfo.AliyunToken
+		token = conf.BaseConfInfo.AliyunToken
 		specialLLMUrl = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 	case param.ChatAnyWhere:
-		token = *conf.BaseConfInfo.ChatAnyWhereToken
+		token = conf.BaseConfInfo.ChatAnyWhereToken
 		specialLLMUrl = "https://api.chatanywhere.tech/v1"
 	case param.DeepSeek:
-		token = *conf.BaseConfInfo.DeepseekToken
+		token = conf.BaseConfInfo.DeepseekToken
 		specialLLMUrl = "https://api.deepseek.com/v1"
 	case param.Vol:
-		token = *conf.BaseConfInfo.VolToken
+		token = conf.BaseConfInfo.VolToken
 		specialLLMUrl = "https://ark.cn-beijing.volces.com/api/v3"
 	case param.OpenRouter:
-		token = *conf.BaseConfInfo.OpenRouterToken
+		token = conf.BaseConfInfo.OpenRouterToken
 		specialLLMUrl = "https://openrouter.ai/api/v1"
 	case param.AI302:
-		token = *conf.BaseConfInfo.AI302Token
+		token = conf.BaseConfInfo.AI302Token
 		specialLLMUrl = "https://api.302.ai/v1"
 	case param.Gemini:
-		token = *conf.BaseConfInfo.GeminiToken
+		token = conf.BaseConfInfo.GeminiToken
 		specialLLMUrl = "https://generativelanguage.googleapis.com/v1beta/openai"
 	}
 	
@@ -598,8 +598,8 @@ func GetOpenAIClient(ctx context.Context, clientType string) *openai.Client {
 		openaiConfig.BaseURL = specialLLMUrl
 	}
 	
-	if *conf.BaseConfInfo.CustomUrl != "" {
-		openaiConfig.BaseURL = *conf.BaseConfInfo.CustomUrl
+	if conf.BaseConfInfo.CustomUrl != "" {
+		openaiConfig.BaseURL = conf.BaseConfInfo.CustomUrl
 	}
 	openaiConfig.HTTPClient = httpClient
 	return openai.NewClientWithConfig(openaiConfig)
