@@ -141,7 +141,7 @@ func (d *DiscordRobot) checkValid() bool {
 			Type: discordgo.InteractionResponseDeferredChannelMessageWithSource,
 		})
 		if err != nil {
-			logger.WarnCtx(d.Robot.Ctx, "Failed to defer interaction response", "err", err)
+			logger.ErrorCtx(d.Robot.Ctx, "Failed to defer interaction response", "err", err)
 		}
 		return true
 	}
@@ -262,10 +262,10 @@ func (d *DiscordRobot) sendTextStream(messageChan *MsgChan) {
 			Type: discordgo.InteractionResponseDeferredChannelMessageWithSource,
 		})
 		if err != nil {
-			logger.WarnCtx(d.Robot.Ctx, "Failed to defer interaction response", "err", err)
+			logger.ErrorCtx(d.Robot.Ctx, "Failed to defer interaction response", "err", err)
 		}
 	} else {
-		logger.Error("Unknown Discord message type")
+		logger.ErrorCtx(d.Robot.Ctx, "Unknown Discord message type")
 		return
 	}
 	
@@ -283,12 +283,12 @@ func (d *DiscordRobot) sendTextStream(messageChan *MsgChan) {
 			if msg.MsgId == "" && originalMsgID == "" {
 				_, err = d.Session.ChannelMessageSend(channelID, msg.Content)
 				if err != nil {
-					logger.WarnCtx(d.Robot.Ctx, "Sending message failed", "err", err)
+					logger.ErrorCtx(d.Robot.Ctx, "Sending message failed", "err", err)
 				}
 			} else {
 				_, err = d.Session.ChannelMessageEdit(channelID, msg.MsgId, msg.Content)
 				if err != nil {
-					logger.WarnCtx(d.Robot.Ctx, "Editing message failed", "msgID", msg.MsgId, "err", err)
+					logger.ErrorCtx(d.Robot.Ctx, "Editing message failed", "msgID", msg.MsgId, "err", err)
 				}
 				originalMsgID = ""
 			}
@@ -298,14 +298,14 @@ func (d *DiscordRobot) sendTextStream(messageChan *MsgChan) {
 					Content: &msg.Content,
 				})
 				if err != nil {
-					logger.WarnCtx(d.Robot.Ctx, "Sending interaction response failed", "err", err)
+					logger.ErrorCtx(d.Robot.Ctx, "Sending interaction response failed", "err", err)
 				}
 			} else {
 				_, err = d.Session.FollowupMessageCreate(d.Inter.Interaction, true, &discordgo.WebhookParams{
 					Content: msg.Content,
 				})
 				if err != nil {
-					logger.WarnCtx(d.Robot.Ctx, "Editing followup interaction message failed", "err", err)
+					logger.ErrorCtx(d.Robot.Ctx, "Editing followup interaction message failed", "err", err)
 				}
 				originalMsgID = ""
 			}
@@ -460,13 +460,13 @@ func (d *DiscordRobot) sendImg() {
 		imageContent, totalToken, err := d.Robot.CreatePhoto(prompt, lastImageContent)
 		if err != nil {
 			logger.WarnCtx(d.Robot.Ctx, "generate image fail", "err", err)
-			d.Robot.SendMsg(chatId, err.Error(), msgId, param.DiscordEditMode, nil)
+			d.Robot.SendMsg(chatId, err.Error(), msgId, "", nil)
 			return
 		}
 		
 		if err != nil {
 			logger.WarnCtx(d.Robot.Ctx, "send image fail", "err", err)
-			d.Robot.SendMsg(chatId, err.Error(), msgId, param.DiscordEditMode, nil)
+			d.Robot.SendMsg(chatId, err.Error(), msgId, "", nil)
 			return
 		}
 		
@@ -556,13 +556,13 @@ func (d *DiscordRobot) sendVideo() {
 		videoContent, totalToken, err := d.Robot.CreateVideo(prompt, imageContent)
 		if err != nil {
 			logger.WarnCtx(d.Robot.Ctx, "generate video fail", "err", err)
-			d.Robot.SendMsg(chatId, err.Error(), msgId, param.DiscordEditMode, nil)
+			d.Robot.SendMsg(chatId, err.Error(), msgId, "", nil)
 			return
 		}
 		
 		if err != nil {
 			logger.WarnCtx(d.Robot.Ctx, "send video fail", "err", err)
-			d.Robot.SendMsg(chatId, err.Error(), msgId, param.DiscordEditMode, nil)
+			d.Robot.SendMsg(chatId, err.Error(), msgId, "", nil)
 			return
 		}
 		

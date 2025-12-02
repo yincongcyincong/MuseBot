@@ -1,14 +1,18 @@
 package utils
 
 import (
+	"context"
+	"encoding/base64"
 	"regexp"
 	"strings"
+	
+	"github.com/yincongcyincong/MuseBot/logger"
 )
 
 // MediaItem struct holds the information for an extracted media link.
 type MediaItem struct {
-	URL string
-	Alt string
+	URL     string
+	Content []byte
 }
 
 type ContentBlock struct {
@@ -29,11 +33,8 @@ var mediaRegex = regexp.MustCompile(
 	`!\[.*?\]\((.+?)\)`,
 )
 
-func ExtractContentBlocks(sourceText string) []ContentBlock {
+func ExtractContentBlocks(ctx context.Context, sourceText string) []ContentBlock {
 	var orderedBlocks []ContentBlock
-	
-	// FindAllStringSubmatchIndex 返回 [][]int，包含整个匹配和捕获组的索引
-	// 索引顺序: [MatchStart MatchEnd Submatch1Start Submatch1End]
 	allMatches := mediaRegex.FindAllStringSubmatchIndex(sourceText, -1)
 	
 	lastIndex := 0
@@ -43,42 +44,67 @@ func ExtractContentBlocks(sourceText string) []ContentBlock {
 		if text != "" {
 			orderedBlocks = append(orderedBlocks, ContentBlock{
 				Type:    "text",
-				Content: text, // 保持所有原始字符 (\n, \t, <, > 等)
+				Content: text,
 			})
 		}
 	}
 	
 	for _, match := range allMatches {
-		// 整个匹配的起始和结束索引 (用于从纯文本中切除，即舍弃描述文字部分)
 		matchStart := match[0]
 		matchEnd := match[1]
 		
-		// 1. **提取前面的文本块**
 		textBefore := sourceText[lastIndex:matchStart]
 		flushText(textBefore)
 		
-		// 2. **提取干净的媒体 URL**
-		// 捕获组 1 的起始和结束索引
-		urlStart := match[2]
-		urlEnd := match[3]
+		mediaStart := match[2]
+		mediaEnd := match[3]
 		
-		var url string
-		if urlStart != -1 && urlEnd != -1 {
-			url = sourceText[urlStart:urlEnd]
+		var media string
+		if mediaStart != -1 && mediaEnd != -1 {
+			media = sourceText[mediaStart:mediaEnd]
 		}
 		
-		// 3. **创建媒体块**
-		if url != "" {
+		if strings.HasPrefix(media, "http") {
 			mediaType := "image"
-			if isVideoURL(url) {
+			if isVideoURL(media) {
+				mediaType = "video"
+			}
+			
+			content, err := DownloadFile(media)
+			if err != nil {
+				logger.ErrorCtx(ctx, "download file error", "err", err)
+				continue
+			}
+			
+			orderedBlocks = append(orderedBlocks, ContentBlock{
+				Type: mediaType,
+				Media: MediaItem{
+					URL:     media,
+					Content: content,
+				},
+			})
+		} else {
+			tmp := strings.Split(media, "base64,")
+			if len(tmp) > 1 {
+				media = tmp[1]
+			}
+			
+			mediaContent, err := base64.StdEncoding.DecodeString(media)
+			if err != nil {
+				logger.ErrorCtx(ctx, "decode base64 error", "err", err)
+				continue
+			}
+			
+			mediaType := "image"
+			if DetectVideoMimeType(mediaContent) != "unknown" || strings.HasSuffix(media, "data:video") {
 				mediaType = "video"
 			}
 			
 			orderedBlocks = append(orderedBlocks, ContentBlock{
 				Type: mediaType,
 				Media: MediaItem{
-					URL: url,
-					Alt: "", // 明确舍弃 Alt/描述文本
+					URL:     media,
+					Content: mediaContent,
 				},
 			})
 		}

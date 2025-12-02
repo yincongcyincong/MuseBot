@@ -400,34 +400,6 @@ func (w *WechatRobot) getMedia() ([]byte, error) {
 	return data, nil
 }
 
-func (w *WechatRobot) SendMsg(msg *param.MsgInfo) {
-	chatId, _, _ := w.Robot.GetChatIdAndMsgIdAndUserID()
-	blocks := utils.ExtractContentBlocks(msg.Content)
-	for _, b := range blocks {
-		switch b.Type {
-		case "text":
-			w.Robot.SendMsg(chatId, strings.TrimSpace(b.Content), "", tgbotapi.ModeMarkdown, nil)
-		case "video", "image":
-			content, err := utils.DownloadFile(b.Media.URL)
-			if err != nil {
-				logger.ErrorCtx(w.Robot.Ctx, "download file fail", "err", err)
-				continue
-			}
-			contentType := ""
-			if b.Type == "video" {
-				contentType = utils.DetectVideoMimeType(content)
-			} else {
-				contentType = utils.DetectImageFormat(content)
-			}
-			
-			err = w.sendMedia(content, contentType, b.Type)
-			if err != nil {
-				logger.ErrorCtx(w.Robot.Ctx, "send media fail", "err", err)
-			}
-		}
-	}
-}
-
 func (w *WechatRobot) sendVoiceContent(voiceContent []byte, duration int) error {
 	fileName := utils.GetAbsPath("data/" + utils.RandomFilename(utils.DetectAudioFormat(voiceContent)))
 	err := os.WriteFile(fileName, voiceContent, 0666)
