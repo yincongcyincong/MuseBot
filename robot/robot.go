@@ -351,16 +351,16 @@ func (r *RobotInfo) SendMsg(chatId string, msgContent string, replyToMessageID s
 		
 		if discordRobot.Inter != nil {
 			var err error
-			if mode == param.DiscordEditMode {
-				_, err = discordRobot.Session.InteractionResponseEdit(discordRobot.Inter.Interaction, &discordgo.WebhookEdit{
-					Content: &msgContent,
-				})
-			} else {
+			if mode == param.DiscordNewMode {
 				err = discordRobot.Session.InteractionRespond(discordRobot.Inter.Interaction, &discordgo.InteractionResponse{
 					Type: discordgo.InteractionResponseChannelMessageWithSource,
 					Data: &discordgo.InteractionResponseData{
 						Content: msgContent,
 					},
+				})
+			} else {
+				_, err = discordRobot.Session.InteractionResponseEdit(discordRobot.Inter.Interaction, &discordgo.WebhookEdit{
+					Content: &msgContent,
 				})
 			}
 			
@@ -1886,25 +1886,20 @@ func (r *RobotInfo) recPhoto() {
 
 func (r *RobotInfo) SendMarkdownMsg(msg *param.MsgInfo) {
 	chatId, _, _ := r.GetChatIdAndMsgIdAndUserID()
-	blocks := utils.ExtractContentBlocks(msg.Content)
+	blocks := utils.ExtractContentBlocks(r.Ctx, msg.Content)
 	for _, b := range blocks {
 		switch b.Type {
 		case "text":
 			r.SendMsg(chatId, strings.TrimSpace(b.Content), "", tgbotapi.ModeMarkdown, nil)
 		case "video", "image":
-			content, err := utils.DownloadFile(b.Media.URL)
-			if err != nil {
-				logger.ErrorCtx(r.Ctx, "download file fail", "err", err)
-				continue
-			}
 			contentType := ""
 			if b.Type == "video" {
-				contentType = utils.DetectVideoMimeType(content)
+				contentType = utils.DetectVideoMimeType(b.Media.Content)
 			} else {
-				contentType = utils.DetectImageFormat(content)
+				contentType = utils.DetectImageFormat(b.Media.Content)
 			}
 			
-			err = r.Robot.sendMedia(content, contentType, b.Type)
+			err := r.Robot.sendMedia(b.Media.Content, contentType, b.Type)
 			if err != nil {
 				logger.ErrorCtx(r.Ctx, "send media fail", "err", err)
 			}

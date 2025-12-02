@@ -301,65 +301,6 @@ func (l *LarkRobot) sendTextStream(messageChan *MsgChan) {
 	}
 }
 
-func (l *LarkRobot) sendMsg(msg *param.MsgInfo) {
-	chatId, _, _ := l.Robot.GetChatIdAndMsgIdAndUserID()
-	blocks := utils.ExtractContentBlocks(msg.Content)
-	
-	postContent := make([]larkim.MessagePostElement, 0)
-	for _, b := range blocks {
-		switch b.Type {
-		case "image":
-			imageContent, err := utils.DownloadFile(b.Media.URL)
-			if err != nil {
-				logger.ErrorCtx(l.Robot.Ctx, "get file content fail", "err", err)
-				continue
-			}
-			imageKey, err := l.getImageInfo(imageContent)
-			if err != nil {
-				logger.ErrorCtx(l.Robot.Ctx, "get image info fail", "err", err)
-				continue
-			}
-			
-			postContent = append(postContent, &larkim.MessagePostImage{
-				ImageKey: imageKey,
-			})
-		case "text":
-			postContent = append(postContent, &MessagePostMarkdown{
-				Text: b.Content,
-			})
-		case "video":
-			imageContent, err := utils.DownloadFile(b.Media.URL)
-			if err != nil {
-				logger.ErrorCtx(l.Robot.Ctx, "get file content fail", "err", err)
-				continue
-			}
-			fileKey, err := l.getVideoInfo(imageContent)
-			if err != nil {
-				logger.ErrorCtx(l.Robot.Ctx, "get image info fail", "err", err)
-				continue
-			}
-			
-			postContent = append(postContent, &larkim.MessagePostMedia{
-				FileKey: fileKey,
-			})
-		}
-	}
-	
-	msgContent, _ := larkim.NewMessagePost().ZhCn(larkim.NewMessagePostContent().AppendContent(postContent).Build()).Build()
-	res, err := l.Client.Im.Message.Create(l.Robot.Ctx, larkim.NewCreateMessageReqBuilder().
-		ReceiveIdType(larkim.ReceiveIdTypeChatId).
-		Body(larkim.NewCreateMessageReqBodyBuilder().
-			MsgType(larkim.MsgTypePost).
-			ReceiveId(chatId).
-			Content(msgContent).
-			Build()).
-		Build())
-	if err != nil || !res.Success() {
-		logger.ErrorCtx(l.Robot.Ctx, "send message fail", "err", err, "resp", res)
-		return
-	}
-}
-
 func (l *LarkRobot) executeLLM() {
 	messageChan := &MsgChan{
 		NormalMessageChan: make(chan *param.MsgInfo),

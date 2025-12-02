@@ -466,35 +466,6 @@ func (s *SlackRobot) sendTextStream(messageChan *MsgChan) {
 	}
 }
 
-func (s *SlackRobot) sendMsg(msg *param.MsgInfo) {
-	chatId, msgId, _ := s.Robot.GetChatIdAndMsgIdAndUserID()
-	blocks := utils.ExtractContentBlocks(msg.Content)
-	
-	for _, b := range blocks {
-		switch b.Type {
-		case "text":
-			s.Robot.SendMsg(chatId, b.Content, msgId, tgbotapi.ModeMarkdown, nil)
-		case "video", "image":
-			content, err := utils.DownloadFile(b.Media.URL)
-			if err != nil {
-				logger.ErrorCtx(s.Robot.Ctx, "download file fail", "err", err)
-				continue
-			}
-			contentType := ""
-			if b.Type == "video" {
-				contentType = utils.DetectVideoMimeType(content)
-			} else {
-				contentType = utils.DetectImageFormat(content)
-			}
-			
-			err = s.sendMedia(content, contentType, b.Type)
-			if err != nil {
-				logger.ErrorCtx(s.Robot.Ctx, "send media fail", "err", err)
-			}
-		}
-	}
-}
-
 func (s *SlackRobot) sendVoiceContent(voiceContent []byte, duration int) error {
 	chatId, _, _ := s.Robot.GetChatIdAndMsgIdAndUserID()
 	format := utils.DetectAudioFormat(voiceContent)

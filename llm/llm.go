@@ -105,8 +105,7 @@ func (l *LLM) CallLLM() error {
 		}
 		
 		l.MessageChan <- &param.MsgInfo{
-			Content:  content,
-			Finished: true,
+			Content: content,
 		}
 		l.WholeContent = content
 	}
