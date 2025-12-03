@@ -8,7 +8,6 @@ import (
 )
 
 func TestInsertAndGetUser(t *testing.T) {
-	conf.BaseConfInfo.TokenPerUser = new(int)
 	conf.BaseConfInfo.TokenPerUser = 100
 	
 	userId := "123456789"

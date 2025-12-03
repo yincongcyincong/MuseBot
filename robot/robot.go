@@ -323,7 +323,7 @@ func (r *RobotInfo) SendMsg(chatId string, msgContent string, replyToMessageID s
 		msg.ReplyToMessageID = utils.ParseInt(replyToMessageID)
 		msgInfo, err := telegramRobot.Bot.Send(msg)
 		if err != nil {
-			logger.WarnCtx(r.Ctx, "send clear message fail", "err", err)
+			logger.WarnCtx(r.Ctx, "send message fail", "err", err)
 			return ""
 		}
 		return utils.ValueToString(msgInfo.MessageID)
@@ -1884,13 +1884,35 @@ func (r *RobotInfo) recPhoto() {
 	r.Robot.executeLLM()
 }
 
+func (r *RobotInfo) splitText(text string) []string {
+	pLen := r.Robot.getPerMsgLen()
+	if pLen <= 0 {
+		return []string{text}
+	}
+	
+	runes := []rune(text)
+	length := len(runes)
+	
+	var result []string
+	
+	for i := 0; i < length; i += pLen {
+		end := i + pLen
+		if end > length {
+			end = length
+		}
+		result = append(result, string(runes[i:end]))
+	}
+	
+	return result
+}
+
 func (r *RobotInfo) SendMarkdownMsg(msg *param.MsgInfo) {
 	chatId, _, _ := r.GetChatIdAndMsgIdAndUserID()
-	blocks := utils.ExtractContentBlocks(r.Ctx, msg.Content)
+	blocks := utils.ExtractContentBlocks(r.Ctx, msg.Content, r.splitText)
 	for _, b := range blocks {
 		switch b.Type {
 		case "text":
-			r.SendMsg(chatId, strings.TrimSpace(b.Content), "", tgbotapi.ModeMarkdown, nil)
+			r.SendMsg(chatId, strings.TrimSpace(b.Content), "", "", nil)
 		case "video", "image":
 			contentType := ""
 			if b.Type == "video" {

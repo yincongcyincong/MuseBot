@@ -40,8 +40,8 @@ func TestInitConfig_WithEnv(t *testing.T) {
 		t.Errorf("expected CheckBotSec = 99, got %d", BaseConfInfo.CheckBotSec)
 	}
 	
-	if *RegisterConfInfo.Type != "etcd" {
-		t.Errorf("expected Type = etcd, got %s", *RegisterConfInfo.Type)
+	if RegisterConfInfo.Type != "etcd" {
+		t.Errorf("expected Type = etcd, got %s", RegisterConfInfo.Type)
 	}
 	
 	expectedURLs := []string{"http://127.0.0.1:2379", "http://127.0.0.2:2379"}
@@ -54,12 +54,12 @@ func TestInitConfig_WithEnv(t *testing.T) {
 		}
 	}
 	
-	if *RegisterConfInfo.EtcdUsername != "admin" {
-		t.Errorf("expected EtcdUsername = admin, got %s", *RegisterConfInfo.EtcdUsername)
+	if RegisterConfInfo.EtcdUsername != "admin" {
+		t.Errorf("expected EtcdUsername = admin, got %s", RegisterConfInfo.EtcdUsername)
 	}
 	
-	if *RegisterConfInfo.EtcdPassword != "123456" {
-		t.Errorf("expected EtcdPassword = 123456, got %s", *RegisterConfInfo.EtcdPassword)
+	if RegisterConfInfo.EtcdPassword != "123456" {
+		t.Errorf("expected EtcdPassword = 123456, got %s", RegisterConfInfo.EtcdPassword)
 	}
 	
 	os.Clearenv()

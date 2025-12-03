@@ -30,14 +30,13 @@ type UpdateConfParam struct {
 func GetCommand(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	
-	useQuota := r.URL.Query().Get("use_quota") == "1"
-	res := CompareFlagsWithStructTags(conf.BaseConfInfo, useQuota)
-	res += CompareFlagsWithStructTags(conf.AudioConfInfo, useQuota)
-	res += CompareFlagsWithStructTags(conf.LLMConfInfo, useQuota)
-	res += CompareFlagsWithStructTags(conf.PhotoConfInfo, useQuota)
-	res += CompareFlagsWithStructTags(conf.RagConfInfo, useQuota)
-	res += CompareFlagsWithStructTags(conf.VideoConfInfo, useQuota)
-	res += CompareFlagsWithStructTags(conf.ToolsConfInfo, useQuota)
+	res := CompareFlagsWithStructTags(conf.BaseConfInfo)
+	res += CompareFlagsWithStructTags(conf.AudioConfInfo)
+	res += CompareFlagsWithStructTags(conf.LLMConfInfo)
+	res += CompareFlagsWithStructTags(conf.PhotoConfInfo)
+	res += CompareFlagsWithStructTags(conf.RagConfInfo)
+	res += CompareFlagsWithStructTags(conf.VideoConfInfo)
+	res += CompareFlagsWithStructTags(conf.ToolsConfInfo)
 	
 	utils.Success(ctx, w, r, res)
 }
@@ -313,7 +312,7 @@ func handleSpecialData(updateConfParam *UpdateConfParam) {
 	}
 }
 
-func CompareFlagsWithStructTags(cfg interface{}, useQuota bool) string {
+func CompareFlagsWithStructTags(cfg interface{}) string {
 	v := reflect.ValueOf(cfg)
 	t := reflect.TypeOf(cfg)
 	
@@ -350,11 +349,7 @@ func CompareFlagsWithStructTags(cfg interface{}, useQuota bool) string {
 		}
 		
 		if flagValue == nil || structValue != flagValue.DefValue || jsonTag == "bot_name" || jsonTag == "http_host" {
-			if useQuota {
-				res += fmt.Sprintf("-%s='%s'\n", jsonTag, structValue)
-			} else {
-				res += fmt.Sprintf("-%s=%s\n", jsonTag, structValue)
-			}
+			res += fmt.Sprintf("-%s=%s\n", jsonTag, structValue)
 		}
 	}
 	
