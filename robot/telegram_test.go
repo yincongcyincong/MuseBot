@@ -25,7 +25,7 @@ func makeFakeUpdateWithText(text string, botUserName string, chatType string) tg
 
 func TestSkipThisMsg(t *testing.T) {
 	fakeBotUserName := "TestBot"
-	conf.BaseConfInfo.BotName = &fakeBotUserName
+	conf.BaseConfInfo.BotName = fakeBotUserName
 	updatePrivate := makeFakeUpdateWithText("hello", fakeBotUserName, "private")
 	tel := NewTelegramRobot(updatePrivate, &tgbotapi.BotAPI{
 		Self: tgbotapi.User{UserName: fakeBotUserName},

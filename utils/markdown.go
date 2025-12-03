@@ -33,7 +33,7 @@ var mediaRegex = regexp.MustCompile(
 	`!\[.*?\]\((.+?)\)`,
 )
 
-func ExtractContentBlocks(ctx context.Context, sourceText string) []ContentBlock {
+func ExtractContentBlocks(ctx context.Context, sourceText string, textFunc func(string) []string) []ContentBlock {
 	var orderedBlocks []ContentBlock
 	allMatches := mediaRegex.FindAllStringSubmatchIndex(sourceText, -1)
 	
@@ -42,10 +42,12 @@ func ExtractContentBlocks(ctx context.Context, sourceText string) []ContentBlock
 	// 刷新文本块的辅助函数（保留所有原始字符）
 	flushText := func(text string) {
 		if text != "" {
-			orderedBlocks = append(orderedBlocks, ContentBlock{
-				Type:    "text",
-				Content: text,
-			})
+			for _, line := range textFunc(text) {
+				orderedBlocks = append(orderedBlocks, ContentBlock{
+					Type:    "text",
+					Content: line,
+				})
+			}
 		}
 	}
 	

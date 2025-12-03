@@ -1047,10 +1047,6 @@ func (t *TelegramRobot) getMessage() *tgbotapi.Message {
 	return nil
 }
 
-func (t *TelegramRobot) getPrompt() string {
-	return t.Prompt
-}
-
 func (t *TelegramRobot) sendForceReply(agentType string) func() {
 	return func() {
 		chatId, msgId, _ := t.Robot.GetChatIdAndMsgIdAndUserID()
@@ -1059,10 +1055,6 @@ func (t *TelegramRobot) sendForceReply(agentType string) func() {
 			logger.WarnCtx(t.Robot.Ctx, "force reply fail", "err", err)
 		}
 	}
-}
-
-func (t *TelegramRobot) getPerMsgLen() int {
-	return 3596
 }
 
 func ForceReply(chatId int64, msgId int, i18MsgId string, bot *tgbotapi.BotAPI) error {
@@ -1173,4 +1165,12 @@ func (t *TelegramRobot) getImage() []byte {
 
 func (t *TelegramRobot) setImage(image []byte) {
 	t.ImageContent = image
+}
+
+func (t *TelegramRobot) getPrompt() string {
+	return t.Prompt
+}
+
+func (t *TelegramRobot) getPerMsgLen() int {
+	return 3596
 }
