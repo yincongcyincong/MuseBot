@@ -56,6 +56,7 @@ compile_and_package() {
     mkdir -p ./output/conf/
     cp -r ./conf/i18n ./output/conf/
     cp -r ./conf/mcp ./output/conf/
+    cp -r ./conf/img ./output/conf/
     mkdir -p ./output/data/
 
     # Copy admin UI files
