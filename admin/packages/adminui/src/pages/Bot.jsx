@@ -94,6 +94,13 @@ function Bots() {
         fetchBots();
     };
 
+    useEffect(() => {
+        const intervalId = setInterval(() => {
+            fetchBots();
+        }, 10000);
+        return () => clearInterval(intervalId);
+    }, []);
+
     const handleAddClick = () => {
         setForm({
             id: 0,
