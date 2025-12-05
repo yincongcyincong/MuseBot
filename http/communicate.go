@@ -52,7 +52,7 @@ func Communicate(w http.ResponseWriter, r *http.Request) {
 	
 	web := robot.NewWeb(command, intUserId, realUserId, p, prompt, fileData, w, flusher)
 	web.AddUserInfo()
-	web.Exec()
+	web.Robot.Exec()
 }
 
 func ComWechatComm(w http.ResponseWriter, r *http.Request) {
