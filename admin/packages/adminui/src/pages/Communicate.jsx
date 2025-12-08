@@ -14,7 +14,7 @@ function Communicate() {
     const [chatPage, setChatPage] = useState(1);
     const [hasMoreHistory, setHasMoreHistory] = useState(true);
     const [toast, setToast] = useState(null);
-    const [File, setMediaFile] = useState(null);
+    const [mediaFile, setMediaFile] = useState(null);
     const [mediaPreview, setMediaPreview] = useState(null);
     const [modalVisible, setModalVisible] = useState(false);
     const [modalMedia, setModalMedia] = useState(null);
@@ -99,7 +99,9 @@ function Communicate() {
 
         const userPrompt = input.trim();
         const formData = new FormData();
-        if (mediaFile) formData.append("file", mediaFile);
+        if (mediaFile) {
+            formData.append("file", mediaFile);
+        }
 
         if (userPrompt === "/clear") {
             setMessages([]);
