@@ -307,6 +307,11 @@ func (r *RobotInfo) GetChatIdAndMsgIdAndUserID() (string, string, string) {
 		chatId = personalQQRobot.Msg.Raw.PeerUid
 		userId = strconv.Itoa(int(personalQQRobot.Msg.UserID))
 		msgId = strconv.Itoa(int(personalQQRobot.Msg.MessageID))
+	case *Web:
+		webRobot := r.Robot.(*Web)
+		chatId = webRobot.RealUserId
+		userId = webRobot.RealUserId
+		msgId = webRobot.RealUserId
 	}
 	
 	return chatId, msgId, userId
@@ -506,6 +511,9 @@ func (r *RobotInfo) SendMsg(chatId string, msgContent string, replyToMessageID s
 			return ""
 		}
 		return msgId
+	case *Web:
+		web := r.Robot.(*Web)
+		web.SendMsg(msgContent)
 	}
 	
 	return ""

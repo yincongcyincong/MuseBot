@@ -7,9 +7,9 @@ import (
 	"net/http"
 	"strings"
 	
+	"github.com/yincongcyincong/MuseBot/conf"
 	"github.com/yincongcyincong/MuseBot/db"
 	"github.com/yincongcyincong/MuseBot/i18n"
-	"github.com/yincongcyincong/MuseBot/llm"
 	"github.com/yincongcyincong/MuseBot/logger"
 	"github.com/yincongcyincong/MuseBot/metrics"
 	"github.com/yincongcyincong/MuseBot/param"
@@ -61,7 +61,7 @@ func NewWeb(command string, userId int64, realUserId, prompt, originalPrompt str
 }
 
 func (web *Web) getMsgContent() string {
-	return web.Command
+	return web.Prompt
 }
 
 func (web *Web) sendImg() {
@@ -174,30 +174,19 @@ func (web *Web) sendVideo() {
 
 func (web *Web) sendChatMessage() {
 	
-	prompt := web.Prompt
-	
-	messageChan := make(chan string)
-	l := llm.NewLLM(
-		llm.WithChatId(web.RealUserId),
-		llm.WithUserId(web.RealUserId),
-		llm.WithMsgId(web.RealUserId),
-		llm.WithHTTPMsgChan(messageChan),
-		llm.WithContent(prompt),
-		llm.WithPerMsgLen(1000000),
-		llm.WithCS(web.cs),
-		llm.WithContext(web.Robot.Ctx),
-	)
-	go func() {
-		defer close(messageChan)
-		err := l.CallLLM()
-		if err != nil {
-			logger.WarnCtx(web.Robot.Ctx, "Error sending message", "err", err)
-			web.SendMsg(err.Error())
+	web.Robot.TalkingPreCheck(func() {
+		if conf.RagConfInfo.Store != nil {
+			//web.executeChain()
+		} else {
+			web.executeLLM()
 		}
-	}()
+	})
 	
+}
+
+func (web *Web) sendTextStream(messageChan *MsgChan) {
 	totalContent := ""
-	for msg := range messageChan {
+	for msg := range messageChan.StrMessageChan {
 		fmt.Fprintf(web.W, "%s", msg)
 		totalContent += msg
 		web.Flusher.Flush()
@@ -219,14 +208,10 @@ func (web *Web) sendChatMessage() {
 		IsDeleted:  0,
 		RecordType: param.WEBRecordType,
 	})
-	
 }
 
 func (web *Web) SendMsg(msgContent string) {
-	_, err := web.W.Write([]byte(msgContent))
-	if err != nil {
-		logger.ErrorCtx(web.Robot.Ctx, "send message fail", "err", err)
-	}
+	fmt.Fprint(web.W, msgContent)
 	web.Flusher.Flush()
 }
 
@@ -288,16 +273,20 @@ func (web *Web) setImage(image []byte) {
 
 func (web *Web) checkValid() bool {
 	var err error
-	web.Prompt, err = web.Robot.GetAudioContent(web.AudioContent)
-	if err != nil {
-		logger.WarnCtx(web.Robot.Ctx, "generate text from audio failed", "err", err)
-		return false
+	if web.AudioContent != nil {
+		web.OriginalPrompt, err = web.Robot.GetAudioContent(web.AudioContent)
+		if err != nil {
+			logger.ErrorCtx(web.Robot.Ctx, "generate text from audio failed", "err", err)
+			return false
+		}
 	}
+	
+	web.Command, web.Prompt = ParseCommand(web.OriginalPrompt)
 	return true
 }
 
 func (web *Web) requestLLM(content string) {
-	web.Robot.ExecCmd(content, web.sendChatMessage, nil, nil)
+	web.Robot.ExecCmd(web.Command, web.sendChatMessage, nil, nil)
 }
 
 func (web *Web) getPrompt() string {
@@ -328,7 +317,21 @@ func (web *Web) getUserName() string {
 }
 
 func (web *Web) executeLLM() {
-
+	var msgChan *MsgChan
+	if conf.BaseConfInfo.IsStreaming {
+		msgChan = &MsgChan{
+			StrMessageChan: make(chan string),
+		}
+	} else {
+		msgChan = &MsgChan{
+			NormalMessageChan: make(chan *param.MsgInfo),
+		}
+	}
+	
+	go web.Robot.ExecLLM(web.Prompt, msgChan)
+	
+	web.Robot.HandleUpdate(msgChan, "mp3")
+	
 }
 
 func (web *Web) sendMedia(media []byte, contentType, sType string) error {
