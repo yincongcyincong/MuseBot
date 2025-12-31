@@ -176,7 +176,7 @@ func OneBot(w http.ResponseWriter, r *http.Request) {
 	go func() {
 		defer func() {
 			if err := recover(); err != nil {
-				logger.ErrorCtx(ctx, "ding exec panic", "err", err, "stack", string(debug.Stack()))
+				logger.ErrorCtx(ctx, "qq exec panic", "err", err, "stack", string(debug.Stack()))
 			}
 		}()
 		
