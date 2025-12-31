@@ -141,7 +141,7 @@ func ExecPersonalQQ(c *db.Cron) {
 			Msg: &QQMessage{
 				GroupId:     int64(utils.ParseInt(groupId)),
 				MessageType: "group",
-				UserID:      int64(utils.ParseInt(c.CreateBy)),
+				UserID:      c.CreateBy,
 				Message: []MessageItem{
 					{
 						Type: "text",
@@ -165,7 +165,7 @@ func ExecPersonalQQ(c *db.Cron) {
 		t := &PersonalQQRobot{
 			Msg: &QQMessage{
 				MessageType: "private",
-				UserID:      int64(utils.ParseInt(targetId)),
+				UserID:      targetId,
 				Message: []MessageItem{
 					{
 						Type: "text",

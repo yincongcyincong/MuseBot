@@ -7,10 +7,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strconv"
 	"strings"
 	
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/json-iterator/go"
 	"github.com/yincongcyincong/MuseBot/conf"
 	"github.com/yincongcyincong/MuseBot/i18n"
 	"github.com/yincongcyincong/MuseBot/logger"
@@ -31,12 +31,12 @@ type QQMessage struct {
 	RawMessage    string        `json:"raw_message"`
 	RealID        int64         `json:"real_id"`
 	RealSeq       string        `json:"real_seq"`
-	SelfID        int64         `json:"self_id"`
+	SelfID        string        `json:"self_id"`
 	Sender        SenderInfo    `json:"sender"`
 	SubType       string        `json:"sub_type"`
 	TargetID      int64         `json:"target_id"`
 	Time          int64         `json:"time"`
-	UserID        int64         `json:"user_id"`
+	UserID        string        `json:"user_id"`
 }
 
 type MessageItem struct {
@@ -110,7 +110,7 @@ type PersonalQQRobot struct {
 
 func NewPersonalQQRobot(ctx context.Context, msgContent []byte) *PersonalQQRobot {
 	msg := new(QQMessage)
-	err := json.Unmarshal(msgContent, msg)
+	err := jsoniter.ConfigCompatibleWithStandardLibrary.Unmarshal(msgContent, msg)
 	if err != nil {
 		logger.ErrorCtx(ctx, "Unmarshal QQMessage error", "error", err)
 		return nil
@@ -404,7 +404,7 @@ func (q *PersonalQQRobot) GetMessageContent() (bool, error) {
 				return false, err
 			}
 		case "at":
-			isAt = v.Data.QQ == strconv.Itoa(int(q.Msg.SelfID))
+			isAt = v.Data.QQ == q.Msg.SelfID
 		}
 	}
 	if q.Command == "" && q.Prompt == "" && q.ImageContent == nil && q.AudioContent == nil {
