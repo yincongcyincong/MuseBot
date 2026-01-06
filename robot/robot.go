@@ -1834,7 +1834,7 @@ func (r *RobotInfo) InsertCron(cron, prompt string) error {
 		if q.Msg.MessageType != "group" {
 			targetId = userId
 		} else {
-			groupId = strconv.Itoa(int(q.Msg.GroupId))
+			groupId = q.Msg.GroupId
 		}
 		t = param.PersonalQQ
 	case *TelegramRobot:

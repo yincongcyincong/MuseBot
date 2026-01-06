@@ -11,6 +11,7 @@ import (
 	
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/json-iterator/go"
+	"github.com/json-iterator/go/extra"
 	"github.com/yincongcyincong/MuseBot/conf"
 	"github.com/yincongcyincong/MuseBot/i18n"
 	"github.com/yincongcyincong/MuseBot/logger"
@@ -18,9 +19,13 @@ import (
 	"github.com/yincongcyincong/MuseBot/utils"
 )
 
+func init() {
+	extra.RegisterFuzzyDecoders()
+}
+
 type QQMessage struct {
 	Font          int           `json:"font"`
-	GroupId       int64         `json:"group_id"`
+	GroupId       string        `json:"group_id"`
 	Message       []MessageItem `json:"message"`
 	MessageFormat string        `json:"message_format"`
 	MessageID     int64         `json:"message_id"`
