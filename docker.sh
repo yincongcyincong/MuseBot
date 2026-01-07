@@ -19,11 +19,12 @@ docker buildx build \
   --platform ${PLATFORMS} \
   -t ${DOCKER_HUB_REPO}:${VERSION} \
   -t ${DOCKER_HUB_REPO}:latest \
+  -t crpi-i1dsvpjijxpgjgbv.cn-hangzhou.personal.cr.aliyuncs.com/jackyin0822/musebot:latest \
   --push .
 
 
-docker buildx imagetools create \
-  --tag crpi-i1dsvpjijxpgjgbv.cn-hangzhou.personal.cr.aliyuncs.com/jackyin0822/musebot:latest \
-  jackyin0822/musebot:latest
+#docker buildx imagetools create \
+#  --tag crpi-i1dsvpjijxpgjgbv.cn-hangzhou.personal.cr.aliyuncs.com/jackyin0822/musebot:latest \
+#  jackyin0822/musebot:latest
 
 echo "✅ success"
