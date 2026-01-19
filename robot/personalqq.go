@@ -28,7 +28,7 @@ type QQMessage struct {
 	GroupId       string        `json:"group_id"`
 	Message       []MessageItem `json:"message"`
 	MessageFormat string        `json:"message_format"`
-	MessageID     int64         `json:"message_id"`
+	MessageID     string        `json:"message_id"`
 	MessageSeq    int64         `json:"message_seq"`
 	MessageType   string        `json:"message_type"`
 	PostType      string        `json:"post_type"`
