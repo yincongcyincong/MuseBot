@@ -58,7 +58,7 @@ type MessageItemData struct {
 type SenderInfo struct {
 	Card     string `json:"card"`
 	Nickname string `json:"nickname"`
-	UserID   int64  `json:"user_id"`
+	UserID   string `json:"user_id"`
 }
 
 // RawMessage 部分嵌套字段很多，以下是主要结构（可按需精简）

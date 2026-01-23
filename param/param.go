@@ -15,6 +15,8 @@ const (
 	Aliyun = "aliyun"
 	
 	Gemini                        = "gemini"
+	ModelGemini30Pro       string = "gemini-3-pro-preview"
+	ModelGemini30Flash     string = "gemini-3-flash-preview"
 	ModelGemini25Pro       string = "gemini-2.5-pro"
 	ModelGemini25Flash     string = "gemini-2.5-flash"
 	ModelGemini20Flash     string = "gemini-2.0-flash"
@@ -171,6 +173,8 @@ var (
 		ModelGemini20FlashLite: true,
 		ModelGemini15Pro:       true,
 		ModelGemini15Flash:     true,
+		ModelGemini30Flash:     true,
+		ModelGemini30Pro:       true,
 	}
 	
 	GeminiRecModels = map[string]bool{
