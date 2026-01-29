@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 	
 	"github.com/yincongcyincong/MuseBot/conf"
@@ -278,7 +279,7 @@ func GetGeminiClient(ctx context.Context) (*genai.Client, error) {
 	httpClient := utils.GetLLMProxyClient()
 	httpOption := genai.HTTPOptions{}
 	if conf.BaseConfInfo.CustomUrl != "" {
-		httpOption.BaseURL = conf.BaseConfInfo.CustomUrl
+		httpOption.BaseURL = strings.Trim(conf.BaseConfInfo.CustomUrl, "/v1")
 		httpOption.Headers = http.Header{
 			"Authorization": []string{"Bearer " + conf.BaseConfInfo.GeminiToken},
 		}
