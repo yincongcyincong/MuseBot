@@ -14,15 +14,11 @@ const (
 	AI302  = "302-ai"
 	Aliyun = "aliyun"
 	
-	Gemini                        = "gemini"
-	ModelGemini30Pro       string = "gemini-3-pro-preview"
-	ModelGemini30Flash     string = "gemini-3-flash-preview"
-	ModelGemini25Pro       string = "gemini-2.5-pro"
-	ModelGemini25Flash     string = "gemini-2.5-flash"
-	ModelGemini20Flash     string = "gemini-2.0-flash"
-	ModelGemini20FlashLite string = "gemini-2.0-flash-lite"
-	ModelGemini15Pro       string = "gemini-1.5-pro"
-	ModelGemini15Flash     string = "gemini-1.5-flash"
+	Gemini                    = "gemini"
+	ModelGemini30Pro   string = "gemini-3-pro-preview"
+	ModelGemini30Flash string = "gemini-3-flash-preview"
+	ModelGemini25Pro   string = "gemini-2.5-pro"
+	ModelGemini25Flash string = "gemini-2.5-flash"
 	
 	// 特定功能模型
 	ModelGeminiFlashPreviewTTS string = "gemini-flash-preview-tts"
@@ -167,20 +163,15 @@ var (
 	}
 	
 	GeminiModels = map[string]bool{
-		ModelGemini25Pro:       true,
-		ModelGemini25Flash:     true,
-		ModelGemini20Flash:     true,
-		ModelGemini20FlashLite: true,
-		ModelGemini15Pro:       true,
-		ModelGemini15Flash:     true,
-		ModelGemini30Flash:     true,
-		ModelGemini30Pro:       true,
+		ModelGemini25Pro:   true,
+		ModelGemini25Flash: true,
+		ModelGemini30Flash: true,
+		ModelGemini30Pro:   true,
 	}
 	
 	GeminiRecModels = map[string]bool{
 		ModelGemini25Pro:   true,
 		ModelGemini25Flash: true,
-		ModelGemini20Flash: true,
 	}
 	
 	GeminiTTSModels = map[string]bool{

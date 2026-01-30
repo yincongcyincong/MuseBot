@@ -17,9 +17,6 @@ const (
 	GoogleGemma3_12bIt                       = "google/gemma-3-12b-it"
 	GoogleGemma3_27bItFree                   = "google/gemma-3-27b-it:free"
 	GoogleGemma3_27bIt                       = "google/gemma-3-27b-it"
-	GoogleGemini2_0FlashLite001              = "google/gemini-2.0-flash-lite-001"
-	GoogleGemini2_0Flash001                  = "google/gemini-2.0-flash-001"
-	GoogleGemini2_0FlashExpFree              = "google/gemini-2.0-flash-exp:free"
 	GoogleGeminiFlash1_5_8b                  = "google/gemini-flash-1.5-8b"
 	GoogleGemini2_5ProExp03_25               = "google/gemini-2.5-pro-exp-03-25"
 	GoogleGemma2_27bIt                       = "google/gemma-2-27b-it"
@@ -37,10 +34,10 @@ const (
 	GooglePalm2CodechatBison                 = "google/palm-2-codechat-bison"
 	GoogleGemma2bIt                          = "google/gemma-2b-it"
 	GoogleGemma7bIt                          = "google/gemma-7b-it"
-
+	
 	// Sentientagi models
 	SentientagiDobbyMiniUnhingedPlusLlama3_1_8b = "sentientagi/dobby-mini-unhinged-plus-llama-3.1-8b"
-
+	
 	// Deepseek models
 	DeepseekDeepseekR1DistillQwen7b       = "deepseek/deepseek-r1-distill-qwen-7b"
 	DeepseekDeepseekR1_0528Qwen3_8bFree   = "deepseek/deepseek-r1-0528-qwen3-8b:free"
@@ -67,17 +64,17 @@ const (
 	DeepseekDeepseekChat                  = "deepseek/deepseek-chat"
 	DeepseekDeepseekChatV2_5              = "deepseek/deepseek-chat-v2.5"
 	DeepseekDeepseekCoder                 = "deepseek/deepseek-coder"
-
+	
 	// Sarvamai models
 	SarvamaiSarvamMFree = "sarvamai/sarvam-m:free"
-
+	
 	// Thedrummer models
 	ThedrummerValkyrie49bV1   = "thedrummer/valkyrie-49b-v1"
 	ThedrummerAnubisPro105bV1 = "thedrummer/anubis-pro-105b-v1"
 	ThedrummerSkyfall36bV2    = "thedrummer/skyfall-36b-v2"
 	ThedrummerUnslopnemo12b   = "thedrummer/unslopnemo-12b"
 	ThedrummerRocinante12b    = "thedrummer/rocinante-12b"
-
+	
 	// Anthropic models
 	AnthropicClaudeOpus4                 = "anthropic/claude-opus-4"
 	AnthropicClaudeSonnet4               = "anthropic/claude-sonnet-4"
@@ -109,7 +106,7 @@ const (
 	AnthropicClaude1                     = "anthropic/claude-1"
 	AnthropicClaude1_2                   = "anthropic/claude-1.2"
 	AnthropicClaudeInstant1_0            = "anthropic/claude-instant-1.0"
-
+	
 	// Mistralai models
 	MistralaiDevstralSmallFree               = "mistralai/devstral-small:free"
 	MistralaiDevstralSmall                   = "mistralai/devstral-small"
@@ -140,7 +137,7 @@ const (
 	MistralaiMixtral8x22bInstruct            = "mistralai/mixtral-8x22b-instruct"
 	MistralaiCodestralMamba                  = "mistralai/codestral-mamba"
 	MistralaiMixtral8x22b                    = "mistralai/mixtral-8x22b"
-
+	
 	// Arcee-ai models
 	ArceeAiCallerLarge      = "arcee-ai/caller-large"
 	ArceeAiSpotlight        = "arcee-ai/spotlight"
@@ -149,7 +146,7 @@ const (
 	ArceeAiCoderLarge       = "arcee-ai/coder-large"
 	ArceeAiVirtuosoMediumV2 = "arcee-ai/virtuoso-medium-v2"
 	ArceeAiArceeBlitz       = "arcee-ai/arcee-blitz"
-
+	
 	// Microsoft models
 	MicrosoftPhi4ReasoningPlusFree  = "microsoft/phi-4-reasoning-plus:free"
 	MicrosoftPhi4ReasoningPlus      = "microsoft/phi-4-reasoning-plus"
@@ -163,14 +160,14 @@ const (
 	MicrosoftPhi3Medium128kInstruct = "microsoft/phi-3-medium-128k-instruct"
 	MicrosoftWizardlm2_7b           = "microsoft/wizardlm-2-7b"
 	MicrosoftPhi3Medium4kInstruct   = "microsoft/phi-3-medium-4k-instruct"
-
+	
 	// Inception models
 	InceptionMercuryCoderSmallBeta = "inception/mercury-coder-small-beta"
-
+	
 	// Opengvlab models
 	OpengvlabInternvl3_14bFree = "opengvlab/internvl3-14b:free"
 	OpengvlabInternvl3_2bFree  = "opengvlab/internvl3-2b:free"
-
+	
 	// Meta-llama models
 	MetaLlamaLlamaGuard4_12b                = "meta-llama/llama-guard-4-12b"
 	MetaLlamaLlama3_3_8bInstructFree        = "meta-llama/llama-3.3-8b-instruct:free"
@@ -203,7 +200,7 @@ const (
 	MetaLlamaLlama2_13bChat                 = "meta-llama/llama-2-13b-chat"
 	MetaLlamaLlama3_8b                      = "meta-llama/llama-3-8b"
 	MetaLlamaLlama3_70b                     = "meta-llama/llama-3-70b"
-
+	
 	// Qwen models
 	QwenQwen3_30bA3bFree            = "qwen/qwen3-30b-a3b:free"
 	QwenQwen3_30bA3b                = "qwen/qwen3-30b-a3b"
@@ -249,10 +246,10 @@ const (
 	QwenQwen14bChat                 = "qwen/qwen-14b-chat"
 	QwenQwen7bChat                  = "qwen/qwen-7b-chat"
 	QwenQwen4bChat                  = "qwen/qwen-4b-chat"
-
+	
 	// Tngtech models
 	TngtechDeepseekR1tChimeraFree = "tngtech/deepseek-r1t-chimera:free"
-
+	
 	// Thudm models
 	ThudmGlmZ1Rumination32b = "thudm/glm-z1-rumination-32b"
 	ThudmGlmZ1_32bFree      = "thudm/glm-z1-32b:free"
@@ -261,7 +258,7 @@ const (
 	ThudmGlm4_32b           = "thudm/glm-4-32b"
 	ThudmGlmZ1_9b           = "thudm/glm-z1-9b"
 	ThudmGlm4_9b            = "thudm/glm-4-9b"
-
+	
 	// OpenAI models
 	OpenaiCodexMini              = "openai/codex-mini"
 	OpenaiO4MiniHigh             = "openai/o4-mini-high"
@@ -303,23 +300,23 @@ const (
 	OpenaiGpt4VisionPreview      = "openai/gpt-4-vision-preview"
 	OpenaiGpt4_32k               = "openai/gpt-4-32k"
 	OpenaiGpt4_32k0314           = "openai/gpt-4-32k-0314"
-
+	
 	// Eleutherai models
 	EleutheraiLlemma7b = "eleutherai/llemma_7b"
-
+	
 	// Alfredpros models
 	AlfredprosCodellama7bInstructSolidity = "alfredpros/codellama-7b-instruct-solidity"
-
+	
 	// Arliai models
 	ArliaiQwq32bArliaiRprV1Free = "arliai/qwq-32b-arliai-rpr-v1:free"
-
+	
 	// Agentica-org models
 	AgenticaOrgDeepcoder14bPreviewFree = "agentica-org/deepcoder-14b-preview:free"
-
+	
 	// Moonshotai models
 	MoonshotaiKimiVlA3bThinkingFree       = "moonshotai/kimi-vl-a3b-thinking:free"
 	MoonshotaiMoonlight16bA3bInstructFree = "moonshotai/moonlight-16b-a3b-instruct:free"
-
+	
 	// X-ai models
 	XAiGrok3MiniBeta   = "x-ai/grok-3-mini-beta"
 	XAiGrok3Beta       = "x-ai/grok-3-beta"
@@ -329,7 +326,7 @@ const (
 	XAiGrokBeta        = "x-ai/grok-beta"
 	XAiGrok2Mini       = "x-ai/grok-2-mini"
 	XAiGrok2           = "x-ai/grok-2"
-
+	
 	// Nvidia models
 	NvidiaLlama3_3NemotronSuper49bV1Free  = "nvidia/llama-3.3-nemotron-super-49b-v1:free"
 	NvidiaLlama3_3NemotronSuper49bV1      = "nvidia/llama-3.3-nemotron-super-49b-v1"
@@ -337,27 +334,27 @@ const (
 	NvidiaLlama3_1NemotronUltra253bV1     = "nvidia/llama-3.1-nemotron-ultra-253b-v1"
 	NvidiaLlama3_1Nemotron70bInstruct     = "nvidia/llama-3.1-nemotron-70b-instruct"
 	NvidiaLlama3_1NemotronNano8bV1        = "nvidia/llama-3.1-nemotron-nano-8b-v1"
-
+	
 	// All-hands models
 	AllHandsOpenhandsLm32bV0_1 = "all-hands/openhands-lm-32b-v0.1"
-
+	
 	// Scb10x models
 	Scb10xLlama3_1Typhoon2_70bInstruct = "scb10x/llama3.1-typhoon2-70b-instruct"
 	Scb10xLlama3_1Typhoon2_8bInstruct  = "scb10x/llama3.1-typhoon2-8b-instruct"
-
+	
 	// Featherless models
 	FeatherlessQwerky72bFree = "featherless/qwerky-72b:free"
-
+	
 	// Open-r1 models
 	OpenR1Olympiccoder32bFree = "open-r1/olympiccoder-32b:free"
-
+	
 	// Ai21 models
 	Ai21Jamba1_6Large = "ai21/jamba-1.6-large"
 	Ai21Jamba1_6Mini  = "ai21/jamba-1.6-mini"
 	Ai21Jamba1_5Mini  = "ai21/jamba-1.5-mini"
 	Ai21Jamba1_5Large = "ai21/jamba-1.5-large"
 	Ai21JambaInstruct = "ai21/jamba-instruct"
-
+	
 	// Cohere models
 	CohereCommandA            = "cohere/command-a"
 	CohereCommandR7b12_2024   = "cohere/command-r7b-12-2024"
@@ -368,10 +365,10 @@ const (
 	CohereCommand             = "cohere/command"
 	CohereCommandR            = "cohere/command-r"
 	CohereCommandR03_2024     = "cohere/command-r-03-2024"
-
+	
 	// Rekaai models
 	RekaaiRekaFlash3Free = "rekaai/reka-flash-3:free"
-
+	
 	// Perplexity models
 	PerplexitySonarReasoningPro            = "perplexity/sonar-reasoning-pro"
 	PerplexitySonarPro                     = "perplexity/sonar-pro"
@@ -385,27 +382,27 @@ const (
 	PerplexityLlama3SonarSmall32kChat      = "perplexity/llama-3-sonar-small-32k-chat"
 	PerplexityLlama3SonarSmall32kOnline    = "perplexity/llama-3-sonar-small-32k-online"
 	PerplexityLlama3SonarLarge32kChat      = "perplexity/llama-3-sonar-large-32k-chat"
-
+	
 	// Cognitivecomputations models
 	CognitivecomputationsDolphin3_0R1Mistral24bFree = "cognitivecomputations/dolphin3.0-r1-mistral-24b:free"
 	CognitivecomputationsDolphin3_0Mistral24bFree   = "cognitivecomputations/dolphin3.0-mistral-24b:free"
 	CognitivecomputationsDolphinMixtral8x22b        = "cognitivecomputations/dolphin-mixtral-8x22b"
 	CognitivecomputationsDolphinLlama3_70b          = "cognitivecomputations/dolphin-llama-3-70b"
 	CognitivecomputationsDolphinMixtral8x7b         = "cognitivecomputations/dolphin-mixtral-8x7b"
-
+	
 	// Aion-labs models
 	AionLabsAion1_0           = "aion-labs/aion-1.0"
 	AionLabsAion1_0Mini       = "aion-labs/aion-1.0-mini"
 	AionLabsAionRpLlama3_1_8b = "aion-labs/aion-rp-llama-3.1-8b"
-
+	
 	// Liquid models
 	LiquidLfm7b  = "liquid/lfm-7b"
 	LiquidLfm3b  = "liquid/lfm-3b"
 	LiquidLfm40b = "liquid/lfm-40b"
-
+	
 	// Minimax models
 	MinimaxMinimax01 = "minimax/minimax-01"
-
+	
 	// Sao10k models
 	Sao10kL3_3Euryale70b   = "sao10k/l3.3-euryale-70b"
 	Sao10kL3_1_70bHanamiX1 = "sao10k/l3.1-70b-hanami-x1"
@@ -414,23 +411,23 @@ const (
 	Sao10kL3Euryale70b     = "sao10k/l3-euryale-70b"
 	Sao10kFimbulvetr11bV2  = "sao10k/fimbulvetr-11b-v2"
 	Sao10kL3Stheno8b       = "sao10k/l3-stheno-8b"
-
+	
 	// Eva-unit-01 models
 	EvaUnit01EvaLlama3_33_70b = "eva-unit-01/eva-llama-3.33-70b"
 	EvaUnit01EvaQwen2_5_72b   = "eva-unit-01/eva-qwen-2.5-72b"
 	EvaUnit01EvaQwen2_5_32b   = "eva-unit-01/eva-qwen-2.5-32b"
 	EvaUnit01EvaQwen2_5_14b   = "eva-unit-01/eva-qwen-2.5-14b"
-
+	
 	// Infermatic models
 	InfermaticMnInferor12b = "infermatic/mn-inferor-12b"
-
+	
 	// Raifle models
 	RaifleSorcererlm8x22b = "raifle/sorcererlm-8x22b"
-
+	
 	// Anthracite-org models
 	AnthraciteOrgMagnumV4_72b = "anthracite-org/magnum-v4-72b"
 	AnthraciteOrgMagnumV2_72b = "anthracite-org/magnum-v2-72b"
-
+	
 	// Neversleep models
 	NeversleepLlama3_1Lumimaid70b         = "neversleep/llama-3.1-lumimaid-70b"
 	NeversleepLlama3_1Lumimaid8b          = "neversleep/llama-3.1-lumimaid-8b"
@@ -438,15 +435,15 @@ const (
 	NeversleepLlama3Lumimaid8b            = "neversleep/llama-3-lumimaid-8b"
 	NeversleepNoromaid20b                 = "neversleep/noromaid-20b"
 	NeversleepNoromaidMixtral8x7bInstruct = "neversleep/noromaid-mixtral-8x7b-instruct"
-
+	
 	// Inflection models
 	InflectionInflection3Productivity = "inflection/inflection-3-productivity"
 	InflectionInflection3Pi           = "inflection/inflection-3-pi"
-
+	
 	// Alpindale models
 	AlpindaleMagnum72b   = "alpindale/magnum-72b"
 	AlpindaleGoliath120b = "alpindale/goliath-120b"
-
+	
 	// Nousresearch models
 	NousresearchDeephermes3Mistral24bPreviewFree = "nousresearch/deephermes-3-mistral-24b-preview:free"
 	NousresearchDeephermes3Llama3_8bPreviewFree  = "nousresearch/deephermes-3-llama-3-8b-preview:free"
@@ -463,12 +460,12 @@ const (
 	NousresearchNousHermesLlama2_70b             = "nousresearch/nous-hermes-llama2-70b"
 	NousresearchNousHermesLlama2_13b             = "nousresearch/nous-hermes-llama2-13b"
 	NousresearchHermes2ThetaLlama3_8b            = "nousresearch/hermes-2-theta-llama-3-8b"
-
+	
 	// Amazon models
 	AmazonNovaLiteV1  = "amazon/nova-lite-v1"
 	AmazonNovaMicroV1 = "amazon/nova-micro-v1"
 	AmazonNovaProV1   = "amazon/nova-pro-v1"
-
+	
 	// 01-ai models
 	O1AiYiLarge       = "01-ai/yi-large"
 	O1AiYi1_5_34bChat = "01-ai/yi-1.5-34b-chat"
@@ -479,131 +476,131 @@ const (
 	O1AiYi34b         = "01-ai/yi-34b"
 	O1AiYi34bChat     = "01-ai/yi-34b-chat"
 	O1AiYi6b          = "01-ai/yi-6b"
-
+	
 	// TokyoTech-LLM models
 	TokyotechLlmLlama3_1Swallow8bInstructV0_3 = "tokyotech-llm/llama-3.1-swallow-8b-instruct-v0.3"
-
+	
 	// Openrouter models
 	OpenrouterOptimusAlpha = "openrouter/optimus-alpha"
 	OpenrouterQuasarAlpha  = "openrouter/quasar-alpha"
 	OpenrouterAuto         = "openrouter/auto"
 	OpenrouterCinematika7b = "openrouter/cinematika-7b"
-
+	
 	// Allenai models
 	AllenaiMolmo7bD               = "allenai/molmo-7b-d"
 	AllenaiOlmo2_0325_32bInstruct = "allenai/olmo-2-0325-32b-instruct"
 	AllenaiLlama3_1Tulu3_405b     = "allenai/llama-3.1-tulu-3-405b"
 	AllenaiOlmo7bInstruct         = "allenai/olmo-7b-instruct"
-
+	
 	// Bytedance-research models
 	BytedanceResearchUiTars72b = "bytedance-research/ui-tars-72b"
-
+	
 	// Steelskull models
 	SteelskullL3_3ElectraR1_70b = "steelskull/l3.3-electra-r1-70b"
-
+	
 	// Latitudegames models
 	LatitudegamesWayfarerLarge70bLlama3_3 = "latitudegames/wayfarer-large-70b-llama-3.3"
-
+	
 	// Inflatebot models
 	InflatebotMnMagMellR1 = "inflatebot/mn-mag-mell-r1"
-
+	
 	// Mattshumer models
 	MattshumerReflection70b = "mattshumer/reflection-70b"
-
+	
 	// Lynn models
 	LynnSoliloquyV3 = "lynn/soliloquy-v3"
 	LynnSoliloquyL3 = "lynn/soliloquy-l3"
-
+	
 	// Nvidia models (already defined, adding new ones)
 	NvidiaNemotron4_340bInstruct = "nvidia/nemotron-4-340b-instruct"
-
+	
 	// Bigcode models
 	BigcodeStarcoder2_15bInstruct = "bigcode/starcoder2-15b-instruct"
-
+	
 	// Openchat models
 	OpenchatOpenchat8b = "openchat/openchat-8b"
 	OpenchatOpenchat7b = "openchat/openchat-7b"
-
+	
 	// Snowflake models
 	SnowflakeSnowflakeArcticInstruct = "snowflake/snowflake-arctic-instruct"
-
+	
 	// Fireworks models
 	FireworksFirellava13b = "fireworks/firellava-13b"
-
+	
 	// Huggingfaceh4 models
 	Huggingfaceh4ZephyrOrpo141bA35b = "huggingfaceh4/zephyr-orpo-141b-a35b"
 	Huggingfaceh4Zephyr7bBeta       = "huggingfaceh4/zephyr-7b-beta"
-
+	
 	// Databricks models
 	DatabricksDbrxInstruct = "databricks/dbrx-instruct"
-
+	
 	// Recursal models
 	RecursalEagle7b        = "recursal/eagle-7b"
 	RecursalRwkv5_3bAiTown = "recursal/rwkv-5-3b-ai-town"
-
+	
 	// Rwkv models
 	RwkvRwkv5World3b = "rwkv/rwkv-5-world-3b"
-
+	
 	// Togethercomputer models
 	TogethercomputerStripedhyenaNous7b    = "togethercomputer/stripedhyena-nous-7b"
 	TogethercomputerStripedhyenaHessian7b = "togethercomputer/stripedhyena-hessian-7b"
-
+	
 	// Koboldai models
 	KoboldaiPsyfighter13b2 = "koboldai/psyfighter-13b-2"
-
+	
 	// Gryphe models
 	GrypheMythomist7b    = "gryphe/mythomist-7b"
 	GrypheMythomaxL2_13b = "gryphe/mythomax-l2-13b"
-
+	
 	// Jebcarter models
 	JebcarterPsyfighter13b = "jebcarter/psyfighter-13b"
-
+	
 	// Intel models
 	IntelNeuralChat7b = "intel/neural-chat-7b"
-
+	
 	// Teknium models
 	TekniumOpenhermes2_5Mistral7b = "teknium/openhermes-2.5-mistral-7b"
 	TekniumOpenhermes2Mistral7b   = "teknium/openhermes-2-mistral-7b"
-
+	
 	// Liuhaotian models
 	LiuhaotianLlavaYi34b = "liuhaotian/llava-yi-34b"
 	LiuhaotianLlava13b   = "liuhaotian/llava-13b"
-
+	
 	// Lizpreciatior models
 	LizpreciatiorLzlv70bFp16Hf = "lizpreciatior/lzlv-70b-fp16-hf"
-
+	
 	// Jondurbin models
 	JondurbinAiroborosL2_70b = "jondurbin/airoboros-l2-70b"
 	JondurbinBagel34b        = "jondurbin/bagel-34b"
-
+	
 	// Xwin-lm models
 	XwinLmXwinLm70b = "xwin-lm/xwin-lm-70b"
-
+	
 	// Migtissera models
 	MigtisseraSynthia70b = "migtissera/synthia-70b"
-
+	
 	// Phind models
 	PhindPhindCodellama34b = "phind/phind-codellama-34b"
-
+	
 	// Mancer models
 	MancerWeaver = "mancer/weaver"
-
+	
 	// Undi95 models
 	Undi95ToppyM7b        = "undi95/toppy-m-7b"
 	Undi95RemmSlerpL2_13b = "undi95/remm-slerp-l2-13b"
-
+	
 	// Austism models
 	AustismChronosHermes13b = "austism/chronos-hermes-13b"
-
+	
 	// Nothingiisreal models
 	NothingiisrealMnCeleste12b = "nothingiisreal/mn-celeste-12b"
-
+	
 	// Aetherwiing models
 	AetherwiingMnStarcannon12b = "aetherwiing/mn-starcannon-12b"
-
+	
 	// Sophosympatheia models
 	SophosympatheiaMidnightRose70b = "sophosympatheia/midnight-rose-70b"
-
+	
 	LLMGoogle    = "google"
 	LLMDeepseek  = "deepseek"
 	LLMOpenai    = "openai"
@@ -629,7 +626,7 @@ var (
 		LLMXAI:       true,
 		LLMNvidia:    true,
 	}
-
+	
 	OpenRouterModels = map[string]bool{
 		// Google models
 		GoogleGemini2_5ProPreview:                true,
@@ -666,10 +663,10 @@ var (
 		GooglePalm2CodechatBison:                 true,
 		GoogleGemma2bIt:                          true,
 		GoogleGemma7bIt:                          true,
-
+		
 		// Sentientagi models
 		SentientagiDobbyMiniUnhingedPlusLlama3_1_8b: true,
-
+		
 		// Deepseek models
 		DeepseekDeepseekR1DistillQwen7b:       true,
 		DeepseekDeepseekR1_0528Qwen3_8bFree:   true,
@@ -696,17 +693,17 @@ var (
 		DeepseekDeepseekChat:                  true,
 		DeepseekDeepseekChatV2_5:              true,
 		DeepseekDeepseekCoder:                 true,
-
+		
 		// Sarvamai models
 		SarvamaiSarvamMFree: true,
-
+		
 		// Thedrummer models
 		ThedrummerValkyrie49bV1:   true,
 		ThedrummerAnubisPro105bV1: true,
 		ThedrummerSkyfall36bV2:    true,
 		ThedrummerUnslopnemo12b:   true,
 		ThedrummerRocinante12b:    true,
-
+		
 		// Anthropic models
 		AnthropicClaudeOpus4:                 true,
 		AnthropicClaudeSonnet4:               true,
@@ -738,7 +735,7 @@ var (
 		AnthropicClaude1:                     true,
 		AnthropicClaude1_2:                   true,
 		AnthropicClaudeInstant1_0:            true,
-
+		
 		// Mistralai models
 		MistralaiDevstralSmallFree:               true,
 		MistralaiDevstralSmall:                   true,
@@ -769,7 +766,7 @@ var (
 		MistralaiMixtral8x22bInstruct:            true,
 		MistralaiCodestralMamba:                  true,
 		MistralaiMixtral8x22b:                    true,
-
+		
 		// Arcee-ai models
 		ArceeAiCallerLarge:      true,
 		ArceeAiSpotlight:        true,
@@ -778,7 +775,7 @@ var (
 		ArceeAiCoderLarge:       true,
 		ArceeAiVirtuosoMediumV2: true,
 		ArceeAiArceeBlitz:       true,
-
+		
 		// Microsoft models
 		MicrosoftPhi4ReasoningPlusFree:  true,
 		MicrosoftPhi4ReasoningPlus:      true,
@@ -792,14 +789,14 @@ var (
 		MicrosoftPhi3Medium128kInstruct: true,
 		MicrosoftWizardlm2_7b:           true,
 		MicrosoftPhi3Medium4kInstruct:   true,
-
+		
 		// Inception models
 		InceptionMercuryCoderSmallBeta: true,
-
+		
 		// Opengvlab models
 		OpengvlabInternvl3_14bFree: true,
 		OpengvlabInternvl3_2bFree:  true,
-
+		
 		// Meta-llama models
 		MetaLlamaLlamaGuard4_12b:                true,
 		MetaLlamaLlama3_3_8bInstructFree:        true,
@@ -832,7 +829,7 @@ var (
 		MetaLlamaLlama2_13bChat:                 true,
 		MetaLlamaLlama3_8b:                      true,
 		MetaLlamaLlama3_70b:                     true,
-
+		
 		// Qwen models
 		QwenQwen3_30bA3bFree:            true,
 		QwenQwen3_30bA3b:                true,
@@ -878,10 +875,10 @@ var (
 		QwenQwen14bChat:                 true,
 		QwenQwen7bChat:                  true,
 		QwenQwen4bChat:                  true,
-
+		
 		// Tngtech models
 		TngtechDeepseekR1tChimeraFree: true,
-
+		
 		// Thudm models
 		ThudmGlmZ1Rumination32b: true,
 		ThudmGlmZ1_32bFree:      true,
@@ -890,7 +887,7 @@ var (
 		ThudmGlm4_32b:           true,
 		ThudmGlmZ1_9b:           true,
 		ThudmGlm4_9b:            true,
-
+		
 		// OpenAI models
 		OpenaiCodexMini:              true,
 		OpenaiO4MiniHigh:             true,
@@ -932,23 +929,23 @@ var (
 		OpenaiGpt4VisionPreview:      true,
 		OpenaiGpt4_32k:               true,
 		OpenaiGpt4_32k0314:           true,
-
+		
 		// Eleutherai models
 		EleutheraiLlemma7b: true,
-
+		
 		// Alfredpros models
 		AlfredprosCodellama7bInstructSolidity: true,
-
+		
 		// Arliai models
 		ArliaiQwq32bArliaiRprV1Free: true,
-
+		
 		// Agentica-org models
 		AgenticaOrgDeepcoder14bPreviewFree: true,
-
+		
 		// Moonshotai models
 		MoonshotaiKimiVlA3bThinkingFree:       true,
 		MoonshotaiMoonlight16bA3bInstructFree: true,
-
+		
 		// X-ai models
 		XAiGrok3MiniBeta:   true,
 		XAiGrok3Beta:       true,
@@ -958,7 +955,7 @@ var (
 		XAiGrokBeta:        true,
 		XAiGrok2Mini:       true,
 		XAiGrok2:           true,
-
+		
 		// Nvidia models
 		NvidiaLlama3_3NemotronSuper49bV1Free:  true,
 		NvidiaLlama3_3NemotronSuper49bV1:      true,
@@ -966,27 +963,27 @@ var (
 		NvidiaLlama3_1NemotronUltra253bV1:     true,
 		NvidiaLlama3_1Nemotron70bInstruct:     true,
 		NvidiaLlama3_1NemotronNano8bV1:        true,
-
+		
 		// All-hands models
 		AllHandsOpenhandsLm32bV0_1: true,
-
+		
 		// Scb10x models
 		Scb10xLlama3_1Typhoon2_70bInstruct: true,
 		Scb10xLlama3_1Typhoon2_8bInstruct:  true,
-
+		
 		// Featherless models
 		FeatherlessQwerky72bFree: true,
-
+		
 		// Open-r1 models
 		OpenR1Olympiccoder32bFree: true,
-
+		
 		// Ai21 models
 		Ai21Jamba1_6Large: true,
 		Ai21Jamba1_6Mini:  true,
 		Ai21Jamba1_5Mini:  true,
 		Ai21Jamba1_5Large: true,
 		Ai21JambaInstruct: true,
-
+		
 		// Cohere models
 		CohereCommandA:            true,
 		CohereCommandR7b12_2024:   true,
@@ -997,10 +994,10 @@ var (
 		CohereCommand:             true,
 		CohereCommandR:            true,
 		CohereCommandR03_2024:     true,
-
+		
 		// Rekaai models
 		RekaaiRekaFlash3Free: true,
-
+		
 		// Perplexity models
 		PerplexitySonarReasoningPro:            true,
 		PerplexitySonarPro:                     true,
@@ -1014,27 +1011,27 @@ var (
 		PerplexityLlama3SonarSmall32kChat:      true,
 		PerplexityLlama3SonarSmall32kOnline:    true,
 		PerplexityLlama3SonarLarge32kChat:      true,
-
+		
 		// Cognitivecomputations models
 		CognitivecomputationsDolphin3_0R1Mistral24bFree: true,
 		CognitivecomputationsDolphin3_0Mistral24bFree:   true,
 		CognitivecomputationsDolphinMixtral8x22b:        true,
 		CognitivecomputationsDolphinLlama3_70b:          true,
 		CognitivecomputationsDolphinMixtral8x7b:         true,
-
+		
 		// Aion-labs models
 		AionLabsAion1_0:           true,
 		AionLabsAion1_0Mini:       true,
 		AionLabsAionRpLlama3_1_8b: true,
-
+		
 		// Liquid models
 		LiquidLfm7b:  true,
 		LiquidLfm3b:  true,
 		LiquidLfm40b: true,
-
+		
 		// Minimax models
 		MinimaxMinimax01: true,
-
+		
 		// Sao10k models
 		Sao10kL3_3Euryale70b:   true,
 		Sao10kL3_1_70bHanamiX1: true,
@@ -1043,23 +1040,23 @@ var (
 		Sao10kL3Euryale70b:     true,
 		Sao10kFimbulvetr11bV2:  true,
 		Sao10kL3Stheno8b:       true,
-
+		
 		// Eva-unit-01 models
 		EvaUnit01EvaLlama3_33_70b: true,
 		EvaUnit01EvaQwen2_5_72b:   true,
 		EvaUnit01EvaQwen2_5_32b:   true,
 		EvaUnit01EvaQwen2_5_14b:   true,
-
+		
 		// Infermatic models
 		InfermaticMnInferor12b: true,
-
+		
 		// Raifle models
 		RaifleSorcererlm8x22b: true,
-
+		
 		// Anthracite-org models
 		AnthraciteOrgMagnumV4_72b: true,
 		AnthraciteOrgMagnumV2_72b: true,
-
+		
 		// Neversleep models
 		NeversleepLlama3_1Lumimaid70b:         true,
 		NeversleepLlama3_1Lumimaid8b:          true,
@@ -1067,15 +1064,15 @@ var (
 		NeversleepLlama3Lumimaid8b:            true,
 		NeversleepNoromaid20b:                 true,
 		NeversleepNoromaidMixtral8x7bInstruct: true,
-
+		
 		// Inflection models
 		InflectionInflection3Productivity: true,
 		InflectionInflection3Pi:           true,
-
+		
 		// Alpindale models
 		AlpindaleMagnum72b:   true,
 		AlpindaleGoliath120b: true,
-
+		
 		// Nousresearch models
 		NousresearchDeephermes3Mistral24bPreviewFree: true,
 		NousresearchDeephermes3Llama3_8bPreviewFree:  true,
@@ -1092,12 +1089,12 @@ var (
 		NousresearchNousHermesLlama2_70b:             true,
 		NousresearchNousHermesLlama2_13b:             true,
 		NousresearchHermes2ThetaLlama3_8b:            true,
-
+		
 		// Amazon models
 		AmazonNovaLiteV1:  true,
 		AmazonNovaMicroV1: true,
 		AmazonNovaProV1:   true,
-
+		
 		// 01-ai models
 		O1AiYiLarge:       true,
 		O1AiYi1_5_34bChat: true,
@@ -1108,128 +1105,128 @@ var (
 		O1AiYi34b:         true,
 		O1AiYi34bChat:     true,
 		O1AiYi6b:          true,
-
+		
 		// TokyoTech-LLM models
 		TokyotechLlmLlama3_1Swallow8bInstructV0_3: true,
-
+		
 		// Openrouter models
 		OpenrouterOptimusAlpha: true,
 		OpenrouterQuasarAlpha:  true,
 		OpenrouterAuto:         true,
 		OpenrouterCinematika7b: true,
-
+		
 		// Allenai models
 		AllenaiMolmo7bD:               true,
 		AllenaiOlmo2_0325_32bInstruct: true,
 		AllenaiLlama3_1Tulu3_405b:     true,
 		AllenaiOlmo7bInstruct:         true,
-
+		
 		// Bytedance-research models
 		BytedanceResearchUiTars72b: true,
-
+		
 		// Steelskull models
 		SteelskullL3_3ElectraR1_70b: true,
-
+		
 		// Latitudegames models
 		LatitudegamesWayfarerLarge70bLlama3_3: true,
-
+		
 		// Inflatebot models
 		InflatebotMnMagMellR1: true,
-
+		
 		// Mattshumer models
 		MattshumerReflection70b: true,
-
+		
 		// Lynn models
 		LynnSoliloquyV3: true,
 		LynnSoliloquyL3: true,
-
+		
 		// Nvidia models
 		NvidiaNemotron4_340bInstruct: true,
-
+		
 		// Bigcode models
 		BigcodeStarcoder2_15bInstruct: true,
-
+		
 		// Openchat models
 		OpenchatOpenchat8b: true,
 		OpenchatOpenchat7b: true,
-
+		
 		// Snowflake models
 		SnowflakeSnowflakeArcticInstruct: true,
-
+		
 		// Fireworks models
 		FireworksFirellava13b: true,
-
+		
 		// Huggingfaceh4 models
 		Huggingfaceh4ZephyrOrpo141bA35b: true,
 		Huggingfaceh4Zephyr7bBeta:       true,
-
+		
 		// Databricks models
 		DatabricksDbrxInstruct: true,
-
+		
 		// Recursal models
 		RecursalEagle7b:        true,
 		RecursalRwkv5_3bAiTown: true,
-
+		
 		// Rwkv models
 		RwkvRwkv5World3b: true,
-
+		
 		// Togethercomputer models
 		TogethercomputerStripedhyenaNous7b:    true,
 		TogethercomputerStripedhyenaHessian7b: true,
-
+		
 		// Koboldai models
 		KoboldaiPsyfighter13b2: true,
-
+		
 		// Gryphe models
 		GrypheMythomist7b:    true,
 		GrypheMythomaxL2_13b: true,
-
+		
 		// Jebcarter models
 		JebcarterPsyfighter13b: true,
-
+		
 		// Intel models
 		IntelNeuralChat7b: true,
-
+		
 		// Teknium models
 		TekniumOpenhermes2_5Mistral7b: true,
 		TekniumOpenhermes2Mistral7b:   true,
-
+		
 		// Liuhaotian models
 		LiuhaotianLlavaYi34b: true,
 		LiuhaotianLlava13b:   true,
-
+		
 		// Lizpreciatior models
 		LizpreciatiorLzlv70bFp16Hf: true,
-
+		
 		// Jondurbin models
 		JondurbinAiroborosL2_70b: true,
 		JondurbinBagel34b:        true,
-
+		
 		// Xwin-lm models
 		XwinLmXwinLm70b: true,
-
+		
 		// Migtissera models
 		MigtisseraSynthia70b: true,
-
+		
 		// Phind models
 		PhindPhindCodellama34b: true,
-
+		
 		// Mancer models
 		MancerWeaver: true,
-
+		
 		// Undi95 models
 		Undi95ToppyM7b:        true,
 		Undi95RemmSlerpL2_13b: true,
-
+		
 		// Austism models
 		AustismChronosHermes13b: true,
-
+		
 		// Nothingiisreal models
 		NothingiisrealMnCeleste12b: true,
-
+		
 		// Aetherwiing models
 		AetherwiingMnStarcannon12b: true,
-
+		
 		// Sophosympatheia models
 		SophosympatheiaMidnightRose70b: true,
 	}
