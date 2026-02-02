@@ -74,7 +74,7 @@ func (d *OpenAIReq) GetModel(l *LLM) {
 			l.Model = model
 		}
 	case param.Gemini:
-		l.Model = param.ModelGemini20Flash
+		l.Model = param.ModelGemini25Flash
 		if userInfo != nil && model != "" && param.GeminiModels[model] {
 			l.Model = model
 		}
@@ -283,7 +283,7 @@ func (d *OpenAIReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 	for i := 0; i < conf.BaseConfInfo.LLMRetryTimes; i++ {
 		response, err = client.CreateChatCompletion(ctx, request)
 		if err != nil {
-			logger.ErrorCtx(l.Ctx, "ChatCompletionStream error", "updateMsgID", l.MsgId, "err", err)
+			time.Sleep(time.Duration(conf.BaseConfInfo.LLMRetryInterval) * time.Millisecond)
 			continue
 		}
 		break
@@ -410,7 +410,7 @@ func GenerateOpenAIImg(ctx context.Context, prompt string, imageContent []byte) 
 			})
 			
 			if err != nil {
-				logger.ErrorCtx(ctx, "CreateImage error", "err", err)
+				time.Sleep(time.Duration(conf.BaseConfInfo.LLMRetryInterval) * time.Millisecond)
 				continue
 			}
 			break
@@ -428,7 +428,7 @@ func GenerateOpenAIImg(ctx context.Context, prompt string, imageContent []byte) 
 			)
 			
 			if err != nil {
-				logger.ErrorCtx(ctx, "CreateImage error", "err", err)
+				time.Sleep(time.Duration(conf.BaseConfInfo.LLMRetryInterval) * time.Millisecond)
 				continue
 			}
 			break
@@ -484,7 +484,7 @@ func GenerateOpenAIText(ctx context.Context, audioContent []byte) (string, error
 	for i := 0; i < conf.BaseConfInfo.LLMRetryTimes; i++ {
 		resp, err = client.CreateTranscription(ctx, req)
 		if err != nil {
-			logger.ErrorCtx(ctx, "CreateTranscription error", "err", err)
+			time.Sleep(time.Duration(conf.BaseConfInfo.LLMRetryInterval) * time.Millisecond)
 			continue
 		}
 		break
@@ -523,7 +523,7 @@ func OpenAITTS(ctx context.Context, content, encoding string) ([]byte, int, int,
 			Speed:          1.0,
 		})
 		if err != nil {
-			logger.ErrorCtx(ctx, "CreateSpeech error", "err", err)
+			time.Sleep(time.Duration(conf.BaseConfInfo.LLMRetryInterval) * time.Millisecond)
 			continue
 		}
 		break

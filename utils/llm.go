@@ -158,7 +158,7 @@ func GetTxtModel(t string) string {
 	case param.DeepSeek:
 		return godeepseek.DeepSeekChat
 	case param.Gemini:
-		return param.ModelGemini20Flash
+		return param.ModelGemini25Flash
 	case param.OpenAi:
 		return openai.GPT3Dot5Turbo
 	case param.OpenRouter:
@@ -368,7 +368,7 @@ func GetUsingRecModel(ty string, model string) string {
 		if param.GeminiRecModels[model] {
 			return model
 		}
-		return param.ModelGemini20Flash
+		return param.ModelGemini25Flash
 	case param.Aliyun:
 		if param.AliyunRecModels[model] {
 			return model
@@ -395,7 +395,7 @@ func GetUsingTxtModel(ty string, model string) string {
 		if param.GeminiModels[model] {
 			return model
 		}
-		return param.ModelGemini20Flash
+		return param.ModelGemini25Flash
 	case param.Vol:
 		if param.VolModels[model] {
 			return model

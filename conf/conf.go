@@ -77,6 +77,7 @@ type BaseConf struct {
 	SendMcpRes        bool   `json:"send_mcp_res"`
 	DefaultModel      string `json:"default_model"`
 	LLMRetryTimes     int    `json:"llm_retry_times"`
+	LLMRetryInterval  int    `json:"llm_retry_interval"`
 	LLMOptionParam    bool   `json:"llm_option_param"`
 	ImagePath         string `json:"image_path"`
 	IsStreaming       bool   `json:"is_streaming"`
@@ -124,7 +125,7 @@ func InitConf() {
 	flag.StringVar(&BaseConfInfo.QQOneBotReceiveToken, "qq_one_bot_receive_token", "MuseBot", "onebot receive token")
 	flag.StringVar(&BaseConfInfo.QQOneBotSendToken, "qq_one_bot_send_token", "MuseBot", "onebot send token")
 	flag.StringVar(&BaseConfInfo.QQOneBotHttpServer, "qq_one_bot_http_server", "http://127.0.0.1:3000", "onebot http server")
-	flag.BoolVar(&BaseConfInfo.SmartMode, "smart_mode", true, "Smart mode")
+	flag.BoolVar(&BaseConfInfo.SmartMode, "smart_mode", false, "Smart mode")
 	flag.IntVar(&BaseConfInfo.ContextExpireTime, "context_expire_time", 86400, "Context expire time")
 	
 	flag.StringVar(&BaseConfInfo.DeepseekToken, "deepseek_token", "", "deepseek auth token")
@@ -165,6 +166,7 @@ func InitConf() {
 	flag.BoolVar(&BaseConfInfo.SendMcpRes, "send_mcp_res", false, "send mcp res")
 	flag.StringVar(&BaseConfInfo.DefaultModel, "default_model", "", "default model")
 	flag.IntVar(&BaseConfInfo.LLMRetryTimes, "llm_retry_times", 3, "llm retry times")
+	flag.IntVar(&BaseConfInfo.LLMRetryInterval, "llm_retry_interval", 100, "llm retry interval")
 	flag.BoolVar(&BaseConfInfo.LLMOptionParam, "llm_option_param", false, "llm option param")
 	flag.BoolVar(&BaseConfInfo.IsStreaming, "is_streaming", false, "is streaming")
 	
@@ -429,6 +431,10 @@ func InitConf() {
 		BaseConfInfo.LLMRetryTimes, _ = strconv.Atoi(os.Getenv("LLM_RETRY_TIMES"))
 	}
 	
+	if os.Getenv("LLM_RETRY_INTERVAL") != "" {
+		BaseConfInfo.LLMRetryInterval, _ = strconv.Atoi(os.Getenv("LLM_RETRY_INTERVAL"))
+	}
+	
 	if os.Getenv("LLM_OPTION_PARAM") != "" {
 		BaseConfInfo.LLMOptionParam = os.Getenv("LLM_OPTION_PARAM") == "true"
 	}
@@ -528,6 +534,7 @@ func logConf(allowedUserIds, allowedGroupIds string) {
 	logger.Info("CONF", "SendMcpRes", BaseConfInfo.SendMcpRes)
 	logger.Info("CONF", "DefaultModel", BaseConfInfo.DefaultModel)
 	logger.Info("CONF", "LLMRetryTimes", BaseConfInfo.LLMRetryTimes)
+	logger.Info("CONF", "LLMRetryInterval", BaseConfInfo.LLMRetryInterval)
 	logger.Info("CONF", "LLMOptionParam", BaseConfInfo.LLMOptionParam)
 	logger.Info("CONF", "ImagePath", BaseConfInfo.ImagePath)
 	logger.Info("CONF", "IsStreaming", BaseConfInfo.IsStreaming)

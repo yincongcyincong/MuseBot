@@ -64,7 +64,7 @@ func GenerateGeminiImg(ctx context.Context, prompt string, imageContent []byte) 
 		)
 		
 		if err != nil {
-			logger.ErrorCtx(ctx, "generate image fail", "err", err)
+			time.Sleep(time.Duration(conf.BaseConfInfo.LLMRetryInterval) * time.Millisecond)
 			continue
 		}
 		break
@@ -113,7 +113,7 @@ func GenerateGeminiVideo(ctx context.Context, prompt string, image []byte) ([]by
 			geminiImage,
 			&genai.GenerateVideosConfig{})
 		if err != nil {
-			logger.ErrorCtx(ctx, "generate video fail", "err", err)
+			time.Sleep(time.Duration(conf.BaseConfInfo.LLMRetryInterval) * time.Millisecond)
 			continue
 		}
 		break
@@ -191,7 +191,7 @@ func GenerateGeminiText(ctx context.Context, audioContent []byte) (string, int, 
 		)
 		
 		if err != nil || result == nil {
-			logger.ErrorCtx(ctx, "generate text fail", "err", err)
+			time.Sleep(time.Duration(conf.BaseConfInfo.LLMRetryInterval) * time.Millisecond)
 			continue
 		}
 		break
@@ -247,7 +247,7 @@ func GeminiTTS(ctx context.Context, content, encoding string) ([]byte, int, int,
 		)
 		
 		if err != nil {
-			logger.ErrorCtx(ctx, "generate audio fail", "err", err)
+			time.Sleep(time.Duration(conf.BaseConfInfo.LLMRetryInterval) * time.Millisecond)
 			continue
 		}
 		break

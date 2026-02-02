@@ -82,7 +82,7 @@ func (o OllamaReq) Send(ctx context.Context, l *LLM) error {
 	for i := 0; i < conf.BaseConfInfo.LLMRetryTimes; i++ {
 		stream, err = requestDeepseek(ctx, client, request)
 		if err != nil {
-			logger.ErrorCtx(l.Ctx, "ChatCompletionStream error", "updateMsgID", l.MsgId, "err", err)
+			time.Sleep(time.Duration(conf.BaseConfInfo.LLMRetryInterval) * time.Millisecond)
 			continue
 		}
 		break
@@ -227,7 +227,7 @@ func (o OllamaReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 	for i := 0; i < conf.BaseConfInfo.LLMRetryTimes; i++ {
 		response, err = client.CreateChatCompletion(ctx, request)
 		if err != nil {
-			logger.ErrorCtx(l.Ctx, "ChatCompletionStream error", "updateMsgID", l.MsgId, "err", err)
+			time.Sleep(time.Duration(conf.BaseConfInfo.LLMRetryInterval) * time.Millisecond)
 			continue
 		}
 		break

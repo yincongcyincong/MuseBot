@@ -93,7 +93,7 @@ func GenerateMixImg(ctx context.Context, prompt string, imageContent []byte) ([]
 	for i := 0; i < conf.BaseConfInfo.LLMRetryTimes; i++ {
 		response, err = client.CreateChatCompletion(ctx, request)
 		if err != nil {
-			logger.ErrorCtx(ctx, "create chat completion fail", "err", err)
+			time.Sleep(time.Duration(conf.BaseConfInfo.LLMRetryInterval) * time.Millisecond)
 			continue
 		}
 		break
@@ -210,7 +210,7 @@ func Generate302AIVideo(ctx context.Context, prompt string, image []byte) (strin
 	for i := 0; i < conf.BaseConfInfo.LLMRetryTimes; i++ {
 		res, err = httpClient.Do(req)
 		if err != nil {
-			logger.ErrorCtx(ctx, "failed to call create API:", "err", err)
+			time.Sleep(time.Duration(conf.BaseConfInfo.LLMRetryInterval) * time.Millisecond)
 			continue
 		}
 		break
