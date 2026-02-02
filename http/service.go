@@ -162,6 +162,6 @@ func Log(w http.ResponseWriter, r *http.Request) {
 
 func Stop(w http.ResponseWriter, r *http.Request) {
 	robot.RobotControl.Cancel()
-	time.Sleep(100 * time.Millisecond)
+	time.Sleep(time.Duration(conf.BaseConfInfo.LLMRetryInterval) * time.Millisecond)
 	os.Exit(0)
 }

@@ -127,7 +127,7 @@ func GenerateAliyunImg(ctx context.Context, prompt string, imageContent []byte) 
 	for i := 0; i < conf.BaseConfInfo.LLMRetryTimes; i++ {
 		resp, err = client.Do(req)
 		if err != nil {
-			logger.ErrorCtx(ctx, "create image fail", "err", err)
+			time.Sleep(time.Duration(conf.BaseConfInfo.LLMRetryInterval) * time.Millisecond)
 			continue
 		}
 		break
@@ -232,7 +232,7 @@ func GenerateAliyunVideo(ctx context.Context, prompt string, image []byte) (stri
 	for i := 0; i < conf.BaseConfInfo.LLMRetryTimes; i++ {
 		resp, err = client.Do(req)
 		if err != nil {
-			logger.ErrorCtx(ctx, "create video fail", "err", err)
+			time.Sleep(time.Duration(conf.BaseConfInfo.LLMRetryInterval) * time.Millisecond)
 			continue
 		}
 		break
@@ -352,7 +352,7 @@ func GenerateAliyunText(ctx context.Context, audioContent []byte) (string, int, 
 	for i := 0; i < conf.BaseConfInfo.LLMRetryTimes; i++ {
 		resp, err = client.Do(req)
 		if err != nil {
-			logger.ErrorCtx(ctx, "create video fail", "err", err)
+			time.Sleep(time.Duration(conf.BaseConfInfo.LLMRetryInterval) * time.Millisecond)
 			continue
 		}
 		break
@@ -436,7 +436,7 @@ func AliyunTTS(ctx context.Context, text, encoding string) ([]byte, int, int, er
 	for i := 0; i < conf.BaseConfInfo.LLMRetryTimes; i++ {
 		resp, err = client.Do(req)
 		if err != nil {
-			logger.ErrorCtx(ctx, "create video fail", "err", err)
+			time.Sleep(time.Duration(conf.BaseConfInfo.LLMRetryInterval) * time.Millisecond)
 			continue
 		}
 		break

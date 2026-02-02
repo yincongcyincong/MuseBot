@@ -63,7 +63,7 @@ func GenerateVolImg(ctx context.Context, prompt string, imageContent []byte) (st
 	for i := 0; i < conf.BaseConfInfo.LLMRetryTimes; i++ {
 		resp, _, err = visual.DefaultInstance.CVProcess(reqBody)
 		if err != nil {
-			logger.ErrorCtx(ctx, "request img api fail", "err", err)
+			time.Sleep(time.Duration(conf.BaseConfInfo.LLMRetryInterval) * time.Millisecond)
 			continue
 		}
 		break
@@ -138,7 +138,7 @@ func GenerateVolVideo(ctx context.Context, prompt string, imageContent []byte) (
 			Content: contents,
 		})
 		if err != nil {
-			logger.ErrorCtx(ctx, "request create video api fail", "err", err)
+			time.Sleep(time.Duration(conf.BaseConfInfo.LLMRetryInterval) * time.Millisecond)
 			continue
 		}
 		break
@@ -249,7 +249,7 @@ func VolTTS(ctx context.Context, text, userId, encoding string) ([]byte, int, in
 	for i := 0; i < conf.BaseConfInfo.LLMRetryTimes; i++ {
 		resp, err = httpClient.Do(req)
 		if err != nil {
-			logger.ErrorCtx(ctx, "httpClient.Do error", "err", err)
+			time.Sleep(time.Duration(conf.BaseConfInfo.LLMRetryInterval) * time.Millisecond)
 			continue
 		}
 		break
