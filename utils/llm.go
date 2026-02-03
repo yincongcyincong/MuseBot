@@ -321,7 +321,7 @@ func GetUsingImgModel(ty string, model string) string {
 		if param.GeminiImageModels[model] {
 			return model
 		}
-		return param.Gemini2_5FlashPreview
+		return param.GeminiImageGenV2_5
 	case param.Aliyun:
 		if param.AliyunImageModels[model] {
 			return model

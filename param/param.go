@@ -76,8 +76,8 @@ const (
 	
 	DefaultContextToken = 128000
 	
-	Gemini2_5FlashPreview    = "gemini-2.5-flash-image-preview"
 	GeminiImageGenV2_5       = "gemini-2.5-flash-image"
+	GeminiImage3Pro          = "gemini-3-pro-image-preview"
 	Imagen3_0Generate002     = "imagen-3.0-generate-002"
 	Imagen4_0Generate001     = "imagen-4.0-generate-001"
 	Imagen4_0FastGenerate002 = "imagen-4.0-fast-generate-001"
@@ -237,7 +237,7 @@ var (
 		GeminiImageGenV2_5:       true,
 		Imagen3_0Generate002:     true,
 		Imagen4_0Generate001:     true,
-		Gemini2_5FlashPreview:    true,
+		GeminiImage3Pro:          true,
 	}
 	
 	DeepseekModels = map[string]bool{
