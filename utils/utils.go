@@ -265,25 +265,40 @@ func MapKeysToString(input interface{}) string {
 	return strings.Join(keyStrs, ",")
 }
 
-func DownloadFile(url string) ([]byte, error) {
-	if url == "" {
+func DownloadFile(urlStr string) ([]byte, error) {
+	if urlStr == "" {
 		return nil, errors.New("url is empty")
 	}
 	
-	client := GetRobotProxyClient()
+	// 解析 URL 以判断协议
+	parsedURL, err := url.Parse(urlStr)
+	if err != nil {
+		return nil, errors.New("invalid URL format: " + err.Error())
+	}
 	
-	resp, err := client.Get(url)
+	// 处理 file:// 协议
+	if parsedURL.Scheme == "file" {
+		// 去除 "file://" 前缀，得到本地文件路径
+		filePath := strings.TrimPrefix(urlStr, "file://")
+		// 对于 Windows 路径可能需要额外处理，但你的路径是 macOS/Linux 格式
+		data, err := os.ReadFile(filePath)
+		if err != nil {
+			return nil, errors.New("failed to read local file: " + err.Error())
+		}
+		return data, nil
+	}
+	
+	client := GetRobotProxyClient()
+	resp, err := client.Get(urlStr)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 	
-	// 检查 HTTP 状态码
 	if resp.StatusCode != http.StatusOK {
 		return nil, errors.New("failed to download file: " + resp.Status)
 	}
 	
-	// 读取响应体内容
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
