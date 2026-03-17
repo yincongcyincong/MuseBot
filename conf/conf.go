@@ -347,8 +347,8 @@ func InitConf() {
 		BaseConfInfo.HTTPHost = os.Getenv("HTTP_HOST")
 	}
 	
-	if os.Getenv("USE_TOOLS") == "false" {
-		BaseConfInfo.UseTools = false
+	if os.Getenv("USE_TOOLS") == "true" {
+		BaseConfInfo.UseTools = true
 	}
 	
 	if os.Getenv("OPENAI_TOKEN") != "" {

@@ -334,3 +334,9 @@ type ContextState struct {
 	SkipCheck bool
 	UseRecord bool
 }
+
+type MCPResp struct {
+	Type     string `json:"type"`
+	Data     string `json:"data"`
+	MimeType string `json:"mimeType"`
+}
