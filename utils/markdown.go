@@ -66,7 +66,7 @@ func ExtractContentBlocks(ctx context.Context, sourceText string, textFunc func(
 			media = sourceText[mediaStart:mediaEnd]
 		}
 		
-		if strings.HasPrefix(media, "http") {
+		if strings.HasPrefix(media, "http") || strings.HasPrefix(media, "file") {
 			mediaType := "image"
 			if isVideoURL(media) {
 				mediaType = "video"

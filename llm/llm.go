@@ -3,8 +3,11 @@ package llm
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"html/template"
+	"regexp"
+	"strings"
 	"time"
 	
 	godeepseek "github.com/cohesion-org/deepseek-go"
@@ -170,8 +173,8 @@ func NewLLM(opts ...Option) *LLM {
 	return l
 }
 
-func (l *LLM) DirectSendMsg(content string) {
-	if len([]byte(content)) > l.PerMsgLen {
+func (l *LLM) DirectSendMsg(content string, ignoreLen bool) {
+	if !ignoreLen && len([]byte(content)) > l.PerMsgLen {
 		content = string([]byte(content)[:l.PerMsgLen])
 	}
 	
@@ -399,11 +402,27 @@ func (l *LLM) ExecMcpReq(ctx context.Context, funcName string, property map[stri
 	logger.InfoCtx(ctx, "get mcp", "function", funcName, "argument", property, "res", toolsData)
 	
 	if conf.BaseConfInfo.SendMcpRes {
+		// First use regex to match JSON with "type" field, extract it, then parse JSON to check if it's an image
+		jsonRegex := regexp.MustCompile(`(\{\s*"type"\s*:[\s\S]*?\})`)
+		ignoreLen := false
+		for _, match := range jsonRegex.FindAllString(toolsData, -1) {
+			if len(match) < 1 {
+				continue
+			}
+			jsonStr := match
+			mcpResp := new(param.MCPResp)
+			if err := json.Unmarshal([]byte(jsonStr), mcpResp); err == nil && mcpResp.Type == "image" {
+				markdown := "![image](data:" + mcpResp.MimeType + ";base64," + mcpResp.Data + ")"
+				toolsData = strings.Replace(toolsData, jsonStr, markdown, 1)
+				ignoreLen = true
+			}
+		}
+		
 		l.DirectSendMsg(i18n.GetMessage("send_mcp_info", map[string]interface{}{
 			"function_name": funcName,
 			"request_args":  property,
 			"response":      toolsData,
-		}))
+		}), ignoreLen)
 	}
 	
 	return toolsData, nil

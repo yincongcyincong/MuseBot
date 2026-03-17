@@ -106,7 +106,7 @@ func (d *LLMTaskReq) ExecuteTask() error {
 		return err
 	}
 	
-	llm.DirectSendMsg(c)
+	llm.DirectSendMsg(c, false)
 	llm.LLMClient.GetMessage(openai.ChatMessageRoleAssistant, c)
 	err = d.loopTask(d.Ctx, plans, c, llm, 0)
 	if err != nil {

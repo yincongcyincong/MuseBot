@@ -60,7 +60,7 @@ func (d *LLMTaskReq) ExecuteMcp() error {
 		}
 	}
 	
-	llm.DirectSendMsg(c)
+	llm.DirectSendMsg(c, false)
 	logger.InfoCtx(d.Ctx, "mcp plan", "plan", mcpResult)
 	
 	// execute mcp request
