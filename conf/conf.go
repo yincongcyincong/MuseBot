@@ -75,6 +75,7 @@ type BaseConf struct {
 	ContextExpireTime int    `json:"context_expire_time"`
 	Powered           string `json:"powered"`
 	SendMcpRes        bool   `json:"send_mcp_res"`
+	SendMcpMediaToLLM bool   `json:"send_mcp_media_to_llm"`
 	DefaultModel      string `json:"default_model"`
 	LLMRetryTimes     int    `json:"llm_retry_times"`
 	LLMRetryInterval  int    `json:"llm_retry_interval"`
@@ -164,6 +165,7 @@ func InitConf() {
 	flag.StringVar(&BaseConfInfo.KeyFile, "key_file", "", "secret key file")
 	flag.StringVar(&BaseConfInfo.CaFile, "ca_file", "", "ca file")
 	flag.BoolVar(&BaseConfInfo.SendMcpRes, "send_mcp_res", false, "send mcp res")
+	flag.BoolVar(&BaseConfInfo.SendMcpMediaToLLM, "send_mcp_media_to_llm", false, "send mcp media to llm")
 	flag.StringVar(&BaseConfInfo.DefaultModel, "default_model", "", "default model")
 	flag.IntVar(&BaseConfInfo.LLMRetryTimes, "llm_retry_times", 3, "llm retry times")
 	flag.IntVar(&BaseConfInfo.LLMRetryInterval, "llm_retry_interval", 100, "llm retry interval")
@@ -447,6 +449,10 @@ func InitConf() {
 		BaseConfInfo.IsStreaming = os.Getenv("IS_STREAMING") == "true"
 	}
 	
+	if os.Getenv("SEND_MCP_MEDIA_TO_LLM") == "true" {
+		BaseConfInfo.SendMcpMediaToLLM = true
+	}
+	
 	EnvAudioConf()
 	EnvRagConf()
 	EnvLLMConf()
@@ -538,6 +544,7 @@ func logConf(allowedUserIds, allowedGroupIds string) {
 	logger.Info("CONF", "LLMOptionParam", BaseConfInfo.LLMOptionParam)
 	logger.Info("CONF", "ImagePath", BaseConfInfo.ImagePath)
 	logger.Info("CONF", "IsStreaming", BaseConfInfo.IsStreaming)
+	logger.Info("CONF", "SendMcpMediaToLLM", BaseConfInfo.SendMcpMediaToLLM)
 	
 	logger.Info("AUDIO_CONF", "AudioAppID", AudioConfInfo.VolAudioAppID)
 	logger.Info("AUDIO_CONF", "AudioToken", AudioConfInfo.VolAudioToken)

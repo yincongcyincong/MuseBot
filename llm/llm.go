@@ -405,6 +405,7 @@ func (l *LLM) ExecMcpReq(ctx context.Context, funcName string, property map[stri
 		// First use regex to match JSON with "type" field, extract it, then parse JSON to check if it's an image
 		jsonRegex := regexp.MustCompile(`(\{\s*"type"\s*:[\s\S]*?\})`)
 		ignoreLen := false
+		sendContent := toolsData
 		for _, match := range jsonRegex.FindAllString(toolsData, -1) {
 			if len(match) < 1 {
 				continue
@@ -413,15 +414,20 @@ func (l *LLM) ExecMcpReq(ctx context.Context, funcName string, property map[stri
 			mcpResp := new(param.MCPResp)
 			if err := json.Unmarshal([]byte(jsonStr), mcpResp); err == nil && mcpResp.Type == "image" {
 				markdown := "![image](data:" + mcpResp.MimeType + ";base64," + mcpResp.Data + ")"
-				toolsData = strings.Replace(toolsData, jsonStr, markdown, 1)
+				sendContent = strings.Replace(toolsData, jsonStr, markdown, 1)
 				ignoreLen = true
+				// 不用发送图片到llm
+				if !conf.BaseConfInfo.SendMcpMediaToLLM {
+					toolsData = strings.Replace(toolsData, jsonStr, "", -1)
+				}
+				break
 			}
 		}
 		
 		l.DirectSendMsg(i18n.GetMessage("send_mcp_info", map[string]interface{}{
 			"function_name": funcName,
 			"request_args":  property,
-			"response":      toolsData,
+			"response":      sendContent,
 		}), ignoreLen)
 	}
 	
