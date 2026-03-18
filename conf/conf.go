@@ -349,8 +349,8 @@ func InitConf() {
 		BaseConfInfo.HTTPHost = os.Getenv("HTTP_HOST")
 	}
 
-	if os.Getenv("USE_TOOLS") == "true" {
-		BaseConfInfo.UseTools = true
+	if os.Getenv("USE_TOOLS") != "" {
+		BaseConfInfo.UseTools = os.Getenv("USE_TOOLS") == "true"
 	}
 
 	if os.Getenv("OPENAI_TOKEN") != "" {
@@ -520,6 +520,7 @@ func logConf(allowedUserIds, allowedGroupIds string) {
 	logger.Info("CONF", "TokenPerUser", BaseConfInfo.TokenPerUser)
 	logger.Info("CONF", "MaxUserChat", BaseConfInfo.MaxUserChat)
 	logger.Info("CONF", "HTTPHost", BaseConfInfo.HTTPHost)
+	logger.Info("CONF", "UseTools", BaseConfInfo.UseTools)
 	logger.Info("CONF", "OpenAIToken", BaseConfInfo.OpenAIToken)
 	logger.Info("CONF", "GeminiToken", BaseConfInfo.GeminiToken)
 	logger.Info("CONF", "OpenRouterToken", BaseConfInfo.OpenRouterToken)

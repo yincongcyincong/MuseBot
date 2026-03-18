@@ -1,0 +1,16 @@
+[Unit]
+Description=MuseBot
+Documentation=https://github.com/yincongcyincong/MuseBot
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/PATH/TO/MuseBot
+EnvironmentFile=/PATH/TO/MuseBot/conf/systemd/.env
+ExecStart=/PATH/TO/MuseBot/MuseBot
+Restart=on-failure
+RestartSec=60s
+
+[Install]
+WantedBy=multi-user.target
