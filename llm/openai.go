@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 	"unicode"
-	
+
 	"github.com/cohesion-org/deepseek-go"
 	"github.com/cohesion-org/deepseek-go/constants"
 	"github.com/devinyf/dashscopego/qwen"
@@ -29,7 +29,7 @@ type OpenAIReq struct {
 	ToolCall           []openai.ToolCall
 	ToolMessage        []openai.ChatCompletionMessage
 	CurrentToolMessage []openai.ChatCompletionMessage
-	
+
 	OpenAIMsgs []openai.ChatCompletionMessage
 }
 
@@ -39,7 +39,7 @@ func (d *OpenAIReq) GetModel(l *LLM) {
 	if userInfo != nil && userInfo.LLMConfigRaw != nil {
 		model = userInfo.LLMConfigRaw.TxtModel
 	}
-	
+
 	switch utils.GetTxtType(db.GetCtxUserInfo(l.Ctx).LLMConfigRaw) {
 	case param.OpenAi, param.ChatAnyWhere:
 		l.Model = openai.GPT3Dot5Turbo0125
@@ -85,9 +85,9 @@ func (d *OpenAIReq) Send(ctx context.Context, l *LLM) error {
 	if l.OverLoop() {
 		return errors.New("too many loops")
 	}
-	
+
 	start := time.Now()
-	
+
 	client := GetOpenAIClient(ctx, "txt")
 	request := openai.ChatCompletionRequest{
 		Model:  l.Model,
@@ -98,7 +98,7 @@ func (d *OpenAIReq) Send(ctx context.Context, l *LLM) error {
 		Messages: d.OpenAIMsgs,
 		Tools:    l.OpenAITools,
 	}
-	
+
 	if conf.BaseConfInfo.LLMOptionParam {
 		request.MaxTokens = conf.LLMConfInfo.MaxTokens
 		request.TopP = float32(conf.LLMConfInfo.TopP)
@@ -109,7 +109,7 @@ func (d *OpenAIReq) Send(ctx context.Context, l *LLM) error {
 		request.PresencePenalty = float32(conf.LLMConfInfo.PresencePenalty)
 		request.Temperature = float32(conf.LLMConfInfo.Temperature)
 	}
-	
+
 	var stream *openai.ChatCompletionStream
 	var err error
 	for i := 0; i < conf.BaseConfInfo.LLMRetryTimes; i++ {
@@ -120,7 +120,7 @@ func (d *OpenAIReq) Send(ctx context.Context, l *LLM) error {
 		}
 		break
 	}
-	
+
 	if err != nil || stream == nil {
 		logger.ErrorCtx(l.Ctx, "ChatCompletionStream error", "updateMsgID", l.MsgId, "err", err, "stream", stream)
 		return err
@@ -129,9 +129,9 @@ func (d *OpenAIReq) Send(ctx context.Context, l *LLM) error {
 	msgInfoContent := &param.MsgInfo{
 		SendLen: FirstSendLen,
 	}
-	
+
 	metrics.APIRequestDuration.WithLabelValues(l.Model).Observe(time.Since(start).Seconds())
-	
+
 	hasTools := false
 	for {
 		response, err := stream.Recv()
@@ -155,17 +155,17 @@ func (d *OpenAIReq) Send(ctx context.Context, l *LLM) error {
 					}
 				}
 			}
-			
+
 			if !hasTools {
 				msgInfoContent = l.SendMsg(msgInfoContent, choice.Delta.Content)
 			}
 		}
-		
+
 		if response.Usage != nil {
 			l.Cs.Token += response.Usage.TotalTokens
 		}
 	}
-	
+
 	if l.MessageChan != nil && len(strings.TrimRightFunc(msgInfoContent.Content, unicode.IsSpace)) > 0 || (hasTools && conf.BaseConfInfo.SendMcpRes) {
 		if conf.BaseConfInfo.Powered != "" {
 			msgInfoContent.Content = msgInfoContent.Content + "\n\n" + conf.BaseConfInfo.Powered
@@ -180,14 +180,14 @@ func (d *OpenAIReq) Send(ctx context.Context, l *LLM) error {
 				ToolCalls: d.ToolCall,
 			},
 		}, d.CurrentToolMessage...)
-		
+
 		d.ToolMessage = append(d.ToolMessage, d.CurrentToolMessage...)
 		d.OpenAIMsgs = append(d.OpenAIMsgs, d.CurrentToolMessage...)
 		d.CurrentToolMessage = make([]openai.ChatCompletionMessage, 0)
 		d.ToolCall = make([]openai.ToolCall, 0)
 		return d.Send(ctx, l)
 	}
-	
+
 	return nil
 }
 
@@ -206,7 +206,7 @@ func (d *OpenAIReq) GetImageMessage(images [][]byte, msg string) {
 			},
 		})
 	}
-	
+
 	d.OpenAIMsgs = append(d.OpenAIMsgs, openai.ChatCompletionMessage{
 		Role:         openai.ChatMessageRoleUser,
 		MultiContent: multiContent,
@@ -235,7 +235,7 @@ func (d *OpenAIReq) AppendMessages(client LLMClient) {
 	if len(d.OpenAIMsgs) == 0 {
 		d.OpenAIMsgs = make([]openai.ChatCompletionMessage, 0)
 	}
-	
+
 	d.OpenAIMsgs = append(d.OpenAIMsgs, client.(*OpenAIReq).OpenAIMsgs...)
 }
 
@@ -249,7 +249,7 @@ func (d *OpenAIReq) GetMessage(role, msg string) {
 		}
 		return
 	}
-	
+
 	d.OpenAIMsgs = append(d.OpenAIMsgs, openai.ChatCompletionMessage{
 		Role:    role,
 		Content: msg,
@@ -258,15 +258,15 @@ func (d *OpenAIReq) GetMessage(role, msg string) {
 
 func (d *OpenAIReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 	start := time.Now()
-	
+
 	client := GetOpenAIClient(ctx, "txt")
-	
+
 	request := openai.ChatCompletionRequest{
 		Model:    l.Model,
 		Tools:    l.OpenAITools,
 		Messages: d.OpenAIMsgs,
 	}
-	
+
 	if conf.BaseConfInfo.LLMOptionParam {
 		request.MaxTokens = conf.LLMConfInfo.MaxTokens
 		request.TopP = float32(conf.LLMConfInfo.TopP)
@@ -277,7 +277,7 @@ func (d *OpenAIReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 		request.PresencePenalty = float32(conf.LLMConfInfo.PresencePenalty)
 		request.Temperature = float32(conf.LLMConfInfo.Temperature)
 	}
-	
+
 	var response openai.ChatCompletionResponse
 	var err error
 	for i := 0; i < conf.BaseConfInfo.LLMRetryTimes; i++ {
@@ -288,19 +288,19 @@ func (d *OpenAIReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 		}
 		break
 	}
-	
+
 	if err != nil {
 		logger.ErrorCtx(l.Ctx, "ChatCompletionStream error", "updateMsgID", l.MsgId, "err", err)
 		return "", err
 	}
-	
+
 	metrics.APIRequestDuration.WithLabelValues(l.Model).Observe(time.Since(start).Seconds())
-	
+
 	if len(response.Choices) == 0 {
 		logger.ErrorCtx(l.Ctx, "response is emtpy", "response", response)
 		return "", errors.New("response is empty")
 	}
-	
+
 	l.Cs.Token += response.Usage.TotalTokens
 	if len(response.Choices[0].Message.ToolCalls) > 0 {
 		d.GetMessage(openai.ChatMessageRoleAssistant, "")
@@ -308,7 +308,7 @@ func (d *OpenAIReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 		d.requestOneToolsCall(ctx, response.Choices[0].Message.ToolCalls, l)
 		return d.SyncSend(ctx, l)
 	}
-	
+
 	return response.Choices[0].Message.Content, nil
 }
 
@@ -319,13 +319,13 @@ func (d *OpenAIReq) requestOneToolsCall(ctx context.Context, toolsCall []openai.
 		if err != nil {
 			return
 		}
-		
+
 		toolsData, err := l.ExecMcpReq(ctx, tool.Function.Name, property)
 		if err != nil {
 			logger.WarnCtx(l.Ctx, "exec tools fail", "err", err, "toolCall", tool)
 			return
 		}
-		
+
 		d.OpenAIMsgs = append(d.OpenAIMsgs, openai.ChatCompletionMessage{
 			Role:       constants.ChatMessageRoleTool,
 			Content:    toolsData,
@@ -337,31 +337,31 @@ func (d *OpenAIReq) requestOneToolsCall(ctx context.Context, toolsCall []openai.
 func (d *OpenAIReq) RequestToolsCall(ctx context.Context, choice openai.ChatCompletionStreamChoice, l *LLM) error {
 	for _, toolCall := range choice.Delta.ToolCalls {
 		property := make(map[string]interface{})
-		
+
 		if toolCall.Function.Name != "" {
 			d.ToolCall = append(d.ToolCall, toolCall)
 			d.ToolCall[len(d.ToolCall)-1].Function.Name = toolCall.Function.Name
 		}
-		
+
 		if toolCall.ID != "" {
 			d.ToolCall[len(d.ToolCall)-1].ID = toolCall.ID
 		}
-		
+
 		if toolCall.Type != "" {
 			d.ToolCall[len(d.ToolCall)-1].Type = toolCall.Type
 		}
-		
+
 		if toolCall.Function.Arguments != "" && toolCall.Function.Name == "" {
 			d.ToolCall[len(d.ToolCall)-1].Function.Arguments += toolCall.Function.Arguments
 		}
-		
+
 		err := json.Unmarshal([]byte(d.ToolCall[len(d.ToolCall)-1].Function.Arguments), &property)
 		if err != nil {
 			return ToolsJsonErr
 		}
-		
+
 		tool := d.ToolCall[len(d.ToolCall)-1]
-		
+
 		toolsData, err := l.ExecMcpReq(ctx, tool.Function.Name, property)
 		if err != nil {
 			logger.ErrorCtx(ctx, "Error executing MCP request", "toolId", toolCall.ID, "err", err)
@@ -373,21 +373,21 @@ func (d *OpenAIReq) RequestToolsCall(ctx context.Context, choice openai.ChatComp
 			ToolCallID: tool.ID,
 		})
 	}
-	
+
 	return nil
-	
+
 }
 
 // GenerateOpenAIImg generate image
 func GenerateOpenAIImg(ctx context.Context, prompt string, imageContent []byte) ([]byte, int, error) {
 	client := GetOpenAIClient(ctx, "img")
-	
+
 	start := time.Now()
 	llmConfig := db.GetCtxUserInfo(ctx).LLMConfigRaw
 	mediaType := utils.GetImgType(llmConfig)
 	model := utils.GetUsingImgModel(mediaType, llmConfig.ImgModel)
 	metrics.APIRequestCount.WithLabelValues(model).Inc()
-	
+
 	var respUrl openai.ImageResponse
 	var err error
 	for i := 0; i < conf.BaseConfInfo.LLMRetryTimes; i++ {
@@ -399,7 +399,7 @@ func GenerateOpenAIImg(ctx context.Context, prompt string, imageContent []byte) 
 			}
 			defer os.Remove(imageFile.Name())
 			defer imageFile.Close()
-			
+
 			respUrl, err = client.CreateEditImage(ctx, openai.ImageEditRequest{
 				Image:          imageFile,
 				Prompt:         prompt,
@@ -408,7 +408,7 @@ func GenerateOpenAIImg(ctx context.Context, prompt string, imageContent []byte) 
 				Size:           conf.PhotoConfInfo.OpenAIImageSize,
 				ResponseFormat: "b64_json",
 			})
-			
+
 			if err != nil {
 				time.Sleep(time.Duration(conf.BaseConfInfo.LLMRetryInterval) * time.Millisecond)
 				continue
@@ -426,7 +426,7 @@ func GenerateOpenAIImg(ctx context.Context, prompt string, imageContent []byte) 
 					ResponseFormat: "b64_json",
 				},
 			)
-			
+
 			if err != nil {
 				time.Sleep(time.Duration(conf.BaseConfInfo.LLMRetryInterval) * time.Millisecond)
 				continue
@@ -434,19 +434,19 @@ func GenerateOpenAIImg(ctx context.Context, prompt string, imageContent []byte) 
 			break
 		}
 	}
-	
+
 	if err != nil {
 		logger.ErrorCtx(ctx, "CreateImage error", "err", err)
 		return nil, 0, fmt.Errorf("CreateImage error: %v", err)
 	}
-	
+
 	metrics.APIRequestDuration.WithLabelValues(model).Observe(time.Since(start).Seconds())
-	
+
 	if len(respUrl.Data) == 0 {
 		logger.ErrorCtx(ctx, "response is emtpy", "response", respUrl)
 		return nil, 0, errors.New("response is empty")
 	}
-	
+
 	var imageContentByte []byte
 	if respUrl.Data[0].B64JSON != "" {
 		imageContentByte, err = base64.StdEncoding.DecodeString(respUrl.Data[0].B64JSON)
@@ -461,24 +461,24 @@ func GenerateOpenAIImg(ctx context.Context, prompt string, imageContent []byte) 
 			return nil, 0, err
 		}
 	}
-	
+
 	return imageContentByte, respUrl.Usage.TotalTokens, nil
 }
 
 func GenerateOpenAIText(ctx context.Context, audioContent []byte) (string, error) {
-	
+
 	start := time.Now()
 	metrics.APIRequestCount.WithLabelValues(openai.Whisper1).Inc()
-	
+
 	client := GetOpenAIClient(ctx, "rec")
-	
+
 	req := openai.AudioRequest{
 		Model:    openai.Whisper1,
 		FilePath: "voice." + utils.DetectAudioFormat(audioContent),
 		Reader:   bytes.NewReader(audioContent),
 		Format:   "json",
 	}
-	
+
 	var resp openai.AudioResponse
 	var err error
 	for i := 0; i < conf.BaseConfInfo.LLMRetryTimes; i++ {
@@ -489,13 +489,13 @@ func GenerateOpenAIText(ctx context.Context, audioContent []byte) (string, error
 		}
 		break
 	}
-	
+
 	metrics.APIRequestDuration.WithLabelValues(openai.Whisper1).Observe(time.Since(start).Seconds())
 	if err != nil {
 		logger.ErrorCtx(ctx, "CreateTranscription error", "err", err)
 		return "", err
 	}
-	
+
 	return resp.Text, nil
 }
 
@@ -505,13 +505,13 @@ func OpenAITTS(ctx context.Context, content, encoding string) ([]byte, int, int,
 		encoding != string(openai.SpeechResponseFormatWav) && encoding != string(openai.SpeechResponseFormatPcm) {
 		formatEncoding = string(openai.SpeechResponseFormatPcm)
 	}
-	
+
 	start := time.Now()
 	model := utils.GetUsingTTSModel(param.OpenAi, db.GetCtxUserInfo(ctx).LLMConfigRaw.TTSModel)
 	metrics.APIRequestCount.WithLabelValues(model).Inc()
-	
+
 	client := GetOpenAIClient(ctx, "")
-	
+
 	var resp openai.RawResponse
 	var err error
 	for i := 0; i < conf.BaseConfInfo.LLMRetryTimes; i++ {
@@ -533,13 +533,13 @@ func OpenAITTS(ctx context.Context, content, encoding string) ([]byte, int, int,
 		return nil, 0, 0, err
 	}
 	metrics.APIRequestDuration.WithLabelValues(model).Observe(time.Since(start).Seconds())
-	
+
 	data, err := io.ReadAll(resp.ReadCloser)
 	if err != nil {
 		logger.ErrorCtx(ctx, "read response error", "err", err)
 		return nil, 0, 0, err
 	}
-	
+
 	if formatEncoding == string(openai.SpeechResponseFormatPcm) {
 		data, err = utils.GetAudioData(encoding, data)
 		if err != nil {
@@ -547,7 +547,7 @@ func OpenAITTS(ctx context.Context, content, encoding string) ([]byte, int, int,
 			return nil, 0, 0, err
 		}
 	}
-	
+
 	return data, db.EstimateTokens(content), utils.PCMDuration(len(data), 24000, 1, 16), nil
 }
 
@@ -564,7 +564,7 @@ func GetOpenAIClient(ctx context.Context, clientType string) *openai.Client {
 	case "rec":
 		t = utils.GetRecType(db.GetCtxUserInfo(ctx).LLMConfigRaw)
 	}
-	
+
 	var token string
 	var specialLLMUrl string
 	switch t {
@@ -592,12 +592,12 @@ func GetOpenAIClient(ctx context.Context, clientType string) *openai.Client {
 		token = conf.BaseConfInfo.GeminiToken
 		specialLLMUrl = "https://generativelanguage.googleapis.com/v1beta/openai"
 	}
-	
+
 	openaiConfig := openai.DefaultConfig(token)
 	if specialLLMUrl != "" {
 		openaiConfig.BaseURL = specialLLMUrl
 	}
-	
+
 	if conf.BaseConfInfo.CustomUrl != "" {
 		openaiConfig.BaseURL = conf.BaseConfInfo.CustomUrl
 	}

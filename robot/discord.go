@@ -11,7 +11,7 @@ import (
 	"runtime/debug"
 	"strings"
 	"time"
-	
+
 	"github.com/bwmarrin/discordgo"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/google/uuid"
@@ -29,7 +29,7 @@ import (
 type VolDialog struct {
 	VolWsConn *websocket.Conn
 	Audio     []byte
-	
+
 	CallUserId string
 	Token      int
 	Ctx        context.Context
@@ -40,7 +40,7 @@ var (
 	volDialog = &VolDialog{
 		Audio: make([]byte, 0),
 	}
-	
+
 	DiscordSession *discordgo.Session
 )
 
@@ -48,7 +48,7 @@ type DiscordRobot struct {
 	Session *discordgo.Session
 	Msg     *discordgo.MessageCreate
 	Inter   *discordgo.InteractionCreate
-	
+
 	Robot        *RobotInfo
 	Prompt       string
 	Command      string
@@ -65,24 +65,24 @@ func StartDiscordRobot(ctx context.Context) {
 		return
 	}
 	DiscordSession.Client = utils.GetRobotProxyClient()
-	
+
 	// 添加消息处理函数
 	DiscordSession.AddHandler(messageCreate)
 	DiscordSession.AddHandler(onInteractionCreate)
 	// 监听语音状态更新事件
 	DiscordSession.AddHandler(voiceStateUpdate)
-	
+
 	// 打开连接
 	err = DiscordSession.Open()
 	if err != nil {
 		logger.ErrorCtx(ctx, "connect fail", "err", err)
 		return
 	}
-	
+
 	logger.InfoCtx(ctx, "discordBot Info", "username", DiscordSession.State.User.Username)
-	
+
 	registerSlashCommands(DiscordSession)
-	
+
 	select {
 	case <-ctx.Done():
 		DiscordSession.Close()
@@ -96,21 +96,21 @@ func NewDiscordRobot(s *discordgo.Session, msg *discordgo.MessageCreate, i *disc
 		Msg:     msg,
 		Inter:   i,
 	}
-	
+
 	if msg != nil {
 		dr.UserName = msg.Author.Username
 	}
-	
+
 	if i != nil {
 		dr.UserName = i.User.Username
 	}
-	
+
 	return dr
 }
 
 func (d *DiscordRobot) checkValid() bool {
 	chatId, msgId, _ := d.Robot.GetChatIdAndMsgIdAndUserID()
-	
+
 	if d.Msg != nil {
 		if d.skipThisMsg() {
 			logger.WarnCtx(d.Robot.Ctx, "skip this msg", "msgId", msgId, "chat", chatId, "content", d.Msg.Content)
@@ -123,20 +123,20 @@ func (d *DiscordRobot) checkValid() bool {
 		d.getMessageContent()
 		return true
 	}
-	
+
 	if d.Inter != nil {
 		switch d.Inter.Type {
 		case discordgo.InteractionApplicationCommand, discordgo.InteractionApplicationCommandAutocomplete:
 			d.Command = d.Inter.ApplicationCommandData().Name
 		}
-		
+
 		if d.Inter != nil && d.Inter.Type == discordgo.InteractionApplicationCommand && len(d.Inter.ApplicationCommandData().Options) > 0 {
 			d.Prompt = d.Inter.ApplicationCommandData().Options[0].StringValue()
 		}
 		if d.Session != nil && d.Session.State != nil && d.Session.State.User != nil {
 			d.Command = strings.ReplaceAll(d.Command, "<@"+d.Session.State.User.ID+">", "")
 		}
-		
+
 		err := d.Session.InteractionRespond(d.Inter.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseDeferredChannelMessageWithSource,
 		})
@@ -145,7 +145,7 @@ func (d *DiscordRobot) checkValid() bool {
 		}
 		return true
 	}
-	
+
 	return false
 }
 
@@ -167,7 +167,7 @@ func (d *DiscordRobot) getMessageContent() {
 			}
 		}
 	}
-	
+
 	if d.Msg != nil {
 		attachments := d.Msg.Attachments
 		if len(attachments) > 0 {
@@ -188,7 +188,7 @@ func (d *DiscordRobot) getMessageContent() {
 						}
 					}
 				}
-				
+
 				if strings.HasPrefix(att.ContentType, "image/") {
 					d.ImageContent, err = utils.DownloadFile(att.URL)
 					if d.ImageContent == nil || err != nil {
@@ -214,7 +214,7 @@ func (d *DiscordRobot) requestLLM(content string) {
 			d.Talk()
 			return
 		}
-		
+
 		d.Robot.ExecCmd(d.Command, d.sendChatMessage, nil, nil)
 	}()
 }
@@ -223,9 +223,9 @@ func (d *DiscordRobot) executeChain() {
 	messageChan := &MsgChan{
 		NormalMessageChan: make(chan *param.MsgInfo),
 	}
-	
+
 	go d.Robot.ExecChain(d.Prompt, messageChan)
-	
+
 	go d.Robot.HandleUpdate(messageChan, "mp3")
 }
 
@@ -233,31 +233,31 @@ func (d *DiscordRobot) executeLLM() {
 	messageChan := &MsgChan{
 		NormalMessageChan: make(chan *param.MsgInfo),
 	}
-	
+
 	go d.Robot.ExecLLM(d.Prompt, messageChan)
-	
+
 	go d.Robot.HandleUpdate(messageChan, "mp3")
 }
 
 func (d *DiscordRobot) sendTextStream(messageChan *MsgChan) {
-	
+
 	var originalMsgID string
 	var channelID string
 	var err error
-	
+
 	if d.Msg != nil {
 		channelID = d.Msg.ChannelID
-		
+
 		thinkingMsg, err := d.Session.ChannelMessageSend(channelID, i18n.GetMessage("thinking", nil))
 		if err != nil {
 			logger.WarnCtx(d.Robot.Ctx, "Sending thinking message failed", "err", err)
 		} else {
 			originalMsgID = thinkingMsg.ID
 		}
-		
+
 	} else if d.Inter != nil {
 		channelID = d.Inter.ChannelID
-		
+
 		err = d.Session.InteractionRespond(d.Inter.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseDeferredChannelMessageWithSource,
 		})
@@ -268,17 +268,17 @@ func (d *DiscordRobot) sendTextStream(messageChan *MsgChan) {
 		logger.ErrorCtx(d.Robot.Ctx, "Unknown Discord message type")
 		return
 	}
-	
+
 	var msg *param.MsgInfo
 	for msg = range messageChan.NormalMessageChan {
 		if len(msg.Content) == 0 {
 			msg.Content = "get nothing from llm!"
 		}
-		
+
 		if msg.MsgId == "" && originalMsgID != "" {
 			msg.MsgId = originalMsgID
 		}
-		
+
 		if d.Msg != nil {
 			if msg.MsgId == "" && originalMsgID == "" {
 				_, err = d.Session.ChannelMessageSend(channelID, msg.Content)
@@ -318,14 +318,14 @@ func (d *DiscordRobot) skipThisMsg() bool {
 		d.Session == nil || d.Msg.Author.ID == d.Session.State.User.ID {
 		return true
 	}
-	
+
 	if d.Msg.GuildID == "" {
 		if strings.TrimSpace(d.Msg.Content) == "" && len(d.Msg.Attachments) == 0 {
 			return true
 		}
 		return false
 	}
-	
+
 	mentionedBot := false
 	for _, user := range d.Msg.Mentions {
 		if user.ID == d.Session.State.User.ID {
@@ -333,16 +333,16 @@ func (d *DiscordRobot) skipThisMsg() bool {
 			break
 		}
 	}
-	
+
 	if !mentionedBot {
 		return true
 	}
-	
+
 	contentWithoutMention := strings.TrimSpace(strings.ReplaceAll(d.Msg.Content, "<@"+d.Session.State.User.ID+">", ""))
 	if contentWithoutMention == "" && len(d.Msg.Attachments) == 0 {
 		return true
 	}
-	
+
 	return false
 }
 
@@ -403,7 +403,7 @@ func registerSlashCommands(s *discordgo.Session) {
 		{Name: param.CronClear, Description: i18n.GetMessage("commands.cron.description", nil)},
 		{Name: param.CronDel, Description: i18n.GetMessage("commands.cron.description", nil)},
 	}
-	
+
 	for _, cmd := range commands {
 		_, err := s.ApplicationCommandCreate(s.State.User.ID, "", cmd)
 		if err != nil {
@@ -418,7 +418,7 @@ func onInteractionCreate(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			logger.Error("onInteractionCreate panic err", "err", err, "stack", string(debug.Stack()))
 		}
 	}()
-	
+
 	d := NewDiscordRobot(s, nil, i)
 	d.Robot = NewRobot(WithRobot(d))
 	d.Robot.Exec()
@@ -437,17 +437,17 @@ func (d *DiscordRobot) sendChatMessage() {
 func (d *DiscordRobot) sendImg() {
 	d.Robot.TalkingPreCheck(func() {
 		chatId, msgId, _ := d.Robot.GetChatIdAndMsgIdAndUserID()
-		
+
 		prompt := strings.TrimSpace(d.getPrompt())
 		if prompt == "" {
 			d.Robot.SendMsg(chatId, i18n.GetMessage("video_empty_content", nil),
 				msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
-		
+
 		d.Robot.SendMsg(chatId, i18n.GetMessage("thinking", nil),
 			msgId, tgbotapi.ModeMarkdown, nil)
-		
+
 		var lastImageContent = d.ImageContent
 		var err error
 		if len(lastImageContent) == 0 && strings.Contains(d.Command, "edit_photo") {
@@ -456,20 +456,20 @@ func (d *DiscordRobot) sendImg() {
 				logger.WarnCtx(d.Robot.Ctx, "get last image record fail", "err", err)
 			}
 		}
-		
+
 		imageContent, totalToken, err := d.Robot.CreatePhoto(prompt, lastImageContent)
 		if err != nil {
 			logger.WarnCtx(d.Robot.Ctx, "generate image fail", "err", err)
 			d.Robot.SendMsg(chatId, err.Error(), msgId, "", nil)
 			return
 		}
-		
+
 		if err != nil {
 			logger.WarnCtx(d.Robot.Ctx, "send image fail", "err", err)
 			d.Robot.SendMsg(chatId, err.Error(), msgId, "", nil)
 			return
 		}
-		
+
 		d.Robot.saveRecord(imageContent, lastImageContent, param.ImageRecordType, totalToken)
 	})
 }
@@ -482,7 +482,7 @@ func (d *DiscordRobot) sendMedia(media []byte, contentType, sType string) error 
 			Name:   "image." + contentType,
 			Reader: bytes.NewReader(media),
 		}
-		
+
 		if d.Inter != nil {
 			_, err = d.Session.InteractionResponseEdit(d.Inter.Interaction, &discordgo.WebhookEdit{
 				Files: []*discordgo.File{file},
@@ -510,7 +510,7 @@ func (d *DiscordRobot) sendMedia(media []byte, contentType, sType string) error 
 			Name:   "video." + contentType,
 			Reader: bytes.NewReader(media),
 		}
-		
+
 		if d.Inter != nil {
 			_, err = d.Session.InteractionResponseEdit(d.Inter.Interaction, &discordgo.WebhookEdit{
 				Files: []*discordgo.File{file},
@@ -534,24 +534,24 @@ func (d *DiscordRobot) sendMedia(media []byte, contentType, sType string) error 
 			}
 		}
 	}
-	
+
 	return nil
 }
 
 func (d *DiscordRobot) sendVideo() {
 	d.Robot.TalkingPreCheck(func() {
 		chatId, msgId, _ := d.Robot.GetChatIdAndMsgIdAndUserID()
-		
+
 		prompt := strings.TrimSpace(d.getPrompt())
 		if prompt == "" {
 			d.Robot.SendMsg(chatId, i18n.GetMessage("video_empty_content", nil),
 				msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
-		
+
 		d.Robot.SendMsg(chatId, i18n.GetMessage("thinking", nil),
 			msgId, tgbotapi.ModeMarkdown, nil)
-		
+
 		var imageContent = d.ImageContent
 		videoContent, totalToken, err := d.Robot.CreateVideo(prompt, imageContent)
 		if err != nil {
@@ -559,13 +559,13 @@ func (d *DiscordRobot) sendVideo() {
 			d.Robot.SendMsg(chatId, err.Error(), msgId, "", nil)
 			return
 		}
-		
+
 		if err != nil {
 			logger.WarnCtx(d.Robot.Ctx, "send video fail", "err", err)
 			d.Robot.SendMsg(chatId, err.Error(), msgId, "", nil)
 			return
 		}
-		
+
 		d.Robot.saveRecord(videoContent, imageContent, param.VideoRecordType, totalToken)
 	})
 }
@@ -582,7 +582,7 @@ func (d *DiscordRobot) sendVoiceContent(voiceContent []byte, duration int) error
 	var err error
 	if d.Msg != nil {
 		_, err = d.Session.ChannelFileSend(d.Msg.ChannelID, "voice."+utils.DetectAudioFormat(voiceContent), bytes.NewReader(voiceContent))
-		
+
 	} else if d.Inter != nil {
 		_, err = d.Session.InteractionResponseEdit(d.Inter.Interaction, &discordgo.WebhookEdit{
 			Files: []*discordgo.File{
@@ -593,7 +593,7 @@ func (d *DiscordRobot) sendVoiceContent(voiceContent []byte, duration int) error
 			},
 		})
 	}
-	
+
 	return err
 }
 
@@ -601,32 +601,32 @@ func (d *DiscordRobot) Talk() {
 	d.Robot.TalkingPreCheck(func() {
 		gid := d.Inter.GuildID
 		cid, replyToMessageID, userId := d.Robot.GetChatIdAndMsgIdAndUserID()
-		
+
 		if gid == "" || cid == "" {
 			d.Robot.SendMsg(cid, i18n.GetMessage("talk_param_error", nil),
 				replyToMessageID, tgbotapi.ModeMarkdown, nil)
 			return
 		}
-		
+
 		if len(d.Session.VoiceConnections) != 0 {
 			d.Robot.SendMsg(cid, i18n.GetMessage("bot_talking", nil),
 				replyToMessageID, tgbotapi.ModeMarkdown, nil)
 			return
 		}
-		
+
 		go func() {
 			defer func() {
 				if err := recover(); err != nil {
 					logger.Error("recover panic", "err", err, "stack", string(debug.Stack()))
 				}
 			}()
-			
+
 			vc, err := d.Session.ChannelVoiceJoin(gid, cid, false, false)
 			if err != nil {
 				logger.Error("join voice fail", "err", err)
 				return
 			}
-			
+
 			wsURL := url.URL{Scheme: "wss", Host: "openspeech.bytedance.com", Path: "/api/v3/realtime/dialogue"}
 			volDialog.VolWsConn, _, err = websocket.DefaultDialer.DialContext(context.Background(), wsURL.String(), http.Header{
 				"X-Api-Resource-Id": []string{"volc.speech.dialog"},
@@ -639,7 +639,7 @@ func (d *DiscordRobot) Talk() {
 				logger.Error("connect vol fail", "err", err)
 				return
 			}
-			
+
 			err = utils.StartConnection(volDialog.VolWsConn)
 			if err != nil {
 				logger.Error("start connect fail", "err", err)
@@ -674,23 +674,23 @@ func (d *DiscordRobot) Talk() {
 				logger.Error("start session fail", "err", err)
 				return
 			}
-			
+
 			volDialog.Ctx, volDialog.Cancel = context.WithCancel(context.Background())
 			volDialog.CallUserId = userId
-			
+
 			go d.PlayAudioToDiscord(vc)
-			
+
 			go d.receiveVoice(vc)
 		}()
 	})
-	
+
 }
 
 func (d *DiscordRobot) PlayAudioToDiscord(vc *discordgo.VoiceConnection) {
 	defer func() {
 		CloseTalk(vc)
 	}()
-	
+
 	for {
 		select {
 		case <-volDialog.Ctx.Done():
@@ -701,7 +701,7 @@ func (d *DiscordRobot) PlayAudioToDiscord(vc *discordgo.VoiceConnection) {
 				logger.Error("receive message", "err", err)
 				return
 			}
-			
+
 			switch msg.Type {
 			case utils.MsgTypeFullServer:
 				switch msg.Event {
@@ -714,7 +714,7 @@ func (d *DiscordRobot) PlayAudioToDiscord(vc *discordgo.VoiceConnection) {
 						volDialog.Token += usage.Usage.CachedAudioTokens + usage.Usage.OutputAudioTokens + usage.Usage.InputAudioTokens +
 							usage.Usage.CachedTextTokens + usage.Usage.OutputTextTokens + usage.Usage.InputTextTokens
 					}
-				
+
 				case 350, 451:
 					logger.Info("start event", "event", msg.Event, "type", msg.TypeFlag(), "payload", string(msg.Payload))
 				case 352:
@@ -740,35 +740,35 @@ func (d *DiscordRobot) PlayAudioToDiscord(vc *discordgo.VoiceConnection) {
 
 func (d *DiscordRobot) sendAudioToDiscord(vc *discordgo.VoiceConnection, audioContent []byte) {
 	mono16k := bytesToInt16LE(audioContent)
-	
+
 	encoder, err := gopus.NewEncoder(48000, 2, gopus.Audio)
 	if err != nil {
 		logger.Error("gopus encoder fail", "err", err)
 		return
 	}
 	encoder.SetBitrate(64000)
-	
+
 	const samplesPerFrame = 960
 	const monoFrameSize = 320
-	
+
 	for i := 0; i < len(mono16k); i += monoFrameSize {
 		end := i + monoFrameSize
 		if end > len(mono16k) {
 			end = len(mono16k)
 		}
-		
+
 		monoFrame := mono16k[i:end]
-		
+
 		stereo48k := upsampleAndStereoLinear(monoFrame)
-		
+
 		opus, err := encoder.Encode(stereo48k, samplesPerFrame, 4000)
 		if err != nil {
 			logger.Error("gopus encode fail", "err", err)
 			break
 		}
-		
+
 		vc.OpusSend <- opus
-		
+
 		time.Sleep(20 * time.Millisecond)
 	}
 }
@@ -777,7 +777,7 @@ func upsampleAndStereoLinear(mono16k []int16) []int16 {
 	inLen := len(mono16k)
 	outLen := inLen * 3            // 16kHz -> 48kHz
 	out := make([]int16, outLen*2) // *2 for stereo
-	
+
 	for i := 0; i < outLen; i++ {
 		// 线性插值
 		pos := float64(i) / 3.0
@@ -787,7 +787,7 @@ func upsampleAndStereoLinear(mono16k []int16) []int16 {
 		}
 		frac := pos - float64(idx)
 		sample := int16((1-frac)*float64(mono16k[idx]) + frac*float64(mono16k[idx+1]))
-		
+
 		out[2*i] = sample   // left
 		out[2*i+1] = sample // right
 	}
@@ -807,15 +807,15 @@ func (d *DiscordRobot) receiveVoice(vc *discordgo.VoiceConnection) {
 	defer func() {
 		CloseTalk(vc)
 	}()
-	
+
 	decoder, err := gopus.NewDecoder(16000, 1)
 	if err != nil {
 		logger.Error("Failed to create opus decoder", "err", err)
 		return
 	}
-	
+
 	_, _, userId := d.Robot.GetChatIdAndMsgIdAndUserID()
-	
+
 	for {
 		select {
 		case <-volDialog.Ctx.Done():
@@ -826,14 +826,14 @@ func (d *DiscordRobot) receiveVoice(vc *discordgo.VoiceConnection) {
 				logger.Error("Failed to decode opus packet", "err", err)
 				continue
 			}
-			
+
 			if len(pcm) > 0 {
 				buf := make([]byte, len(pcm)*2)
 				for i, v := range pcm {
 					buf[2*i] = byte(v)
 					buf[2*i+1] = byte(v >> 8)
 				}
-				
+
 				err = utils.SendAudio(volDialog.VolWsConn, userId, buf)
 				if err != nil {
 					logger.Error("Failed to send PCM data", "err", err)
@@ -851,7 +851,7 @@ func voiceStateUpdate(s *discordgo.Session, v *discordgo.VoiceStateUpdate) {
 		// If the bot isn't in a voice channel, there's no need to handle voice state updates.
 		return
 	}
-	
+
 	// 2. Check if the event is relevant to the bot's channel.
 	// We need to check both v.ChannelID and v.BeforeUpdate.ChannelID for user joins and leaves.
 	isRelevant := false
@@ -862,25 +862,25 @@ func voiceStateUpdate(s *discordgo.Session, v *discordgo.VoiceStateUpdate) {
 		// The event occurred in the bot's channel (user left).
 		isRelevant = true
 	}
-	
+
 	// If the event is not relevant to the bot's channel, return early.
 	if !isRelevant {
 		return
 	}
-	
+
 	g, err := s.State.Guild(v.GuildID)
 	if err != nil {
 		logger.Error("get guild fail", "err", err)
 		return
 	}
-	
+
 	count := 0
 	for _, vs := range g.VoiceStates {
 		if vs.ChannelID == botVoiceState.ChannelID {
 			count++
 		}
 	}
-	
+
 	if count <= 1 {
 		if s.VoiceConnections[v.GuildID] != nil {
 			CloseTalk(s.VoiceConnections[v.GuildID])
@@ -888,7 +888,7 @@ func voiceStateUpdate(s *discordgo.Session, v *discordgo.VoiceStateUpdate) {
 			logger.Error("join voice fail", "err", err)
 		}
 	}
-	
+
 }
 
 func CloseTalk(vc *discordgo.VoiceConnection) {

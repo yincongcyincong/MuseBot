@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
-	
+
 	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/yincongcyincong/MuseBot/conf"
@@ -78,7 +78,7 @@ var (
 		);
 	`,
 	}
-	
+
 	mysqlInitializeSQLs = []string{
 		// 1. users 表 (嵌入索引)
 		`
@@ -171,12 +171,12 @@ func InitTable() {
 		}
 		logger.Info("✅ create direction success")
 	}
-	
+
 	DB, err = sql.Open(conf.BaseConfInfo.DBType, conf.BaseConfInfo.DBConf)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
-	
+
 	// init table
 	switch conf.BaseConfInfo.DBType {
 	case "sqlite3":
@@ -190,9 +190,9 @@ func InitTable() {
 			logger.Fatal("create mysql table fail", "err", err)
 		}
 	}
-	
+
 	InsertRecord(context.Background())
-	
+
 	logger.Info("db initialize successfully")
 }
 
@@ -204,7 +204,7 @@ func initializeMySQLTables(db *sql.DB) error {
 			return fmt.Errorf("execute SQL batch %d fail: %v\nSQL: %s", i+1, err, sqlStr)
 		}
 	}
-	
+
 	return nil
 }
 
@@ -217,6 +217,6 @@ func initializeSqlite3Table(db *sql.DB) error {
 			return fmt.Errorf("create table %s fail: %v", tableName, err)
 		}
 	}
-	
+
 	return nil
 }

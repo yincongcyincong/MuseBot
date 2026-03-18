@@ -3,7 +3,7 @@ package utils
 import (
 	"net/http"
 	"testing"
-	
+
 	"github.com/yincongcyincong/MuseBot/admin/db"
 )
 
@@ -16,7 +16,7 @@ func TestNormalizeAddress(t *testing.T) {
 		{"http://example.com", "http://example.com"},
 		{"https://secure.com", "https://secure.com"},
 	}
-	
+
 	for _, tt := range tests {
 		got := NormalizeAddress(tt.input)
 		if got != tt.expected {
@@ -29,7 +29,7 @@ func TestNormalizeAddress(t *testing.T) {
 func TestParseCommand(t *testing.T) {
 	input := "-a=1 -b=2 -c=hello"
 	want := map[string]string{"a": "1", "b": "2", "c": "hello"}
-	
+
 	got := ParseCommand(input)
 	if len(got) != len(want) {
 		t.Fatalf("expected map of len %d, got %d", len(want), len(got))
@@ -53,7 +53,7 @@ func TestGetCrtClient(t *testing.T) {
 			t.Fatal("expected non-nil transport")
 		}
 	})
-	
+
 	t.Run("invalid cert content", func(t *testing.T) {
 		bot := &db.Bot{
 			KeyFile: "invalid-key",
@@ -69,7 +69,7 @@ func TestGetCrtClient(t *testing.T) {
 			t.Errorf("expected http.Transport type")
 		}
 	})
-	
+
 	t.Run("valid empty tls config", func(t *testing.T) {
 		bot := &db.Bot{}
 		client := GetCrtClient(bot)

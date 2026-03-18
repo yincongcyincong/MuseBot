@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
-	
+
 	"github.com/yincongcyincong/MuseBot/conf"
 	"github.com/yincongcyincong/MuseBot/db"
 	"github.com/yincongcyincong/MuseBot/logger"
@@ -28,18 +28,18 @@ func CreateRagFile(w http.ResponseWriter, r *http.Request) {
 		utils.Failure(ctx, w, r, param.CodeParamError, param.MsgParamError, err)
 		return
 	}
-	
+
 	path := conf.RagConfInfo.KnowledgePath + "/" + ragFile.FileName
 	_, err = os.Stat(path)
 	fileNotExist := os.IsNotExist(err)
-	
+
 	err = os.WriteFile(path, []byte(ragFile.Content), 0644)
 	if err != nil {
 		logger.ErrorCtx(ctx, "write file error", "err", err)
 		utils.Failure(ctx, w, r, param.CodeServerFail, param.MsgServerFail, err)
 		return
 	}
-	
+
 	if fileNotExist && conf.RagConfInfo.Store == nil {
 		_, err = db.InsertRagFile(ragFile.FileName, "")
 		if err != nil {
@@ -48,7 +48,7 @@ func CreateRagFile(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	
+
 	utils.Success(ctx, w, r, nil)
 }
 
@@ -61,13 +61,13 @@ func GetRagFileContent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	name := r.FormValue("file_name")
-	
+
 	if !strings.Contains(name, ".txt") {
 		logger.ErrorCtx(ctx, "only support txt file")
 		utils.Failure(ctx, w, r, param.CodeTxtFileOnly, param.MsgTxtFileOnly, "only support txt file")
 		return
 	}
-	
+
 	path := conf.RagConfInfo.KnowledgePath + "/" + name
 	file, err := os.Open(path)
 	if err != nil {
@@ -76,18 +76,18 @@ func GetRagFileContent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer file.Close()
-	
+
 	content, err := io.ReadAll(file)
 	if err != nil {
 		logger.ErrorCtx(ctx, "write file error", "err", err)
 		utils.Failure(ctx, w, r, param.CodeServerFail, param.MsgServerFail, err)
 		return
 	}
-	
+
 	result := map[string]interface{}{
 		"content": string(content),
 	}
-	
+
 	utils.Success(ctx, w, r, result)
 }
 
@@ -99,7 +99,7 @@ func DeleteRagFile(w http.ResponseWriter, r *http.Request) {
 		utils.Failure(ctx, w, r, param.CodeParamError, param.MsgParamError, err)
 		return
 	}
-	
+
 	fileName := r.FormValue("file_name")
 	err = os.Remove(conf.RagConfInfo.KnowledgePath + "/" + fileName)
 	if err != nil {
@@ -107,7 +107,7 @@ func DeleteRagFile(w http.ResponseWriter, r *http.Request) {
 		utils.Failure(ctx, w, r, param.CodeServerFail, param.MsgServerFail, err)
 		return
 	}
-	
+
 	if conf.RagConfInfo.Store == nil {
 		err = db.DeleteRagFileByFileName(fileName)
 		if err != nil {
@@ -116,7 +116,7 @@ func DeleteRagFile(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	
+
 	utils.Success(ctx, w, r, nil)
 }
 
@@ -131,21 +131,21 @@ func GetRagFile(w http.ResponseWriter, r *http.Request) {
 	page := utils.ParseInt(r.FormValue("page"))
 	pageSize := utils.ParseInt(r.FormValue("page_size"))
 	name := r.FormValue("name")
-	
+
 	ragFiles, err := db.GetRagFilesByPage(page, pageSize, name)
 	if err != nil {
 		logger.ErrorCtx(ctx, "get user error", "err", err)
 		utils.Failure(ctx, w, r, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
 		return
 	}
-	
+
 	total, err := db.GetRagFilesCount(name)
 	if err != nil {
 		logger.ErrorCtx(ctx, "get user count error", "err", err)
 		utils.Failure(ctx, w, r, param.CodeDBQueryFail, param.MsgDBWriteFail, err)
 		return
 	}
-	
+
 	result := map[string]interface{}{
 		"list":  ragFiles,
 		"total": total,
@@ -165,7 +165,7 @@ func ClearAllVectorData(w http.ResponseWriter, r *http.Request) {
 				utils.Failure(ctx, w, r, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
 				return
 			}
-			
+
 			for _, ragFile := range ragFiles {
 				err = db.DeleteRagFileByFileName(ragFile.FileName)
 				if err != nil {
@@ -173,7 +173,7 @@ func ClearAllVectorData(w http.ResponseWriter, r *http.Request) {
 					utils.Failure(ctx, w, r, param.CodeDBWriteFail, param.MsgDBWriteFail, err)
 					return
 				}
-				
+
 				err = rag.DeleteStoreData(ctx, ragFile.VectorId)
 				if err != nil {
 					logger.ErrorCtx(ctx, "delete dir error", "err", err)
@@ -181,7 +181,7 @@ func ClearAllVectorData(w http.ResponseWriter, r *http.Request) {
 					return
 				}
 			}
-			
+
 			if len(ragFiles) < 10 {
 				break
 			}

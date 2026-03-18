@@ -2,7 +2,7 @@ package controller
 
 import (
 	"net/http"
-	
+
 	"github.com/gorilla/sessions"
 	"github.com/yincongcyincong/MuseBot/admin/conf"
 	"github.com/yincongcyincong/MuseBot/admin/db"
@@ -34,20 +34,20 @@ func UserLogin(w http.ResponseWriter, r *http.Request) {
 		utils.Failure(ctx, w, r, param.CodeParamError, param.MsgParamError, nil)
 		return
 	}
-	
+
 	user, err := db.GetUserByUsername(u.Username)
 	if err != nil {
 		logger.ErrorCtx(ctx, "login error", "reason", "user not found", "username", u.Username, "err", err)
 		utils.Failure(ctx, w, r, param.CodeLoginFail, param.MsgLoginFail, nil)
 		return
 	}
-	
+
 	if user.Password != utils.MD5(u.Password) {
 		logger.ErrorCtx(ctx, "login error", "reason", "wrong password", "username", u.Username)
 		utils.Failure(ctx, w, r, param.CodeLoginFail, param.MsgLoginFail, nil)
 		return
 	}
-	
+
 	session, _ := sessionStore.Get(r, sessionName)
 	session.Values["user_id"] = user.ID
 	session.Values["username"] = user.Username
@@ -57,7 +57,7 @@ func UserLogin(w http.ResponseWriter, r *http.Request) {
 		utils.Failure(ctx, w, r, param.CodeServerFail, param.MsgServerFail, err)
 		return
 	}
-	
+
 	// 登录成功，返回用户信息（不含密码）
 	resp := map[string]interface{}{
 		"id":       user.ID,
@@ -99,19 +99,19 @@ func GetCurrentUserHandler(w http.ResponseWriter, r *http.Request) {
 		logger.ErrorCtx(ctx, "get session error", "userId", userIDValue)
 		return
 	}
-	
+
 	userName, ok := session.Values["username"]
 	if !ok || userName == nil {
 		utils.Failure(ctx, w, r, param.CodeNotLogin, param.MsgNotLogin, nil)
 		logger.ErrorCtx(ctx, "get session error", "userName", userName)
 		return
 	}
-	
+
 	res := map[string]interface{}{
 		"user_id":  userIDValue,
 		"username": userName,
 	}
-	
+
 	utils.Success(ctx, w, r, res)
 }
 
@@ -130,6 +130,6 @@ func UserLogout(w http.ResponseWriter, r *http.Request) {
 		utils.Failure(ctx, w, r, param.CodeServerFail, param.MsgServerFail, err)
 		return
 	}
-	
+
 	utils.Success(ctx, w, r, "success")
 }
