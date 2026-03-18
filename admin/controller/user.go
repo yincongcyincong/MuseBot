@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	
+
 	"github.com/yincongcyincong/MuseBot/admin/db"
 	adminUtils "github.com/yincongcyincong/MuseBot/admin/utils"
 	"github.com/yincongcyincong/MuseBot/logger"
@@ -95,9 +95,9 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 func ListUsers(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	page, pageSize := parsePaginationParams(r)
-	
+
 	username := r.URL.Query().Get("username")
-	
+
 	offset := (page - 1) * pageSize
 	users, total, err := db.ListUsers(offset, pageSize, username)
 	if err != nil {
@@ -105,7 +105,7 @@ func ListUsers(w http.ResponseWriter, r *http.Request) {
 		utils.Failure(ctx, w, r, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
 		return
 	}
-	
+
 	utils.Success(ctx, w, r, map[string]interface{}{
 		"list":  users,
 		"total": total,
@@ -120,10 +120,10 @@ func UpdateUserMode(w http.ResponseWriter, r *http.Request) {
 		utils.Failure(ctx, w, r, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
 		return
 	}
-	
+
 	userId := r.URL.Query().Get("userId")
 	mode := r.URL.Query().Get("mode")
-	
+
 	resp, err := adminUtils.GetCrtClient(botInfo).Get(strings.TrimSuffix(botInfo.Address, "/") +
 		fmt.Sprintf("/user/mode/update?userId=%s&mode=%s", userId, mode))
 	if err != nil {
@@ -143,10 +143,10 @@ func UpdateUserMode(w http.ResponseWriter, r *http.Request) {
 func parsePaginationParams(r *http.Request) (page int, pageSize int) {
 	pageStr := r.URL.Query().Get("page")
 	pageSizeStr := r.URL.Query().Get("page_size")
-	
+
 	page, _ = strconv.Atoi(pageStr)
 	pageSize, _ = strconv.Atoi(pageSizeStr)
-	
+
 	if page <= 0 {
 		page = 1
 	}

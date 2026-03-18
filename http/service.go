@@ -11,7 +11,7 @@ import (
 	"strings"
 	"syscall"
 	"time"
-	
+
 	"github.com/hpcloud/tail"
 	"github.com/yincongcyincong/MuseBot/conf"
 	"github.com/yincongcyincong/MuseBot/db"
@@ -34,14 +34,14 @@ func DashboardHandler(w http.ResponseWriter, r *http.Request) {
 		utils.Failure(ctx, w, r, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
 		return
 	}
-	
+
 	userCount, err := db.GetUserCount("")
 	if err != nil {
 		logger.ErrorCtx(ctx, "parse json body error", "err", err)
 		utils.Failure(ctx, w, r, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
 		return
 	}
-	
+
 	day := utils.ParseInt(r.URL.Query().Get("day"))
 	userDayCount, err := db.GetDailyNewUsers(day)
 	if err != nil {
@@ -49,14 +49,14 @@ func DashboardHandler(w http.ResponseWriter, r *http.Request) {
 		utils.Failure(ctx, w, r, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
 		return
 	}
-	
+
 	recordDayCount, err := db.GetDailyNewRecords(day)
 	if err != nil {
 		logger.ErrorCtx(ctx, "parse json body error", "err", err)
 		utils.Failure(ctx, w, r, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
 		return
 	}
-	
+
 	utils.Success(ctx, w, r, map[string]interface{}{
 		"record_count":     recordCount,
 		"user_count":       userCount,
@@ -64,7 +64,7 @@ func DashboardHandler(w http.ResponseWriter, r *http.Request) {
 		"record_day_count": recordDayCount,
 		"start_time":       conf.BaseConfInfo.StartTime,
 	})
-	
+
 }
 
 func Restart(w http.ResponseWriter, r *http.Request) {
@@ -75,11 +75,11 @@ func Restart(w http.ResponseWriter, r *http.Request) {
 		utils.Failure(ctx, w, r, param.CodeDBQueryFail, param.MsgDBQueryFail, "")
 		return
 	}
-	
+
 	lines := strings.Split(params, "\n")
-	
+
 	execPath, _ := os.Executable()
-	
+
 	args := []string{}
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
@@ -87,9 +87,9 @@ func Restart(w http.ResponseWriter, r *http.Request) {
 			args = append(args, line)
 		}
 	}
-	
+
 	env := os.Environ()
-	
+
 	go func() {
 		if runtime.GOOS == "windows" {
 			cmd := exec.Command(execPath, args...)
@@ -98,7 +98,7 @@ func Restart(w http.ResponseWriter, r *http.Request) {
 			cmd.Stdin = os.Stdin
 			cmd.Env = env
 			cmd.Dir = filepath.Dir(execPath)
-			
+
 			if err := cmd.Start(); err != nil {
 				logger.ErrorCtx(ctx, "restart fail", "err", err)
 				return
@@ -111,7 +111,7 @@ func Restart(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}()
-	
+
 	utils.Success(ctx, w, r, "")
 }
 
@@ -119,19 +119,19 @@ func Log(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.Header().Set("Transfer-Encoding", "chunked")
 	typ := r.URL.Query().Get("type")
-	
+
 	maxLines := 5000
 	if typ != "" {
 		maxLines = 100000
 	}
-	
+
 	filePath := utils.GetAbsPath("log/muse_bot.log")
 	startFrom, err := utils.GetTailStartOffset(filePath, maxLines)
 	if err != nil {
 		http.Error(w, "Failed to read log file", http.StatusInternalServerError)
 		return
 	}
-	
+
 	t, err := tail.TailFile(filePath, tail.Config{
 		Follow:    true,
 		ReOpen:    true,
@@ -143,9 +143,9 @@ func Log(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to tail log file", http.StatusInternalServerError)
 		return
 	}
-	
+
 	flusher := w.(http.Flusher)
-	
+
 	for line := range t.Lines {
 		select {
 		case <-r.Context().Done():

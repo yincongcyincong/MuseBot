@@ -3,7 +3,7 @@ package llm
 import (
 	"encoding/json"
 	"regexp"
-	
+
 	"github.com/sashabaranov/go-openai"
 	"github.com/yincongcyincong/MuseBot/conf"
 	"github.com/yincongcyincong/MuseBot/i18n"
@@ -33,24 +33,24 @@ func (d *LLMTaskReq) ExecuteMcp() error {
 		})
 		return true
 	})
-	
+
 	// get mcp request
 	llm := NewLLM(WithChatId(d.ChatId), WithMsgId(d.MsgId), WithUserId(d.UserId),
 		WithMessageChan(d.MessageChan), WithContent(d.Content), WithHTTPMsgChan(d.HTTPMsgChan),
 		WithPerMsgLen(d.PerMsgLen), WithContext(d.Ctx))
-	
+
 	prompt := i18n.GetMessage("mcp_prompt", taskParam)
 	llm.LLMClient.GetMessage(openai.ChatMessageRoleUser, prompt)
 	llm.Content = prompt
 	llm.LLMClient.GetModel(llm)
-	
+
 	metrics.APIRequestCount.WithLabelValues(llm.Model).Inc()
 	c, err := llm.LLMClient.SyncSend(d.Ctx, llm)
 	if err != nil {
 		logger.ErrorCtx(d.Ctx, "get message fail", "err", err)
 		return err
 	}
-	
+
 	matches := mcpRe.FindAllString(c, -1)
 	mcpResult := new(McpResult)
 	for _, match := range matches {
@@ -59,10 +59,10 @@ func (d *LLMTaskReq) ExecuteMcp() error {
 			logger.ErrorCtx(d.Ctx, "json umarshal fail", "err", err)
 		}
 	}
-	
+
 	llm.DirectSendMsg(c, false)
 	logger.InfoCtx(d.Ctx, "mcp plan", "plan", mcpResult)
-	
+
 	// execute mcp request
 	var taskTool *conf.AgentInfo
 	taskToolInter, ok := conf.TaskTools.Load(mcpResult.Agent)
@@ -76,18 +76,18 @@ func (d *LLMTaskReq) ExecuteMcp() error {
 	mcpLLM.Content = d.Content
 	mcpLLM.LLMClient.GetMessage(openai.ChatMessageRoleUser, d.Content)
 	mcpLLM.LLMClient.GetModel(mcpLLM)
-	
+
 	metrics.APIRequestCount.WithLabelValues(mcpLLM.Model).Inc()
 	err = mcpLLM.LLMClient.Send(d.Ctx, mcpLLM)
 	if err != nil {
 		logger.ErrorCtx(d.Ctx, "execute conversation fail", "err", err)
 		return err
 	}
-	
+
 	err = mcpLLM.InsertOrUpdate()
 	if err != nil {
 		logger.ErrorCtx(d.Ctx, "insertOrUpdate fail", "err", err)
 	}
-	
+
 	return err
 }

@@ -10,14 +10,14 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	
+
 	"github.com/yincongcyincong/MuseBot/logger"
 )
 
 type BaseConf struct {
 	StartTime int64 `json:"-"`
 	ImageDay  int   `json:"-"`
-	
+
 	TelegramBotToken        string `json:"telegram_bot_token"`
 	DiscordBotToken         string `json:"discord_bot_token"`
 	SlackBotToken           string `json:"slack_bot_token"`
@@ -41,7 +41,7 @@ type BaseConf struct {
 	QQOneBotReceiveToken    string `json:"qq_one_bot_receive_token"`
 	QQOneBotSendToken       string `json:"qq_one_bot_send_token"`
 	QQOneBotHttpServer      string `json:"qq_one_bot_http_server"`
-	
+
 	DeepseekToken     string `json:"deepseek_token"`
 	OpenAIToken       string `json:"openai_token"`
 	GeminiToken       string `json:"gemini_token"`
@@ -52,7 +52,7 @@ type BaseConf struct {
 	ChatAnyWhereToken string `json:"chat_any_where_token"`
 	ErnieAK           string `json:"ernie_ak"`
 	ErnieSK           string `json:"ernie_sk"`
-	
+
 	BotName           string `json:"bot_name"`
 	Type              string `json:"type"`
 	MediaType         string `json:"media_type"`
@@ -82,11 +82,11 @@ type BaseConf struct {
 	LLMOptionParam    bool   `json:"llm_option_param"`
 	ImagePath         string `json:"image_path"`
 	IsStreaming       bool   `json:"is_streaming"`
-	
+
 	CrtFile string `json:"crt_file"`
 	KeyFile string `json:"key_file"`
 	CaFile  string `json:"ca_file"`
-	
+
 	AllowedUserIds  map[string]bool `json:"allowed_user_ids"`
 	AllowedGroupIds map[string]bool `json:"allowed_group_ids"`
 }
@@ -102,7 +102,7 @@ func InitConf() {
 		logConf("", "")
 		return
 	}
-	
+
 	flag.StringVar(&BaseConfInfo.TelegramBotToken, "telegram_bot_token", "", "Telegram bot tokens")
 	flag.StringVar(&BaseConfInfo.DiscordBotToken, "discord_bot_token", "", "Discord bot tokens")
 	flag.StringVar(&BaseConfInfo.SlackBotToken, "slack_bot_token", "", "Slack bot tokens")
@@ -128,7 +128,7 @@ func InitConf() {
 	flag.StringVar(&BaseConfInfo.QQOneBotHttpServer, "qq_one_bot_http_server", "http://127.0.0.1:3000", "onebot http server")
 	flag.BoolVar(&BaseConfInfo.SmartMode, "smart_mode", false, "Smart mode")
 	flag.IntVar(&BaseConfInfo.ContextExpireTime, "context_expire_time", 86400, "Context expire time")
-	
+
 	flag.StringVar(&BaseConfInfo.DeepseekToken, "deepseek_token", "", "deepseek auth token")
 	flag.StringVar(&BaseConfInfo.OpenAIToken, "openai_token", "", "openai auth token")
 	flag.StringVar(&BaseConfInfo.GeminiToken, "gemini_token", "", "gemini auth token")
@@ -141,7 +141,7 @@ func InitConf() {
 	flag.StringVar(&BaseConfInfo.VolcAK, "volc_ak", "", "volc ak")
 	flag.StringVar(&BaseConfInfo.VolcSK, "volc_sk", "", "volc sk")
 	flag.StringVar(&BaseConfInfo.ChatAnyWhereToken, "chat_any_where_token", "", "chatAnyWhere Token")
-	
+
 	flag.StringVar(&BaseConfInfo.BotName, "bot_name", "MuseBot", "bot name")
 	flag.StringVar(&BaseConfInfo.CustomUrl, "custom_url", "", "custom url")
 	flag.StringVar(&BaseConfInfo.CustomPath, "custom_path", "", "custom path")
@@ -160,7 +160,7 @@ func InitConf() {
 	flag.StringVar(&BaseConfInfo.Character, "character", "", "ai's character")
 	flag.StringVar(&BaseConfInfo.Powered, "powered", "", "powered by")
 	flag.StringVar(&BaseConfInfo.ImagePath, "image_path", "./conf/img/", "image path")
-	
+
 	flag.StringVar(&BaseConfInfo.CrtFile, "crt_file", "", "public key file")
 	flag.StringVar(&BaseConfInfo.KeyFile, "key_file", "", "secret key file")
 	flag.StringVar(&BaseConfInfo.CaFile, "ca_file", "", "ca file")
@@ -171,13 +171,13 @@ func InitConf() {
 	flag.IntVar(&BaseConfInfo.LLMRetryInterval, "llm_retry_interval", 100, "llm retry interval")
 	flag.BoolVar(&BaseConfInfo.LLMOptionParam, "llm_option_param", false, "llm option param")
 	flag.BoolVar(&BaseConfInfo.IsStreaming, "is_streaming", false, "is streaming")
-	
+
 	allowedUserIds := flag.String("allowed_user_ids", "", "allowed user ids")
 	allowedGroupIds := flag.String("allowed_group_ids", "", "allowed group ids")
-	
+
 	BaseConfInfo.AllowedUserIds = make(map[string]bool)
 	BaseConfInfo.AllowedGroupIds = make(map[string]bool)
-	
+
 	InitLLMConf()
 	InitPhotoConf()
 	InitVideoConf()
@@ -185,274 +185,274 @@ func InitConf() {
 	InitToolsConf()
 	InitRagConf()
 	InitRegisterConf()
-	
+
 	flag.CommandLine.Init(os.Args[0], flag.ContinueOnError)
 	flag.Parse()
-	
+
 	if os.Getenv("TELEGRAM_BOT_TOKEN") != "" {
 		BaseConfInfo.TelegramBotToken = os.Getenv("TELEGRAM_BOT_TOKEN")
 	}
-	
+
 	if os.Getenv("CHAT_ANY_WHERE_TOKEN") != "" {
 		BaseConfInfo.ChatAnyWhereToken = os.Getenv("CHAT_ANY_WHERE_TOKEN")
 	}
-	
+
 	if os.Getenv("DISCORD_BOT_TOKEN") != "" {
 		BaseConfInfo.DiscordBotToken = os.Getenv("DISCORD_BOT_TOKEN")
 	}
-	
+
 	if os.Getenv("SLACK_BOT_TOKEN") != "" {
 		BaseConfInfo.SlackBotToken = os.Getenv("SLACK_BOT_TOKEN")
 	}
-	
+
 	if os.Getenv("SLACK_APP_TOKEN") != "" {
 		BaseConfInfo.SlackAppToken = os.Getenv("SLACK_APP_TOKEN")
 	}
-	
+
 	if os.Getenv("LARK_APP_ID") != "" {
 		BaseConfInfo.LarkAPPID = os.Getenv("LARK_APP_ID")
 	}
-	
+
 	if os.Getenv("LARK_APP_SECRET") != "" {
 		BaseConfInfo.LarkAppSecret = os.Getenv("LARK_APP_SECRET")
 	}
-	
+
 	if os.Getenv("DING_CLIENT_ID") != "" {
 		BaseConfInfo.DingClientId = os.Getenv("DING_CLIENT_ID")
 	}
-	
+
 	if os.Getenv("DING_CLIENT_SECRET") != "" {
 		BaseConfInfo.DingClientSecret = os.Getenv("DING_CLIENT_SECRET")
 	}
-	
+
 	if os.Getenv("COM_WECHAT_TOKEN") != "" {
 		BaseConfInfo.ComWechatToken = os.Getenv("COM_WECHAT_TOKEN")
 	}
-	
+
 	if os.Getenv("WECHAT_TOKEN") != "" {
 		BaseConfInfo.WechatToken = os.Getenv("WECHAT_TOKEN")
 	}
-	
+
 	if os.Getenv("WECHAT_APP_ID") != "" {
 		BaseConfInfo.WechatAppID = os.Getenv("WECHAT_APP_ID")
 	}
-	
+
 	if os.Getenv("WECHAT_APP_SECRET") != "" {
 		BaseConfInfo.WechatAppSecret = os.Getenv("WECHAT_APP_SECRET")
 	}
-	
+
 	if os.Getenv("WECHAT_ENCODING_AES_KEY") != "" {
 		BaseConfInfo.WechatEncodingAESKey = os.Getenv("WECHAT_ENCODING_AES_KEY")
 	}
-	
+
 	if os.Getenv("WECHAT_ACTIVE") != "" {
 		BaseConfInfo.WechatActive = os.Getenv("WECHAT_ACTIVE") == "true"
 	}
-	
+
 	if os.Getenv("COM_WECHAT_ENCODING_AES_KEY") != "" {
 		BaseConfInfo.ComWechatEncodingAESKey = os.Getenv("COM_WECHAT_ENCODING_AES_KEY")
 	}
-	
+
 	if os.Getenv("COM_WECHAT_CORP_ID") != "" {
 		BaseConfInfo.ComWechatCorpID = os.Getenv("COM_WECHAT_CORP_ID")
 	}
-	
+
 	if os.Getenv("COM_WECHAT_SECRET") != "" {
 		BaseConfInfo.ComWechatSecret = os.Getenv("COM_WECHAT_SECRET")
 	}
-	
+
 	if os.Getenv("COM_WECHAT_AGENT_ID") != "" {
 		BaseConfInfo.ComWechatAgentID = os.Getenv("COM_WECHAT_AGENT_ID")
 	}
-	
+
 	if os.Getenv("QQ_APP_ID") != "" {
 		BaseConfInfo.QQAppID = os.Getenv("QQ_APP_ID")
 	}
-	
+
 	if os.Getenv("QQ_APP_SECRET") != "" {
 		BaseConfInfo.QQAppSecret = os.Getenv("QQ_APP_SECRET")
 	}
-	
+
 	if os.Getenv("QQ_ONEBOT_SEND_TOKEN") != "" {
 		BaseConfInfo.QQOneBotSendToken = os.Getenv("QQ_ONEBOT_SEND_TOKEN")
 	}
-	
+
 	if os.Getenv("QQ_ONEBOT_RECEIVE_TOKEN") != "" {
 		BaseConfInfo.QQOneBotReceiveToken = os.Getenv("QQ_ONEBOT_RECEIVE_TOKEN")
 	}
-	
+
 	if os.Getenv("QQ_ONEBOT_HTTP_SERVER") != "" {
 		BaseConfInfo.QQOneBotHttpServer = os.Getenv("QQ_ONEBOT_HTTP_SERVER")
 	}
-	
+
 	if os.Getenv("DEEPSEEK_TOKEN") != "" {
 		BaseConfInfo.DeepseekToken = os.Getenv("DEEPSEEK_TOKEN")
 	}
-	
+
 	if os.Getenv("CUSTOM_URL") != "" {
 		BaseConfInfo.CustomUrl = os.Getenv("CUSTOM_URL")
 	}
-	
+
 	if os.Getenv("BOT_NAME") != "" {
 		BaseConfInfo.BotName = os.Getenv("BOT_NAME")
 	}
-	
+
 	if os.Getenv("TYPE") != "" {
 		BaseConfInfo.Type = os.Getenv("TYPE")
 	}
-	
+
 	if os.Getenv("VOLC_AK") != "" {
 		BaseConfInfo.VolcAK = os.Getenv("VOLC_AK")
 	}
-	
+
 	if os.Getenv("VOLC_SK") != "" {
 		BaseConfInfo.VolcSK = os.Getenv("VOLC_SK")
 	}
-	
+
 	if os.Getenv("DB_TYPE") != "" {
 		BaseConfInfo.DBType = os.Getenv("DB_TYPE")
 	}
-	
+
 	if os.Getenv("DB_CONF") != "" {
 		BaseConfInfo.DBConf = os.Getenv("DB_CONF")
 	}
-	
+
 	if os.Getenv("ALLOWED_USER_IDS") != "" {
 		*allowedUserIds = os.Getenv("ALLOWED_USER_IDS")
 	}
-	
+
 	if os.Getenv("ALLOWED_GROUP_IDS") != "" {
 		*allowedGroupIds = os.Getenv("ALLOWED_GROUP_IDS")
 	}
-	
+
 	if os.Getenv("LLM_PROXY") != "" {
 		BaseConfInfo.LLMProxy = os.Getenv("LLM_PROXY")
 	}
-	
+
 	if os.Getenv("ROBOT_PROXY") != "" {
 		BaseConfInfo.RobotProxy = os.Getenv("ROBOT_PROXY")
 	}
-	
+
 	if os.Getenv("LANG") != "" {
 		BaseConfInfo.Lang = os.Getenv("LANG")
 	}
-	
+
 	if os.Getenv("TOKEN_PER_USER") != "" {
 		BaseConfInfo.TokenPerUser, _ = strconv.Atoi(os.Getenv("TOKEN_PER_USER"))
 	}
-	
+
 	if os.Getenv("MAX_USER_CHAT") != "" {
 		BaseConfInfo.MaxUserChat, _ = strconv.Atoi(os.Getenv("MAX_USER_CHAT"))
 	}
-	
+
 	if os.Getenv("HTTP_HOST") != "" {
 		BaseConfInfo.HTTPHost = os.Getenv("HTTP_HOST")
 	}
-	
+
 	if os.Getenv("USE_TOOLS") == "true" {
 		BaseConfInfo.UseTools = true
 	}
-	
+
 	if os.Getenv("OPENAI_TOKEN") != "" {
 		BaseConfInfo.OpenAIToken = os.Getenv("OPENAI_TOKEN")
 	}
-	
+
 	if os.Getenv("GEMINI_TOKEN") != "" {
 		BaseConfInfo.GeminiToken = os.Getenv("GEMINI_TOKEN")
 	}
-	
+
 	if os.Getenv("VOL_TOKEN") != "" {
 		BaseConfInfo.VolToken = os.Getenv("VOL_TOKEN")
 	}
-	
+
 	if os.Getenv("ALIYUN_TOKEN") != "" {
 		BaseConfInfo.AliyunToken = os.Getenv("ALIYUN_TOKEN")
 	}
-	
+
 	if os.Getenv("ERNIE_AK") != "" {
 		BaseConfInfo.ErnieAK = os.Getenv("ERNIE_AK")
 	}
-	
+
 	if os.Getenv("ERNIE_SK") != "" {
 		BaseConfInfo.ErnieSK = os.Getenv("ERNIE_SK")
 	}
-	
+
 	if os.Getenv("OPEN_ROUTER_TOKEN") != "" {
 		BaseConfInfo.OpenRouterToken = os.Getenv("OPEN_ROUTER_TOKEN")
 	}
-	
+
 	if os.Getenv("AI_302_TOKEN") != "" {
 		BaseConfInfo.AI302Token = os.Getenv("AI_302_TOKEN")
 	}
-	
+
 	if os.Getenv("MAX_QA_PAIR") != "" {
 		BaseConfInfo.MaxQAPair, _ = strconv.Atoi(os.Getenv("MAX_QA_PAIR"))
 	}
-	
+
 	if os.Getenv("CHARACTER") != "" {
 		BaseConfInfo.Character = os.Getenv("CHARACTER")
 	}
-	
+
 	if os.Getenv("CRT_FILE") != "" {
 		BaseConfInfo.CrtFile = os.Getenv("CRT_FILE")
 	}
-	
+
 	if os.Getenv("KEY_FILE") != "" {
 		BaseConfInfo.KeyFile = os.Getenv("KEY_FILE")
 	}
-	
+
 	if os.Getenv("CA_FILE") != "" {
 		BaseConfInfo.CaFile = os.Getenv("CA_FILE")
 	}
-	
+
 	if os.Getenv("MEDIA_TYPE") != "" {
 		BaseConfInfo.MediaType = os.Getenv("MEDIA_TYPE")
 	}
-	
+
 	if os.Getenv("SMART_MODE") != "" {
 		BaseConfInfo.SmartMode = os.Getenv("SMART_MODE") == "true"
 	}
-	
+
 	if os.Getenv("CONTEXT_EXPIRE_TIME") != "" {
 		BaseConfInfo.ContextExpireTime, _ = strconv.Atoi(os.Getenv("CONTEXT_EXPIRE_TIME"))
 	}
-	
+
 	if os.Getenv("POWERED") != "" {
 		BaseConfInfo.Powered = os.Getenv("POWERED")
 	}
-	
+
 	if os.Getenv("SEND_MCP_RES") != "" {
 		BaseConfInfo.SendMcpRes = os.Getenv("SEND_MCP_RES") == "true"
 	}
-	
+
 	if os.Getenv("DEFAULT_MODEL") != "" {
 		BaseConfInfo.DefaultModel = os.Getenv("DEFAULT_MODEL")
 	}
-	
+
 	if os.Getenv("LLM_RETRY_TIMES") != "" {
 		BaseConfInfo.LLMRetryTimes, _ = strconv.Atoi(os.Getenv("LLM_RETRY_TIMES"))
 	}
-	
+
 	if os.Getenv("LLM_RETRY_INTERVAL") != "" {
 		BaseConfInfo.LLMRetryInterval, _ = strconv.Atoi(os.Getenv("LLM_RETRY_INTERVAL"))
 	}
-	
+
 	if os.Getenv("LLM_OPTION_PARAM") != "" {
 		BaseConfInfo.LLMOptionParam = os.Getenv("LLM_OPTION_PARAM") == "true"
 	}
-	
+
 	if os.Getenv("IMAGE_PATH") != "" {
 		BaseConfInfo.ImagePath = os.Getenv("IMAGE_PATH")
 	}
-	
+
 	if os.Getenv("IS_STREAMING") != "" {
 		BaseConfInfo.IsStreaming = os.Getenv("IS_STREAMING") == "true"
 	}
-	
+
 	if os.Getenv("SEND_MCP_MEDIA_TO_LLM") == "true" {
 		BaseConfInfo.SendMcpMediaToLLM = true
 	}
-	
+
 	EnvAudioConf()
 	EnvRagConf()
 	EnvLLMConf()
@@ -460,10 +460,10 @@ func InitConf() {
 	EnvToolsConf()
 	EnvVideoConf()
 	EnvRegisterConf()
-	
+
 	logConf(*allowedUserIds, *allowedGroupIds)
 	SaveConf()
-	
+
 }
 
 func logConf(allowedUserIds, allowedGroupIds string) {
@@ -473,14 +473,14 @@ func logConf(allowedUserIds, allowedGroupIds string) {
 		}
 		BaseConfInfo.AllowedUserIds[userIdStr] = true
 	}
-	
+
 	for _, groupIdStr := range strings.Split(allowedGroupIds, ",") {
 		if groupIdStr == "" {
 			continue
 		}
 		BaseConfInfo.AllowedGroupIds[groupIdStr] = true
 	}
-	
+
 	logger.Info("CONF", "TelegramBotToken", BaseConfInfo.TelegramBotToken)
 	logger.Info("CONF", "DiscordBotToken", BaseConfInfo.DiscordBotToken)
 	logger.Info("CONF", "SlackBotToken", BaseConfInfo.SlackBotToken)
@@ -545,7 +545,7 @@ func logConf(allowedUserIds, allowedGroupIds string) {
 	logger.Info("CONF", "ImagePath", BaseConfInfo.ImagePath)
 	logger.Info("CONF", "IsStreaming", BaseConfInfo.IsStreaming)
 	logger.Info("CONF", "SendMcpMediaToLLM", BaseConfInfo.SendMcpMediaToLLM)
-	
+
 	logger.Info("AUDIO_CONF", "AudioAppID", AudioConfInfo.VolAudioAppID)
 	logger.Info("AUDIO_CONF", "AudioToken", AudioConfInfo.VolAudioToken)
 	logger.Info("AUDIO_CONF", "AudioCluster", AudioConfInfo.VolAudioRecCluster)
@@ -564,7 +564,7 @@ func logConf(allowedUserIds, allowedGroupIds string) {
 	logger.Info("AUDIO_CONF", "AliyunAudioModel", AudioConfInfo.AliyunAudioModel)
 	logger.Info("AUDIO_CONF", "AliyunAudioVoice", AudioConfInfo.AliyunAudioVoice)
 	logger.Info("AUDIO_CONF", "AliyunAudioRecModel", AudioConfInfo.AliyunAudioRecModel)
-	
+
 	logger.Info("RAG_CONF", "EmbeddingType", RagConfInfo.EmbeddingType)
 	logger.Info("RAG_CONF", "KnowledgePath", RagConfInfo.KnowledgePath)
 	logger.Info("RAG_CONF", "VectorDBType", RagConfInfo.VectorDBType)
@@ -573,7 +573,7 @@ func logConf(allowedUserIds, allowedGroupIds string) {
 	logger.Info("RAG_CONF", "MilvusURL", RagConfInfo.MilvusURL)
 	logger.Info("RAG_CONF", "WeaviateURL", RagConfInfo.WeaviateURL)
 	logger.Info("RAG_CONF", "WeaviateScheme", RagConfInfo.WeaviateScheme)
-	
+
 	logger.Info("PHOTO_CONF", "ReqKey", PhotoConfInfo.ReqKey)
 	logger.Info("PHOTO_CONF", "ModelVersion", PhotoConfInfo.ModelVersion)
 	logger.Info("PHOTO_CONF", "ReqScheduleConf", PhotoConfInfo.ReqScheduleConf)
@@ -602,7 +602,7 @@ func logConf(allowedUserIds, allowedGroupIds string) {
 	logger.Info("PHOTO_CONF", "AI302RecModel", PhotoConfInfo.MixRecModel)
 	logger.Info("PHOTO_CONF", "AliyunImageModel", PhotoConfInfo.AliyunImageModel)
 	logger.Info("PHOTO_CONF", "AliyunRecModel", PhotoConfInfo.AliyunRecModel)
-	
+
 	logger.Info("VIDEO_CONF", "VOL_VIDEO_MODEL", VideoConfInfo.VolVideoModel)
 	logger.Info("VIDEO_CONF", "RADIO", VideoConfInfo.Radio)
 	logger.Info("VIDEO_CONF", "DURATION", VideoConfInfo.Duration)
@@ -612,12 +612,12 @@ func logConf(allowedUserIds, allowedGroupIds string) {
 	logger.Info("AUDIO_CONF", "GeminiVideoModel", VideoConfInfo.GeminiVideoModel)
 	logger.Info("AUDIO_CONF", "AI302VideoModel", VideoConfInfo.AI302VideoModel)
 	logger.Info("AUDIO_CONF", "AliyunVideoModel", VideoConfInfo.AliyunVideoModel)
-	
+
 	logger.Info("REGISTER_CONF", "Type", RegisterConfInfo.Type)
 	logger.Info("REGISTER_CONF", "EtcdURLs", RegisterConfInfo.EtcdURLs)
 	logger.Info("REGISTER_CONF", "EtcdUsername", RegisterConfInfo.EtcdUsername)
 	logger.Info("REGISTER_CONF", "EtcdPassword", RegisterConfInfo.EtcdPassword)
-	
+
 	logger.Info("LLM_CONF", "FrequencyPenalty", LLMConfInfo.FrequencyPenalty)
 	logger.Info("LLM_CONF", "MaxTokens", LLMConfInfo.MaxTokens)
 	logger.Info("LLM_CONF", "PresencePenalty", LLMConfInfo.PresencePenalty)
@@ -626,7 +626,7 @@ func logConf(allowedUserIds, allowedGroupIds string) {
 	logger.Info("LLM_CONF", "Stop", LLMConfInfo.Stop)
 	logger.Info("LLM_CONF", "LogProbs", LLMConfInfo.LogProbs)
 	logger.Info("LLM_CONF", "TopLogProbs", LLMConfInfo.TopLogProbs)
-	
+
 	logger.Info("TOOLS_CONF", "McpConfPath", *ToolsConfInfo.McpConfPath)
 }
 
@@ -650,71 +650,71 @@ func loadConf() bool {
 			}
 		}
 	}
-	
+
 	if !(len(m) == 0 || (len(m) == 1 && (m["bot_name"] != "" || m["http_host"] != "")) ||
 		(len(m) == 2 && m["bot_name"] != "" && m["http_host"] != "")) {
 		return false
 	}
-	
+
 	data, err := os.ReadFile(getSaveConf(m))
 	if err != nil {
 		return false
 	}
-	
+
 	err = json.Unmarshal(data, &AllConf)
 	if err != nil {
 		logger.Error("Failed to parse config file", "err", err)
 		return false
 	}
-	
+
 	err = TransferMapToConf(AllConf["base"].(map[string]interface{}), BaseConfInfo)
 	if err != nil {
 		logger.Error("Failed to transfer map to base conf", "err", err)
 		return false
 	}
-	
+
 	err = TransferMapToConf(AllConf["audio"].(map[string]interface{}), AudioConfInfo)
 	if err != nil {
 		logger.Error("Failed to transfer map to audio conf", "err", err)
 		return false
 	}
-	
+
 	err = TransferMapToConf(AllConf["llm"].(map[string]interface{}), LLMConfInfo)
 	if err != nil {
 		logger.Error("Failed to transfer map to llm conf", "err", err)
 		return false
 	}
-	
+
 	err = TransferMapToConf(AllConf["photo"].(map[string]interface{}), PhotoConfInfo)
 	if err != nil {
 		logger.Error("Failed to transfer map to photo conf", "err", err)
 		return false
 	}
-	
+
 	err = TransferMapToConf(AllConf["rag"].(map[string]interface{}), RagConfInfo)
 	if err != nil {
 		logger.Error("Failed to transfer map to rag conf", "err", err)
 		return false
 	}
-	
+
 	err = TransferMapToConf(AllConf["video"].(map[string]interface{}), VideoConfInfo)
 	if err != nil {
 		logger.Error("Failed to transfer map to video conf", "err", err)
 		return false
 	}
-	
+
 	err = TransferMapToConf(AllConf["register"].(map[string]interface{}), RegisterConfInfo)
 	if err != nil {
 		logger.Error("Failed to transfer map to register conf", "err", err)
 		return false
 	}
-	
+
 	err = TransferMapToConf(AllConf["tools"].(map[string]interface{}), ToolsConfInfo)
 	if err != nil {
 		logger.Error("Failed to transfer map to tools conf", "err", err)
 		return false
 	}
-	
+
 	return true
 }
 
@@ -727,24 +727,24 @@ func SaveConf() {
 	AllConf["video"] = VideoConfInfo
 	AllConf["register"] = RegisterConfInfo
 	AllConf["tools"] = ToolsConfInfo
-	
+
 	fileName := getSaveConf(map[string]string{
 		"bot_name":  BaseConfInfo.BotName,
 		"http_host": BaseConfInfo.HTTPHost,
 	})
-	
+
 	confData, err := json.Marshal(AllConf)
 	if err != nil {
 		logger.Error("Failed to marshal config data", "err", err)
 		return
 	}
-	
+
 	err = os.WriteFile(fileName, confData, 0644)
 	if err != nil {
 		logger.Error("Failed to write config file", "err", err)
 		return
 	}
-	
+
 }
 
 func getSaveConf(m map[string]string) string {
@@ -752,13 +752,13 @@ func getSaveConf(m map[string]string) string {
 	if botName == "" {
 		botName = "MuseBot"
 	}
-	
+
 	httpHost := m["http_host"]
 	if httpHost == "" {
 		httpHost = ":36060"
 	}
 	httpHost = NormalizeHTTP(httpHost)
-	
+
 	hash := md5.Sum([]byte(httpHost))
 	md5Str := hex.EncodeToString(hash[:])
 	return GetAbsPath(botName + md5Str + ".json")
@@ -779,6 +779,6 @@ func TransferMapToConf(m map[string]interface{}, conf interface{}) error {
 	if err != nil {
 		return err
 	}
-	
+
 	return json.Unmarshal(data, conf)
 }

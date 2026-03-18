@@ -11,7 +11,7 @@ import (
 	"regexp"
 	"strings"
 	"time"
-	
+
 	"github.com/cohesion-org/deepseek-go/constants"
 	openrouter "github.com/revrost/go-openrouter"
 	"github.com/yincongcyincong/MuseBot/conf"
@@ -59,7 +59,7 @@ func GenerateMixImg(ctx context.Context, prompt string, imageContent []byte) ([]
 	mediaType := utils.GetImgType(llmConfig)
 	model := utils.GetUsingImgModel(mediaType, llmConfig.ImgModel)
 	metrics.APIRequestCount.WithLabelValues(model).Inc()
-	
+
 	messages := openrouter.ChatCompletionMessage{
 		Role: constants.ChatMessageRoleUser,
 		Content: openrouter.Content{
@@ -71,7 +71,7 @@ func GenerateMixImg(ctx context.Context, prompt string, imageContent []byte) ([]
 			},
 		},
 	}
-	
+
 	if len(imageContent) != 0 {
 		messages.Content.Multi = append(messages.Content.Multi, openrouter.ChatMessagePart{
 			Type: openrouter.ChatMessagePartTypeImageURL,
@@ -80,13 +80,13 @@ func GenerateMixImg(ctx context.Context, prompt string, imageContent []byte) ([]
 			},
 		})
 	}
-	
+
 	client := GetMixClient(ctx, "img")
 	request := openrouter.ChatCompletionRequest{
 		Model:    model,
 		Messages: []openrouter.ChatCompletionMessage{messages},
 	}
-	
+
 	// assign task
 	var response openrouter.ChatCompletionResponse
 	var err error
@@ -98,14 +98,14 @@ func GenerateMixImg(ctx context.Context, prompt string, imageContent []byte) ([]
 		}
 		break
 	}
-	
+
 	if err != nil {
 		logger.ErrorCtx(ctx, "create chat completion fail", "err", err)
 		return nil, 0, err
 	}
-	
+
 	metrics.APIRequestDuration.WithLabelValues(model).Observe(time.Since(start).Seconds())
-	
+
 	if len(response.Choices) != 0 {
 		if len(response.Choices[0].Message.Content.Multi) != 0 {
 			imageContent, err := utils.DownloadFile(response.Choices[0].Message.Content.Multi[0].ImageURL.URL)
@@ -134,7 +134,7 @@ func GenerateMixImg(ctx context.Context, prompt string, imageContent []byte) ([]
 			}
 		}
 	}
-	
+
 	return nil, 0, errors.New("image is empty")
 }
 
@@ -150,7 +150,7 @@ func GetMixClient(ctx context.Context, clientType string) *openrouter.Client {
 	case "rec":
 		t = utils.GetRecType(db.GetCtxUserInfo(ctx).LLMConfigRaw)
 	}
-	
+
 	token := ""
 	specialLLMUrl := ""
 	switch t {
@@ -160,7 +160,7 @@ func GetMixClient(ctx context.Context, clientType string) *openrouter.Client {
 		token = conf.BaseConfInfo.AI302Token
 		specialLLMUrl = "https://api.302.ai/"
 	}
-	
+
 	config := openrouter.DefaultConfig(token)
 	config.HTTPClient = utils.GetLLMProxyClient()
 	if specialLLMUrl != "" {
@@ -174,13 +174,13 @@ func GetMixClient(ctx context.Context, clientType string) *openrouter.Client {
 
 func Generate302AIVideo(ctx context.Context, prompt string, image []byte) (string, int, error) {
 	httpClient := utils.GetLLMProxyClient()
-	
+
 	start := time.Now()
 	llmConfig := db.GetCtxUserInfo(ctx).LLMConfigRaw
 	mediaType := utils.GetVideoType(llmConfig)
 	model := utils.GetUsingVideoModel(mediaType, llmConfig.VideoModel)
 	metrics.APIRequestCount.WithLabelValues(model).Inc()
-	
+
 	// Step 1: prepare payload using map -> json
 	payloadMap := map[string]interface{}{
 		"model":      model,
@@ -189,23 +189,23 @@ func Generate302AIVideo(ctx context.Context, prompt string, image []byte) (strin
 		"resolution": conf.VideoConfInfo.Resolution,
 		"fps":        conf.VideoConfInfo.FPS,
 	}
-	
+
 	payloadBytes, err := json.Marshal(payloadMap)
 	if err != nil {
 		return "", 0, fmt.Errorf("failed to marshal payload: %w", err)
 	}
 	payload := strings.NewReader(string(payloadBytes))
-	
+
 	req, err := http.NewRequestWithContext(ctx, "POST", "https://api.302.ai/302/v2/video/create", payload)
-	
+
 	metrics.APIRequestDuration.WithLabelValues(model).Observe(time.Since(start).Seconds())
-	
+
 	if err != nil {
 		return "", 0, fmt.Errorf("failed to create request: %w", err)
 	}
 	req.Header.Add("Authorization", "Bearer "+conf.BaseConfInfo.AI302Token)
 	req.Header.Add("Content-Type", "application/json")
-	
+
 	var res *http.Response
 	for i := 0; i < conf.BaseConfInfo.LLMRetryTimes; i++ {
 		res, err = httpClient.Do(req)
@@ -215,14 +215,14 @@ func Generate302AIVideo(ctx context.Context, prompt string, image []byte) (strin
 		}
 		break
 	}
-	
+
 	if err != nil || res == nil {
 		return "", 0, fmt.Errorf("failed to call create API: %w %v", err, res)
 	}
 	defer res.Body.Close()
-	
+
 	body, _ := io.ReadAll(res.Body)
-	
+
 	var createResp CreateResp
 	if err := json.Unmarshal(body, &createResp); err != nil {
 		return "", 0, fmt.Errorf("failed to parse create response: %w, body=%s", err, string(body))
@@ -230,7 +230,7 @@ func Generate302AIVideo(ctx context.Context, prompt string, image []byte) (strin
 	if createResp.TaskID == "" {
 		return "", 0, fmt.Errorf("no task_id returned from create API, body=%s", string(body))
 	}
-	
+
 	// Step 2: Poll fetch API (保持原逻辑)
 	fetchURL := "https://api.302.ai/302/v2/video/fetch/" + createResp.TaskID
 	for i := 0; i < 100; i++ {
@@ -239,10 +239,10 @@ func Generate302AIVideo(ctx context.Context, prompt string, image []byte) (strin
 			return "", 0, fmt.Errorf("context canceled or timeout: %w", ctx.Err())
 		default:
 		}
-		
+
 		req, _ := http.NewRequestWithContext(ctx, "GET", fetchURL, nil)
 		req.Header.Add("Authorization", "Bearer "+conf.BaseConfInfo.AI302Token)
-		
+
 		res, err := httpClient.Do(req)
 		if err != nil {
 			logger.ErrorCtx(ctx, "failed to fetch result:", "err", err)
@@ -251,14 +251,14 @@ func Generate302AIVideo(ctx context.Context, prompt string, image []byte) (strin
 		}
 		body, _ := io.ReadAll(res.Body)
 		res.Body.Close()
-		
+
 		var fetchResp AI302FetchResp
 		if err := json.Unmarshal(body, &fetchResp); err != nil {
 			logger.ErrorCtx(ctx, "failed to parse fetch response:", "err", err, "body", string(body))
 			time.Sleep(5 * time.Second)
 			continue
 		}
-		
+
 		if fetchResp.Status == "completed" {
 			if fetchResp.VideoURL != "" {
 				return fetchResp.VideoURL, 0, nil
@@ -269,9 +269,9 @@ func Generate302AIVideo(ctx context.Context, prompt string, image []byte) (strin
 		} else {
 			logger.InfoCtx(ctx, "task is still running, polling again...")
 		}
-		
+
 		time.Sleep(5 * time.Second)
 	}
-	
+
 	return "", 0, fmt.Errorf("video generation timeout")
 }

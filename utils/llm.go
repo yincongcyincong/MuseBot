@@ -28,18 +28,18 @@ func GetTxtType(llmConf *param.LLMConfig) string {
 	if llmConf == nil {
 		return conf.BaseConfInfo.Type
 	}
-	
+
 	aType := GetAvailTxtType()
 	for _, v := range aType {
 		if v == llmConf.TxtType {
 			return v
 		}
 	}
-	
+
 	if len(aType) > 0 {
 		return aType[0]
 	}
-	
+
 	return conf.BaseConfInfo.Type
 }
 
@@ -47,18 +47,18 @@ func GetImgType(llmConf *param.LLMConfig) string {
 	if llmConf == nil {
 		return conf.BaseConfInfo.MediaType
 	}
-	
+
 	aType := GetAvailImgType()
 	for _, v := range aType {
 		if v == llmConf.ImgType {
 			return v
 		}
 	}
-	
+
 	if len(aType) > 0 {
 		return aType[0]
 	}
-	
+
 	return conf.BaseConfInfo.MediaType
 }
 
@@ -66,18 +66,18 @@ func GetVideoType(llmConf *param.LLMConfig) string {
 	if llmConf == nil {
 		return conf.BaseConfInfo.MediaType
 	}
-	
+
 	aType := GetAvailVideoType()
 	for _, v := range aType {
 		if v == llmConf.VideoType {
 			return v
 		}
 	}
-	
+
 	if len(aType) > 0 {
 		return aType[0]
 	}
-	
+
 	return conf.BaseConfInfo.MediaType
 }
 
@@ -85,18 +85,18 @@ func GetTTSType(llmConf *param.LLMConfig) string {
 	if llmConf == nil {
 		return conf.BaseConfInfo.MediaType
 	}
-	
+
 	aType := GetAvailTTSType()
 	for _, v := range aType {
 		if v == llmConf.TTSType {
 			return v
 		}
 	}
-	
+
 	if len(aType) > 0 {
 		return aType[0]
 	}
-	
+
 	return conf.BaseConfInfo.MediaType
 }
 
@@ -115,7 +115,7 @@ func GetImgModel(t string) string {
 	case param.ChatAnyWhere:
 		return conf.PhotoConfInfo.OpenAIImageModel
 	}
-	
+
 	return ""
 }
 
@@ -130,7 +130,7 @@ func GetVideoModel(t string) string {
 	case param.Vol:
 		return conf.VideoConfInfo.VolVideoModel
 	}
-	
+
 	return ""
 }
 
@@ -145,7 +145,7 @@ func GetTTSModel(t string) string {
 	case param.OpenAi:
 		return conf.AudioConfInfo.OpenAIAudioModel
 	}
-	
+
 	return ""
 }
 
@@ -153,7 +153,7 @@ func GetTxtModel(t string) string {
 	if conf.BaseConfInfo.DefaultModel != "" {
 		return conf.BaseConfInfo.DefaultModel
 	}
-	
+
 	switch t {
 	case param.DeepSeek:
 		return godeepseek.DeepSeekChat
@@ -174,7 +174,7 @@ func GetTxtModel(t string) string {
 	case param.ChatAnyWhere:
 		return openai.GPT3Dot5Turbo
 	}
-	
+
 	return godeepseek.DeepSeekChat
 }
 
@@ -212,7 +212,7 @@ func GetAvailTxtType() []string {
 
 func GetAvailImgType() []string {
 	res := []string{}
-	
+
 	if conf.BaseConfInfo.GeminiToken != "" {
 		res = append(res, param.Gemini)
 	}
@@ -234,7 +234,7 @@ func GetAvailImgType() []string {
 	if conf.BaseConfInfo.ChatAnyWhereToken != "" {
 		res = append(res, param.ChatAnyWhere)
 	}
-	
+
 	return res
 }
 
@@ -252,7 +252,7 @@ func GetAvailVideoType() []string {
 	if conf.BaseConfInfo.VolToken != "" {
 		res = append(res, param.Vol)
 	}
-	
+
 	return res
 }
 
@@ -270,13 +270,13 @@ func GetAvailTTSType() []string {
 	if conf.BaseConfInfo.OpenAIToken != "" {
 		res = append(res, param.OpenAi)
 	}
-	
+
 	return res
 }
 
 func GetAvailRecType() []string {
 	res := []string{}
-	
+
 	if conf.BaseConfInfo.GeminiToken != "" {
 		res = append(res, param.Gemini)
 	}
@@ -292,7 +292,7 @@ func GetAvailRecType() []string {
 	if conf.BaseConfInfo.VolToken != "" {
 		res = append(res, param.Vol)
 	}
-	
+
 	return res
 }
 
@@ -300,18 +300,18 @@ func GetRecType(llmConf *param.LLMConfig) string {
 	if llmConf == nil {
 		return conf.BaseConfInfo.MediaType
 	}
-	
+
 	aType := GetAvailRecType()
 	for _, v := range aType {
 		if v == llmConf.RecType {
 			return v
 		}
 	}
-	
+
 	if len(aType) > 0 {
 		return aType[0]
 	}
-	
+
 	return conf.BaseConfInfo.MediaType
 }
 
@@ -344,7 +344,7 @@ func GetUsingVideoModel(ty string, model string) string {
 			return model
 		}
 		return param.GeminiVideoVeo3_1FastPreview
-	
+
 	case param.Aliyun:
 		if param.AliyunVideoModels[model] {
 			return model
@@ -358,7 +358,7 @@ func GetUsingVideoModel(ty string, model string) string {
 		}
 		return param.DoubaoSeedance1_0Pro
 	}
-	
+
 	return ""
 }
 
@@ -407,7 +407,7 @@ func GetUsingTxtModel(ty string, model string) string {
 		}
 		return qwen.QwenMax
 	}
-	
+
 	return model
 }
 
@@ -431,6 +431,6 @@ func GetUsingTTSModel(ty string, model string) string {
 		}
 		return param.Qwen3TTSFlash
 	}
-	
+
 	return model
 }

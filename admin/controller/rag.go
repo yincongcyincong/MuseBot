@@ -6,7 +6,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
-	
+
 	adminUtils "github.com/yincongcyincong/MuseBot/admin/utils"
 	"github.com/yincongcyincong/MuseBot/logger"
 	"github.com/yincongcyincong/MuseBot/param"
@@ -39,7 +39,7 @@ func ListRagFiles(w http.ResponseWriter, r *http.Request) {
 		utils.Failure(ctx, w, r, param.CodeServerFail, param.MsgServerFail, err)
 		return
 	}
-	
+
 	defer resp.Body.Close()
 	_, err = io.Copy(w, resp.Body)
 	if err != nil {
@@ -57,7 +57,7 @@ func GetRagFile(w http.ResponseWriter, r *http.Request) {
 		utils.Failure(ctx, w, r, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
 		return
 	}
-	
+
 	resp, err := adminUtils.GetCrtClient(botInfo).Do(GetRequest(ctx, http.MethodGet,
 		strings.TrimSuffix(botInfo.Address, "/")+"/rag/get?file_name="+r.FormValue("file_name"), bytes.NewBuffer(nil)))
 	if err != nil {
@@ -65,7 +65,7 @@ func GetRagFile(w http.ResponseWriter, r *http.Request) {
 		utils.Failure(ctx, w, r, param.CodeServerFail, param.MsgServerFail, err)
 		return
 	}
-	
+
 	defer resp.Body.Close()
 	_, err = io.Copy(w, resp.Body)
 	if err != nil {
@@ -83,7 +83,7 @@ func DeleteRagFile(w http.ResponseWriter, r *http.Request) {
 		utils.Failure(ctx, w, r, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
 		return
 	}
-	
+
 	resp, err := adminUtils.GetCrtClient(botInfo).Do(GetRequest(ctx, http.MethodGet,
 		strings.TrimSuffix(botInfo.Address, "/")+"/rag/delete?file_name="+r.FormValue("file_name"), bytes.NewBuffer(nil)))
 	if err != nil {
@@ -91,7 +91,7 @@ func DeleteRagFile(w http.ResponseWriter, r *http.Request) {
 		utils.Failure(ctx, w, r, param.CodeServerFail, param.MsgServerFail, err)
 		return
 	}
-	
+
 	defer resp.Body.Close()
 	_, err = io.Copy(w, resp.Body)
 	if err != nil {
@@ -109,7 +109,7 @@ func CreateRagFile(w http.ResponseWriter, r *http.Request) {
 		utils.Failure(ctx, w, r, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
 		return
 	}
-	
+
 	resp, err := adminUtils.GetCrtClient(botInfo).Do(GetRequest(ctx, http.MethodGet,
 		strings.TrimSuffix(botInfo.Address, "/")+"/rag/create", r.Body))
 	if err != nil {
@@ -117,7 +117,7 @@ func CreateRagFile(w http.ResponseWriter, r *http.Request) {
 		utils.Failure(ctx, w, r, param.CodeServerFail, param.MsgServerFail, err)
 		return
 	}
-	
+
 	defer resp.Body.Close()
 	_, err = io.Copy(w, resp.Body)
 	if err != nil {

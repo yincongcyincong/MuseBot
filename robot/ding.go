@@ -13,7 +13,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	
+
 	openapi "github.com/alibabacloud-go/darabonba-openapi/v2/client"
 	dingtalkaiinteraction "github.com/alibabacloud-go/dingtalk/ai_interaction_1_0"
 	dingtalkoauth2 "github.com/alibabacloud-go/dingtalk/oauth2_1_0"
@@ -47,7 +47,7 @@ type DingRobot struct {
 	Robot   *RobotInfo
 	Client  *client.StreamClient
 	Message *chatbot.BotCallbackDataModel
-	
+
 	Command      string
 	Prompt       string
 	BotName      string
@@ -71,13 +71,13 @@ func StartDingRobot(ctx context.Context) {
 		client.WithSubscription(dingUtils.SubscriptionTypeKCallback, "/v1.0/im/bot/messages/get",
 			chatbot.NewDefaultChatBotFrameHandler(OnChatReceive).OnEventReceived),
 	)
-	
+
 	err := DingBotClient.Start(ctx)
 	if err != nil {
 		logger.ErrorCtx(ctx, "start dingbot fail", "err", err)
 		return
 	}
-	
+
 	logger.Info("DingRobot Info", "username", DingBotClient.UserAgent)
 }
 
@@ -90,10 +90,10 @@ func OnChatReceive(ctx context.Context, message *chatbot.BotCallbackDataModel) (
 				logger.ErrorCtx(ctx, "ding exec panic", "err", err, "stack", string(debug.Stack()))
 			}
 		}()
-		
+
 		d.Robot.Exec()
 	}()
-	
+
 	return nil, nil
 }
 
@@ -114,7 +114,7 @@ func (d *DingRobot) checkValid() bool {
 		logger.ErrorCtx(d.Robot.Ctx, "get access token error", "err", err)
 		return false
 	}
-	
+
 	// group need to at bot
 	atBot, err := d.GetMessageContent()
 	if err != nil {
@@ -128,7 +128,7 @@ func (d *DingRobot) checkValid() bool {
 			return false
 		}
 	}
-	
+
 	return true
 }
 
@@ -146,14 +146,14 @@ func (d *DingRobot) requestLLM(content string) {
 func (d *DingRobot) sendImg() {
 	d.Robot.TalkingPreCheck(func() {
 		chatId, msgId, _ := d.Robot.GetChatIdAndMsgIdAndUserID()
-		
+
 		prompt := strings.TrimSpace(d.Prompt)
 		if prompt == "" {
 			logger.ErrorCtx(d.Robot.Ctx, "prompt is empty")
 			d.Robot.SendMsg(chatId, i18n.GetMessage("photo_empty_content", nil), msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
-		
+
 		var err error
 		lastImageContent := d.ImageContent
 		if len(lastImageContent) == 0 && strings.Contains(d.Command, "edit_photo") {
@@ -162,21 +162,21 @@ func (d *DingRobot) sendImg() {
 				logger.ErrorCtx(d.Robot.Ctx, "get last image record fail", "err", err)
 			}
 		}
-		
+
 		imageContent, totalToken, err := d.Robot.CreatePhoto(prompt, lastImageContent)
 		if err != nil {
 			logger.ErrorCtx(d.Robot.Ctx, "generate image fail", "err", err)
 			d.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
-		
+
 		err = d.sendMedia(imageContent, utils.DetectImageFormat(imageContent), "image")
 		if err != nil {
 			logger.ErrorCtx(d.Robot.Ctx, "send media fail", "err", err)
 			d.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
-		
+
 		d.Robot.saveRecord(imageContent, lastImageContent, param.ImageRecordType, totalToken)
 	})
 }
@@ -193,7 +193,7 @@ func (d *DingRobot) sendMedia(media []byte, contentType, sType string) error {
 			logger.ErrorCtx(d.Robot.Ctx, "upload file fail", "err", err)
 			return err
 		}
-		
+
 		_, err = d.SimpleReplyMarkdown(d.Robot.Ctx, []byte(fmt.Sprintf("![image](%s)", mediaId)))
 		if err != nil {
 			logger.ErrorCtx(d.Robot.Ctx, "send image fail", "err", err)
@@ -205,14 +205,14 @@ func (d *DingRobot) sendMedia(media []byte, contentType, sType string) error {
 			logger.ErrorCtx(d.Robot.Ctx, "upload file fail", "err", err)
 			return err
 		}
-		
+
 		_, err = d.VideoReplyMarkdown(d.Robot.Ctx, mediaId, contentType)
 		if err != nil {
 			logger.ErrorCtx(d.Robot.Ctx, "send image fail", "err", err)
 			return err
 		}
 	}
-	
+
 	return nil
 }
 
@@ -220,14 +220,14 @@ func (d *DingRobot) sendVideo() {
 	// 检查 prompt
 	d.Robot.TalkingPreCheck(func() {
 		chatId, msgId, _ := d.Robot.GetChatIdAndMsgIdAndUserID()
-		
+
 		prompt := strings.TrimSpace(d.Prompt)
 		if prompt == "" {
 			logger.ErrorCtx(d.Robot.Ctx, "prompt is empty")
 			d.Robot.SendMsg(chatId, i18n.GetMessage("video_empty_content", nil), msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
-		
+
 		imageContent := d.ImageContent
 		videoContent, totalToken, err := d.Robot.CreateVideo(prompt, imageContent)
 		if err != nil {
@@ -235,18 +235,18 @@ func (d *DingRobot) sendVideo() {
 			d.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
-		
+
 		err = d.sendMedia(videoContent, utils.DetectVideoMimeType(videoContent), "video")
 		if err != nil {
 			logger.ErrorCtx(d.Robot.Ctx, "send video fail", "err", err)
 			d.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
-		
+
 		d.Robot.saveRecord(videoContent, imageContent, param.VideoRecordType, totalToken)
-		
+
 	})
-	
+
 }
 
 func (d *DingRobot) sendChatMessage() {
@@ -257,7 +257,7 @@ func (d *DingRobot) sendChatMessage() {
 			d.executeLLM()
 		}
 	})
-	
+
 }
 
 func (d *DingRobot) executeChain() {
@@ -265,7 +265,7 @@ func (d *DingRobot) executeChain() {
 		NormalMessageChan: make(chan *param.MsgInfo),
 	}
 	go d.Robot.ExecChain(d.Prompt, messageChan)
-	
+
 	// send response message
 	go d.Robot.HandleUpdate(messageChan, "amr")
 }
@@ -275,18 +275,18 @@ func (d *DingRobot) executeLLM() {
 		NormalMessageChan: make(chan *param.MsgInfo),
 	}
 	go d.Robot.HandleUpdate(messageChan, "amr")
-	
+
 	go d.Robot.ExecLLM(d.Prompt, messageChan)
-	
+
 }
 
 func (d *DingRobot) GetMessageContent() (bool, error) {
 	if d.Message == nil {
 		return false, errors.New("callback data is nil")
 	}
-	
+
 	chatId, msgId, _ := d.Robot.GetChatIdAndMsgIdAndUserID()
-	
+
 	accessToken, err := d.GetAccessToken()
 	if err != nil {
 		logger.ErrorCtx(d.Robot.Ctx, "get access token failed", "err", err)
@@ -320,7 +320,7 @@ func (d *DingRobot) GetMessageContent() (bool, error) {
 				return false, err
 			}
 		}
-		
+
 	} else if d.Message.Msgtype == "audio" {
 		if c, ok := d.Message.Content.(map[string]interface{}); ok {
 			d.AudioContent, err = d.GetImageContent(accessToken, c)
@@ -337,7 +337,7 @@ func (d *DingRobot) GetMessageContent() (bool, error) {
 			}
 		}
 	}
-	
+
 	d.OriginPrompt = content
 	d.Command, d.Prompt = ParseCommand(content)
 	for _, atID := range d.Message.AtUsers {
@@ -346,7 +346,7 @@ func (d *DingRobot) GetMessageContent() (bool, error) {
 			break
 		}
 	}
-	
+
 	return botAt, nil
 }
 
@@ -395,32 +395,32 @@ func (d *DingRobot) ReplyMessage(ctx context.Context, requestBody map[string]int
 	if err != nil {
 		return nil, err
 	}
-	
+
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "*/*")
-	
+
 	httpClient := utils.GetRobotProxyClient()
-	
+
 	resp, err := httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	sendRsp := new(DingResp)
 	err = json.Unmarshal(data, sendRsp)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	if sendRsp.ErrCode != 0 {
 		return nil, errors.New(sendRsp.ErrMsg)
 	}
-	
+
 	return sendRsp, err
 }
 
@@ -455,23 +455,23 @@ func (d *DingRobot) GetAccessToken() (string, error) {
 	if accessTokenInfo.ExpiredTime != 0 && accessTokenInfo.ExpiredTime < time.Now().Unix() {
 		return accessTokenInfo.AccessToken, nil
 	}
-	
+
 	getTokenRequest := &dingtalkoauth2.GetTokenRequest{
 		ClientId:     tea.String(conf.BaseConfInfo.DingClientId),
 		ClientSecret: tea.String(conf.BaseConfInfo.DingClientSecret),
 		GrantType:    tea.String("client_credentials"),
 	}
-	
+
 	authClient, err := d.CreateDingAuthClient()
 	if err != nil {
 		return "", err
 	}
-	
+
 	resp, err := authClient.GetToken(tea.String(d.Message.ChatbotCorpId), getTokenRequest)
 	if err != nil {
 		return "", err
 	}
-	
+
 	accessTokenInfo.AccessToken = tea.StringValue(resp.Body.AccessToken)
 	accessTokenInfo.ExpiredTime = time.Now().Unix() + int64(tea.Int32Value(resp.Body.ExpiresIn)) - 300
 	return accessTokenInfo.AccessToken, nil
@@ -486,59 +486,59 @@ type uploadResp struct {
 
 func (d *DingRobot) UploadFileWithType(accessToken, fileType, filePath string, fileContent []byte) (string, error) {
 	url := fmt.Sprintf("https://oapi.dingtalk.com/media/upload?access_token=%s", accessToken)
-	
+
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
-	
+
 	// media 字段，上传文件内容
 	part, err := writer.CreateFormFile("media", filePath)
 	if err != nil {
 		return "", err
 	}
-	
+
 	_, err = part.Write(fileContent)
 	if err != nil {
 		return "", err
 	}
-	
+
 	err = writer.WriteField("type", fileType)
 	if err != nil {
 		return "", err
 	}
-	
+
 	err = writer.Close()
 	if err != nil {
 		return "", err
 	}
-	
+
 	req, err := http.NewRequest("POST", url, body)
 	if err != nil {
 		return "", err
 	}
-	
+
 	req.Header.Set("Content-Type", writer.FormDataContentType())
-	
+
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
 		return "", err
 	}
 	defer resp.Body.Close()
-	
+
 	byteBody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", err
 	}
-	
+
 	var res uploadResp
 	if err := json.Unmarshal(byteBody, &res); err != nil {
 		return "", err
 	}
-	
+
 	if res.ErrCode != 0 {
 		return "", fmt.Errorf("dingtalk upload error: %s", res.ErrMsg)
 	}
-	
+
 	return res.MediaId, nil
 }
 
@@ -548,13 +548,13 @@ func (d *DingRobot) GetImageContent(accessToken string, c map[string]interface{}
 		logger.ErrorCtx(d.Robot.Ctx, "create ding client failed", "err", err)
 		return nil, err
 	}
-	
+
 	if dc, ok := c["downloadCode"].(string); ok {
 		robotMessageFileDownloadRequest := &dingtalkrobot.RobotMessageFileDownloadRequest{
 			DownloadCode: tea.String(dc),
 			RobotCode:    tea.String(conf.BaseConfInfo.DingClientId),
 		}
-		
+
 		resp, err := dingClient.RobotMessageFileDownloadWithOptions(robotMessageFileDownloadRequest, &dingtalkrobot.RobotMessageFileDownloadHeaders{
 			XAcsDingtalkAccessToken: tea.String(accessToken),
 		}, &teaUtil.RuntimeOptions{})
@@ -562,16 +562,16 @@ func (d *DingRobot) GetImageContent(accessToken string, c map[string]interface{}
 			logger.ErrorCtx(d.Robot.Ctx, "download file failed", "err", err)
 			return nil, err
 		}
-		
+
 		data, err := utils.DownloadFile(tea.StringValue(resp.Body.DownloadUrl))
 		if err != nil {
 			logger.ErrorCtx(d.Robot.Ctx, "download file failed", "err", err)
 			return nil, err
 		}
-		
+
 		return data, nil
 	}
-	
+
 	return nil, errors.New("download code not exist")
 }
 
@@ -581,25 +581,25 @@ func (d *DingRobot) getPerMsgLen() int {
 
 func (d *DingRobot) sendVoiceContent(voiceContent []byte, duration int) error {
 	format := utils.DetectAudioFormat(voiceContent)
-	
+
 	accessToken, err := d.GetAccessToken()
 	if err != nil {
 		logger.ErrorCtx(d.Robot.Ctx, "get access token fail", "err", err)
 		return err
 	}
-	
+
 	mediaId, err := d.UploadFileWithType(accessToken, "voice", "voice."+format, voiceContent)
 	if err != nil {
 		logger.ErrorCtx(d.Robot.Ctx, "upload file fail", "err", err)
 		return err
 	}
-	
+
 	_, err = d.VoiceReplyMarkdown(d.Robot.Ctx, mediaId, duration)
 	if err != nil {
 		logger.ErrorCtx(d.Robot.Ctx, "send voice fail", "err", err)
 		return err
 	}
-	
+
 	return nil
 }
 

@@ -3,7 +3,7 @@ package db
 import (
 	"fmt"
 	"time"
-	
+
 	"github.com/yincongcyincong/MuseBot/conf"
 )
 
@@ -32,7 +32,7 @@ type Cron struct {
 func InsertCron(cronName, cronSpec, targetID, groupID, command, prompt, t, createBy string) (int64, error) {
 	insertSQL := `INSERT INTO cron (cron_name, cron, target_id, group_id, command, prompt, create_time, update_time, is_deleted, from_bot, status,
                   cron_job_id, type, create_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-	
+
 	now := time.Now().Unix()
 	result, err := DB.Exec(insertSQL,
 		cronName,
@@ -53,7 +53,7 @@ func InsertCron(cronName, cronSpec, targetID, groupID, command, prompt, t, creat
 	if err != nil {
 		return 0, fmt.Errorf("insert cron error: %w", err)
 	}
-	
+
 	// 获取最后插入的ID
 	id, err := result.LastInsertId()
 	if err != nil {
@@ -66,13 +66,13 @@ const cronSelectFields = "id, cron_name, type, cron, target_id, group_id, comman
 
 func GetCronByID(id int64) (*Cron, error) {
 	querySQL := fmt.Sprintf("SELECT %s FROM cron WHERE id = ? and is_deleted = 0 and from_bot = ?", cronSelectFields)
-	
+
 	var c Cron
 	err := DB.QueryRow(querySQL, id, conf.BaseConfInfo.BotName).Scan(
 		&c.ID, &c.CronName, &c.Type, &c.CronSpec, &c.TargetID, &c.GroupID, &c.Command, &c.Prompt,
 		&c.CreateTime, &c.UpdateTime, &c.IsDeleted, &c.FromBot, &c.Status, &c.CronJobId, &c.CreateBy,
 	)
-	
+
 	if err != nil {
 		return nil, fmt.Errorf("get cron by id error: %w", err)
 	}
@@ -81,14 +81,14 @@ func GetCronByID(id int64) (*Cron, error) {
 
 func GetActiveCrons() ([]*Cron, error) {
 	querySQL := fmt.Sprintf("SELECT %s FROM cron WHERE is_deleted = 0 and from_bot = ? ORDER BY id DESC", cronSelectFields)
-	
+
 	rows, err := DB.Query(querySQL, conf.BaseConfInfo.BotName)
-	
+
 	if err != nil {
 		return nil, fmt.Errorf("query active crons error: %w", err)
 	}
 	defer rows.Close()
-	
+
 	var crons []*Cron
 	for rows.Next() {
 		var c Cron
@@ -100,7 +100,7 @@ func GetActiveCrons() ([]*Cron, error) {
 		}
 		crons = append(crons, &c)
 	}
-	
+
 	// 检查 rows.Err()
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("rows iteration error: %w", err)
@@ -116,38 +116,38 @@ func GetCronsByPage(page, pageSize int, name string, userId string) ([]Cron, err
 		pageSize = 10
 	}
 	offset := (page - 1) * pageSize
-	
+
 	var (
 		whereSQL = "WHERE is_deleted = 0 and from_bot = ?"
 		args     = []interface{}{conf.BaseConfInfo.BotName}
 	)
-	
+
 	if name != "" {
 		// 模糊匹配 cron_name
 		whereSQL += " AND cron_name LIKE ?"
 		args = append(args, "%"+name+"%")
 	}
-	
+
 	if userId != "" {
 		whereSQL += " AND create_by = ?"
 		args = append(args, userId)
 	}
-	
+
 	// 查询数据，使用了 cronSelectFields
 	listSQL := fmt.Sprintf(`
        SELECT %s
        FROM cron %s
        ORDER BY id DESC
        LIMIT ? OFFSET ?`, cronSelectFields, whereSQL)
-	
+
 	args = append(args, pageSize, offset)
-	
+
 	rows, err := DB.Query(listSQL, args...)
 	if err != nil {
 		return nil, fmt.Errorf("query crons by page error: %w", err)
 	}
 	defer rows.Close()
-	
+
 	var crons []Cron
 	for rows.Next() {
 		var c Cron
@@ -159,32 +159,32 @@ func GetCronsByPage(page, pageSize int, name string, userId string) ([]Cron, err
 		}
 		crons = append(crons, c)
 	}
-	
+
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("rows iteration error: %w", err)
 	}
-	
+
 	return crons, nil
 }
 
 func GetCronsCount(name string) (int, error) {
 	whereSQL := "WHERE is_deleted = 0 and from_bot = ?"
 	args := []interface{}{conf.BaseConfInfo.BotName}
-	
+
 	if name != "" {
 		whereSQL += " AND cron_name LIKE ?"
 		args = append(args, "%"+name+"%")
 	}
-	
+
 	countSQL := fmt.Sprintf("SELECT COUNT(*) FROM cron %s", whereSQL)
-	
+
 	var count int
 	err := DB.QueryRow(countSQL, args...).Scan(&count)
-	
+
 	if err != nil {
 		return 0, fmt.Errorf("get crons count error: %w", err)
 	}
-	
+
 	return count, nil
 }
 
@@ -193,7 +193,7 @@ func UpdateCron(id int64, cronName, cronSpec, targetID, groupID, command, prompt
         UPDATE cron
         SET cron_name = ?, cron = ?, target_id = ?, group_id = ?, command = ?, prompt = ?, type = ?, update_time = ?
         WHERE id = ? AND is_deleted = 0 AND from_bot = ? `
-	
+
 	_, err := DB.Exec(updateSQL,
 		cronName,
 		cronSpec,
@@ -215,7 +215,7 @@ func UpdateCronStatus(id int64, status int) error {
         UPDATE cron
         SET status = ?, update_time = ?
         WHERE id = ? AND is_deleted = 0 AND from_bot = ?`
-	
+
 	_, err := DB.Exec(updateSQL,
 		status,
 		time.Now().Unix(),
@@ -231,7 +231,7 @@ func UpdateCronJobId(id int64, cronJobID int) error {
         UPDATE cron
         SET cron_job_id = ?, update_time = ?
         WHERE id = ? AND is_deleted = 0 AND from_bot = ?`
-	
+
 	_, err := DB.Exec(updateSQL,
 		cronJobID,
 		time.Now().Unix(),
@@ -244,7 +244,7 @@ func UpdateCronJobId(id int64, cronJobID int) error {
 // DeleteCronByID 对定时任务进行软删除（将 is_deleted 设为 1）
 func DeleteCronByID(id int64) error {
 	deleteSQL := `UPDATE cron SET is_deleted = 1, update_time = ? WHERE id = ? AND from_bot = ?`
-	
+
 	_, err := DB.Exec(deleteSQL, time.Now().Unix(), id, conf.BaseConfInfo.BotName)
 	return err
 }
@@ -256,7 +256,7 @@ func DeleteCronByCreateBy(createBy string, id string) error {
 		_, err := DB.Exec(deleteSQL, time.Now().Unix(), createBy, conf.BaseConfInfo.BotName, id)
 		return err
 	}
-	
+
 	_, err := DB.Exec(deleteSQL, time.Now().Unix(), createBy, conf.BaseConfInfo.BotName)
 	return err
 }

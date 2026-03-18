@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"runtime/debug"
 	"strings"
-	
+
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/slack-go/slack"
 	"github.com/slack-go/slack/slackevents"
@@ -31,13 +31,13 @@ type SlackRobot struct {
 	Event    *slackevents.MessageEvent
 	CmdEvent *slack.SlashCommand
 	Callback *slack.InteractionCallback
-	
+
 	Robot   *RobotInfo
 	Client  *slack.Client
 	Command string
 	Prompt  string
 	BotName string
-	
+
 	ImageContent []byte
 	VoiceContent []byte
 	UserName     string
@@ -47,7 +47,7 @@ func StartSlackRobot(ctx context.Context) {
 	if conf.BaseConfInfo.SlackAppToken == "" || conf.BaseConfInfo.SlackBotToken == "" {
 		return
 	}
-	
+
 	SlackClient = slack.New(
 		conf.BaseConfInfo.SlackBotToken,
 		slack.OptionDebug(false),
@@ -56,14 +56,14 @@ func StartSlackRobot(ctx context.Context) {
 		slack.OptionHTTPClient(utils.GetRobotProxyClient()),
 	)
 	socketClient = socketmode.New(SlackClient)
-	
+
 	authResp, err := SlackClient.AuthTest()
 	if err != nil {
 		logger.ErrorCtx(ctx, "Slack auth failed", "err", err)
 		return
 	}
 	slackUserId = authResp.UserID
-	
+
 	go func() {
 		for evt := range socketClient.Events {
 			switch evt.Type {
@@ -86,15 +86,15 @@ func StartSlackRobot(ctx context.Context) {
 				}
 				socketClient.Ack(*evt.Request)
 				SlackCmdHandler(&cmd)
-			
+
 			case socketmode.EventTypeInteractive:
-				
+
 				interaction, ok := evt.Data.(slack.InteractionCallback)
 				if !ok {
 					continue
 				}
 				socketClient.Ack(*evt.Request)
-				
+
 				switch interaction.Type {
 				case slack.InteractionTypeBlockActions:
 					SlackButtonHandler(&interaction)
@@ -103,7 +103,7 @@ func StartSlackRobot(ctx context.Context) {
 				}
 			}
 		}
-		
+
 	}()
 	logger.Info("SlackBot Info", "username", authResp.User)
 	err = socketClient.RunContext(ctx)
@@ -131,10 +131,10 @@ func NewSlackRobot(message *slackevents.MessageEvent, command *slack.SlashComman
 }
 
 func SlackButtonHandler(callback *slack.InteractionCallback) {
-	
+
 	s := NewSlackRobot(nil, nil, callback)
 	s.Robot = NewRobot(WithRobot(s))
-	
+
 	for _, action := range callback.ActionCallback.BlockActions {
 		s.Command = action.ActionID
 		switch action.ActionID {
@@ -142,7 +142,7 @@ func SlackButtonHandler(callback *slack.InteractionCallback) {
 			s.openModal(callback.TriggerID, action.ActionID)
 		default:
 			s.Robot.ExecCmd(s.Command, nil, nil, nil)
-			
+
 		}
 	}
 }
@@ -156,12 +156,12 @@ func SlackCmdHandler(command *slack.SlashCommand) {
 				logger.ErrorCtx(s.Robot.Ctx, "Slack exec panic", "err", err, "stack", string(debug.Stack()))
 			}
 		}()
-		
+
 		s.Command = command.Command
 		s.Prompt = command.Text
 		s.Robot.AddUserInfo()
 		s.Robot.ExecCmd(s.Command, s.sendChatMessage, nil, nil)
-		
+
 	}()
 }
 
@@ -185,7 +185,7 @@ func (s *SlackRobot) checkValid() bool {
 		strings.Contains(s.Event.Text, atRobot) {
 		return false
 	}
-	
+
 	s.Command, s.Prompt = ParseCommand(strings.ReplaceAll(s.Event.Text, atRobot, ""))
 	return s.getMessageContent()
 }
@@ -201,7 +201,7 @@ func (s *SlackRobot) getMessageContent() bool {
 				logger.ErrorCtx(s.Robot.Ctx, "download image failed", "err", err)
 				return false
 			}
-		
+
 		case "audio/mpeg", "audio/wav", "audio/ogg", "audio/mp4":
 			// 下载音频
 			s.VoiceContent, err = s.downloadSlackFile(file.URLPrivateDownload)
@@ -209,7 +209,7 @@ func (s *SlackRobot) getMessageContent() bool {
 				logger.ErrorCtx(s.Robot.Ctx, "download audio failed", "err", err)
 				return false
 			}
-			
+
 			s.Prompt, err = s.Robot.GetAudioContent(s.VoiceContent)
 			if err != nil {
 				logger.Warn("generate text from audio failed", "err", err)
@@ -217,7 +217,7 @@ func (s *SlackRobot) getMessageContent() bool {
 			}
 		}
 	}
-	
+
 	return true
 }
 
@@ -240,7 +240,7 @@ func (s *SlackRobot) sendChatMessage() {
 			s.executeLLM()
 		}
 	})
-	
+
 }
 
 func (s *SlackRobot) executeChain() {
@@ -248,7 +248,7 @@ func (s *SlackRobot) executeChain() {
 		NormalMessageChan: make(chan *param.MsgInfo),
 	}
 	go s.Robot.ExecChain(s.Prompt, messageChan)
-	
+
 	go s.Robot.HandleUpdate(messageChan, "mp3")
 }
 
@@ -257,7 +257,7 @@ func (s *SlackRobot) executeLLM() {
 		NormalMessageChan: make(chan *param.MsgInfo),
 	}
 	go s.Robot.ExecLLM(s.Prompt, messageChan)
-	
+
 	go s.Robot.HandleUpdate(messageChan, "mp3")
 }
 
@@ -267,24 +267,24 @@ func (s *SlackRobot) downloadSlackFile(url string) ([]byte, error) {
 		return nil, err
 	}
 	req.Header.Set("Authorization", "Bearer "+conf.BaseConfInfo.SlackBotToken)
-	
+
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
-	
+
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("failed to download file: %s", resp.Status)
 	}
-	
+
 	return io.ReadAll(resp.Body)
 }
 
 func (s *SlackRobot) sendImg() {
 	s.Robot.TalkingPreCheck(func() {
 		chatId, msgId, _ := s.Robot.GetChatIdAndMsgIdAndUserID()
-		
+
 		prompt := s.Prompt
 		prompt = utils.ReplaceCommand(prompt, "/photo", s.BotName)
 		if prompt == "" {
@@ -292,7 +292,7 @@ func (s *SlackRobot) sendImg() {
 			s.Robot.SendMsg(chatId, i18n.GetMessage("photo_empty_content", nil), msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
-		
+
 		var err error
 		lastImageContent := s.ImageContent
 		if len(lastImageContent) == 0 && strings.Contains(s.Command, "edit_photo") {
@@ -301,21 +301,21 @@ func (s *SlackRobot) sendImg() {
 				logger.Warn("get last image record fail", "err", err)
 			}
 		}
-		
+
 		imageContent, totalToken, err := s.Robot.CreatePhoto(prompt, lastImageContent)
 		if err != nil {
 			logger.ErrorCtx(s.Robot.Ctx, "generate image fail", "err", err)
 			s.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
-		
+
 		err = s.sendMedia(imageContent, utils.DetectImageFormat(imageContent), "image")
 		if err != nil {
 			logger.ErrorCtx(s.Robot.Ctx, "send image fail", "err", err)
 			s.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
-		
+
 		s.Robot.saveRecord(imageContent, lastImageContent, param.ImageRecordType, totalToken)
 	})
 }
@@ -330,7 +330,7 @@ func (s *SlackRobot) sendMedia(media []byte, contentType, sType string) error {
 			FileSize: len(media),
 			Channel:  chatId,
 		}
-		
+
 		_, err := s.Client.UploadFileV2(uploadParams)
 		if err != nil {
 			logger.ErrorCtx(s.Robot.Ctx, "upload image to slack fail", "err", err)
@@ -344,21 +344,21 @@ func (s *SlackRobot) sendMedia(media []byte, contentType, sType string) error {
 			FileSize: len(media),
 			Channel:  chatId,
 		}
-		
+
 		_, err := s.Client.UploadFileV2(uploadParams)
 		if err != nil {
 			logger.ErrorCtx(s.Robot.Ctx, "upload image to slack fail", "err", err)
 			return err
 		}
 	}
-	
+
 	return nil
 }
 
 func (s *SlackRobot) sendVideo() {
 	s.Robot.TalkingPreCheck(func() {
 		chatId, replyToMessageID, _ := s.Robot.GetChatIdAndMsgIdAndUserID()
-		
+
 		prompt := s.Prompt
 		prompt = utils.ReplaceCommand(prompt, "/video", s.BotName)
 		if prompt == "" {
@@ -367,7 +367,7 @@ func (s *SlackRobot) sendVideo() {
 				replyToMessageID, tgbotapi.ModeMarkdown, nil)
 			return
 		}
-		
+
 		var err error
 		imageContent := s.ImageContent
 		videoContent, totalToken, err := s.Robot.CreateVideo(prompt, imageContent)
@@ -376,14 +376,14 @@ func (s *SlackRobot) sendVideo() {
 			s.Robot.SendMsg(chatId, err.Error(), replyToMessageID, tgbotapi.ModeMarkdown, nil)
 			return
 		}
-		
+
 		err = s.sendMedia(videoContent, utils.DetectVideoMimeType(videoContent), "video")
 		if err != nil {
 			logger.ErrorCtx(s.Robot.Ctx, "send video failed", "err", err)
 			s.Robot.SendMsg(chatId, err.Error(), replyToMessageID, tgbotapi.ModeMarkdown, nil)
 			return
 		}
-		
+
 		s.Robot.saveRecord(videoContent, imageContent, param.VideoRecordType, totalToken)
 	})
 }
@@ -408,7 +408,7 @@ func (s *SlackRobot) openModal(triggerID, actionID string) {
 			},
 		},
 	}
-	
+
 	_, err := s.Client.OpenView(triggerID, modalRequest)
 	if err != nil {
 		logger.ErrorCtx(s.Robot.Ctx, "open modal failed", "err", err)
@@ -418,7 +418,7 @@ func (s *SlackRobot) openModal(triggerID, actionID string) {
 func submissionHandler(callback *slack.InteractionCallback) {
 	s := NewSlackRobot(nil, nil, callback)
 	s.Robot = NewRobot(WithRobot(s))
-	
+
 	s.Command = callback.View.PrivateMetadata
 	values := callback.View.State.Values
 	inputBlock := values["input_block"]
@@ -426,11 +426,11 @@ func submissionHandler(callback *slack.InteractionCallback) {
 		s.Prompt += v.Value
 	}
 	s.Callback.Channel.ID = callback.View.CallbackID
-	
+
 	s.Robot.AddUserInfo()
 	s.getMessageContent()
 	s.Robot.ExecCmd(s.Command, nil, nil, nil)
-	
+
 }
 
 func (s *SlackRobot) getPrompt() string {
@@ -443,12 +443,12 @@ func (s *SlackRobot) getPerMsgLen() int {
 
 func (s *SlackRobot) sendTextStream(messageChan *MsgChan) {
 	chatId, messageId, _ := s.Robot.GetChatIdAndMsgIdAndUserID()
-	
+
 	for msg := range messageChan.NormalMessageChan {
 		if msg.Content == "" {
 			msg.Content = "get nothing from llm!"
 		}
-		
+
 		if msg.MsgId == "" {
 			msg.MsgId = s.Robot.SendMsg(chatId, msg.Content, messageId, tgbotapi.ModeMarkdown, nil)
 		} else {
@@ -476,13 +476,13 @@ func (s *SlackRobot) sendVoiceContent(voiceContent []byte, duration int) error {
 		FileSize: len(voiceContent),
 		Channel:  chatId,
 	}
-	
+
 	_, err := s.Client.UploadFileV2(uploadParams)
 	if err != nil {
 		logger.Warn("upload voice to slack fail", "err", err)
 		return err
 	}
-	
+
 	return nil
 }
 

@@ -3,14 +3,14 @@ package utils
 import (
 	"strings"
 	"testing"
-	
+
 	"github.com/stretchr/testify/assert"
 )
 
 func TestUtf16len(t *testing.T) {
 	tests := map[string]int{
 		"hello":   5,
-		"你好":    2,
+		"你好":      2,
 		"𠀀":       2, // surrogate pair in utf16
 		"":        0,
 		"abc𠀀def": 8,
@@ -93,7 +93,7 @@ func TestNormalizeHTTP(t *testing.T) {
 		{"localhost:9090", "http://localhost:9090"},
 		{"http://example.com", "http://example.com"},
 	}
-	
+
 	for _, tt := range tests {
 		got := NormalizeHTTP(tt.input)
 		if got != tt.expected {

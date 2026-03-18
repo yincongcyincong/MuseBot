@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"os"
 	"path/filepath"
-	
+
 	"github.com/yincongcyincong/MuseBot/logger"
 )
 
@@ -24,17 +24,17 @@ func GetTailStartOffset(filePath string, lines int) (int64, error) {
 		return 0, err
 	}
 	defer file.Close()
-	
+
 	const bufferSize = 4096
 	stat, err := file.Stat()
 	if err != nil {
 		return 0, err
 	}
-	
+
 	size := stat.Size()
 	var offset = size
 	var count int
-	
+
 	for offset > 0 && count <= lines {
 		readSize := int64(bufferSize)
 		if offset < readSize {
@@ -47,10 +47,10 @@ func GetTailStartOffset(filePath string, lines int) (int64, error) {
 		}
 		count += bytes.Count(tmp, []byte("\n"))
 	}
-	
+
 	if offset <= 0 {
 		offset = 0
 	}
-	
+
 	return offset, nil
 }

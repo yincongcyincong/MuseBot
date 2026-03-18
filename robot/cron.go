@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"strings"
 	"time"
-	
+
 	"github.com/ArtisanCloud/PowerWeChat/v3/src/kernel/models"
 	serverModel "github.com/ArtisanCloud/PowerWeChat/v3/src/work/server/handlers/models"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -25,7 +25,7 @@ func InitCron() {
 		logger.Error("get crons error", "err", err)
 		return
 	}
-	
+
 	Cron = cron.New(cron.WithSeconds())
 	for _, c := range cronJobs {
 		if c.CronSpec != "" && c.Status == 1 && c.Type != "" && c.Prompt != "" {
@@ -36,14 +36,14 @@ func InitCron() {
 				logger.Error("crontab parse error", "err", err)
 				continue
 			}
-			
+
 			err = db.UpdateCronJobId(c.ID, int(cronID))
 			if err != nil {
 				logger.Error("update cron job id error", "err", err)
 			}
 		}
 	}
-	
+
 	Cron.Start()
 }
 
@@ -73,7 +73,7 @@ func ExecDing(c *db.Cron) {
 		logger.Error("dingbot client is nil")
 		return
 	}
-	
+
 	for _, targetId := range strings.Split(c.TargetID, ",") {
 		t := &DingRobot{
 			Message: &chatbot.BotCallbackDataModel{
@@ -90,7 +90,7 @@ func ExecDing(c *db.Cron) {
 			WithSkipCheck(true), WithUseRecord(false))
 		t.Robot.Exec()
 	}
-	
+
 }
 
 func ExecLark(c *db.Cron) {
@@ -98,7 +98,7 @@ func ExecLark(c *db.Cron) {
 		logger.Error("larkbot client is nil")
 		return
 	}
-	
+
 	for _, targetId := range strings.Split(c.TargetID, ",") {
 		targetId = strings.TrimSpace(targetId)
 		if targetId == "" {
@@ -128,7 +128,7 @@ func ExecLark(c *db.Cron) {
 		t.Robot = NewRobot(WithRobot(t), WithSkipCheck(true), WithUseRecord(false))
 		t.Robot.Exec()
 	}
-	
+
 }
 
 func ExecPersonalQQ(c *db.Cron) {
@@ -156,7 +156,7 @@ func ExecPersonalQQ(c *db.Cron) {
 			WithSkipCheck(true), WithUseRecord(false))
 		t.Robot.Exec()
 	}
-	
+
 	for _, targetId := range strings.Split(c.TargetID, ",") {
 		targetId = strings.TrimSpace(targetId)
 		if targetId == "" {
@@ -180,7 +180,7 @@ func ExecPersonalQQ(c *db.Cron) {
 			WithSkipCheck(true), WithUseRecord(false))
 		t.Robot.Exec()
 	}
-	
+
 }
 
 func ExecSlack(c *db.Cron) {
@@ -188,7 +188,7 @@ func ExecSlack(c *db.Cron) {
 		logger.Error("slack client is nil")
 		return
 	}
-	
+
 	for _, targetId := range strings.Split(c.TargetID, ",") {
 		targetId = strings.TrimSpace(targetId)
 		if targetId == "" {
@@ -205,7 +205,7 @@ func ExecSlack(c *db.Cron) {
 		t.Robot = NewRobot(WithRobot(t), WithSkipCheck(true), WithUseRecord(false))
 		t.Robot.Exec()
 	}
-	
+
 }
 
 func ExecComWechat(c *db.Cron) {
@@ -213,7 +213,7 @@ func ExecComWechat(c *db.Cron) {
 		logger.Warn("com wechat app is nil")
 		return
 	}
-	
+
 	for _, targetId := range strings.Split(c.TargetID, ",") {
 		targetId = strings.TrimSpace(targetId)
 		if targetId == "" {
@@ -232,7 +232,7 @@ func ExecComWechat(c *db.Cron) {
 		t.Robot = NewRobot(WithRobot(t), WithSkipCheck(true), WithUseRecord(false))
 		t.Robot.Exec()
 	}
-	
+
 }
 
 func ExecTelegram(c *db.Cron) {
@@ -258,7 +258,7 @@ func ExecTelegram(c *db.Cron) {
 		t.Robot = NewRobot(WithRobot(t), WithSkipCheck(true), WithUseRecord(false))
 		t.Robot.Exec()
 	}
-	
+
 	for _, groupId := range strings.Split(c.GroupID, ",") {
 		groupId = strings.TrimSpace(groupId)
 		if groupId == "" {
@@ -281,7 +281,7 @@ func ExecTelegram(c *db.Cron) {
 		t.Robot = NewRobot(WithRobot(t), WithSkipCheck(true), WithUseRecord(false))
 		t.Robot.Exec()
 	}
-	
+
 }
 
 func ExecWechat(c *db.Cron) {
@@ -289,7 +289,7 @@ func ExecWechat(c *db.Cron) {
 		logger.Warn("official account app is nil", "type", c.Type, "userId", c.TargetID, "prompt", c.Prompt)
 		return
 	}
-	
+
 	for _, targetId := range strings.Split(c.TargetID, ",") {
 		targetId = strings.TrimSpace(targetId)
 		if targetId == "" {
@@ -308,7 +308,7 @@ func ExecWechat(c *db.Cron) {
 		w.Robot = NewRobot(WithRobot(w), WithSkipCheck(true), WithUseRecord(false))
 		w.Robot.Exec()
 	}
-	
+
 }
 
 func AddCron(cronInfo *db.Cron) error {
@@ -318,12 +318,12 @@ func AddCron(cronInfo *db.Cron) error {
 	if err != nil {
 		return err
 	}
-	
+
 	err = db.UpdateCronJobId(cronInfo.ID, int(cronJobId))
 	if err != nil {
 		return err
 	}
-	
+
 	return nil
-	
+
 }
