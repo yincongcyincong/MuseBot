@@ -12,7 +12,7 @@ var (
 		},
 		[]string{"model"},
 	)
-	
+
 	APIRequestDuration = prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
 			Name:    "api_request_duration_seconds",
@@ -21,7 +21,7 @@ var (
 		},
 		[]string{"model"},
 	)
-	
+
 	AppRequestCount = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "app_request_total",
@@ -29,7 +29,7 @@ var (
 		},
 		[]string{"app"},
 	)
-	
+
 	HTTPRequestCount = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "http_request_total",
@@ -37,7 +37,7 @@ var (
 		},
 		[]string{"path"},
 	)
-	
+
 	HTTPResponseCount = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "http_response_total",
@@ -45,7 +45,7 @@ var (
 		},
 		[]string{"path", "code"},
 	)
-	
+
 	HTTPResponseDuration = prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
 			Name:    "http_response_duration_seconds",
@@ -54,7 +54,7 @@ var (
 		},
 		[]string{"path", "code"},
 	)
-	
+
 	MCPRequestCount = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "mcp_request_total",
@@ -62,7 +62,7 @@ var (
 		},
 		[]string{"mcp_service", "mcp_func"},
 	)
-	
+
 	MCPRequestDuration = prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
 			Name:    "mcp_request_duration_seconds",

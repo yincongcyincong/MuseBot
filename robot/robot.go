@@ -13,7 +13,7 @@ import (
 	"strings"
 	"sync"
 	"time"
-	
+
 	"github.com/ArtisanCloud/PowerWeChat/v3/src/kernel/messages"
 	"github.com/ArtisanCloud/PowerWeChat/v3/src/work/message/request"
 	"github.com/bwmarrin/discordgo"
@@ -59,7 +59,7 @@ type RobotInfo struct {
 	Ctx    context.Context
 	Cancel context.CancelFunc
 	Robot  Robot
-	
+
 	cs *param.ContextState
 }
 
@@ -76,37 +76,37 @@ type TencentWechatMessage struct {
 
 type Robot interface {
 	checkValid() bool
-	
+
 	getMsgContent() string
-	
+
 	requestLLM(content string)
-	
+
 	sendChatMessage()
-	
+
 	sendImg()
-	
+
 	sendVideo()
-	
+
 	getPrompt() string
-	
+
 	setPrompt(prompt string)
-	
+
 	getPerMsgLen() int
-	
+
 	sendVoiceContent(voiceContent []byte, duration int) error
-	
+
 	setCommand(command string)
-	
+
 	getCommand() string
-	
+
 	getUserName() string
-	
+
 	executeLLM()
-	
+
 	getImage() []byte
-	
+
 	setImage(image []byte)
-	
+
 	sendMedia(media []byte, contentType, sType string) error
 }
 
@@ -123,20 +123,20 @@ func NewRobot(options ...botOption) *RobotInfo {
 	for _, o := range options {
 		o(r)
 	}
-	
+
 	if r.Ctx == nil {
 		r.Ctx = context.Background()
 	}
-	
+
 	ctx, cancel := context.WithTimeout(r.Ctx, 15*time.Minute)
-	
+
 	if ctx.Value("bot_name") == nil {
 		ctx = context.WithValue(ctx, "bot_name", conf.BaseConfInfo.BotName)
 	}
 	if ctx.Value("log_id") == nil {
 		ctx = context.WithValue(ctx, "log_id", uuid.New().String())
 	}
-	
+
 	r.Ctx = ctx
 	r.Cancel = cancel
 	return r
@@ -144,14 +144,14 @@ func NewRobot(options ...botOption) *RobotInfo {
 
 func (r *RobotInfo) Exec() {
 	chatId, msgId, userId := r.GetChatIdAndMsgIdAndUserID()
-	
+
 	if !r.cs.SkipCheck && !r.checkUserAllow(userId) && !r.checkGroupAllow(chatId) {
 		logger.WarnCtx(r.Ctx, "user/group not allow to use this bot", "userID", userId, "chat", chatId)
 		r.SendMsg(chatId, i18n.GetMessage("valid_user_group", nil),
 			msgId, tgbotapi.ModeMarkdown, nil)
 		return
 	}
-	
+
 	if r.AddUserInfo() && r.Robot.checkValid() && r.smartMode() {
 		r.Robot.requestLLM(r.Robot.getMsgContent())
 	}
@@ -164,35 +164,35 @@ func (r *RobotInfo) AddUserInfo() bool {
 		logger.ErrorCtx(r.Ctx, "addUserInfo GetUserByID err", "err", err)
 		return false
 	}
-	
+
 	if userInfo == nil || userInfo.ID == 0 {
 		_, err = db.InsertUser(userId, utils.GetDefaultLLMConfig())
 		if err != nil {
 			logger.ErrorCtx(r.Ctx, "insert user fail", "userID", userId, "err", err)
 			return false
 		}
-		
+
 		userInfo, err = db.GetUserByID(userId)
 		if err != nil || userInfo == nil {
 			logger.ErrorCtx(r.Ctx, "addUserInfo GetUserByID err", "err", err)
 			return false
 		}
 	}
-	
+
 	if userInfo.LLMConfigRaw == nil {
 		userInfo.LLMConfigRaw = new(param.LLMConfig)
 	}
-	
+
 	r.Ctx = context.WithValue(r.Ctx, "user_info", userInfo)
 	return true
-	
+
 }
 
 func (r *RobotInfo) GetChatIdAndMsgIdAndUserID() (string, string, string) {
 	chatId := ""
 	msgId := ""
 	userId := ""
-	
+
 	switch r.Robot.(type) {
 	case *TelegramRobot:
 		telegramRobot := r.Robot.(*TelegramRobot)
@@ -258,7 +258,7 @@ func (r *RobotInfo) GetChatIdAndMsgIdAndUserID() (string, string, string) {
 			chatId = comWechatRobot.Event.GetFromUserName()
 			userId = comWechatRobot.Event.GetFromUserName()
 		}
-		
+
 		if comWechatRobot.TextMsg != nil {
 			msgId = comWechatRobot.TextMsg.MsgID
 		}
@@ -268,7 +268,7 @@ func (r *RobotInfo) GetChatIdAndMsgIdAndUserID() (string, string, string) {
 		if comWechatRobot.VoiceMsg != nil {
 			msgId = comWechatRobot.VoiceMsg.MsgID
 		}
-	
+
 	case *QQRobot:
 		q := r.Robot.(*QQRobot)
 		if q.C2CMessage != nil {
@@ -292,7 +292,7 @@ func (r *RobotInfo) GetChatIdAndMsgIdAndUserID() (string, string, string) {
 			chatId = wechatRobot.Event.GetFromUserName()
 			userId = wechatRobot.Event.GetFromUserName()
 		}
-		
+
 		if wechatRobot.TextMsg != nil {
 			msgId = wechatRobot.TextMsg.MsgID
 		}
@@ -313,7 +313,7 @@ func (r *RobotInfo) GetChatIdAndMsgIdAndUserID() (string, string, string) {
 		userId = webRobot.RealUserId
 		msgId = webRobot.RealUserId
 	}
-	
+
 	return chatId, msgId, userId
 }
 
@@ -338,14 +338,14 @@ func (r *RobotInfo) SendMsg(chatId string, msgContent string, replyToMessageID s
 			messageSend := &discordgo.MessageSend{
 				Content: msgContent,
 			}
-			
+
 			if replyToMessageID != "" {
 				messageSend.Reference = &discordgo.MessageReference{
 					MessageID: replyToMessageID,
 					ChannelID: chatId,
 				}
 			}
-			
+
 			sentMsg, err := discordRobot.Session.ChannelMessageSendComplex(chatId, messageSend)
 			if err != nil {
 				logger.WarnCtx(r.Ctx, "send discord message fail", "err", err)
@@ -353,7 +353,7 @@ func (r *RobotInfo) SendMsg(chatId string, msgContent string, replyToMessageID s
 			}
 			return sentMsg.ID
 		}
-		
+
 		if discordRobot.Inter != nil {
 			var err error
 			if mode == param.DiscordNewMode {
@@ -368,24 +368,24 @@ func (r *RobotInfo) SendMsg(chatId string, msgContent string, replyToMessageID s
 					Content: &msgContent,
 				})
 			}
-			
+
 			if err != nil {
 				logger.WarnCtx(r.Ctx, "send discord interaction response fail", "err", err)
 			}
 			return ""
 		}
-	
+
 	case *SlackRobot:
 		slackRobot := r.Robot.(*SlackRobot)
 		_, timestamp, err := slackRobot.Client.PostMessage(chatId, slack.MsgOptionText(msgContent, false))
 		if err != nil {
 			logger.WarnCtx(r.Ctx, "send message fail", "err", err)
 		}
-		
+
 		return timestamp
 	case *LarkRobot:
 		lark := r.Robot.(*LarkRobot)
-		
+
 		if replyToMessageID != "" {
 			resp, err := lark.Client.Im.Message.Reply(r.Ctx, larkim.NewReplyMessageReqBuilder().
 				MessageId(replyToMessageID).
@@ -398,7 +398,7 @@ func (r *RobotInfo) SendMsg(chatId string, msgContent string, replyToMessageID s
 				logger.WarnCtx(r.Ctx, "send message fail", "err", err, "resp", resp)
 				return ""
 			}
-			
+
 			return *resp.Data.MessageId
 		} else {
 			resp, err := lark.Client.Im.Message.Create(r.Ctx, larkim.NewCreateMessageReqBuilder().
@@ -413,10 +413,10 @@ func (r *RobotInfo) SendMsg(chatId string, msgContent string, replyToMessageID s
 				logger.ErrorCtx(r.Ctx, "send message fail", "err", err, "resp", resp)
 				return ""
 			}
-			
+
 			return *resp.Data.MessageId
 		}
-	
+
 	case *DingRobot:
 		d := r.Robot.(*DingRobot)
 		_, err := d.SimpleReplyMarkdown(r.Ctx, []byte(">"+d.OriginPrompt+"\n\n"+msgContent))
@@ -458,27 +458,27 @@ func (r *RobotInfo) SendMsg(chatId string, msgContent string, replyToMessageID s
 				logger.WarnCtx(r.Ctx, "send message fail", "err", err)
 				return ""
 			}
-			
+
 			return resp.ID
 		}
-		
+
 		if q.ATMessage != nil {
 			resp, err := q.QQApi.PostMessage(r.Ctx, q.ATMessage.GuildID, qqMsg)
 			if err != nil {
 				logger.WarnCtx(r.Ctx, "send message fail", "err", err)
 				return ""
 			}
-			
+
 			return resp.ID
 		}
-		
+
 		if q.GroupAtMessage != nil {
 			resp, err := q.QQApi.PostGroupMessage(r.Ctx, q.GroupAtMessage.GroupID, qqMsg)
 			if err != nil {
 				logger.WarnCtx(r.Ctx, "send message fail", "err", err)
 				return ""
 			}
-			
+
 			return resp.ID
 		}
 	case *WechatRobot:
@@ -502,7 +502,7 @@ func (r *RobotInfo) SendMsg(chatId string, msgContent string, replyToMessageID s
 				})
 			}
 		}
-	
+
 	case *PersonalQQRobot:
 		personalQQRobot := r.Robot.(*PersonalQQRobot)
 		msgId, err := personalQQRobot.SendMsg(msgContent, nil, nil, nil)
@@ -515,7 +515,7 @@ func (r *RobotInfo) SendMsg(chatId string, msgContent string, replyToMessageID s
 		web := r.Robot.(*Web)
 		web.SendMsg(msgContent)
 	}
-	
+
 	return ""
 }
 
@@ -547,49 +547,49 @@ func StartRobot() {
 	ctx, cancel := context.WithCancel(context.Background())
 	RobotControl.Cancel = cancel
 	ctx = context.WithValue(ctx, "bot_name", conf.BaseConfInfo.BotName)
-	
+
 	if conf.BaseConfInfo.TelegramBotToken != "" {
 		go func() {
 			StartTelegramRobot(ctx)
 		}()
 	}
-	
+
 	if conf.BaseConfInfo.DiscordBotToken != "" {
 		go func() {
 			StartDiscordRobot(ctx)
 		}()
 	}
-	
+
 	if conf.BaseConfInfo.LarkAPPID != "" && conf.BaseConfInfo.LarkAppSecret != "" {
 		go func() {
 			StartLarkRobot(ctx)
 		}()
 	}
-	
+
 	if conf.BaseConfInfo.SlackBotToken != "" && conf.BaseConfInfo.SlackAppToken != "" {
 		go func() {
 			StartSlackRobot(ctx)
 		}()
 	}
-	
+
 	if conf.BaseConfInfo.DingClientId != "" && conf.BaseConfInfo.DingClientSecret != "" {
 		go func() {
 			StartDingRobot(ctx)
 		}()
 	}
-	
+
 	if conf.BaseConfInfo.ComWechatSecret != "" && conf.BaseConfInfo.ComWechatAgentID != "" && conf.BaseConfInfo.ComWechatEncodingAESKey != "" {
 		go func() {
 			StartComWechatRobot(ctx)
 		}()
 	}
-	
+
 	if conf.BaseConfInfo.QQAppID != "" && conf.BaseConfInfo.QQAppSecret != "" {
 		go func() {
 			StartQQRobot(ctx)
 		}()
 	}
-	
+
 	if conf.BaseConfInfo.WechatAppID != "" && conf.BaseConfInfo.WechatAppSecret != "" {
 		go func() {
 			StartWechatRobot()
@@ -605,13 +605,13 @@ func (r *RobotInfo) checkUserAllow(userId string) bool {
 	if conf.BaseConfInfo.AllowedUserIds["0"] {
 		return false
 	}
-	
+
 	_, ok := conf.BaseConfInfo.AllowedUserIds[userId]
 	return ok
 }
 
 func (r *RobotInfo) checkGroupAllow(chatId string) bool {
-	
+
 	if len(conf.BaseConfInfo.AllowedGroupIds) == 0 {
 		return true
 	}
@@ -621,7 +621,7 @@ func (r *RobotInfo) checkGroupAllow(chatId string) bool {
 	if _, ok := conf.BaseConfInfo.AllowedGroupIds[chatId]; ok {
 		return true
 	}
-	
+
 	return false
 }
 
@@ -630,20 +630,20 @@ func (r *RobotInfo) checkUserTokenExceed(chatId string, msgId string, userId str
 	if conf.BaseConfInfo.TokenPerUser <= 0 {
 		return false
 	}
-	
+
 	userInfo, err := db.GetUserByID(userId)
 	if err != nil {
 		logger.WarnCtx(r.Ctx, "get user info fail", "err", err)
 		return false
 	}
-	
+
 	if userInfo.Token >= userInfo.AvailToken {
 		tpl := i18n.GetMessage("token_exceed", nil)
 		content := fmt.Sprintf(tpl, userInfo.Token, userInfo.AvailToken-userInfo.Token, userInfo.AvailToken)
 		r.SendMsg(chatId, content, msgId, tgbotapi.ModeMarkdown, nil)
 		return true
 	}
-	
+
 	return false
 }
 
@@ -664,11 +664,11 @@ func (r *RobotInfo) GetAudioContent(audioContent []byte) (string, error) {
 	case param.Aliyun:
 		answer, token, err = llm.GenerateAliyunText(r.Ctx, audioContent)
 	}
-	
+
 	if err != nil {
 		return "", err
 	}
-	
+
 	_, _, userId := r.GetChatIdAndMsgIdAndUserID()
 	err = db.AddRecordToken(r.Ctx, r.cs.RecordID, userId, token)
 	if err != nil {
@@ -678,7 +678,7 @@ func (r *RobotInfo) GetAudioContent(audioContent []byte) (string, error) {
 	if err != nil {
 		logger.WarnCtx(r.Ctx, "AddRecordContent err", "err", err)
 	}
-	
+
 	return answer, err
 }
 
@@ -692,7 +692,7 @@ func (r *RobotInfo) GetLastImageContent() ([]byte, error) {
 	if imageInfo == nil {
 		return nil, nil
 	}
-	
+
 	answer := imageInfo.Answer
 	const base64Prefix = "data:image/"
 	if strings.HasPrefix(answer, base64Prefix) {
@@ -709,7 +709,7 @@ func (r *RobotInfo) GetLastImageContent() ([]byte, error) {
 		}
 		return imageContent, nil
 	}
-	
+
 	imageContent, err := utils.DownloadFile(answer)
 	if err != nil {
 		logger.WarnCtx(r.Ctx, "download image fail", "err", err)
@@ -719,21 +719,21 @@ func (r *RobotInfo) GetLastImageContent() ([]byte, error) {
 
 func (r *RobotInfo) TalkingPreCheck(f func()) {
 	chatId, msgId, userId := r.GetChatIdAndMsgIdAndUserID()
-	
+
 	if r.checkUserTokenExceed(chatId, msgId, userId) {
 		logger.WarnCtx(r.Ctx, "user token exceed", "userID", userId)
 		return
 	}
-	
+
 	defer utils.DecreaseUserChat(userId)
-	
+
 	// check user chat exceed max count
 	if utils.CheckUserChatExceed(userId) {
 		r.SendMsg(chatId, i18n.GetMessage("chat_exceed", nil),
 			msgId, tgbotapi.ModeMarkdown, nil)
 		return
 	}
-	
+
 	f()
 }
 
@@ -752,7 +752,7 @@ type RobotModel struct {
 
 func (r *RobotInfo) handleModelUpdate(rm *RobotModel) {
 	chatId, msgId, userId := r.GetChatIdAndMsgIdAndUserID()
-	
+
 	userInfo := db.GetCtxUserInfo(r.Ctx)
 	if userInfo != nil && userInfo.ID != 0 {
 		llmConf := userInfo.LLMConfigRaw
@@ -789,9 +789,9 @@ func (r *RobotInfo) handleModelUpdate(rm *RobotModel) {
 		if rm.TTSModel != "" {
 			llmConf.TTSModel = rm.TTSModel
 		}
-		
+
 		mode, _ := json.Marshal(llmConf)
-		
+
 		err := db.UpdateUserLLMConfig(userId, string(mode))
 		if err != nil {
 			logger.WarnCtx(r.Ctx, "update user fail", "userID", userId, "err", err)
@@ -800,7 +800,7 @@ func (r *RobotInfo) handleModelUpdate(rm *RobotModel) {
 			return
 		}
 	}
-	
+
 	totalContent := i18n.GetMessage("mode_choose", nil) + r.Robot.getPrompt()
 	r.SendMsg(chatId, totalContent, msgId, "", nil)
 }
@@ -822,7 +822,7 @@ func ParseCommand(prompt string) (command string, args string) {
 func (r *RobotInfo) ExecCmd(cmd string, defaultFunc func(), modeFunc func(string), typesFunc func(string)) {
 	_, _, userID := r.GetChatIdAndMsgIdAndUserID()
 	logger.InfoCtx(r.Ctx, "command info", "userID", userID, "cmd", cmd)
-	
+
 	switch cmd {
 	case param.State, "/" + param.State, "$" + param.State:
 		r.showStateInfo()
@@ -888,7 +888,7 @@ func (r *RobotInfo) cronList() {
 		r.SendMsg(chatId, err.Error(), msgId, "", nil)
 		return
 	}
-	
+
 	txt := i18n.GetMessage("cron_list_header", nil)
 	for _, c := range crons {
 		txt += i18n.GetMessage("cron_list_item", map[string]interface{}{
@@ -900,7 +900,7 @@ func (r *RobotInfo) cronList() {
 		})
 	}
 	r.SendMsg(chatId, txt, msgId, "", nil)
-	
+
 }
 
 func (r *RobotInfo) cronDel() {
@@ -964,7 +964,7 @@ func (r *RobotInfo) changeType(t string) {
 
 `, model)
 		}
-	
+
 	case "photo_type", "/photo_type", "$photo_type":
 		if r.Robot.getPrompt() != "" {
 			r.handleModelUpdate(&RobotModel{ImgType: r.Robot.getPrompt()})
@@ -975,13 +975,13 @@ func (r *RobotInfo) changeType(t string) {
 
 `, model)
 		}
-	
+
 	case "video_type", "/video_type", "$video_type":
 		if r.Robot.getPrompt() != "" {
 			r.handleModelUpdate(&RobotModel{VideoType: r.Robot.getPrompt()})
 			return
 		}
-		
+
 		for _, model := range utils.GetAvailVideoType() {
 			totalContent += fmt.Sprintf(`%s
 
@@ -992,7 +992,7 @@ func (r *RobotInfo) changeType(t string) {
 			r.handleModelUpdate(&RobotModel{RecType: r.Robot.getPrompt()})
 			return
 		}
-		
+
 		for _, model := range utils.GetAvailRecType() {
 			totalContent += fmt.Sprintf(`%s
 
@@ -1003,16 +1003,16 @@ func (r *RobotInfo) changeType(t string) {
 			r.handleModelUpdate(&RobotModel{TTSType: r.Robot.getPrompt()})
 			return
 		}
-		
+
 		for _, model := range utils.GetAvailRecType() {
 			totalContent += fmt.Sprintf(`%s
 
 `, model)
 		}
 	}
-	
+
 	r.SendMsg(chatId, totalContent, msgId, "", nil)
-	
+
 }
 
 func (r *RobotInfo) changeModel(ty string) {
@@ -1048,13 +1048,13 @@ func (r *RobotInfo) changeModel(ty string) {
 		}
 		r.showTTSModel()
 	}
-	
+
 }
 
 func (r *RobotInfo) showTxtModel() {
 	chatId, msgId, _ := r.GetChatIdAndMsgIdAndUserID()
 	var modelList []string
-	
+
 	switch utils.GetTxtType(db.GetCtxUserInfo(r.Ctx).LLMConfigRaw) {
 	case param.DeepSeek:
 		for k := range param.DeepseekModels {
@@ -1091,7 +1091,7 @@ func (r *RobotInfo) showTxtModel() {
 			}),
 				msgId, tgbotapi.ModeMarkdown, nil)
 		}
-		
+
 		return
 	case param.Vol:
 		for k := range param.VolModels {
@@ -1104,14 +1104,14 @@ func (r *RobotInfo) showTxtModel() {
 
 `, model)
 	}
-	
+
 	r.SendMsg(chatId, totalContent, msgId, "", nil)
 }
 
 func (r *RobotInfo) showImageModel() {
 	chatId, msgId, _ := r.GetChatIdAndMsgIdAndUserID()
 	var modelList []string
-	
+
 	switch utils.GetTxtType(db.GetCtxUserInfo(r.Ctx).LLMConfigRaw) {
 	case param.Gemini:
 		for k := range param.GeminiImageModels {
@@ -1156,14 +1156,14 @@ func (r *RobotInfo) showImageModel() {
 
 `, model)
 	}
-	
+
 	r.SendMsg(chatId, totalContent, msgId, "", nil)
 }
 
 func (r *RobotInfo) showVideoModel() {
 	chatId, msgId, _ := r.GetChatIdAndMsgIdAndUserID()
 	var modelList []string
-	
+
 	switch utils.GetTxtType(db.GetCtxUserInfo(r.Ctx).LLMConfigRaw) {
 	case param.Gemini:
 		for k := range param.GeminiVideoModels {
@@ -1193,14 +1193,14 @@ func (r *RobotInfo) showVideoModel() {
 
 `, model)
 	}
-	
+
 	r.SendMsg(chatId, totalContent, msgId, "", nil)
 }
 
 func (r *RobotInfo) showRecModel() {
 	chatId, msgId, _ := r.GetChatIdAndMsgIdAndUserID()
 	var modelList []string
-	
+
 	switch utils.GetRecType(db.GetCtxUserInfo(r.Ctx).LLMConfigRaw) {
 	case param.Gemini:
 		for k := range param.GeminiRecModels {
@@ -1236,14 +1236,14 @@ func (r *RobotInfo) showRecModel() {
 
 `, model)
 	}
-	
+
 	r.SendMsg(chatId, totalContent, msgId, "", nil)
 }
 
 func (r *RobotInfo) showTTSModel() {
 	chatId, msgId, _ := r.GetChatIdAndMsgIdAndUserID()
 	var modelList []string
-	
+
 	switch utils.GetTTSType(db.GetCtxUserInfo(r.Ctx).LLMConfigRaw) {
 	case param.Gemini:
 		for k := range param.GeminiTTSModels {
@@ -1273,14 +1273,14 @@ func (r *RobotInfo) showTTSModel() {
 
 `, model)
 	}
-	
+
 	r.SendMsg(chatId, totalContent, msgId, "", nil)
 }
 
 func (r *RobotInfo) ExecChain(msgContent string, msgChan *MsgChan) {
 	r.TalkingPreCheck(func() {
 		chatId, msgId, userId := r.GetChatIdAndMsgIdAndUserID()
-		
+
 		defer func() {
 			if err := recover(); err != nil {
 				logger.ErrorCtx(r.Ctx, "panic", "err", err, "stack", string(debug.Stack()))
@@ -1288,27 +1288,27 @@ func (r *RobotInfo) ExecChain(msgContent string, msgChan *MsgChan) {
 			if msgChan.NormalMessageChan != nil {
 				close(msgChan.NormalMessageChan)
 			}
-			
+
 			if msgChan.StrMessageChan != nil {
 				close(msgChan.StrMessageChan)
 			}
 		}()
-		
+
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 		defer cancel()
-		
+
 		content := r.Robot.getPrompt()
 		if len(msgContent) == 0 {
 			logger.InfoCtx(r.Ctx, "content is empty")
 			return
 		}
-		
+
 		r.InsertRecord()
 		perMsgLen := r.Robot.getPerMsgLen()
 		if conf.AudioConfInfo.TTSType != "" {
 			perMsgLen = AudioMsgLen
 		}
-		
+
 		dpLLM := rag.NewRag(
 			llm.WithMessageChan(msgChan.NormalMessageChan),
 			llm.WithHTTPMsgChan(msgChan.StrMessageChan),
@@ -1337,12 +1337,12 @@ func (r *RobotInfo) ExecLLM(msgContent string, msgChan *MsgChan) {
 		if msgChan.NormalMessageChan != nil {
 			close(msgChan.NormalMessageChan)
 		}
-		
+
 		if msgChan.StrMessageChan != nil {
 			close(msgChan.StrMessageChan)
 		}
 	}()
-	
+
 	chatId, msgId, userId := r.GetChatIdAndMsgIdAndUserID()
 	content := r.Robot.getPrompt()
 	if len(content) == 0 {
@@ -1352,18 +1352,18 @@ func (r *RobotInfo) ExecLLM(msgContent string, msgChan *MsgChan) {
 		logger.InfoCtx(r.Ctx, "content is empty")
 		return
 	}
-	
+
 	r.InsertRecord()
 	perMsgLen := r.Robot.getPerMsgLen()
 	if conf.AudioConfInfo.TTSType != "" {
 		perMsgLen = AudioMsgLen
 	}
-	
+
 	images := make([][]byte, 0)
 	if len(r.Robot.getImage()) > 0 {
 		images = append(images, r.Robot.getImage())
 	}
-	
+
 	llmClient := llm.NewLLM(
 		llm.WithChatId(chatId),
 		llm.WithUserId(userId),
@@ -1386,13 +1386,13 @@ func (r *RobotInfo) ExecLLM(msgContent string, msgChan *MsgChan) {
 		}),
 		llm.WithImages(images),
 	)
-	
+
 	err := llmClient.CallLLM()
 	if err != nil {
 		logger.ErrorCtx(r.Ctx, "get content fail", "err", err)
 		r.SendMsg(chatId, err.Error(), msgId, "", nil)
 	}
-	
+
 }
 
 func (r *RobotInfo) showStateInfo() {
@@ -1403,7 +1403,7 @@ func (r *RobotInfo) showStateInfo() {
 		r.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
 		return
 	}
-	
+
 	// get today token
 	now := time.Now()
 	startOfDay := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
@@ -1412,24 +1412,24 @@ func (r *RobotInfo) showStateInfo() {
 	if err != nil {
 		logger.WarnCtx(r.Ctx, "get today token fail", "err", err)
 	}
-	
+
 	// get this week token
 	startOf7DaysAgo := now.AddDate(0, 0, -7).Truncate(24 * time.Hour)
 	weekToken, err := db.GetTokenByUserIdAndTime(userId, startOf7DaysAgo.Unix(), endOfDay.Unix())
 	if err != nil {
 		logger.WarnCtx(r.Ctx, "get week token fail", "err", err)
 	}
-	
+
 	startOf30DaysAgo := now.AddDate(0, 0, -30).Truncate(24 * time.Hour)
 	monthToken, err := db.GetTokenByUserIdAndTime(userId, startOf30DaysAgo.Unix(), endOfDay.Unix())
 	if err != nil {
 		logger.WarnCtx(r.Ctx, "get week token fail", "err", err)
 	}
-	
+
 	template := i18n.GetMessage("state_content", nil)
 	msgContent := fmt.Sprintf(template, userInfo.Token, todayTokey, weekToken, monthToken)
 	r.SendMsg(chatId, msgContent, msgId, tgbotapi.ModeMarkdown, nil)
-	
+
 }
 
 func (r *RobotInfo) clearAllRecord() {
@@ -1439,12 +1439,12 @@ func (r *RobotInfo) clearAllRecord() {
 	r.SendMsg(chatId, deleteSuccMsg,
 		msgId, tgbotapi.ModeMarkdown, nil)
 	return
-	
+
 }
 
 func (r *RobotInfo) retryLastQuestion() {
 	chatId, msgId, userId := r.GetChatIdAndMsgIdAndUserID()
-	
+
 	records := db.GetMsgRecord(userId)
 	if records != nil && len(records.AQs) > 0 {
 		r.Robot.requestLLM(records.AQs[len(records.AQs)-1].Question)
@@ -1452,15 +1452,15 @@ func (r *RobotInfo) retryLastQuestion() {
 		r.SendMsg(chatId, i18n.GetMessage("last_question_fail", nil),
 			msgId, tgbotapi.ModeMarkdown, nil)
 	}
-	
+
 	return
-	
+
 }
 
 func (r *RobotInfo) sendMultiAgent(agentType string, emptyPromptFunc func()) {
 	r.TalkingPreCheck(func() {
 		chatId, msgId, userId := r.GetChatIdAndMsgIdAndUserID()
-		
+
 		prompt := r.Robot.getPrompt()
 		prompt = strings.TrimSpace(prompt)
 		if len(prompt) == 0 {
@@ -1472,7 +1472,7 @@ func (r *RobotInfo) sendMultiAgent(agentType string, emptyPromptFunc func()) {
 			}
 			return
 		}
-		
+
 		dpReq := &llm.LLMTaskReq{
 			Content:   prompt,
 			UserId:    userId,
@@ -1481,13 +1481,13 @@ func (r *RobotInfo) sendMultiAgent(agentType string, emptyPromptFunc func()) {
 			PerMsgLen: r.Robot.getPerMsgLen(),
 			Ctx:       r.Ctx,
 		}
-		
+
 		if _, ok := r.Robot.(*QQRobot); ok {
 			dpReq.HTTPMsgChan = make(chan string)
 		} else {
 			dpReq.MessageChan = make(chan *param.MsgInfo)
 		}
-		
+
 		go func() {
 			defer func() {
 				if err := recover(); err != nil {
@@ -1500,7 +1500,7 @@ func (r *RobotInfo) sendMultiAgent(agentType string, emptyPromptFunc func()) {
 					close(dpReq.MessageChan)
 				}
 			}()
-			
+
 			var err error
 			if agentType == "mcp_empty_content" {
 				err = dpReq.ExecuteMcp()
@@ -1513,7 +1513,7 @@ func (r *RobotInfo) sendMultiAgent(agentType string, emptyPromptFunc func()) {
 				return
 			}
 		}()
-		
+
 		go r.HandleUpdate(&MsgChan{
 			NormalMessageChan: dpReq.MessageChan,
 			StrMessageChan:    dpReq.HTTPMsgChan,
@@ -1522,7 +1522,7 @@ func (r *RobotInfo) sendMultiAgent(agentType string, emptyPromptFunc func()) {
 }
 
 func (r *RobotInfo) CreatePhoto(prompt string, lastImageContent []byte) ([]byte, int, error) {
-	
+
 	var imageUrl string
 	var imageContent []byte
 	var totalToken int
@@ -1545,12 +1545,12 @@ func (r *RobotInfo) CreatePhoto(prompt string, lastImageContent []byte) ([]byte,
 	default:
 		err = fmt.Errorf("unsupported media type: %s", conf.BaseConfInfo.MediaType)
 	}
-	
+
 	if err != nil {
 		logger.ErrorCtx(r.Ctx, "generate image fail", "err", err)
 		return nil, 0, err
 	}
-	
+
 	if len(imageContent) == 0 {
 		imageContent, err = utils.DownloadFile(imageUrl)
 		if err != nil {
@@ -1558,7 +1558,7 @@ func (r *RobotInfo) CreatePhoto(prompt string, lastImageContent []byte) ([]byte,
 			return nil, 0, err
 		}
 	}
-	
+
 	return imageContent, totalToken, nil
 }
 
@@ -1587,7 +1587,7 @@ func (r *RobotInfo) CreateVideo(prompt string, lastImageContent []byte) ([]byte,
 		logger.WarnCtx(r.Ctx, "generate video fail", "err", err)
 		return nil, 0, err
 	}
-	
+
 	if len(videoContent) == 0 {
 		videoContent, err = utils.DownloadFile(videoUrl)
 		if err != nil {
@@ -1595,7 +1595,7 @@ func (r *RobotInfo) CreateVideo(prompt string, lastImageContent []byte) ([]byte,
 			return nil, 0, err
 		}
 	}
-	
+
 	return videoContent, totalToken, nil
 }
 
@@ -1615,12 +1615,12 @@ func (r *RobotInfo) GetVoiceBaseTTS(content, encoding string) ([]byte, int, erro
 	case param.Aliyun:
 		ttsContent, token, duration, err = llm.AliyunTTS(r.Ctx, content, encoding)
 	}
-	
+
 	err = db.AddRecordToken(r.Ctx, r.cs.RecordID, userId, token)
 	if err != nil {
 		logger.WarnCtx(r.Ctx, "addRecordToken err", "err", err)
 	}
-	
+
 	return ttsContent, duration, err
 }
 
@@ -1643,12 +1643,12 @@ func (r *RobotInfo) sendVoice(messageChan *MsgChan, encoding string) {
 			}
 		}
 	}
-	
+
 	if msg == nil || len(msg.Content) == 0 {
 		msg = new(param.MsgInfo)
 		return
 	}
-	
+
 	voiceContent, duration, err := r.GetVoiceBaseTTS(msg.Content, encoding)
 	if err != nil {
 		logger.ErrorCtx(r.Ctx, "tts fail", "err", err)
@@ -1669,7 +1669,7 @@ func (r *RobotInfo) HandleUpdate(messageChan *MsgChan, encoding string) {
 			logger.ErrorCtx(r.Ctx, "handleUpdate panic err", "err", err, "stack", string(debug.Stack()))
 		}
 	}()
-	
+
 	if conf.AudioConfInfo.TTSType != "" && encoding != "" {
 		r.sendVoice(messageChan, encoding)
 	} else {
@@ -1682,20 +1682,20 @@ func (r *RobotInfo) HandleUpdate(messageChan *MsgChan, encoding string) {
 		} else {
 			r.sendText(messageChan)
 		}
-		
+
 	}
-	
+
 }
 
 func (r *RobotInfo) InsertRecord() {
 	_, _, userId := r.GetChatIdAndMsgIdAndUserID()
-	
+
 	content := ""
 	if len(r.Robot.getImage()) > 0 {
 		content = fmt.Sprintf("data:image/%s;base64,%s", utils.DetectImageFormat(r.Robot.getImage()),
 			base64.StdEncoding.EncodeToString(r.Robot.getImage()))
 	}
-	
+
 	id, err := db.InsertRecordInfo(r.Ctx, &db.Record{
 		UserId:     userId,
 		Question:   r.Robot.getCommand() + " " + r.Robot.getPrompt(),
@@ -1707,7 +1707,7 @@ func (r *RobotInfo) InsertRecord() {
 		logger.ErrorCtx(r.Ctx, "insert record fail", "err", err)
 		return
 	}
-	
+
 	r.cs.RecordID = id
 }
 
@@ -1731,9 +1731,9 @@ func (r *RobotInfo) smartMode() bool {
 	if r.Robot.getCommand() != "" || r.Robot.getPrompt() == "" || !conf.BaseConfInfo.SmartMode {
 		return true
 	}
-	
+
 	chatId, msgId, userId := r.GetChatIdAndMsgIdAndUserID()
-	
+
 	llmClient := llm.NewLLM(
 		llm.WithChatId(chatId),
 		llm.WithUserId(userId),
@@ -1753,7 +1753,7 @@ func (r *RobotInfo) smartMode() bool {
 		logger.ErrorCtx(r.Ctx, "get content fail", "err", err)
 		return true
 	}
-	
+
 	matches := smartModeReg.FindAllString(content, -1)
 	smartResult := new(SmartModeResult)
 	for _, match := range matches {
@@ -1762,9 +1762,9 @@ func (r *RobotInfo) smartMode() bool {
 			logger.ErrorCtx(r.Ctx, "json umarshal fail", "err", err)
 		}
 	}
-	
+
 	logger.InfoCtx(r.Ctx, "smart mode result", "result", smartResult)
-	
+
 	switch smartResult.Command {
 	case "/cron":
 		r.cs.Token = llmClient.Cs.Token
@@ -1780,32 +1780,32 @@ func (r *RobotInfo) smartMode() bool {
 			r.Robot.setCommand(smartResult.Command)
 		}
 	}
-	
+
 	r.cs.Token = llmClient.Cs.Token
 	return true
 }
 
 func (r *RobotInfo) saveRecord(content, imageContent []byte, recordType, totalToken int) {
 	_, _, userId := r.GetChatIdAndMsgIdAndUserID()
-	
+
 	base64Content := base64.StdEncoding.EncodeToString(content)
 	format := utils.DetectImageFormat(content)
 	dataURI := fmt.Sprintf("data:image/%s;base64,%s", format, base64Content)
-	
+
 	originImageURI := ""
 	if len(imageContent) > 0 {
 		base64Content = base64.StdEncoding.EncodeToString(imageContent)
 		format = utils.DetectImageFormat(imageContent)
 		originImageURI = fmt.Sprintf("data:image/%s;base64,%s", format, base64Content)
 	}
-	
+
 	mode := ""
 	if recordType == param.ImageRecordType {
 		mode = utils.GetImgType(db.GetCtxUserInfo(r.Ctx).LLMConfigRaw)
 	} else {
 		mode = utils.GetVideoType(db.GetCtxUserInfo(r.Ctx).LLMConfigRaw)
 	}
-	
+
 	// save data record
 	_, err := db.InsertRecordInfo(r.Ctx, &db.Record{
 		UserId:     userId,
@@ -1858,24 +1858,24 @@ func (r *RobotInfo) InsertCron(cron, prompt string) error {
 		targetId = chatId
 		t = param.ComWechat
 	}
-	
+
 	if t == "" {
 		return errors.New("unsupported robot type")
 	}
-	
+
 	id, err = db.InsertCron(fmt.Sprintf("%s cron task", r.Robot.getUserName()), cron, targetId,
 		groupId, "", prompt, t, userId)
 	if err != nil {
 		logger.ErrorCtx(r.Ctx, "insert cron fail", "err", err)
 		return err
 	}
-	
+
 	cronInfo, err := db.GetCronByID(id)
 	if err != nil {
 		logger.ErrorCtx(r.Ctx, "get cron by id fail", "err", err)
 		return err
 	}
-	
+
 	return AddCron(cronInfo)
 }
 
@@ -1888,7 +1888,7 @@ func (r *RobotInfo) recPhoto() {
 		}
 		r.Robot.setImage(lastImageContent)
 	}
-	
+
 	r.Robot.executeLLM()
 }
 
@@ -1897,12 +1897,12 @@ func (r *RobotInfo) splitText(text string) []string {
 	if pLen <= 0 {
 		return []string{text}
 	}
-	
+
 	runes := []rune(text)
 	length := len(runes)
-	
+
 	var result []string
-	
+
 	for i := 0; i < length; i += pLen {
 		end := i + pLen
 		if end > length {
@@ -1910,7 +1910,7 @@ func (r *RobotInfo) splitText(text string) []string {
 		}
 		result = append(result, string(runes[i:end]))
 	}
-	
+
 	return result
 }
 
@@ -1928,7 +1928,7 @@ func (r *RobotInfo) SendMarkdownMsg(msg *param.MsgInfo) {
 			} else {
 				contentType = utils.DetectImageFormat(b.Media.Content)
 			}
-			
+
 			err := r.Robot.sendMedia(b.Media.Content, contentType, b.Type)
 			if err != nil {
 				logger.ErrorCtx(r.Ctx, "send media fail", "err", err)
@@ -1945,7 +1945,7 @@ func (r *RobotInfo) sendText(messageChan *MsgChan) {
 				r.SendMarkdownMsg(msg)
 			}
 		}
-		
+
 		if msg != nil {
 			r.SendMarkdownMsg(msg)
 		}

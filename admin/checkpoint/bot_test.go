@@ -3,16 +3,16 @@ package checkpoint
 import (
 	"os"
 	"testing"
-	
+
 	"github.com/yincongcyincong/MuseBot/admin/conf"
 	"github.com/yincongcyincong/MuseBot/admin/db"
 )
 
 func TestMain(m *testing.M) {
 	setup()
-	
+
 	code := m.Run()
-	
+
 	os.Exit(code)
 }
 
@@ -26,9 +26,9 @@ func TestScheduleBotChecks(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	
+
 	ScheduleBotChecks()
-	
+
 	BotMap.Range(func(key, value interface{}) bool {
 		v, ok := value.(*BotStatus)
 		if !ok {

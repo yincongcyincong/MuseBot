@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 	"time"
-	
+
 	"github.com/stretchr/testify/assert"
 	"github.com/yincongcyincong/MuseBot/db"
 	"github.com/yincongcyincong/MuseBot/param"
@@ -14,7 +14,7 @@ func TestSendMsg_WithMessageChan(t *testing.T) {
 	msgChan := make(chan *param.MsgInfo, 1)
 	l := &LLM{MessageChan: msgChan}
 	msg := &param.MsgInfo{SendLen: 10}
-	
+
 	updated := l.SendMsg(msg, "hello")
 	assert.Equal(t, "hello", updated.Content)
 }
@@ -22,7 +22,7 @@ func TestSendMsg_WithMessageChan(t *testing.T) {
 func TestSendMsg_WithHTTPMsgChan(t *testing.T) {
 	httpChan := make(chan string, 1)
 	l := &LLM{HTTPMsgChan: httpChan}
-	
+
 	l.SendMsg(&param.MsgInfo{}, "streamed text")
 	select {
 	case msg := <-httpChan:

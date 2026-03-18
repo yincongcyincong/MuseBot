@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"testing"
-	
+
 	"github.com/stretchr/testify/assert"
 	"github.com/yincongcyincong/MuseBot/conf"
 	"github.com/yincongcyincong/MuseBot/db"
@@ -14,15 +14,15 @@ import (
 func TestGeminiSend(t *testing.T) {
 	conf.InitConf()
 	messageChan := make(chan *param.MsgInfo)
-	
+
 	go func() {
 		for m := range messageChan {
 			fmt.Println(m)
 		}
 	}()
-	
+
 	conf.BaseConfInfo.Type = param.Gemini
-	
+
 	ctx := context.WithValue(context.Background(), "user_info", &db.User{
 		LLMConfig:    `{"type":"gemini"}`,
 		LLMConfigRaw: &param.LLMConfig{TxtType: param.Gemini},
@@ -33,7 +33,7 @@ func TestGeminiSend(t *testing.T) {
 	callLLM.GetMessages("4", "hi")
 	err := callLLM.LLMClient.Send(ctx, callLLM)
 	assert.Equal(t, nil, err)
-	
+
 }
 
 func TestGenerateGeminiText_EmptyAudio(t *testing.T) {

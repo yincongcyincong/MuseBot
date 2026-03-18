@@ -3,7 +3,7 @@ package db
 import (
 	"fmt"
 	"time"
-	
+
 	"github.com/yincongcyincong/MuseBot/conf"
 )
 
@@ -24,7 +24,7 @@ func InsertRagFile(fileName, fileMd5 string) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	
+
 	// get last insert id
 	id, err := result.LastInsertId()
 	if err != nil {
@@ -36,12 +36,12 @@ func InsertRagFile(fileName, fileMd5 string) (int64, error) {
 func GetRagFileByFileMd5(fileMd5 string) ([]*RagFiles, error) {
 	querySQL := `SELECT id, file_name, file_md5, update_time, create_time FROM rag_files WHERE file_md5 = ? and is_deleted = 0 and from_bot = ?`
 	rows, err := DB.Query(querySQL, fileMd5, conf.BaseConfInfo.BotName)
-	
+
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	
+
 	var ragFiles []*RagFiles
 	for rows.Next() {
 		var ragFile RagFiles
@@ -50,7 +50,7 @@ func GetRagFileByFileMd5(fileMd5 string) ([]*RagFiles, error) {
 		}
 		ragFiles = append(ragFiles, &ragFile)
 	}
-	
+
 	// check error
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -61,12 +61,12 @@ func GetRagFileByFileMd5(fileMd5 string) ([]*RagFiles, error) {
 func GetRagFileByFileName(fileName string) ([]*RagFiles, error) {
 	querySQL := `SELECT id, file_name, file_md5, update_time, create_time, vector_id FROM rag_files WHERE file_name = ? and is_deleted = 0 and from_bot = ?`
 	rows, err := DB.Query(querySQL, fileName, conf.BaseConfInfo.BotName)
-	
+
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	
+
 	var ragFiles []*RagFiles
 	for rows.Next() {
 		var ragFile RagFiles
@@ -75,7 +75,7 @@ func GetRagFileByFileName(fileName string) ([]*RagFiles, error) {
 		}
 		ragFiles = append(ragFiles, &ragFile)
 	}
-	
+
 	// check error
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -109,32 +109,32 @@ func GetRagFilesByPage(page, pageSize int, name string) ([]RagFiles, error) {
 		pageSize = 10
 	}
 	offset := (page - 1) * pageSize
-	
+
 	var (
 		whereSQL = "WHERE is_deleted = 0 and from_bot = ?"
 		args     = []interface{}{conf.BaseConfInfo.BotName}
 	)
-	
+
 	if name != "" {
 		whereSQL += " AND file_name LIKE ?"
 		args = append(args, "%"+name+"%")
 	}
-	
+
 	// 查询数据
 	listSQL := fmt.Sprintf(`
 		SELECT id, file_name, file_md5, vector_id, update_time, create_time, is_deleted
 		FROM rag_files %s
 		ORDER BY id DESC
 		LIMIT ? OFFSET ?`, whereSQL)
-	
+
 	args = append(args, pageSize, offset)
-	
+
 	rows, err := DB.Query(listSQL, args...)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	
+
 	var files []RagFiles
 	for rows.Next() {
 		var f RagFiles
@@ -143,23 +143,23 @@ func GetRagFilesByPage(page, pageSize int, name string) ([]RagFiles, error) {
 		}
 		files = append(files, f)
 	}
-	
+
 	return files, nil
 }
 
 func GetRagFilesCount(name string) (int, error) {
 	whereSQL := "WHERE is_deleted = 0 and from_bot = ?"
 	args := []interface{}{conf.BaseConfInfo.BotName}
-	
+
 	if name != "" {
 		whereSQL += " AND file_name LIKE ?"
 		args = append(args, "%"+name+"%")
 	}
-	
+
 	countSQL := fmt.Sprintf("SELECT COUNT(*) FROM rag_files %s", whereSQL)
-	
+
 	var count int
 	err := DB.QueryRow(countSQL, args...).Scan(&count)
-	
+
 	return count, err
 }

@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-	
+
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/json-iterator/go"
 	"github.com/json-iterator/go/extra"
@@ -104,7 +104,7 @@ type PersonalQQRobot struct {
 	Msg   *QQMessage
 	Robot *RobotInfo
 	Ctx   context.Context
-	
+
 	Command      string
 	Prompt       string
 	OriginPrompt string
@@ -120,13 +120,13 @@ func NewPersonalQQRobot(ctx context.Context, msgContent []byte) *PersonalQQRobot
 		logger.ErrorCtx(ctx, "Unmarshal QQMessage error", "error", err)
 		return nil
 	}
-	
+
 	q := &PersonalQQRobot{
 		Msg:      msg,
 		Ctx:      ctx,
 		UserName: msg.Sender.Nickname,
 	}
-	
+
 	q.Robot = NewRobot(WithRobot(q))
 	return q
 }
@@ -135,21 +135,21 @@ func (q *PersonalQQRobot) checkValid() bool {
 	if q.Msg.Message == nil {
 		return false
 	}
-	
+
 	atBot, err := q.GetMessageContent()
 	if err != nil {
 		logger.ErrorCtx(q.Ctx, "get message content error", "err", err)
 		return false
 	}
-	
+
 	if q.Robot.cs.SkipCheck {
 		return true
 	}
-	
+
 	if !atBot && q.Msg.MessageType == "group" {
 		return false
 	}
-	
+
 	return true
 }
 
@@ -167,14 +167,14 @@ func (q *PersonalQQRobot) requestLLM(content string) {
 func (q *PersonalQQRobot) sendImg() {
 	q.Robot.TalkingPreCheck(func() {
 		chatId, msgId, _ := q.Robot.GetChatIdAndMsgIdAndUserID()
-		
+
 		prompt := strings.TrimSpace(q.Prompt)
 		if prompt == "" {
 			logger.Warn("prompt is empty")
 			q.Robot.SendMsg(chatId, i18n.GetMessage("photo_empty_content", nil), msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
-		
+
 		var err error
 		var lastImageContent = q.ImageContent
 		if len(lastImageContent) == 0 && strings.Contains(q.Command, "edit_photo") {
@@ -183,21 +183,21 @@ func (q *PersonalQQRobot) sendImg() {
 				logger.Warn("get last image record fail", "err", err)
 			}
 		}
-		
+
 		imageContent, totalToken, err := q.Robot.CreatePhoto(prompt, lastImageContent)
 		if err != nil {
 			logger.Warn("generate image fail", "err", err)
 			q.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
-		
+
 		_, err = q.SendMsg("", imageContent, nil, nil)
 		if err != nil {
 			logger.Warn("send image fail", "err", err)
 			q.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
-		
+
 		q.Robot.saveRecord(imageContent, lastImageContent, param.ImageRecordType, totalToken)
 	})
 }
@@ -206,31 +206,31 @@ func (q *PersonalQQRobot) sendVideo() {
 	// 检查 prompt
 	q.Robot.TalkingPreCheck(func() {
 		chatId, msgId, _ := q.Robot.GetChatIdAndMsgIdAndUserID()
-		
+
 		prompt := strings.TrimSpace(q.Prompt)
 		if prompt == "" {
 			logger.Warn("prompt is empty")
 			q.Robot.SendMsg(chatId, i18n.GetMessage("video_empty_content", nil), msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
-		
+
 		videoContent, totalToken, err := q.Robot.CreateVideo(prompt, q.ImageContent)
 		if err != nil {
 			logger.Warn("generate video fail", "err", err)
 			q.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
-		
+
 		_, err = q.SendMsg("", nil, videoContent, nil)
 		if err != nil {
 			logger.Warn("send video fail", "err", err)
 			q.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
-		
+
 		q.Robot.saveRecord(videoContent, q.ImageContent, param.VideoRecordType, totalToken)
 	})
-	
+
 }
 
 func (q *PersonalQQRobot) sendChatMessage() {
@@ -241,7 +241,7 @@ func (q *PersonalQQRobot) sendChatMessage() {
 			q.executeLLM()
 		}
 	})
-	
+
 }
 
 func (q *PersonalQQRobot) executeChain() {
@@ -249,7 +249,7 @@ func (q *PersonalQQRobot) executeChain() {
 		NormalMessageChan: make(chan *param.MsgInfo),
 	}
 	go q.Robot.ExecChain(q.Prompt, msgChan)
-	
+
 	// send response message
 	go q.Robot.HandleUpdate(msgChan, "mp3")
 }
@@ -258,11 +258,11 @@ func (q *PersonalQQRobot) executeLLM() {
 	msgChan := &MsgChan{
 		NormalMessageChan: make(chan *param.MsgInfo),
 	}
-	
+
 	go q.Robot.HandleUpdate(msgChan, "mp3")
-	
+
 	go q.Robot.ExecLLM(q.Prompt, msgChan)
-	
+
 }
 
 func (q *PersonalQQRobot) getPrompt() string {
@@ -280,9 +280,9 @@ type OneBotResult struct {
 
 func (q *PersonalQQRobot) SendMsg(txt string, image []byte, video []byte, voice []byte) (string, error) {
 	_, msgId, userId := q.Robot.GetChatIdAndMsgIdAndUserID()
-	
+
 	msgArray := []map[string]interface{}{}
-	
+
 	if txt != "" {
 		if msgId != "" {
 			msgArray = append(msgArray, map[string]interface{}{
@@ -290,13 +290,13 @@ func (q *PersonalQQRobot) SendMsg(txt string, image []byte, video []byte, voice 
 				"data": map[string]string{"id": msgId},
 			})
 		}
-		
+
 		msgArray = append(msgArray, map[string]interface{}{
 			"type": "text",
 			"data": map[string]string{"text": txt},
 		})
 	}
-	
+
 	if len(image) > 0 {
 		if msgId != "" {
 			msgArray = append(msgArray, map[string]interface{}{
@@ -304,14 +304,14 @@ func (q *PersonalQQRobot) SendMsg(txt string, image []byte, video []byte, voice 
 				"data": map[string]string{"id": msgId},
 			})
 		}
-		
+
 		encoded := "base64://" + base64.StdEncoding.EncodeToString(image)
 		msgArray = append(msgArray, map[string]interface{}{
 			"type": "image",
 			"data": map[string]string{"file": encoded},
 		})
 	}
-	
+
 	if len(video) > 0 {
 		encoded := "base64://" + base64.StdEncoding.EncodeToString(video)
 		msgArray = append(msgArray, map[string]interface{}{
@@ -319,7 +319,7 @@ func (q *PersonalQQRobot) SendMsg(txt string, image []byte, video []byte, voice 
 			"data": map[string]string{"file": encoded},
 		})
 	}
-	
+
 	if len(voice) > 0 {
 		encoded := "base64://" + base64.StdEncoding.EncodeToString(voice)
 		msgArray = append(msgArray, map[string]interface{}{
@@ -327,11 +327,11 @@ func (q *PersonalQQRobot) SendMsg(txt string, image []byte, video []byte, voice 
 			"data": map[string]string{"file": encoded},
 		})
 	}
-	
+
 	if len(msgArray) == 0 {
 		return "", fmt.Errorf("no content")
 	}
-	
+
 	payload := map[string]interface{}{
 		"message": msgArray,
 	}
@@ -342,7 +342,7 @@ func (q *PersonalQQRobot) SendMsg(txt string, image []byte, video []byte, voice 
 	} else {
 		payload["user_id"] = userId
 	}
-	
+
 	data, _ := json.Marshal(payload)
 	req, _ := http.NewRequest("POST", strings.TrimRight(conf.BaseConfInfo.QQOneBotHttpServer, "/")+
 		path, bytes.NewBuffer(data))
@@ -350,7 +350,7 @@ func (q *PersonalQQRobot) SendMsg(txt string, image []byte, video []byte, voice 
 	if conf.BaseConfInfo.QQOneBotSendToken != "" {
 		req.Header.Set("Authorization", "Bearer "+conf.BaseConfInfo.QQOneBotSendToken)
 	}
-	
+
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
@@ -358,19 +358,19 @@ func (q *PersonalQQRobot) SendMsg(txt string, image []byte, video []byte, voice 
 		return "", err
 	}
 	defer resp.Body.Close()
-	
+
 	// 解析返回值
 	result := new(OneBotResult)
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		logger.ErrorCtx(q.Ctx, "send message failed", "err", err, "req", payload)
 		return "", err
 	}
-	
+
 	if result.Status != "ok" && result.MessageID == "" {
 		logger.ErrorCtx(q.Ctx, "send message failed", "err", err, "req", data, "result", result)
 		return "", fmt.Errorf("send fail: %v", result)
 	}
-	
+
 	return result.MessageID, nil
 }
 
@@ -415,7 +415,7 @@ func (q *PersonalQQRobot) GetMessageContent() (bool, error) {
 	if q.Command == "" && q.Prompt == "" && q.ImageContent == nil && q.AudioContent == nil {
 		return false, fmt.Errorf("no content")
 	}
-	
+
 	return isAt, nil
 }
 
