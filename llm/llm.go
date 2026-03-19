@@ -401,34 +401,43 @@ func (l *LLM) ExecMcpReq(ctx context.Context, funcName string, property map[stri
 
 	logger.InfoCtx(ctx, "get mcp", "function", funcName, "argument", property, "res", toolsData)
 
-	if conf.BaseConfInfo.SendMcpRes {
-		// First use regex to match JSON with "type" field, extract it, then parse JSON to check if it's an image
-		jsonRegex := regexp.MustCompile(`(\{\s*"type"\s*:[\s\S]*?\})`)
-		ignoreLen := false
-		sendContent := toolsData
-		for _, match := range jsonRegex.FindAllString(toolsData, -1) {
-			if len(match) < 1 {
-				continue
-			}
-			jsonStr := match
-			mcpResp := new(param.MCPResp)
-			if err := json.Unmarshal([]byte(jsonStr), mcpResp); err == nil && mcpResp.Type == "image" {
-				markdown := "![image](data:" + mcpResp.MimeType + ";base64," + mcpResp.Data + ")"
-				sendContent = strings.Replace(toolsData, jsonStr, markdown, 1)
-				ignoreLen = true
-				// 不用发送图片到llm
-				if !conf.BaseConfInfo.SendMcpMediaToLLM {
-					toolsData = strings.Replace(toolsData, jsonStr, "", -1)
-				}
-				break
-			}
+	// 无论 SendMcpRes 是否开启，都检测图片类型并单独发送
+	jsonRegex := regexp.MustCompile(`(\{\s*"type"\s*:[\s\S]*?\})`)
+	imageSent := false
+	for _, match := range jsonRegex.FindAllString(toolsData, -1) {
+		if len(match) < 1 {
+			continue
 		}
+		mcpResp := new(param.MCPResp)
+		if err := json.Unmarshal([]byte(match), mcpResp); err == nil && mcpResp.Type == "image" {
+			markdown := "![image](data:" + mcpResp.MimeType + ";base64," + mcpResp.Data + ")"
+			l.DirectSendMsg(markdown, true)
+			imageSent = true
+			// 图片 base64 不传给 LLM，替换为占位符
+			if !conf.BaseConfInfo.SendMcpMediaToLLM {
+				toolsData = strings.Replace(toolsData, match, "[MCP 返回的 Base64 图像已直接发送给用户]", -1)
+			}
+			break
+		}
+	}
 
-		l.DirectSendMsg(i18n.GetMessage("send_mcp_info", map[string]interface{}{
-			"function_name": funcName,
-			"request_args":  property,
-			"response":      sendContent,
-		}), ignoreLen)
+	if conf.BaseConfInfo.SendMcpRes {
+		sendContent := toolsData
+		if !imageSent {
+			// 非图片类型，直接发送原始内容
+			l.DirectSendMsg(i18n.GetMessage("send_mcp_info", map[string]interface{}{
+				"function_name": funcName,
+				"request_args":  property,
+				"response":      sendContent,
+			}), false)
+		} else {
+			// 图片已单独发送，sendContent 已是替换后的内容，发送文字部分
+			l.DirectSendMsg(i18n.GetMessage("send_mcp_info", map[string]interface{}{
+				"function_name": funcName,
+				"request_args":  property,
+				"response":      sendContent,
+			}), false)
+		}
 	}
 
 	return toolsData, nil

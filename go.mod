@@ -19,6 +19,7 @@ require (
 	github.com/gorilla/sessions v1.2.1
 	github.com/gorilla/websocket v1.5.3
 	github.com/hpcloud/tail v1.0.0
+	github.com/json-iterator/go v1.1.12
 	github.com/larksuite/oapi-sdk-go/v3 v3.4.22
 	github.com/mattn/go-sqlite3 v1.14.24
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d
@@ -40,7 +41,6 @@ require (
 	github.com/weaviate/weaviate-go-client/v4 v4.13.1
 	github.com/yincongcyincong/langchaingo v0.0.3
 	github.com/yincongcyincong/mcp-client-go v0.0.25
-	github.com/yuin/goldmark v1.4.13
 	go.etcd.io/etcd/client/v3 v3.5.0
 	golang.org/x/oauth2 v0.25.0
 	golang.org/x/text v0.29.0
@@ -125,7 +125,6 @@ require (
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/joho/godotenv v1.5.1 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
-	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.17.11 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
