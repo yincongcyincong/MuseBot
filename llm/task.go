@@ -30,6 +30,7 @@ type LLMTaskReq struct {
 	ChatId string
 	MsgId  string
 
+	Cs  *param.ContextState
 	Ctx context.Context
 }
 
@@ -65,8 +66,8 @@ func (d *LLMTaskReq) ExecuteTask() error {
 	prompt := i18n.GetMessage("assign_task_prompt", taskParam)
 	llm := NewLLM(WithUserId(d.UserId), WithChatId(d.ChatId), WithMsgId(d.MsgId),
 		WithMessageChan(d.MessageChan), WithContent(prompt), WithHTTPMsgChan(d.HTTPMsgChan),
-		WithPerMsgLen(d.PerMsgLen), WithContext(d.Ctx))
-	llm.LLMClient.GetMessage(openai.ChatMessageRoleUser, prompt)
+		WithPerMsgLen(d.PerMsgLen), WithContext(d.Ctx), WithCS(d.Cs))
+	llm.GetMessages(d.UserId, prompt)
 	llm.LLMClient.GetModel(llm)
 
 	metrics.APIRequestCount.WithLabelValues(llm.Model).Inc()

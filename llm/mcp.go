@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"regexp"
 
-	"github.com/sashabaranov/go-openai"
 	"github.com/yincongcyincong/MuseBot/conf"
 	"github.com/yincongcyincong/MuseBot/i18n"
 	"github.com/yincongcyincong/MuseBot/logger"
@@ -37,10 +36,10 @@ func (d *LLMTaskReq) ExecuteMcp() error {
 	// get mcp request
 	llm := NewLLM(WithChatId(d.ChatId), WithMsgId(d.MsgId), WithUserId(d.UserId),
 		WithMessageChan(d.MessageChan), WithContent(d.Content), WithHTTPMsgChan(d.HTTPMsgChan),
-		WithPerMsgLen(d.PerMsgLen), WithContext(d.Ctx))
+		WithPerMsgLen(d.PerMsgLen), WithContext(d.Ctx), WithCS(d.Cs))
 
 	prompt := i18n.GetMessage("mcp_prompt", taskParam)
-	llm.LLMClient.GetMessage(openai.ChatMessageRoleUser, prompt)
+	llm.GetMessages(d.UserId, prompt)
 	llm.Content = prompt
 	llm.LLMClient.GetModel(llm)
 
@@ -71,10 +70,10 @@ func (d *LLMTaskReq) ExecuteMcp() error {
 	}
 	mcpLLM := NewLLM(WithChatId(d.ChatId), WithMsgId(d.MsgId), WithUserId(d.UserId),
 		WithMessageChan(d.MessageChan), WithContent(d.Content), WithTaskTools(taskTool),
-		WithPerMsgLen(d.PerMsgLen), WithContext(d.Ctx))
+		WithPerMsgLen(d.PerMsgLen), WithContext(d.Ctx), WithCS(d.Cs))
 	mcpLLM.Cs.Token += llm.Cs.Token
 	mcpLLM.Content = d.Content
-	mcpLLM.LLMClient.GetMessage(openai.ChatMessageRoleUser, d.Content)
+	mcpLLM.GetMessages(d.UserId, d.Content)
 	mcpLLM.LLMClient.GetModel(mcpLLM)
 
 	metrics.APIRequestCount.WithLabelValues(mcpLLM.Model).Inc()

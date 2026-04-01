@@ -1479,6 +1479,7 @@ func (r *RobotInfo) sendMultiAgent(agentType string, emptyPromptFunc func()) {
 			ChatId:    chatId,
 			MsgId:     msgId,
 			PerMsgLen: r.Robot.getPerMsgLen(),
+			Cs:        r.cs,
 			Ctx:       r.Ctx,
 		}
 
