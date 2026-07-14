@@ -133,9 +133,9 @@ func InitConf() {
 	flag.BoolVar(&BaseConfInfo.SmartMode, "smart_mode", false, "Smart mode")
 	flag.IntVar(&BaseConfInfo.ContextExpireTime, "context_expire_time", 86400, "Context expire time")
 
-	flag.BoolVar(&BaseConfInfo.EnableAutoCompress, "enable_auto_compress", false, "enable auto compress context history")
+	flag.BoolVar(&BaseConfInfo.EnableAutoCompress, "enable_auto_compress", true, "enable auto compress context history")
 	flag.IntVar(&BaseConfInfo.CompressThreshold, "compress_threshold", 8000, "accumulated context token that triggers compression")
-	flag.IntVar(&BaseConfInfo.CompressKeepPairs, "compress_keep_pairs", 10, "recent qa pairs kept uncompressed")
+	flag.IntVar(&BaseConfInfo.CompressKeepPairs, "compress_keep_pairs", 3, "recent qa pairs kept uncompressed")
 
 	flag.StringVar(&BaseConfInfo.DeepseekToken, "deepseek_token", "", "deepseek auth token")
 	flag.StringVar(&BaseConfInfo.OpenAIToken, "openai_token", "", "openai auth token")
@@ -691,52 +691,69 @@ func loadConf() bool {
 		return false
 	}
 
-	err = TransferMapToConf(AllConf["base"].(map[string]interface{}), BaseConfInfo)
+	hasNewField := false
+
+	newField, err := TransferMapToConf(AllConf["base"].(map[string]interface{}), BaseConfInfo)
 	if err != nil {
 		logger.Error("Failed to transfer map to base conf", "err", err)
 		return false
 	}
+	hasNewField = hasNewField || newField
 
-	err = TransferMapToConf(AllConf["audio"].(map[string]interface{}), AudioConfInfo)
+	newField, err = TransferMapToConf(AllConf["audio"].(map[string]interface{}), AudioConfInfo)
 	if err != nil {
 		logger.Error("Failed to transfer map to audio conf", "err", err)
 		return false
 	}
+	hasNewField = hasNewField || newField
 
-	err = TransferMapToConf(AllConf["llm"].(map[string]interface{}), LLMConfInfo)
+	newField, err = TransferMapToConf(AllConf["llm"].(map[string]interface{}), LLMConfInfo)
 	if err != nil {
 		logger.Error("Failed to transfer map to llm conf", "err", err)
 		return false
 	}
+	hasNewField = hasNewField || newField
 
-	err = TransferMapToConf(AllConf["photo"].(map[string]interface{}), PhotoConfInfo)
+	newField, err = TransferMapToConf(AllConf["photo"].(map[string]interface{}), PhotoConfInfo)
 	if err != nil {
 		logger.Error("Failed to transfer map to photo conf", "err", err)
 		return false
 	}
+	hasNewField = hasNewField || newField
 
-	err = TransferMapToConf(AllConf["rag"].(map[string]interface{}), RagConfInfo)
+	newField, err = TransferMapToConf(AllConf["rag"].(map[string]interface{}), RagConfInfo)
 	if err != nil {
 		logger.Error("Failed to transfer map to rag conf", "err", err)
 		return false
 	}
+	hasNewField = hasNewField || newField
 
-	err = TransferMapToConf(AllConf["video"].(map[string]interface{}), VideoConfInfo)
+	newField, err = TransferMapToConf(AllConf["video"].(map[string]interface{}), VideoConfInfo)
 	if err != nil {
 		logger.Error("Failed to transfer map to video conf", "err", err)
 		return false
 	}
+	hasNewField = hasNewField || newField
 
-	err = TransferMapToConf(AllConf["register"].(map[string]interface{}), RegisterConfInfo)
+	newField, err = TransferMapToConf(AllConf["register"].(map[string]interface{}), RegisterConfInfo)
 	if err != nil {
 		logger.Error("Failed to transfer map to register conf", "err", err)
 		return false
 	}
+	hasNewField = hasNewField || newField
 
-	err = TransferMapToConf(AllConf["tools"].(map[string]interface{}), ToolsConfInfo)
+	newField, err = TransferMapToConf(AllConf["tools"].(map[string]interface{}), ToolsConfInfo)
 	if err != nil {
 		logger.Error("Failed to transfer map to tools conf", "err", err)
 		return false
+	}
+	hasNewField = hasNewField || newField
+
+	// New fields were added to the config structs but are missing from the
+	// persisted file. Re-write the file so the new fields are stored with their
+	// default values, without altering any existing (old) values.
+	if hasNewField {
+		SaveConf()
 	}
 
 	return true
@@ -798,11 +815,40 @@ func NormalizeHTTP(addr string) string {
 	return addr
 }
 
-func TransferMapToConf(m map[string]interface{}, conf interface{}) error {
+// TransferMapToConf unmarshals the persisted config map m into conf. Values
+// present in m always win, so existing (old) config is never changed. It also
+// reports whether conf contains fields that are absent from m — i.e. fields
+// newly added to the struct since the config file was last written — so the
+// caller can re-persist the config file to include them.
+func TransferMapToConf(m map[string]interface{}, conf interface{}) (bool, error) {
 	data, err := json.Marshal(m)
 	if err != nil {
-		return err
+		return false, err
 	}
 
-	return json.Unmarshal(data, conf)
+	if err = json.Unmarshal(data, conf); err != nil {
+		return false, err
+	}
+
+	// Marshal conf back to a map to obtain the full set of current fields, then
+	// detect any that the persisted map is missing.
+	confData, err := json.Marshal(conf)
+	if err != nil {
+		return false, err
+	}
+
+	confMap := make(map[string]interface{})
+	if err = json.Unmarshal(confData, &confMap); err != nil {
+		return false, err
+	}
+
+	hasNewField := false
+	for key := range confMap {
+		if _, ok := m[key]; !ok {
+			hasNewField = true
+			break
+		}
+	}
+
+	return hasNewField, nil
 }
