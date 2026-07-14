@@ -53,5 +53,7 @@
   "del_cron_success": "已成功删除定时任务",
   "clear_cron_success": "已成功清除所有定时任务",
   "cron_list_item": "ID: {{.id}} | CRON: {{.cron_spec}} | 目标: {{.target_id}} | 群组: {{.group_id}} | 提示: {{.prompt}}\n",
-  "cron_list_header": "已设置的定时任务 (Cron) 列表:\n\n"
+  "cron_list_header": "已设置的定时任务 (Cron) 列表:\n\n",
+  "compress_history_prompt": "你是一个对话历史压缩助手。请把下面的对话历史（可能已包含之前的摘要）压缩成一段简洁、连贯的摘要，保留关键事实、用户偏好、已达成的结论和未完成的事项，去除寒暄和冗余。只输出摘要正文，不要额外说明。\n\n对话历史：\n{{.history}}",
+  "compress_summary_context": "以下是早期对话的摘要，供你参考以保持上下文连贯：\n{{.summary}}"
 }

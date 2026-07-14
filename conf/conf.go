@@ -73,15 +73,19 @@ type BaseConf struct {
 	Character         string `json:"character"`
 	SmartMode         bool   `json:"smart_mode"`
 	ContextExpireTime int    `json:"context_expire_time"`
-	Powered           string `json:"powered"`
-	SendMcpRes        bool   `json:"send_mcp_res"`
-	SendMcpMediaToLLM bool   `json:"send_mcp_media_to_llm"`
-	DefaultModel      string `json:"default_model"`
-	LLMRetryTimes     int    `json:"llm_retry_times"`
-	LLMRetryInterval  int    `json:"llm_retry_interval"`
-	LLMOptionParam    bool   `json:"llm_option_param"`
-	ImagePath         string `json:"image_path"`
-	IsStreaming       bool   `json:"is_streaming"`
+
+	EnableAutoCompress bool   `json:"enable_auto_compress"`
+	CompressThreshold  int    `json:"compress_threshold"`
+	CompressKeepPairs  int    `json:"compress_keep_pairs"`
+	Powered            string `json:"powered"`
+	SendMcpRes         bool   `json:"send_mcp_res"`
+	SendMcpMediaToLLM  bool   `json:"send_mcp_media_to_llm"`
+	DefaultModel       string `json:"default_model"`
+	LLMRetryTimes      int    `json:"llm_retry_times"`
+	LLMRetryInterval   int    `json:"llm_retry_interval"`
+	LLMOptionParam     bool   `json:"llm_option_param"`
+	ImagePath          string `json:"image_path"`
+	IsStreaming        bool   `json:"is_streaming"`
 
 	CrtFile string `json:"crt_file"`
 	KeyFile string `json:"key_file"`
@@ -128,6 +132,10 @@ func InitConf() {
 	flag.StringVar(&BaseConfInfo.QQOneBotHttpServer, "qq_one_bot_http_server", "http://127.0.0.1:3000", "onebot http server")
 	flag.BoolVar(&BaseConfInfo.SmartMode, "smart_mode", false, "Smart mode")
 	flag.IntVar(&BaseConfInfo.ContextExpireTime, "context_expire_time", 86400, "Context expire time")
+
+	flag.BoolVar(&BaseConfInfo.EnableAutoCompress, "enable_auto_compress", false, "enable auto compress context history")
+	flag.IntVar(&BaseConfInfo.CompressThreshold, "compress_threshold", 8000, "accumulated context token that triggers compression")
+	flag.IntVar(&BaseConfInfo.CompressKeepPairs, "compress_keep_pairs", 10, "recent qa pairs kept uncompressed")
 
 	flag.StringVar(&BaseConfInfo.DeepseekToken, "deepseek_token", "", "deepseek auth token")
 	flag.StringVar(&BaseConfInfo.OpenAIToken, "openai_token", "", "openai auth token")
@@ -417,6 +425,18 @@ func InitConf() {
 		BaseConfInfo.ContextExpireTime, _ = strconv.Atoi(os.Getenv("CONTEXT_EXPIRE_TIME"))
 	}
 
+	if os.Getenv("ENABLE_AUTO_COMPRESS") != "" {
+		BaseConfInfo.EnableAutoCompress = os.Getenv("ENABLE_AUTO_COMPRESS") == "true"
+	}
+
+	if os.Getenv("COMPRESS_THRESHOLD") != "" {
+		BaseConfInfo.CompressThreshold, _ = strconv.Atoi(os.Getenv("COMPRESS_THRESHOLD"))
+	}
+
+	if os.Getenv("COMPRESS_KEEP_PAIRS") != "" {
+		BaseConfInfo.CompressKeepPairs, _ = strconv.Atoi(os.Getenv("COMPRESS_KEEP_PAIRS"))
+	}
+
 	if os.Getenv("POWERED") != "" {
 		BaseConfInfo.Powered = os.Getenv("POWERED")
 	}
@@ -538,6 +558,9 @@ func logConf(allowedUserIds, allowedGroupIds string) {
 	logger.Info("CONF", "Powered", BaseConfInfo.Powered)
 	logger.Info("CONF", "Character", BaseConfInfo.Character)
 	logger.Info("CONF", "ContextExpireTime", BaseConfInfo.ContextExpireTime)
+	logger.Info("CONF", "EnableAutoCompress", BaseConfInfo.EnableAutoCompress)
+	logger.Info("CONF", "CompressThreshold", BaseConfInfo.CompressThreshold)
+	logger.Info("CONF", "CompressKeepPairs", BaseConfInfo.CompressKeepPairs)
 	logger.Info("CONF", "SendMcpRes", BaseConfInfo.SendMcpRes)
 	logger.Info("CONF", "DefaultModel", BaseConfInfo.DefaultModel)
 	logger.Info("CONF", "LLMRetryTimes", BaseConfInfo.LLMRetryTimes)

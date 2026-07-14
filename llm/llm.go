@@ -84,8 +84,8 @@ type LLMClient interface {
 func (l *LLM) CallLLM() error {
 
 	totalContent := l.GetContent(l.Content)
-	l.GetMessages(l.UserId, totalContent)
 	l.InsertCharacter(l.Ctx)
+	l.GetMessages(l.UserId, totalContent)
 	l.LLMClient.GetModel(l)
 
 	logger.InfoCtx(l.Ctx, "msg receive", "userID", l.UserId, "prompt", totalContent, "type",
@@ -262,6 +262,19 @@ func (l *LLM) InsertOrUpdate() error {
 func (l *LLM) GetMessages(userId string, prompt string) {
 	msgRecords := db.GetMsgRecord(userId)
 	if msgRecords != nil && l.Cs.UseRecord {
+		if conf.BaseConfInfo.EnableAutoCompress {
+			db.MaybeCompress(l.Ctx, userId, msgRecords,
+				conf.BaseConfInfo.CompressThreshold, conf.BaseConfInfo.CompressKeepPairs,
+				CompressHistory)
+		}
+
+		if msgRecords.Summary != "" {
+			l.LLMClient.GetMessage(openai.ChatMessageRoleSystem,
+				i18n.GetMessage("compress_summary_context", map[string]interface{}{
+					"summary": msgRecords.Summary,
+				}))
+		}
+
 		aqs := db.FilterByMaxContextFromLatest(msgRecords.AQs, param.DefaultContextToken)
 		for i, record := range aqs {
 			if record.Question != "" && record.Answer != "" && record.CreateTime > time.Now().Unix()-int64(conf.BaseConfInfo.ContextExpireTime) {
@@ -278,6 +291,49 @@ func (l *LLM) GetMessages(userId string, prompt string) {
 		l.LLMClient.GetMessage(openai.ChatMessageRoleUser, prompt)
 	}
 
+}
+
+// CompressHistory summarizes oldSummary + oldAQs into a single condensed summary.
+// It is injected into db.MaybeCompress to avoid a db -> llm import cycle. The call
+// runs synchronously and must not itself load history (UseRecord = false) to avoid
+// recursion.
+func CompressHistory(ctx context.Context, userId, oldSummary string, oldAQs []*db.AQ) (string, error) {
+	var sb strings.Builder
+	if oldSummary != "" {
+		sb.WriteString(oldSummary)
+		sb.WriteString("\n\n")
+	}
+	for _, aq := range oldAQs {
+		if aq.Question != "" {
+			sb.WriteString("Q: " + aq.Question + "\n")
+		}
+		if aq.Answer != "" {
+			sb.WriteString("A: " + aq.Answer + "\n")
+		}
+	}
+
+	prompt := i18n.GetMessage("compress_history_prompt", map[string]interface{}{
+		"history": sb.String(),
+	})
+
+	l := NewLLM(WithUserId(userId), WithContent(prompt), WithContext(ctx))
+	l.Cs.UseRecord = false
+	l.LLMClient.GetModel(l)
+	l.LLMClient.GetMessage(openai.ChatMessageRoleUser, prompt)
+
+	metrics.APIRequestCount.WithLabelValues(l.Model).Inc()
+	summary, err := l.LLMClient.SyncSend(ctx, l)
+	if err != nil {
+		return "", err
+	}
+
+	if l.Cs.Token > 0 {
+		if addErr := db.AddToken(userId, l.Cs.Token); addErr != nil {
+			logger.ErrorCtx(ctx, "compress add token fail", "err", addErr)
+		}
+	}
+
+	return strings.TrimSpace(summary), nil
 }
 
 type Option func(p *LLM)

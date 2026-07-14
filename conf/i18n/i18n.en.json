@@ -54,5 +54,7 @@
   "del_cron_success": "Successfully deleted cron job",
   "clear_cron_success": "Successfully cleared all cron jobs",
   "cron_list_item": "ID: {{.id}} | CRON: {{.cron_spec}} | Target: {{.target_id}} | Group: {{.group_id}} | Prompt: {{.prompt}}\n",
-  "cron_list_header": "List of Scheduled Cron Jobs:\n\n"
+  "cron_list_header": "List of Scheduled Cron Jobs:\n\n",
+  "compress_history_prompt": "You are a conversation history compressor. Condense the following conversation history (which may already include an earlier summary) into a single concise, coherent summary. Preserve key facts, user preferences, conclusions reached, and open items; drop greetings and redundancy. Output only the summary body, with no extra explanation.\n\nConversation history:\n{{.history}}",
+  "compress_summary_context": "The following is a summary of earlier conversation, provided so you can keep the context coherent:\n{{.summary}}"
 }

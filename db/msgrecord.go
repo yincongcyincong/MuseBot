@@ -16,7 +16,9 @@ import (
 
 type MsgRecordInfo struct {
 	AQs        []*AQ
+	Summary    string
 	updateTime int64
+	mu         sync.Mutex
 }
 
 type UserRecords struct {
@@ -96,6 +98,91 @@ func DeleteMsgRecord(ctx context.Context, userId string) {
 	}
 }
 
+// CompressFunc summarizes oldSummary + oldAQs into a new summary. Implemented in
+// the llm package and injected to avoid a db -> llm import cycle.
+type CompressFunc func(ctx context.Context, userId, oldSummary string, oldAQs []*AQ) (string, error)
+
+// MaybeCompress compresses the earliest QA pairs into msgRecord.Summary once the
+// accumulated context token exceeds threshold, keeping the most recent keepPairs
+// pairs untouched. On any failure it leaves the record unchanged so the caller
+// falls back to the existing truncation behaviour.
+func MaybeCompress(ctx context.Context, userId string, msgRecord *MsgRecordInfo, threshold, keepPairs int, compressFn CompressFunc) {
+	if msgRecord == nil || compressFn == nil {
+		return
+	}
+
+	msgRecord.mu.Lock()
+	defer msgRecord.mu.Unlock()
+
+	if len(msgRecord.AQs) <= keepPairs {
+		return
+	}
+
+	total := EstimateTokens(msgRecord.Summary)
+	for _, aq := range msgRecord.AQs {
+		total += EstimateTokens(aq.Question + " " + aq.Answer)
+	}
+	if total <= threshold {
+		return
+	}
+
+	split := len(msgRecord.AQs) - keepPairs
+	oldAQs := msgRecord.AQs[:split]
+	recent := msgRecord.AQs[split:]
+
+	summary, err := compressFn(ctx, userId, msgRecord.Summary, oldAQs)
+	if err != nil || summary == "" {
+		logger.WarnCtx(ctx, "compress history fail, fallback to truncation", "err", err)
+		return
+	}
+
+	msgRecord.Summary = summary
+	newAQs := make([]*AQ, len(recent))
+	copy(newAQs, recent)
+	msgRecord.AQs = newAQs
+	msgRecord.updateTime = time.Now().Unix()
+	MsgRecord.Store(userId, msgRecord)
+
+	// persist summary so it survives restarts; old text records are soft-deleted
+	// on the next /clear, the summary record keeps the compressed context.
+	go saveSummaryRecord(ctx, userId, summary)
+	logger.InfoCtx(ctx, "compress history done", "userID", userId, "compressedPairs", len(oldAQs))
+}
+
+// saveSummaryRecord upserts the single summary record for a user.
+func saveSummaryRecord(ctx context.Context, userId, summary string) {
+	query := `UPDATE records SET answer = ?, update_time = ? WHERE user_id = ? and record_type = ? and is_deleted = 0`
+	result, err := DB.Exec(query, summary, time.Now().Unix(), userId, param.SummaryRecordType)
+	if err != nil {
+		logger.ErrorCtx(ctx, "update summary record fail", "err", err)
+		return
+	}
+	if affected, _ := result.RowsAffected(); affected == 0 {
+		_, err = InsertRecordInfo(ctx, &Record{
+			UserId:     userId,
+			Answer:     summary,
+			RecordType: param.SummaryRecordType,
+		})
+		if err != nil {
+			logger.ErrorCtx(ctx, "insert summary record fail", "err", err)
+		}
+	}
+}
+
+// getSummaryByUserId returns the persisted compressed summary for a user, if any.
+func getSummaryByUserId(userId string) string {
+	query := `SELECT answer FROM records WHERE user_id = ? and record_type = ? and is_deleted = 0 order by id desc limit 1`
+	var summary string
+	err := DB.QueryRow(query, userId, param.SummaryRecordType).Scan(&summary)
+	if err != nil {
+		if err != sql.ErrNoRows {
+			logger.Error("get summary record fail", "err", err)
+		}
+		return ""
+	}
+	return summary
+}
+
 func InsertRecord(ctx context.Context) {
 	users, err := GetUsers()
 	if err != nil {
@@ -115,6 +202,15 @@ func InsertRecord(ctx context.Context) {
 				Content:    record.Content,
 				CreateTime: record.CreateTime,
 			}, false)
+		}
+
+		if summary := getSummaryByUserId(user.UserId); summary != "" {
+			if mr := GetMsgRecord(user.UserId); mr != nil {
+				mr.Summary = summary
+				MsgRecord.Store(user.UserId, mr)
+			} else {
+				MsgRecord.Store(user.UserId, &MsgRecordInfo{Summary: summary, updateTime: time.Now().Unix()})
+			}
 		}
 	}
 
