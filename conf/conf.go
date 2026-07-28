@@ -597,6 +597,9 @@ func logConf(allowedUserIds, allowedGroupIds string) {
 	logger.Info("RAG_CONF", "MilvusURL", RagConfInfo.MilvusURL)
 	logger.Info("RAG_CONF", "WeaviateURL", RagConfInfo.WeaviateURL)
 	logger.Info("RAG_CONF", "WeaviateScheme", RagConfInfo.WeaviateScheme)
+	logger.Info("RAG_CONF", "QdrantHost", RagConfInfo.QdrantHost)
+	logger.Info("RAG_CONF", "QdrantPort", RagConfInfo.QdrantPort)
+	logger.Info("RAG_CONF", "QdrantUseTLS", RagConfInfo.QdrantUseTLS)
 
 	logger.Info("PHOTO_CONF", "ReqKey", PhotoConfInfo.ReqKey)
 	logger.Info("PHOTO_CONF", "ModelVersion", PhotoConfInfo.ModelVersion)

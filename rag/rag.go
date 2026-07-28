@@ -149,6 +149,8 @@ func InitRag() {
 			Scheme: conf.RagConfInfo.WeaviateScheme,
 			Host:   conf.RagConfInfo.WeaviateURL,
 		})
+	case "qdrant":
+		conf.RagConfInfo.Store, err = NewQdrantStore(ctx, conf.RagConfInfo.Embedder)
 	default:
 		logger.Error("vector db not exist", "VectorDBTypee", conf.RagConfInfo.VectorDBType)
 		return
@@ -166,18 +168,23 @@ func InitRag() {
 	}
 
 	if len(docs) > 0 {
-		insertVectorDb(ctx, docs)
+		err = insertVectorDb(ctx, docs)
+		if err != nil {
+			logger.Error("insert vector data fail", "err", err)
+			return
+		}
 	}
 
 	go CheckDirChange()
 
 }
 
-func insertVectorDb(ctx context.Context, docs []schema.Document) {
+func insertVectorDb(ctx context.Context, docs []schema.Document) error {
 	ids, err := conf.RagConfInfo.Store.AddDocuments(ctx, docs)
 	if err != nil {
 		logger.Error("get save doc fail", "err", err)
-		return
+		cleanupPendingRagFiles(docs)
+		return err
 	}
 
 	fileVectorIds := make(map[string]string)
@@ -190,6 +197,23 @@ func insertVectorDb(ctx context.Context, docs []schema.Document) {
 		err = db.UpdateVectorIdByFileMd5(fileMd5, strings.TrimRight(vectorIds, ","))
 		if err != nil {
 			logger.Error("update vector id fail", "err", err)
+			return err
+		}
+	}
+	return nil
+}
+
+func cleanupPendingRagFiles(docs []schema.Document) {
+	fileNames := make(map[string]struct{})
+	for _, doc := range docs {
+		fileName, ok := doc.Metadata["file_name"].(string)
+		if ok && fileName != "" {
+			fileNames[fileName] = struct{}{}
+		}
+	}
+	for fileName := range fileNames {
+		if err := db.DeleteRagFileByFileName(fileName); err != nil {
+			logger.Error("clean up failed rag file record", "file", fileName, "err", err)
 		}
 	}
 }
@@ -505,7 +529,9 @@ func InsertDoc(ctx context.Context, event fsnotify.Event) {
 		return
 	}
 	if len(docs) > 0 {
-		insertVectorDb(ctx, docs)
+		if err = insertVectorDb(ctx, docs); err != nil {
+			logger.Error("insert vector data fail", "err", err)
+		}
 	}
 }
 
@@ -542,7 +568,13 @@ func DeleteStoreData(ctx context.Context, vectorIds string) error {
 			expr := fmt.Sprintf(`pk == %s`, vectorId)
 			err = conf.RagConfInfo.MilvusClient.Delete(ctx, conf.RagConfInfo.Space, "", expr)
 		}
+	case "qdrant":
+		store, ok := conf.RagConfInfo.Store.(*QdrantStore)
+		if !ok {
+			return errors.New("qdrant store is not initialized")
+		}
+		err = store.Delete(ctx, strings.Split(vectorIds, ","))
 	}
 
-	return nil
+	return err
 }
