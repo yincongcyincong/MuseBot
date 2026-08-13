@@ -46,6 +46,7 @@ type BaseConf struct {
 	OpenAIToken       string `json:"openai_token"`
 	GeminiToken       string `json:"gemini_token"`
 	OpenRouterToken   string `json:"open_router_token"`
+	OrcaRouterToken   string `json:"orcarouter_token"`
 	AI302Token        string `json:"ai_302_token"`
 	VolToken          string `json:"vol_token"`
 	AliyunToken       string `json:"aliyun_token"`
@@ -141,6 +142,7 @@ func InitConf() {
 	flag.StringVar(&BaseConfInfo.OpenAIToken, "openai_token", "", "openai auth token")
 	flag.StringVar(&BaseConfInfo.GeminiToken, "gemini_token", "", "gemini auth token")
 	flag.StringVar(&BaseConfInfo.OpenRouterToken, "open_router_token", "", "openrouter auth token")
+	flag.StringVar(&BaseConfInfo.OrcaRouterToken, "orcarouter_token", "", "orcarouter auth token")
 	flag.StringVar(&BaseConfInfo.AI302Token, "ai_302_token", "", "302.ai token")
 	flag.StringVar(&BaseConfInfo.VolToken, "vol_token", "", "vol auth token")
 	flag.StringVar(&BaseConfInfo.AliyunToken, "aliyun_token", "", "aliyun auth token")
@@ -153,8 +155,8 @@ func InitConf() {
 	flag.StringVar(&BaseConfInfo.BotName, "bot_name", "MuseBot", "bot name")
 	flag.StringVar(&BaseConfInfo.CustomUrl, "custom_url", "", "custom url")
 	flag.StringVar(&BaseConfInfo.CustomPath, "custom_path", "", "custom path")
-	flag.StringVar(&BaseConfInfo.Type, "type", "", "llm type: deepseek gemini openai openrouter vol chatanywhere")
-	flag.StringVar(&BaseConfInfo.MediaType, "media_type", "", "media type: vol gemini openai aliyun 302-ai openrouter")
+	flag.StringVar(&BaseConfInfo.Type, "type", "", "llm type: deepseek gemini openai openrouter vol chatanywhere orcarouter")
+	flag.StringVar(&BaseConfInfo.MediaType, "media_type", "", "media type: vol gemini openai aliyun 302-ai openrouter orcarouter")
 	flag.StringVar(&BaseConfInfo.DBType, "db_type", "sqlite3", "db type")
 	flag.StringVar(&BaseConfInfo.DBConf, "db_conf", GetAbsPath("data/muse_bot.db"), "db conf")
 	flag.StringVar(&BaseConfInfo.LLMProxy, "llm_proxy", "", "llm proxy: http://127.0.0.1:7890")
@@ -389,6 +391,10 @@ func InitConf() {
 		BaseConfInfo.OpenRouterToken = os.Getenv("OPEN_ROUTER_TOKEN")
 	}
 
+	if os.Getenv("ORCAROUTER_TOKEN") != "" {
+		BaseConfInfo.OrcaRouterToken = os.Getenv("ORCAROUTER_TOKEN")
+	}
+
 	if os.Getenv("AI_302_TOKEN") != "" {
 		BaseConfInfo.AI302Token = os.Getenv("AI_302_TOKEN")
 	}
@@ -544,6 +550,7 @@ func logConf(allowedUserIds, allowedGroupIds string) {
 	logger.Info("CONF", "OpenAIToken", BaseConfInfo.OpenAIToken)
 	logger.Info("CONF", "GeminiToken", BaseConfInfo.GeminiToken)
 	logger.Info("CONF", "OpenRouterToken", BaseConfInfo.OpenRouterToken)
+	logger.Info("CONF", "OrcaRouterToken", BaseConfInfo.OrcaRouterToken)
 	logger.Info("CONF", "AI302Token", BaseConfInfo.AI302Token)
 	logger.Info("CONF", "ErnieAK", BaseConfInfo.ErnieAK)
 	logger.Info("CONF", "ErnieSK", BaseConfInfo.ErnieSK)

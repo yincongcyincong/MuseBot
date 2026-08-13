@@ -30,6 +30,8 @@ const (
 
 	OpenRouter = "openrouter"
 
+	OrcaRouter = "orcarouter"
+
 	LLAVA = "llava:latest"
 
 	DiscordNewMode = "new"

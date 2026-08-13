@@ -18,7 +18,7 @@
 
 This repository provides a **Chat bot** (Telegram, Discord, Slack, Lark（飞书），钉钉, 企业微信, QQ, 微信) that integrates
 with **LLM API** to provide
-AI-powered responses. The bot supports **openai** **deepseek** **gemini** **openrouter** LLMs, making interactions feel
+AI-powered responses. The bot supports **openai** **deepseek** **gemini** **openrouter** **orcarouter** LLMs, making interactions feel
 more natural and dynamic.       
 [中文文档](https://github.com/yincongcyincong/MuseBot/blob/main/README_ZH.md)       
 [Китайская документация](https://github.com/yincongcyincong/MuseBot/blob/main/README_RU.md)
@@ -83,6 +83,7 @@ chatgpt: https://www.youtube.com/watch?v=G_DZYMvd5Ug
 | 🧠 **DeepSeek**     | DeepSeek     | ✅               |        ❌         |        ❌         |               ❌ |   ❌ | [doc](https://www.deepseek.com/)                                                                              |
 | ⚙️ **302.AI**       | 302.AI       | ✅               |        ✅         |        ✅         |               ✅ |   ❌ | [doc](https://302.ai/)                                                                                        |
 | 🌐 **OpenRouter**   | OpenRouter   | ✅               |        ✅         |        ❌         |               ✅ |   ❌ | [doc](https://openrouter.ai/)                                                                                 |
+| 🛡️ **OrcaRouter**  | OrcaRouter   | ✅               |        ✅         |        ❌         |               ✅ |   ❌ | [doc](https://www.orcarouter.ai)                                                                               |
 | 🌐 **ChatAnywhere** | ChatAnywhere | ✅               |        ✅         |        ❌         |               ✅ |   ❌ | [doc](https://api.chatanywhere.tech/#/)                                                                       |
 
 ## 🤖 Text Example
@@ -175,6 +176,7 @@ If you use parameter. Please use lower letter and underscore. for example: ./Mus
 | **OPENAI_TOKEN**                | OpenAI API key                                                                               | -                                                      |
 | **GEMINI_TOKEN**                | Google Gemini API token                                                                      | -                                                      |
 | **OPEN_ROUTER_TOKEN**           | OpenRouter token [doc](https://openrouter.ai/docs/quickstart)                                | -                                                      |
+| **ORCAROUTER_TOKEN**           | OrcaRouter API key [doc](https://www.orcarouter.ai)                                          | -                                                      |
 | **ALIYUN_TOKEN**                | Aliyun Bailian token [doc](https://bailian.console.aliyun.com/#/doc/?type=model&url=2840915) | -                                                      |
 | **AI_302_TOKEN**                | 302.AI token [doc](https://302.ai/)                                                          | -                                                      |
 | **VOL_TOKEN**                   | Volcano Engine general token [doc](https://www.volcengine.com/docs/82379/1399008#b00dee71)   | -                                                      |
@@ -183,8 +185,8 @@ If you use parameter. Please use lower letter and underscore. for example: ./Mus
 | **ERNIE_AK**                    | Baidu ERNIE large model AK [doc](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Sly8bm96d)     | -                                                      |
 | **ERNIE_SK**                    | Baidu ERNIE large model SK [doc](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Sly8bm96d)     | -                                                      |
 | **CUSTOM_URL**                  | Custom LLM API endpoint                                                                      | [https://api.deepseek.com/](https://api.deepseek.com/) |
-| **TYPE**                        | LLM type (deepseek/openai/gemini/openrouter/vol/302-ai/chatanywhere)                         | deepseek                                               |
-| **MEDIA_TYPE**                  | Media generation source (openai/gemini/vol/openrouter/aliyun/302-ai)                         | vol                                                    |
+| **TYPE**                        | LLM type (deepseek/openai/gemini/openrouter/vol/302-ai/chatanywhere/orcarouter)               | deepseek                                               |
+| **MEDIA_TYPE**                  | Media generation source (openai/gemini/vol/openrouter/aliyun/302-ai/orcarouter)               | vol                                                    |
 | **DB_TYPE**                     | Database type (sqlite3/mysql)                                                                | sqlite3                                                |
 | **DB_CONF**                     | Database config path or connection string                                                    | ./data/muse_bot.db                                     |
 | **LLM_PROXY**                   | LLM network proxy (e.g. [http://127.0.0.1:7890](http://127.0.0.1:7890))                      | -                                                      |
