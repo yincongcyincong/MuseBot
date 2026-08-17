@@ -91,7 +91,21 @@
 * `-type`: Тип модели (указать `openrouter`)
 * `-openrouter_token`: Ваш токен OpenRouter API
 
-### 7. Распознавание изображений (`identify photo`)
+### 7. Поддержка OrcaRouter (`orcarouter`)
+
+Интеграция с шлюзом OrcaRouter: один эндпоинт и один API-ключ открывают 150+ моделей OpenAI, Anthropic, Google, DeepSeek, Qwen и других. ID моделей имеют пространство имён, например `orcarouter/auto` — виртуальный роутер для каждого запроса.
+
+```bash
+./MuseBot \
+-telegram_bot_token=xxxx \
+-type=orcarouter \
+-orcarouter_token=sk-orca-xxxx
+```
+
+* `-type`: Тип модели (указать `orcarouter`)
+* `-orcarouter_token`: Ваш API-ключ OrcaRouter
+
+### 8. Распознавание изображений (`identify photo`)
 
 Для интеграции с сервисом распознавания изображений VolcEngine.
 
@@ -108,7 +122,7 @@
 
 Подробнее: [Документация VolcEngine](https://www.volcengine.com/docs/6790/116987)
 
-### 8. Распознавание голоса (`identify voice`)
+### 9. Распознавание голоса (`identify voice`)
 
 Для интеграции с сервисом распознавания речи VolcEngine.
 
@@ -127,7 +141,7 @@
 
 Подробнее: [Документация VolcEngine](https://www.volcengine.com/docs/6561/80816)
 
-### 9. Инструменты MCP (`mcp`)
+### 10. Инструменты MCP (`mcp`)
 
 Для использования инструментов Amap (например, геолокации).
 
@@ -140,7 +154,7 @@
 
 * `-use_tools`: Активирует инструменты (по умолчанию `false`)
 
-### 10. RAG с ChromaDB (`rag chroma`)
+### 11. RAG с ChromaDB (`rag chroma`)
 
 Для использования RAG с ChromaDB и сервисом эмбеддингов OpenAI.
 
@@ -157,7 +171,7 @@
 * `-embedding_type`: Тип эмбеддингов (указать `openai`)
 * `-vector_db_type`: Тип векторной БД (указать `milvus`)
 
-### 11. RAG с Milvus (`rag milvus`)
+### 12. RAG с Milvus (`rag milvus`)
 
 Для использования RAG с Milvus и сервисом эмбеддингов Gemini.
 
@@ -174,7 +188,7 @@
 * `-embedding_type`: Тип эмбеддингов (указать `gemini`)
 * `-vector_db_type`: Тип векторной БД (указать `milvus`)
 
-### 12. RAG с Weaviate (`rag weaviate`)
+### 13. RAG с Weaviate (`rag weaviate`)
 
 Для использования RAG с Weaviate и сервисом эмбеддингов Ernie.
 
