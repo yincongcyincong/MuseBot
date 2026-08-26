@@ -165,6 +165,8 @@ func GetTxtModel(t string) string {
 		return param.DeepseekDeepseekR1_0528Free
 	case param.OrcaRouter:
 		return param.OrcaRouterAuto
+	case param.Synthorai:
+		return param.SynthoraiDeepSeekV4Flash
 	case param.AI302:
 		return param.DeepseekDeepseekR1_0528
 	case param.Ollama:
@@ -208,6 +210,9 @@ func GetAvailTxtType() []string {
 	}
 	if conf.BaseConfInfo.OrcaRouterToken != "" {
 		res = append(res, param.OrcaRouter)
+	}
+	if conf.BaseConfInfo.SynthoraiToken != "" {
+		res = append(res, param.Synthorai)
 	}
 	if conf.BaseConfInfo.Type == param.Ollama {
 		res = append(res, param.Ollama)

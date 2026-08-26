@@ -62,6 +62,7 @@ chatgpt: [https://www.youtube.com/watch?v=G\_DZYMvd5Ug](https://www.youtube.com/
 | ⚙️ **302.AI**       | 302.AI       | ✅                |           ✅           |        ✅        |                  ✅ |   ❌ | [doc](https://302.ai/)                                                                                        |
 | 🌐 **OpenRouter**   | OpenRouter   | ✅                |           ✅           |        ❌        |                  ✅ |   ❌ | [doc](https://openrouter.ai/docs/quickstart)                                                                  |
 | 🛡️ **OrcaRouter**  | OrcaRouter   | ✅                |           ✅           |        ❌        |                  ✅ |   ❌ | [doc](https://www.orcarouter.ai)                                                                               |
+| 🔷 **Synthorai**    | Synthorai    | ✅                |           ❌           |        ❌        |                  ❌ |   ❌ | [doc](https://synthorai.io/docs)                                                                              |
 | 🌐 **ChatAnywhere** | ChatAnywhere | ✅                |           ✅           |        ❌        |                  ✅ |   ❌ | [doc](https://api.chatanywhere.tech/#/)                                                                       |
 
 ## 🤖 Пример текста
@@ -150,6 +151,7 @@ chatgpt: [https://www.youtube.com/watch?v=G\_DZYMvd5Ug](https://www.youtube.com/
 | **GEMINI\_TOKEN**                   | Токен API Google Gemini                                                                                                 | -                                                      |
 | **OPEN\_ROUTER\_TOKEN**             | Токен OpenRouter [doc](https://openrouter.ai/docs/quickstart)                                                           | -                                                      |
 | **ORCAROUTER\_TOKEN**             | API-ключ OrcaRouter [doc](https://www.orcarouter.ai)                                                                  | -                                                      |
+| **SYNTHORAI\_TOKEN**              | API-ключ Synthorai [doc](https://synthorai.io/docs)                                                                   | -                                                      |
 | **ALIYUN\_TOKEN**                   | Токен Aliyun Bailian [doc](https://bailian.console.aliyun.com/#/doc/?type=model&url=2840915)                            | -                                                      |
 | **AI\_302\_TOKEN**                  | Токен 302.AI [doc](https://302.ai/)                                                                                     | -                                                      |
 | **VOL\_TOKEN**                      | Общий токен Volcano Engine [doc](https://www.volcengine.com/docs/82379/1399008#b00dee71)                                | -                                                      |

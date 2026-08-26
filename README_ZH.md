@@ -65,6 +65,7 @@ chatgpt: https://www.bilibili.com/video/BV1RutxzJEGY/
 | 🧠 **DeepSeek**     | DeepSeek     | ✅    |  ❌   |  ❌   |  ❌   |    ❌ | [文档](https://www.deepseek.com/)                                                                              |
 | 🌐 **OpenRouter**   | OpenRouter   | ✅    |  ✅   |  ❌   |  ✅   |    ❌ | [文档](https://openrouter.ai/)                                                                                 |
 | 🛡️ **OrcaRouter**  | OrcaRouter   | ✅    |  ✅   |  ❌   |  ✅   |    ❌ | [文档](https://www.orcarouter.ai)                                                                               |
+| 🔷 **Synthorai**    | Synthorai    | ✅    |  ❌   |  ❌   |  ❌   |    ❌ | [文档](https://synthorai.io/docs)                                                                              |
 | 🌐 **ChatAnywhere** | ChatAnywhere | ✅    |  ✅   |  ❌   |  ✅   |    ❌ | [文档](https://api.chatanywhere.tech/#/)                                                                       |
 
 ## 🤖 文本示例
@@ -163,6 +164,7 @@ docker run -d -v /home/user/data:/app/data -e TELEGRAM_BOT_TOKEN="telegram-bot-t
 | **GEMINI_TOKEN**                | Google Gemini Token                                                                 | -                     |
 | **OPEN_ROUTER_TOKEN**           | OpenRouter Token [doc](https://openrouter.ai/docs/quickstart)                       | -                     |
 | **ORCAROUTER_TOKEN**           | OrcaRouter API Key [doc](https://www.orcarouter.ai)                                 | -                     |
+| **SYNTHORAI_TOKEN**            | Synthorai API Key [doc](https://synthorai.io/docs)                                  | -                     |
 | **ALIYUN_TOKEN**                | 阿里云百炼 Token [doc](https://bailian.console.aliyun.com/#/doc/?type=model&url=2840915) | -                     |
 | **AI_302_TOKEN**                | 302.AI Token [doc](https://302.ai/)                                                 | -                     |
 | **VOL_TOKEN**                   | 火山引擎通用 Token [doc](https://www.volcengine.com/docs/82379/1399008#b00dee71)          | -                     |
@@ -174,8 +176,9 @@ docker run -d -v /home/user/data:/app/data -e TELEGRAM_BOT_TOKEN="telegram-bot-t
 | **AI_302_TOKEN**                | 302.AI 平台 Token                                                                     | -                     |
 | **OPEN_ROUTER_TOKEN**           | OpenRouter API Key                                                                  | -                     |
 | **ORCAROUTER_TOKEN**           | OrcaRouter API Key                                                                  | -                     |
+| **SYNTHORAI_TOKEN**            | Synthorai API Key                                                                   | -                     |
 | **CUSTOM_URL**                  | 自定义 LLM API 地址                                                                      |                       |
-| **TYPE**                        | LLM 类型（deepseek/openai/gemini/openrouter/vol/302-ai/chatanywhere/orcarouter）        | deepseek              |
+| **TYPE**                        | LLM 类型（deepseek/openai/gemini/openrouter/vol/302-ai/chatanywhere/orcarouter/synthorai）        | deepseek              |
 | **MEDIA_TYPE**                  | 图片/视频生成模型来源（openai/gemini/vol/openrouter/aliyun/302-ai/orcarouter）               | vol                   |
 | **DB_TYPE**                     | 数据库类型（sqlite3/mysql）                                                                | sqlite3               |
 | **DB_CONF**                     | 数据库配置路径或连接字符串                                                                       | ./data/muse_bot.db    |

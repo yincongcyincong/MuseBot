@@ -519,7 +519,7 @@ func (t *TelegramRobot) showTxtModel(ty string) {
 				tgbotapi.NewInlineKeyboardButtonData(k, k),
 			))
 		}
-	case param.OpenRouter, param.OrcaRouter, param.AI302, param.Ollama, param.OpenAi:
+	case param.OpenRouter, param.OrcaRouter, param.Synthorai, param.AI302, param.Ollama, param.OpenAi:
 		if t.Prompt != "" {
 			t.Robot.handleModelUpdate(&RobotModel{TxtType: t.Prompt})
 			return
@@ -546,6 +546,12 @@ func (t *TelegramRobot) showTxtModel(ty string) {
 		case param.OrcaRouter:
 			t.Robot.SendMsg(chatID, i18n.GetMessage("mix_mode_choose", map[string]interface{}{
 				"link":    "https://www.orcarouter.ai",
+				"command": ty,
+			}),
+				msgId, tgbotapi.ModeMarkdown, nil)
+		case param.Synthorai:
+			t.Robot.SendMsg(chatID, i18n.GetMessage("mix_mode_choose", map[string]interface{}{
+				"link":    "https://synthorai.io",
 				"command": ty,
 			}),
 				msgId, tgbotapi.ModeMarkdown, nil)

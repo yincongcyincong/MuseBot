@@ -32,6 +32,8 @@ const (
 
 	OrcaRouter = "orcarouter"
 
+	Synthorai = "synthorai"
+
 	LLAVA = "llava:latest"
 
 	DiscordNewMode = "new"

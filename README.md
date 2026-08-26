@@ -84,6 +84,7 @@ chatgpt: https://www.youtube.com/watch?v=G_DZYMvd5Ug
 | ⚙️ **302.AI**       | 302.AI       | ✅               |        ✅         |        ✅         |               ✅ |   ❌ | [doc](https://302.ai/)                                                                                        |
 | 🌐 **OpenRouter**   | OpenRouter   | ✅               |        ✅         |        ❌         |               ✅ |   ❌ | [doc](https://openrouter.ai/)                                                                                 |
 | 🛡️ **OrcaRouter**  | OrcaRouter   | ✅               |        ✅         |        ❌         |               ✅ |   ❌ | [doc](https://www.orcarouter.ai)                                                                               |
+| 🔷 **Synthorai**    | Synthorai    | ✅               |        ❌         |        ❌         |               ❌ |   ❌ | [doc](https://synthorai.io/docs)                                                                              |
 | 🌐 **ChatAnywhere** | ChatAnywhere | ✅               |        ✅         |        ❌         |               ✅ |   ❌ | [doc](https://api.chatanywhere.tech/#/)                                                                       |
 
 ## 🤖 Text Example
@@ -177,6 +178,7 @@ If you use parameter. Please use lower letter and underscore. for example: ./Mus
 | **GEMINI_TOKEN**                | Google Gemini API token                                                                      | -                                                      |
 | **OPEN_ROUTER_TOKEN**           | OpenRouter token [doc](https://openrouter.ai/docs/quickstart)                                | -                                                      |
 | **ORCAROUTER_TOKEN**           | OrcaRouter API key [doc](https://www.orcarouter.ai)                                          | -                                                      |
+| **SYNTHORAI_TOKEN**            | Synthorai API key [doc](https://synthorai.io/docs)                                           | -                                                      |
 | **ALIYUN_TOKEN**                | Aliyun Bailian token [doc](https://bailian.console.aliyun.com/#/doc/?type=model&url=2840915) | -                                                      |
 | **AI_302_TOKEN**                | 302.AI token [doc](https://302.ai/)                                                          | -                                                      |
 | **VOL_TOKEN**                   | Volcano Engine general token [doc](https://www.volcengine.com/docs/82379/1399008#b00dee71)   | -                                                      |

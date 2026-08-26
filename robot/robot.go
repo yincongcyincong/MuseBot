@@ -1068,7 +1068,7 @@ func (r *RobotInfo) showTxtModel() {
 		for k := range param.AliyunModel {
 			modelList = append(modelList, k)
 		}
-	case param.OpenRouter, param.OrcaRouter, param.AI302, param.Ollama, param.OpenAi:
+	case param.OpenRouter, param.OrcaRouter, param.Synthorai, param.AI302, param.Ollama, param.OpenAi:
 		switch utils.GetTxtType(db.GetCtxUserInfo(r.Ctx).LLMConfigRaw) {
 		case param.OpenAi:
 			r.SendMsg(chatId, i18n.GetMessage("mix_mode_choose", map[string]interface{}{
@@ -1088,6 +1088,11 @@ func (r *RobotInfo) showTxtModel() {
 		case param.OrcaRouter:
 			r.SendMsg(chatId, i18n.GetMessage("mix_mode_choose", map[string]interface{}{
 				"link": "https://www.orcarouter.ai",
+			}),
+				msgId, tgbotapi.ModeMarkdown, nil)
+		case param.Synthorai:
+			r.SendMsg(chatId, i18n.GetMessage("mix_mode_choose", map[string]interface{}{
+				"link": "https://synthorai.io",
 			}),
 				msgId, tgbotapi.ModeMarkdown, nil)
 		case param.Ollama:
