@@ -105,7 +105,21 @@
 * `-type`: 模型类型，设置为 `orcarouter`。
 * `-orcarouter_token`: 您的 OrcaRouter API Key。
 
-#### 8\. 图片识别 (`identify photo`)
+#### 8\. Synthorai 模型支持 (`synthorai`)
+
+集成 Synthorai 网关,一个端点 + 一个 API Key 即可使用 Anthropic、OpenAI、Google、DeepSeek、Qwen、Moonshot、Z.ai 等模型。模型 ID 不带命名空间,例如 `deepseek-v4-flash`、`claude-opus-5`。
+
+```bash
+./MuseBot \
+-telegram_bot_token=xxxx \
+-type=synthorai \
+-synthorai_token=xxxx
+```
+
+* `-type`: 模型类型,设置为 `synthorai`。
+* `-synthorai_token`: 你的 Synthorai API Key。
+
+#### 9\. 图片识别 (`identify photo`)
 
 集成火山引擎（VolcEngine）的图片识别功能，需要提供火山引擎的 AK/SK。
 
@@ -122,7 +136,7 @@
 
 更多详情请参考：[火山引擎图片识别文档](https://www.volcengine.com/docs/6790/116987)
 
-#### 9\. 语音识别 (`identify voice`)
+#### 10\. 语音识别 (`identify voice`)
 
 集成火山引擎（VolcEngine）的语音识别功能。
 
@@ -141,7 +155,7 @@
 
 更多详情请参考：[火山引擎语音识别文档](https://www.volcengine.com/docs/6561/80816)
 
-#### 10\. 高德地图 MCP (`amap mcp`)
+#### 11\. 高德地图 MCP (`amap mcp`)
 
 如果您的机器人需要使用高德地图的相关工具，例如地理位置查询等。
 
@@ -154,7 +168,7 @@
 
 * `-use_tools`: 启用工具使用功能，设置为 `true`，默认为`false`。
 
-#### 11\. RAG (Retrieval Augmented Generation) - ChromaDB (`rag milvus`)
+#### 12\. RAG (Retrieval Augmented Generation) - ChromaDB (`rag milvus`)
 
 结合 ChromaDB 进行 RAG，需要使用 OpenAI 的 Embedding 服务。
 
@@ -171,7 +185,7 @@
 * `-embedding_type`: Embedding 类型，设置为 `openai`。
 * `-vector_db_type`: 向量数据库类型，设置为 `milvus`。
 
-#### 12\. RAG (Retrieval Augmented Generation) - Milvus (`rag milvus`)
+#### 13\. RAG (Retrieval Augmented Generation) - Milvus (`rag milvus`)
 
 结合 Milvus 进行 RAG，需要使用 Gemini 的 Embedding 服务。
 
@@ -188,7 +202,7 @@
 * `-embedding_type`: Embedding 类型，设置为 `gemini`。
 * `-vector_db_type`: 向量数据库类型，设置为 `milvus`。
 
-#### 13\. RAG (Retrieval Augmented Generation) - Weaviate (`rag weaviate`)
+#### 14\. RAG (Retrieval Augmented Generation) - Weaviate (`rag weaviate`)
 
 结合 Weaviate 进行 RAG，需要使用 Ernie 的 Embedding 服务。
 

@@ -105,7 +105,21 @@ Integrate with the OrcaRouter gateway to use 150+ models from OpenAI, Anthropic,
 * `-type`: Model type, set to `orcarouter`.
 * `-orcarouter_token`: Your OrcaRouter API Key.
 
-#### 8\. Photo Identification (`identify photo`)
+#### 8\. Synthorai Model Support (`synthorai`)
+
+Integrate with the Synthorai gateway to reach models from Anthropic, OpenAI, Google, DeepSeek, Qwen, Moonshot and Z.ai behind a single endpoint and API key. Model IDs are bare rather than namespaced, e.g. `deepseek-v4-flash` or `claude-opus-5`.
+
+```bash
+./MuseBot \
+-telegram_bot_token=xxxx \
+-type=synthorai \
+-synthorai_token=xxxx
+```
+
+* `-type`: Model type, set to `synthorai`.
+* `-synthorai_token`: Your Synthorai API Key.
+
+#### 9\. Photo Identification (`identify photo`)
 
 To integrate with VolcEngine's photo identification feature, you'll need to provide your VolcEngine AK/SK.
 
@@ -122,7 +136,7 @@ To integrate with VolcEngine's photo identification feature, you'll need to prov
 
 For more details, please refer to: [VolcEngine Image Recognition Documentation](https://www.volcengine.com/docs/6790/116987)
 
-#### 9\. Voice Identification (`identify voice`)
+#### 10\. Voice Identification (`identify voice`)
 
 To integrate with VolcEngine's voice recognition feature.
 
@@ -141,7 +155,7 @@ To integrate with VolcEngine's voice recognition feature.
 
 For more details, please refer to: [VolcEngine Voice Recognition Documentation](https://www.volcengine.com/docs/6561/80816)
 
-#### 10\. MCP (`mcp`)
+#### 11\. MCP (`mcp`)
 
 If your bot needs to use Amap (Gaode Map) related tools, such as geolocation queries.
 
@@ -153,7 +167,7 @@ If your bot needs to use Amap (Gaode Map) related tools, such as geolocation que
 ```
 * `-use_tools`: Enables tool usage functionality, set to `true` default is `false`.
 
-#### 11\. RAG (Retrieval Augmented Generation) - ChromaDB (`rag milvus`)
+#### 12\. RAG (Retrieval Augmented Generation) - ChromaDB (`rag milvus`)
 
 To perform RAG with ChromaDB, you'll need to use OpenAI's Embedding service.
 
@@ -170,7 +184,7 @@ To perform RAG with ChromaDB, you'll need to use OpenAI's Embedding service.
 * `-embedding_type`: Embedding type, set to `openai`.
 * `-vector_db_type`: Vector database type, set to `chroma`.
 
-#### 12\. RAG (Retrieval Augmented Generation) - Milvus (`rag milvus`)
+#### 13\. RAG (Retrieval Augmented Generation) - Milvus (`rag milvus`)
 
 To perform RAG with Milvus, you'll need to use Gemini's Embedding service.
 
@@ -187,7 +201,7 @@ To perform RAG with Milvus, you'll need to use Gemini's Embedding service.
 * `-embedding_type`: Embedding type, set to `gemini`.
 * `-vector_db_type`: Vector database type, set to `milvus`.
 
-#### 13\. RAG (Retrieval Augmented Generation) - Weaviate (`rag weaviate`)
+#### 14\. RAG (Retrieval Augmented Generation) - Weaviate (`rag weaviate`)
 
 To perform RAG with Weaviate, you'll need to use Ernie's Embedding service.
 
