@@ -22,6 +22,7 @@ gemini： https://www.bilibili.com/video/BV1D4htz4Ekv/
 chatgpt: https://www.bilibili.com/video/BV1RutxzJEGY/    
 豆包：https://www.bilibili.com/video/BV1QDbEzwE43/    
 怎么使用mcp: https://www.bilibili.com/video/BV1JbtJzVEJd/
+怎么使用agent：https://www.bilibili.com/video/BV18XvczbEf8/
 
 ## 🚀 功能特性
 
