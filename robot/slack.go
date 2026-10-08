@@ -136,10 +136,14 @@ func SlackButtonHandler(callback *slack.InteractionCallback) {
 	s.Robot = NewRobot(WithRobot(s))
 
 	for _, action := range callback.ActionCallback.BlockActions {
-		s.Command = action.ActionID
-		switch action.ActionID {
-		case "chat", "photo", "video", "mcp", "task":
-			s.openModal(callback.TriggerID, action.ActionID)
+		command := action.ActionID
+		if command == param.Mcp {
+			command = param.Task
+		}
+		s.Command = command
+		switch command {
+		case "chat", "photo", "video", "task":
+			s.openModal(callback.TriggerID, command)
 		default:
 			s.Robot.ExecCmd(s.Command, nil, nil, nil)
 

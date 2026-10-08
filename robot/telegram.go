@@ -184,10 +184,6 @@ func CreateBot(ctx context.Context) *tgbotapi.BotAPI {
 			Description: i18n.GetMessage("commands.task.description", nil),
 		},
 		tgbotapi.BotCommand{
-			Command:     param.Mcp,
-			Description: i18n.GetMessage("commands.mcp.description", nil),
-		},
-		tgbotapi.BotCommand{
 			Command:     param.CronList,
 			Description: i18n.GetMessage("commands.cron.description", nil),
 		},
@@ -988,9 +984,9 @@ func (t *TelegramRobot) ExecuteForceReply() {
 	case i18n.GetMessage("video_empty_content", nil):
 		t.sendVideo()
 	case i18n.GetMessage("task_empty_content", nil):
-		t.Robot.sendMultiAgent("task_empty_content", t.sendForceReply("task_empty_content"))
+		t.Robot.sendMultiAgent(t.sendForceReply("task_empty_content"))
 	case i18n.GetMessage("mcp_empty_content", nil):
-		t.Robot.sendMultiAgent("task_empty_content", t.sendForceReply("mcp_empty_content"))
+		t.Robot.sendMultiAgent(t.sendForceReply("task_empty_content"))
 	}
 }
 

@@ -855,18 +855,13 @@ func (r *RobotInfo) ExecCmd(cmd string, defaultFunc func(), modeFunc func(string
 		r.sendHelpInfo()
 	case param.RecPhoto, "/" + param.RecPhoto, "$" + param.RecPhoto:
 		r.recPhoto()
-	case param.Task, "/" + param.Task, "$" + param.Task:
+	case param.Task, "/" + param.Task, "$" + param.Task,
+		param.Mcp, "/" + param.Mcp, "$" + param.Mcp:
 		var emptyPromptFunc func()
 		if t, ok := r.Robot.(*TelegramRobot); ok {
 			emptyPromptFunc = t.sendForceReply("task_empty_content")
 		}
-		r.sendMultiAgent("task_empty_content", emptyPromptFunc)
-	case param.Mcp, "/" + param.Mcp, "$" + param.Mcp:
-		var emptyPromptFunc func()
-		if t, ok := r.Robot.(*TelegramRobot); ok {
-			emptyPromptFunc = t.sendForceReply("mcp_empty_content")
-		}
-		r.sendMultiAgent("mcp_empty_content", emptyPromptFunc)
+		r.sendMultiAgent(emptyPromptFunc)
 	case param.Mode, "/" + param.Mode, "$" + param.Mode:
 		r.showMode()
 	case param.CronList, "/" + param.CronList, "$" + param.CronList:
@@ -1467,7 +1462,7 @@ func (r *RobotInfo) retryLastQuestion() {
 
 }
 
-func (r *RobotInfo) sendMultiAgent(agentType string, emptyPromptFunc func()) {
+func (r *RobotInfo) sendMultiAgent(emptyPromptFunc func()) {
 	r.TalkingPreCheck(func() {
 		chatId, msgId, userId := r.GetChatIdAndMsgIdAndUserID()
 
@@ -1512,12 +1507,7 @@ func (r *RobotInfo) sendMultiAgent(agentType string, emptyPromptFunc func()) {
 				}
 			}()
 
-			var err error
-			if agentType == "mcp_empty_content" {
-				err = dpReq.ExecuteMcp()
-			} else {
-				err = dpReq.ExecuteTask()
-			}
+			err := dpReq.ExecuteTask()
 			if err != nil {
 				logger.WarnCtx(r.Ctx, "execute task fail", "err", err)
 				r.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)

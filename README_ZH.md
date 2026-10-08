@@ -32,6 +32,7 @@ chatgpt: https://www.bilibili.com/video/BV1RutxzJEGY/
 - 👀 **图像识别**：使用图片与大模型进行交流，详见[文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/photoconf_ZH.md)。
 - 🎺 **支持语音**：使用语音与大模型进行交流，详见[文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/audioconf_ZH.md)。
 - 🐂 **函数调用**：将MCP协议转换为函数调用，详见[文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/functioncall_ZH.md)。
+- 🧩 **Skill**：加载本地 `SKILL.md` 指令并接入统一的 `/task` 工作流，详见[文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/skills_ZH.md)。
 - 🌊 **RAG（检索增强生成）**：支持RAG以填充上下文，详见[文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/rag_ZH.md)。
 - 🌞 **管理平台（AdminPlatform）**：使用管理平台来管理MuseBot，详见[文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/admin_ZH.md)。
 - 🌛 **注册中心**：支持服务注册，机器人实例可自动注册，详见 [文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/register_ZH.md)

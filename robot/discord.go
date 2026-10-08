@@ -394,9 +394,6 @@ func registerSlashCommands(s *discordgo.Session) {
 		{Name: param.Task, Description: i18n.GetMessage("commands.task.description", nil), Options: []*discordgo.ApplicationCommandOption{
 			{Type: discordgo.ApplicationCommandOptionString, Name: "prompt", Description: "Prompt", Required: true},
 		}},
-		{Name: param.Mcp, Description: i18n.GetMessage("commands.mcp.description", nil), Options: []*discordgo.ApplicationCommandOption{
-			{Type: discordgo.ApplicationCommandOptionString, Name: "prompt", Description: "Prompt", Required: true},
-		}},
 		{Name: param.CronDel, Description: i18n.GetMessage("commands.cron.description", nil), Options: []*discordgo.ApplicationCommandOption{
 			{Type: discordgo.ApplicationCommandOptionString, Name: "id", Description: "id", Required: true},
 		}},
