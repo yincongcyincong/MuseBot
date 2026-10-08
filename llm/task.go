@@ -153,8 +153,12 @@ func (d *LLMTaskReq) loopTask(ctx context.Context, plans *TaskInfo, lastPlan str
 			tool = toolInter.(*conf.AgentInfo)
 		}
 		WithTaskTools(tool)(taskLLM)
-		taskLLM.LLMClient.GetMessage(openai.ChatMessageRoleUser, plan.Description)
-		taskLLM.Content = plan.Description
+		taskDescription := plan.Description
+		if tool != nil && tool.Instructions != "" {
+			taskDescription = tool.Instructions + "\n\n# Current Task\n\n" + plan.Description
+		}
+		taskLLM.LLMClient.GetMessage(openai.ChatMessageRoleUser, taskDescription)
+		taskLLM.Content = taskDescription
 		taskLLM.LLMClient.GetModel(taskLLM)
 		logger.InfoCtx(d.Ctx, "execute task", "task", plan.Name, "task desc", plan.Description)
 		err := d.requestTask(ctx, taskLLM, plan)

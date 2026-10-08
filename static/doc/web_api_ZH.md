@@ -197,8 +197,7 @@
 | `/retry`   | 重试上一次提问           |
 | `/photo`   | 根据提示或上传图片生成图像     |
 | `/video`   | 根据提示生成视频          |
-| `/task`    | 让多个代理协作完成任务       |
-| `/mcp`     | 使用多代理控制面板进行复杂任务规划 |
+| `/task`    | 让多个代理（包括 MCP 和 Skill 代理）协作完成任务 |
 | `/help`    | 显示帮助信息（本命令列表）     |
 
 #### /chat
@@ -229,9 +228,6 @@
 
 #### /task
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/f58adc7c-4436-4908-baf9-0a7aed8b140c" />
-
-#### /mcp
-<img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/9c5db063-23b5-41c2-989c-4eda48b7440c" />
 
 #### /help
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/f2734a79-9d82-4716-8916-86a01865ed97" />
@@ -477,7 +473,5 @@ Content-Type: application/octet-stream
   "data": null
 }
 ```
-
-
 
 

@@ -153,6 +153,17 @@ If your bot needs to use Amap (Gaode Map) related tools, such as geolocation que
 ```
 * `-use_tools`: Enables tool usage functionality, set to `true` default is `false`.
 
+#### 10\.1\. Skills (`skill`)
+
+Load local `SKILL.md` prompt skills for the `/task` workflow.
+
+```bash
+./MuseBot -skill_path=/path/to/skills
+```
+
+* `-skill_path`: Skill directory. The equivalent environment variable is `SKILLS_PATH`.
+* See [Skills](skills.md) for the file format.
+
 #### 11\. RAG (Retrieval Augmented Generation) - ChromaDB (`rag milvus`)
 
 To perform RAG with ChromaDB, you'll need to use OpenAI's Embedding service.
@@ -207,4 +218,3 @@ To perform RAG with Weaviate, you'll need to use Ernie's Embedding service.
 * `-embedding_type`: Embedding type, set to `ernie`.
 * `-vector_db_type`: Vector database type, set to `weaviate`.
 * `-weaviate_url`: The URL of your Weaviate database.
-

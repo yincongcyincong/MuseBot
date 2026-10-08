@@ -20,6 +20,9 @@ import (
 type AgentInfo struct {
 	Description string `json:"description"`
 
+	Instructions string `json:"-"`
+	IsSkill      bool   `json:"-"`
+
 	DeepseekTool    []deepseek.Tool   `json:"-"`
 	VolTool         []*model.Tool     `json:"-"`
 	OpenAITools     []openai.Tool     `json:"-"`
@@ -29,6 +32,7 @@ type AgentInfo struct {
 
 type ToolsConf struct {
 	McpConfPath *string `json:"mcp_conf_path"`
+	SkillPath   *string `json:"skill_path"`
 }
 
 var (
@@ -38,16 +42,21 @@ var (
 	GeminiTools   = make([]*genai.Tool, 0)
 
 	TaskTools     = sync.Map{}
+	SkillTools    = sync.Map{}
 	ToolsConfInfo = new(ToolsConf)
 )
 
 func InitToolsConf() {
 	ToolsConfInfo.McpConfPath = flag.String("mcp_conf_path", GetAbsPath("conf/mcp/mcp.json"), "mcp conf path")
+	ToolsConfInfo.SkillPath = flag.String("skill_path", GetAbsPath("conf/skills"), "skill directory path")
 }
 
 func EnvToolsConf() {
 	if os.Getenv("MCP_CONF_PATH") != "" {
 		*ToolsConfInfo.McpConfPath = os.Getenv("MCP_CONF_PATH")
+	}
+	if os.Getenv("SKILLS_PATH") != "" {
+		*ToolsConfInfo.SkillPath = os.Getenv("SKILLS_PATH")
 	}
 }
 
@@ -59,7 +68,7 @@ func InitTools() {
 
 		TaskTools.Range(func(key, value any) bool {
 			aInfo := value.(*AgentInfo)
-			if len(aInfo.DeepseekTool) == 0 || len(aInfo.VolTool) == 0 {
+			if !aInfo.IsSkill && (len(aInfo.DeepseekTool) == 0 || len(aInfo.VolTool) == 0) {
 				keysToDelete = append(keysToDelete, key)
 			}
 			return true
@@ -85,6 +94,8 @@ func InitTools() {
 	for _, mcpParam := range mcpParams {
 		InsertTools(mcpParam.Name)
 	}
+
+	InitSkills()
 }
 
 func InsertTools(clientName string) {

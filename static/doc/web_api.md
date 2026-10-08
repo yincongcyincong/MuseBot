@@ -195,8 +195,7 @@
 | `/retry` | Retry last question                                     |
 | `/photo` | Generate image based on prompt or uploaded image        |
 | `/video` | Generate video based on prompt                          |
-| `/task`  | Let multiple agents collaborate on a task               |
-| `/mcp`   | Use multi-agent control panel for complex task planning |
+| `/task`  | Let multiple agents, including MCP/skill agents, work  |
 | `/help`  | Show this help message (list of commands)               |
 
 #### /chat
@@ -231,10 +230,6 @@
 #### /task
 
 <img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/f58adc7c-4436-4908-baf9-0a7aed8b140c" />
-
-#### /mcp
-
-<img width="374" alt="aa92b3c9580da6926a48fc1fc5c37c03" src="https://github.com/user-attachments/assets/9c5db063-23b5-41c2-989c-4eda48b7440c" />
 
 #### /help
 
@@ -512,4 +507,3 @@ Content-Type: application/octet-stream
   "data": null
 }
 ```
-
