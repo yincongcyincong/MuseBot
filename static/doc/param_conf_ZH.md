@@ -165,6 +165,24 @@
 * `-skill_path`：Skill 目录，等价环境变量是 `SKILLS_PATH`。
 * 文件格式详见 [Skill 文档](skills_ZH.md)。
 
+#### 10\.2\. 对话式配置（`config`）
+
+指定管理员可以通过自然语言意图识别管理运行参数、MCP、Skill、定时任务，并执行受限制的内置命令和文件操作。
+
+```bash
+./MuseBot \
+-admin_user_ids=123456 \
+-allowed_commands=git,ls \
+-command_timeout_sec=60 \
+-file_root_path=/path/to/agent-files
+```
+
+* `-admin_user_ids`：逗号分隔的管理员 ID，等价环境变量是 `ADMIN_USER_IDS`。
+* `-allowed_commands`：逗号分隔的内置命令白名单，等价环境变量是 `ALLOWED_COMMANDS`。
+* `-command_timeout_sec`：内置命令超时时间，等价环境变量是 `COMMAND_TIMEOUT_SEC`。
+* `-file_root_path`：内置文件操作根目录，等价环境变量是 `FILE_ROOT_PATH`。
+* 支持操作详见[对话式配置文档](conversation_config_ZH.md)。
+
 #### 11\. RAG (Retrieval Augmented Generation) - ChromaDB (`rag milvus`)
 
 结合 ChromaDB 进行 RAG，需要使用 OpenAI 的 Embedding 服务。

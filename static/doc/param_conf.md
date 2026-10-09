@@ -164,6 +164,24 @@ Load local `SKILL.md` prompt skills for the `/task` workflow.
 * `-skill_path`: Skill directory. The equivalent environment variable is `SKILLS_PATH`.
 * See [Skills](skills.md) for the file format.
 
+#### 10\.2\. Conversation Configuration (`config`)
+
+Configured administrators can manage runtime settings, MCP, skills, and cron jobs, and execute restricted built-in commands and file operations through direct natural-language intent recognition.
+
+```bash
+./MuseBot \
+-admin_user_ids=123456 \
+-allowed_commands=git,ls \
+-command_timeout_sec=60 \
+-file_root_path=/path/to/agent-files
+```
+
+* `-admin_user_ids`: Comma-separated administrator IDs. The equivalent environment variable is `ADMIN_USER_IDS`.
+* `-allowed_commands`: Comma-separated built-in command allowlist. The equivalent environment variable is `ALLOWED_COMMANDS`.
+* `-command_timeout_sec`: Built-in command timeout. The equivalent environment variable is `COMMAND_TIMEOUT_SEC`.
+* `-file_root_path`: Built-in file-operation root. The equivalent environment variable is `FILE_ROOT_PATH`.
+* See [Conversation Configuration](conversation_config.md) for supported operations.
+
 #### 11\. RAG (Retrieval Augmented Generation) - ChromaDB (`rag milvus`)
 
 To perform RAG with ChromaDB, you'll need to use OpenAI's Embedding service.

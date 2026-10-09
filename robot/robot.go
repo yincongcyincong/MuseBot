@@ -152,8 +152,13 @@ func (r *RobotInfo) Exec() {
 		return
 	}
 
-	if r.AddUserInfo() && r.Robot.checkValid() && r.smartMode() {
-		r.Robot.requestLLM(r.Robot.getMsgContent())
+	if r.AddUserInfo() && r.Robot.checkValid() {
+		if r.tryConversationConfig() {
+			return
+		}
+		if r.smartMode() {
+			r.Robot.requestLLM(r.Robot.getMsgContent())
+		}
 	}
 }
 
