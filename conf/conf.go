@@ -94,6 +94,7 @@ type BaseConf struct {
 
 	AllowedUserIds  map[string]bool `json:"allowed_user_ids"`
 	AllowedGroupIds map[string]bool `json:"allowed_group_ids"`
+	AdminUserIds    map[string]bool `json:"admin_user_ids"`
 }
 
 var (
@@ -104,7 +105,12 @@ var (
 func InitConf() {
 	BaseConfInfo.StartTime = time.Now().Unix()
 	if loadConf() {
-		logConf("", "")
+		EnvToolsConf()
+		adminUserIds := os.Getenv("ADMIN_USER_IDS")
+		logConf("", "", adminUserIds)
+		if adminUserIds != "" {
+			SaveConf()
+		}
 		return
 	}
 
@@ -184,9 +190,11 @@ func InitConf() {
 
 	allowedUserIds := flag.String("allowed_user_ids", "", "allowed user ids")
 	allowedGroupIds := flag.String("allowed_group_ids", "", "allowed group ids")
+	adminUserIds := flag.String("admin_user_ids", "", "admin user ids")
 
 	BaseConfInfo.AllowedUserIds = make(map[string]bool)
 	BaseConfInfo.AllowedGroupIds = make(map[string]bool)
+	BaseConfInfo.AdminUserIds = make(map[string]bool)
 
 	InitLLMConf()
 	InitPhotoConf()
@@ -198,6 +206,7 @@ func InitConf() {
 
 	flag.CommandLine.Init(os.Args[0], flag.ContinueOnError)
 	flag.Parse()
+	applyParsedToolsFlags(flag.CommandLine)
 
 	if os.Getenv("TELEGRAM_BOT_TOKEN") != "" {
 		BaseConfInfo.TelegramBotToken = os.Getenv("TELEGRAM_BOT_TOKEN")
@@ -333,6 +342,9 @@ func InitConf() {
 
 	if os.Getenv("ALLOWED_GROUP_IDS") != "" {
 		*allowedGroupIds = os.Getenv("ALLOWED_GROUP_IDS")
+	}
+	if os.Getenv("ADMIN_USER_IDS") != "" {
+		*adminUserIds = os.Getenv("ADMIN_USER_IDS")
 	}
 
 	if os.Getenv("LLM_PROXY") != "" {
@@ -487,12 +499,22 @@ func InitConf() {
 	EnvVideoConf()
 	EnvRegisterConf()
 
-	logConf(*allowedUserIds, *allowedGroupIds)
+	logConf(*allowedUserIds, *allowedGroupIds, *adminUserIds)
 	SaveConf()
 
 }
 
-func logConf(allowedUserIds, allowedGroupIds string) {
+func logConf(allowedUserIds, allowedGroupIds, adminUserIds string) {
+	if BaseConfInfo.AllowedUserIds == nil {
+		BaseConfInfo.AllowedUserIds = make(map[string]bool)
+	}
+	if BaseConfInfo.AllowedGroupIds == nil {
+		BaseConfInfo.AllowedGroupIds = make(map[string]bool)
+	}
+	if BaseConfInfo.AdminUserIds == nil {
+		BaseConfInfo.AdminUserIds = make(map[string]bool)
+	}
+
 	for _, userIdStr := range strings.Split(allowedUserIds, ",") {
 		if userIdStr == "" {
 			continue
@@ -505,6 +527,13 @@ func logConf(allowedUserIds, allowedGroupIds string) {
 			continue
 		}
 		BaseConfInfo.AllowedGroupIds[groupIdStr] = true
+	}
+
+	for _, adminIdStr := range strings.Split(adminUserIds, ",") {
+		if adminIdStr == "" {
+			continue
+		}
+		BaseConfInfo.AdminUserIds[adminIdStr] = true
 	}
 
 	logger.Info("CONF", "TelegramBotToken", BaseConfInfo.TelegramBotToken)

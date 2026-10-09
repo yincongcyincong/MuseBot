@@ -42,6 +42,8 @@ Thanks to the Reddit community as well, even though a few of my subreddits got b
   see [doc](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/functioncall.md).
 - 🧩 **Skills**: load local `SKILL.md` instructions into the unified `/task` workflow,
   see [doc](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/skills.md).
+- 🛠️ **Conversational System Operations**: use natural language directly to manage runtime settings, MCP, skills, and cron jobs, and to run commands and file operations inside safety boundaries,
+  see [doc](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/conversation_config.md).
 - 🌊 **RAG**: Support Rag to fill context,
   see [doc](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/rag.md).
 - 🌞 **AdminPlatform**: Use platform to manage MuseBot,

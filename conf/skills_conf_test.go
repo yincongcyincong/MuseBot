@@ -99,3 +99,31 @@ Use lowercase filenames.
 		t.Fatal("lowercase skill.md was not loaded")
 	}
 }
+
+func TestCreateSkillEscapesFrontmatter(t *testing.T) {
+	skillRoot := t.TempDir()
+	oldSkillPath := ToolsConfInfo.SkillPath
+	ToolsConfInfo.SkillPath = &skillRoot
+	defer func() {
+		ToolsConfInfo.SkillPath = oldSkillPath
+		TaskTools.Delete("yaml_skill")
+		SkillTools.Delete("yaml_skill")
+	}()
+
+	err := CreateSkill("yaml_skill", "Use when prompts say: summarize this.", "Summarize safely.")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	value, ok := TaskTools.Load("yaml_skill")
+	if !ok {
+		t.Fatal("created skill was not loaded")
+	}
+	skill, ok := value.(*AgentInfo)
+	if !ok {
+		t.Fatalf("TaskTools contains %T, want *AgentInfo", value)
+	}
+	if skill.Description != "Use when prompts say: summarize this." {
+		t.Errorf("description = %q", skill.Description)
+	}
+}

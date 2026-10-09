@@ -69,6 +69,41 @@ func InitSkills() {
 	}
 }
 
+func CreateSkill(name, description, instructions string) error {
+	name = strings.TrimSpace(name)
+	if !skillNameReg.MatchString(name) {
+		return errors.New("invalid skill name; use 1-64 letters, digits, hyphens, or underscores")
+	}
+	description = strings.TrimSpace(description)
+	if description == "" {
+		return errors.New("skill description is required")
+	}
+
+	skillDir := filepath.Join(*ToolsConfInfo.SkillPath, name)
+	if err := os.MkdirAll(skillDir, 0755); err != nil {
+		return err
+	}
+	skillFile := filepath.Join(skillDir, "SKILL.md")
+	if _, err := os.Stat(skillFile); err == nil {
+		return errors.New("skill already exists")
+	}
+
+	frontmatter, err := yaml.Marshal(skillInfo{Name: name, Description: description})
+	if err != nil {
+		return err
+	}
+	skillContent := "---\n" + string(frontmatter) + "---\n\n" + strings.TrimSpace(instructions) + "\n"
+	if len(skillContent) > maxSkillFileBytes {
+		return fmt.Errorf("SKILL.md exceeds %d bytes", maxSkillFileBytes)
+	}
+	if err := os.WriteFile(skillFile, []byte(skillContent), 0644); err != nil {
+		return err
+	}
+
+	InitSkills()
+	return nil
+}
+
 func loadSkill(skillFile string) (string, *AgentInfo, error) {
 	content, err := os.ReadFile(skillFile)
 	if err != nil {
