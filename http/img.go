@@ -92,8 +92,8 @@ func loadAllImagePaths() error {
 
 	dirs, err := ioutil.ReadDir(conf.BaseConfInfo.ImagePath)
 	if err != nil {
-		logger.Error("Failed to read image directory", "directory", conf.BaseConfInfo.ImagePath, "error", err)
-		return err
+		logger.Info("Failed to read image directory", "directory", conf.BaseConfInfo.ImagePath, "error", err)
+		return nil
 	}
 
 	for _, dir := range dirs {
