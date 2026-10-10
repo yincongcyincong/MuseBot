@@ -67,7 +67,15 @@ func StartTelegramRobot(ctx context.Context) {
 
 	for {
 		TelegramBot = CreateBot(ctx)
+		if TelegramBot == nil {
+			time.Sleep(3 * time.Second)
+			continue
+		}
 		logger.InfoCtx(ctx, "telegramBot Info", "username", TelegramBot.Self.UserName)
+
+		if _, err := TelegramBot.Request(tgbotapi.DeleteWebhookConfig{}); err != nil {
+			logger.ErrorCtx(ctx, "delete telegram webhook error", "err", err)
+		}
 
 		u := tgbotapi.NewUpdate(0)
 		u.Timeout = 60
