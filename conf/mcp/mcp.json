@@ -1,8 +1,14 @@
 {
   "mcpServers": {
     "playwright": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@playwright/mcp@latest"
+      ],
       "url": "http://localhost:8931/mcp",
-      "description": "Simulates browser behavior for tasks like web navigation, data scraping, and automated interactions with web pages."
+      "type": "stdio",
+      "description": "Playwright MCP server"
     }
   }
 }
