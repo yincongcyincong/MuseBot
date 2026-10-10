@@ -42,12 +42,12 @@ Use this configuration if your network environment requires accessing Telegram o
 ./MuseBot \
 -telegram_bot_token=xxxx \
 -deepseek_token=sk-xxx \
--telegram_proxy=http://127.0.0.1:7890 \
--deepseek_proxy=http://127.0.0.1:7890
+-robot_proxy=http://127.0.0.1:7890 \
+-robot_proxy=http://127.0.0.1:7890
 ```
 
-* `-telegram_proxy`: The proxy address used for Telegram API requests.
-* `-deepseek_proxy`: The proxy address used for DeepSeek API requests.
+* `-robot_proxy`: The proxy address used for Telegram API requests.
+* `-robot_proxy`: The proxy address used for DeepSeek API requests.
 
 #### 4\. OpenAI Model Support (`openai`)
 

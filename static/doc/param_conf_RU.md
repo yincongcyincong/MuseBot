@@ -42,12 +42,12 @@
 ./MuseBot \
 -telegram_bot_token=xxxx \
 -deepseek_token=sk-xxx \
--telegram_proxy=http://127.0.0.1:7890 \
--deepseek_proxy=http://127.0.0.1:7890
+-robot_proxy=http://127.0.0.1:7890 \
+-robot_proxy=http://127.0.0.1:7890
 ```
 
-* `-telegram_proxy`: Адрес прокси для запросов к Telegram API
-* `-deepseek_proxy`: Адрес прокси для запросов к DeepSeek API
+* `-robot_proxy`: Адрес прокси для запросов к Telegram API
+* `-robot_proxy`: Адрес прокси для запросов к DeepSeek API
 
 ### 4. Поддержка моделей OpenAI (`openai`)
 
