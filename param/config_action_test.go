@@ -40,6 +40,17 @@ func TestParseConversationConfigPlanBuiltInActions(t *testing.T) {
 	}
 }
 
+func TestParseConversationConfigPlanAcceptsQuotedCronID(t *testing.T) {
+	content := `{"actions":[{"type":"cron","operation":"delete","id":"42"}]}`
+	plan, err := ParseConversationConfigPlan(content)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if plan.Actions[0].ID.Int64() != 42 {
+		t.Fatalf("id = %d, want 42", plan.Actions[0].ID.Int64())
+	}
+}
+
 func TestParseConversationConfigIntent(t *testing.T) {
 	tests := []struct {
 		name    string

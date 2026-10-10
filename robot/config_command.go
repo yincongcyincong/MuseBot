@@ -55,6 +55,8 @@ func (r *RobotInfo) tryConversationConfig() bool {
 		return false
 	}
 
+	_, _, userId := r.GetChatIdAndMsgIdAndUserID()
+	logger.InfoCtx(r.Ctx, "conversation config request", "userID", userId, "prompt", r.Robot.getPrompt())
 	r.handleConversationConfig()
 	return true
 }
@@ -156,6 +158,11 @@ func (r *RobotInfo) buildConversationConfigPlan() (*param.ConversationConfigPlan
 func (r *RobotInfo) executeConversationConfigAction(action *param.ConversationConfigAction, userId string) (string, error) {
 	if action == nil {
 		return "", fmt.Errorf("empty action")
+	}
+	if action.Type == "cron" {
+		logger.InfoCtx(r.Ctx, "conversation cron action", "operation", action.Operation,
+			"id", action.ID.Int64(), "name", action.Name, "cron", action.Cron,
+			"prompt", action.Prompt, "command", action.Command)
 	}
 	switch action.Type {
 	case "config":
@@ -896,21 +903,22 @@ func (r *RobotInfo) executeConversationCronAction(action *param.ConversationConf
 		}
 		return string(data), nil
 	case "get":
-		return r.getConversationCron(action.ID)
+		return r.getConversationCron(action.ID.Int64())
 	case "update":
 		return r.updateConversationCron(action)
 	case "enable", "disable":
-		return r.setConversationCronStatus(action.ID, action.Operation == "enable")
+		return r.setConversationCronStatus(action.ID.Int64(), action.Operation == "enable")
 	case "delete":
-		cronInfo, err := r.getConversationCronInfo(action.ID)
+		cronID := action.ID.Int64()
+		cronInfo, err := r.getConversationCronInfo(cronID)
 		if err != nil {
 			return "", err
 		}
-		if err := db.DeleteCronByID(action.ID); err != nil {
+		if err := db.DeleteCronByID(cronID); err != nil {
 			return "", err
 		}
 		removeConversationCronSchedule(cronInfo)
-		return fmt.Sprintf("deleted cron task %d", action.ID), nil
+		return fmt.Sprintf("deleted cron task %d", cronID), nil
 	case "clear":
 		crons, err := db.GetCronsByPage(1, 1000, "", userId)
 		if err != nil {
@@ -948,7 +956,7 @@ func (r *RobotInfo) getConversationCronInfo(id int64) (*db.Cron, error) {
 }
 
 func (r *RobotInfo) updateConversationCron(action *param.ConversationConfigAction) (string, error) {
-	cronInfo, err := r.getConversationCronInfo(action.ID)
+	cronInfo, err := r.getConversationCronInfo(action.ID.Int64())
 	if err != nil {
 		return "", err
 	}
