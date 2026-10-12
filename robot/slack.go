@@ -238,22 +238,9 @@ func (s *SlackRobot) requestLLM(content string) {
 
 func (s *SlackRobot) sendChatMessage() {
 	s.Robot.TalkingPreCheck(func() {
-		if conf.RagConfInfo.Store != nil {
-			s.executeChain()
-		} else {
-			s.executeLLM()
-		}
+		s.executeLLM()
 	})
 
-}
-
-func (s *SlackRobot) executeChain() {
-	messageChan := &MsgChan{
-		NormalMessageChan: make(chan *param.MsgInfo),
-	}
-	go s.Robot.ExecChain(s.Prompt, messageChan)
-
-	go s.Robot.HandleUpdate(messageChan, "mp3")
 }
 
 func (s *SlackRobot) executeLLM() {

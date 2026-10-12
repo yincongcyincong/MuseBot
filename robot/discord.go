@@ -219,16 +219,6 @@ func (d *DiscordRobot) requestLLM(content string) {
 	}()
 }
 
-func (d *DiscordRobot) executeChain() {
-	messageChan := &MsgChan{
-		NormalMessageChan: make(chan *param.MsgInfo),
-	}
-
-	go d.Robot.ExecChain(d.Prompt, messageChan)
-
-	go d.Robot.HandleUpdate(messageChan, "mp3")
-}
-
 func (d *DiscordRobot) executeLLM() {
 	messageChan := &MsgChan{
 		NormalMessageChan: make(chan *param.MsgInfo),
@@ -423,11 +413,7 @@ func onInteractionCreate(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 func (d *DiscordRobot) sendChatMessage() {
 	d.Robot.TalkingPreCheck(func() {
-		if conf.RagConfInfo.Store != nil {
-			d.executeChain()
-		} else {
-			d.executeLLM()
-		}
+		d.executeLLM()
 	})
 }
 

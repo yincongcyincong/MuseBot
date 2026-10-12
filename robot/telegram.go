@@ -270,19 +270,6 @@ func (t *TelegramRobot) requestLLM(content string) {
 	t.sendChatMessage()
 }
 
-// executeChain use langchain to interact llm
-func (t *TelegramRobot) executeChain() {
-	messageChan := &MsgChan{
-		NormalMessageChan: make(chan *param.MsgInfo),
-	}
-
-	go t.Robot.ExecChain(t.Prompt, messageChan)
-
-	// send response message
-	go t.Robot.HandleUpdate(messageChan, "ogg_opus")
-
-}
-
 // executeLLM directly interact llm
 func (t *TelegramRobot) executeLLM() {
 	messageChan := &MsgChan{
@@ -407,11 +394,7 @@ func (t *TelegramRobot) sendChatMessage() {
 
 	// Reply to the chat content
 	t.Robot.TalkingPreCheck(func() {
-		if conf.RagConfInfo.Store != nil {
-			t.executeChain()
-		} else {
-			t.executeLLM()
-		}
+		t.executeLLM()
 	})
 }
 

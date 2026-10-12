@@ -255,22 +255,9 @@ func (l *LarkRobot) sendVideo() {
 
 func (l *LarkRobot) sendChatMessage() {
 	l.Robot.TalkingPreCheck(func() {
-		if conf.RagConfInfo.Store != nil {
-			l.executeChain()
-		} else {
-			l.executeLLM()
-		}
+		l.executeLLM()
 	})
 
-}
-
-func (l *LarkRobot) executeChain() {
-	messageChan := &MsgChan{
-		NormalMessageChan: make(chan *param.MsgInfo),
-	}
-	go l.Robot.ExecChain(l.Prompt, messageChan)
-
-	go l.Robot.HandleUpdate(messageChan, "opus")
 }
 
 func (l *LarkRobot) sendTextStream(messageChan *MsgChan) {

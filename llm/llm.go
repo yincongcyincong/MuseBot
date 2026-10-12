@@ -40,6 +40,7 @@ type LLM struct {
 	MessageChan chan *param.MsgInfo
 	HTTPMsgChan chan string
 	Content     string
+	RagContext  string
 	Images      [][]byte
 
 	Model string
@@ -83,7 +84,7 @@ type LLMClient interface {
 
 func (l *LLM) CallLLM() error {
 
-	totalContent := l.GetContent(l.Content)
+	totalContent := l.GetContent(l.getPrompt())
 	l.InsertCharacter(l.Ctx)
 	l.GetMessages(l.UserId, totalContent)
 	l.LLMClient.GetModel(l)
@@ -124,6 +125,21 @@ func (l *LLM) CallLLM() error {
 
 func (l *LLM) GetContent(content string) string {
 	return content
+}
+
+func (l *LLM) getPrompt() string {
+	if l.RagContext == "" {
+		return l.Content
+	}
+
+	prompt := i18n.GetMessage("rag_prompt", map[string]interface{}{
+		"question": l.Content,
+		"context":  l.RagContext,
+	})
+	if prompt == "" {
+		return l.Content
+	}
+	return prompt
 }
 
 func (l *LLM) InsertCharacter(ctx context.Context) {
@@ -347,6 +363,12 @@ func WithModel(model string) Option {
 func WithContent(content string) Option {
 	return func(p *LLM) {
 		p.Content = content
+	}
+}
+
+func WithRagContext(ragContext string) Option {
+	return func(p *LLM) {
+		p.RagContext = ragContext
 	}
 }
 

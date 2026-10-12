@@ -328,31 +328,9 @@ func (q *QQRobot) sendVideo() {
 
 func (q *QQRobot) sendChatMessage() {
 	q.Robot.TalkingPreCheck(func() {
-		if conf.RagConfInfo.Store != nil {
-			q.executeChain()
-		} else {
-			q.executeLLM()
-		}
+		q.executeLLM()
 	})
 
-}
-
-func (q *QQRobot) executeChain() {
-	var msgChan *MsgChan
-	if conf.BaseConfInfo.IsStreaming {
-		msgChan = &MsgChan{
-			StrMessageChan: make(chan string),
-		}
-	} else {
-		msgChan = &MsgChan{
-			NormalMessageChan: make(chan *param.MsgInfo),
-		}
-	}
-
-	go q.Robot.ExecChain(q.Prompt, msgChan)
-
-	// send response message
-	go q.Robot.HandleUpdate(msgChan, "silk")
 }
 
 func (q *QQRobot) executeLLM() {

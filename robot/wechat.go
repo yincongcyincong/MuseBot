@@ -316,22 +316,9 @@ func (w *WechatRobot) sendVideo() {
 
 func (w *WechatRobot) sendChatMessage() {
 	w.Robot.TalkingPreCheck(func() {
-		if conf.RagConfInfo.Store != nil {
-			w.executeChain()
-		} else {
-			w.executeLLM()
-		}
+		w.executeLLM()
 	})
 
-}
-
-func (w *WechatRobot) executeChain() {
-	messageChan := &MsgChan{
-		NormalMessageChan: make(chan *param.MsgInfo),
-	}
-	go w.Robot.ExecChain(w.Prompt, messageChan)
-
-	go w.Robot.HandleUpdate(messageChan, "amr")
 }
 
 func (w *WechatRobot) executeLLM() {
