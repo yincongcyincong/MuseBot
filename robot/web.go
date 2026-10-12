@@ -175,11 +175,7 @@ func (web *Web) sendVideo() {
 func (web *Web) sendChatMessage() {
 
 	web.Robot.TalkingPreCheck(func() {
-		if conf.RagConfInfo.Store != nil {
-			//web.executeChain()
-		} else {
-			web.executeLLM()
-		}
+		web.executeLLM()
 	})
 
 }

@@ -33,8 +33,6 @@ import (
 	"github.com/yincongcyincong/MuseBot/param"
 	"github.com/yincongcyincong/MuseBot/rag"
 	"github.com/yincongcyincong/MuseBot/utils"
-	"github.com/yincongcyincong/langchaingo/chains"
-	"github.com/yincongcyincong/langchaingo/vectorstores"
 )
 
 const (
@@ -1287,58 +1285,6 @@ func (r *RobotInfo) showTTSModel() {
 	r.SendMsg(chatId, totalContent, msgId, "", nil)
 }
 
-func (r *RobotInfo) ExecChain(msgContent string, msgChan *MsgChan) {
-	r.TalkingPreCheck(func() {
-		chatId, msgId, userId := r.GetChatIdAndMsgIdAndUserID()
-
-		defer func() {
-			if err := recover(); err != nil {
-				logger.ErrorCtx(r.Ctx, "panic", "err", err, "stack", string(debug.Stack()))
-			}
-			if msgChan.NormalMessageChan != nil {
-				close(msgChan.NormalMessageChan)
-			}
-
-			if msgChan.StrMessageChan != nil {
-				close(msgChan.StrMessageChan)
-			}
-		}()
-
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
-		defer cancel()
-
-		content := r.Robot.getPrompt()
-		if len(msgContent) == 0 {
-			logger.InfoCtx(r.Ctx, "content is empty")
-			return
-		}
-
-		r.InsertRecord()
-		perMsgLen := r.Robot.getPerMsgLen()
-		if conf.AudioConfInfo.TTSType != "" {
-			perMsgLen = AudioMsgLen
-		}
-
-		dpLLM := rag.NewRag(
-			llm.WithMessageChan(msgChan.NormalMessageChan),
-			llm.WithHTTPMsgChan(msgChan.StrMessageChan),
-			llm.WithContent(content),
-			llm.WithChatId(chatId),
-			llm.WithUserId(userId),
-			llm.WithPerMsgLen(perMsgLen),
-			llm.WithCS(r.cs),
-		)
-		qaChain := chains.NewRetrievalQAFromLLM(
-			dpLLM,
-			vectorstores.ToRetriever(conf.RagConfInfo.Store, 3),
-		)
-		_, err := chains.Run(ctx, qaChain, content)
-		if err != nil {
-			r.SendMsg(chatId, err.Error(), msgId, "", nil)
-		}
-	})
-}
-
 func (r *RobotInfo) ExecLLM(msgContent string, msgChan *MsgChan) {
 	defer func() {
 		if err := recover(); err != nil {
@@ -1374,6 +1320,13 @@ func (r *RobotInfo) ExecLLM(msgContent string, msgChan *MsgChan) {
 		images = append(images, r.Robot.getImage())
 	}
 
+	ragContext := ""
+	if conf.RagConfInfo.Store != nil {
+		ctx, cancel := context.WithTimeout(r.Ctx, 30*time.Second)
+		ragContext = rag.BuildContext(ctx, content)
+		cancel()
+	}
+
 	llmClient := llm.NewLLM(
 		llm.WithChatId(chatId),
 		llm.WithUserId(userId),
@@ -1381,6 +1334,7 @@ func (r *RobotInfo) ExecLLM(msgContent string, msgChan *MsgChan) {
 		llm.WithMessageChan(msgChan.NormalMessageChan),
 		llm.WithHTTPMsgChan(msgChan.StrMessageChan),
 		llm.WithContent(content),
+		llm.WithRagContext(ragContext),
 		llm.WithPerMsgLen(perMsgLen),
 		llm.WithCS(r.cs),
 		llm.WithContext(r.Ctx),

@@ -14,12 +14,10 @@ import (
 	db_weaviate "github.com/weaviate/weaviate-go-client/v4/weaviate"
 	"github.com/yincongcyincong/MuseBot/conf"
 	"github.com/yincongcyincong/MuseBot/db"
-	"github.com/yincongcyincong/MuseBot/llm"
 	"github.com/yincongcyincong/MuseBot/logger"
 	"github.com/yincongcyincong/MuseBot/utils"
 	"github.com/yincongcyincong/langchaingo/documentloaders"
 	"github.com/yincongcyincong/langchaingo/embeddings"
-	"github.com/yincongcyincong/langchaingo/llms"
 	"github.com/yincongcyincong/langchaingo/llms/ernie"
 	"github.com/yincongcyincong/langchaingo/llms/googleai"
 	"github.com/yincongcyincong/langchaingo/llms/openai"
@@ -32,62 +30,30 @@ import (
 
 const (
 	weaviateIndexName = "MuseBot"
+	ragTopK           = 3
 )
 
-type Rag struct {
-	LLM *llm.LLM
-}
-
-func NewRag(options ...llm.Option) *Rag {
-	dp := &Rag{
-		LLM: llm.NewLLM(options...),
+func BuildContext(ctx context.Context, query string) string {
+	if conf.RagConfInfo.Store == nil || strings.TrimSpace(query) == "" {
+		return ""
 	}
 
-	for _, o := range options {
-		o(dp.LLM)
-	}
-	return dp
-}
-
-func (l *Rag) Call(ctx context.Context, prompt string, options ...llms.CallOption) (string, error) {
-	return llms.GenerateFromSinglePrompt(ctx, l, prompt, options...)
-}
-
-func (l *Rag) GenerateContent(ctx context.Context, messages []llms.MessageContent, options ...llms.CallOption) (*llms.ContentResponse, error) {
-	opts := &llms.CallOptions{}
-	for _, opt := range options {
-		opt(opts)
-	}
-
-	doc, err := conf.RagConfInfo.Store.SimilaritySearch(ctx, l.LLM.Content, 3)
+	docs, err := conf.RagConfInfo.Store.SimilaritySearch(ctx, query, ragTopK)
 	if err != nil {
-		logger.Error("request vector db fail", "err", err)
+		logger.ErrorCtx(ctx, "request vector db fail", "err", err)
+		return ""
 	}
-	if len(doc) != 0 {
-		tmpContent := ""
-		for _, msg := range messages {
-			for _, part := range msg.Parts {
-				tmpContent += part.(llms.TextContent).Text
-			}
-		}
-		llm.WithContent(tmpContent)(l.LLM)
+	if len(docs) == 0 {
+		return ""
 	}
 
-	err = l.LLM.CallLLM()
-	if err != nil {
-		logger.Error("error calling DeepSeek API", "err", err)
-		return nil, errors.New("error calling DeepSeek API")
+	var context strings.Builder
+	for _, doc := range docs {
+		context.WriteString(doc.PageContent)
+		context.WriteString("\n\n")
 	}
 
-	resp := &llms.ContentResponse{
-		Choices: []*llms.ContentChoice{
-			{
-				Content: l.LLM.WholeContent,
-			},
-		},
-	}
-
-	return resp, nil
+	return strings.TrimSpace(context.String())
 }
 
 func InitRag() {

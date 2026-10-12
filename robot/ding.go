@@ -251,23 +251,9 @@ func (d *DingRobot) sendVideo() {
 
 func (d *DingRobot) sendChatMessage() {
 	d.Robot.TalkingPreCheck(func() {
-		if conf.RagConfInfo.Store != nil {
-			d.executeChain()
-		} else {
-			d.executeLLM()
-		}
+		d.executeLLM()
 	})
 
-}
-
-func (d *DingRobot) executeChain() {
-	messageChan := &MsgChan{
-		NormalMessageChan: make(chan *param.MsgInfo),
-	}
-	go d.Robot.ExecChain(d.Prompt, messageChan)
-
-	// send response message
-	go d.Robot.HandleUpdate(messageChan, "amr")
 }
 
 func (d *DingRobot) executeLLM() {

@@ -235,23 +235,9 @@ func (q *PersonalQQRobot) sendVideo() {
 
 func (q *PersonalQQRobot) sendChatMessage() {
 	q.Robot.TalkingPreCheck(func() {
-		if conf.RagConfInfo.Store != nil {
-			q.executeChain()
-		} else {
-			q.executeLLM()
-		}
+		q.executeLLM()
 	})
 
-}
-
-func (q *PersonalQQRobot) executeChain() {
-	msgChan := &MsgChan{
-		NormalMessageChan: make(chan *param.MsgInfo),
-	}
-	go q.Robot.ExecChain(q.Prompt, msgChan)
-
-	// send response message
-	go q.Robot.HandleUpdate(msgChan, "mp3")
 }
 
 func (q *PersonalQQRobot) executeLLM() {
