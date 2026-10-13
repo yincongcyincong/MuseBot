@@ -1694,13 +1694,17 @@ func (r *RobotInfo) smartMode() bool {
 
 	chatId, msgId, userId := r.GetChatIdAndMsgIdAndUserID()
 
+	smartModeParams := map[string]interface{}{
+		"prompt": r.Robot.getPrompt(),
+	}
+	smartModePrompt := i18n.GetMessage("smart_mode_prompt", smartModeParams) +
+		"\n\n" + i18n.GetMessage("smart_mode_task_prompt", smartModeParams)
+
 	llmClient := llm.NewLLM(
 		llm.WithChatId(chatId),
 		llm.WithUserId(userId),
 		llm.WithMsgId(msgId),
-		llm.WithContent(i18n.GetMessage("smart_mode_prompt", map[string]interface{}{
-			"prompt": r.Robot.getPrompt(),
-		})),
+		llm.WithContent(smartModePrompt),
 		llm.WithContext(r.Ctx),
 		llm.WithImages([][]byte{
 			r.Robot.getImage(),
@@ -1726,6 +1730,8 @@ func (r *RobotInfo) smartMode() bool {
 	logger.InfoCtx(r.Ctx, "smart mode result", "result", smartResult)
 
 	switch smartResult.Command {
+	case param.Task, "/" + param.Task, "$" + param.Task:
+		r.Robot.setCommand("/" + param.Task)
 	case "/cron":
 		r.cs.Token = llmClient.Cs.Token
 		err = r.InsertCron(smartResult.Cron, smartResult.Prompt)

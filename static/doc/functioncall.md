@@ -11,7 +11,6 @@ First, you'll need to create a JSON file that defines your MCP servers. Here's a
     "mcpServers": {
        "github": {
           "command": "docker",
-          "description": "Performs Git operations and integrates with GitHub to manage repositories, pull requests, issues, and workflows.",
           "args": [
              "run",
              "-i",
@@ -25,16 +24,13 @@ First, you'll need to create a JSON file that defines your MCP servers. Here's a
           }
        },
        "playwright": {
-          "description": "Simulates browser behavior for tasks like web navigation, data scraping, and automated interactions with web pages.",
           "url": "http://localhost:8931/sse"
        },
        "amap-mcp-server": {
-          "description": "Provides geographic services such as location lookup, route planning, and map navigation.",
           "url": "http://localhost:8000/mcp"
        },
        "amap-maps": {
           "command": "npx",
-          "description": "Provides geographic services such as location lookup, route planning, and map navigation.",
           "args": [
              "-y",
              "@amap/amap-maps-mcp-server"

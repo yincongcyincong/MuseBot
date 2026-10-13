@@ -134,6 +134,7 @@ func UpdateMCPConf(w http.ResponseWriter, r *http.Request) {
 	}
 
 	mcpConfigs.McpServers[name] = config
+	config.Description = ""
 
 	mcpClientConf := clients.GetOneMCPClient(name, config)
 	if mcpClientConf == nil {
@@ -258,6 +259,12 @@ func getMCPConf(ctx context.Context) (*mcpParam.McpClientGoConfig, error) {
 }
 
 func updateMCPConfFile(ctx context.Context, config *mcpParam.McpClientGoConfig) error {
+	for _, server := range config.McpServers {
+		if server != nil {
+			server.Description = ""
+		}
+	}
+
 	file, err := os.OpenFile(*conf.ToolsConfInfo.McpConfPath, os.O_RDWR|os.O_TRUNC, 0644)
 	if err != nil {
 		logger.ErrorCtx(ctx, "open mcp conf error", "err", err)

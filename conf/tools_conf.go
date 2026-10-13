@@ -3,6 +3,7 @@ package conf
 import (
 	"context"
 	"flag"
+	"fmt"
 	"os"
 	"strconv"
 	"strings"
@@ -10,14 +11,17 @@ import (
 	"time"
 
 	"github.com/cohesion-org/deepseek-go"
+	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/revrost/go-openrouter"
 	"github.com/sashabaranov/go-openai"
 	"github.com/volcengine/volcengine-go-sdk/service/arkruntime/model"
 	"github.com/yincongcyincong/MuseBot/logger"
 	"github.com/yincongcyincong/mcp-client-go/clients"
-	"github.com/yincongcyincong/mcp-client-go/utils"
+	mcputils "github.com/yincongcyincong/mcp-client-go/utils"
 	"google.golang.org/genai"
 )
+
+const BuiltinWebSearchTool = "web_search"
 
 type AgentInfo struct {
 	Description string `json:"description"`
@@ -132,6 +136,8 @@ func InitTools() {
 		}
 	}()
 
+	RegisterBuiltinTools()
+
 	mcpParams, err := clients.InitByConfFile(*ToolsConfInfo.McpConfPath)
 	if err != nil {
 		logger.Error("init mcp file fail", "err", err)
@@ -151,16 +157,47 @@ func InitTools() {
 	InitSkills()
 }
 
+func RegisterBuiltinTools() {
+	tools := []mcp.Tool{{
+		Name:        BuiltinWebSearchTool,
+		Description: "Search the public web. Use for current facts, unknown terminology, market data, documentation, prior work, and source links.",
+		InputSchema: mcp.ToolInputSchema{
+			Type: "object",
+			Properties: map[string]any{
+				"query": map[string]any{
+					"type":        "string",
+					"description": "Focused web search query",
+				},
+			},
+			Required: []string{"query"},
+		},
+	}}
+
+	TaskTools.Store(BuiltinWebSearchTool, &AgentInfo{
+		Description:     "Required first-step web research agent. Call web_search to collect facts and source links before planning or producing the final result.",
+		DeepseekTool:    mcputils.TransToolsToDPFunctionCall(tools),
+		VolTool:         mcputils.TransToolsToVolFunctionCall(tools),
+		OpenAITools:     mcputils.TransToolsToChatGPTFunctionCall(tools),
+		GeminiTools:     mcputils.TransToolsToGeminiFunctionCall(tools),
+		OpenRouterTools: mcputils.TransToolsToOpenRouterFunctionCall(tools),
+	})
+}
+
 func InsertTools(clientName string) {
+	if clientName == BuiltinWebSearchTool {
+		logger.Error("web_search is reserved by the built-in search tool")
+		return
+	}
+
 	c, err := clients.GetMCPClient(clientName)
 	if err != nil {
 		logger.Error("get client fail", "err", err)
 	} else {
-		dpTools := utils.TransToolsToDPFunctionCall(c.Tools)
-		volTools := utils.TransToolsToVolFunctionCall(c.Tools)
-		oaTools := utils.TransToolsToChatGPTFunctionCall(c.Tools)
-		gmTools := utils.TransToolsToGeminiFunctionCall(c.Tools)
-		orTools := utils.TransToolsToOpenRouterFunctionCall(c.Tools)
+		dpTools := mcputils.TransToolsToDPFunctionCall(c.Tools)
+		volTools := mcputils.TransToolsToVolFunctionCall(c.Tools)
+		oaTools := mcputils.TransToolsToChatGPTFunctionCall(c.Tools)
+		gmTools := mcputils.TransToolsToGeminiFunctionCall(c.Tools)
+		orTools := mcputils.TransToolsToOpenRouterFunctionCall(c.Tools)
 
 		if BaseConfInfo.UseTools {
 			DeepseekTools = append(DeepseekTools, dpTools...)
@@ -169,15 +206,13 @@ func InsertTools(clientName string) {
 			GeminiTools = append(GeminiTools, gmTools...)
 		}
 
-		if c.Conf.Description != "" {
-			TaskTools.Store(clientName, &AgentInfo{
-				Description:     c.Conf.Description,
-				DeepseekTool:    dpTools,
-				VolTool:         volTools,
-				GeminiTools:     gmTools,
-				OpenAITools:     oaTools,
-				OpenRouterTools: orTools,
-			})
-		}
+		TaskTools.Store(clientName, &AgentInfo{
+			Description:     fmt.Sprintf("MCP server %s exposes the function tools listed in this agent's schema.", clientName),
+			DeepseekTool:    dpTools,
+			VolTool:         volTools,
+			GeminiTools:     gmTools,
+			OpenAITools:     oaTools,
+			OpenRouterTools: orTools,
+		})
 	}
 }

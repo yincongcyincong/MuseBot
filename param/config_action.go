@@ -51,6 +51,7 @@ type ConversationConfigAction struct {
 	ID           ConversationConfigID `json:"id,omitempty"`
 	Name         string               `json:"name,omitempty"`
 	Path         string               `json:"path,omitempty"`
+	Query        string               `json:"query,omitempty"`
 	Description  string               `json:"description,omitempty"`
 	Instructions string               `json:"instructions,omitempty"`
 	Cron         string               `json:"cron,omitempty"`

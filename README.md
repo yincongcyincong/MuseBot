@@ -210,7 +210,7 @@ If you use parameter. Please use lower letter and underscore. for example: ./Mus
 | **ALLOWED_GROUP_IDS**           | Comma-separated group IDs allowed to use the bot; empty = all allowed; 0 = all banned        | -                                                      |
 | **BOT_NAME**                    | Bot name                                                                                     | MuseBot                                                |
 | **CHAT_ANY_WHERE_TOKEN**        | ChatAnyWhere platform token                                                                  | -                                                      |
-| **SMART_MODE**                  | Automatically check what you want to generate (txt/photo/video)                              | true                                                   |
+| **SMART_MODE**                  | Automatically check what you want to generate (txt/photo/video) and route multi-step tasks to `/task` | true |
 | **SEND_MCP_RES**                | send mcp result to user                                                                      | false                                                  |
 | **DEFAULT_MODEL**               | default txt model                                                                            | -                                                      |
 

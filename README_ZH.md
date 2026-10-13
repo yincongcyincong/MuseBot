@@ -199,7 +199,7 @@ docker run -d -v /home/user/data:/app/data -e TELEGRAM_BOT_TOKEN="telegram-bot-t
 | **ALLOWED_GROUP_IDS**           | 允许使用的群组 ID，逗号分隔；空=全部可用；0=全部禁用                                                       | -                     |
 | **BOT_NAME**                    | Bot 名称                                                                              | MuseBot               |
 | **CHAT_ANY_WHERE_TOKEN**        | ChatAnyWhere 平台 Token                                                               | -                     |
-| **SMART_MODE**                  | 自动检测你想生成什么样的内容                                                                      | true                  |
+| **SMART_MODE**                  | 自动检测你想生成什么样的内容，并将多步骤任务自动路由到 `/task`                                                | true                  |
 | **SEND_MCP_RES**                | 是否发送mcp的请求结果                                                                        | false                 |
 | **DEFAULT_MODEL**               | 用户默认使用的文本模型                                                                         | -                     |
 
