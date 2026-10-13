@@ -53,6 +53,12 @@ function BotMcpListPage() {
         setToast({ show: true, message, type });
     };
 
+    const removeMCPDescription = (config) => {
+        if (!config || typeof config !== "object") return config;
+        const { description: _description, ...normalizedConfig } = config;
+        return normalizedConfig;
+    };
+
     useEffect(() => {
         if (botId !== null) {
             fetchMcpServices();
@@ -89,13 +95,13 @@ function BotMcpListPage() {
 
     const handleAddPreparedService = (name, config) => {
         setSelectedPreparedService(name);
-        setPrepareEditJson(JSON.stringify(config, null, 2));
+        setPrepareEditJson(JSON.stringify(removeMCPDescription(config), null, 2));
         setPrepareTab("json");
     };
 
     const handleSubmitPreparedService = async () => {
         try {
-            const config = JSON.parse(prepareEditJson);
+            const config = removeMCPDescription(JSON.parse(prepareEditJson));
             const params = new URLSearchParams({ id: botId, name: selectedPreparedService });
 
             const res = await fetch(`/bot/mcp/update?${params.toString()}`, {
@@ -116,13 +122,13 @@ function BotMcpListPage() {
 
     const openEditModal = (svc) => {
         setEditingService(svc.name);
-        setEditJson(JSON.stringify(svc.config, null, 2));
+        setEditJson(JSON.stringify(removeMCPDescription(svc.config), null, 2));
         setShowEditModal(true);
     };
 
     const handleUpdateService = async () => {
         try {
-            const config = JSON.parse(editJson);
+            const config = removeMCPDescription(JSON.parse(editJson));
             const params = new URLSearchParams({ id: botId, name: editingService });
 
             const res = await fetch(`/bot/mcp/update?${params.toString()}`, {
@@ -228,7 +234,6 @@ function BotMcpListPage() {
                     <thead className="bg-gray-50">
                     <tr>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t("name")}</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t("description")}</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t("status")}</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t("action")}</th>
                     </tr>
@@ -237,7 +242,6 @@ function BotMcpListPage() {
                     {mcpServices.map((svc) => (
                         <tr key={svc.name} className="hover:bg-gray-50">
                             <td className="px-6 py-4 text-sm text-gray-800">{svc.name}</td>
-                            <td className="px-6 py-4 text-sm text-gray-800 whitespace-pre-line">{svc.config.description}</td>
                             <td className="px-6 py-4 text-sm text-gray-800">{svc.config.disabled ? t("disable") : t("enable")}</td>
                             <td className="px-6 py-4 text-sm space-x-3">
                                 <button onClick={() => openEditModal(svc)} className="text-blue-600 hover:underline">{t("edit")}</button>
@@ -324,7 +328,6 @@ function BotMcpListPage() {
                                 <thead className="bg-gray-50">
                                 <tr>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t("name")}</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t('description')}</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t('action')}</th>
                                 </tr>
                                 </thead>
@@ -332,7 +335,6 @@ function BotMcpListPage() {
                                 {filteredPrepareServices.map((svc) => (
                                     <tr key={svc.name} className="hover:bg-gray-50">
                                         <td className="px-6 py-4 text-sm text-gray-800">{svc.name}</td>
-                                        <td className="px-6 py-4 text-sm text-gray-800 whitespace-pre-line">{svc.config.description}</td>
                                         <td className="px-6 py-4 text-sm">
                                             <button onClick={() => handleAddPreparedService(svc.name, svc.config)} className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded">{t("add")}</button>
                                         </td>

@@ -11,7 +11,6 @@
     "mcpServers": {
        "github": {
           "command": "docker",
-          "description": "执行 Git 操作并与 GitHub 集成，用于管理仓库、拉取请求、问题和工作流。",
           "args": [
              "run",
              "-i",
@@ -25,16 +24,13 @@
           }
        },
        "playwright": {
-          "description": "模拟浏览器行为，用于网页导航、数据抓取和网页自动化交互等任务。",
           "url": "http://localhost:8931/sse"
        },
        "amap-mcp-server": {
-          "description": "提供地理服务，如位置查找、路线规划和地图导航。",
           "url": "http://localhost:8000/mcp"
        },
        "amap-maps": {
           "command": "npx",
-          "description": "提供地理服务，如位置查找、路线规划和地图导航。",
           "args": [
              "-y",
              "@amap/amap-maps-mcp-server"

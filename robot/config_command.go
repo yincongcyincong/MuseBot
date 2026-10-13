@@ -414,10 +414,11 @@ func upsertConversationMCP(action *param.ConversationConfigAction) (string, erro
 	if err := json.Unmarshal(action.Server, server); err != nil {
 		return "", fmt.Errorf("decode MCP server: %w", err)
 	}
-	if server.Description == "" || (server.Url == "" && server.Command == "") {
-		return "", fmt.Errorf("MCP description and either url or command are required")
+	if server.Url == "" && server.Command == "" {
+		return "", fmt.Errorf("MCP url or command is required")
 	}
 	config.McpServers[action.Name] = server
+	server.Description = ""
 	if err := writeMCPConfig(config); err != nil {
 		return "", err
 	}
@@ -475,6 +476,11 @@ func readMCPConfig() (*mcpParam.McpClientGoConfig, error) {
 }
 
 func writeMCPConfig(config *mcpParam.McpClientGoConfig) error {
+	for _, server := range config.McpServers {
+		if server != nil {
+			server.Description = ""
+		}
+	}
 	data, err := json.MarshalIndent(config, "", "  ")
 	if err != nil {
 		return err
@@ -495,6 +501,26 @@ func (r *RobotInfo) executeSkillAction(action *param.ConversationConfigAction) (
 	case "reload":
 		conf.InitSkills()
 		return "reloaded skills", nil
+	case "search":
+		candidates, err := conf.SearchRemoteSkills(r.Ctx, action.Query)
+		if err != nil {
+			return "", err
+		}
+		var output strings.Builder
+		output.WriteString(fmt.Sprintf("found %d remote skills:", len(candidates)))
+		for index, candidate := range candidates {
+			description := candidate.Description
+			if description == "" {
+				description = "(no description)"
+			}
+			output.WriteString(fmt.Sprintf("\n%d. %s - %s\n   %s", index+1, candidate.Name, description, candidate.Source))
+		}
+		return output.String(), nil
+	case "install":
+		if strings.TrimSpace(action.Path) != "" {
+			return conf.InstallRemoteSkill(r.Ctx, strings.TrimSpace(action.Path))
+		}
+		return conf.SearchAndInstallRemoteSkill(r.Ctx, action.Query)
 	case "set_path":
 		path := strings.TrimSpace(action.Path)
 		if path == "" {

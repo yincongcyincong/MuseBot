@@ -63,7 +63,8 @@ func (d *LLMTaskReq) ExecuteTask() error {
 		return true
 	})
 
-	prompt := i18n.GetMessage("assign_task_prompt", taskParam)
+	prompt := i18n.GetMessage("assign_task_prompt", taskParam) +
+		"\n\n" + i18n.GetMessage("web_search_task_prompt", taskParam)
 	llm := NewLLM(WithUserId(d.UserId), WithChatId(d.ChatId), WithMsgId(d.MsgId),
 		WithMessageChan(d.MessageChan), WithContent(prompt), WithHTTPMsgChan(d.HTTPMsgChan),
 		WithPerMsgLen(d.PerMsgLen), WithContext(d.Ctx), WithCS(d.Cs))

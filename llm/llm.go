@@ -451,6 +451,11 @@ func WithContentParameter(contentParameter map[string]string) Option {
 }
 
 func (l *LLM) ExecMcpReq(ctx context.Context, funcName string, property map[string]interface{}) (string, error) {
+	if funcName == conf.BuiltinWebSearchTool {
+		query, _ := property["query"].(string)
+		return utils.WebSearch(ctx, query)
+	}
+
 	mc, err := clients.GetMCPClientByToolName(funcName)
 	if err != nil {
 		logger.ErrorCtx(ctx, "get mcp fail", "err", err, "function", funcName, "argument", property)
