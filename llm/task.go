@@ -3,8 +3,10 @@ package llm
 import (
 	"context"
 	"encoding/json"
-	"errors"
-	"regexp"
+	"fmt"
+	"sort"
+	"strings"
+	"unicode/utf8"
 
 	"github.com/sashabaranov/go-openai"
 	"github.com/yincongcyincong/MuseBot/conf"
@@ -12,10 +14,7 @@ import (
 	"github.com/yincongcyincong/MuseBot/logger"
 	"github.com/yincongcyincong/MuseBot/metrics"
 	"github.com/yincongcyincong/MuseBot/param"
-)
-
-var (
-	jsonRe = regexp.MustCompile(`(?s)\{[\s\r\n]*"plan"\s*:\s*\[.*?][\s\r\n]*}`)
+	"github.com/yincongcyincong/MuseBot/utils"
 )
 
 type LLMTaskReq struct {
@@ -48,183 +47,329 @@ type TaskResult struct {
 	TaskResult string
 }
 
-// ExecuteTask execute task command
 func (d *LLMTaskReq) ExecuteTask() error {
 	logger.InfoCtx(d.Ctx, "task content", "content", d.Content)
-	taskParam := make(map[string]interface{})
-	taskParam["assign_param"] = make([]map[string]string, 0)
-	taskParam["user_task"] = d.Content
+
+	machine := newTaskStateMachine()
+	if err := machine.beginResearch(); err != nil {
+		return err
+	}
+	if err := d.runResearch(machine); err != nil {
+		logger.ErrorCtx(d.Ctx, "task research fail", "err", err)
+	}
+
+	planner, plan, err := d.planTask(machine)
+	if err != nil {
+		return err
+	}
+
+	for machine.state == TaskStatePlan {
+		if err := machine.beginExecutionLoop(); err != nil {
+			return err
+		}
+		if err := d.executePlan(machine, plan); err != nil {
+			return err
+		}
+
+		if err := machine.transition(TaskStateReflect); err != nil {
+			return err
+		}
+		plan, err = d.reflectTask(planner, machine)
+		if err != nil {
+			return err
+		}
+		if len(plan.Plan) == 0 {
+			break
+		}
+
+		if err := machine.transition(TaskStatePlan); err != nil {
+			return err
+		}
+		planOutput := formatTaskPlan(plan)
+		planner.DirectSendMsg(planOutput, false)
+		planner.LLMClient.GetMessage(openai.ChatMessageRoleAssistant, planOutput)
+	}
+
+	if err := machine.transition(TaskStateSummarize); err != nil {
+		return err
+	}
+	if err := d.summarizeTask(planner, machine); err != nil {
+		return err
+	}
+	if err := machine.finish(); err != nil {
+		return err
+	}
+	return planner.InsertOrUpdate()
+}
+
+func (d *LLMTaskReq) taskAgentParams() []map[string]string {
+	agents := make([]map[string]string, 0)
 	conf.TaskTools.Range(func(name, value any) bool {
 		tool := value.(*conf.AgentInfo)
-		taskParam["assign_param"] = append(taskParam["assign_param"].([]map[string]string), map[string]string{
+		agents = append(agents, map[string]string{
 			"tool_name": name.(string),
 			"tool_desc": tool.Description,
 		})
 		return true
 	})
-
-	prompt := i18n.GetMessage("assign_task_prompt", taskParam) +
-		"\n\n" + i18n.GetMessage("web_search_task_prompt", taskParam)
-	llm := NewLLM(WithUserId(d.UserId), WithChatId(d.ChatId), WithMsgId(d.MsgId),
-		WithMessageChan(d.MessageChan), WithContent(prompt), WithHTTPMsgChan(d.HTTPMsgChan),
-		WithPerMsgLen(d.PerMsgLen), WithContext(d.Ctx), WithCS(d.Cs))
-	llm.GetMessages(d.UserId, prompt)
-	llm.LLMClient.GetModel(llm)
-
-	metrics.APIRequestCount.WithLabelValues(llm.Model).Inc()
-	c, err := llm.LLMClient.SyncSend(d.Ctx, llm)
-	if err != nil {
-		logger.ErrorCtx(d.Ctx, "get message fail", "err", err)
-		return err
-	}
-
-	d.Token += llm.Cs.Token
-
-	matches := jsonRe.FindAllString(c, -1)
-	plans := new(TaskInfo)
-	for _, match := range matches {
-		err = json.Unmarshal([]byte(match), &plans)
-		if err != nil {
-			logger.WarnCtx(d.Ctx, "json umarshal fail", "err", err)
-		}
-	}
-
-	logger.InfoCtx(d.Ctx, "task plan", "plan", plans)
-
-	if len(plans.Plan) == 0 {
-		logger.InfoCtx(d.Ctx, "no plan created!")
-
-		finalLLM := NewLLM(WithUserId(d.UserId), WithChatId(d.ChatId), WithMsgId(d.MsgId),
-			WithMessageChan(d.MessageChan), WithContent(d.Content), WithHTTPMsgChan(d.HTTPMsgChan),
-			WithPerMsgLen(d.PerMsgLen), WithContext(d.Ctx))
-		finalLLM.LLMClient.GetMessage(openai.ChatMessageRoleUser, c)
-		finalLLM.LLMClient.GetModel(finalLLM)
-
-		metrics.APIRequestCount.WithLabelValues(finalLLM.Model).Inc()
-		err = finalLLM.LLMClient.Send(d.Ctx, finalLLM)
-		if err != nil {
-			logger.ErrorCtx(d.Ctx, "request summary fail", "err", err)
-		}
-		return err
-	}
-
-	llm.DirectSendMsg(c, false)
-	llm.LLMClient.GetMessage(openai.ChatMessageRoleAssistant, c)
-	err = d.loopTask(d.Ctx, plans, c, llm, 0)
-	if err != nil {
-		logger.ErrorCtx(d.Ctx, "loopTask fail", "err", err)
-		return err
-	}
-
-	// summary
-	summaryParam := make(map[string]interface{})
-	summaryParam["user_task"] = d.Content
-	summaryPrompt := i18n.GetMessage("summary_task_prompt", summaryParam)
-	llm.LLMClient.GetMessage(openai.ChatMessageRoleUser, summaryPrompt)
-	llm.Content = summaryPrompt
-
-	metrics.APIRequestCount.WithLabelValues(llm.Model).Inc()
-	err = llm.LLMClient.Send(d.Ctx, llm)
-	if err != nil {
-		logger.ErrorCtx(d.Ctx, "request summary fail", "err", err)
-		return err
-	}
-
-	err = llm.InsertOrUpdate()
-	if err != nil {
-		logger.ErrorCtx(d.Ctx, "insertOrUpdate fail", "err", err)
-	}
-	return err
+	sort.Slice(agents, func(left, right int) bool {
+		return agents[left]["tool_name"] < agents[right]["tool_name"]
+	})
+	return agents
 }
 
-// loopTask loop task
-func (d *LLMTaskReq) loopTask(ctx context.Context, plans *TaskInfo, lastPlan string, llm *LLM, loop int) error {
-	if loop > MostLoop {
-		return errors.New("too many loops")
+func (d *LLMTaskReq) newTaskLLM(prompt string, tool *conf.AgentInfo, streaming bool) *LLM {
+	options := []Option{
+		WithUserId(d.UserId),
+		WithChatId(d.ChatId),
+		WithMsgId(d.MsgId),
+		WithContent(prompt),
+		WithPerMsgLen(d.PerMsgLen),
+		WithContext(d.Ctx),
+		WithCS(d.Cs),
+		WithTaskTools(tool),
+	}
+	if streaming {
+		options = append(options, WithMessageChan(d.MessageChan), WithHTTPMsgChan(d.HTTPMsgChan))
 	}
 
-	completeTasks := map[string]bool{}
-	taskLLM := NewLLM(WithUserId(d.UserId), WithChatId(d.ChatId), WithMsgId(d.MsgId),
-		WithMessageChan(d.MessageChan), WithHTTPMsgChan(d.HTTPMsgChan), WithPerMsgLen(d.PerMsgLen),
-		WithContext(d.Ctx))
-	for _, plan := range plans.Plan {
-		toolInter, ok := conf.TaskTools.Load(plan.Name)
+	llm := NewLLM(options...)
+	llm.LLMClient.GetMessage(openai.ChatMessageRoleUser, prompt)
+	llm.LLMClient.GetModel(llm)
+	return llm
+}
+
+func (d *LLMTaskReq) syncTaskLLM(llm *LLM) (string, error) {
+	metrics.APIRequestCount.WithLabelValues(llm.Model).Inc()
+	content, err := llm.LLMClient.SyncSend(d.Ctx, llm)
+	if err != nil {
+		return "", err
+	}
+	if strings.TrimSpace(content) == "" {
+		return "", fmt.Errorf("task state returned an empty response")
+	}
+	return content, nil
+}
+
+func (d *LLMTaskReq) runResearch(machine *taskStateMachine) error {
+	if err := machine.requireState(TaskStateResearchQuery); err != nil {
+		return err
+	}
+	for machine.state == TaskStateResearchQuery {
+		taskParam := map[string]interface{}{
+			"user_task": d.Content,
+			"round":     machine.researchRound + 1,
+			"evidence":  strings.Join(machine.researchEvidence, "\n\n"),
+		}
+		prompt := i18n.GetMessage("task_research_prompt", taskParam)
+		llm := d.newTaskLLM(prompt, nil, false)
+		content, err := d.syncTaskLLM(llm)
+		if err != nil {
+			logger.WarnCtx(d.Ctx, "task research query failed; using fallback query", "err", err)
+			content = ""
+		}
+
+		queries := normalizeTaskResearchPlan(content, d.fallbackSearchQuery())
+		if err := machine.transition(TaskStateResearchObserve); err != nil {
+			return err
+		}
+
+		for _, query := range queries {
+			response, searchErr := utils.WebSearch(d.Ctx, query)
+			if searchErr != nil {
+				machine.addResearchEvidence(fmt.Sprintf("web_search(%q) failed: %v", query, searchErr))
+				continue
+			}
+			machine.addResearchEvidence(formatWebSearchEvidence(query, response))
+		}
+
+		if err := machine.transition(TaskStateResearchReview); err != nil {
+			return err
+		}
+		machine.researchRound++
+		if err := machine.beginNextResearchRound(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (d *LLMTaskReq) fallbackSearchQuery() string {
+	query := strings.TrimSpace(d.Content)
+	if utf8.RuneCountInString(query) <= taskMaxQueryRunes {
+		return query
+	}
+	runes := []rune(query)
+	return string(runes[:taskMaxQueryRunes])
+}
+
+func (m *taskStateMachine) addResearchEvidence(evidence string) {
+	evidence = strings.TrimSpace(evidence)
+	if evidence == "" {
+		return
+	}
+	m.researchEvidence = append(m.researchEvidence, evidence)
+
+	total := 0
+	kept := make([]string, 0, len(m.researchEvidence))
+	for index := len(m.researchEvidence) - 1; index >= 0; index-- {
+		item := m.researchEvidence[index]
+		if total+len(item) > taskMaxObservationLen {
+			break
+		}
+		total += len(item)
+		kept = append([]string{item}, kept...)
+	}
+	m.researchEvidence = kept
+}
+
+func formatWebSearchEvidence(query, response string) string {
+	var results utils.WebSearchResponse
+	if err := json.Unmarshal([]byte(response), &results); err != nil {
+		return fmt.Sprintf("web_search(%q):\n%s", query, response)
+	}
+
+	var output strings.Builder
+	fmt.Fprintf(&output, "web_search(%q):", query)
+	for _, result := range results.Results {
+		fmt.Fprintf(&output, "\n- %s\n  %s", result.Title, result.URL)
+		if strings.TrimSpace(result.Snippet) != "" {
+			fmt.Fprintf(&output, "\n  %s", result.Snippet)
+		}
+	}
+	return output.String()
+}
+
+func (d *LLMTaskReq) planTask(machine *taskStateMachine) (*LLM, *TaskInfo, error) {
+	if err := machine.requireState(TaskStatePlan); err != nil {
+		return nil, nil, err
+	}
+	var lastErr error
+	for attempt := 0; attempt < 2; attempt++ {
+		taskParam := map[string]interface{}{
+			"user_task":    d.Content,
+			"evidence":     strings.Join(machine.researchEvidence, "\n\n"),
+			"assign_param": d.taskAgentParams(),
+		}
+		prompt := i18n.GetMessage("task_state_plan_prompt", taskParam)
+		llm := d.newTaskLLM(prompt, nil, false)
+		content, err := d.syncTaskLLM(llm)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		plan := new(TaskInfo)
+		if err := extractTaskJSON(content, plan); err == nil {
+			err = validateTaskPlan(plan, true)
+		}
+		if err == nil {
+			planOutput := formatTaskPlan(plan)
+			llm.DirectSendMsg(planOutput, false)
+			llm.LLMClient.GetMessage(openai.ChatMessageRoleAssistant, planOutput)
+			return llm, plan, nil
+		}
+		lastErr = err
+		logger.WarnCtx(d.Ctx, "invalid task plan", "attempt", attempt+1, "err", err)
+	}
+	return nil, nil, fmt.Errorf("invalid task plan: %w", lastErr)
+}
+
+func (d *LLMTaskReq) executePlan(machine *taskStateMachine, plan *TaskInfo) error {
+	if err := machine.requireState(TaskStateExecute); err != nil {
+		return err
+	}
+	for _, task := range plan.Plan {
+		toolValue, loaded := conf.TaskTools.Load(task.Name)
 		var tool *conf.AgentInfo
-		if ok {
-			tool = toolInter.(*conf.AgentInfo)
+		if loaded {
+			tool = toolValue.(*conf.AgentInfo)
 		}
-		WithTaskTools(tool)(taskLLM)
-		taskDescription := plan.Description
+
+		taskParam := map[string]interface{}{
+			"user_task":        d.Content,
+			"agent_name":       task.Name,
+			"task_description": task.Description,
+			"evidence":         strings.Join(machine.researchEvidence, "\n\n"),
+			"completed_tasks":  formatTaskResults(machine.completedResults),
+		}
+		prompt := i18n.GetMessage("task_state_execute_prompt", taskParam)
 		if tool != nil && tool.Instructions != "" {
-			taskDescription = tool.Instructions + "\n\n# Current Task\n\n" + plan.Description
+			prompt = tool.Instructions + "\n\n" + prompt
 		}
-		taskLLM.LLMClient.GetMessage(openai.ChatMessageRoleUser, taskDescription)
-		taskLLM.Content = taskDescription
-		taskLLM.LLMClient.GetModel(taskLLM)
-		logger.InfoCtx(d.Ctx, "execute task", "task", plan.Name, "task desc", plan.Description)
-		err := d.requestTask(ctx, taskLLM, plan)
+
+		llm := d.newTaskLLM(prompt, tool, true)
+		result, err := d.syncTaskLLM(llm)
 		if err != nil {
 			return err
 		}
-		d.Token += taskLLM.Cs.Token
-		completeTasks[plan.Description] = true
+		d.Token += llm.Cs.Token
+		machine.completedResults = append(machine.completedResults, TaskResult{
+			TaskName:   task.Name,
+			TaskResult: result,
+		})
 	}
-
-	llm.LLMClient.AppendMessages(taskLLM.LLMClient)
-
-	taskParam := map[string]interface{}{
-		"user_task":      d.Content,
-		"complete_tasks": completeTasks,
-		"last_plan":      lastPlan,
-	}
-
-	llm.LLMClient.GetMessage(openai.ChatMessageRoleUser, i18n.GetMessage("loop_task_prompt", taskParam))
-	llm.LLMClient.GetModel(llm)
-
-	metrics.APIRequestCount.WithLabelValues(llm.Model).Inc()
-	c, err := llm.LLMClient.SyncSend(ctx, llm)
-	if err != nil {
-		logger.ErrorCtx(d.Ctx, "ChatCompletionStream error", "err", err)
-		return err
-	}
-
-	if len(c) == 0 {
-		logger.ErrorCtx(d.Ctx, "response is emtpy", "response", c)
-		return errors.New("response is emtpy")
-	}
-
-	d.Token += llm.Cs.Token
-
-	matches := jsonRe.FindAllString(c, -1)
-	plans = new(TaskInfo)
-	for _, match := range matches {
-		err := json.Unmarshal([]byte(match), &plans)
-		if err != nil {
-			logger.ErrorCtx(d.Ctx, "json umarshal fail", "err", err)
-		}
-	}
-
-	llm.LLMClient.GetMessage(openai.ChatMessageRoleAssistant, c)
-
-	if len(plans.Plan) == 0 {
-		return nil
-	}
-
-	return d.loopTask(ctx, plans, c, llm, loop+1)
+	return nil
 }
 
-// requestTask request task
-func (d *LLMTaskReq) requestTask(ctx context.Context, llm *LLM, plan *Task) error {
-	metrics.APIRequestCount.WithLabelValues(llm.Model).Inc()
-	c, err := llm.LLMClient.SyncSend(ctx, llm)
+func (d *LLMTaskReq) reflectTask(planner *LLM, machine *taskStateMachine) (*TaskInfo, error) {
+	if err := machine.requireState(TaskStateReflect); err != nil {
+		return nil, err
+	}
+	taskParam := map[string]interface{}{
+		"user_task":       d.Content,
+		"evidence":        strings.Join(machine.researchEvidence, "\n\n"),
+		"completed_tasks": formatTaskResults(machine.completedResults),
+		"execution_loop":  machine.executionLoop,
+	}
+	prompt := i18n.GetMessage("task_state_reflect_prompt", taskParam)
+	planner.LLMClient.GetMessage(openai.ChatMessageRoleUser, prompt)
+	planner.Content = prompt
+	planner.LLMClient.GetModel(planner)
+
+	content, err := d.syncTaskLLM(planner)
 	if err != nil {
-		logger.ErrorCtx(d.Ctx, "ChatCompletionStream error", "err", err)
+		return nil, err
+	}
+	plan := new(TaskInfo)
+	if err := extractTaskJSON(content, plan); err != nil {
+		return nil, err
+	}
+	if err := validateTaskPlan(plan, false); err != nil {
+		return nil, err
+	}
+	if len(plan.Plan) > 0 {
+		planner.LLMClient.GetMessage(openai.ChatMessageRoleAssistant, formatTaskPlan(plan))
+	} else {
+		planner.LLMClient.GetMessage(openai.ChatMessageRoleAssistant, content)
+	}
+	return plan, nil
+}
+
+func (d *LLMTaskReq) summarizeTask(planner *LLM, machine *taskStateMachine) error {
+	if err := machine.requireState(TaskStateSummarize); err != nil {
 		return err
 	}
+	taskParam := map[string]interface{}{
+		"user_task":       d.Content,
+		"evidence":        strings.Join(machine.researchEvidence, "\n\n"),
+		"completed_tasks": formatTaskResults(machine.completedResults),
+	}
+	prompt := i18n.GetMessage("task_state_summary_prompt", taskParam)
+	planner.LLMClient.GetMessage(openai.ChatMessageRoleUser, prompt)
+	planner.Content = prompt
+	planner.LLMClient.GetModel(planner)
 
-	// llm response merge into msg
-	c += "\n\n" + plan.Name + " is completed"
-	llm.LLMClient.GetMessage(openai.ChatMessageRoleAssistant, c)
+	metrics.APIRequestCount.WithLabelValues(planner.Model).Inc()
+	return planner.LLMClient.Send(d.Ctx, planner)
+}
 
-	return nil
+func formatTaskResults(results []TaskResult) string {
+	if len(results) == 0 {
+		return "(none)"
+	}
+	var output strings.Builder
+	for _, result := range results {
+		fmt.Fprintf(&output, "- [%s]\n%s\n", result.TaskName, result.TaskResult)
+	}
+	return strings.TrimRight(output.String(), "\n")
 }

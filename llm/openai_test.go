@@ -63,6 +63,12 @@ func TestOpenAIReq_AppendMessages(t *testing.T) {
 }
 
 func TestOpenAIReq_GetModel_Default(t *testing.T) {
+	previousType := conf.BaseConfInfo.Type
+	conf.BaseConfInfo.Type = param.OpenAi
+	t.Cleanup(func() {
+		conf.BaseConfInfo.Type = previousType
+	})
+
 	req := &OpenAIReq{}
 	ctx := context.WithValue(context.Background(), "user_info", &db.User{
 		LLMConfig:    `{"type":"openai"}`,
@@ -76,25 +82,13 @@ func TestOpenAIReq_GetModel_Default(t *testing.T) {
 }
 
 func TestRequestToolsCall_InvalidJSON(t *testing.T) {
-	req := &OpenAIReq{
-		ToolCall: []openai.ToolCall{},
-	}
+	tools := &LLMToolState{}
 
-	streamChoice := openai.ChatCompletionStreamChoice{
-		Delta: openai.ChatCompletionStreamChoiceDelta{
-			ToolCalls: []openai.ToolCall{
-				{
-					ID:   "tool-id",
-					Type: "function",
-					Function: openai.FunctionCall{
-						Name:      "mockTool",
-						Arguments: "{invalid-json",
-					},
-				},
-			},
-		},
-	}
-
-	err := req.RequestToolsCall(context.Background(), streamChoice, nil)
+	err := tools.observe(LLMToolCall{
+		ID:        "tool-id",
+		Name:      "mockTool",
+		Type:      "function",
+		Arguments: "{invalid-json",
+	})
 	assert.Equal(t, ToolsJsonErr, err)
 }
