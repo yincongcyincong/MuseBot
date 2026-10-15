@@ -173,17 +173,9 @@ func NewLLM(opts ...Option) *LLM {
 
 	switch utils.GetTxtType(db.GetCtxUserInfo(l.Ctx).LLMConfigRaw) {
 	case param.Ollama:
-		l.LLMClient = &OllamaReq{
-			ToolCall:           []godeepseek.ToolCall{},
-			ToolMessage:        []godeepseek.ChatCompletionMessage{},
-			CurrentToolMessage: []godeepseek.ChatCompletionMessage{},
-		}
+		l.LLMClient = &OllamaReq{}
 	default:
-		l.LLMClient = &OpenAIReq{
-			ToolCall:           []openai.ToolCall{},
-			ToolMessage:        []openai.ChatCompletionMessage{},
-			CurrentToolMessage: []openai.ChatCompletionMessage{},
-		}
+		l.LLMClient = &OpenAIReq{}
 	}
 
 	return l

@@ -4,14 +4,11 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"os"
-	"strings"
 	"time"
-	"unicode"
 
 	"github.com/cohesion-org/deepseek-go"
 	"github.com/cohesion-org/deepseek-go/constants"
@@ -26,10 +23,7 @@ import (
 )
 
 type OpenAIReq struct {
-	ToolCall           []openai.ToolCall
-	ToolMessage        []openai.ChatCompletionMessage
-	CurrentToolMessage []openai.ChatCompletionMessage
-
+	Tools      LLMToolState
 	OpenAIMsgs []openai.ChatCompletionMessage
 }
 
@@ -104,92 +98,56 @@ func (d *OpenAIReq) Send(ctx context.Context, l *LLM) error {
 		Tools:    l.OpenAITools,
 	}
 
-	if conf.BaseConfInfo.LLMOptionParam {
-		request.MaxTokens = conf.LLMConfInfo.MaxTokens
-		request.TopP = float32(conf.LLMConfInfo.TopP)
-		request.FrequencyPenalty = float32(conf.LLMConfInfo.FrequencyPenalty)
-		request.TopLogProbs = conf.LLMConfInfo.TopLogProbs
-		request.LogProbs = conf.LLMConfInfo.LogProbs
-		request.Stop = conf.LLMConfInfo.Stop
-		request.PresencePenalty = float32(conf.LLMConfInfo.PresencePenalty)
-		request.Temperature = float32(conf.LLMConfInfo.Temperature)
-	}
+	currentLLMSamplingOptions().applyToOpenAI(&request)
 
-	var stream *openai.ChatCompletionStream
-	var err error
-	for i := 0; i < conf.BaseConfInfo.LLMRetryTimes; i++ {
-		stream, err = client.CreateChatCompletionStream(ctx, request)
-		if err != nil {
-			logger.ErrorCtx(l.Ctx, "ChatCompletionStream error", "updateMsgID", l.MsgId, "err", err)
-			continue
-		}
-		break
-	}
-
-	if err != nil || stream == nil {
-		logger.ErrorCtx(l.Ctx, "ChatCompletionStream error", "updateMsgID", l.MsgId, "err", err, "stream", stream)
+	stream, err := retryLLMRequest(l, func() (*openai.ChatCompletionStream, error) {
+		return client.CreateChatCompletionStream(ctx, request)
+	})
+	if err != nil {
+		logger.ErrorCtx(l.Ctx, "ChatCompletionStream error", "updateMsgID", l.MsgId, "err", err)
 		return err
 	}
 	defer stream.Close()
-	msgInfoContent := &param.MsgInfo{
-		SendLen: FirstSendLen,
-	}
 
 	metrics.APIRequestDuration.WithLabelValues(l.Model).Observe(time.Since(start).Seconds())
 
-	hasTools := false
-	for {
+	msgInfoContent, hasTools, err := receiveLLMStream(ctx, l, func() (LLMStreamChunk, error) {
 		response, err := stream.Recv()
-		if errors.Is(err, io.EOF) {
-			logger.InfoCtx(l.Ctx, "Stream finished", "updateMsgID", l.MsgId)
-			break
-		}
 		if err != nil {
-			logger.WarnCtx(l.Ctx, "Stream error", "updateMsgID", l.MsgId, "err", err)
-			return err
+			return LLMStreamChunk{}, err
 		}
+		chunk := LLMStreamChunk{}
 		for _, choice := range response.Choices {
-			if len(choice.Delta.ToolCalls) > 0 {
-				hasTools = true
-				err = d.RequestToolsCall(ctx, choice, l)
-				if err != nil {
-					if errors.Is(err, ToolsJsonErr) {
-						continue
-					} else {
-						logger.ErrorCtx(l.Ctx, "requestToolsCall error", "updateMsgID", l.MsgId, "err", err)
-					}
-				}
-			}
-
-			if !hasTools {
-				msgInfoContent = l.SendMsg(msgInfoContent, choice.Delta.Content)
+			chunk.Content += choice.Delta.Content
+			for _, toolCall := range choice.Delta.ToolCalls {
+				chunk.ToolCalls = append(chunk.ToolCalls, LLMToolCall{
+					ID:        toolCall.ID,
+					Name:      toolCall.Function.Name,
+					Type:      string(toolCall.Type),
+					Arguments: toolCall.Function.Arguments,
+				})
 			}
 		}
-
 		if response.Usage != nil {
-			l.Cs.Token += response.Usage.TotalTokens
+			chunk.Usage = response.Usage.TotalTokens
+			chunk.HasUsage = true
 		}
+		return chunk, nil
+	}, &d.Tools)
+	if err != nil {
+		return err
 	}
 
-	if l.MessageChan != nil && len(strings.TrimRightFunc(msgInfoContent.Content, unicode.IsSpace)) > 0 || (hasTools && conf.BaseConfInfo.SendMcpRes) {
-		if conf.BaseConfInfo.Powered != "" {
-			msgInfoContent.Content = msgInfoContent.Content + "\n\n" + conf.BaseConfInfo.Powered
+	sendLLMStreamOutput(l, msgInfoContent, hasTools)
+	if hasTools && len(d.Tools.Results) != 0 {
+		assistantMessage := openai.ChatCompletionMessage{
+			Role:      openai.ChatMessageRoleAssistant,
+			Content:   l.WholeContent,
+			ToolCalls: openAIToolCalls(d.Tools.Calls),
 		}
-		l.MessageChan <- msgInfoContent
-	}
-	if hasTools && len(d.CurrentToolMessage) != 0 {
-		d.CurrentToolMessage = append([]openai.ChatCompletionMessage{
-			{
-				Role:      deepseek.ChatMessageRoleAssistant,
-				Content:   l.WholeContent,
-				ToolCalls: d.ToolCall,
-			},
-		}, d.CurrentToolMessage...)
-
-		d.ToolMessage = append(d.ToolMessage, d.CurrentToolMessage...)
-		d.OpenAIMsgs = append(d.OpenAIMsgs, d.CurrentToolMessage...)
-		d.CurrentToolMessage = make([]openai.ChatCompletionMessage, 0)
-		d.ToolCall = make([]openai.ToolCall, 0)
+		d.OpenAIMsgs = append(d.OpenAIMsgs, assistantMessage)
+		d.OpenAIMsgs = append(d.OpenAIMsgs, openAIToolMessages(d.Tools.Results)...)
+		d.Tools.reset()
 		return d.Send(ctx, l)
 	}
 
@@ -272,28 +230,11 @@ func (d *OpenAIReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 		Messages: d.OpenAIMsgs,
 	}
 
-	if conf.BaseConfInfo.LLMOptionParam {
-		request.MaxTokens = conf.LLMConfInfo.MaxTokens
-		request.TopP = float32(conf.LLMConfInfo.TopP)
-		request.FrequencyPenalty = float32(conf.LLMConfInfo.FrequencyPenalty)
-		request.TopLogProbs = conf.LLMConfInfo.TopLogProbs
-		request.LogProbs = conf.LLMConfInfo.LogProbs
-		request.Stop = conf.LLMConfInfo.Stop
-		request.PresencePenalty = float32(conf.LLMConfInfo.PresencePenalty)
-		request.Temperature = float32(conf.LLMConfInfo.Temperature)
-	}
+	currentLLMSamplingOptions().applyToOpenAI(&request)
 
-	var response openai.ChatCompletionResponse
-	var err error
-	for i := 0; i < conf.BaseConfInfo.LLMRetryTimes; i++ {
-		response, err = client.CreateChatCompletion(ctx, request)
-		if err != nil {
-			time.Sleep(time.Duration(conf.BaseConfInfo.LLMRetryInterval) * time.Millisecond)
-			continue
-		}
-		break
-	}
-
+	response, err := retryLLMRequest(l, func() (openai.ChatCompletionResponse, error) {
+		return client.CreateChatCompletion(ctx, request)
+	})
 	if err != nil {
 		logger.ErrorCtx(l.Ctx, "ChatCompletionStream error", "updateMsgID", l.MsgId, "err", err)
 		return "", err
@@ -308,79 +249,58 @@ func (d *OpenAIReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 
 	l.Cs.Token += response.Usage.TotalTokens
 	if len(response.Choices[0].Message.ToolCalls) > 0 {
+		toolCalls := openAIStreamToolCalls(response.Choices[0].Message.ToolCalls)
 		d.GetMessage(openai.ChatMessageRoleAssistant, "")
 		d.OpenAIMsgs[len(d.OpenAIMsgs)-1].ToolCalls = response.Choices[0].Message.ToolCalls
-		d.requestOneToolsCall(ctx, response.Choices[0].Message.ToolCalls, l)
+		if err := d.Tools.observeComplete(ctx, l, toolCalls); err != nil {
+			return "", err
+		}
+		d.OpenAIMsgs = append(d.OpenAIMsgs, openAIToolMessages(d.Tools.Results)...)
+		d.Tools.reset()
 		return d.SyncSend(ctx, l)
 	}
 
 	return response.Choices[0].Message.Content, nil
 }
 
-func (d *OpenAIReq) requestOneToolsCall(ctx context.Context, toolsCall []openai.ToolCall, l *LLM) {
-	for _, tool := range toolsCall {
-		property := make(map[string]interface{})
-		err := json.Unmarshal([]byte(tool.Function.Arguments), &property)
-		if err != nil {
-			return
-		}
-
-		toolsData, err := l.ExecMcpReq(ctx, tool.Function.Name, property)
-		if err != nil {
-			logger.WarnCtx(l.Ctx, "exec tools fail", "err", err, "toolCall", tool)
-			return
-		}
-
-		d.OpenAIMsgs = append(d.OpenAIMsgs, openai.ChatCompletionMessage{
-			Role:       constants.ChatMessageRoleTool,
-			Content:    toolsData,
-			ToolCallID: tool.ID,
+func openAIToolCalls(calls []LLMToolCall) []openai.ToolCall {
+	toolCalls := make([]openai.ToolCall, 0, len(calls))
+	for _, call := range calls {
+		toolCalls = append(toolCalls, openai.ToolCall{
+			ID:   call.ID,
+			Type: openai.ToolType(call.Type),
+			Function: openai.FunctionCall{
+				Name:      call.Name,
+				Arguments: call.Arguments,
+			},
 		})
 	}
+	return toolCalls
 }
 
-func (d *OpenAIReq) RequestToolsCall(ctx context.Context, choice openai.ChatCompletionStreamChoice, l *LLM) error {
-	for _, toolCall := range choice.Delta.ToolCalls {
-		property := make(map[string]interface{})
-
-		if toolCall.Function.Name != "" {
-			d.ToolCall = append(d.ToolCall, toolCall)
-			d.ToolCall[len(d.ToolCall)-1].Function.Name = toolCall.Function.Name
-		}
-
-		if toolCall.ID != "" {
-			d.ToolCall[len(d.ToolCall)-1].ID = toolCall.ID
-		}
-
-		if toolCall.Type != "" {
-			d.ToolCall[len(d.ToolCall)-1].Type = toolCall.Type
-		}
-
-		if toolCall.Function.Arguments != "" && toolCall.Function.Name == "" {
-			d.ToolCall[len(d.ToolCall)-1].Function.Arguments += toolCall.Function.Arguments
-		}
-
-		err := json.Unmarshal([]byte(d.ToolCall[len(d.ToolCall)-1].Function.Arguments), &property)
-		if err != nil {
-			return ToolsJsonErr
-		}
-
-		tool := d.ToolCall[len(d.ToolCall)-1]
-
-		toolsData, err := l.ExecMcpReq(ctx, tool.Function.Name, property)
-		if err != nil {
-			logger.ErrorCtx(ctx, "Error executing MCP request", "toolId", toolCall.ID, "err", err)
-			return err
-		}
-		d.CurrentToolMessage = append(d.CurrentToolMessage, openai.ChatCompletionMessage{
-			Role:       constants.ChatMessageRoleTool,
-			Content:    toolsData,
-			ToolCallID: tool.ID,
+func openAIStreamToolCalls(calls []openai.ToolCall) []LLMToolCall {
+	toolCalls := make([]LLMToolCall, 0, len(calls))
+	for _, call := range calls {
+		toolCalls = append(toolCalls, LLMToolCall{
+			ID:        call.ID,
+			Name:      call.Function.Name,
+			Type:      string(call.Type),
+			Arguments: call.Function.Arguments,
 		})
 	}
+	return toolCalls
+}
 
-	return nil
-
+func openAIToolMessages(results []LLMToolResult) []openai.ChatCompletionMessage {
+	messages := make([]openai.ChatCompletionMessage, 0, len(results))
+	for _, result := range results {
+		messages = append(messages, openai.ChatCompletionMessage{
+			Role:       constants.ChatMessageRoleTool,
+			Content:    result.Content,
+			ToolCallID: result.ID,
+		})
+	}
+	return messages
 }
 
 // GenerateOpenAIImg generate image
