@@ -83,7 +83,7 @@ func GetVideoType(llmConf *param.LLMConfig) string {
 
 func GetTTSType(llmConf *param.LLMConfig) string {
 	if llmConf == nil {
-		return conf.BaseConfInfo.MediaType
+		return conf.AudioConfInfo.TTSType
 	}
 
 	aType := GetAvailTTSType()
@@ -97,7 +97,7 @@ func GetTTSType(llmConf *param.LLMConfig) string {
 		return aType[0]
 	}
 
-	return conf.BaseConfInfo.MediaType
+	return conf.AudioConfInfo.TTSType
 }
 
 func GetImgModel(t string) string {
@@ -272,7 +272,8 @@ func GetAvailTTSType() []string {
 	if conf.BaseConfInfo.AliyunToken != "" {
 		res = append(res, param.Aliyun)
 	}
-	if conf.BaseConfInfo.VolcAK != "" {
+	// VolTTS authenticates with the audio app credentials, not VolcAK or VolToken
+	if conf.AudioConfInfo.VolAudioAppID != "" && conf.AudioConfInfo.VolAudioToken != "" {
 		res = append(res, param.Vol)
 	}
 	if conf.BaseConfInfo.OpenAIToken != "" {
@@ -297,7 +298,8 @@ func GetAvailRecType() []string {
 	if conf.BaseConfInfo.AI302Token != "" {
 		res = append(res, param.AI302)
 	}
-	if conf.BaseConfInfo.VolToken != "" {
+	// Vol speech recognition authenticates with the audio app credentials, not VolToken
+	if conf.AudioConfInfo.VolAudioAppID != "" && conf.AudioConfInfo.VolAudioToken != "" {
 		res = append(res, param.Vol)
 	}
 

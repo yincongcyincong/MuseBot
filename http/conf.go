@@ -174,6 +174,7 @@ func DeleteMCPConf(w http.ResponseWriter, r *http.Request) {
 
 	delete(mcpConfigs.McpServers, name)
 	conf.TaskTools.Delete(name)
+	conf.RebuildChatToolSets()
 
 	err = updateMCPConfFile(ctx, mcpConfigs)
 	if err != nil {
@@ -201,6 +202,7 @@ func DisableMCPConf(w http.ResponseWriter, r *http.Request) {
 			if mcpName == name {
 				client.Disabled = true
 				conf.TaskTools.Delete(name)
+				conf.RebuildChatToolSets()
 				err = clients.RemoveMCPClient(name)
 				if err != nil {
 					logger.ErrorCtx(ctx, "remove mcp client error", "err", err)
@@ -305,13 +307,18 @@ func handleSpecialData(updateConfParam *UpdateConfParam) {
 	switch updateConfParam.Key {
 	case "allowed_user_ids", "allowed_group_ids", "admin_user_ids":
 		ids := strings.Split(updateConfParam.Value.(string), ",")
-		idMap := make(map[int64]bool)
+		// the whitelist fields are map[string]bool, so the value must match that
+		// type or SetStructFieldByJSONTag rejects the update
+		idMap := make(map[string]bool)
 		for _, idStr := range ids {
-			id, err := strconv.Atoi(idStr)
-			if err != nil {
+			idStr = strings.TrimSpace(idStr)
+			if idStr == "" {
 				continue
 			}
-			idMap[int64(id)] = true
+			if _, err := strconv.Atoi(idStr); err != nil {
+				continue
+			}
+			idMap[idStr] = true
 		}
 		updateConfParam.Value = idMap
 	case "stop":

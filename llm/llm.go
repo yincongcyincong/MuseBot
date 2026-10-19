@@ -66,6 +66,11 @@ type LLM struct {
 	LoopNum      int
 
 	ToolApprovals bool
+
+	// ConfigExecutor runs MuseBot configuration actions (config/mcp/skill/
+	// cron/command/file) from inside the /task workflow. It is injected by the
+	// robot layer to avoid an llm -> robot import cycle.
+	ConfigExecutor func(action *param.ConversationConfigAction) (string, error)
 }
 
 type LLMClient interface {
@@ -225,7 +230,11 @@ func (l *LLM) SendMsg(msgInfoContent *param.MsgInfo, content string) *param.MsgI
 		return msgInfoContent
 	} else {
 		l.WholeContent += content
-		l.HTTPMsgChan <- content
+		// HTTPMsgChan may be nil when no consumer is attached (e.g. the task
+		// planner); sending on a nil channel would block forever
+		if l.HTTPMsgChan != nil {
+			l.HTTPMsgChan <- content
+		}
 		return nil
 	}
 }
@@ -438,6 +447,12 @@ func WithToolApprovals(enabled bool) Option {
 	}
 }
 
+func WithConfigExecutor(executor func(action *param.ConversationConfigAction) (string, error)) Option {
+	return func(p *LLM) {
+		p.ConfigExecutor = executor
+	}
+}
+
 func WithContext(ctx context.Context) Option {
 	return func(p *LLM) {
 		p.Ctx = ctx
@@ -454,6 +469,9 @@ func (l *LLM) ExecMcpReq(ctx context.Context, funcName string, property map[stri
 	if funcName == conf.BuiltinWebSearchTool {
 		query, _ := property["query"].(string)
 		return utils.WebSearch(ctx, query)
+	}
+	if funcName == conf.BuiltinConfigTool {
+		return l.executeTaskConfigTool(ctx, property)
 	}
 	if l.ToolApprovals && (funcName == conf.BuiltinFileReadTool || funcName == conf.BuiltinFileWriteTool) {
 		return l.executeTaskFileTool(ctx, funcName, property)

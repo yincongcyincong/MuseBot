@@ -10,7 +10,7 @@ provides context-aware responses, and supports multiple models for diverse inter
 To start the management platform, execute the following command:
 
 ```bash
-./admin -db_type=sqlite3 -db_conf=./data/telegram_admin_bot.db -session_key=telegram_bot_session_key
+./admin -db_type=sqlite3 -db_conf=./data/telegram_admin_bot.db
 ```
 
 ### Command Parameters
@@ -19,7 +19,7 @@ To start the management platform, execute the following command:
 |:-----------------|:-------------------------------------------------------------------------------------------------------------------------------------------|:-------------------------------------------------------------------|
 | **DB\_TYPE**     | Database type: `sqlite3` / `mysql`                                                                                                         | `sqlite3` / `mysql`                                                |
 | **DB\_CONF**     | Database configuration: `./data/telegram_admin_bot.db` or `root:admin@tcp(127.0.0.1:3306)/dbname?charset=utf8mb4&parseTime=True&loc=Local` | `./data/telegram_admin_bot.db`                                     |
-| **SESSION\_KEY** | Specifies the key used for session management.                                                                                             | `telegram_bot_session_key` (A string used to encrypt session data) |
+| **SESSION\_KEY** | Secret key used to sign session cookies. Set your own random value; when empty a random key is generated and persisted to `data/admin_session_key` (permission 0600) | auto-generated |
 | **ADMIN\_PORT**  | port for admin platform                                                                                                                    | `18080`                                                            |
 
 -----
@@ -31,12 +31,26 @@ To start the management platform, execute the following command:
 Access the management platform's login page.
 ![image](https://github.com/user-attachments/assets/f6bf8ae6-4c0e-44d9-9115-7e744fc20dc3)
 
-### Default Account
+### Initial Account
 
-Upon first launch, you can log in using the following default credentials:
+There is no default password anymore. On first launch a random password for the
+`admin` account is generated and printed **once** in the admin log:
 
-* **Username:** `admin`
-* **Password:** `admin`
+```
+initial admin account created; password is shown ONCE, change it after first login  username=admin password=xxxxxxxxxxxx
+```
+
+Change it after logging in (Admin Page -> update password).
+
+Notes for upgrades from older versions:
+
+* Passwords are now stored as bcrypt hashes. Old unsalted MD5 passwords still
+  work and are transparently re-hashed on your next successful login.
+* If the account still used the public default `admin`/`admin`, its password is
+  reset on first startup after the upgrade and the new one is printed in the
+  admin log.
+* If you never set `SESSION_KEY`, a random key is generated and saved to
+  `data/admin_session_key`, invalidating existing login sessions once.
 
 -----
 

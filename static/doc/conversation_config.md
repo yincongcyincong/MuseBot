@@ -1,21 +1,23 @@
 # Conversation Configuration
 
-Administrators can configure MuseBot by talking to it directly:
+Configuration requests run inside the unified `/task` workflow. Administrators
+send the request to `/task` directly, or enable smart mode (`SMART_MODE=true`)
+and phrase it naturally—the classifier routes system requests to `/task`
+automatically:
 
 ```text
-Enable smart mode.
-Add an MCP server named weather, URL https://example.com/mcp, description "Query weather data".
-Reload skills.
-Create a skill named release_notes for writing release notes; instructions: write concise user-facing release notes.
-Create a cron at 08:00 every day with prompt "summarize AI news".
-Run git status.
-List the data directory.
-Read notes/a.md.
-Change old to new in doc.md.
-Move a.md to archive/a.md.
+/task Enable smart mode.
+/task Add an MCP server named weather, URL https://example.com/mcp, description "Query weather data".
+/task Reload skills.
+/task Create a skill named release_notes for writing release notes; instructions: write concise user-facing release notes.
+/task Create a cron at 08:00 every day with prompt "summarize AI news".
+/task Run git status.
+/task List the data directory.
 ```
 
-MuseBot first detects system intent from ordinary messages. Confirmed system requests are executed directly; other messages continue through the normal chat and smart-mode flows. Concept questions, hypothetical requests, and risk discussions do not trigger execution.
+Inside `/task`, the planner assigns the built-in `bot_config` agent, which
+calls the `bot_config` tool with a validated action. MuseBot executes the
+action locally and reports each result as part of the task output.
 
 ## Access Control
 
@@ -62,4 +64,7 @@ export FILE_ROOT_PATH=/path/to/agent-files
 - Commands: run an allowlisted command and return truncated output.
 - Files: list, read, write, exact-text edit, create directories, delete, and move.
 
-Intent detection uses a lightweight LLM classifier followed by a constrained JSON action planner. MuseBot validates and executes those actions locally, then reports each result.
+Configuration actions are part of the `/task` multi-agent workflow: the task
+planner sees the `bot_config` agent, the assigned sub-agent emits a constrained
+JSON action, and MuseBot validates and executes it locally before reporting
+the result.

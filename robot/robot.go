@@ -151,9 +151,6 @@ func (r *RobotInfo) Exec() {
 	}
 
 	if r.AddUserInfo() && r.Robot.checkValid() {
-		if r.tryConversationConfig() {
-			return
-		}
 		if r.smartMode() {
 			r.Robot.requestLLM(r.Robot.getMsgContent())
 		}
@@ -1027,7 +1024,7 @@ func (r *RobotInfo) changeType(t string) {
 			return
 		}
 
-		for _, model := range utils.GetAvailRecType() {
+		for _, model := range utils.GetAvailTTSType() {
 			totalContent += fmt.Sprintf(`%s
 
 `, model)
@@ -1207,17 +1204,14 @@ func (r *RobotInfo) showVideoModel() {
 			modelList = append(modelList, k)
 		}
 	case param.AI302:
-		switch utils.GetTxtType(db.GetCtxUserInfo(r.Ctx).LLMConfigRaw) {
-		case param.AI302:
-			r.SendMsg(chatId, i18n.GetMessage("mix_mode_choose", map[string]interface{}{
-				"link": "https://302.ai/",
-			}),
-				msgId, tgbotapi.ModeMarkdown, nil)
-			return
-		case param.Vol:
-			for k := range param.VolVideoModels {
-				modelList = append(modelList, k)
-			}
+		r.SendMsg(chatId, i18n.GetMessage("mix_mode_choose", map[string]interface{}{
+			"link": "https://302.ai/",
+		}),
+			msgId, tgbotapi.ModeMarkdown, nil)
+		return
+	case param.Vol:
+		for k := range param.VolVideoModels {
+			modelList = append(modelList, k)
 		}
 	}
 	totalContent := ""
@@ -1470,6 +1464,9 @@ func (r *RobotInfo) sendMultiAgent(emptyPromptFunc func()) {
 			PerMsgLen: r.Robot.getPerMsgLen(),
 			Cs:        r.cs,
 			Ctx:       r.Ctx,
+			ConfigExecutor: func(action *param.ConversationConfigAction) (string, error) {
+				return r.executeConversationConfigAction(action, userId)
+			},
 		}
 
 		if _, ok := r.Robot.(*QQRobot); ok {
@@ -1515,7 +1512,7 @@ func (r *RobotInfo) CreatePhoto(prompt string, lastImageContent []byte) ([]byte,
 	llmConf := db.GetCtxUserInfo(r.Ctx).LLMConfigRaw
 	mediaType := utils.GetImgType(llmConf)
 	logger.InfoCtx(r.Ctx, "create image", "mediaType", mediaType, "mediaModel",
-		utils.GetUsingRecModel(mediaType, llmConf.ImgModel), "lastImageContent", len(lastImageContent), "prompt", prompt)
+		utils.GetUsingImgModel(mediaType, llmConf.ImgModel), "lastImageContent", len(lastImageContent), "prompt", prompt)
 	switch mediaType {
 	case param.Vol:
 		imageUrl, totalToken, err = llm.GenerateVolImg(r.Ctx, prompt, lastImageContent)
@@ -1611,6 +1608,14 @@ func (r *RobotInfo) GetVoiceBaseTTS(content, encoding string) ([]byte, int, erro
 
 func (r *RobotInfo) sendVoice(messageChan *MsgChan, encoding string) {
 	chatId, messageId, _ := r.GetChatIdAndMsgIdAndUserID()
+	if messageChan.NormalMessageChan == nil {
+		// streaming producers such as QQ only attach a string channel; consume
+		// it instead of blocking forever on a nil channel, and speak the whole
+		// answer once at the end
+		r.sendVoiceByString(messageChan, encoding)
+		return
+	}
+
 	var msg *param.MsgInfo
 	for msg = range messageChan.NormalMessageChan {
 		if msg.Finished {
@@ -1629,8 +1634,9 @@ func (r *RobotInfo) sendVoice(messageChan *MsgChan, encoding string) {
 		}
 	}
 
-	if msg == nil || len(msg.Content) == 0 {
-		msg = new(param.MsgInfo)
+	// flush the trailing partial message; skip it if the last message was
+	// already Finished and spoken inside the loop
+	if msg == nil || len(msg.Content) == 0 || msg.Finished {
 		return
 	}
 
@@ -1644,6 +1650,36 @@ func (r *RobotInfo) sendVoice(messageChan *MsgChan, encoding string) {
 	if err != nil {
 		logger.ErrorCtx(r.Ctx, "sendVoice fail", "err", err)
 		r.SendMsg(chatId, err.Error(), messageId, "", nil)
+		return
+	}
+}
+
+// sendVoiceByString consumes a string message channel and speaks its full
+// content in one voice message.
+func (r *RobotInfo) sendVoiceByString(messageChan *MsgChan, encoding string) {
+	chatId, messageId, _ := r.GetChatIdAndMsgIdAndUserID()
+	if messageChan.StrMessageChan == nil {
+		return
+	}
+
+	var content strings.Builder
+	for msg := range messageChan.StrMessageChan {
+		content.WriteString(msg)
+	}
+	if content.Len() == 0 {
+		return
+	}
+
+	voiceContent, duration, err := r.GetVoiceBaseTTS(content.String(), encoding)
+	if err != nil {
+		logger.ErrorCtx(r.Ctx, "tts fail", "err", err)
+		r.SendMsg(chatId, content.String(), messageId, "", nil)
+		return
+	}
+	err = r.Robot.sendVoiceContent(voiceContent, duration)
+	if err != nil {
+		logger.ErrorCtx(r.Ctx, "sendVoice fail", "err", err)
+		r.SendMsg(chatId, content.String(), messageId, "", nil)
 		return
 	}
 }
@@ -1937,7 +1973,9 @@ func (r *RobotInfo) sendText(messageChan *MsgChan) {
 			}
 		}
 
-		if msg != nil {
+		// flush the trailing partial message; skip it if the last message was
+		// already Finished and sent inside the loop
+		if msg != nil && !msg.Finished {
 			r.SendMarkdownMsg(msg)
 		}
 	}

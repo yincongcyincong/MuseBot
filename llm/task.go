@@ -31,6 +31,10 @@ type LLMTaskReq struct {
 
 	Cs  *param.ContextState
 	Ctx context.Context
+
+	// ConfigExecutor runs MuseBot configuration actions requested inside the
+	// task workflow; injected by the robot layer.
+	ConfigExecutor func(action *param.ConversationConfigAction) (string, error)
 }
 
 type Task struct {
@@ -133,6 +137,9 @@ func (d *LLMTaskReq) newTaskLLM(prompt string, tool *conf.AgentInfo, streaming b
 	if streaming {
 		options = append(options, WithMessageChan(d.MessageChan), WithHTTPMsgChan(d.HTTPMsgChan))
 	}
+	if d.ConfigExecutor != nil {
+		options = append(options, WithConfigExecutor(d.ConfigExecutor))
+	}
 
 	llm := NewLLM(options...)
 	llm.LLMClient.GetMessage(openai.ChatMessageRoleUser, prompt)
@@ -150,6 +157,31 @@ func (d *LLMTaskReq) syncTaskLLM(llm *LLM) (string, error) {
 		return "", fmt.Errorf("task state returned an empty response")
 	}
 	return content, nil
+}
+
+// sendProgress pushes a short status message to the user's chat while the
+// task workflow advances between stages, so long-running tasks stay responsive.
+func (d *LLMTaskReq) sendProgress(message string) {
+	if message == "" {
+		return
+	}
+	perMsgLen := d.PerMsgLen
+	if perMsgLen == 0 {
+		perMsgLen = OneMsgLen
+	}
+	if len([]byte(message)) > perMsgLen {
+		message = string([]byte(message)[:perMsgLen])
+	}
+
+	if d.MessageChan != nil {
+		d.MessageChan <- &param.MsgInfo{
+			Content:  message,
+			Finished: true,
+		}
+	}
+	if d.HTTPMsgChan != nil {
+		d.HTTPMsgChan <- message
+	}
 }
 
 func (d *LLMTaskReq) runResearch(machine *taskStateMachine) error {
@@ -171,6 +203,10 @@ func (d *LLMTaskReq) runResearch(machine *taskStateMachine) error {
 		}
 
 		queries := normalizeTaskResearchPlan(content, d.fallbackSearchQuery())
+		d.sendProgress(i18n.GetMessage("task_progress_research", map[string]interface{}{
+			"round":   machine.researchRound + 1,
+			"queries": strings.Join(queries, "; "),
+		}))
 		if err := machine.transition(TaskStateResearchObserve); err != nil {
 			return err
 		}
@@ -246,6 +282,7 @@ func (d *LLMTaskReq) planTask(machine *taskStateMachine) (*LLM, *TaskInfo, error
 		return nil, nil, err
 	}
 	var lastErr error
+	d.sendProgress(i18n.GetMessage("task_progress_plan", nil))
 	for attempt := 0; attempt < 2; attempt++ {
 		taskParam := map[string]interface{}{
 			"user_task":    d.Content,
@@ -253,7 +290,9 @@ func (d *LLMTaskReq) planTask(machine *taskStateMachine) (*LLM, *TaskInfo, error
 			"assign_param": d.taskAgentParams(),
 		}
 		prompt := i18n.GetMessage("task_state_plan_prompt", taskParam)
-		llm := d.newTaskLLM(prompt, nil, false)
+		// the planner is reused by summarizeTask, which streams its answer to the
+		// user, so it must be created with the parent's channels attached
+		llm := d.newTaskLLM(prompt, nil, d.MessageChan != nil || d.HTTPMsgChan != nil)
 		content, err := d.syncTaskLLM(llm)
 		if err != nil {
 			return nil, nil, err
@@ -279,13 +318,19 @@ func (d *LLMTaskReq) executePlan(machine *taskStateMachine, plan *TaskInfo) erro
 	if err := machine.requireState(TaskStateExecute); err != nil {
 		return err
 	}
-	for _, task := range plan.Plan {
+	for i, task := range plan.Plan {
 		toolValue, loaded := conf.TaskTools.Load(task.Name)
 		var tool *conf.AgentInfo
 		if loaded {
 			tool = toolValue.(*conf.AgentInfo)
 		}
 
+		d.sendProgress(i18n.GetMessage("task_progress_execute", map[string]interface{}{
+			"index":       i + 1,
+			"total":       len(plan.Plan),
+			"name":        task.Name,
+			"description": task.Description,
+		}))
 		taskParam := map[string]interface{}{
 			"user_task":        d.Content,
 			"agent_name":       task.Name,
@@ -304,6 +349,11 @@ func (d *LLMTaskReq) executePlan(machine *taskStateMachine, plan *TaskInfo) erro
 			return err
 		}
 		d.Token += llm.Cs.Token
+		d.sendProgress(i18n.GetMessage("task_progress_execute_done", map[string]interface{}{
+			"index": i + 1,
+			"total": len(plan.Plan),
+			"name":  task.Name,
+		}))
 		machine.completedResults = append(machine.completedResults, TaskResult{
 			TaskName:   task.Name,
 			TaskResult: result,
@@ -323,6 +373,7 @@ func (d *LLMTaskReq) reflectTask(planner *LLM, machine *taskStateMachine) (*Task
 		"execution_loop":  machine.executionLoop,
 	}
 	prompt := i18n.GetMessage("task_state_reflect_prompt", taskParam)
+	d.sendProgress(i18n.GetMessage("task_progress_reflect", nil))
 	planner.LLMClient.GetMessage(openai.ChatMessageRoleUser, prompt)
 	planner.Content = prompt
 	planner.LLMClient.GetModel(planner)
@@ -356,6 +407,7 @@ func (d *LLMTaskReq) summarizeTask(planner *LLM, machine *taskStateMachine) erro
 		"completed_tasks": formatTaskResults(machine.completedResults),
 	}
 	prompt := i18n.GetMessage("task_state_summary_prompt", taskParam)
+	d.sendProgress(i18n.GetMessage("task_progress_summarize", nil))
 	planner.LLMClient.GetMessage(openai.ChatMessageRoleUser, prompt)
 	planner.Content = prompt
 	planner.LLMClient.GetModel(planner)

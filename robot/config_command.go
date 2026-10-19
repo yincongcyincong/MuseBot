@@ -11,15 +11,13 @@ import (
 	"reflect"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
 	cronC "github.com/robfig/cron/v3"
-	"github.com/sashabaranov/go-openai"
 	"github.com/yincongcyincong/MuseBot/conf"
 	"github.com/yincongcyincong/MuseBot/db"
-	"github.com/yincongcyincong/MuseBot/i18n"
-	"github.com/yincongcyincong/MuseBot/llm"
 	"github.com/yincongcyincong/MuseBot/logger"
 	"github.com/yincongcyincong/MuseBot/param"
 	"github.com/yincongcyincong/mcp-client-go/clients"
@@ -35,84 +33,11 @@ const (
 )
 
 var (
-	configNameReg      = regexp.MustCompile(`^[a-zA-Z0-9_.-]{1,64}$`)
-	sensitiveConfig    = regexp.MustCompile(`(?i)(token|secret|password|passphrase|credential|db_conf|encoding_aes|cert|key_file|ca_file|crt_file|_ak$|_sk$)`)
-	configCandidateReg = regexp.MustCompile(`(?i)(mcp|skill|cron|config|configuration|setting|settings|schedule|scheduled|remind|reminder|model|token|switch|change|update|add|create|delete|reload|sync|enable|disable|daily|weekly|command|shell|terminal|file|directory|folder|read|write|edit|list|run|execute|move|mv|remove|rm|mkdir|touch|cat|view|save|rename|ls|git|加载|配置|设置|切换|修改|新增|添加|创建|删除|重载|同步|技能|定时|计划任务|提醒|每天|每周|开启|启用|关闭|禁用|模型|令牌|密钥|执行|运行|跑|命令|终端|文件|目录|文件夹|读取|写入|编辑|移动|移到|重命名|保存|查看)`)
+	configNameReg   = regexp.MustCompile(`^[a-zA-Z0-9_.-]{1,64}$`)
+	sensitiveConfig = regexp.MustCompile(`(?i)(token|secret|password|passphrase|credential|db_conf|encoding_aes|cert|key_file|ca_file|crt_file|_ak$|_sk$)`)
 )
 
-func (r *RobotInfo) tryConversationConfig() bool {
-	if r.Robot.getCommand() != "" || r.Robot.getPrompt() == "" ||
-		!configCandidateReg.MatchString(r.Robot.getPrompt()) {
-		return false
-	}
-
-	intent, err := r.detectConversationConfigIntent()
-	if err != nil {
-		logger.ErrorCtx(r.Ctx, "detect conversation config intent fail", "err", err)
-		return false
-	}
-	if !intent.Config {
-		return false
-	}
-
-	_, _, userId := r.GetChatIdAndMsgIdAndUserID()
-	logger.InfoCtx(r.Ctx, "conversation config request", "userID", userId, "prompt", r.Robot.getPrompt())
-	r.handleConversationConfig()
-	return true
-}
-
-func (r *RobotInfo) detectConversationConfigIntent() (*param.ConversationConfigIntent, error) {
-	llmClient := llm.NewLLM(
-		llm.WithChatId(r.ChatIdValue()),
-		llm.WithUserId(r.UserIdValue()),
-		llm.WithMsgId(r.MsgIdValue()),
-		llm.WithContent(i18n.GetMessage("conversation_config_intent_prompt", map[string]interface{}{
-			"request": r.Robot.getPrompt(),
-		})),
-		llm.WithContext(r.Ctx),
-	)
-	llmClient.LLMClient.GetModel(llmClient)
-	llmClient.LLMClient.GetMessage(openai.ChatMessageRoleUser, llmClient.Content)
-	content, err := llmClient.LLMClient.SyncSend(r.Ctx, llmClient)
-	if err != nil {
-		return nil, err
-	}
-	r.cs.Token += llmClient.Cs.Token
-
-	return param.ParseConversationConfigIntent(content)
-}
-
-func (r *RobotInfo) handleConversationConfig() {
-	chatId, msgId, userId := r.GetChatIdAndMsgIdAndUserID()
-	if !r.isAdminUser(userId) {
-		r.SendMsg(chatId, i18n.GetMessage("config_permission_denied", nil), msgId, "", nil)
-		return
-	}
-	if strings.TrimSpace(r.Robot.getPrompt()) == "" {
-		r.SendMsg(chatId, i18n.GetMessage("config_usage", nil), msgId, "", nil)
-		return
-	}
-
-	plan, err := r.buildConversationConfigPlan()
-	if err != nil {
-		logger.ErrorCtx(r.Ctx, "build conversation config plan fail", "err", err)
-		r.SendMsg(chatId, err.Error(), msgId, "", nil)
-		return
-	}
-
-	results := make([]string, 0, len(plan.Actions))
-	for _, action := range plan.Actions {
-		result, err := r.executeConversationConfigAction(action, userId)
-		if err != nil {
-			logger.ErrorCtx(r.Ctx, "execute conversation config action fail", "type", action.Type, "operation", action.Operation, "err", err)
-			results = append(results, fmt.Sprintf("❌ %s %s: %s", action.Type, action.Operation, err.Error()))
-			continue
-		}
-		results = append(results, "✅ "+result)
-	}
-	r.SendMsg(chatId, strings.Join(results, "\n"), msgId, "", nil)
-}
-
+// isAdminUser reports whether the user may run MuseBot configuration actions.
 func (r *RobotInfo) isAdminUser(userId string) bool {
 	if len(conf.BaseConfInfo.AdminUserIds) == 0 || conf.BaseConfInfo.AdminUserIds["0"] {
 		return false
@@ -120,44 +45,18 @@ func (r *RobotInfo) isAdminUser(userId string) bool {
 	return conf.BaseConfInfo.AdminUserIds[userId]
 }
 
-func (r *RobotInfo) buildConversationConfigPlan() (*param.ConversationConfigPlan, error) {
-	prompt := i18n.GetMessage("conversation_config_prompt", map[string]interface{}{
-		"schema":  conversationConfigSchema(),
-		"mcp":     conversationMCPSummary(),
-		"skills":  conversationSkillSummary(),
-		"builtin": conversationBuiltinSummary(),
-		"request": r.Robot.getPrompt(),
-	})
-
-	llmClient := llm.NewLLM(
-		llm.WithChatId(r.ChatIdValue()),
-		llm.WithUserId(r.UserIdValue()),
-		llm.WithMsgId(r.MsgIdValue()),
-		llm.WithContent(prompt),
-		llm.WithContext(r.Ctx),
-		llm.WithCS(r.cs),
-	)
-	llmClient.LLMClient.GetModel(llmClient)
-	llmClient.LLMClient.GetMessage(openai.ChatMessageRoleUser, prompt)
-	content, err := llmClient.LLMClient.SyncSend(r.Ctx, llmClient)
-	if err != nil {
-		return nil, fmt.Errorf("get configuration plan fail: %w", err)
-	}
-	r.cs.Token = llmClient.Cs.Token
-
-	plan, err := param.ParseConversationConfigPlan(content)
-	if err != nil {
-		return nil, err
-	}
-	if len(plan.Actions) > maxConversationConfigActions {
-		return nil, fmt.Errorf("too many configuration actions")
-	}
-	return plan, nil
-}
-
+// executeConversationConfigAction runs a single configuration action. It is
+// exposed to the /task workflow through the bot_config tool; the admin gate
+// is enforced here so every entry path is protected.
 func (r *RobotInfo) executeConversationConfigAction(action *param.ConversationConfigAction, userId string) (string, error) {
 	if action == nil {
 		return "", fmt.Errorf("empty action")
+	}
+	if !r.isAdminUser(userId) {
+		return "", fmt.Errorf("configuration actions require an administrator user")
+	}
+	if action.Operation == "" {
+		return "", fmt.Errorf("action type %q is missing the operation field", action.Type)
 	}
 	if action.Type == "cron" {
 		logger.InfoCtx(r.Ctx, "conversation cron action", "operation", action.Operation,
@@ -281,6 +180,11 @@ func setConversationConfigField(target interface{}, key string, value json.RawMe
 			continue
 		}
 
+		targetKind := fieldValue.Kind()
+		if targetKind == reflect.Ptr {
+			targetKind = fieldValue.Type().Elem().Kind()
+		}
+		value = coerceConfigValue(value, targetKind)
 		if fieldValue.Kind() == reflect.Ptr {
 			newValue := reflect.New(fieldValue.Type().Elem())
 			if err := json.Unmarshal(value, newValue.Interface()); err != nil {
@@ -293,6 +197,58 @@ func setConversationConfigField(target interface{}, key string, value json.RawMe
 		return nil
 	}
 	return fmt.Errorf("unknown config key %q", key)
+}
+
+// coerceConfigValue repairs scalar type mismatches that models produce
+// frequently: booleans and numbers quoted as strings ("false", "10"), and
+// string fields receiving unquoted scalars (5, true). Values that do not
+// match the target kind are returned unchanged so the decoder reports the
+// original error.
+func coerceConfigValue(value json.RawMessage, kind reflect.Kind) json.RawMessage {
+	trimmed := bytes.TrimSpace(value)
+	if len(trimmed) == 0 {
+		return value
+	}
+
+	switch kind {
+	case reflect.Bool:
+		var text string
+		if err := json.Unmarshal(trimmed, &text); err != nil {
+			return value
+		}
+		switch strings.ToLower(strings.TrimSpace(text)) {
+		case "true", "1", "yes", "on":
+			return json.RawMessage("true")
+		case "false", "0", "no", "off":
+			return json.RawMessage("false")
+		}
+		return value
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
+		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64,
+		reflect.Float32, reflect.Float64:
+		var text string
+		if err := json.Unmarshal(trimmed, &text); err != nil {
+			return value
+		}
+		text = strings.TrimSpace(text)
+		if _, err := strconv.ParseFloat(text, 64); err != nil {
+			return value
+		}
+		return json.RawMessage(text)
+	case reflect.String:
+		if trimmed[0] == '"' {
+			return value // already a JSON string
+		}
+		var raw interface{}
+		if err := json.Unmarshal(trimmed, &raw); err != nil {
+			return value
+		}
+		if data, err := json.Marshal(fmt.Sprintf("%v", raw)); err == nil {
+			return data
+		}
+		return value
+	}
+	return value
 }
 
 func isRuntimeImmutableConfigKey(key string) bool {

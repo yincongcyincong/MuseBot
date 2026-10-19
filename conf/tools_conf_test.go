@@ -3,6 +3,8 @@ package conf
 import (
 	"flag"
 	"testing"
+
+	"github.com/sashabaranov/go-openai"
 )
 
 func TestApplyParsedToolsFlags(t *testing.T) {
@@ -75,5 +77,74 @@ func TestEnvToolsConfDefaultsMissingFileRoot(t *testing.T) {
 	}
 	if ToolsConfInfo.CommandTimeoutSec != 60 {
 		t.Errorf("CommandTimeoutSec = %d, want 60", ToolsConfInfo.CommandTimeoutSec)
+	}
+}
+
+func TestRebuildChatToolSetsIsIdempotent(t *testing.T) {
+	oldUseTools := BaseConfInfo.UseTools
+	oldDeepseekTools := DeepseekTools
+	oldVolTools := VolTools
+	oldOpenAITools := OpenAITools
+	oldGeminiTools := GeminiTools
+	BaseConfInfo.UseTools = true
+	defer func() {
+		BaseConfInfo.UseTools = oldUseTools
+		DeepseekTools = oldDeepseekTools
+		VolTools = oldVolTools
+		OpenAITools = oldOpenAITools
+		GeminiTools = oldGeminiTools
+		TaskTools.Delete("test_mcp_server")
+		TaskTools.Delete(BuiltinWebSearchTool)
+		TaskTools.Delete("test_skill")
+	}()
+
+	TaskTools.Store("test_mcp_server", &AgentInfo{
+		OpenAITools: []openai.Tool{{
+			Type:     openai.ToolTypeFunction,
+			Function: &openai.FunctionDefinition{Name: "rebuild_demo_tool"},
+		}},
+	})
+	TaskTools.Store(BuiltinWebSearchTool, &AgentInfo{
+		IsBuiltin: true,
+		OpenAITools: []openai.Tool{{
+			Type:     openai.ToolTypeFunction,
+			Function: &openai.FunctionDefinition{Name: "rebuild_builtin_tool"},
+		}},
+	})
+	TaskTools.Store("test_skill", &AgentInfo{
+		IsSkill: true,
+		OpenAITools: []openai.Tool{{
+			Type:     openai.ToolTypeFunction,
+			Function: &openai.FunctionDefinition{Name: "rebuild_skill_tool"},
+		}},
+	})
+
+	countTool := func(name string) int {
+		n := 0
+		for _, tool := range OpenAITools {
+			if tool.Function != nil && tool.Function.Name == name {
+				n++
+			}
+		}
+		return n
+	}
+
+	RebuildChatToolSets()
+	RebuildChatToolSets()
+
+	if got := countTool("rebuild_demo_tool"); got != 1 {
+		t.Errorf("MCP tool appears %d times after repeated rebuilds, want 1", got)
+	}
+	if got := countTool("rebuild_builtin_tool"); got != 0 {
+		t.Errorf("built-in agent leaked into chat tools %d times, want 0", got)
+	}
+	if got := countTool("rebuild_skill_tool"); got != 0 {
+		t.Errorf("skill agent leaked into chat tools %d times, want 0", got)
+	}
+
+	BaseConfInfo.UseTools = false
+	RebuildChatToolSets()
+	if got := countTool("rebuild_demo_tool"); got != 0 {
+		t.Errorf("tools kept after UseTools disabled: %d, want 0", got)
 	}
 }

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"time"
 
 	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/mattn/go-sqlite3"
@@ -33,8 +34,7 @@ const (
 				create_time int(11) NOT NULL DEFAULT '0',
 				update_time int(11) NOT NULL DEFAULT '0',
 				is_deleted int(10) NOT NULL DEFAULT '0'
-			);
-			insert into admin_users values(1, 'admin', '21232f297a57a5a743894a0e4a801fc3', strftime('%s','now'), strftime('%s','now'))`
+			);`
 
 	mysqlCreateUsersSQL = `
 			CREATE TABLE IF NOT EXISTS admin_users (
@@ -58,7 +58,6 @@ const (
 				update_time int(11) NOT NULL DEFAULT '0',
 				is_deleted int(10) NOT NULL DEFAULT '0'
 			);`
-	MysqlInsertAdmin = `insert into admin_users values(1, 'admin', '21232f297a57a5a743894a0e4a801fc3', UNIX_TIMESTAMP(), UNIX_TIMESTAMP())`
 )
 
 var (
@@ -101,7 +100,63 @@ func InitTable() {
 
 	}
 
+	if err := ensureAdminUser(); err != nil {
+		logger.Fatal("ensure admin user fail", "err", err)
+	}
+
 	logger.Info("db initialize successfully")
+}
+
+// ensureAdminUser creates the initial admin account with a random password
+// when the users table is empty, and resets accounts that still carry the
+// well-known default admin/admin hash.
+func ensureAdminUser() error {
+	var count int
+	err := DB.QueryRow(`SELECT COUNT(*) FROM admin_users`).Scan(&count)
+	if err != nil {
+		return err
+	}
+
+	if count == 0 {
+		password, err := GenerateRandomPassword()
+		if err != nil {
+			return err
+		}
+		hash, err := HashPassword(password)
+		if err != nil {
+			return err
+		}
+		now := time.Now().Unix()
+		_, err = DB.Exec(`INSERT INTO admin_users (username, password, create_time, update_time) VALUES ('admin', ?, ?, ?)`,
+			hash, now, now)
+		if err != nil {
+			return err
+		}
+		logger.Warn("initial admin account created; password is shown ONCE, change it after first login",
+			"username", "admin", "password", password)
+		return nil
+	}
+
+	// reset accounts still using the public default password admin/admin
+	password, err := GenerateRandomPassword()
+	if err != nil {
+		return err
+	}
+	hash, err := HashPassword(password)
+	if err != nil {
+		return err
+	}
+	result, err := DB.Exec(`UPDATE admin_users SET password = ?, update_time = ? WHERE password = ?`,
+		hash, time.Now().Unix(), DefaultAdminMD5Password)
+	if err != nil {
+		return err
+	}
+	if affected, _ := result.RowsAffected(); affected > 0 {
+		logger.Warn("accounts still using the default admin/admin password were reset; the new password is shown ONCE, change it after first login",
+			"username", "admin", "password", password)
+	}
+
+	return nil
 }
 
 func initializeMysqlTable(db *sql.DB, tableName string, createSQL string) error {
@@ -116,13 +171,6 @@ func initializeMysqlTable(db *sql.DB, tableName string, createSQL string) error 
 			return fmt.Errorf("create table failed: %v", err)
 		}
 		logger.Info("Create table success", "tableName", tableName)
-
-		if tableName == "admin_users" {
-			_, err = db.Exec(MysqlInsertAdmin)
-			if err != nil {
-				logger.Fatal("Create index failed", "err", err)
-			}
-		}
 	} else if err != nil {
 		return fmt.Errorf("search table failed: %v", err)
 	} else {

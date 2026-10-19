@@ -1,6 +1,9 @@
 package param
 
-import "testing"
+import (
+	"errors"
+	"testing"
+)
 
 func TestParseConversationConfigPlan(t *testing.T) {
 	content := "```json\n{\"actions\":[{\"type\":\"config\",\"operation\":\"set\",\"config_type\":\"base\",\"key\":\"smart_mode\",\"value\":true}]}\n```"
@@ -51,24 +54,33 @@ func TestParseConversationConfigPlanAcceptsQuotedCronID(t *testing.T) {
 	}
 }
 
-func TestParseConversationConfigIntent(t *testing.T) {
-	tests := []struct {
-		name    string
-		content string
-		want    bool
-	}{
-		{name: "true", content: "prefix {\"config\":true} suffix", want: true},
-		{name: "false", content: "{\"config\":false}", want: false},
+// an empty plan must be distinguishable from real failures so callers can
+// treat it like {"config":false} and fall back to normal chat
+func TestParseConversationConfigPlanEmptyActions(t *testing.T) {
+	for _, content := range []string{`{"actions":[]}`, `{}`, `{"actions":null}`} {
+		_, err := ParseConversationConfigPlan(content)
+		if !errors.Is(err, ErrEmptyConfigPlan) {
+			t.Errorf("ParseConversationConfigPlan(%s) err = %v, want ErrEmptyConfigPlan", content, err)
+		}
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			intent, err := ParseConversationConfigIntent(tt.content)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if intent.Config != tt.want {
-				t.Errorf("config = %v, want %v", intent.Config, tt.want)
-			}
-		})
+}
+
+// models sometimes emit "op" instead of "operation"; accept it as an alias
+func TestParseConversationConfigPlanAcceptsOpAlias(t *testing.T) {
+	plan, err := ParseConversationConfigPlan(`{"actions":[{"type":"file","op":"list","path":"doc"}]}`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(plan.Actions) != 1 || plan.Actions[0].Operation != "list" {
+		t.Fatalf("operation = %q, want list", plan.Actions[0].Operation)
+	}
+
+	// explicit "operation" still wins over the alias
+	plan, err = ParseConversationConfigPlan(`{"actions":[{"type":"config","op":"get","operation":"list"}]}`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if plan.Actions[0].Operation != "list" {
+		t.Fatalf("operation = %q, want list (explicit key must win)", plan.Actions[0].Operation)
 	}
 }

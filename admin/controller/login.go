@@ -18,6 +18,12 @@ var (
 
 func InitSessionStore() {
 	sessionStore = sessions.NewCookieStore([]byte(conf.BaseConfInfo.SessionKey))
+	sessionStore.Options = &sessions.Options{
+		Path:     "/",
+		MaxAge:   86400 * 30,
+		HttpOnly: true,
+		SameSite: http.SameSiteLaxMode,
+	}
 }
 
 func UserLogin(w http.ResponseWriter, r *http.Request) {
@@ -42,10 +48,20 @@ func UserLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if user.Password != utils.MD5(u.Password) {
+	passwordOk, isLegacyHash := db.VerifyPassword(u.Password, user.Password)
+	if !passwordOk {
 		logger.ErrorCtx(ctx, "login error", "reason", "wrong password", "username", u.Username)
 		utils.Failure(ctx, w, r, param.CodeLoginFail, param.MsgLoginFail, nil)
 		return
+	}
+
+	// transparently upgrade legacy unsalted MD5 hashes to bcrypt
+	if isLegacyHash {
+		if err := db.UpdateUserPassword(user.ID, u.Password); err != nil {
+			logger.ErrorCtx(ctx, "upgrade password hash error", "err", err)
+		} else {
+			logger.Info("password hash upgraded to bcrypt", "username", u.Username)
+		}
 	}
 
 	session, _ := sessionStore.Get(r, sessionName)

@@ -3,6 +3,7 @@ package param
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -66,27 +67,34 @@ type ConversationConfigAction struct {
 	Target       string               `json:"target,omitempty"`
 }
 
+// UnmarshalJSON accepts the shorthand key "op" as an alias for "operation":
+// models occasionally emit it even though the schema asks for "operation",
+// and the default decoder would silently leave Operation empty.
+func (a *ConversationConfigAction) UnmarshalJSON(data []byte) error {
+	type conversationConfigActionAlias ConversationConfigAction
+	aux := struct {
+		Op string `json:"op,omitempty"`
+		*conversationConfigActionAlias
+	}{
+		conversationConfigActionAlias: (*conversationConfigActionAlias)(a),
+	}
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+	if a.Operation == "" && aux.Op != "" {
+		a.Operation = aux.Op
+	}
+	return nil
+}
+
 type ConversationConfigPlan struct {
 	Actions []*ConversationConfigAction `json:"actions"`
 }
 
-type ConversationConfigIntent struct {
-	Config bool `json:"config"`
-}
-
-func ParseConversationConfigIntent(content string) (*ConversationConfigIntent, error) {
-	start := strings.Index(content, "{")
-	if start < 0 {
-		return nil, fmt.Errorf("configuration intent does not contain JSON")
-	}
-
-	decoder := json.NewDecoder(strings.NewReader(content[start:]))
-	intent := new(ConversationConfigIntent)
-	if err := decoder.Decode(intent); err != nil {
-		return nil, fmt.Errorf("decode configuration intent: %w", err)
-	}
-	return intent, nil
-}
+// ErrEmptyConfigPlan means the model returned valid JSON but no actions: the
+// request is not a system operation. Callers should treat it the same as a
+// negative intent result ({"config":false}) instead of reporting an error.
+var ErrEmptyConfigPlan = errors.New("configuration plan has no actions")
 
 func ParseConversationConfigPlan(content string) (*ConversationConfigPlan, error) {
 	start := strings.Index(content, "{")
@@ -100,7 +108,7 @@ func ParseConversationConfigPlan(content string) (*ConversationConfigPlan, error
 		return nil, fmt.Errorf("decode configuration plan: %w", err)
 	}
 	if len(plan.Actions) == 0 {
-		return nil, fmt.Errorf("configuration plan has no actions")
+		return nil, ErrEmptyConfigPlan
 	}
 	if len(plan.Actions) > 20 {
 		return nil, fmt.Errorf("configuration plan has too many actions")

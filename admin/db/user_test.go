@@ -2,6 +2,7 @@ package db
 
 import (
 	"testing"
+	"time"
 
 	"github.com/yincongcyincong/MuseBot/utils"
 )
@@ -22,6 +23,12 @@ func TestUserCRUD_SQLite(t *testing.T) {
 	}
 	if u.Username != "alice" {
 		t.Errorf("expected username 'alice', got %s", u.Username)
+	}
+	if ok, isLegacy := VerifyPassword("123456", u.Password); !ok || isLegacy {
+		t.Errorf("expected bcrypt password to verify, ok=%v isLegacy=%v", ok, isLegacy)
+	}
+	if ok, _ := VerifyPassword("wrongpass", u.Password); ok {
+		t.Error("expected wrong password to fail")
 	}
 
 	// 3️⃣ GetUserByID
@@ -44,8 +51,8 @@ func TestUserCRUD_SQLite(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetUserByUsername failed after update: %v", err)
 	}
-	if u3.Password != utils.MD5("newpass") {
-		t.Errorf("expected password %s, got %s", utils.MD5("newpass"), u3.Password)
+	if ok, isLegacy := VerifyPassword("newpass", u3.Password); !ok || isLegacy {
+		t.Errorf("expected updated bcrypt password to verify, ok=%v isLegacy=%v", ok, isLegacy)
 	}
 
 	// 5️⃣ ListUsers
@@ -58,6 +65,9 @@ func TestUserCRUD_SQLite(t *testing.T) {
 	}
 	if len(users) != 1 {
 		t.Errorf("expected 1 user in result, got %d", len(users))
+	}
+	if users[0].Password != "" {
+		t.Error("expected ListUsers to not expose the password hash")
 	}
 
 	// 6️⃣ DeleteUser
@@ -72,6 +82,19 @@ func TestUserCRUD_SQLite(t *testing.T) {
 	}
 
 	DeleteAllUserData()
+}
+
+// legacy unsalted MD5 hashes must keep verifying (transparent bcrypt upgrade)
+func TestVerifyPasswordLegacyMD5(t *testing.T) {
+	ok, isLegacy := VerifyPassword("admin", utils.MD5("admin"))
+	if !ok || !isLegacy {
+		t.Errorf("expected legacy MD5 hash to verify, ok=%v isLegacy=%v", ok, isLegacy)
+	}
+
+	ok, _ = VerifyPassword("wrong", utils.MD5("admin"))
+	if ok {
+		t.Error("expected wrong password to fail against legacy hash")
+	}
 }
 
 func TestListUsers_Filter_SQLite(t *testing.T) {
@@ -100,4 +123,33 @@ func TestListUsers_Filter_SQLite(t *testing.T) {
 	}
 
 	DeleteAllUserData()
+}
+
+// accounts still carrying the public admin/admin hash must be reset on startup
+func TestEnsureAdminUserResetsDefaultPassword(t *testing.T) {
+	DeleteAllUserData()
+	defer DeleteAllUserData()
+
+	now := time.Now().Unix()
+	_, err := DB.Exec(`INSERT INTO admin_users (username, password, create_time, update_time) VALUES ('admin', ?, ?, ?)`,
+		DefaultAdminMD5Password, now, now)
+	if err != nil {
+		t.Fatalf("insert legacy admin failed: %v", err)
+	}
+
+	if err := ensureAdminUser(); err != nil {
+		t.Fatalf("ensureAdminUser failed: %v", err)
+	}
+
+	u, err := GetUserByUsername("admin")
+	if err != nil {
+		t.Fatalf("GetUserByUsername failed: %v", err)
+	}
+	if u.Password == DefaultAdminMD5Password {
+		t.Fatal("expected the default admin/admin hash to be reset")
+	}
+	// the default password must no longer verify
+	if ok, _ := VerifyPassword("admin", u.Password); ok {
+		t.Error("expected admin/admin to stop working after the reset")
+	}
 }

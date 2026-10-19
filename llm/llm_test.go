@@ -32,6 +32,26 @@ func TestSendMsg_WithHTTPMsgChan(t *testing.T) {
 	}
 }
 
+// A task planner without any channel attached must not block forever on a nil
+// channel; the content is kept in WholeContent instead.
+func TestSendMsg_WithoutChanDoesNotBlock(t *testing.T) {
+	l := &LLM{}
+
+	done := make(chan struct{})
+	go func() {
+		l.SendMsg(&param.MsgInfo{}, "first")
+		l.SendMsg(&param.MsgInfo{}, " second")
+		close(done)
+	}()
+
+	select {
+	case <-done:
+		assert.Equal(t, "first second", l.WholeContent)
+	case <-time.After(time.Second):
+		t.Error("SendMsg blocked on nil channel")
+	}
+}
+
 func TestOverLoop(t *testing.T) {
 	l := &LLM{LoopNum: 14}
 	assert.False(t, l.OverLoop())
