@@ -1,6 +1,10 @@
 package llm
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/yincongcyincong/MuseBot/param"
+)
 
 func TestTaskStateMachineEnforcesResearchBeforePlan(t *testing.T) {
 	machine := newTaskStateMachine()
@@ -97,4 +101,33 @@ func TestValidateTaskPlan(t *testing.T) {
 	if err := validateTaskPlan(plan, true); err == nil {
 		t.Fatal("expected duplicate plan item to be rejected")
 	}
+}
+
+func TestSendProgressDeliversToBothChannels(t *testing.T) {
+	msgChan := make(chan *param.MsgInfo, 2)
+	httpChan := make(chan string, 2)
+	d := &LLMTaskReq{
+		MessageChan: msgChan,
+		HTTPMsgChan: httpChan,
+	}
+
+	d.sendProgress("")
+	select {
+	case <-msgChan:
+		t.Error("empty progress should not be sent")
+	default:
+	}
+
+	d.sendProgress("working...")
+	msg := <-msgChan
+	if msg.Content != "working..." || !msg.Finished {
+		t.Errorf("message chan got %+v", msg)
+	}
+	if s := <-httpChan; s != "working..." {
+		t.Errorf("http chan got %q", s)
+	}
+
+	// no channels attached: must not block or panic
+	bare := &LLMTaskReq{}
+	bare.sendProgress("ignored")
 }

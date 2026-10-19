@@ -10,7 +10,7 @@
 要启动管理平台，请执行以下命令：
 
 ```bash
-./admin -db_type=sqlite3 -db_conf=./admin/data/telegram_bot.db -session_key=telegram_bot_session_key
+./admin -db_type=sqlite3 -db_conf=./admin/data/telegram_bot.db
 ```
 
 ### 命令参数
@@ -19,7 +19,7 @@
 |:----------------|:------------------------------------------------------------------------------------------------------------------------|:------------------------------------------|
 | **DB_TYPE**     | 数据库类型：`sqlite3` / `mysql`                                                                                               | `sqlite3` / `mysql`                       |
 | **DB_CONF**     | 数据库配置：`./data/telegram_admin_bot.db` 或 `root:admin@tcp(127.0.0.1:3306)/dbname?charset=utf8mb4&parseTime=True&loc=Local` | `./data/telegram_admin_bot.db`            |
-| **SESSION_KEY** | 指定用于会话管理的密钥。                                                                                                            | `telegram_bot_session_key` (用于加密会话数据的字符串) |
+| **SESSION_KEY** | 用于签发会话 cookie 的密钥。请自行设置随机值；未设置时会自动生成随机密钥并保存到 `data/admin_session_key`（权限 0600） | 自动生成            |
 | **ADMIN_PORT**  | 管理平台端口                                                                                                                  | `18080`                                   |
 
 -----
@@ -31,12 +31,21 @@
 ![image](https://github.com/user-attachments/assets/f6bf8ae6-4c0e-44d9-9115-7e744fc20dc3)
 访问管理平台的登录页面。
 
-### 默认账户
+### 初始账户
 
-首次启动时，您可以使用以下默认凭据登录：
+不再有默认密码。首次启动时会为 `admin` 账户生成随机密码，并只在日志里打印**一次**：
 
-* **用户名：** `admin`
-* **密码：** `admin`
+```
+initial admin account created; password is shown ONCE, change it after first login  username=admin password=xxxxxxxxxxxx
+```
+
+登录后请尽快修改（管理页面 -> 修改密码）。
+
+从旧版本升级的说明：
+
+* 密码现在使用 bcrypt 存储。旧的无盐 MD5 密码仍然可以登录，并在下次登录成功时自动升级为 bcrypt。
+* 如果账户仍在使用公开的默认密码 `admin`/`admin`，升级后首次启动会强制重置，新密码打印在管理端日志中。
+* 如果从未设置过 `SESSION_KEY`，将自动生成随机密钥并保存到 `data/admin_session_key`，已登录的会话会因此失效一次。
 
 -----
 

@@ -279,7 +279,8 @@ func GetGeminiClient(ctx context.Context) (*genai.Client, error) {
 	httpClient := utils.GetLLMProxyClient()
 	httpOption := genai.HTTPOptions{}
 	if conf.BaseConfInfo.CustomUrl != "" {
-		httpOption.BaseURL = strings.Trim(conf.BaseConfInfo.CustomUrl, "/v1")
+		// Trim with a cutset would strip every trailing '/', 'v' and '1' char
+		httpOption.BaseURL = strings.TrimSuffix(conf.BaseConfInfo.CustomUrl, "/v1")
 		httpOption.Headers = http.Header{
 			"Authorization": []string{"Bearer " + conf.BaseConfInfo.GeminiToken},
 		}

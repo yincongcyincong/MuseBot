@@ -1,21 +1,18 @@
 # 对话式配置
 
-管理员可以直接用自然语言配置 MuseBot：
+配置请求现在统一在 `/task` 工作流里执行。管理员直接发给 `/task`，或者开启智能模式（`SMART_MODE=true`）后用自然语言表达——分类器会把系统请求自动路由到 `/task`：
 
 ```text
-开启智能模式。
-添加一个叫 weather 的 MCP，地址是 https://example.com/mcp，描述是查询天气数据。
-重新加载 skill。
-创建一个叫 release_notes 的 skill，用于编写发布说明，指令：输出简洁、面向用户的发布说明。
-每天早上 8 点创建一个定时任务，提示词是“总结 AI 新闻”。
-运行 git status。
-查看 data 目录。
-读取 notes/a.md。
-把 doc.md 里的 old 改成 new。
-把 a.md 移动到 archive/a.md。
+/task 开启智能模式。
+/task 添加一个叫 weather 的 MCP，地址是 https://example.com/mcp，描述是查询天气数据。
+/task 重新加载 skill。
+/task 创建一个叫 release_notes 的 skill，用于编写发布说明，指令：输出简洁、面向用户的发布说明。
+/task 每天早上 8 点创建一个定时任务，提示词是“总结 AI 新闻”。
+/task 运行 git status。
+/task 查看 data 目录。
 ```
 
-MuseBot 会先从普通消息中识别系统意图；确认是系统请求后直接执行，其他消息继续走正常聊天和 Smart Mode 流程。咨询概念、假设问题和风险讨论不会触发执行。
+在 `/task` 内部，规划器会分派内建的 `bot_config` agent，由它调用 `bot_config` 工具提交经过校验的动作；MuseBot 在本地执行后把结果并入任务输出。
 
 ## 权限
 
@@ -64,4 +61,4 @@ export FILE_ROOT_PATH=/path/to/agent-files
 - 命令：运行白名单内命令，并返回截断后的输出。
 - 文件：列出、读取、写入、精确替换编辑、创建目录、删除和移动。
 
-意图识别使用轻量 LLM 分类器，确认后再生成受限制的 JSON 操作列表；MuseBot 在本地校验并执行这些操作，然后逐项返回结果。
+配置动作是 `/task` 多智能体工作流的一部分：任务规划器能看到 `bot_config` agent，被分派的子 agent 生成受限的 JSON 动作，MuseBot 在本地校验并执行，然后返回结果。

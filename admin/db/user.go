@@ -3,22 +3,24 @@ package db
 import (
 	"database/sql"
 	"time"
-
-	"github.com/yincongcyincong/MuseBot/utils"
 )
 
 type User struct {
 	ID         int    `json:"id"`
 	Username   string `json:"username"`
-	Password   string `json:"password"`
+	Password   string `json:"-"`
 	CreateTime int64  `json:"create_time"`
 	UpdateTime int64  `json:"update_time"`
 }
 
 func CreateUser(username, password string) error {
+	hash, err := HashPassword(password)
+	if err != nil {
+		return err
+	}
 	now := time.Now().Unix()
-	_, err := DB.Exec(`INSERT INTO admin_users (username, password, create_time, update_time) VALUES (?, ?, ?, ?)`,
-		username, utils.MD5(password), now, now)
+	_, err = DB.Exec(`INSERT INTO admin_users (username, password, create_time, update_time) VALUES (?, ?, ?, ?)`,
+		username, hash, now, now)
 	return err
 }
 
@@ -43,8 +45,12 @@ func GetUserByUsername(username string) (*User, error) {
 }
 
 func UpdateUserPassword(id int, newPassword string) error {
+	hash, err := HashPassword(newPassword)
+	if err != nil {
+		return err
+	}
 	now := time.Now().Unix()
-	_, err := DB.Exec(`UPDATE admin_users SET password = ?, update_time = ? WHERE id = ?`, utils.MD5(newPassword), now, id)
+	_, err = DB.Exec(`UPDATE admin_users SET password = ?, update_time = ? WHERE id = ?`, hash, now, id)
 	return err
 }
 
@@ -63,12 +69,12 @@ func ListUsers(offset, limit int, username string) ([]User, int, error) {
 
 	users := make([]User, 0)
 
-	// 构建查询 SQL
+	// 构建查询 SQL; the password hash is never selected for listing
 	if username != "" {
-		query = `SELECT id, username, password, create_time, update_time FROM admin_users WHERE username LIKE ? LIMIT ? OFFSET ?`
+		query = `SELECT id, username, create_time, update_time FROM admin_users WHERE username LIKE ? LIMIT ? OFFSET ?`
 		args = append(args, "%"+username+"%", limit, offset)
 	} else {
-		query = `SELECT id, username, password, create_time, update_time FROM admin_users LIMIT ? OFFSET ?`
+		query = `SELECT id, username, create_time, update_time FROM admin_users LIMIT ? OFFSET ?`
 		args = append(args, limit, offset)
 	}
 
@@ -80,7 +86,7 @@ func ListUsers(offset, limit int, username string) ([]User, int, error) {
 
 	for rows.Next() {
 		var u User
-		err := rows.Scan(&u.ID, &u.Username, &u.Password, &u.CreateTime, &u.UpdateTime)
+		err := rows.Scan(&u.ID, &u.Username, &u.CreateTime, &u.UpdateTime)
 		if err != nil {
 			return nil, 0, err
 		}

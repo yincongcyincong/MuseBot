@@ -2,6 +2,8 @@ package conf
 
 import (
 	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -63,4 +65,36 @@ func TestInitConfig_WithEnv(t *testing.T) {
 	}
 
 	os.Clearenv()
+}
+
+func TestEnsureSessionKeyAt(t *testing.T) {
+	keyPath := filepath.Join(t.TempDir(), "admin_session_key")
+
+	BaseConfInfo.SessionKey = ""
+	source := ensureSessionKeyAt(keyPath)
+	if BaseConfInfo.SessionKey == "" || len(BaseConfInfo.SessionKey) < 32 {
+		t.Fatalf("expected a generated session key, got %q", BaseConfInfo.SessionKey)
+	}
+	if !strings.Contains(source, "generated") {
+		t.Errorf("expected generated source, got %q", source)
+	}
+	firstKey := BaseConfInfo.SessionKey
+
+	// restart: the persisted key is reloaded unchanged
+	BaseConfInfo.SessionKey = ""
+	source = ensureSessionKeyAt(keyPath)
+	if BaseConfInfo.SessionKey != firstKey {
+		t.Errorf("expected persisted key %q to be reloaded, got %q", firstKey, BaseConfInfo.SessionKey)
+	}
+	if !strings.Contains(source, "loaded") {
+		t.Errorf("expected loaded source, got %q", source)
+	}
+
+	// the legacy hard-coded default must be replaced
+	BaseConfInfo.SessionKey = legacySessionKeyDefault
+	legacyPath := filepath.Join(t.TempDir(), "admin_session_key")
+	ensureSessionKeyAt(legacyPath)
+	if BaseConfInfo.SessionKey == legacySessionKeyDefault {
+		t.Error("expected the legacy default session key to be replaced")
+	}
 }

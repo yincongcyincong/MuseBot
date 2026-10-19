@@ -423,7 +423,7 @@ func (d *DiscordRobot) sendImg() {
 
 		prompt := strings.TrimSpace(d.getPrompt())
 		if prompt == "" {
-			d.Robot.SendMsg(chatId, i18n.GetMessage("video_empty_content", nil),
+			d.Robot.SendMsg(chatId, i18n.GetMessage("photo_empty_content", nil),
 				msgId, tgbotapi.ModeMarkdown, nil)
 			return
 		}
@@ -447,6 +447,7 @@ func (d *DiscordRobot) sendImg() {
 			return
 		}
 
+		err = d.sendMedia(imageContent, utils.DetectImageFormat(imageContent), "image")
 		if err != nil {
 			logger.WarnCtx(d.Robot.Ctx, "send image fail", "err", err)
 			d.Robot.SendMsg(chatId, err.Error(), msgId, "", nil)
@@ -543,6 +544,7 @@ func (d *DiscordRobot) sendVideo() {
 			return
 		}
 
+		err = d.sendMedia(videoContent, utils.DetectVideoMimeType(videoContent), "video")
 		if err != nil {
 			logger.WarnCtx(d.Robot.Ctx, "send video fail", "err", err)
 			d.Robot.SendMsg(chatId, err.Error(), msgId, "", nil)

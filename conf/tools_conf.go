@@ -26,6 +26,7 @@ const (
 	BuiltinFileReadTool  = "file_read"
 	BuiltinFileWriteTool = "file_write"
 	BuiltinShellTool     = "shell"
+	BuiltinConfigTool    = "bot_config"
 )
 
 type AgentInfo struct {
@@ -33,6 +34,7 @@ type AgentInfo struct {
 
 	Instructions string `json:"-"`
 	IsSkill      bool   `json:"-"`
+	IsBuiltin    bool   `json:"-"`
 
 	DeepseekTool    []deepseek.Tool   `json:"-"`
 	VolTool         []*model.Tool     `json:"-"`
@@ -242,6 +244,7 @@ func RegisterBuiltinTools() {
 
 	TaskTools.Store(BuiltinWebSearchTool, &AgentInfo{
 		Description:     "Required first-step web research agent. Call web_search to collect facts and source links before planning or producing the final result.",
+		IsBuiltin:       true,
 		DeepseekTool:    mcputils.TransToolsToDPFunctionCall([]mcp.Tool{searchTool}),
 		VolTool:         mcputils.TransToolsToVolFunctionCall([]mcp.Tool{searchTool}),
 		OpenAITools:     mcputils.TransToolsToChatGPTFunctionCall([]mcp.Tool{searchTool}),
@@ -251,6 +254,7 @@ func RegisterBuiltinTools() {
 
 	TaskTools.Store(BuiltinFileReadTool, &AgentInfo{
 		Description:     "File access agent. Call file_read to inspect an approved text file in the task file sandbox.",
+		IsBuiltin:       true,
 		DeepseekTool:    mcputils.TransToolsToDPFunctionCall([]mcp.Tool{readTool}),
 		VolTool:         mcputils.TransToolsToVolFunctionCall([]mcp.Tool{readTool}),
 		OpenAITools:     mcputils.TransToolsToChatGPTFunctionCall([]mcp.Tool{readTool}),
@@ -260,6 +264,7 @@ func RegisterBuiltinTools() {
 
 	TaskTools.Store(BuiltinFileWriteTool, &AgentInfo{
 		Description:     "File mutation agent. Call file_write only for user-approved creation, overwrite, or append operations in the task file sandbox.",
+		IsBuiltin:       true,
 		DeepseekTool:    mcputils.TransToolsToDPFunctionCall([]mcp.Tool{writeTool}),
 		VolTool:         mcputils.TransToolsToVolFunctionCall([]mcp.Tool{writeTool}),
 		OpenAITools:     mcputils.TransToolsToChatGPTFunctionCall([]mcp.Tool{writeTool}),
@@ -269,17 +274,71 @@ func RegisterBuiltinTools() {
 
 	TaskTools.Store(BuiltinShellTool, &AgentInfo{
 		Description:     "Command execution agent. Call shell only with the exact argv needed, and wait for user approval before execution.",
+		IsBuiltin:       true,
 		DeepseekTool:    mcputils.TransToolsToDPFunctionCall([]mcp.Tool{shellTool}),
 		VolTool:         mcputils.TransToolsToVolFunctionCall([]mcp.Tool{shellTool}),
 		OpenAITools:     mcputils.TransToolsToChatGPTFunctionCall([]mcp.Tool{shellTool}),
 		GeminiTools:     mcputils.TransToolsToGeminiFunctionCall([]mcp.Tool{shellTool}),
 		OpenRouterTools: mcputils.TransToolsToOpenRouterFunctionCall([]mcp.Tool{shellTool}),
 	})
+
+	configTool := mcp.Tool{
+		Name:        BuiltinConfigTool,
+		Description: "Manage MuseBot itself: runtime settings, MCP servers, skills, cron jobs, allowlisted commands, and task files. Use it whenever the task asks to view or change the bot's own configuration. Requires an administrator user.",
+		InputSchema: mcp.ToolInputSchema{
+			Type: "object",
+			Properties: map[string]any{
+				"type":        map[string]any{"type": "string", "description": "Action type: config, mcp, skill, cron, command, file"},
+				"operation":   map[string]any{"type": "string", "description": "config: list|get|set; mcp: list|set|delete|enable|disable|sync; skill: list|create|reload|set_path|search|install; cron: list|get|create|update|enable|disable|delete|clear; command: run; file: list|read|write|edit|mkdir|delete|move"},
+				"config_type": map[string]any{"type": "string", "description": "config get/set target: base, audio, llm, photo, rag, video, register, tools"},
+				"key":         map[string]any{"type": "string", "description": "config key in json tag form, e.g. smart_mode"},
+				"value":       map[string]any{"description": "config value to set"},
+				"name":        map[string]any{"type": "string", "description": "mcp/skill/cron name"},
+				"query":       map[string]any{"type": "string", "description": "skill search/install capability query"},
+				"description": map[string]any{"type": "string", "description": "mcp/skill description"},
+				"instructions": map[string]any{
+					"type":        "string",
+					"description": "skill instructions (SKILL.md body)",
+				},
+				"cron":    map[string]any{"type": "string", "description": "six-field cron expression for cron create/update"},
+				"prompt":  map[string]any{"type": "string", "description": "cron prompt"},
+				"args":    map[string]any{"type": "array", "items": map[string]any{"type": "string"}, "description": "command argv array, e.g. [\"git\",\"status\"]"},
+				"timeout": map[string]any{"type": "integer", "description": "command timeout seconds"},
+				"path":    map[string]any{"type": "string", "description": "file path relative to the configured file root, or command working directory"},
+				"content": map[string]any{"type": "string", "description": "file write content"},
+				"old_text": map[string]any{
+					"type":        "string",
+					"description": "exact text to replace for file edit",
+				},
+				"new_text": map[string]any{"type": "string", "description": "replacement text for file edit"},
+				"target":   map[string]any{"type": "string", "description": "move destination for file move"},
+				"id":       map[string]any{"type": "integer", "description": "cron id for cron update/enable/disable/delete"},
+			},
+			Required: []string{"type", "operation"},
+		},
+	}
+
+	TaskTools.Store(BuiltinConfigTool, &AgentInfo{
+		Description: "MuseBot configuration agent. Assign it when the task needs to view or change MuseBot settings, MCP servers, skills, cron jobs, run allowlisted commands, or manage task files. It calls bot_config and enforces admin-only access.",
+		IsBuiltin:   true,
+		Instructions: "You manage MuseBot itself through the bot_config tool. Pass exactly the keys \"type\" and \"operation\". " +
+			"Use config(list|get|set) with config_type and key for settings; bot_name, http_host, db_type, db_conf, the command allowlist and the file root cannot change at runtime. " +
+			"Use mcp(list|set|delete|enable|disable|sync); set needs name plus a complete server object. " +
+			"Use skill(list|create|reload|set_path|search|install). Use cron(list|get|create|update|enable|disable|delete|clear) with six-field cron, prompt and numeric id as applicable. " +
+			"Use command(run) with an argv array, never a shell string. Use file(list|read|write|edit|mkdir|delete|move) with paths relative to the configured file root; write needs content, edit needs exact old_text and new_text, move needs target. " +
+			"Never invent configuration keys, operations, or URLs, and never return secrets.",
+		DeepseekTool:    mcputils.TransToolsToDPFunctionCall([]mcp.Tool{configTool}),
+		VolTool:         mcputils.TransToolsToVolFunctionCall([]mcp.Tool{configTool}),
+		OpenAITools:     mcputils.TransToolsToChatGPTFunctionCall([]mcp.Tool{configTool}),
+		GeminiTools:     mcputils.TransToolsToGeminiFunctionCall([]mcp.Tool{configTool}),
+		OpenRouterTools: mcputils.TransToolsToOpenRouterFunctionCall([]mcp.Tool{configTool}),
+	})
 }
 
 func InsertTools(clientName string) {
 	if clientName == BuiltinWebSearchTool || clientName == BuiltinFileReadTool ||
-		clientName == BuiltinFileWriteTool || clientName == BuiltinShellTool {
+		clientName == BuiltinFileWriteTool || clientName == BuiltinShellTool ||
+		clientName == BuiltinConfigTool {
 		logger.Error("built-in tool name is reserved", "tool", clientName)
 		return
 	}
@@ -294,13 +353,6 @@ func InsertTools(clientName string) {
 		gmTools := mcputils.TransToolsToGeminiFunctionCall(c.Tools)
 		orTools := mcputils.TransToolsToOpenRouterFunctionCall(c.Tools)
 
-		if BaseConfInfo.UseTools {
-			DeepseekTools = append(DeepseekTools, dpTools...)
-			VolTools = append(VolTools, volTools...)
-			OpenAITools = append(OpenAITools, oaTools...)
-			GeminiTools = append(GeminiTools, gmTools...)
-		}
-
 		TaskTools.Store(clientName, &AgentInfo{
 			Description:     fmt.Sprintf("MCP server %s exposes the function tools listed in this agent's schema.", clientName),
 			DeepseekTool:    dpTools,
@@ -309,5 +361,38 @@ func InsertTools(clientName string) {
 			OpenAITools:     oaTools,
 			OpenRouterTools: orTools,
 		})
+
+		RebuildChatToolSets()
 	}
+}
+
+// RebuildChatToolSets rebuilds the global function-call tool lists from the
+// registered MCP agents. It must be called whenever TaskTools changes so that
+// repeated syncs, updates or deletions replace the tool sets instead of
+// appending duplicates or keeping stale tools.
+func RebuildChatToolSets() {
+	dpTools := make([]deepseek.Tool, 0)
+	volTools := make([]*model.Tool, 0)
+	oaTools := make([]openai.Tool, 0)
+	gmTools := make([]*genai.Tool, 0)
+
+	if BaseConfInfo.UseTools {
+		TaskTools.Range(func(_, value any) bool {
+			info := value.(*AgentInfo)
+			if info.IsSkill || info.IsBuiltin {
+				// skills and built-in tools are task agents, not chat tools
+				return true
+			}
+			dpTools = append(dpTools, info.DeepseekTool...)
+			volTools = append(volTools, info.VolTool...)
+			oaTools = append(oaTools, info.OpenAITools...)
+			gmTools = append(gmTools, info.GeminiTools...)
+			return true
+		})
+	}
+
+	DeepseekTools = dpTools
+	VolTools = volTools
+	OpenAITools = oaTools
+	GeminiTools = gmTools
 }

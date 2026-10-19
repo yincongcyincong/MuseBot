@@ -1,13 +1,23 @@
 package conf
 
 import (
+	"bytes"
+	"crypto/rand"
+	"encoding/hex"
 	"flag"
 	"os"
+	"path/filepath"
 	"strconv"
 
 	"github.com/yincongcyincong/MuseBot/logger"
 	botUtils "github.com/yincongcyincong/MuseBot/utils"
 )
+
+// legacySessionKeyDefault was a hard-coded default; anyone can read it in the
+// source or old docs and forge session cookies, so it must never be used.
+const legacySessionKeyDefault = "muse_bot_session_key"
+
+const sessionKeyFile = "data/admin_session_key"
 
 type BaseConfig struct {
 	DBType string `json:"db_type"`
@@ -25,7 +35,7 @@ var BaseConfInfo = new(BaseConfig)
 func InitConfig() {
 	flag.StringVar(&BaseConfInfo.DBType, "db_type", "sqlite3", "db type")
 	flag.StringVar(&BaseConfInfo.DBConf, "db_conf", botUtils.GetAbsPath("data/muse_bot_admin.db"), "db conf")
-	flag.StringVar(&BaseConfInfo.SessionKey, "session_key", "muse_bot_session_key", "session key")
+	flag.StringVar(&BaseConfInfo.SessionKey, "session_key", "", "session key; auto-generated and persisted when empty")
 	flag.StringVar(&BaseConfInfo.AdminPort, "admin_port", "18080", "admin port")
 	flag.IntVar(&BaseConfInfo.CheckBotSec, "check_bot_sec", 10, "check bot interval")
 
@@ -54,11 +64,55 @@ func InitConfig() {
 		BaseConfInfo.CheckBotSec, _ = strconv.Atoi(os.Getenv("CHECK_BOT_SEC"))
 	}
 
+	sessionKeySource := ensureSessionKey()
+
 	logger.Info("CONF", "DBType", BaseConfInfo.DBType)
 	logger.Info("CONF", "DBConf", BaseConfInfo.DBConf)
-	logger.Info("CONF", "SessionKey", BaseConfInfo.SessionKey)
+	// never log the session key itself
+	logger.Info("CONF", "SessionKey", sessionKeySource)
 	logger.Info("CONF", "AdminPort", BaseConfInfo.AdminPort)
 	logger.Info("CONF", "CheckBotSec", BaseConfInfo.CheckBotSec)
 
 	EnvRegisterConf()
+}
+
+// ensureSessionKey falls back to a persisted random key when none is
+// configured or when the legacy hard-coded default is detected. The key is
+// stored under the data directory so sessions survive restarts.
+func ensureSessionKey() string {
+	if BaseConfInfo.SessionKey != "" && BaseConfInfo.SessionKey != legacySessionKeyDefault {
+		return "configured"
+	}
+
+	return ensureSessionKeyAt(botUtils.GetAbsPath(sessionKeyFile))
+}
+
+// ensureSessionKeyAt loads or creates the persisted session key at keyPath.
+func ensureSessionKeyAt(keyPath string) string {
+	if data, err := os.ReadFile(keyPath); err == nil {
+		if key := string(bytes.TrimSpace(data)); len(key) >= 32 {
+			BaseConfInfo.SessionKey = key
+			return "loaded from " + keyPath
+		}
+	}
+
+	buf := make([]byte, 32)
+	if _, err := rand.Read(buf); err != nil {
+		logger.Fatal("generate session key fail", "err", err)
+		return ""
+	}
+	BaseConfInfo.SessionKey = hex.EncodeToString(buf)
+
+	if err := os.MkdirAll(filepath.Dir(keyPath), 0755); err != nil {
+		logger.Fatal("create data direction fail", "err", err)
+		return ""
+	}
+	if err := os.WriteFile(keyPath, []byte(BaseConfInfo.SessionKey), 0600); err != nil {
+		logger.Fatal("persist session key fail", "err", err)
+		return ""
+	}
+
+	logger.Warn("SESSION_KEY not configured; a random key was generated and saved (set SESSION_KEY to override)",
+		"file", keyPath)
+	return "generated at " + keyPath
 }
