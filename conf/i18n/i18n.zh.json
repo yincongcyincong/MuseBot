@@ -66,5 +66,10 @@
   "cron_list_header": "已设置的定时任务 (Cron) 列表:\n\n",
   "compress_history_prompt": "你是一个对话历史压缩助手。请把下面的对话历史（可能已包含之前的摘要）压缩成一段简洁、连贯的摘要，保留关键事实、用户偏好、已达成的结论和未完成的事项，去除寒暄和冗余。只输出摘要正文，不要额外说明。\n\n对话历史：\n{{.history}}",
   "compress_summary_context": "以下是早期对话的摘要，供你参考以保持上下文连贯：\n{{.summary}}",
-  "rag_prompt": "请根据以下上下文回答用户问题。如果上下文与问题无关，则基于你自己的知识回答。\n\n上下文：\n{{.context}}\n问题：\n{{.question}}"
+  "rag_prompt": "请根据以下上下文回答用户问题。如果上下文与问题无关，则基于你自己的知识回答。\n\n上下文：\n{{.context}}\n问题：\n{{.question}}",
+  "task_tool_approval_request": "⚠️ 任务操作需要授权。\n工具：{{.operation}}\n目标：{{.path}}\n详情：{{.detail}}\n请在 {{.timeout}} 分钟内回复 `/y` 授权，或回复 `/n` 拒绝。",
+  "task_tool_approval_received": "已收到授权，任务继续执行。",
+  "task_tool_denied": "已收到拒绝，任务将跳过该操作并继续。",
+  "task_tool_approval_missing": "没有找到匹配的待授权工具操作。",
+  "task_tool_operation_approved": "已授权{{.operation}}：{{.path}}"
 }

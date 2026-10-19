@@ -64,6 +64,8 @@ type LLM struct {
 
 	WholeContent string // whole answer from llm
 	LoopNum      int
+
+	ToolApprovals bool
 }
 
 type LLMClient interface {
@@ -430,6 +432,12 @@ func WithTaskTools(taskTool *conf.AgentInfo) Option {
 	}
 }
 
+func WithToolApprovals(enabled bool) Option {
+	return func(p *LLM) {
+		p.ToolApprovals = enabled
+	}
+}
+
 func WithContext(ctx context.Context) Option {
 	return func(p *LLM) {
 		p.Ctx = ctx
@@ -446,6 +454,12 @@ func (l *LLM) ExecMcpReq(ctx context.Context, funcName string, property map[stri
 	if funcName == conf.BuiltinWebSearchTool {
 		query, _ := property["query"].(string)
 		return utils.WebSearch(ctx, query)
+	}
+	if l.ToolApprovals && (funcName == conf.BuiltinFileReadTool || funcName == conf.BuiltinFileWriteTool) {
+		return l.executeTaskFileTool(ctx, funcName, property)
+	}
+	if l.ToolApprovals && funcName == conf.BuiltinShellTool {
+		return l.executeTaskShellTool(ctx, property)
 	}
 
 	mc, err := clients.GetMCPClientByToolName(funcName)

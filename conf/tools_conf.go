@@ -21,7 +21,12 @@ import (
 	"google.golang.org/genai"
 )
 
-const BuiltinWebSearchTool = "web_search"
+const (
+	BuiltinWebSearchTool = "web_search"
+	BuiltinFileReadTool  = "file_read"
+	BuiltinFileWriteTool = "file_write"
+	BuiltinShellTool     = "shell"
+)
 
 type AgentInfo struct {
 	Description string `json:"description"`
@@ -158,7 +163,7 @@ func InitTools() {
 }
 
 func RegisterBuiltinTools() {
-	tools := []mcp.Tool{{
+	searchTool := mcp.Tool{
 		Name:        BuiltinWebSearchTool,
 		Description: "Search the public web. Use for current facts, unknown terminology, market data, documentation, prior work, and source links.",
 		InputSchema: mcp.ToolInputSchema{
@@ -171,21 +176,111 @@ func RegisterBuiltinTools() {
 			},
 			Required: []string{"query"},
 		},
-	}}
+	}
+
+	readTool := mcp.Tool{
+		Name:        BuiltinFileReadTool,
+		Description: "Read a UTF-8 text file from the task file sandbox after explicit user approval.",
+		InputSchema: mcp.ToolInputSchema{
+			Type: "object",
+			Properties: map[string]any{
+				"path": map[string]any{
+					"type":        "string",
+					"description": "Path relative to the task file sandbox",
+				},
+			},
+			Required: []string{"path"},
+		},
+	}
+
+	writeTool := mcp.Tool{
+		Name:        BuiltinFileWriteTool,
+		Description: "Create, overwrite, or append to a UTF-8 text file in the task file sandbox after explicit user approval.",
+		InputSchema: mcp.ToolInputSchema{
+			Type: "object",
+			Properties: map[string]any{
+				"path": map[string]any{
+					"type":        "string",
+					"description": "Path relative to the task file sandbox",
+				},
+				"content": map[string]any{
+					"type":        "string",
+					"description": "UTF-8 text content to write",
+				},
+				"append": map[string]any{
+					"type":        "boolean",
+					"description": "Append to the file instead of overwriting it",
+				},
+			},
+			Required: []string{"path", "content"},
+		},
+	}
+
+	shellTool := mcp.Tool{
+		Name:        BuiltinShellTool,
+		Description: "Run one allowlisted command as an argv array in the task file sandbox after explicit user approval. Shell interpolation is not used.",
+		InputSchema: mcp.ToolInputSchema{
+			Type: "object",
+			Properties: map[string]any{
+				"args": map[string]any{
+					"type":        "array",
+					"items":       map[string]any{"type": "string"},
+					"description": "Executable and arguments, for example [\"git\", \"status\"]",
+				},
+				"cwd": map[string]any{
+					"type":        "string",
+					"description": "Optional working directory relative to the task file sandbox",
+				},
+				"timeout_sec": map[string]any{
+					"type":        "integer",
+					"description": "Optional timeout in seconds, capped by the server configuration",
+				},
+			},
+			Required: []string{"args"},
+		},
+	}
 
 	TaskTools.Store(BuiltinWebSearchTool, &AgentInfo{
 		Description:     "Required first-step web research agent. Call web_search to collect facts and source links before planning or producing the final result.",
-		DeepseekTool:    mcputils.TransToolsToDPFunctionCall(tools),
-		VolTool:         mcputils.TransToolsToVolFunctionCall(tools),
-		OpenAITools:     mcputils.TransToolsToChatGPTFunctionCall(tools),
-		GeminiTools:     mcputils.TransToolsToGeminiFunctionCall(tools),
-		OpenRouterTools: mcputils.TransToolsToOpenRouterFunctionCall(tools),
+		DeepseekTool:    mcputils.TransToolsToDPFunctionCall([]mcp.Tool{searchTool}),
+		VolTool:         mcputils.TransToolsToVolFunctionCall([]mcp.Tool{searchTool}),
+		OpenAITools:     mcputils.TransToolsToChatGPTFunctionCall([]mcp.Tool{searchTool}),
+		GeminiTools:     mcputils.TransToolsToGeminiFunctionCall([]mcp.Tool{searchTool}),
+		OpenRouterTools: mcputils.TransToolsToOpenRouterFunctionCall([]mcp.Tool{searchTool}),
+	})
+
+	TaskTools.Store(BuiltinFileReadTool, &AgentInfo{
+		Description:     "File access agent. Call file_read to inspect an approved text file in the task file sandbox.",
+		DeepseekTool:    mcputils.TransToolsToDPFunctionCall([]mcp.Tool{readTool}),
+		VolTool:         mcputils.TransToolsToVolFunctionCall([]mcp.Tool{readTool}),
+		OpenAITools:     mcputils.TransToolsToChatGPTFunctionCall([]mcp.Tool{readTool}),
+		GeminiTools:     mcputils.TransToolsToGeminiFunctionCall([]mcp.Tool{readTool}),
+		OpenRouterTools: mcputils.TransToolsToOpenRouterFunctionCall([]mcp.Tool{readTool}),
+	})
+
+	TaskTools.Store(BuiltinFileWriteTool, &AgentInfo{
+		Description:     "File mutation agent. Call file_write only for user-approved creation, overwrite, or append operations in the task file sandbox.",
+		DeepseekTool:    mcputils.TransToolsToDPFunctionCall([]mcp.Tool{writeTool}),
+		VolTool:         mcputils.TransToolsToVolFunctionCall([]mcp.Tool{writeTool}),
+		OpenAITools:     mcputils.TransToolsToChatGPTFunctionCall([]mcp.Tool{writeTool}),
+		GeminiTools:     mcputils.TransToolsToGeminiFunctionCall([]mcp.Tool{writeTool}),
+		OpenRouterTools: mcputils.TransToolsToOpenRouterFunctionCall([]mcp.Tool{writeTool}),
+	})
+
+	TaskTools.Store(BuiltinShellTool, &AgentInfo{
+		Description:     "Command execution agent. Call shell only with the exact argv needed, and wait for user approval before execution.",
+		DeepseekTool:    mcputils.TransToolsToDPFunctionCall([]mcp.Tool{shellTool}),
+		VolTool:         mcputils.TransToolsToVolFunctionCall([]mcp.Tool{shellTool}),
+		OpenAITools:     mcputils.TransToolsToChatGPTFunctionCall([]mcp.Tool{shellTool}),
+		GeminiTools:     mcputils.TransToolsToGeminiFunctionCall([]mcp.Tool{shellTool}),
+		OpenRouterTools: mcputils.TransToolsToOpenRouterFunctionCall([]mcp.Tool{shellTool}),
 	})
 }
 
 func InsertTools(clientName string) {
-	if clientName == BuiltinWebSearchTool {
-		logger.Error("web_search is reserved by the built-in search tool")
+	if clientName == BuiltinWebSearchTool || clientName == BuiltinFileReadTool ||
+		clientName == BuiltinFileWriteTool || clientName == BuiltinShellTool {
+		logger.Error("built-in tool name is reserved", "tool", clientName)
 		return
 	}
 

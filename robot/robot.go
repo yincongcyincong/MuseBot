@@ -865,6 +865,12 @@ func (r *RobotInfo) ExecCmd(cmd string, defaultFunc func(), modeFunc func(string
 			emptyPromptFunc = t.sendForceReply("task_empty_content")
 		}
 		r.sendMultiAgent(emptyPromptFunc)
+	case param.Approve, "/" + param.Approve, "$" + param.Approve,
+		"approve", "/approve", "$approve":
+		r.resolveTaskToolApproval(true)
+	case param.Deny, "/" + param.Deny, "$" + param.Deny,
+		"deny", "/deny", "$deny":
+		r.resolveTaskToolApproval(false)
 	case param.Mode, "/" + param.Mode, "$" + param.Mode:
 		r.showMode()
 	case param.CronList, "/" + param.CronList, "$" + param.CronList:
@@ -876,6 +882,25 @@ func (r *RobotInfo) ExecCmd(cmd string, defaultFunc func(), modeFunc func(string
 	default:
 		defaultFunc()
 	}
+}
+
+func (r *RobotInfo) resolveTaskToolApproval(approved bool) {
+	chatId, msgId, userId := r.GetChatIdAndMsgIdAndUserID()
+	fields := strings.Fields(r.Robot.getPrompt())
+	token := ""
+	if len(fields) > 0 {
+		token = fields[0]
+	}
+	if !llm.ResolveTaskToolApproval(userId, chatId, token, approved) {
+		r.SendMsg(chatId, i18n.GetMessage("task_tool_approval_missing", nil), msgId, "", nil)
+		return
+	}
+
+	key := "task_tool_denied"
+	if approved {
+		key = "task_tool_approval_received"
+	}
+	r.SendMsg(chatId, i18n.GetMessage(key, nil), msgId, "", nil)
 }
 
 func (r *RobotInfo) cronList() {

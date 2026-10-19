@@ -128,6 +128,7 @@ func (d *LLMTaskReq) newTaskLLM(prompt string, tool *conf.AgentInfo, streaming b
 		WithContext(d.Ctx),
 		WithCS(d.Cs),
 		WithTaskTools(tool),
+		WithToolApprovals(true),
 	}
 	if streaming {
 		options = append(options, WithMessageChan(d.MessageChan), WithHTTPMsgChan(d.HTTPMsgChan))
