@@ -3,7 +3,7 @@
 Этот репозиторий предоставляет **Чат-бот** (Telegram, Discord, Slack, Lark（飞书）, 钉钉, 企业微信, QQ, 微信), который
 интегрируется
 с **LLM API** для предоставления ответов на основе искусственного интеллекта. Бот поддерживает LLM от **openai** *
-*deepseek** **gemini** **openrouter** **orcarouter**, что делает взаимодействие более естественным и динамичным.
+*deepseek** **gemini** **openrouter** **orcarouter** **cheaperinference**, что делает взаимодействие более естественным и динамичным.
 [中文文档 (Китайская документация)](https://github.com/yincongcyincong/MuseBot/blob/main/README_ZH.md)
 [Китайская документация (Русский перевод)](https://github.com/yincongcyincong/MuseBot/blob/main/README_RU.md)
 
@@ -62,6 +62,7 @@ chatgpt: [https://www.youtube.com/watch?v=G\_DZYMvd5Ug](https://www.youtube.com/
 | ⚙️ **302.AI**       | 302.AI       | ✅                |           ✅           |        ✅        |                  ✅ |   ❌ | [doc](https://302.ai/)                                                                                        |
 | 🌐 **OpenRouter**   | OpenRouter   | ✅                |           ✅           |        ❌        |                  ✅ |   ❌ | [doc](https://openrouter.ai/docs/quickstart)                                                                  |
 | 🛡️ **OrcaRouter**  | OrcaRouter   | ✅                |           ✅           |        ❌        |                  ✅ |   ❌ | [doc](https://www.orcarouter.ai)                                                                               |
+| 🌐 **Cheaper Inference** | Cheaper Inference | ✅           |           ✅           |        ❌        |                  ✅ |   ❌ | [doc](https://cheaperinference.com/docs)                                                                       |
 | 🌐 **ChatAnywhere** | ChatAnywhere | ✅                |           ✅           |        ❌        |                  ✅ |   ❌ | [doc](https://api.chatanywhere.tech/#/)                                                                       |
 
 ## 🤖 Пример текста
@@ -150,6 +151,7 @@ chatgpt: [https://www.youtube.com/watch?v=G\_DZYMvd5Ug](https://www.youtube.com/
 | **GEMINI\_TOKEN**                   | Токен API Google Gemini                                                                                                 | -                                                      |
 | **OPEN\_ROUTER\_TOKEN**             | Токен OpenRouter [doc](https://openrouter.ai/docs/quickstart)                                                           | -                                                      |
 | **ORCAROUTER\_TOKEN**             | API-ключ OrcaRouter [doc](https://www.orcarouter.ai)                                                                  | -                                                      |
+| **CHEAPER\_INFERENCE\_TOKEN**      | API-ключ Cheaper Inference [doc](https://cheaperinference.com/docs)                                                   | -                                                      |
 | **ALIYUN\_TOKEN**                   | Токен Aliyun Bailian [doc](https://bailian.console.aliyun.com/#/doc/?type=model&url=2840915)                            | -                                                      |
 | **AI\_302\_TOKEN**                  | Токен 302.AI [doc](https://302.ai/)                                                                                     | -                                                      |
 | **VOL\_TOKEN**                      | Общий токен Volcano Engine [doc](https://www.volcengine.com/docs/82379/1399008#b00dee71)                                | -                                                      |
@@ -158,8 +160,8 @@ chatgpt: [https://www.youtube.com/watch?v=G\_DZYMvd5Ug](https://www.youtube.com/
 | **ERNIE\_AK**                       | AK большой модели Baidu ERNIE [doc](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Sly8bm96d)                             | -                                                      |
 | **ERNIE\_SK**                       | SK большой модели Baidu ERNIE [doc](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Sly8bm96d)                             | -                                                      |
 | **CUSTOM\_URL**                     | Пользовательская конечная точка API DeepSeek                                                                            | [https://api.deepseek.com/](https://api.deepseek.com/) |
-| **TYPE**                            | Тип LLM (deepseek/openai/gemini/openrouter/vol/302-ai/chatanywhere/orcarouter)                                        | deepseek                                               |
-| **MEDIA\_TYPE**                     | Источник генерации медиа (openai/gemini/vol/openrouter/aliyun/302-ai/orcarouter)                                      | vol                                                    |
+| **TYPE**                            | Тип LLM (deepseek/openai/gemini/openrouter/vol/302-ai/chatanywhere/orcarouter/cheaperinference)                       | deepseek                                               |
+| **MEDIA\_TYPE**                     | Источник генерации медиа (openai/gemini/vol/openrouter/aliyun/302-ai/orcarouter/cheaperinference)                     | vol                                                    |
 | **DB\_TYPE**                        | Тип базы данных (sqlite3/mysql)                                                                                         | sqlite3                                                |
 | **DB\_CONF**                        | Путь к файлу конфигурации базы данных или строка подключения                                                            | ./data/muse\_bot.db                                    |
 | **LLM\_PROXY**                      | Сетевой прокси LLM (например, [http://127.0.0.1:7890](http://127.0.0.1:7890))                                           | -                                                      |

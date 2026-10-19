@@ -30,3 +30,26 @@ func TestGetTxtType_OrcaRouterFallback(t *testing.T) {
 	conf.BaseConfInfo.Type = param.OrcaRouter
 	assert.Equal(t, param.OrcaRouter, GetTxtType(nil))
 }
+
+func TestGetAvailTxtType_IncludesCheaperInference(t *testing.T) {
+	conf.BaseConfInfo.CheaperInferenceToken = "ci_live_test"
+	defer func() { conf.BaseConfInfo.CheaperInferenceToken = "" }()
+	got := GetAvailTxtType()
+	assert.Contains(t, got, param.CheaperInference)
+}
+
+func TestGetAvailImgType_IncludesCheaperInference(t *testing.T) {
+	conf.BaseConfInfo.CheaperInferenceToken = "ci_live_test"
+	defer func() { conf.BaseConfInfo.CheaperInferenceToken = "" }()
+	got := GetAvailImgType()
+	assert.Contains(t, got, param.CheaperInference)
+}
+
+func TestGetTxtModel_CheaperInferenceDefault(t *testing.T) {
+	assert.Equal(t, param.CheaperInferenceGPT54Mini, GetTxtModel(param.CheaperInference))
+}
+
+func TestGetTxtType_CheaperInferenceFallback(t *testing.T) {
+	conf.BaseConfInfo.Type = param.CheaperInference
+	assert.Equal(t, param.CheaperInference, GetTxtType(nil))
+}

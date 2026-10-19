@@ -1066,7 +1066,7 @@ func (r *RobotInfo) showTxtModel() {
 		for k := range param.AliyunModel {
 			modelList = append(modelList, k)
 		}
-	case param.OpenRouter, param.OrcaRouter, param.AI302, param.Ollama, param.OpenAi:
+	case param.OpenRouter, param.OrcaRouter, param.CheaperInference, param.AI302, param.Ollama, param.OpenAi:
 		switch utils.GetTxtType(db.GetCtxUserInfo(r.Ctx).LLMConfigRaw) {
 		case param.OpenAi:
 			r.SendMsg(chatId, i18n.GetMessage("mix_mode_choose", map[string]interface{}{
@@ -1086,6 +1086,11 @@ func (r *RobotInfo) showTxtModel() {
 		case param.OrcaRouter:
 			r.SendMsg(chatId, i18n.GetMessage("mix_mode_choose", map[string]interface{}{
 				"link": "https://www.orcarouter.ai",
+			}),
+				msgId, tgbotapi.ModeMarkdown, nil)
+		case param.CheaperInference:
+			r.SendMsg(chatId, i18n.GetMessage("mix_mode_choose", map[string]interface{}{
+				"link": "https://cheaperinference.com/markets",
 			}),
 				msgId, tgbotapi.ModeMarkdown, nil)
 		case param.Ollama:
@@ -1124,7 +1129,7 @@ func (r *RobotInfo) showImageModel() {
 		for k := range param.AliyunImageModels {
 			modelList = append(modelList, k)
 		}
-	case param.OpenRouter, param.OrcaRouter, param.AI302, param.Ollama, param.OpenAi:
+	case param.OpenRouter, param.OrcaRouter, param.CheaperInference, param.AI302, param.Ollama, param.OpenAi:
 		switch utils.GetTxtType(db.GetCtxUserInfo(r.Ctx).LLMConfigRaw) {
 		case param.OpenAi:
 			r.SendMsg(chatId, i18n.GetMessage("mix_mode_choose", map[string]interface{}{
@@ -1144,6 +1149,11 @@ func (r *RobotInfo) showImageModel() {
 		case param.OrcaRouter:
 			r.SendMsg(chatId, i18n.GetMessage("mix_mode_choose", map[string]interface{}{
 				"link": "https://www.orcarouter.ai",
+			}),
+				msgId, tgbotapi.ModeMarkdown, nil)
+		case param.CheaperInference:
+			r.SendMsg(chatId, i18n.GetMessage("mix_mode_choose", map[string]interface{}{
+				"link": "https://cheaperinference.com/markets",
 			}),
 				msgId, tgbotapi.ModeMarkdown, nil)
 		case param.Ollama:
@@ -1494,7 +1504,7 @@ func (r *RobotInfo) CreatePhoto(prompt string, lastImageContent []byte) ([]byte,
 	switch mediaType {
 	case param.Vol:
 		imageUrl, totalToken, err = llm.GenerateVolImg(r.Ctx, prompt, lastImageContent)
-	case param.OpenAi, param.ChatAnyWhere, param.OrcaRouter:
+	case param.OpenAi, param.ChatAnyWhere, param.OrcaRouter, param.CheaperInference:
 		imageContent, totalToken, err = llm.GenerateOpenAIImg(r.Ctx, prompt, lastImageContent)
 	case param.Gemini:
 		imageContent, totalToken, err = llm.GenerateGeminiImg(r.Ctx, prompt, lastImageContent)

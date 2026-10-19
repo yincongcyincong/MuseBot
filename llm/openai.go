@@ -72,6 +72,11 @@ func (d *OpenAIReq) GetModel(l *LLM) {
 		if userInfo != nil && model != "" {
 			l.Model = model
 		}
+	case param.CheaperInference:
+		l.Model = param.CheaperInferenceGPT54Mini
+		if userInfo != nil && model != "" {
+			l.Model = model
+		}
 	case param.Gemini:
 		l.Model = param.ModelGemini25Flash
 		if userInfo != nil && model != "" && param.GeminiModels[model] {
@@ -513,6 +518,9 @@ func GetOpenAIClient(ctx context.Context, clientType string) *openai.Client {
 	case param.OrcaRouter:
 		token = conf.BaseConfInfo.OrcaRouterToken
 		specialLLMUrl = "https://api.orcarouter.ai/v1"
+	case param.CheaperInference:
+		token = conf.BaseConfInfo.CheaperInferenceToken
+		specialLLMUrl = "https://api.cheaperinference.com/v1"
 	case param.AI302:
 		token = conf.BaseConfInfo.AI302Token
 		specialLLMUrl = "https://api.302.ai/v1"

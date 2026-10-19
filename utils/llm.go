@@ -165,6 +165,8 @@ func GetTxtModel(t string) string {
 		return param.DeepseekDeepseekR1_0528Free
 	case param.OrcaRouter:
 		return param.OrcaRouterAuto
+	case param.CheaperInference:
+		return param.CheaperInferenceGPT54Mini
 	case param.AI302:
 		return param.DeepseekDeepseekR1_0528
 	case param.Ollama:
@@ -209,6 +211,9 @@ func GetAvailTxtType() []string {
 	if conf.BaseConfInfo.OrcaRouterToken != "" {
 		res = append(res, param.OrcaRouter)
 	}
+	if conf.BaseConfInfo.CheaperInferenceToken != "" {
+		res = append(res, param.CheaperInference)
+	}
 	if conf.BaseConfInfo.Type == param.Ollama {
 		res = append(res, param.Ollama)
 	}
@@ -229,6 +234,9 @@ func GetAvailImgType() []string {
 	}
 	if conf.BaseConfInfo.OrcaRouterToken != "" {
 		res = append(res, param.OrcaRouter)
+	}
+	if conf.BaseConfInfo.CheaperInferenceToken != "" {
+		res = append(res, param.CheaperInference)
 	}
 	if conf.BaseConfInfo.AliyunToken != "" {
 		res = append(res, param.Aliyun)

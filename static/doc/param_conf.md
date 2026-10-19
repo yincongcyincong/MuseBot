@@ -105,7 +105,21 @@ Integrate with the OrcaRouter gateway to use 150+ models from OpenAI, Anthropic,
 * `-type`: Model type, set to `orcarouter`.
 * `-orcarouter_token`: Your OrcaRouter API Key.
 
-#### 8\. Photo Identification (`identify photo`)
+#### 8\. Cheaper Inference Model Support (`cheaperinference`)
+
+Integrate with Cheaper Inference, an OpenAI-compatible LLM gateway. One API key gives access to models from several labs. Model IDs are bare, e.g. `gpt-5.4-mini` (the default).
+
+```bash
+./MuseBot \
+-telegram_bot_token=xxxx \
+-type=cheaperinference \
+-cheaper_inference_token=ci_live_xxxx
+```
+
+* `-type`: Model type, set to `cheaperinference`.
+* `-cheaper_inference_token`: Your Cheaper Inference API Key.
+
+#### 9\. Photo Identification (`identify photo`)
 
 To integrate with VolcEngine's photo identification feature, you'll need to provide your VolcEngine AK/SK.
 
@@ -122,7 +136,7 @@ To integrate with VolcEngine's photo identification feature, you'll need to prov
 
 For more details, please refer to: [VolcEngine Image Recognition Documentation](https://www.volcengine.com/docs/6790/116987)
 
-#### 9\. Voice Identification (`identify voice`)
+#### 10\. Voice Identification (`identify voice`)
 
 To integrate with VolcEngine's voice recognition feature.
 
@@ -141,7 +155,7 @@ To integrate with VolcEngine's voice recognition feature.
 
 For more details, please refer to: [VolcEngine Voice Recognition Documentation](https://www.volcengine.com/docs/6561/80816)
 
-#### 10\. MCP (`mcp`)
+#### 11\. MCP (`mcp`)
 
 If your bot needs to use Amap (Gaode Map) related tools, such as geolocation queries.
 
@@ -153,7 +167,7 @@ If your bot needs to use Amap (Gaode Map) related tools, such as geolocation que
 ```
 * `-use_tools`: Enables tool usage functionality, set to `true` default is `false`.
 
-#### 10\.1\. Skills (`skill`)
+#### 11\.1\. Skills (`skill`)
 
 Load local `SKILL.md` prompt skills for the `/task` workflow.
 
@@ -164,7 +178,7 @@ Load local `SKILL.md` prompt skills for the `/task` workflow.
 * `-skill_path`: Skill directory. The equivalent environment variable is `SKILLS_PATH`.
 * See [Skills](skills.md) for the file format.
 
-#### 10\.2\. Conversation Configuration (`config`)
+#### 11\.2\. Conversation Configuration (`config`)
 
 Configured administrators can manage runtime settings, MCP, skills, and cron jobs, and execute restricted built-in commands and file operations through direct natural-language intent recognition.
 
@@ -182,7 +196,7 @@ Configured administrators can manage runtime settings, MCP, skills, and cron job
 * `-file_root_path`: Built-in file-operation root. The equivalent environment variable is `FILE_ROOT_PATH`.
 * See [Conversation Configuration](conversation_config.md) for supported operations.
 
-#### 11\. RAG (Retrieval Augmented Generation) - ChromaDB (`rag milvus`)
+#### 12\. RAG (Retrieval Augmented Generation) - ChromaDB (`rag milvus`)
 
 To perform RAG with ChromaDB, you'll need to use OpenAI's Embedding service.
 
@@ -199,7 +213,7 @@ To perform RAG with ChromaDB, you'll need to use OpenAI's Embedding service.
 * `-embedding_type`: Embedding type, set to `openai`.
 * `-vector_db_type`: Vector database type, set to `chroma`.
 
-#### 12\. RAG (Retrieval Augmented Generation) - Milvus (`rag milvus`)
+#### 13\. RAG (Retrieval Augmented Generation) - Milvus (`rag milvus`)
 
 To perform RAG with Milvus, you'll need to use Gemini's Embedding service.
 
@@ -216,7 +230,7 @@ To perform RAG with Milvus, you'll need to use Gemini's Embedding service.
 * `-embedding_type`: Embedding type, set to `gemini`.
 * `-vector_db_type`: Vector database type, set to `milvus`.
 
-#### 13\. RAG (Retrieval Augmented Generation) - Weaviate (`rag weaviate`)
+#### 14\. RAG (Retrieval Augmented Generation) - Weaviate (`rag weaviate`)
 
 To perform RAG with Weaviate, you'll need to use Ernie's Embedding service.
 

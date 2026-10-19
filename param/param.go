@@ -32,6 +32,8 @@ const (
 
 	OrcaRouter = "orcarouter"
 
+	CheaperInference = "cheaperinference"
+
 	LLAVA = "llava:latest"
 
 	DiscordNewMode = "new"

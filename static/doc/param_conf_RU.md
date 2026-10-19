@@ -105,7 +105,21 @@
 * `-type`: Тип модели (указать `orcarouter`)
 * `-orcarouter_token`: Ваш API-ключ OrcaRouter
 
-### 8. Распознавание изображений (`identify photo`)
+### 8. Поддержка Cheaper Inference (`cheaperinference`)
+
+Интеграция с Cheaper Inference — OpenAI-совместимым LLM-шлюзом. Один API-ключ открывает модели нескольких лабораторий. ID моделей без префикса, например `gpt-5.4-mini` (по умолчанию).
+
+```bash
+./MuseBot \
+-telegram_bot_token=xxxx \
+-type=cheaperinference \
+-cheaper_inference_token=ci_live_xxxx
+```
+
+* `-type`: Тип модели (указать `cheaperinference`)
+* `-cheaper_inference_token`: Ваш API-ключ Cheaper Inference
+
+### 9. Распознавание изображений (`identify photo`)
 
 Для интеграции с сервисом распознавания изображений VolcEngine.
 
@@ -122,7 +136,7 @@
 
 Подробнее: [Документация VolcEngine](https://www.volcengine.com/docs/6790/116987)
 
-### 9. Распознавание голоса (`identify voice`)
+### 10. Распознавание голоса (`identify voice`)
 
 Для интеграции с сервисом распознавания речи VolcEngine.
 
@@ -141,7 +155,7 @@
 
 Подробнее: [Документация VolcEngine](https://www.volcengine.com/docs/6561/80816)
 
-### 10. Инструменты MCP (`mcp`)
+### 11. Инструменты MCP (`mcp`)
 
 Для использования инструментов Amap (например, геолокации).
 
@@ -154,7 +168,7 @@
 
 * `-use_tools`: Активирует инструменты (по умолчанию `false`)
 
-### 11. RAG с ChromaDB (`rag chroma`)
+### 12. RAG с ChromaDB (`rag chroma`)
 
 Для использования RAG с ChromaDB и сервисом эмбеддингов OpenAI.
 
@@ -171,7 +185,7 @@
 * `-embedding_type`: Тип эмбеддингов (указать `openai`)
 * `-vector_db_type`: Тип векторной БД (указать `milvus`)
 
-### 12. RAG с Milvus (`rag milvus`)
+### 13. RAG с Milvus (`rag milvus`)
 
 Для использования RAG с Milvus и сервисом эмбеддингов Gemini.
 
@@ -188,7 +202,7 @@
 * `-embedding_type`: Тип эмбеддингов (указать `gemini`)
 * `-vector_db_type`: Тип векторной БД (указать `milvus`)
 
-### 13. RAG с Weaviate (`rag weaviate`)
+### 14. RAG с Weaviate (`rag weaviate`)
 
 Для использования RAG с Weaviate и сервисом эмбеддингов Ernie.
 
