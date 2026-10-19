@@ -135,6 +135,8 @@ const (
 	Video      = "video"
 	Help       = "help"
 	Task       = "task"
+	Approve    = "y"
+	Deny       = "n"
 	Mcp        = "mcp"
 	Mode       = "mode"
 	TxtType    = "txt_type"
