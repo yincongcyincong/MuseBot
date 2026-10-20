@@ -11,7 +11,6 @@ import (
 	"time"
 
 	godeepseek "github.com/cohesion-org/deepseek-go"
-	"github.com/revrost/go-openrouter"
 	"github.com/sashabaranov/go-openai"
 	"github.com/volcengine/volcengine-go-sdk/service/arkruntime/model"
 	"github.com/yincongcyincong/MuseBot/conf"
@@ -60,7 +59,6 @@ type LLM struct {
 	VolTools        []*model.Tool
 	OpenAITools     []openai.Tool
 	GeminiTools     []*genai.Tool
-	OpenRouterTools []openrouter.Tool
 
 	WholeContent string // whole answer from llm
 	LoopNum      int
@@ -107,24 +105,32 @@ func (l *LLM) CallLLM() error {
 
 	metrics.APIRequestCount.WithLabelValues(l.Model).Inc()
 
+	retryTimes := conf.BaseConfInfo.LLMRetryTimes
+	if retryTimes <= 0 {
+		retryTimes = 1
+	}
 	var err error
-	if conf.BaseConfInfo.IsStreaming {
-		err = l.LLMClient.Send(l.Ctx, l)
-		if err != nil {
-			logger.ErrorCtx(l.Ctx, "Error calling LLM API", "err", err)
-			return err
+	for attempt := 0; attempt < retryTimes; attempt++ {
+		if conf.BaseConfInfo.IsStreaming {
+			err = l.LLMClient.Send(l.Ctx, l)
+		} else {
+			var content string
+			content, err = l.LLMClient.SyncSend(l.Ctx, l)
+			if err == nil {
+				l.MessageChan <- &param.MsgInfo{
+					Content: content,
+				}
+				l.WholeContent = content
+			}
 		}
-	} else {
-		content, err := l.LLMClient.SyncSend(l.Ctx, l)
-		if err != nil {
-			logger.ErrorCtx(l.Ctx, "Error calling LLM API", "err", err)
-			return err
+		if err == nil {
+			break
 		}
-
-		l.MessageChan <- &param.MsgInfo{
-			Content: content,
-		}
-		l.WholeContent = content
+		logger.WarnCtx(l.Ctx, "llm request fail, retrying", "attempt", attempt+1, "err", err)
+	}
+	if err != nil {
+		logger.ErrorCtx(l.Ctx, "Error calling LLM API", "err", err)
+		return err
 	}
 
 	err = l.InsertOrUpdate()
@@ -446,14 +452,12 @@ func WithTaskTools(taskTool *conf.AgentInfo) Option {
 			p.VolTools = nil
 			p.OpenAITools = nil
 			p.GeminiTools = nil
-			p.OpenRouterTools = nil
 			return
 		}
 		p.DeepseekTools = taskTool.DeepseekTool
 		p.VolTools = taskTool.VolTool
 		p.OpenAITools = taskTool.OpenAITools
 		p.GeminiTools = taskTool.GeminiTools
-		p.OpenRouterTools = taskTool.OpenRouterTools
 	}
 }
 

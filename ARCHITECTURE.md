@@ -89,10 +89,10 @@ go Robot.HandleUpdate(msgChan, encoding)  // 消费：从 channel 读取并回�
 
 ### 抽象
 - **`LLMClient` 接口**（`llm/llm.go`）：`Send`（流式）、`SyncSend`（同步）、`GetMessage`/`GetImageMessage`/`GetAudioMessage`、`AppendMessages`、`GetModel`。
-- **`LLM` 结构体**：承载一次请求的全部状态——内容、图片、模型名、各厂商工具集（Deepseek/Vol/OpenAI/Gemini/OpenRouter Tools）、`MessageChan`、上下文 `Cs`。
+- **`LLM` 结构体**：承载一次请求的全部状态——内容、图片、模型名、各厂商工具集（Deepseek/Vol/OpenAI/Gemini Tools）、`MessageChan`、上下文 `Cs`。
 - **实现选择**（`NewLLM`，`llm.go:151`）：根据用户配置 `utils.GetTxtType(...)`：
   - `Ollama` → `OllamaReq`
-  - 其余全部 → `OpenAIReq`（OpenAI 兼容协议，覆盖 OpenAI/DeepSeek/Vol豆包/Aliyun通义/302/OpenRouter/Gemini，具体模型名在 `OpenAIReq.GetModel` 内 `switch` 决定）。
+  - 其余全部 → `OpenAIReq`（OpenAI 兼容协议，覆盖 OpenAI/DeepSeek/Vol豆包/Aliyun通义/ChatAnywhere/Gemini，具体模型名在 `OpenAIReq.GetModel` 内 `switch` 决定）。
 
 ### 调用主路径（`CallLLM`，`llm.go:84`）
 ```
@@ -113,7 +113,7 @@ CallLLM()
 `ExecuteTask()`：先用 `assign_task_prompt` 让 LLM 拆解出 `TaskInfo.Plan` → `loopTask` 逐个子任务 `requestTask` 执行（可再触发工具）→ 最后 `summary_task_prompt` 汇总。无计划则直接回答。
 
 ### 多模态生成（独立函数）
-`GenerateOpenAIImg` / `GenerateMixImg`（302.AI）/ `Generate302AIVideo` / `GenerateOpenAIText`（ASR）/ `OpenAITTS`，分散在 `openai.go`、`mix.go`。
+`GenerateOpenAIImg` / `GenerateGeminiImg` / `GenerateGeminiVideo` / `GenerateOpenAIText`（ASR）/ `OpenAITTS`，分散在 `openai.go`、`gemini.go`。
 
 ## 5. 数据流总览
 

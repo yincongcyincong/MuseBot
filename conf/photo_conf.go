@@ -37,9 +37,6 @@ type PhotoConf struct {
 	OpenAIImageSize  string `json:"openai_image_size"`
 	OpenAIImageStyle string `json:"openai_image_style"`
 
-	MixImageModel string `json:"mix_image_model"`
-	MixRecModel   string `json:"mix_rec_model"`
-
 	AliyunImageModel string `json:"aliyun_image_model"`
 	AliyunRecModel   string `json:"aliyun_rec_model"`
 }
@@ -77,9 +74,6 @@ func InitPhotoConf() {
 
 	flag.StringVar(&PhotoConfInfo.VolImageModel, "vol_image_model", "doubao-seed-1-6-250615", "vol image model")
 	flag.StringVar(&PhotoConfInfo.VolRecModel, "vol_rec_model", "doubao-seed-1-6-250615", "vol recognize photo model")
-
-	flag.StringVar(&PhotoConfInfo.MixImageModel, "mix_image_model", "gpt-image-1", "ai302/openrouter image model")
-	flag.StringVar(&PhotoConfInfo.MixRecModel, "mix_rec_model", "chatgpt-4o-latest", "ai302/openrouter recognize photo model")
 
 	flag.StringVar(&PhotoConfInfo.AliyunImageModel, "aliyun_image_model", "qwen-image-plus", "aliyun image model")
 	flag.StringVar(&PhotoConfInfo.AliyunRecModel, "aliyun_rec_model", "qwen-vl-max-latest", "aliyun recognize photo model")
@@ -181,14 +175,6 @@ func EnvPhotoConf() {
 
 	if os.Getenv("VOL_REC_MODEL") != "" {
 		PhotoConfInfo.VolRecModel = os.Getenv("VOL_REC_MODEL")
-	}
-
-	if os.Getenv("MIX_IMAGE_MODEL") != "" {
-		PhotoConfInfo.MixImageModel = os.Getenv("MIX_IMAGE_MODEL")
-	}
-
-	if os.Getenv("MIX_REC_MODEL") != "" {
-		PhotoConfInfo.MixRecModel = os.Getenv("MIX_REC_MODEL")
 	}
 
 	if os.Getenv("ALIYUN_IMAGE_MODEL") != "" {

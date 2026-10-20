@@ -29,8 +29,6 @@
 | `OPENAI_IMAGE_STYLE` | `String` | 可选    | openai 图片风格                                                                                         |
 | `VOL_IMAGE_MODEL`    | `String` | 可选    | vol/豆包 图片模型                                                                                         |
 | `VOL_REC_MODEL`      | `String` | 可选    | vol/豆包  图片识别模型                                                                                      |
-| `MIX_IMAGE_MODEL`    | `String` | 可选    | openrouter/302ai 图片模型                                                                               |
-| `MIX_REC_MODEL`      | `String` | 可选    | openrouter/302ai  图片识别模型                                                                            |
 | `ALIYUN_IMAGE_MODEL` | `String` | 可选    | 阿里云 图片模型                                                                                            |
 | `ALIYUN_REC_MODEL`   | `String` | 可选    | 阿里云  图片识别模型                                                                                         |
 

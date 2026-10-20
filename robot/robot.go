@@ -1160,26 +1160,11 @@ func (r *RobotInfo) showTxtModel() {
 		for k := range param.AliyunModel {
 			modelList = append(modelList, k)
 		}
-	case param.OpenRouter, param.OrcaRouter, param.AI302, param.Ollama, param.OpenAi:
+	case param.Ollama, param.OpenAi:
 		switch utils.GetTxtType(db.GetCtxUserInfo(r.Ctx).LLMConfigRaw) {
 		case param.OpenAi:
 			r.SendMsg(chatId, i18n.GetMessage("mix_mode_choose", map[string]interface{}{
 				"link": "https://platform.openai.com/",
-			}),
-				msgId, tgbotapi.ModeMarkdown, nil)
-		case param.AI302:
-			r.SendMsg(chatId, i18n.GetMessage("mix_mode_choose", map[string]interface{}{
-				"link": "https://302.ai/",
-			}),
-				msgId, tgbotapi.ModeMarkdown, nil)
-		case param.OpenRouter:
-			r.SendMsg(chatId, i18n.GetMessage("mix_mode_choose", map[string]interface{}{
-				"link": "https://openrouter.ai/",
-			}),
-				msgId, tgbotapi.ModeMarkdown, nil)
-		case param.OrcaRouter:
-			r.SendMsg(chatId, i18n.GetMessage("mix_mode_choose", map[string]interface{}{
-				"link": "https://www.orcarouter.ai",
 			}),
 				msgId, tgbotapi.ModeMarkdown, nil)
 		case param.Ollama:
@@ -1218,26 +1203,11 @@ func (r *RobotInfo) showImageModel() {
 		for k := range param.AliyunImageModels {
 			modelList = append(modelList, k)
 		}
-	case param.OpenRouter, param.OrcaRouter, param.AI302, param.Ollama, param.OpenAi:
+	case param.Ollama, param.OpenAi:
 		switch utils.GetTxtType(db.GetCtxUserInfo(r.Ctx).LLMConfigRaw) {
 		case param.OpenAi:
 			r.SendMsg(chatId, i18n.GetMessage("mix_mode_choose", map[string]interface{}{
 				"link": "https://platform.openai.com/",
-			}),
-				msgId, tgbotapi.ModeMarkdown, nil)
-		case param.AI302:
-			r.SendMsg(chatId, i18n.GetMessage("mix_mode_choose", map[string]interface{}{
-				"link": "https://302.ai/",
-			}),
-				msgId, tgbotapi.ModeMarkdown, nil)
-		case param.OpenRouter:
-			r.SendMsg(chatId, i18n.GetMessage("mix_mode_choose", map[string]interface{}{
-				"link": "https://openrouter.ai/",
-			}),
-				msgId, tgbotapi.ModeMarkdown, nil)
-		case param.OrcaRouter:
-			r.SendMsg(chatId, i18n.GetMessage("mix_mode_choose", map[string]interface{}{
-				"link": "https://www.orcarouter.ai",
 			}),
 				msgId, tgbotapi.ModeMarkdown, nil)
 		case param.Ollama:
@@ -1275,12 +1245,6 @@ func (r *RobotInfo) showVideoModel() {
 		for k := range param.AliyunVideoModels {
 			modelList = append(modelList, k)
 		}
-	case param.AI302:
-		r.SendMsg(chatId, i18n.GetMessage("mix_mode_choose", map[string]interface{}{
-			"link": "https://302.ai/",
-		}),
-			msgId, tgbotapi.ModeMarkdown, nil)
-		return
 	case param.Vol:
 		for k := range param.VolVideoModels {
 			modelList = append(modelList, k)
@@ -1313,21 +1277,12 @@ func (r *RobotInfo) showRecModel() {
 		for k := range param.VolRecModels {
 			modelList = append(modelList, k)
 		}
-	case param.AI302, param.OpenAi:
-		switch utils.GetRecType(db.GetCtxUserInfo(r.Ctx).LLMConfigRaw) {
-		case param.AI302:
-			r.SendMsg(chatId, i18n.GetMessage("mix_mode_choose", map[string]interface{}{
-				"link": "https://302.ai/",
-			}),
-				msgId, tgbotapi.ModeMarkdown, nil)
-			return
-		case param.OpenAi:
-			r.SendMsg(chatId, i18n.GetMessage("mix_mode_choose", map[string]interface{}{
-				"link": "https://platform.openai.com/",
-			}),
-				msgId, tgbotapi.ModeMarkdown, nil)
-			return
-		}
+	case param.OpenAi:
+		r.SendMsg(chatId, i18n.GetMessage("mix_mode_choose", map[string]interface{}{
+			"link": "https://platform.openai.com/",
+		}),
+			msgId, tgbotapi.ModeMarkdown, nil)
+		return
 	}
 	totalContent := ""
 	for _, model := range modelList {
@@ -1472,7 +1427,10 @@ func (r *RobotInfo) ExecLLM(msgContent string, msgChan *MsgChan) {
 	err := llmClient.CallLLM()
 	if err != nil {
 		logger.ErrorCtx(r.Ctx, "get content fail", "err", err)
-		r.SendMsg(chatId, err.Error(), msgId, "", nil)
+		r.SendMsg(chatId, i18n.GetMessage("llm_request_fail", map[string]interface{}{
+			"retry": conf.BaseConfInfo.LLMRetryTimes,
+			"err":   err.Error(),
+		}), msgId, "", nil)
 	}
 
 }
@@ -1590,7 +1548,10 @@ func (r *RobotInfo) sendMultiAgent(emptyPromptFunc func()) {
 			err := dpReq.ExecuteTask()
 			if err != nil {
 				logger.WarnCtx(r.Ctx, "execute task fail", "err", err)
-				r.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
+				r.SendMsg(chatId, i18n.GetMessage("llm_request_fail", map[string]interface{}{
+					"retry": conf.BaseConfInfo.LLMRetryTimes,
+					"err":   err.Error(),
+				}), msgId, "", nil)
 				return
 			}
 		}()
@@ -1615,12 +1576,10 @@ func (r *RobotInfo) CreatePhoto(prompt string, lastImageContent []byte) ([]byte,
 	switch mediaType {
 	case param.Vol:
 		imageUrl, totalToken, err = llm.GenerateVolImg(r.Ctx, prompt, lastImageContent)
-	case param.OpenAi, param.ChatAnyWhere, param.OrcaRouter:
+	case param.OpenAi, param.ChatAnyWhere:
 		imageContent, totalToken, err = llm.GenerateOpenAIImg(r.Ctx, prompt, lastImageContent)
 	case param.Gemini:
 		imageContent, totalToken, err = llm.GenerateGeminiImg(r.Ctx, prompt, lastImageContent)
-	case param.AI302, param.OpenRouter:
-		imageContent, totalToken, err = llm.GenerateMixImg(r.Ctx, prompt, lastImageContent)
 	case param.Aliyun:
 		imageUrl, totalToken, err = llm.GenerateAliyunImg(r.Ctx, prompt, lastImageContent)
 	default:
@@ -1657,8 +1616,6 @@ func (r *RobotInfo) CreateVideo(prompt string, lastImageContent []byte) ([]byte,
 		videoUrl, totalToken, err = llm.GenerateVolVideo(r.Ctx, prompt, lastImageContent)
 	case param.Gemini:
 		videoContent, totalToken, err = llm.GenerateGeminiVideo(r.Ctx, prompt, lastImageContent)
-	case param.AI302:
-		videoUrl, totalToken, err = llm.Generate302AIVideo(r.Ctx, prompt, lastImageContent)
 	case param.Aliyun:
 		videoUrl, totalToken, err = llm.GenerateAliyunVideo(r.Ctx, prompt, lastImageContent)
 	default:

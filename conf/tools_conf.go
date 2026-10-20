@@ -14,7 +14,6 @@ import (
 
 	"github.com/cohesion-org/deepseek-go"
 	"github.com/mark3labs/mcp-go/mcp"
-	"github.com/revrost/go-openrouter"
 	"github.com/sashabaranov/go-openai"
 	"github.com/volcengine/volcengine-go-sdk/service/arkruntime/model"
 	"github.com/yincongcyincong/MuseBot/logger"
@@ -40,7 +39,6 @@ type AgentInfo struct {
 	VolTool         []*model.Tool     `json:"-"`
 	OpenAITools     []openai.Tool     `json:"-"`
 	GeminiTools     []*genai.Tool     `json:"-"`
-	OpenRouterTools []openrouter.Tool `json:"-"`
 }
 
 type ToolsConf struct {
@@ -192,7 +190,6 @@ func RegisterBuiltinTools() {
 		VolTool:         mcputils.TransToolsToVolFunctionCall([]mcp.Tool{searchTool}),
 		OpenAITools:     mcputils.TransToolsToChatGPTFunctionCall([]mcp.Tool{searchTool}),
 		GeminiTools:     mcputils.TransToolsToGeminiFunctionCall([]mcp.Tool{searchTool}),
-		OpenRouterTools: mcputils.TransToolsToOpenRouterFunctionCall([]mcp.Tool{searchTool}),
 	})
 
 	shellTool := mcp.Tool{
@@ -226,7 +223,6 @@ func RegisterBuiltinTools() {
 		VolTool:         mcputils.TransToolsToVolFunctionCall([]mcp.Tool{shellTool}),
 		OpenAITools:     mcputils.TransToolsToChatGPTFunctionCall([]mcp.Tool{shellTool}),
 		GeminiTools:     mcputils.TransToolsToGeminiFunctionCall([]mcp.Tool{shellTool}),
-		OpenRouterTools: mcputils.TransToolsToOpenRouterFunctionCall([]mcp.Tool{shellTool}),
 	})
 
 	configTool := mcp.Tool{
@@ -272,7 +268,6 @@ func RegisterBuiltinTools() {
 		VolTool:         mcputils.TransToolsToVolFunctionCall([]mcp.Tool{configTool}),
 		OpenAITools:     mcputils.TransToolsToChatGPTFunctionCall([]mcp.Tool{configTool}),
 		GeminiTools:     mcputils.TransToolsToGeminiFunctionCall([]mcp.Tool{configTool}),
-		OpenRouterTools: mcputils.TransToolsToOpenRouterFunctionCall([]mcp.Tool{configTool}),
 	})
 }
 
@@ -291,15 +286,13 @@ func InsertTools(clientName string) {
 		volTools := mcputils.TransToolsToVolFunctionCall(c.Tools)
 		oaTools := mcputils.TransToolsToChatGPTFunctionCall(c.Tools)
 		gmTools := mcputils.TransToolsToGeminiFunctionCall(c.Tools)
-		orTools := mcputils.TransToolsToOpenRouterFunctionCall(c.Tools)
 
 		TaskTools.Store(clientName, &AgentInfo{
-			Description:     fmt.Sprintf("MCP server %s exposes the function tools listed in this agent's schema.", clientName),
+			Description: fmt.Sprintf("MCP server %s exposes the function tools listed in this agent's schema.", clientName),
 			DeepseekTool:    dpTools,
 			VolTool:         volTools,
 			GeminiTools:     gmTools,
 			OpenAITools:     oaTools,
-			OpenRouterTools: orTools,
 		})
 
 		RebuildChatToolSets()

@@ -110,8 +110,6 @@ func GetImgModel(t string) string {
 		return conf.PhotoConfInfo.OpenAIImageModel
 	case param.Aliyun:
 		return conf.PhotoConfInfo.AliyunImageModel
-	case param.AI302:
-		return conf.PhotoConfInfo.MixImageModel
 	case param.Vol:
 		return conf.PhotoConfInfo.VolImageModel
 	case param.ChatAnyWhere:
@@ -127,8 +125,6 @@ func GetVideoModel(t string) string {
 		return conf.VideoConfInfo.GeminiVideoModel
 	case param.Aliyun:
 		return conf.VideoConfInfo.AliyunVideoModel
-	case param.AI302:
-		return conf.VideoConfInfo.AI302VideoModel
 	case param.Vol:
 		return conf.VideoConfInfo.VolVideoModel
 	}
@@ -163,12 +159,6 @@ func GetTxtModel(t string) string {
 		return param.ModelGemini25Flash
 	case param.OpenAi:
 		return openai.GPT3Dot5Turbo
-	case param.OpenRouter:
-		return param.DeepseekDeepseekR1_0528Free
-	case param.OrcaRouter:
-		return param.OrcaRouterAuto
-	case param.AI302:
-		return param.DeepseekDeepseekR1_0528
 	case param.Ollama:
 		return "deepseek-r1"
 	case param.Vol:
@@ -202,15 +192,6 @@ func GetAvailTxtType() []string {
 	if conf.BaseConfInfo.ChatAnyWhereToken != "" {
 		res = append(res, param.ChatAnyWhere)
 	}
-	if conf.BaseConfInfo.AI302Token != "" {
-		res = append(res, param.AI302)
-	}
-	if conf.BaseConfInfo.OpenRouterToken != "" {
-		res = append(res, param.OpenRouter)
-	}
-	if conf.BaseConfInfo.OrcaRouterToken != "" {
-		res = append(res, param.OrcaRouter)
-	}
 	if conf.BaseConfInfo.Type == param.Ollama {
 		res = append(res, param.Ollama)
 	}
@@ -226,17 +207,8 @@ func GetAvailImgType() []string {
 	if conf.BaseConfInfo.OpenAIToken != "" {
 		res = append(res, param.OpenAi)
 	}
-	if conf.BaseConfInfo.OpenRouterToken != "" {
-		res = append(res, param.OpenRouter)
-	}
-	if conf.BaseConfInfo.OrcaRouterToken != "" {
-		res = append(res, param.OrcaRouter)
-	}
 	if conf.BaseConfInfo.AliyunToken != "" {
 		res = append(res, param.Aliyun)
-	}
-	if conf.BaseConfInfo.AI302Token != "" {
-		res = append(res, param.AI302)
 	}
 	if conf.BaseConfInfo.VolToken != "" {
 		res = append(res, param.Vol)
@@ -255,9 +227,6 @@ func GetAvailVideoType() []string {
 	}
 	if conf.BaseConfInfo.AliyunToken != "" {
 		res = append(res, param.Aliyun)
-	}
-	if conf.BaseConfInfo.AI302Token != "" {
-		res = append(res, param.AI302)
 	}
 	if conf.BaseConfInfo.VolToken != "" {
 		res = append(res, param.Vol)
@@ -296,9 +265,6 @@ func GetAvailRecType() []string {
 	}
 	if conf.BaseConfInfo.AliyunToken != "" {
 		res = append(res, param.Aliyun)
-	}
-	if conf.BaseConfInfo.AI302Token != "" {
-		res = append(res, param.AI302)
 	}
 	// Vol speech recognition authenticates with the audio app credentials, not VolToken
 	if conf.AudioConfInfo.VolAudioAppID != "" && conf.AudioConfInfo.VolAudioToken != "" {
@@ -362,8 +328,6 @@ func GetUsingVideoModel(ty string, model string) string {
 			return model
 		}
 		return param.Wan2_5T2VPreview
-	case param.AI302:
-		return model
 	case param.Vol:
 		if param.VolVideoModels[model] {
 			return model

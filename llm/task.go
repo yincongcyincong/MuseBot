@@ -177,6 +177,24 @@ func (d *LLMTaskReq) syncTaskLLM(llm *LLM) (string, error) {
 	return content, nil
 }
 
+// retryTaskRequest reruns a task-stage LLM request when it fails, so a
+// transient API error does not abort the whole task run.
+func (d *LLMTaskReq) retryTaskRequest(stage string, fn func() error) error {
+	retryTimes := conf.BaseConfInfo.LLMRetryTimes
+	if retryTimes <= 0 {
+		retryTimes = 1
+	}
+	var err error
+	for attempt := 0; attempt < retryTimes; attempt++ {
+		err = fn()
+		if err == nil {
+			return nil
+		}
+		logger.WarnCtx(d.Ctx, "task llm request fail, retrying", "stage", stage, "attempt", attempt+1, "err", err)
+	}
+	return err
+}
+
 // sendProgress pushes a short status message to the user's chat while the
 // task workflow advances between stages, so long-running tasks stay responsive.
 func (d *LLMTaskReq) sendProgress(message string) {
@@ -217,7 +235,12 @@ func (d *LLMTaskReq) planTask(machine *taskStateMachine) (*LLM, *TaskInfo, error
 		// the planner is reused by summarizeTask, which streams its answer to the
 		// user, so it must be created with the parent's channels attached
 		llm := d.newTaskLLM(prompt, nil, d.MessageChan != nil || d.HTTPMsgChan != nil)
-		content, err := d.syncTaskLLM(llm)
+		var content string
+		err := d.retryTaskRequest("plan", func() error {
+			var syncErr error
+			content, syncErr = d.syncTaskLLM(llm)
+			return syncErr
+		})
 		if err != nil {
 			return nil, nil, err
 		}
@@ -267,7 +290,12 @@ func (d *LLMTaskReq) executePlan(machine *taskStateMachine, plan *TaskInfo) erro
 		}
 
 		llm := d.newTaskLLM(prompt, tool, true)
-		result, err := d.syncTaskLLM(llm)
+		var result string
+		err := d.retryTaskRequest("execute", func() error {
+			var syncErr error
+			result, syncErr = d.syncTaskLLM(llm)
+			return syncErr
+		})
 		if err != nil {
 			return err
 		}
@@ -300,15 +328,21 @@ func (d *LLMTaskReq) reflectTask(planner *LLM, machine *taskStateMachine) (*Task
 	planner.Content = prompt
 	planner.LLMClient.GetModel(planner)
 
-	content, err := d.syncTaskLLM(planner)
+	var content string
+	var plan *TaskInfo
+	err := d.retryTaskRequest("reflect", func() error {
+		var syncErr error
+		content, syncErr = d.syncTaskLLM(planner)
+		if syncErr != nil {
+			return syncErr
+		}
+		plan = new(TaskInfo)
+		if err := extractTaskJSON(content, plan); err != nil {
+			return err
+		}
+		return validateTaskPlan(plan, false)
+	})
 	if err != nil {
-		return nil, err
-	}
-	plan := new(TaskInfo)
-	if err := extractTaskJSON(content, plan); err != nil {
-		return nil, err
-	}
-	if err := validateTaskPlan(plan, false); err != nil {
 		return nil, err
 	}
 	if len(plan.Plan) > 0 {
@@ -334,7 +368,9 @@ func (d *LLMTaskReq) summarizeTask(planner *LLM, machine *taskStateMachine) erro
 	planner.LLMClient.GetModel(planner)
 
 	metrics.APIRequestCount.WithLabelValues(planner.Model).Inc()
-	return planner.LLMClient.Send(d.Ctx, planner)
+	return d.retryTaskRequest("summarize", func() error {
+		return planner.LLMClient.Send(d.Ctx, planner)
+	})
 }
 
 func formatTaskResults(results []TaskResult) string {

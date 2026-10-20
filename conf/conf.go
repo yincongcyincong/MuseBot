@@ -45,9 +45,6 @@ type BaseConf struct {
 	DeepseekToken     string `json:"deepseek_token"`
 	OpenAIToken       string `json:"openai_token"`
 	GeminiToken       string `json:"gemini_token"`
-	OpenRouterToken   string `json:"open_router_token"`
-	OrcaRouterToken   string `json:"orcarouter_token"`
-	AI302Token        string `json:"ai_302_token"`
 	VolToken          string `json:"vol_token"`
 	AliyunToken       string `json:"aliyun_token"`
 	ChatAnyWhereToken string `json:"chat_any_where_token"`
@@ -87,7 +84,8 @@ type BaseConf struct {
 	LLMOptionParam     bool   `json:"llm_option_param"`
 	ImagePath          string `json:"image_path"`
 	IsStreaming        bool   `json:"is_streaming"`
-	MediaRetentionDays int    `json:"media_retention_days"`
+	TaskAutoApprove   bool   `json:"task_auto_approve"`
+	MediaRetentionDays int   `json:"media_retention_days"`
 
 	CrtFile string `json:"crt_file"`
 	KeyFile string `json:"key_file"`
@@ -148,9 +146,6 @@ func InitConf() {
 	flag.StringVar(&BaseConfInfo.DeepseekToken, "deepseek_token", "", "deepseek auth token")
 	flag.StringVar(&BaseConfInfo.OpenAIToken, "openai_token", "", "openai auth token")
 	flag.StringVar(&BaseConfInfo.GeminiToken, "gemini_token", "", "gemini auth token")
-	flag.StringVar(&BaseConfInfo.OpenRouterToken, "open_router_token", "", "openrouter auth token")
-	flag.StringVar(&BaseConfInfo.OrcaRouterToken, "orcarouter_token", "", "orcarouter auth token")
-	flag.StringVar(&BaseConfInfo.AI302Token, "ai_302_token", "", "302.ai token")
 	flag.StringVar(&BaseConfInfo.VolToken, "vol_token", "", "vol auth token")
 	flag.StringVar(&BaseConfInfo.AliyunToken, "aliyun_token", "", "aliyun auth token")
 	flag.StringVar(&BaseConfInfo.ErnieAK, "ernie_ak", "", "ernie ak")
@@ -162,8 +157,8 @@ func InitConf() {
 	flag.StringVar(&BaseConfInfo.BotName, "bot_name", "MuseBot", "bot name")
 	flag.StringVar(&BaseConfInfo.CustomUrl, "custom_url", "", "custom url")
 	flag.StringVar(&BaseConfInfo.CustomPath, "custom_path", "", "custom path")
-	flag.StringVar(&BaseConfInfo.Type, "type", "", "llm type: deepseek gemini openai openrouter vol chatanywhere orcarouter")
-	flag.StringVar(&BaseConfInfo.MediaType, "media_type", "", "media type: vol gemini openai aliyun 302-ai openrouter orcarouter")
+	flag.StringVar(&BaseConfInfo.Type, "type", "", "llm type: deepseek gemini openai vol chatanywhere aliyun ollama (all via OpenAI-compatible API format)")
+	flag.StringVar(&BaseConfInfo.MediaType, "media_type", "", "media type: vol gemini openai aliyun (all via OpenAI-compatible API format)")
 	flag.StringVar(&BaseConfInfo.DBType, "db_type", "sqlite3", "db type")
 	flag.StringVar(&BaseConfInfo.DBConf, "db_conf", GetAbsPath("data/muse_bot.db"), "db conf")
 	flag.StringVar(&BaseConfInfo.LLMProxy, "llm_proxy", "", "llm proxy: http://127.0.0.1:7890")
@@ -189,6 +184,7 @@ func InitConf() {
 	flag.IntVar(&BaseConfInfo.LLMRetryInterval, "llm_retry_interval", 100, "llm retry interval")
 	flag.BoolVar(&BaseConfInfo.LLMOptionParam, "llm_option_param", false, "llm option param")
 	flag.BoolVar(&BaseConfInfo.IsStreaming, "is_streaming", false, "is streaming")
+	flag.BoolVar(&BaseConfInfo.TaskAutoApprove, "task_auto_approve", false, "auto approve task tool operations without /y")
 
 	allowedUserIds := flag.String("allowed_user_ids", "", "allowed user ids")
 	allowedGroupIds := flag.String("allowed_group_ids", "", "allowed group ids")
@@ -401,18 +397,6 @@ func InitConf() {
 		BaseConfInfo.ErnieSK = os.Getenv("ERNIE_SK")
 	}
 
-	if os.Getenv("OPEN_ROUTER_TOKEN") != "" {
-		BaseConfInfo.OpenRouterToken = os.Getenv("OPEN_ROUTER_TOKEN")
-	}
-
-	if os.Getenv("ORCAROUTER_TOKEN") != "" {
-		BaseConfInfo.OrcaRouterToken = os.Getenv("ORCAROUTER_TOKEN")
-	}
-
-	if os.Getenv("AI_302_TOKEN") != "" {
-		BaseConfInfo.AI302Token = os.Getenv("AI_302_TOKEN")
-	}
-
 	if os.Getenv("MAX_QA_PAIR") != "" {
 		BaseConfInfo.MaxQAPair, _ = strconv.Atoi(os.Getenv("MAX_QA_PAIR"))
 	}
@@ -491,6 +475,10 @@ func InitConf() {
 
 	if os.Getenv("IS_STREAMING") != "" {
 		BaseConfInfo.IsStreaming = os.Getenv("IS_STREAMING") == "true"
+	}
+
+	if os.Getenv("TASK_AUTO_APPROVE") != "" {
+		BaseConfInfo.TaskAutoApprove = os.Getenv("TASK_AUTO_APPROVE") == "true"
 	}
 
 	if os.Getenv("SEND_MCP_MEDIA_TO_LLM") == "true" {
@@ -584,9 +572,6 @@ func logConf(allowedUserIds, allowedGroupIds, adminUserIds string) {
 	logger.Info("CONF", "UseTools", BaseConfInfo.UseTools)
 	logger.Info("CONF", "OpenAIToken", BaseConfInfo.OpenAIToken)
 	logger.Info("CONF", "GeminiToken", BaseConfInfo.GeminiToken)
-	logger.Info("CONF", "OpenRouterToken", BaseConfInfo.OpenRouterToken)
-	logger.Info("CONF", "OrcaRouterToken", BaseConfInfo.OrcaRouterToken)
-	logger.Info("CONF", "AI302Token", BaseConfInfo.AI302Token)
 	logger.Info("CONF", "ErnieAK", BaseConfInfo.ErnieAK)
 	logger.Info("CONF", "ErnieSK", BaseConfInfo.ErnieSK)
 	logger.Info("CONF", "VolToken", BaseConfInfo.VolToken)
@@ -610,6 +595,7 @@ func logConf(allowedUserIds, allowedGroupIds, adminUserIds string) {
 	logger.Info("CONF", "LLMOptionParam", BaseConfInfo.LLMOptionParam)
 	logger.Info("CONF", "ImagePath", BaseConfInfo.ImagePath)
 	logger.Info("CONF", "IsStreaming", BaseConfInfo.IsStreaming)
+	logger.Info("CONF", "TaskAutoApprove", BaseConfInfo.TaskAutoApprove)
 	logger.Info("CONF", "SendMcpMediaToLLM", BaseConfInfo.SendMcpMediaToLLM)
 
 	logger.Info("AUDIO_CONF", "AudioAppID", AudioConfInfo.VolAudioAppID)
@@ -667,8 +653,6 @@ func logConf(allowedUserIds, allowedGroupIds, adminUserIds string) {
 	logger.Info("PHOTO_CONF", "OpenAIRecModel", PhotoConfInfo.OpenAIRecModel)
 	logger.Info("PHOTO_CONF", "VolImageModel", PhotoConfInfo.VolImageModel)
 	logger.Info("PHOTO_CONF", "VolRecModel", PhotoConfInfo.VolRecModel)
-	logger.Info("PHOTO_CONF", "AI302ImageModel", PhotoConfInfo.MixRecModel)
-	logger.Info("PHOTO_CONF", "AI302RecModel", PhotoConfInfo.MixRecModel)
 	logger.Info("PHOTO_CONF", "AliyunImageModel", PhotoConfInfo.AliyunImageModel)
 	logger.Info("PHOTO_CONF", "AliyunRecModel", PhotoConfInfo.AliyunRecModel)
 
@@ -679,7 +663,6 @@ func logConf(allowedUserIds, allowedGroupIds, adminUserIds string) {
 	logger.Info("VIDEO_CONF", "RESOLUTION", VideoConfInfo.Resolution)
 	logger.Info("VIDEO_CONF", "WATERMARK", VideoConfInfo.Watermark)
 	logger.Info("AUDIO_CONF", "GeminiVideoModel", VideoConfInfo.GeminiVideoModel)
-	logger.Info("AUDIO_CONF", "AI302VideoModel", VideoConfInfo.AI302VideoModel)
 	logger.Info("AUDIO_CONF", "AliyunVideoModel", VideoConfInfo.AliyunVideoModel)
 
 	logger.Info("REGISTER_CONF", "Type", RegisterConfInfo.Type)

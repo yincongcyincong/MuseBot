@@ -1,6 +1,6 @@
 module github.com/yincongcyincong/MuseBot
 
-go 1.24.0
+go 1.26.0
 
 require (
 	github.com/ArtisanCloud/PowerWeChat/v3 v3.4.22
@@ -29,7 +29,6 @@ require (
 	github.com/open-dingtalk/dingtalk-stream-sdk-go v0.9.1
 	github.com/prometheus/client_golang v1.17.0
 	github.com/qdrant/go-client v1.17.1
-	github.com/revrost/go-openrouter v0.1.6
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/rs/zerolog v1.34.0
 	github.com/sashabaranov/go-openai v1.40.5
@@ -146,6 +145,7 @@ require (
 	github.com/prometheus/procfs v0.11.1 // indirect
 	github.com/redis/go-redis/v9 v9.6.3 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20200410134404-eec4a21b6bb0 // indirect
+	github.com/revrost/go-openrouter v0.1.6 // indirect
 	github.com/rogpeppe/go-internal v1.14.1 // indirect
 	github.com/spf13/cast v1.7.1 // indirect
 	github.com/tidwall/gjson v1.14.4 // indirect

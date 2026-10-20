@@ -78,5 +78,6 @@
   "doc_unsupported_type": "unsupported document type: {{.file_name}}; only pdf/csv/html and text-like files are supported",
   "doc_prompt": "The user sent a document \"{{.file_name}}\" with the following content:\n\n{{.document}}\n\n---\nAnswer the user's question using the document.\n\nQuestion:\n{{.question}}",
   "doc_received_hint": "📎 Document received: {{.file_name}}. Processing…",
-  "doc_analyze_prompt": "Please read the document above and give a concise summary of its content, highlighting the key points."
+  "doc_analyze_prompt": "Please read the document above and give a concise summary of its content, highlighting the key points.",
+  "llm_request_fail": "❌ LLM request failed after {{.retry}} retries: {{.err}}"
 }

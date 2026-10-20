@@ -77,35 +77,7 @@ The bot also supports using Google Gemini models.
 * `-type`: Model type, set to `gemini`.
 * `-gemini_token`: Your Gemini API Token.
 
-#### 6\. OpenRouter Model Support (`openrouter`)
-
-Integrate with the OpenRouter platform to use various models it provides.
-
-```bash
-./MuseBot \
--telegram_bot_token=xxxx \
--type=openrouter \
--openrouter_token=sk-or-v1-xxxx
-```
-
-* `-type`: Model type, set to `openrouter`.
-* `-openrouter_token`: Your OpenRouter API Token.
-
-#### 7\. OrcaRouter Model Support (`orcarouter`)
-
-Integrate with the OrcaRouter gateway to use 150+ models from OpenAI, Anthropic, Google, DeepSeek, Qwen and others behind a single endpoint and API key. Model IDs are namespaced, e.g. `orcarouter/auto` for the per-request virtual router.
-
-```bash
-./MuseBot \
--telegram_bot_token=xxxx \
--type=orcarouter \
--orcarouter_token=sk-orca-xxxx
-```
-
-* `-type`: Model type, set to `orcarouter`.
-* `-orcarouter_token`: Your OrcaRouter API Key.
-
-#### 8\. Photo Identification (`identify photo`)
+#### 6\. Photo Identification (`identify photo`)
 
 To integrate with VolcEngine's photo identification feature, you'll need to provide your VolcEngine AK/SK.
 
@@ -122,7 +94,7 @@ To integrate with VolcEngine's photo identification feature, you'll need to prov
 
 For more details, please refer to: [VolcEngine Image Recognition Documentation](https://www.volcengine.com/docs/6790/116987)
 
-#### 9\. Voice Identification (`identify voice`)
+#### 7\. Voice Identification (`identify voice`)
 
 To integrate with VolcEngine's voice recognition feature.
 
@@ -141,7 +113,7 @@ To integrate with VolcEngine's voice recognition feature.
 
 For more details, please refer to: [VolcEngine Voice Recognition Documentation](https://www.volcengine.com/docs/6561/80816)
 
-#### 10\. MCP (`mcp`)
+#### 8\. MCP (`mcp`)
 
 If your bot needs to use Amap (Gaode Map) related tools, such as geolocation queries.
 
@@ -153,7 +125,7 @@ If your bot needs to use Amap (Gaode Map) related tools, such as geolocation que
 ```
 * `-use_tools`: Enables tool usage functionality, set to `true` default is `false`.
 
-#### 10\.1\. Skills (`skill`)
+#### 8\.1\. Skills (`skill`)
 
 Load local `SKILL.md` prompt skills for the `/task` workflow.
 
@@ -164,7 +136,7 @@ Load local `SKILL.md` prompt skills for the `/task` workflow.
 * `-skill_path`: Skill directory. The equivalent environment variable is `SKILLS_PATH`.
 * See [Skills](skills.md) for the file format.
 
-#### 10\.2\. Conversation Configuration (`config`)
+#### 8\.2\. Conversation Configuration (`config`)
 
 Configured administrators can manage runtime settings, MCP, skills, and cron jobs, and execute restricted built-in commands and file operations through direct natural-language intent recognition.
 
@@ -182,7 +154,7 @@ Configured administrators can manage runtime settings, MCP, skills, and cron job
 * `-file_root_path`: Built-in file-operation root. The equivalent environment variable is `FILE_ROOT_PATH`.
 * See [Conversation Configuration](conversation_config.md) for supported operations.
 
-#### 11\. RAG (Retrieval Augmented Generation) - ChromaDB (`rag milvus`)
+#### 9\. RAG (Retrieval Augmented Generation) - ChromaDB (`rag milvus`)
 
 To perform RAG with ChromaDB, you'll need to use OpenAI's Embedding service.
 
@@ -199,7 +171,7 @@ To perform RAG with ChromaDB, you'll need to use OpenAI's Embedding service.
 * `-embedding_type`: Embedding type, set to `openai`.
 * `-vector_db_type`: Vector database type, set to `chroma`.
 
-#### 12\. RAG (Retrieval Augmented Generation) - Milvus (`rag milvus`)
+#### 10\. RAG (Retrieval Augmented Generation) - Milvus (`rag milvus`)
 
 To perform RAG with Milvus, you'll need to use Gemini's Embedding service.
 
@@ -216,7 +188,7 @@ To perform RAG with Milvus, you'll need to use Gemini's Embedding service.
 * `-embedding_type`: Embedding type, set to `gemini`.
 * `-vector_db_type`: Vector database type, set to `milvus`.
 
-#### 13\. RAG (Retrieval Augmented Generation) - Weaviate (`rag weaviate`)
+#### 11\. RAG (Retrieval Augmented Generation) - Weaviate (`rag weaviate`)
 
 To perform RAG with Weaviate, you'll need to use Ernie's Embedding service.
 

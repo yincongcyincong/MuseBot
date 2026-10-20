@@ -11,27 +11,27 @@ import (
 	"github.com/yincongcyincong/MuseBot/param"
 )
 
-func TestGetAvailTxtType_IncludesOrcaRouter(t *testing.T) {
-	conf.BaseConfInfo.OrcaRouterToken = "sk-orca-test"
-	defer func() { conf.BaseConfInfo.OrcaRouterToken = "" }()
+func TestGetAvailTxtType_IncludesChatAnyWhere(t *testing.T) {
+	conf.BaseConfInfo.ChatAnyWhereToken = "sk-caw-test"
+	defer func() { conf.BaseConfInfo.ChatAnyWhereToken = "" }()
 	got := GetAvailTxtType()
-	assert.Contains(t, got, param.OrcaRouter)
+	assert.Contains(t, got, param.ChatAnyWhere)
 }
 
-func TestGetAvailImgType_IncludesOrcaRouter(t *testing.T) {
-	conf.BaseConfInfo.OrcaRouterToken = "sk-orca-test"
-	defer func() { conf.BaseConfInfo.OrcaRouterToken = "" }()
+func TestGetAvailImgType_IncludesChatAnyWhere(t *testing.T) {
+	conf.BaseConfInfo.ChatAnyWhereToken = "sk-caw-test"
+	defer func() { conf.BaseConfInfo.ChatAnyWhereToken = "" }()
 	got := GetAvailImgType()
-	assert.Contains(t, got, param.OrcaRouter)
+	assert.Contains(t, got, param.ChatAnyWhere)
 }
 
-func TestGetTxtModel_OrcaRouterDefault(t *testing.T) {
-	assert.Equal(t, param.OrcaRouterAuto, GetTxtModel(param.OrcaRouter))
+func TestGetTxtModel_ChatAnyWhereDefault(t *testing.T) {
+	assert.Equal(t, openai.GPT3Dot5Turbo, GetTxtModel(param.ChatAnyWhere))
 }
 
-func TestGetTxtType_OrcaRouterFallback(t *testing.T) {
-	conf.BaseConfInfo.Type = param.OrcaRouter
-	assert.Equal(t, param.OrcaRouter, GetTxtType(nil))
+func TestGetTxtType_ChatAnyWhereFallback(t *testing.T) {
+	conf.BaseConfInfo.Type = param.ChatAnyWhere
+	assert.Equal(t, param.ChatAnyWhere, GetTxtType(nil))
 }
 
 func TestGetTxtType_TrustsStoredValue(t *testing.T) {

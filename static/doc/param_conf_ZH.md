@@ -77,35 +77,7 @@
 * `-type`: 模型类型，设置为 `gemini`。
 * `-gemini_token`: 您的 Gemini API Token。
 
-#### 6\. OpenRouter 模型支持 (`openrouter`)
-
-集成 OpenRouter 平台，可以使用其提供的多种模型。
-
-```bash
-./MuseBot \
--telegram_bot_token=xxxx \
--type=openrouter \
--openrouter_token=sk-or-v1-xxxx
-```
-
-* `-type`: 模型类型，设置为 `openrouter`。
-* `-openrouter_token`: 您的 OpenRouter API Token。
-
-#### 7\. OrcaRouter 模型支持 (`orcarouter`)
-
-集成 OrcaRouter 网关，一个端点 + 一个 API Key 即可使用 OpenAI、Anthropic、Google、DeepSeek、Qwen 等 150+ 模型。模型 ID 带命名空间，例如 `orcarouter/auto` 为按请求的虚拟路由。
-
-```bash
-./MuseBot \
--telegram_bot_token=xxxx \
--type=orcarouter \
--orcarouter_token=sk-orca-xxxx
-```
-
-* `-type`: 模型类型，设置为 `orcarouter`。
-* `-orcarouter_token`: 您的 OrcaRouter API Key。
-
-#### 8\. 图片识别 (`identify photo`)
+#### 6\. 图片识别 (`identify photo`)
 
 集成火山引擎（VolcEngine）的图片识别功能，需要提供火山引擎的 AK/SK。
 
@@ -122,7 +94,7 @@
 
 更多详情请参考：[火山引擎图片识别文档](https://www.volcengine.com/docs/6790/116987)
 
-#### 9\. 语音识别 (`identify voice`)
+#### 7\. 语音识别 (`identify voice`)
 
 集成火山引擎（VolcEngine）的语音识别功能。
 
@@ -141,7 +113,7 @@
 
 更多详情请参考：[火山引擎语音识别文档](https://www.volcengine.com/docs/6561/80816)
 
-#### 10\. 高德地图 MCP (`amap mcp`)
+#### 8\. 高德地图 MCP (`amap mcp`)
 
 如果您的机器人需要使用高德地图的相关工具，例如地理位置查询等。
 
@@ -154,7 +126,7 @@
 
 * `-use_tools`: 启用工具使用功能，设置为 `true`，默认为`false`。
 
-#### 10\.1\. Skill（`skill`）
+#### 8\.1\. Skill（`skill`）
 
 加载本地 `SKILL.md` 提示词 Skill，并接入 `/task` 工作流。
 
@@ -165,7 +137,7 @@
 * `-skill_path`：Skill 目录，等价环境变量是 `SKILLS_PATH`。
 * 文件格式详见 [Skill 文档](skills_ZH.md)。
 
-#### 10\.2\. 对话式配置（`config`）
+#### 8\.2\. 对话式配置（`config`）
 
 指定管理员可以通过自然语言意图识别管理运行参数、MCP、Skill、定时任务，并执行受限制的内置命令和文件操作。
 
@@ -183,7 +155,7 @@
 * `-file_root_path`：内置文件操作根目录，等价环境变量是 `FILE_ROOT_PATH`。
 * 支持操作详见[对话式配置文档](conversation_config_ZH.md)。
 
-#### 11\. RAG (Retrieval Augmented Generation) - ChromaDB (`rag milvus`)
+#### 9\. RAG (Retrieval Augmented Generation) - ChromaDB (`rag milvus`)
 
 结合 ChromaDB 进行 RAG，需要使用 OpenAI 的 Embedding 服务。
 
@@ -200,7 +172,7 @@
 * `-embedding_type`: Embedding 类型，设置为 `openai`。
 * `-vector_db_type`: 向量数据库类型，设置为 `milvus`。
 
-#### 12\. RAG (Retrieval Augmented Generation) - Milvus (`rag milvus`)
+#### 10\. RAG (Retrieval Augmented Generation) - Milvus (`rag milvus`)
 
 结合 Milvus 进行 RAG，需要使用 Gemini 的 Embedding 服务。
 
@@ -217,7 +189,7 @@
 * `-embedding_type`: Embedding 类型，设置为 `gemini`。
 * `-vector_db_type`: 向量数据库类型，设置为 `milvus`。
 
-#### 13\. RAG (Retrieval Augmented Generation) - Weaviate (`rag weaviate`)
+#### 11\. RAG (Retrieval Augmented Generation) - Weaviate (`rag weaviate`)
 
 结合 Weaviate 进行 RAG，需要使用 Ernie 的 Embedding 服务。
 

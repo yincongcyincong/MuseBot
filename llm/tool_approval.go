@@ -8,7 +8,9 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/yincongcyincong/MuseBot/conf"
 	"github.com/yincongcyincong/MuseBot/i18n"
+	"github.com/yincongcyincong/MuseBot/logger"
 )
 
 const taskToolApprovalTimeout = 5 * time.Minute
@@ -28,6 +30,11 @@ func taskApprovalOwner(userID, chatID string) string {
 }
 
 func requestTaskToolApproval(ctx context.Context, l *LLM, operation, target, detail string) (bool, error) {
+	if conf.BaseConfInfo.TaskAutoApprove {
+		logger.InfoCtx(ctx, "task tool auto approved", "operation", operation, "target", target, "detail", detail)
+		return true, nil
+	}
+
 	approval := &taskToolApproval{
 		Token:     strings.ReplaceAll(uuid.NewString(), "-", "")[:8],
 		Operation: operation,

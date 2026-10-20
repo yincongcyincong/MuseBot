@@ -470,15 +470,6 @@ func GetOpenAIClient(ctx context.Context, clientType string) *openai.Client {
 	case param.Vol:
 		token = conf.BaseConfInfo.VolToken
 		specialLLMUrl = "https://ark.cn-beijing.volces.com/api/v3"
-	case param.OpenRouter:
-		token = conf.BaseConfInfo.OpenRouterToken
-		specialLLMUrl = "https://openrouter.ai/api/v1"
-	case param.OrcaRouter:
-		token = conf.BaseConfInfo.OrcaRouterToken
-		specialLLMUrl = "https://api.orcarouter.ai/v1"
-	case param.AI302:
-		token = conf.BaseConfInfo.AI302Token
-		specialLLMUrl = "https://api.302.ai/v1"
 	case param.Gemini:
 		token = conf.BaseConfInfo.GeminiToken
 		specialLLMUrl = "https://generativelanguage.googleapis.com/v1beta/openai"

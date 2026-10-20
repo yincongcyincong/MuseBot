@@ -77,5 +77,6 @@
   "doc_unsupported_type": "不支持的文档类型：{{.file_name}}，仅支持 pdf/csv/html 及文本类文件",
   "doc_prompt": "用户发送了文档\"{{.file_name}}\"，内容如下：\n\n{{.document}}\n\n---\n请根据文档内容回答用户的问题。\n\n问题：\n{{.question}}",
   "doc_received_hint": "📎 已收到文档：{{.file_name}}，正在处理…",
-  "doc_analyze_prompt": "请阅读上面的文档，简要总结它的内容并指出重点。"
+  "doc_analyze_prompt": "请阅读上面的文档，简要总结它的内容并指出重点。",
+  "llm_request_fail": "❌ 模型请求失败（已重试 {{.retry}} 次）：{{.err}}"
 }

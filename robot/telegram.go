@@ -509,7 +509,7 @@ func (t *TelegramRobot) showTxtModel(ty string) {
 				tgbotapi.NewInlineKeyboardButtonData(k, k),
 			))
 		}
-	case param.OpenRouter, param.OrcaRouter, param.AI302, param.Ollama, param.OpenAi:
+	case param.Ollama, param.OpenAi:
 		if t.Prompt != "" {
 			t.Robot.handleModelUpdate(&RobotModel{TxtType: t.Prompt})
 			return
@@ -518,24 +518,6 @@ func (t *TelegramRobot) showTxtModel(ty string) {
 		case param.OpenAi:
 			t.Robot.SendMsg(chatID, i18n.GetMessage("mix_mode_choose", map[string]interface{}{
 				"link":    "https://platform.openai.com/",
-				"command": ty,
-			}),
-				msgId, tgbotapi.ModeMarkdown, nil)
-		case param.AI302:
-			t.Robot.SendMsg(chatID, i18n.GetMessage("mix_mode_choose", map[string]interface{}{
-				"link":    "https://302.ai/",
-				"command": ty,
-			}),
-				msgId, tgbotapi.ModeMarkdown, nil)
-		case param.OpenRouter:
-			t.Robot.SendMsg(chatID, i18n.GetMessage("mix_mode_choose", map[string]interface{}{
-				"link":    "https://openrouter.ai/",
-				"command": ty,
-			}),
-				msgId, tgbotapi.ModeMarkdown, nil)
-		case param.OrcaRouter:
-			t.Robot.SendMsg(chatID, i18n.GetMessage("mix_mode_choose", map[string]interface{}{
-				"link":    "https://www.orcarouter.ai",
 				"command": ty,
 			}),
 				msgId, tgbotapi.ModeMarkdown, nil)
@@ -582,23 +564,8 @@ func (t *TelegramRobot) showImageModel() {
 				tgbotapi.NewInlineKeyboardButtonData(k, k),
 			))
 		}
-	case param.OpenRouter, param.OrcaRouter, param.AI302, param.Ollama, param.OpenAi:
+	case param.Ollama, param.OpenAi:
 		switch utils.GetImgType(db.GetCtxUserInfo(t.Robot.Ctx).LLMConfigRaw) {
-		case param.AI302:
-			t.Robot.SendMsg(chatID, i18n.GetMessage("mix_mode_choose", map[string]interface{}{
-				"link": "https://302.ai/",
-			}),
-				msgId, tgbotapi.ModeMarkdown, nil)
-		case param.OpenRouter:
-			t.Robot.SendMsg(chatID, i18n.GetMessage("mix_mode_choose", map[string]interface{}{
-				"link": "https://openrouter.ai/",
-			}),
-				msgId, tgbotapi.ModeMarkdown, nil)
-		case param.OrcaRouter:
-			t.Robot.SendMsg(chatID, i18n.GetMessage("mix_mode_choose", map[string]interface{}{
-				"link": "https://www.orcarouter.ai",
-			}),
-				msgId, tgbotapi.ModeMarkdown, nil)
 		case param.Ollama:
 			t.Robot.SendMsg(chatID, i18n.GetMessage("mix_mode_choose", map[string]interface{}{
 				"link": "https://ollama.com/",
@@ -650,15 +617,6 @@ func (t *TelegramRobot) showVideoModel() {
 				tgbotapi.NewInlineKeyboardButtonData(k, k),
 			))
 		}
-	case param.AI302:
-		switch utils.GetVideoType(db.GetCtxUserInfo(t.Robot.Ctx).LLMConfigRaw) {
-		case param.AI302:
-			t.Robot.SendMsg(chatID, i18n.GetMessage("mix_mode_choose", map[string]interface{}{
-				"link": "https://302.ai/",
-			}),
-				msgId, tgbotapi.ModeMarkdown, nil)
-			return
-		}
 	}
 
 	inlineKeyboard = tgbotapi.NewInlineKeyboardMarkup(inlineButton...)
@@ -691,21 +649,12 @@ func (t *TelegramRobot) showRecModel() {
 				tgbotapi.NewInlineKeyboardButtonData(k, k),
 			))
 		}
-	case param.AI302, param.OpenAi:
-		switch utils.GetRecType(db.GetCtxUserInfo(t.Robot.Ctx).LLMConfigRaw) {
-		case param.AI302:
-			t.Robot.SendMsg(chatID, i18n.GetMessage("mix_mode_choose", map[string]interface{}{
-				"link": "https://302.ai/",
-			}),
-				msgId, tgbotapi.ModeMarkdown, nil)
-			return
-		case param.OpenAi:
-			t.Robot.SendMsg(chatID, i18n.GetMessage("mix_mode_choose", map[string]interface{}{
-				"link": "https://platform.openai.com/",
-			}),
-				msgId, tgbotapi.ModeMarkdown, nil)
-			return
-		}
+	case param.OpenAi:
+		t.Robot.SendMsg(chatID, i18n.GetMessage("mix_mode_choose", map[string]interface{}{
+			"link": "https://platform.openai.com/",
+		}),
+			msgId, tgbotapi.ModeMarkdown, nil)
+		return
 	}
 
 	inlineKeyboard = tgbotapi.NewInlineKeyboardMarkup(inlineButton...)

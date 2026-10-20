@@ -37,6 +37,7 @@ export ALLOWED_COMMANDS=git,ls
 * `-command_timeout_sec`：单次命令最长执行时间，等价环境变量是 `COMMAND_TIMEOUT_SEC`。
 * 命令在文件根目录内执行；也可以通过自然语言指定根目录内的已存在工作目录。
 * 不在白名单里的命令会触发交互审批：用户批准后该命令会加入白名单并立即执行。审批结果持久化到 `data/runtime_boundary.json`，重启后仍然生效。
+* `-task_auto_approve`：自动同意所有任务工具操作（命令执行、配置修改），无需交互输入 `/y` 确认；等价环境变量是 `TASK_AUTO_APPROVE`（默认 `false`）。
 
 没有独立的文件工具：所有文件操作（列出、读取、写入、编辑、创建、移动）都通过白名单内的 shell 命令完成（`ls`、`cat`、`tee`、`mkdir`、`mv` 等）。命令的工作目录限制在配置的文件根目录内，根外路径作为工作目录会被拒绝。批准的新命令会持久化到 `data/runtime_boundary.json`。
 

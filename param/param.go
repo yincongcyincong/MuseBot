@@ -11,7 +11,6 @@ const (
 	ChatAnyWhere = "chatanywhere"
 
 	Vol    = "vol"
-	AI302  = "302-ai"
 	Aliyun = "aliyun"
 
 	Gemini                    = "gemini"
@@ -27,10 +26,6 @@ const (
 	ModelVeo2                  string = "veo-2"
 
 	OpenAi = "openai"
-
-	OpenRouter = "openrouter"
-
-	OrcaRouter = "orcarouter"
 
 	LLAVA = "llava:latest"
 

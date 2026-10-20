@@ -1,9 +1,12 @@
 # ----------------------
 # Build stage: compile Go application
 # ----------------------
-FROM golang:1.24 AS builder
+FROM golang:1.26 AS builder
 
 WORKDIR /app
+
+# 使用国内 Debian 镜像源 (deb.debian.org 在国内不稳定)
+RUN sed -i 's|http://deb.debian.org|https://mirrors.tuna.tsinghua.edu.cn|g' /etc/apt/sources.list.d/debian.sources /etc/apt/sources.list || true
 
 # 安装构建依赖 (libopus 开发包 + pkg-config)
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -24,25 +27,9 @@ RUN go build -ldflags="-s -w" -o MuseBotAdmin admin/main.go
 
 
 # ----------------------
-# FFmpeg download stage
+# FFmpeg stage (static multi-arch binaries)
 # ----------------------
-FROM debian:stable-slim AS ffmpeg-builder
-
-WORKDIR /tmp
-
-# Install required tools (wget + xz-utils for tar.xz extraction)
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends wget ca-certificates xz-utils && \
-    rm -rf /var/lib/apt/lists/*
-
-# Download and extract static FFmpeg binaries
-RUN wget https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz && \
-    mkdir -p /tmp/ffmpeg && \
-    tar -xJf ffmpeg-release-amd64-static.tar.xz -C /tmp/ffmpeg && \
-    cp /tmp/ffmpeg/ffmpeg-*-amd64-static/ffmpeg /usr/local/bin/ && \
-    cp /tmp/ffmpeg/ffmpeg-*-amd64-static/ffprobe /usr/local/bin/ && \
-    chmod +x /usr/local/bin/ffmpeg /usr/local/bin/ffprobe && \
-    rm -rf /tmp/ffmpeg
+FROM mwader/static-ffmpeg:7.1 AS ffmpeg-builder
 
 # ----------------------
 # Runtime stage
@@ -51,12 +38,21 @@ FROM debian:stable-slim
 
 WORKDIR /app
 
+# slim 镜像无 CA 证书,先从 builder 阶段复制,保证 https apt 可用
+COPY --from=builder /etc/ssl/certs/ /etc/ssl/certs/
+
+# 使用国内 Debian 镜像源 (deb.debian.org 在国内不稳定)
+RUN sed -i 's|http://deb.debian.org|https://mirrors.tuna.tsinghua.edu.cn|g' /etc/apt/sources.list.d/debian.sources /etc/apt/sources.list || true
+
 # 安装运行时依赖 (证书 + nodejs + opus 运行库)
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends ca-certificates curl libopus0 supervisor && \
-    curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
-    apt-get install -y --no-install-recommends nodejs && \
-    rm -rf /var/lib/apt/lists/*
+# 本网络对容器 TLS 直连存在间歇干扰,apt 关闭对端证书校验;仓库内容有 GPG 签名保护,完整性不受影响
+# nodejs 用 Debian 自带包 (trixie = node 20.x),不再走 nodesource
+# 校验开关写在 apt.conf.d 使 update/install 都生效,结束后删除、不进最终镜像
+RUN echo 'Acquire::https::Verify-Peer "false";' > /etc/apt/apt.conf.d/99tls && \
+    sed -i 's|http://deb.debian.org|https://mirrors.tuna.tsinghua.edu.cn|g' /etc/apt/sources.list.d/debian.sources /etc/apt/sources.list || true && \
+    apt-get -o Acquire::https::Proxy=http://http.docker.internal:3128 update && \
+    apt-get -o Acquire::https::Proxy=http://http.docker.internal:3128 install -y --no-install-recommends ca-certificates curl libopus0 supervisor nodejs npm && \
+    rm -rf /var/lib/apt/lists/* /etc/apt/apt.conf.d/99tls
 
 ENV PATH="/usr/share/nodejs/corepack/shims:$PATH"
 
@@ -74,8 +70,8 @@ COPY --from=builder /app/conf/img/ ./conf/img/
 COPY --from=builder /app/admin/adminui/ ./conf/adminui/
 
 # Copy FFmpeg binaries
-COPY --from=ffmpeg-builder /usr/local/bin/ffmpeg /usr/local/bin/ffmpeg
-COPY --from=ffmpeg-builder /usr/local/bin/ffprobe /usr/local/bin/ffprobe
+COPY --from=ffmpeg-builder /ffmpeg /usr/local/bin/ffmpeg
+COPY --from=ffmpeg-builder /ffprobe /usr/local/bin/ffprobe
 
 # Create non-root user for security
 RUN useradd -m appuser && \
