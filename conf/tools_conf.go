@@ -44,6 +44,7 @@ type AgentInfo struct {
 }
 
 type ToolsConf struct {
+	WebSearchProvider string  `json:"web_search_provider"`
 	McpConfPath       *string `json:"mcp_conf_path"`
 	SkillPath         *string `json:"skill_path"`
 	AllowedCommands   string  `json:"allowed_commands"`
@@ -63,6 +64,7 @@ var (
 )
 
 func InitToolsConf() {
+	flag.StringVar(&ToolsConfInfo.WebSearchProvider, "web_search_provider", "default", "task web search provider: default, parallel, or disabled")
 	flag.String("allowed_commands", "", "comma-separated executable allowlist")
 	flag.Int("command_timeout_sec", 60, "built-in command timeout in seconds")
 
@@ -85,6 +87,9 @@ func applyParsedToolsFlags(flags *flag.FlagSet) {
 
 func EnvToolsConf() {
 	applyToolsDefaults()
+	if provider := os.Getenv("WEB_SEARCH_PROVIDER"); provider != "" {
+		ToolsConfInfo.WebSearchProvider = provider
+	}
 	if os.Getenv("MCP_CONF_PATH") != "" {
 		*ToolsConfInfo.McpConfPath = os.Getenv("MCP_CONF_PATH")
 	}

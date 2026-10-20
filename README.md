@@ -310,6 +310,26 @@ multi agent communicate with each other!
      docker run -d -v /home/user/xxx/data:/app/data -e TELEGRAM_BOT_TOKEN="telegram-bot-token" -e DEEPSEEK_TOKEN="deepseek-auth-token" --name my-bot MuseBot
    ```
 
+## Task web search
+
+The built-in `web_search` task agent uses DuckDuckGo with Bing fallback by default.
+To use [Parallel Search MCP](https://docs.parallel.ai/integrations/mcp/search-mcp)
+instead, set `WEB_SEARCH_PROVIDER=parallel` before starting MuseBot, or pass
+`-web_search_provider=parallel` on a fresh installation. The setting is also saved
+as `tools.web_search_provider` in the bot configuration. Environment values
+override the saved setting.
+
+Parallel searches use Fast mode at `https://search.parallel.ai/mcp`, without an
+account or API key. The task agent receives titles, source URLs and relevant
+excerpts in the existing search result format. This provider supports search;
+it does not add a page-fetch tool. Anonymous usage is subject to service limits,
+and errors are returned to the task without switching providers.
+
+Use `default` to retain DuckDuckGo/Bing, or `disabled` to block built-in web
+search. Custom MCP servers and their tool settings are separate. Each `/task`
+or `/mcp` research run has its own opaque Parallel session identifier, reused by
+its agents and subsequent searches within that run.
+
 ## Contributing
 
 Feel free to submit issues and pull requests to improve this bot. 🚀

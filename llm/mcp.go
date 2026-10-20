@@ -71,6 +71,7 @@ func (d *LLMTaskReq) ExecuteMcp() error {
 	mcpLLM := NewLLM(WithChatId(d.ChatId), WithMsgId(d.MsgId), WithUserId(d.UserId),
 		WithMessageChan(d.MessageChan), WithContent(d.Content), WithTaskTools(taskTool),
 		WithPerMsgLen(d.PerMsgLen), WithContext(d.Ctx), WithCS(d.Cs))
+	mcpLLM.searchSession = &d.searchSession
 	mcpLLM.Cs.Token += llm.Cs.Token
 	mcpLLM.Content = d.Content
 	mcpLLM.GetMessages(d.UserId, d.Content)
