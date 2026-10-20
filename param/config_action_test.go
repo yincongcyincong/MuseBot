@@ -29,7 +29,7 @@ func TestParseConversationConfigPlanRejectsUnsupportedType(t *testing.T) {
 func TestParseConversationConfigPlanBuiltInActions(t *testing.T) {
 	content := `{"actions":[
 		{"type":"command","operation":"run","args":["git","status"],"timeout":30},
-		{"type":"file","operation":"edit","path":"doc.md","old_text":"old","new_text":"new"}
+		{"type":"mcp","operation":"sync"}
 	]}`
 	plan, err := ParseConversationConfigPlan(content)
 	if err != nil {
@@ -38,8 +38,8 @@ func TestParseConversationConfigPlanBuiltInActions(t *testing.T) {
 	if plan.Actions[0].Type != "command" || plan.Actions[0].Args[0] != "git" || plan.Actions[0].Timeout != 30 {
 		t.Errorf("unexpected command action: %+v", plan.Actions[0])
 	}
-	if plan.Actions[1].Type != "file" || plan.Actions[1].OldText != "old" || plan.Actions[1].NewText != "new" {
-		t.Errorf("unexpected file action: %+v", plan.Actions[1])
+	if plan.Actions[1].Type != "mcp" || plan.Actions[1].Operation != "sync" {
+		t.Errorf("unexpected mcp action: %+v", plan.Actions[1])
 	}
 }
 
@@ -67,12 +67,12 @@ func TestParseConversationConfigPlanEmptyActions(t *testing.T) {
 
 // models sometimes emit "op" instead of "operation"; accept it as an alias
 func TestParseConversationConfigPlanAcceptsOpAlias(t *testing.T) {
-	plan, err := ParseConversationConfigPlan(`{"actions":[{"type":"file","op":"list","path":"doc"}]}`)
+	plan, err := ParseConversationConfigPlan(`{"actions":[{"type":"mcp","op":"sync"}]}`)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(plan.Actions) != 1 || plan.Actions[0].Operation != "list" {
-		t.Fatalf("operation = %q, want list", plan.Actions[0].Operation)
+	if len(plan.Actions) != 1 || plan.Actions[0].Operation != "sync" {
+		t.Fatalf("operation = %q, want sync", plan.Actions[0].Operation)
 	}
 
 	// explicit "operation" still wins over the alias

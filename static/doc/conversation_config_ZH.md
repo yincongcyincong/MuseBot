@@ -9,7 +9,6 @@
 /task 创建一个叫 release_notes 的 skill，用于编写发布说明，指令：输出简洁、面向用户的发布说明。
 /task 每天早上 8 点创建一个定时任务，提示词是“总结 AI 新闻”。
 /task 运行 git status。
-/task 查看 data 目录。
 ```
 
 在 `/task` 内部，规划器会分派内建的 `bot_config` agent，由它调用 `bot_config` 工具提交经过校验的动作；MuseBot 在本地执行后把结果并入任务输出。
@@ -37,20 +36,9 @@ export ALLOWED_COMMANDS=git,ls
 * `-allowed_commands`：逗号分隔的可执行文件白名单，等价环境变量是 `ALLOWED_COMMANDS`。
 * `-command_timeout_sec`：单次命令最长执行时间，等价环境变量是 `COMMAND_TIMEOUT_SEC`。
 * 命令在文件根目录内执行；也可以通过自然语言指定根目录内的已存在工作目录。
-* 命令白名单属于启动配置，不能通过对话先放行再执行。
+* 不在白名单里的命令会触发交互审批：用户批准后该命令会加入白名单并立即执行。审批结果持久化到 `data/runtime_boundary.json`，重启后仍然生效。
 
-文件操作被限制在根目录内，符号链接解析后也必须留在根目录内：
-
-```bash
-export FILE_ROOT_PATH=/path/to/agent-files
-./MuseBot -file_root_path=/path/to/agent-files
-```
-
-文件根目录属于启动配置，不能通过对话在运行中修改。
-
-* 单次读取最多 256 KiB，写入和编辑最多 1 MiB。
-* 目录列表最多返回 500 项，命令输出最多返回 16 KiB。
-* 写入和编辑使用临时文件加原子重命名。
+没有独立的文件工具：所有文件操作（列出、读取、写入、编辑、创建、移动）都通过白名单内的 shell 命令完成（`ls`、`cat`、`tee`、`mkdir`、`mv` 等）。命令的工作目录限制在配置的文件根目录内，根外路径作为工作目录会被拒绝。批准的新命令会持久化到 `data/runtime_boundary.json`。
 
 ## 支持范围
 
@@ -58,7 +46,6 @@ export FILE_ROOT_PATH=/path/to/agent-files
 - MCP：列出、添加/更新、启用、禁用、删除和同步。
 - Skill：列出、创建、重载和修改 Skill 目录。
 - 定时任务：列出、查询、创建、更新、启用、禁用、删除和清空。
-- 命令：运行白名单内命令，并返回截断后的输出。
-- 文件：列出、读取、写入、精确替换编辑、创建目录、删除和移动。
+- 命令：运行白名单内命令（含所有文件操作），并返回截断后的输出。
 
 配置动作是 `/task` 多智能体工作流的一部分：任务规划器能看到 `bot_config` agent，被分派的子 agent 生成受限的 JSON 动作，MuseBot 在本地校验并执行，然后返回结果。

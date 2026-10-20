@@ -54,3 +54,25 @@ func GetTailStartOffset(filePath string, lines int) (int64, error) {
 
 	return offset, nil
 }
+
+// EvalExistingPathPrefix resolves symlinks in the deepest existing ancestors
+// of path while keeping the not-yet-existing tail intact. It lets sandbox
+// prefix checks accept paths like /var/folders (-> /private/var/folders)
+// without opening the door to symlink escapes inside a sandbox root, which
+// callers still reject segment by segment.
+func EvalExistingPathPrefix(path string) string {
+	if path == "" {
+		return path
+	}
+	if _, err := os.Lstat(path); err == nil {
+		if evaluated, err := filepath.EvalSymlinks(path); err == nil {
+			return evaluated
+		}
+		return path
+	}
+	parent := filepath.Dir(path)
+	if parent == path {
+		return path
+	}
+	return filepath.Join(EvalExistingPathPrefix(parent), filepath.Base(path))
+}

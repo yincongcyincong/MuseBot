@@ -69,9 +69,14 @@ type LLM struct {
 
 	// ConfigExecutor runs MuseBot configuration actions (config/mcp/skill/
 	// cron/command/file) from inside the /task workflow. It is injected by the
-	// robot layer to avoid an llm -> robot import cycle.
-	ConfigExecutor func(action *param.ConversationConfigAction) (string, error)
+	// robot layer to avoid an llm -> robot import cycle; approve lets the
+	// executor ask the user before expanding the runtime boundary.
+	ConfigExecutor func(action *param.ConversationConfigAction, approve TaskApprovalFunc) (string, error)
 }
+
+// TaskApprovalFunc asks the triggering user to confirm an operation; it
+// returns true when the user approved within the timeout window.
+type TaskApprovalFunc func(operation, target, detail string) (bool, error)
 
 type LLMClient interface {
 	Send(ctx context.Context, l *LLM) error
@@ -447,7 +452,7 @@ func WithToolApprovals(enabled bool) Option {
 	}
 }
 
-func WithConfigExecutor(executor func(action *param.ConversationConfigAction) (string, error)) Option {
+func WithConfigExecutor(executor func(action *param.ConversationConfigAction, approve TaskApprovalFunc) (string, error)) Option {
 	return func(p *LLM) {
 		p.ConfigExecutor = executor
 	}
@@ -472,9 +477,6 @@ func (l *LLM) ExecMcpReq(ctx context.Context, funcName string, property map[stri
 	}
 	if funcName == conf.BuiltinConfigTool {
 		return l.executeTaskConfigTool(ctx, property)
-	}
-	if l.ToolApprovals && (funcName == conf.BuiltinFileReadTool || funcName == conf.BuiltinFileWriteTool) {
-		return l.executeTaskFileTool(ctx, funcName, property)
 	}
 	if l.ToolApprovals && funcName == conf.BuiltinShellTool {
 		return l.executeTaskShellTool(ctx, property)

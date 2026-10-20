@@ -760,6 +760,10 @@ func (r *RobotInfo) handleModelUpdate(rm *RobotModel) {
 			llmConf = &param.LLMConfig{}
 		}
 		if rm.TxtType != "" {
+			if llmConf.TxtType != rm.TxtType {
+				// keep txt_model matching the new type so the stored pair stays valid
+				llmConf.TxtModel = utils.GetTxtModel(rm.TxtType)
+			}
 			llmConf.TxtType = rm.TxtType
 		}
 		if rm.ImgType != "" {
@@ -1464,8 +1468,8 @@ func (r *RobotInfo) sendMultiAgent(emptyPromptFunc func()) {
 			PerMsgLen: r.Robot.getPerMsgLen(),
 			Cs:        r.cs,
 			Ctx:       r.Ctx,
-			ConfigExecutor: func(action *param.ConversationConfigAction) (string, error) {
-				return r.executeConversationConfigAction(action, userId)
+			ConfigExecutor: func(action *param.ConversationConfigAction, approve llm.TaskApprovalFunc) (string, error) {
+				return r.executeConversationConfigAction(action, userId, approve)
 			},
 		}
 

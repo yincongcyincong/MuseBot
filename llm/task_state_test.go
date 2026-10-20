@@ -6,17 +6,17 @@ import (
 	"github.com/yincongcyincong/MuseBot/param"
 )
 
-func TestTaskStateMachineEnforcesResearchBeforePlan(t *testing.T) {
+func TestTaskStateMachineStartsAtPlan(t *testing.T) {
 	machine := newTaskStateMachine()
-	if err := machine.transition(TaskStatePlan); err == nil {
-		t.Fatal("expected INIT -> PLAN to be rejected")
+	// research is no longer a separate phase: tasks go straight to planning
+	if err := machine.transition(TaskStateExecute); err == nil {
+		t.Fatal("expected INIT -> EXECUTE to be rejected")
+	}
+	if err := machine.beginPlan(); err != nil {
+		t.Fatalf("beginPlan() error = %v", err)
 	}
 
 	transitions := []TaskState{
-		TaskStateResearchQuery,
-		TaskStateResearchObserve,
-		TaskStateResearchReview,
-		TaskStatePlan,
 		TaskStateExecute,
 		TaskStateReflect,
 		TaskStateSummarize,
@@ -29,29 +29,27 @@ func TestTaskStateMachineEnforcesResearchBeforePlan(t *testing.T) {
 	}
 }
 
-func TestTaskStateMachineLimitsResearchAndExecution(t *testing.T) {
+// single-step plans skip reflection: EXECUTE may go straight to SUMMARIZE
+func TestTaskStateMachineAllowsDirectSummarize(t *testing.T) {
 	machine := newTaskStateMachine()
-	if err := machine.beginResearch(); err != nil {
-		t.Fatalf("beginResearch() error = %v", err)
+	if err := machine.beginPlan(); err != nil {
+		t.Fatalf("beginPlan() error = %v", err)
 	}
+	if err := machine.beginExecutionLoop(); err != nil {
+		t.Fatalf("beginExecutionLoop() error = %v", err)
+	}
+	if err := machine.transition(TaskStateSummarize); err != nil {
+		t.Fatalf("EXECUTE -> SUMMARIZE should be allowed: %v", err)
+	}
+	if err := machine.transition(TaskStateDone); err != nil {
+		t.Fatalf("SUMMARIZE -> DONE failed: %v", err)
+	}
+}
 
-	for round := 0; round < taskMaxResearchRounds; round++ {
-		if machine.state != TaskStateResearchQuery {
-			t.Fatalf("round %d state = %s, want %s", round, machine.state, TaskStateResearchQuery)
-		}
-		if err := machine.transition(TaskStateResearchObserve); err != nil {
-			t.Fatalf("research observe transition failed: %v", err)
-		}
-		if err := machine.transition(TaskStateResearchReview); err != nil {
-			t.Fatalf("research review transition failed: %v", err)
-		}
-		machine.researchRound++
-		if err := machine.beginNextResearchRound(); err != nil {
-			t.Fatalf("beginNextResearchRound() error = %v", err)
-		}
-	}
-	if machine.state != TaskStatePlan {
-		t.Fatalf("after research state = %s, want %s", machine.state, TaskStatePlan)
+func TestTaskStateMachineLimitsExecutionLoops(t *testing.T) {
+	machine := newTaskStateMachine()
+	if err := machine.beginPlan(); err != nil {
+		t.Fatalf("beginPlan() error = %v", err)
 	}
 
 	for loop := 0; loop < taskMaxExecutionLoops; loop++ {
@@ -70,18 +68,6 @@ func TestTaskStateMachineLimitsResearchAndExecution(t *testing.T) {
 	}
 	if err := machine.beginExecutionLoop(); err == nil {
 		t.Fatal("expected execution loop limit")
-	}
-}
-
-func TestNormalizeTaskResearchPlan(t *testing.T) {
-	queries := normalizeTaskResearchPlan("noise {\"queries\":[\" MCP function calling \",\"mcp function calling\",\"  \"]}", "fallback query")
-	if len(queries) != 1 || queries[0] != "MCP function calling" {
-		t.Fatalf("unexpected queries: %#v", queries)
-	}
-
-	queries = normalizeTaskResearchPlan("not json", "fallback query")
-	if len(queries) != 1 || queries[0] != "fallback query" {
-		t.Fatalf("fallback queries = %#v", queries)
 	}
 }
 

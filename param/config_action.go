@@ -61,10 +61,6 @@ type ConversationConfigAction struct {
 	Server       json.RawMessage      `json:"server,omitempty"`
 	Args         []string             `json:"args,omitempty"`
 	Timeout      int                  `json:"timeout,omitempty"`
-	Content      string               `json:"content,omitempty"`
-	OldText      string               `json:"old_text,omitempty"`
-	NewText      string               `json:"new_text,omitempty"`
-	Target       string               `json:"target,omitempty"`
 }
 
 // UnmarshalJSON accepts the shorthand key "op" as an alias for "operation":
@@ -121,7 +117,7 @@ func ParseConversationConfigPlan(content string) (*ConversationConfigPlan, error
 			continue
 		}
 		switch action.Type {
-		case "config", "mcp", "skill", "cron", "command", "file":
+		case "config", "mcp", "skill", "cron", "command":
 		default:
 			invalidTypes = append(invalidTypes, action.Type)
 		}

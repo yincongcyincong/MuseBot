@@ -12,7 +12,6 @@ automatically:
 /task Create a skill named release_notes for writing release notes; instructions: write concise user-facing release notes.
 /task Create a cron at 08:00 every day with prompt "summarize AI news".
 /task Run git status.
-/task List the data directory.
 ```
 
 Inside `/task`, the planner assigns the built-in `bot_config` agent, which
@@ -42,18 +41,13 @@ export ALLOWED_COMMANDS=git,ls
 - `-allowed_commands`: comma-separated executable allowlist; equivalent environment variable is `ALLOWED_COMMANDS`.
 - `-command_timeout_sec`: maximum command runtime; equivalent environment variable is `COMMAND_TIMEOUT_SEC`.
 - Commands run inside the file root. A natural-language request may select an existing working directory inside that root.
-- The allowlist is startup configuration and cannot be changed through conversation before running a command.
+- A command outside the allowlist triggers an interactive approval: the user can add it to the allowlist and run it right away. Approvals are persisted to `data/runtime_boundary.json` and survive restarts.
 
-File operations are confined to the configured root, including after symbolic links are resolved:
-
-```bash
-export FILE_ROOT_PATH=/path/to/agent-files
-./MuseBot -file_root_path=/path/to/agent-files
-```
-
-- Reads are limited to 256 KiB; writes and edits to 1 MiB.
-- Directory listings return at most 500 entries and command output at most 16 KiB.
-- Writes and edits use a temporary file followed by an atomic rename.
+There is no separate file tool: all file operations (list, read, write, edit,
+create, move) go through allowlisted shell commands (`ls`, `cat`, `tee`,
+`mkdir`, `mv`, ...). Commands run with a working directory inside the
+configured file root; a path outside the root used as a working directory is
+rejected. Approving a new command persists it to `data/runtime_boundary.json`.
 
 ## Supported Operations
 
@@ -61,8 +55,7 @@ export FILE_ROOT_PATH=/path/to/agent-files
 - MCP: list, add/update, enable, disable, delete, and synchronize servers.
 - Skills: list, create, reload, and change the skill directory.
 - Cron: list, get, create, update, enable, disable, delete, and clear.
-- Commands: run an allowlisted command and return truncated output.
-- Files: list, read, write, exact-text edit, create directories, delete, and move.
+- Commands: run an allowlisted command (including all file operations) and return truncated output.
 
 Configuration actions are part of the `/task` multi-agent workflow: the task
 planner sees the `bot_config` agent, the assigned sub-agent emits a constrained
