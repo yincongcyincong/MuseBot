@@ -50,6 +50,7 @@ type QQRobot struct {
 	BotName      string
 	OriginPrompt string
 	ImageContent []byte
+	DocContent   *param.DocInfo
 	AudioContent []byte
 	UserName     string
 }
@@ -197,6 +198,28 @@ func (q *QQRobot) checkValid() bool {
 			q.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
 			return false
 		}
+	}
+
+	if q.GetAttachment() != nil && q.GetAttachment().ContentType != "" &&
+		!strings.Contains(q.GetAttachment().ContentType, "image") &&
+		!strings.Contains(q.GetAttachment().ContentType, "voice") &&
+		!strings.Contains(q.GetAttachment().ContentType, "video") {
+		// any other attachment (pdf, txt, csv, html, and text-like files
+		// with other extensions) is a document
+		docContent, err := utils.DownloadFile(q.GetAttachment().URL)
+		if err != nil {
+			q.Robot.SendMsg(chatId, "get media fail", msgId, tgbotapi.ModeMarkdown, nil)
+			logger.ErrorCtx(q.Robot.Ctx, "download document fail", "err", err)
+			return false
+		}
+		if utils.DetectDocumentType(q.GetAttachment().FileName, docContent) == "" {
+			logger.WarnCtx(q.Robot.Ctx, "unsupported document type", "fileName", q.GetAttachment().FileName)
+			q.Robot.SendMsg(chatId, i18n.GetMessage("doc_unsupported_type",
+				map[string]interface{}{"file_name": q.GetAttachment().FileName}), msgId, "", nil)
+			return true
+		}
+
+		q.DocContent = &param.DocInfo{FileName: q.GetAttachment().FileName, Content: docContent}
 	}
 
 	return true
@@ -583,6 +606,14 @@ func (q *QQRobot) setPrompt(prompt string) {
 
 func (q *QQRobot) getAudio() []byte {
 	return q.AudioContent
+}
+
+func (q *QQRobot) getDoc() *param.DocInfo {
+	return q.DocContent
+}
+
+func (q *QQRobot) setDoc(doc *param.DocInfo) {
+	q.DocContent = doc
 }
 
 func (q *QQRobot) getImage() []byte {

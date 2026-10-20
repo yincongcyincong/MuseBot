@@ -53,6 +53,7 @@ type DingRobot struct {
 	BotName      string
 	OriginPrompt string
 	ImageContent []byte
+	DocContent   *param.DocInfo
 	AudioContent []byte
 	UserName     string
 }
@@ -290,9 +291,25 @@ func (d *DingRobot) GetMessageContent() (bool, error) {
 					break
 				}
 				if _, ok := cMap["downloadCode"].(string); ok {
-					d.ImageContent, err = d.GetImageContent(accessToken, cMap)
+					// the download api is type-agnostic, sniff the bytes to
+					// tell images and documents apart
+					mediaContent, err := d.GetImageContent(accessToken, cMap)
 					if err != nil {
-						logger.Warn("get last image record fail", "err", err)
+						logger.Warn("get media content fail", "err", err)
+					} else if utils.DetectImageFormat(mediaContent) != "unknown" {
+						d.ImageContent = mediaContent
+					} else {
+						fileName, _ := cMap["fileName"].(string)
+						if fileName == "" {
+							fileName = "doc" + utils.DetectDocumentType("", mediaContent)
+						}
+						if utils.DetectDocumentType(fileName, mediaContent) != "" {
+							d.DocContent = &param.DocInfo{FileName: fileName, Content: mediaContent}
+						} else {
+							logger.WarnCtx(d.Robot.Ctx, "unsupported richText media type", "fileName", fileName)
+							d.Robot.SendMsg(chatId, i18n.GetMessage("doc_unsupported_type",
+								map[string]interface{}{"file_name": fileName}), msgId, "", nil)
+						}
 					}
 				}
 			}
@@ -607,6 +624,14 @@ func (d *DingRobot) setPrompt(prompt string) {
 
 func (d *DingRobot) getAudio() []byte {
 	return d.AudioContent
+}
+
+func (d *DingRobot) getDoc() *param.DocInfo {
+	return d.DocContent
+}
+
+func (d *DingRobot) setDoc(doc *param.DocInfo) {
+	d.DocContent = doc
 }
 
 func (d *DingRobot) getImage() []byte {

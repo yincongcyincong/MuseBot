@@ -87,6 +87,7 @@ type BaseConf struct {
 	LLMOptionParam     bool   `json:"llm_option_param"`
 	ImagePath          string `json:"image_path"`
 	IsStreaming        bool   `json:"is_streaming"`
+	MediaRetentionDays int    `json:"media_retention_days"`
 
 	CrtFile string `json:"crt_file"`
 	KeyFile string `json:"key_file"`
@@ -176,6 +177,7 @@ func InitConf() {
 	flag.StringVar(&BaseConfInfo.Character, "character", "", "ai's character")
 	flag.StringVar(&BaseConfInfo.Powered, "powered", "", "powered by")
 	flag.StringVar(&BaseConfInfo.ImagePath, "image_path", "./conf/img/", "image path")
+	flag.IntVar(&BaseConfInfo.MediaRetentionDays, "media_retention_days", 30, "media file retention days, 0 means never clean")
 
 	flag.StringVar(&BaseConfInfo.CrtFile, "crt_file", "", "public key file")
 	flag.StringVar(&BaseConfInfo.KeyFile, "key_file", "", "secret key file")
@@ -481,6 +483,10 @@ func InitConf() {
 
 	if os.Getenv("IMAGE_PATH") != "" {
 		BaseConfInfo.ImagePath = os.Getenv("IMAGE_PATH")
+	}
+
+	if os.Getenv("MEDIA_RETENTION_DAYS") != "" {
+		BaseConfInfo.MediaRetentionDays, _ = strconv.Atoi(os.Getenv("MEDIA_RETENTION_DAYS"))
 	}
 
 	if os.Getenv("IS_STREAMING") != "" {

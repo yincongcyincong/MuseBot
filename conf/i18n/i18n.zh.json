@@ -72,5 +72,10 @@
   "task_tool_approval_received": "已收到授权，任务继续执行。",
   "task_tool_denied": "已收到拒绝，任务将跳过该操作并继续。",
   "task_tool_approval_missing": "没有找到匹配的待授权工具操作。",
-  "task_tool_operation_approved": "✅ 已执行 {{.operation}}：{{.detail}}"
+  "task_tool_operation_approved": "✅ 已执行 {{.operation}}：{{.detail}}",
+  "doc_parse_fail": "解析文档失败：{{.err}}",
+  "doc_unsupported_type": "不支持的文档类型：{{.file_name}}，仅支持 pdf/csv/html 及文本类文件",
+  "doc_prompt": "用户发送了文档\"{{.file_name}}\"，内容如下：\n\n{{.document}}\n\n---\n请根据文档内容回答用户的问题。\n\n问题：\n{{.question}}",
+  "doc_received_hint": "📎 已收到文档：{{.file_name}}，正在处理…",
+  "doc_analyze_prompt": "请阅读上面的文档，简要总结它的内容并指出重点。"
 }

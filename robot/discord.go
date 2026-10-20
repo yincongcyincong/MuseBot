@@ -53,6 +53,7 @@ type DiscordRobot struct {
 	Prompt       string
 	Command      string
 	ImageContent []byte
+	DocContent   *param.DocInfo
 	AudioContent []byte
 	UserName     string
 }
@@ -196,6 +197,27 @@ func (d *DiscordRobot) getMessageContent() {
 						d.Robot.SendMsg(chatId, err.Error(), msgId, "", nil)
 						return
 					}
+				}
+
+				if !strings.HasPrefix(att.ContentType, "image/") &&
+					!strings.HasPrefix(att.ContentType, "audio/") &&
+					!strings.HasPrefix(att.ContentType, "video/") {
+					// any other attachment (pdf, txt, csv, html, and
+					// text-like files with other extensions) is a document
+					docContent, err := utils.DownloadFile(att.URL)
+					if err != nil {
+						logger.ErrorCtx(d.Robot.Ctx, "document url empty", "url", att.URL, "err", err)
+						d.Robot.SendMsg(chatId, err.Error(), msgId, "", nil)
+						return
+					}
+					if utils.DetectDocumentType(att.Filename, docContent) == "" {
+						logger.WarnCtx(d.Robot.Ctx, "unsupported document type", "fileName", att.Filename)
+						d.Robot.SendMsg(chatId, i18n.GetMessage("doc_unsupported_type",
+							map[string]interface{}{"file_name": att.Filename}), msgId, "", nil)
+						continue
+					}
+
+					d.DocContent = &param.DocInfo{FileName: att.Filename, Content: docContent}
 				}
 			}
 		}
@@ -912,6 +934,14 @@ func (d *DiscordRobot) setPrompt(prompt string) {
 
 func (d *DiscordRobot) getAudio() []byte {
 	return d.AudioContent
+}
+
+func (d *DiscordRobot) getDoc() *param.DocInfo {
+	return d.DocContent
+}
+
+func (d *DiscordRobot) setDoc(doc *param.DocInfo) {
+	d.DocContent = doc
 }
 
 func (d *DiscordRobot) getImage() []byte {

@@ -177,10 +177,17 @@
 |-----------|--------|----------|-----------------------------------------------------------------------|
 | prompt    | string | Yes      | Request content, can include commands starting with `/` or plain text |
 | user_id   | string | Yes      | User unique identifier (numeric string)                               |
+| file_name | string | Optional | File name of a document in the request body (`.txt`/`.pdf`/`.csv`/`.html`). Without it, PDF/HTML are detected by magic bytes. See [document doc](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/document.md) |
 
 * **Request Body**:
 
-    * Binary data such as image or audio, depending on command.
+    * Binary data such as image or audio, depending on command. For documents, send the raw file bytes and set
+      `file_name`, e.g.:
+
+```bash
+curl -N -X POST --data-binary @notes.txt \
+  "http://localhost:36060/communicate?prompt=summarize%20this%20document&user_id=1&file_name=notes.txt"
+```
 
 ---
 

@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
 	"reflect"
 	"strconv"
 	"strings"
@@ -411,6 +412,52 @@ func DetectVideoMimeType(data []byte) string {
 
 	// fallback
 	return "unknown"
+}
+
+// DetectDocumentType returns the canonical document extension
+// (".txt"/".pdf"/".csv"/".html") for a chat document, or "" when unsupported.
+// The file name extension wins; otherwise the magic bytes of pdf/html are
+// sniffed, and any other text-like content (e.g. .bat/.diff/.log files)
+// falls back to plain ".txt". Only binary content is rejected.
+func DetectDocumentType(fileName string, data []byte) string {
+	switch strings.ToLower(filepath.Ext(fileName)) {
+	case ".txt", ".pdf", ".csv", ".html", ".htm":
+		return strings.ToLower(filepath.Ext(fileName))
+	}
+
+	trimmed := strings.TrimSpace(string(data[:min(len(data), 512)]))
+	switch {
+	case bytes.HasPrefix(data, []byte("%PDF-")):
+		return ".pdf"
+	case strings.HasPrefix(strings.ToLower(trimmed), "<!doctype html"),
+		strings.HasPrefix(strings.ToLower(trimmed), "<html"):
+		return ".html"
+	case len(data) > 0 && LooksLikeText(data):
+		// an empty body must never claim to be a document
+		return ".txt"
+	default:
+		return ""
+	}
+}
+
+// LooksLikeText reports whether the bytes can be treated as plain text:
+// control characters (other than tab/newline/carriage return) stay rare in
+// the sample. This accepts UTF-8 as well as other mostly-printable encodings
+// (e.g. GBK), while binary headers (zip, jpeg, ...) are rejected. Empty data
+// counts as text so callers can pre-gate on a file name alone.
+func LooksLikeText(data []byte) bool {
+	sample := data[:min(len(data), 8192)]
+	if len(sample) == 0 {
+		return true
+	}
+
+	control := 0
+	for _, b := range sample {
+		if b < 32 && b != '\t' && b != '\n' && b != '\r' {
+			control++
+		}
+	}
+	return control*10 < len(sample)
 }
 
 func RandomFilename(ext string) string {

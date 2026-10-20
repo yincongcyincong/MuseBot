@@ -36,6 +36,8 @@ Thanks to the Reddit community as well, even though a few of my subreddits got b
 - 🏗 **Easy Deployment**: Run locally or deploy to a cloud server.
 - 👀 **Identify Image**: use image to communicate with LLM,
   see [doc](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/imageconf.md).
+- 📄 **Identify Document**: send txt/pdf/csv/html documents and ask questions; chat media is stored
+  locally per conversation, see [doc](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/document.md).
 - 🎺 **Support Voice**: use voice to communicate with LLM,
   see [doc](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/audioconf.md).
 - 🐂 **Function Call**: transform mcp protocol to function call,

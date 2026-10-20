@@ -1,12 +1,14 @@
 package robot
 
 import (
+	"bytes"
 	"context"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"hash/crc32"
+	"path/filepath"
 	"regexp"
 	"runtime/debug"
 	"strconv"
@@ -105,6 +107,10 @@ type Robot interface {
 
 	setImage(image []byte)
 
+	getDoc() *param.DocInfo
+
+	setDoc(doc *param.DocInfo)
+
 	sendMedia(media []byte, contentType, sType string) error
 }
 
@@ -151,10 +157,29 @@ func (r *RobotInfo) Exec() {
 	}
 
 	if r.AddUserInfo() && r.Robot.checkValid() {
+		r.ackDocument()
 		if r.smartMode() {
 			r.Robot.requestLLM(r.Robot.getMsgContent())
 		}
 	}
+}
+
+// ackDocument logs every received document and replies immediately so the
+// user feels the document arrived; the LLM handles it automatically right
+// after (a lone document is analyzed, a document with text answers it).
+func (r *RobotInfo) ackDocument() {
+	doc := r.Robot.getDoc()
+	if doc == nil {
+		return
+	}
+
+	chatId, msgId, _ := r.GetChatIdAndMsgIdAndUserID()
+	logger.InfoCtx(r.Ctx, "receive document",
+		"platform", r.GetPlatform(), "chatId", chatId,
+		"fileName", doc.FileName, "size", len(doc.Content))
+
+	r.SendMsg(chatId, i18n.GetMessage("doc_received_hint",
+		map[string]interface{}{"file_name": doc.FileName}), msgId, "", nil)
 }
 
 func (r *RobotInfo) AddUserInfo() bool {
@@ -315,6 +340,41 @@ func (r *RobotInfo) GetChatIdAndMsgIdAndUserID() (string, string, string) {
 	}
 
 	return chatId, msgId, userId
+}
+
+// GetPlatform returns the IM platform name of the current robot, used as a
+// folder prefix so identical chat ids on different platforms never collide.
+func (r *RobotInfo) GetPlatform() string {
+	switch r.Robot.(type) {
+	case *TelegramRobot:
+		return param.Telegram
+	case *DiscordRobot:
+		return param.Discord
+	case *SlackRobot:
+		return param.Slack
+	case *LarkRobot:
+		return param.Lark
+	case *DingRobot:
+		return param.Ding
+	case *ComWechatRobot:
+		return param.ComWechat
+	case *QQRobot:
+		return param.QQ
+	case *WechatRobot:
+		return param.Wechat
+	case *PersonalQQRobot:
+		return param.PersonalQQ
+	case *Web:
+		return "web"
+	}
+	return "unknown"
+}
+
+// mediaFolder is the per-conversation folder under data/media/ holding the
+// images and documents exchanged in this chat.
+func (r *RobotInfo) mediaFolder() string {
+	chatId, _, _ := r.GetChatIdAndMsgIdAndUserID()
+	return r.GetPlatform() + "_" + utils.SanitizeChatId(chatId)
 }
 
 func (r *RobotInfo) SendMsg(chatId string, msgContent string, replyToMessageID string,
@@ -694,8 +754,8 @@ func (r *RobotInfo) GetLastImageContent() ([]byte, error) {
 	}
 
 	answer := imageInfo.Answer
-	const base64Prefix = "data:image/"
-	if strings.HasPrefix(answer, base64Prefix) {
+	switch {
+	case strings.HasPrefix(answer, "data:image/"):
 		// 去掉前缀，找到 base64 数据起始位置
 		idx := strings.Index(answer, "base64,")
 		if idx == -1 {
@@ -705,6 +765,14 @@ func (r *RobotInfo) GetLastImageContent() ([]byte, error) {
 		imageContent, err := base64.StdEncoding.DecodeString(base64Data)
 		if err != nil {
 			logger.WarnCtx(r.Ctx, "decode base64 image fail", "err", err)
+			return nil, err
+		}
+		return imageContent, nil
+
+	case utils.IsMediaPath(answer):
+		imageContent, err := utils.ReadMediaFile(answer)
+		if err != nil {
+			logger.WarnCtx(r.Ctx, "read image media file fail", "err", err)
 			return nil, err
 		}
 		return imageContent, nil
@@ -1324,6 +1392,33 @@ func (r *RobotInfo) ExecLLM(msgContent string, msgChan *MsgChan) {
 
 	chatId, msgId, userId := r.GetChatIdAndMsgIdAndUserID()
 	content := r.Robot.getPrompt()
+
+	// a received document joins the conversation context: with a prompt the
+	// LLM answers it directly, a lone document gets analyzed automatically.
+	// The wrapped prompt is written back so the record and the replayed
+	// history both carry the document.
+	if doc := r.Robot.getDoc(); doc != nil {
+		r.saveDocRecord(doc, 0)
+		docText, err := rag.ParseDocument(doc.FileName, bytes.NewReader(doc.Content))
+		if err != nil {
+			logger.ErrorCtx(r.Ctx, "parse document fail", "err", err)
+			r.SendMsg(chatId, i18n.GetMessage("doc_parse_fail",
+				map[string]interface{}{"err": err.Error()}), msgId, "", nil)
+			return
+		}
+
+		question := content
+		if strings.TrimSpace(question) == "" {
+			question = i18n.GetMessage("doc_analyze_prompt", nil)
+		}
+		content = i18n.GetMessage("doc_prompt", map[string]interface{}{
+			"file_name": doc.FileName,
+			"document":  docText,
+			"question":  question,
+		})
+		r.Robot.setPrompt(content)
+	}
+
 	if len(content) == 0 {
 		if len(r.Robot.getImage()) > 0 {
 			r.saveRecord(r.Robot.getImage(), r.Robot.getImage(), param.ImageRecordType, 0)
@@ -1717,8 +1812,7 @@ func (r *RobotInfo) InsertRecord() {
 
 	content := ""
 	if len(r.Robot.getImage()) > 0 {
-		content = fmt.Sprintf("data:image/%s;base64,%s", utils.DetectImageFormat(r.Robot.getImage()),
-			base64.StdEncoding.EncodeToString(r.Robot.getImage()))
+		content = r.saveMediaContent(r.Robot.getImage(), param.ImageRecordType)
 	}
 
 	id, err := db.InsertRecordInfo(r.Ctx, &db.Record{
@@ -1819,15 +1913,10 @@ func (r *RobotInfo) smartMode() bool {
 func (r *RobotInfo) saveRecord(content, imageContent []byte, recordType, totalToken int) {
 	_, _, userId := r.GetChatIdAndMsgIdAndUserID()
 
-	base64Content := base64.StdEncoding.EncodeToString(content)
-	format := utils.DetectImageFormat(content)
-	dataURI := fmt.Sprintf("data:image/%s;base64,%s", format, base64Content)
-
-	originImageURI := ""
+	answerPath := r.saveMediaContent(content, recordType)
+	contentPath := ""
 	if len(imageContent) > 0 {
-		base64Content = base64.StdEncoding.EncodeToString(imageContent)
-		format = utils.DetectImageFormat(imageContent)
-		originImageURI = fmt.Sprintf("data:image/%s;base64,%s", format, base64Content)
+		contentPath = r.saveMediaContent(imageContent, recordType)
 	}
 
 	mode := ""
@@ -1841,8 +1930,8 @@ func (r *RobotInfo) saveRecord(content, imageContent []byte, recordType, totalTo
 	_, err := db.InsertRecordInfo(r.Ctx, &db.Record{
 		UserId:     userId,
 		Question:   r.Robot.getCommand() + " " + r.Robot.getPrompt(),
-		Answer:     dataURI,
-		Content:    originImageURI,
+		Answer:     answerPath,
+		Content:    contentPath,
 		Token:      totalToken + r.cs.Token,
 		IsDeleted:  0,
 		RecordType: recordType,
@@ -1850,6 +1939,66 @@ func (r *RobotInfo) saveRecord(content, imageContent []byte, recordType, totalTo
 	})
 	if err != nil {
 		logger.ErrorCtx(r.Ctx, "insert record fail", "err", err)
+	}
+}
+
+// saveMediaContent persists media bytes into the conversation folder under
+// data/media/ and returns the stored relative path; on failure it falls back
+// to the legacy base64 data URI so the record is never lost.
+func (r *RobotInfo) saveMediaContent(content []byte, recordType int) string {
+	if len(content) == 0 {
+		return ""
+	}
+
+	// sniff the bytes themselves: a video record may still carry a source
+	// image in its content column (image-to-video), and vice versa
+	kind, ext := "image", utils.DetectImageFormat(content)
+	if ext == "" || ext == "unknown" {
+		kind, ext = "video", utils.DetectVideoMimeType(content)
+	}
+	if ext == "" || ext == "unknown" {
+		if recordType == param.ImageRecordType {
+			kind, ext = "image", "png"
+		} else {
+			kind, ext = "video", "mp4"
+		}
+	}
+
+	path, err := utils.SaveMediaFile(r.mediaFolder(), "", content, ext)
+	if err != nil {
+		logger.WarnCtx(r.Ctx, "save media file fail", "err", err)
+		return fmt.Sprintf("data:%s/%s;base64,%s", kind, ext, base64.StdEncoding.EncodeToString(content))
+	}
+
+	return path
+}
+
+// saveDocRecord stores a received document into the conversation folder and
+// records its path, so a later /doc can pick it up again.
+func (r *RobotInfo) saveDocRecord(doc *param.DocInfo, totalToken int) {
+	_, _, userId := r.GetChatIdAndMsgIdAndUserID()
+
+	ext := strings.ToLower(filepath.Ext(doc.FileName))
+	if ext == "" {
+		ext = utils.DetectDocumentType(doc.FileName, doc.Content)
+	}
+	path, err := utils.SaveMediaFile(r.mediaFolder(), doc.FileName, doc.Content, ext)
+	if err != nil {
+		logger.ErrorCtx(r.Ctx, "save document file fail", "err", err)
+		return
+	}
+
+	_, err = db.InsertRecordInfo(r.Ctx, &db.Record{
+		UserId:     userId,
+		Question:   r.Robot.getCommand() + " " + r.Robot.getPrompt(),
+		Content:    path,
+		Token:      totalToken + r.cs.Token,
+		IsDeleted:  0,
+		RecordType: param.DocumentRecordType,
+		Mode:       utils.GetTxtType(db.GetCtxUserInfo(r.Ctx).LLMConfigRaw),
+	})
+	if err != nil {
+		logger.ErrorCtx(r.Ctx, "insert document record fail", "err", err)
 	}
 }
 

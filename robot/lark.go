@@ -44,6 +44,7 @@ type LarkRobot struct {
 	Prompt       string
 	BotName      string
 	ImageContent []byte
+	DocContent   *param.DocInfo
 	AudioContent []byte
 	UserName     string
 }
@@ -465,6 +466,42 @@ func (l *LarkRobot) GetMessageContent() (bool, error) {
 			logger.ErrorCtx(l.Robot.Ctx, "read image failed", "err", err)
 			return false, err
 		}
+	} else if msgType == larkim.MsgTypeFile {
+		msgFile := new(larkim.MessageFile)
+		err := json.Unmarshal([]byte(larkcore.StringValue(l.Message.Event.Message.Content)), msgFile)
+		if err != nil {
+			logger.ErrorCtx(l.Robot.Ctx, "unmarshal message file failed", "err", err)
+			return false, err
+		}
+
+		resp, err := l.Client.Im.V1.MessageResource.Get(l.Robot.Ctx,
+			larkim.NewGetMessageResourceReqBuilder().
+				MessageId(msgId).
+				FileKey(msgFile.FileKey).
+				Type("file").
+				Build())
+		if err != nil || !resp.Success() {
+			logger.ErrorCtx(l.Robot.Ctx, "get file failed", "err", err, "resp", resp)
+			return false, err
+		}
+
+		bs, err := io.ReadAll(resp.File)
+		if err != nil {
+			logger.ErrorCtx(l.Robot.Ctx, "read file failed", "err", err)
+			return false, err
+		}
+
+		// lark file payload carries no file name, so it is synthesized from
+		// the file key plus the sniffed extension
+		ext := utils.DetectDocumentType("", bs)
+		if ext == "" {
+			logger.WarnCtx(l.Robot.Ctx, "unsupported document type from lark", "fileKey", msgFile.FileKey)
+			chatId, msgId, _ := l.Robot.GetChatIdAndMsgIdAndUserID()
+			l.Robot.SendMsg(chatId, i18n.GetMessage("doc_unsupported_type",
+				map[string]interface{}{"file_name": msgFile.FileKey}), msgId, "", nil)
+			return true, nil
+		}
+		l.DocContent = &param.DocInfo{FileName: "doc_" + msgFile.FileKey + ext, Content: bs}
 	}
 
 	l.Prompt = strings.ReplaceAll(l.Prompt, "@"+l.BotName, "")
@@ -566,6 +603,14 @@ func (l *LarkRobot) setPrompt(prompt string) {
 
 func (l *LarkRobot) getAudio() []byte {
 	return l.AudioContent
+}
+
+func (l *LarkRobot) getDoc() *param.DocInfo {
+	return l.DocContent
+}
+
+func (l *LarkRobot) setDoc(doc *param.DocInfo) {
+	l.DocContent = doc
 }
 
 func (l *LarkRobot) getImage() []byte {

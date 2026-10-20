@@ -69,13 +69,14 @@ const (
 	ModelDoubao15VisionPro32k = "doubao-1.5-vision-pro-32k-250115"
 	ModelDoubao15VisionLite   = "doubao-1.5-vision-lite-250315"
 
-	AllRecordType     = -1
-	TextRecordType    = 0
-	ImageRecordType   = 1
-	VideoRecordType   = 2
-	WEBRecordType     = 3
-	TalkRecordType    = 4
-	SummaryRecordType = 5
+	AllRecordType      = -1
+	TextRecordType     = 0
+	ImageRecordType    = 1
+	VideoRecordType    = 2
+	WEBRecordType      = 3
+	TalkRecordType     = 4
+	SummaryRecordType  = 5
+	DocumentRecordType = 6
 
 	DefaultContextToken = 128000
 
@@ -338,6 +339,12 @@ type ContextState struct {
 	RecordID  int64
 	SkipCheck bool
 	UseRecord bool
+}
+
+// DocInfo carries a chat document received from an IM platform.
+type DocInfo struct {
+	FileName string
+	Content  []byte
 }
 
 type MCPResp struct {

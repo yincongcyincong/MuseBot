@@ -50,9 +50,10 @@ type MessageItem struct {
 }
 
 type MessageItemData struct {
-	Text string `json:"text"`
-	Url  string `json:"url"`
-	QQ   string `json:"qq"`
+	Text     string `json:"text"`
+	Url      string `json:"url"`
+	QQ       string `json:"qq"`
+	FileName string `json:"file_name"`
 }
 
 type SenderInfo struct {
@@ -109,6 +110,7 @@ type PersonalQQRobot struct {
 	Prompt       string
 	OriginPrompt string
 	ImageContent []byte
+	DocContent   *param.DocInfo
 	AudioContent []byte
 	UserName     string
 }
@@ -384,6 +386,28 @@ func (q *PersonalQQRobot) GetMessageContent() (bool, error) {
 			if err != nil {
 				return false, err
 			}
+		case "file":
+			if v.Data.Url == "" {
+				// onebot implementations differ; some only push file events
+				// without a downloadable url
+				continue
+			}
+			docContent, err := utils.DownloadFile(v.Data.Url)
+			if err != nil {
+				return false, err
+			}
+			fileName := v.Data.FileName
+			if fileName == "" {
+				fileName = "doc" + utils.DetectDocumentType("", docContent)
+			}
+			if utils.DetectDocumentType(fileName, docContent) == "" {
+				logger.Warn("unsupported document type", "fileName", fileName)
+				chatId, msgId, _ := q.Robot.GetChatIdAndMsgIdAndUserID()
+				q.Robot.SendMsg(chatId, i18n.GetMessage("doc_unsupported_type",
+					map[string]interface{}{"file_name": fileName}), msgId, "", nil)
+				continue
+			}
+			q.DocContent = &param.DocInfo{FileName: fileName, Content: docContent}
 		case "record":
 			q.AudioContent, err = utils.DownloadFile(v.Data.Url)
 			if err != nil {
@@ -398,7 +422,7 @@ func (q *PersonalQQRobot) GetMessageContent() (bool, error) {
 			isAt = v.Data.QQ == q.Msg.SelfID
 		}
 	}
-	if q.Command == "" && q.Prompt == "" && q.ImageContent == nil && q.AudioContent == nil {
+	if q.Command == "" && q.Prompt == "" && q.ImageContent == nil && q.AudioContent == nil && q.DocContent == nil {
 		return false, fmt.Errorf("no content")
 	}
 
@@ -428,6 +452,14 @@ func (q *PersonalQQRobot) setPrompt(prompt string) {
 
 func (q *PersonalQQRobot) getAudio() []byte {
 	return q.AudioContent
+}
+
+func (q *PersonalQQRobot) getDoc() *param.DocInfo {
+	return q.DocContent
+}
+
+func (q *PersonalQQRobot) setDoc(doc *param.DocInfo) {
+	q.DocContent = doc
 }
 
 func (q *PersonalQQRobot) getImage() []byte {

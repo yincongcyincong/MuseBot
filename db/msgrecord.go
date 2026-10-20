@@ -284,30 +284,19 @@ func GetTokenByUserIdAndTime(userId string, start, end int64) (int, error) {
 }
 
 func GetLastImageRecord(userId string) (*Record, error) {
-	query := fmt.Sprintf("SELECT id, user_id, question, answer, content FROM records WHERE user_id =  ? and record_type = ? and is_deleted = 0 order by id desc")
+	query := "SELECT id, user_id, question, answer, content FROM records WHERE user_id = ? and record_type = ? and is_deleted = 0 order by id desc LIMIT 1"
 
-	// execute query
-	rows, err := DB.Query(query, userId, param.ImageRecordType)
+	var record Record
+	err := DB.QueryRow(query, userId, param.ImageRecordType).
+		Scan(&record.ID, &record.UserId, &record.Question, &record.Answer, &record.Content)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 
-	var records []Record
-	for rows.Next() {
-		var record Record
-		err := rows.Scan(&record.ID, &record.UserId, &record.Question, &record.Answer, &record.Content)
-		if err != nil {
-			return nil, err
-		}
-		records = append(records, record)
-	}
-
-	if len(records) == 0 {
-		return nil, nil
-	}
-
-	return &records[0], nil
+	return &record, nil
 }
 
 func GetRecordCount(userId string, isDeleted int, recordType string) (int, error) {

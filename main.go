@@ -16,6 +16,7 @@ import (
 	"github.com/yincongcyincong/MuseBot/rag"
 	"github.com/yincongcyincong/MuseBot/register"
 	"github.com/yincongcyincong/MuseBot/robot"
+	"github.com/yincongcyincong/MuseBot/utils"
 )
 
 func main() {
@@ -24,6 +25,7 @@ func main() {
 	i18n.InitI18n()
 	db.InitTable()
 	db.SyncUserTxtConfig()
+	utils.StartMediaRetention(conf.BaseConfInfo.MediaRetentionDays)
 	conf.InitTools()
 	rag.InitRag()
 	http.InitHTTP()
@@ -31,7 +33,7 @@ func main() {
 	robot.StartRobot()
 	register.InitRegister()
 	robot.InitCron()
-	
+
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
 	<-sc

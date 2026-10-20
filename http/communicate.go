@@ -49,8 +49,9 @@ func Communicate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	command, p := robot.ParseCommand(prompt)
+	fileName := r.URL.Query().Get("file_name")
 
-	web := robot.NewWeb(command, intUserId, realUserId, p, prompt, fileData, w, flusher)
+	web := robot.NewWeb(command, intUserId, realUserId, p, prompt, fileName, fileData, w, flusher)
 	web.AddUserInfo()
 	web.Robot.Exec()
 }

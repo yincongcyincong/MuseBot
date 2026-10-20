@@ -39,6 +39,7 @@ type SlackRobot struct {
 	BotName string
 
 	ImageContent []byte
+	DocContent   *param.DocInfo
 	VoiceContent []byte
 	UserName     string
 }
@@ -219,6 +220,24 @@ func (s *SlackRobot) getMessageContent() bool {
 				logger.Warn("generate text from audio failed", "err", err)
 				return false
 			}
+
+		default:
+			// any other shared file (pdf, txt, csv, html, and text-like
+			// files with other extensions such as .bat/.diff) is a document
+			docContent, err := s.downloadSlackFile(file.URLPrivateDownload)
+			if err != nil {
+				logger.ErrorCtx(s.Robot.Ctx, "download document failed", "err", err)
+				return false
+			}
+			if utils.DetectDocumentType(file.Name, docContent) == "" {
+				logger.WarnCtx(s.Robot.Ctx, "unsupported document type", "fileName", file.Name)
+				chatId, msgId, _ := s.Robot.GetChatIdAndMsgIdAndUserID()
+				s.Robot.SendMsg(chatId, i18n.GetMessage("doc_unsupported_type",
+					map[string]interface{}{"file_name": file.Name}), msgId, "", nil)
+				return true
+			}
+
+			s.DocContent = &param.DocInfo{FileName: file.Name, Content: docContent}
 		}
 	}
 
@@ -495,6 +514,14 @@ func (s *SlackRobot) setPrompt(prompt string) {
 
 func (s *SlackRobot) getAudio() []byte {
 	return s.VoiceContent
+}
+
+func (s *SlackRobot) getDoc() *param.DocInfo {
+	return s.DocContent
+}
+
+func (s *SlackRobot) setDoc(doc *param.DocInfo) {
+	s.DocContent = doc
 }
 
 func (s *SlackRobot) getImage() []byte {

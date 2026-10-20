@@ -1,6 +1,7 @@
 package http
 
 import (
+	"encoding/base64"
 	"net/http"
 
 	"github.com/yincongcyincong/MuseBot/db"
@@ -106,12 +107,41 @@ func GetRecords(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// media is stored as local file paths since the media-storage refactor;
+	// inline it back as data URIs so the admin ui keeps rendering history
+	for i := range list {
+		list[i].Answer = mediaPathToDataURI(list[i].Answer)
+		list[i].Content = mediaPathToDataURI(list[i].Content)
+	}
+
 	result := map[string]interface{}{
 		"list":  list,
 		"total": total,
 	}
 
 	utils.Success(ctx, w, r, result)
+}
+
+// mediaPathToDataURI inlines a stored media file path as a data URI for the
+// admin ui. Non-media values (legacy base64 rows, plain text answers) are
+// returned unchanged; unreadable files fall back to the raw path so a
+// cleaned-up file never breaks the whole record list.
+func mediaPathToDataURI(p string) string {
+	if !utils.IsMediaPath(p) {
+		return p
+	}
+
+	data, err := utils.ReadMediaFile(p)
+	if err != nil {
+		return p
+	}
+
+	mimeType := getMimeType(p)
+	if mimeType == "application/octet-stream" {
+		// keep the legacy guess: unknown media in records is mostly images
+		mimeType = "image/png"
+	}
+	return "data:" + mimeType + ";base64," + base64.StdEncoding.EncodeToString(data)
 }
 
 func InsertUserRecords(w http.ResponseWriter, r *http.Request) {

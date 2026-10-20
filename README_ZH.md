@@ -30,6 +30,7 @@ chatgpt: https://www.bilibili.com/video/BV1RutxzJEGY/
 - ⏳ **流式输出**：实时发送回复，提升用户体验。
 - 🏗 **轻松部署**：可本地运行或部署到云服务器。
 - 👀 **图像识别**：使用图片与大模型进行交流，详见[文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/photoconf_ZH.md)。
+- 📄 **文档识别**：发送 txt/pdf/csv/html 文档提问，媒体按会话存本地，详见[文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/document_ZH.md)。
 - 🎺 **支持语音**：使用语音与大模型进行交流，详见[文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/audioconf_ZH.md)。
 - 🐂 **函数调用**：将MCP协议转换为函数调用，详见[文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/functioncall_ZH.md)。
 - 🧩 **Skill**：加载本地 `SKILL.md` 指令并接入统一的 `/task` 工作流，详见[文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/skills_ZH.md)。

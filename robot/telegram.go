@@ -31,6 +31,7 @@ type TelegramRobot struct {
 	Prompt       string
 	Command      string
 	ImageContent []byte
+	DocContent   *param.DocInfo
 	AudioContent []byte
 	UserName     string
 }
@@ -228,6 +229,7 @@ func (t *TelegramRobot) checkValid() bool {
 		}
 
 		t.ImageContent = t.GetPhotoContent()
+		t.DocContent = t.GetDocumentContent()
 		t.AudioContent = t.GetAudioContent()
 		var err error
 		if t.AudioContent != nil {
@@ -330,7 +332,8 @@ func (t *TelegramRobot) skipThisMsg() bool {
 
 	if t.Update.Message.Chat.Type == "private" {
 		if strings.TrimSpace(t.getMsgContent()) == "" &&
-			t.Update.Message.Voice == nil && t.Update.Message.Photo == nil {
+			t.Update.Message.Voice == nil && t.Update.Message.Photo == nil &&
+			t.Update.Message.Document == nil {
 			return true
 		}
 
@@ -381,7 +384,7 @@ func (t *TelegramRobot) sendChatMessage() {
 	t.Update.Message.Text = content
 	t.Prompt = content
 
-	if len(content) == 0 {
+	if len(content) == 0 && t.DocContent == nil {
 		if t.ImageContent != nil {
 			t.Robot.saveRecord(t.ImageContent, t.ImageContent, param.ImageRecordType, 0)
 		}
@@ -1032,6 +1035,43 @@ func (t *TelegramRobot) GetPhotoContent() []byte {
 	return photoContent
 }
 
+// GetDocumentContent downloads the document attachment of the message.
+// Known extensions keep their type, any other text-like file (e.g. .bat,
+// .diff) is accepted as plain text; binary files are rejected with a hint.
+func (t *TelegramRobot) GetDocumentContent() *param.DocInfo {
+	if t.Update.Message == nil || t.Update.Message.Document == nil {
+		return nil
+	}
+
+	doc := t.Update.Message.Document
+	if doc.FileSize > 20*1024*1024 {
+		logger.WarnCtx(t.Robot.Ctx, "document too large", "fileName", doc.FileName, "size", doc.FileSize)
+		return nil
+	}
+
+	file, err := t.Bot.GetFile(tgbotapi.FileConfig{FileID: doc.FileID})
+	if err != nil {
+		logger.WarnCtx(t.Robot.Ctx, "get document file fail", "err", err)
+		return nil
+	}
+
+	docContent, err := utils.DownloadFile(file.Link(t.Bot.Token))
+	if err != nil {
+		logger.WarnCtx(t.Robot.Ctx, "download document fail", "err", err)
+		return nil
+	}
+
+	if utils.DetectDocumentType(doc.FileName, docContent) == "" {
+		logger.WarnCtx(t.Robot.Ctx, "unsupported document type", "fileName", doc.FileName)
+		chatId, msgId, _ := t.Robot.GetChatIdAndMsgIdAndUserID()
+		t.Robot.SendMsg(chatId, i18n.GetMessage("doc_unsupported_type",
+			map[string]interface{}{"file_name": doc.FileName}), msgId, "", nil)
+		return nil
+	}
+
+	return &param.DocInfo{FileName: doc.FileName, Content: docContent}
+}
+
 func (t *TelegramRobot) getMessage() *tgbotapi.Message {
 	if t.Update.Message != nil {
 		return t.Update.Message
@@ -1155,6 +1195,14 @@ func (t *TelegramRobot) setPrompt(prompt string) {
 
 func (t *TelegramRobot) getAudio() []byte {
 	return t.AudioContent
+}
+
+func (t *TelegramRobot) getDoc() *param.DocInfo {
+	return t.DocContent
+}
+
+func (t *TelegramRobot) setDoc(doc *param.DocInfo) {
+	t.DocContent = doc
 }
 
 func (t *TelegramRobot) getImage() []byte {

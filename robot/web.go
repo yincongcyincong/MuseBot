@@ -22,6 +22,7 @@ type Web struct {
 	RealUserId   string
 	Prompt       string
 	ImageContent []byte
+	DocContent   *param.DocInfo
 	AudioContent []byte
 	cs           *param.ContextState
 
@@ -33,7 +34,7 @@ type Web struct {
 	Robot *RobotInfo
 }
 
-func NewWeb(command string, userId int64, realUserId, prompt, originalPrompt string, bodyData []byte, w http.ResponseWriter, flusher http.Flusher) *Web {
+func NewWeb(command string, userId int64, realUserId, prompt, originalPrompt, fileName string, bodyData []byte, w http.ResponseWriter, flusher http.Flusher) *Web {
 	metrics.AppRequestCount.WithLabelValues("web").Inc()
 	web := &Web{
 		Command:        command,
@@ -54,6 +55,11 @@ func NewWeb(command string, userId int64, realUserId, prompt, originalPrompt str
 
 	if utils.DetectAudioFormat(bodyData) != "unknown" {
 		web.AudioContent = bodyData
+	}
+
+	if web.ImageContent == nil && web.AudioContent == nil &&
+		utils.DetectDocumentType(fileName, bodyData) != "" {
+		web.DocContent = &param.DocInfo{FileName: fileName, Content: bodyData}
 	}
 
 	web.Robot = NewRobot(WithRobot(web), WithSkipCheck(true))
@@ -90,25 +96,21 @@ func (web *Web) sendImg() {
 	}
 
 	// 构建 base64 图片
-	base64Content := base64.StdEncoding.EncodeToString(imageContent)
 	format := utils.DetectImageFormat(imageContent)
-	dataURI := fmt.Sprintf("data:image/%s;base64,%s", format, base64Content)
-
 	web.sendMedia(imageContent, format, "image")
 
-	originImageURI := ""
+	answerPath := web.Robot.saveMediaContent(imageContent, param.ImageRecordType)
+	originImagePath := ""
 	if len(web.ImageContent) > 0 {
-		base64Content = base64.StdEncoding.EncodeToString(web.ImageContent)
-		format = utils.DetectImageFormat(web.ImageContent)
-		originImageURI = fmt.Sprintf("data:image/%s;base64,%s", format, base64Content)
+		originImagePath = web.Robot.saveMediaContent(web.ImageContent, param.ImageRecordType)
 	}
 
 	// save message record
 	db.InsertRecordInfo(web.Robot.Ctx, &db.Record{
 		UserId:     web.RealUserId,
 		Question:   web.OriginalPrompt,
-		Answer:     dataURI,
-		Content:    originImageURI,
+		Answer:     answerPath,
+		Content:    originImagePath,
 		Token:      0,
 		IsDeleted:  0,
 		RecordType: param.WEBRecordType,
@@ -119,8 +121,8 @@ func (web *Web) sendImg() {
 	db.InsertRecordInfo(web.Robot.Ctx, &db.Record{
 		UserId:     web.RealUserId,
 		Question:   web.OriginalPrompt,
-		Answer:     dataURI,
-		Content:    originImageURI,
+		Answer:     answerPath,
+		Content:    originImagePath,
 		Token:      totalToken,
 		IsDeleted:  0,
 		RecordType: param.ImageRecordType,
@@ -144,16 +146,15 @@ func (web *Web) sendVideo() {
 		return
 	}
 
-	base64Content := base64.StdEncoding.EncodeToString(videoContent)
 	format := utils.DetectVideoMimeType(videoContent)
-	dataURI := fmt.Sprintf("data:video/%s;base64,%s", format, base64Content)
-
 	web.sendMedia(videoContent, format, "video")
+
+	answerPath := web.Robot.saveMediaContent(videoContent, param.VideoRecordType)
 
 	db.InsertRecordInfo(web.Robot.Ctx, &db.Record{
 		UserId:     web.RealUserId,
 		Question:   web.OriginalPrompt,
-		Answer:     dataURI,
+		Answer:     answerPath,
 		Token:      0,
 		IsDeleted:  0,
 		RecordType: param.WEBRecordType,
@@ -163,7 +164,7 @@ func (web *Web) sendVideo() {
 	db.InsertRecordInfo(web.Robot.Ctx, &db.Record{
 		UserId:     web.RealUserId,
 		Question:   web.OriginalPrompt,
-		Answer:     dataURI,
+		Answer:     answerPath,
 		Token:      totalToken,
 		IsDeleted:  0,
 		RecordType: param.VideoRecordType,
@@ -190,9 +191,10 @@ func (web *Web) sendTextStream(messageChan *MsgChan) {
 
 	originDataURI := ""
 	if web.ImageContent != nil {
-		originDataURI = fmt.Sprintf("data:image/%s;base64,%s", utils.DetectImageFormat(web.ImageContent), web.ImageContent)
+		originDataURI = web.Robot.saveMediaContent(web.ImageContent, param.ImageRecordType)
 	} else if web.AudioContent != nil {
-		originDataURI = fmt.Sprintf("data:audio/%s;base64,%s", utils.DetectAudioFormat(web.AudioContent), web.AudioContent)
+		originDataURI = fmt.Sprintf("data:audio/%s;base64,%s", utils.DetectAudioFormat(web.AudioContent),
+			base64.StdEncoding.EncodeToString(web.AudioContent))
 	}
 
 	db.InsertRecordInfo(web.Robot.Ctx, &db.Record{
@@ -257,6 +259,14 @@ func (web *Web) setPrompt(prompt string) {
 
 func (web *Web) getAudio() []byte {
 	return web.AudioContent
+}
+
+func (web *Web) getDoc() *param.DocInfo {
+	return web.DocContent
+}
+
+func (web *Web) setDoc(doc *param.DocInfo) {
+	web.DocContent = doc
 }
 
 func (web *Web) getImage() []byte {

@@ -223,6 +223,20 @@ func getMimeType(filename string) string {
 		return "image/gif"
 	case ".webp":
 		return "image/webp"
+	case ".mp4":
+		return "video/mp4"
+	case ".webm":
+		return "video/webm"
+	case ".ogg":
+		return "video/ogg"
+	case ".txt":
+		return "text/plain"
+	case ".pdf":
+		return "application/pdf"
+	case ".csv":
+		return "text/csv"
+	case ".html", ".htm":
+		return "text/html"
 	default:
 		// Default for unknown or non-image types
 		return "application/octet-stream"

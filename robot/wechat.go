@@ -44,6 +44,7 @@ type WechatRobot struct {
 	Prompt       string
 	OriginPrompt string
 	ImageContent []byte
+	DocContent   *param.DocInfo
 	VoiceContent []byte
 
 	TextMsg  *serverModel.MessageText
@@ -428,6 +429,14 @@ func (w *WechatRobot) setPrompt(prompt string) {
 
 func (w *WechatRobot) getAudio() []byte {
 	return w.VoiceContent
+}
+
+func (w *WechatRobot) getDoc() *param.DocInfo {
+	return w.DocContent
+}
+
+func (w *WechatRobot) setDoc(doc *param.DocInfo) {
+	w.DocContent = doc
 }
 
 func (w *WechatRobot) getImage() []byte {

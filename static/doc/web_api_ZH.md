@@ -177,10 +177,16 @@
 |---------|--------|----|---------------------------|
 | prompt  | string | 是  | 请求内容，可包含命令（以 `/` 开头）或普通文本 |
 | user_id | string | 是  | 用户唯一标识（数字字符串）             |
+| file_name | string | 否 | 请求体中文档的文件名（`.txt`/`.pdf`/`.csv`/`.html`），不传时按魔数识别 PDF/HTML，详见[文档识别](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/document_ZH.md) |
 
 * **请求体**：
 
-    * 传入二进制数据，如图片或音频数据（根据命令决定是否需要）。
+    * 传入二进制数据，如图片或音频数据（根据命令决定是否需要）。发送文档时传原始文件字节并设置 `file_name`，例如：
+
+```bash
+curl -N -X POST --data-binary @notes.txt \
+  "http://localhost:36060/communicate?prompt=总结这个文档&user_id=1&file_name=notes.txt"
+```
 
 ---
 
