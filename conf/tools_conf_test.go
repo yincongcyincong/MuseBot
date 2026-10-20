@@ -32,6 +32,34 @@ func TestApplyParsedToolsFlags(t *testing.T) {
 	}
 }
 
+func TestWebSearchProviderConfiguration(t *testing.T) {
+	previous := ToolsConfInfo
+	t.Cleanup(func() { ToolsConfInfo = previous })
+	for _, provider := range []string{"", "default", "parallel", "disabled"} {
+		ToolsConfInfo = &ToolsConf{WebSearchProvider: provider}
+		t.Setenv("WEB_SEARCH_PROVIDER", "")
+		EnvToolsConf()
+		if ToolsConfInfo.WebSearchProvider != provider {
+			t.Fatalf("saved provider %q changed to %q", provider, ToolsConfInfo.WebSearchProvider)
+		}
+	}
+	t.Setenv("WEB_SEARCH_PROVIDER", "parallel")
+	EnvToolsConf()
+	if ToolsConfInfo.WebSearchProvider != "parallel" {
+		t.Fatal("environment did not override saved provider")
+	}
+	previousFlags := flag.CommandLine
+	flag.CommandLine = flag.NewFlagSet("search", flag.ContinueOnError)
+	t.Cleanup(func() { flag.CommandLine = previousFlags })
+	InitToolsConf()
+	if err := flag.CommandLine.Parse([]string{"-web_search_provider=disabled"}); err != nil {
+		t.Fatal(err)
+	}
+	if ToolsConfInfo.WebSearchProvider != "disabled" {
+		t.Fatal("provider flag was not applied")
+	}
+}
+
 func TestEnvToolsConfAppliesDefaultsAndEnvironment(t *testing.T) {
 	t.Setenv("MCP_CONF_PATH", "/tmp/mcp.json")
 	t.Setenv("SKILLS_PATH", "/tmp/skills")

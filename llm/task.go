@@ -12,9 +12,13 @@ import (
 	"github.com/yincongcyincong/MuseBot/logger"
 	"github.com/yincongcyincong/MuseBot/metrics"
 	"github.com/yincongcyincong/MuseBot/param"
+	"github.com/yincongcyincong/MuseBot/utils"
 )
 
 type LLMTaskReq struct {
+	// One identity per standalone research run, shared by all of its agents.
+	searchSession utils.WebSearchSession
+
 	MessageChan chan *param.MsgInfo
 	HTTPMsgChan chan string
 	Content     string
@@ -149,6 +153,7 @@ func (d *LLMTaskReq) newTaskLLM(prompt string, tool *conf.AgentInfo, streaming b
 	}
 
 	llm := NewLLM(options...)
+	llm.searchSession = &d.searchSession
 	if tool == nil {
 		// the planner (and fallback agents without a tool) sees recent chat
 		// history so references like "the cron task I created earlier"

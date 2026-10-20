@@ -66,6 +66,7 @@ type LLM struct {
 	LoopNum      int
 
 	ToolApprovals bool
+	searchSession *utils.WebSearchSession
 
 	// ConfigExecutor runs MuseBot configuration actions (config/mcp/skill/
 	// cron/command/file) from inside the /task workflow. It is injected by the
@@ -178,6 +179,7 @@ func (l *LLM) InsertCharacter(ctx context.Context) {
 
 func NewLLM(opts ...Option) *LLM {
 	l := new(LLM)
+	l.searchSession = new(utils.WebSearchSession)
 	l.Cs = new(param.ContextState)
 	for _, opt := range opts {
 		opt(l)
@@ -482,7 +484,19 @@ func WithContentParameter(contentParameter map[string]string) Option {
 func (l *LLM) ExecMcpReq(ctx context.Context, funcName string, property map[string]interface{}) (string, error) {
 	if funcName == conf.BuiltinWebSearchTool {
 		query, _ := property["query"].(string)
-		return utils.WebSearch(ctx, query)
+		switch strings.ToLower(strings.TrimSpace(conf.ToolsConfInfo.WebSearchProvider)) {
+		case "", "default":
+			return utils.WebSearch(ctx, query)
+		case "parallel":
+			if l.searchSession == nil {
+				return "", errors.New("web search session is not initialized")
+			}
+			return utils.ParallelWebSearch(ctx, query, l.searchSession.ID())
+		case "disabled":
+			return "", errors.New("web search is disabled")
+		default:
+			return "", errors.New("unknown web search provider")
+		}
 	}
 	if funcName == conf.BuiltinConfigTool {
 		return l.executeTaskConfigTool(ctx, property)
