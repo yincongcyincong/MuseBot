@@ -5,10 +5,13 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"slices"
 	"time"
 
 	"github.com/yincongcyincong/MuseBot/conf"
+	"github.com/yincongcyincong/MuseBot/logger"
 	"github.com/yincongcyincong/MuseBot/param"
+	botUtils "github.com/yincongcyincong/MuseBot/utils"
 )
 
 type User struct {
@@ -256,4 +259,54 @@ func GetCtxUserInfo(ctx context.Context) *User {
 	}
 
 	return nil
+}
+
+// SyncUserTxtConfig aligns the stored txt type of every user with the tokens
+// configured at startup: a type whose token has been removed falls back to
+// the first configured type and its default model. Configs whose type still
+// has a token are left untouched, so relay-style model/type combinations
+// survive restarts.
+func SyncUserTxtConfig() {
+	users, err := GetUsers()
+	if err != nil {
+		logger.Error("SyncUserTxtConfig GetUsers err", "err", err)
+		return
+	}
+
+	for _, user := range users {
+		if user.LLMConfig == "" {
+			continue
+		}
+
+		var llmConf param.LLMConfig
+		if err := json.Unmarshal([]byte(user.LLMConfig), &llmConf); err != nil {
+			// non-json config rows are left untouched
+			continue
+		}
+
+		syncUserTxtConfig(user.UserId, &llmConf)
+	}
+}
+
+func syncUserTxtConfig(userId string, llmConf *param.LLMConfig) {
+	if slices.Contains(botUtils.GetAvailTxtType(), llmConf.TxtType) {
+		return
+	}
+
+	txtType := botUtils.GetDefaultTxtType()
+	llmConf.TxtType = txtType
+	llmConf.TxtModel = botUtils.GetTxtModel(txtType)
+
+	b, err := json.Marshal(llmConf)
+	if err != nil {
+		logger.Error("SyncUserTxtConfig Marshal err", "userId", userId, "err", err)
+		return
+	}
+
+	if err = UpdateUserLLMConfig(userId, string(b)); err != nil {
+		logger.Error("SyncUserTxtConfig update user err", "userId", userId, "err", err)
+		return
+	}
+
+	logger.Info("SyncUserTxtConfig updated user", "userId", userId, "txtType", txtType, "txtModel", llmConf.TxtModel)
 }

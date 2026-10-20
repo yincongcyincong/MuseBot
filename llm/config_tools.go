@@ -30,10 +30,13 @@ func (l *LLM) executeTaskConfigTool(ctx context.Context, property map[string]int
 	}
 
 	results := make([]string, 0, len(plan.Actions))
+	approve := func(operation, target, detail string) (bool, error) {
+		return requestTaskToolApproval(ctx, l, operation, target, detail)
+	}
 	for _, action := range plan.Actions {
 		logger.InfoCtx(ctx, "task config action", "type", action.Type, "operation", action.Operation,
 			"key", action.Key, "path", action.Path)
-		result, err := l.ConfigExecutor(action)
+		result, err := l.ConfigExecutor(action, approve)
 		if err != nil {
 			logger.ErrorCtx(ctx, "task config action fail", "type", action.Type,
 				"operation", action.Operation, "err", err)

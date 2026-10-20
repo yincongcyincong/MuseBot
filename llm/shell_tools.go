@@ -14,6 +14,7 @@ import (
 
 	"github.com/yincongcyincong/MuseBot/conf"
 	"github.com/yincongcyincong/MuseBot/i18n"
+	"github.com/yincongcyincong/MuseBot/utils"
 )
 
 const (
@@ -40,8 +41,23 @@ func (l *LLM) executeTaskShellTool(ctx context.Context, property map[string]inte
 	if err != nil {
 		return "", err
 	}
-	if !taskCommandAllowed(executable) {
-		return "", fmt.Errorf("command %q is not allowed", args[0])
+
+	// a command outside the allowlist triggers an interactive approval: the
+	// user can add it to the allowlist and run it right away, so no startup
+	// configuration is required
+	boundaryApproved := false
+	if !conf.IsCommandAllowed(executable) {
+		detail := fmt.Sprintf("command %q is not in the allowlist; approving adds it to the allowlist and runs it now: argv %s",
+			args[0], formatTaskCommandArgs(args))
+		approved, err := requestTaskToolApproval(ctx, l, "allow_command", args[0], detail)
+		if err != nil {
+			return "", err
+		}
+		if !approved {
+			return "", fmt.Errorf("command %q was not approved by the user", args[0])
+		}
+		conf.AddAllowedCommand(executable)
+		boundaryApproved = true
 	}
 
 	cwdInput, _ := property["cwd"].(string)
@@ -58,13 +74,16 @@ func (l *LLM) executeTaskShellTool(ctx context.Context, property map[string]inte
 		return "", errors.New("command timeout must be positive")
 	}
 
-	detail := fmt.Sprintf("argv %s; timeout %ds", formatTaskCommandArgs(args), timeout)
-	approved, err := requestTaskToolApproval(ctx, l, "shell", relativeCwd, detail)
-	if err != nil {
-		return "", err
-	}
-	if !approved {
-		return taskToolDenialJSON(conf.BuiltinShellTool, relativeCwd, "The user denied this shell operation.")
+	// the boundary approval above already confirmed this exact argv
+	if !boundaryApproved {
+		detail := fmt.Sprintf("argv %s; timeout %ds", formatTaskCommandArgs(args), timeout)
+		approved, err := requestTaskToolApproval(ctx, l, "shell", relativeCwd, detail)
+		if err != nil {
+			return "", err
+		}
+		if !approved {
+			return taskToolDenialJSON(conf.BuiltinShellTool, relativeCwd, "The user denied this shell operation.")
+		}
 	}
 
 	runCtx, cancel := context.WithTimeout(ctx, time.Duration(timeout)*time.Second)
@@ -99,7 +118,7 @@ func (l *LLM) executeTaskShellTool(ctx context.Context, property map[string]inte
 
 	l.DirectSendMsg(i18n.GetMessage("task_tool_operation_approved", map[string]interface{}{
 		"operation": "shell",
-		"path":      relativeCwd,
+		"detail":    formatTaskCommandArgs(args),
 	}), true)
 
 	output, err := json.Marshal(result)
@@ -124,19 +143,6 @@ func taskCommandArgs(property map[string]interface{}) ([]string, error) {
 		args = append(args, arg)
 	}
 	return args, nil
-}
-
-func taskCommandAllowed(executable string) bool {
-	for _, allowedCommand := range strings.Split(conf.ToolsConfInfo.AllowedCommands, ",") {
-		allowedCommand = strings.TrimSpace(allowedCommand)
-		if allowedCommand == "" {
-			continue
-		}
-		if allowedCommand == executable || allowedCommand == filepath.Base(executable) {
-			return true
-		}
-	}
-	return false
 }
 
 func taskCommandTimeout() int {
@@ -213,4 +219,108 @@ func minInt(left, right int) int {
 		return left
 	}
 	return right
+}
+
+// errTaskPathOutsideRoots reports that the requested path is not inside any
+// allowed sandbox root; callers may offer an interactive approval to add it.
+var errTaskPathOutsideRoots = errors.New("file path is outside the allowed sandbox roots")
+
+func taskFilePath(pathInput string) (string, string, error) {
+	pathInput = strings.TrimSpace(pathInput)
+	if pathInput == "" {
+		return "", "", errors.New("file path is required")
+	}
+
+	roots := conf.AllowedPathRoots()
+	if len(roots) == 0 {
+		return "", "", errors.New("task file sandbox is not configured")
+	}
+
+	// pick the root the path belongs to; relative inputs always use the first
+	// (configured) root
+	rootIndex := 0
+	relativePath := ""
+	if filepath.IsAbs(pathInput) {
+		absoluteInput, err := filepath.Abs(pathInput)
+		if err != nil {
+			return "", "", err
+		}
+		found := -1
+		for index, root := range roots {
+			relative, ok := pathWithinRoot(absoluteInput, root)
+			if ok {
+				found = index
+				relativePath = relative
+				break
+			}
+		}
+		if found < 0 {
+			return "", "", errTaskPathOutsideRoots
+		}
+		rootIndex = found
+	} else {
+		relativePath = filepath.Clean(pathInput)
+		if relativePath == "." || relativePath == ".." || strings.HasPrefix(relativePath, ".."+string(filepath.Separator)) {
+			return "", "", errors.New("file path cannot escape the task file sandbox")
+		}
+	}
+
+	absoluteRoot, err := filepath.Abs(roots[rootIndex])
+	if err != nil {
+		return "", "", err
+	}
+	// the configured root is created on demand; runtime-approved roots must exist
+	if rootIndex == 0 {
+		if err := os.MkdirAll(absoluteRoot, 0o700); err != nil {
+			return "", "", err
+		}
+	}
+	evaluatedRoot, err := filepath.EvalSymlinks(absoluteRoot)
+	if err != nil {
+		return "", "", err
+	}
+
+	current := evaluatedRoot
+	for _, segment := range strings.Split(relativePath, string(filepath.Separator)) {
+		if segment == "" {
+			continue
+		}
+		current = filepath.Join(current, segment)
+		info, err := os.Lstat(current)
+		if err != nil && !errors.Is(err, os.ErrNotExist) {
+			return "", "", err
+		}
+		if err == nil && info.Mode()&os.ModeSymlink != 0 {
+			return "", "", errors.New("symbolic links are not allowed in the task file sandbox")
+		}
+	}
+
+	return current, relativePath, nil
+}
+
+// pathWithinRoot reports whether absolute path lies under root and returns
+// the path relative to the root.
+func pathWithinRoot(absolutePath, root string) (string, bool) {
+	absoluteRoot, err := filepath.Abs(root)
+	if err != nil {
+		return "", false
+	}
+	evaluatedRoot, err := filepath.EvalSymlinks(absoluteRoot)
+	if err != nil {
+		return "", false
+	}
+	// resolve symlinked ancestors of the input (e.g. /var -> /private/var)
+	// before the prefix match; symlinks inside the root are still rejected by
+	// the segment walk in taskFilePath
+	evaluatedInput := utils.EvalExistingPathPrefix(absolutePath)
+	for _, candidate := range []string{absolutePath, evaluatedInput} {
+		if candidate == evaluatedRoot {
+			return ".", true
+		}
+		prefix := evaluatedRoot + string(filepath.Separator)
+		if strings.HasPrefix(candidate, prefix) {
+			return filepath.Clean(strings.TrimPrefix(candidate, prefix)), true
+		}
+	}
+	return "", false
 }

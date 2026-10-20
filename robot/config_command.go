@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -18,18 +19,17 @@ import (
 	cronC "github.com/robfig/cron/v3"
 	"github.com/yincongcyincong/MuseBot/conf"
 	"github.com/yincongcyincong/MuseBot/db"
+	"github.com/yincongcyincong/MuseBot/llm"
 	"github.com/yincongcyincong/MuseBot/logger"
 	"github.com/yincongcyincong/MuseBot/param"
+	"github.com/yincongcyincong/MuseBot/utils"
 	"github.com/yincongcyincong/mcp-client-go/clients"
 	mcpParam "github.com/yincongcyincong/mcp-client-go/clients/param"
 )
 
 const (
 	maxConversationConfigActions = 20
-	maxFileReadBytes             = 256 * 1024
-	maxFileWriteBytes            = 1024 * 1024
 	maxCommandOutputBytes        = 16 * 1024
-	maxFileListEntries           = 500
 )
 
 var (
@@ -47,8 +47,9 @@ func (r *RobotInfo) isAdminUser(userId string) bool {
 
 // executeConversationConfigAction runs a single configuration action. It is
 // exposed to the /task workflow through the bot_config tool; the admin gate
-// is enforced here so every entry path is protected.
-func (r *RobotInfo) executeConversationConfigAction(action *param.ConversationConfigAction, userId string) (string, error) {
+// is enforced here so every entry path is protected. approve (when non-nil)
+// lets boundary expansions ask the triggering user first.
+func (r *RobotInfo) executeConversationConfigAction(action *param.ConversationConfigAction, userId string, approve llm.TaskApprovalFunc) (string, error) {
 	if action == nil {
 		return "", fmt.Errorf("empty action")
 	}
@@ -73,9 +74,7 @@ func (r *RobotInfo) executeConversationConfigAction(action *param.ConversationCo
 	case "cron":
 		return r.executeConversationCronAction(action, userId)
 	case "command":
-		return r.executeConversationCommandAction(action)
-	case "file":
-		return r.executeConversationFileAction(action)
+		return r.executeConversationCommandAction(action, approve)
 	default:
 		return "", fmt.Errorf("unsupported action type %q", action.Type)
 	}
@@ -507,7 +506,7 @@ func (r *RobotInfo) executeSkillAction(action *param.ConversationConfigAction) (
 	}
 }
 
-func (r *RobotInfo) executeConversationCommandAction(action *param.ConversationConfigAction) (string, error) {
+func (r *RobotInfo) executeConversationCommandAction(action *param.ConversationConfigAction, approve llm.TaskApprovalFunc) (string, error) {
 	if action.Operation != "run" {
 		return "", fmt.Errorf("unsupported command operation %q", action.Operation)
 	}
@@ -519,8 +518,22 @@ func (r *RobotInfo) executeConversationCommandAction(action *param.ConversationC
 	if err != nil {
 		return "", err
 	}
-	if !conversationCommandAllowed(executable) {
-		return "", fmt.Errorf("command %q is not allowed", action.Args[0])
+	// an unapproved command triggers an interactive approval: the user can
+	// add it to the allowlist and run it right away
+	if !conf.IsCommandAllowed(executable) {
+		if approve == nil {
+			return "", fmt.Errorf("command %q is not allowed; add it to the startup allowlist (ALLOWED_COMMANDS or -allowed_commands) to permit it", action.Args[0])
+		}
+		detail := fmt.Sprintf("command %q is not in the allowlist; approving adds it to the allowlist and runs it now: argv %s",
+			action.Args[0], strings.Join(action.Args, " "))
+		approved, approvalErr := approve("allow_command", action.Args[0], detail)
+		if approvalErr != nil {
+			return "", approvalErr
+		}
+		if !approved {
+			return "", fmt.Errorf("command %q was not approved by the user", action.Args[0])
+		}
+		conf.AddAllowedCommand(executable)
 	}
 
 	workingDir := conversationFileRootOrDefault()
@@ -565,19 +578,6 @@ func (r *RobotInfo) executeConversationCommandAction(action *param.ConversationC
 	return result, runErr
 }
 
-func conversationCommandAllowed(executable string) bool {
-	for _, allowedCommand := range strings.Split(conf.ToolsConfInfo.AllowedCommands, ",") {
-		allowedCommand = strings.TrimSpace(allowedCommand)
-		if allowedCommand == "" {
-			continue
-		}
-		if allowedCommand == executable || allowedCommand == filepath.Base(executable) || allowedCommand == filepath.Clean(executable) {
-			return true
-		}
-	}
-	return false
-}
-
 func conversationCommandTimeout() int {
 	if conf.ToolsConfInfo.CommandTimeoutSec <= 0 {
 		return 60
@@ -593,52 +593,6 @@ func formatCommandOutput(stdout, stderr []byte) string {
 		output = bytes.Join([][]byte{prefix, []byte("\n... output truncated ...\n"), suffix}, nil)
 	}
 	return string(output)
-}
-
-func (r *RobotInfo) executeConversationFileAction(action *param.ConversationConfigAction) (string, error) {
-	if action.Path == "" {
-		return "", fmt.Errorf("file path is required")
-	}
-
-	switch action.Operation {
-	case "list":
-		return listConversationFile(action.Path)
-	case "read":
-		return readConversationFile(action.Path)
-	case "write":
-		return writeConversationFile(action.Path, action.Content)
-	case "edit":
-		return editConversationFile(action.Path, action.OldText, action.NewText)
-	case "mkdir":
-		targetPath, err := secureConversationFilePath(action.Path, false)
-		if err != nil {
-			return "", err
-		}
-		if err := os.MkdirAll(targetPath, 0755); err != nil {
-			return "", err
-		}
-		return "created directory " + action.Path, nil
-	case "delete":
-		targetPath, err := secureConversationFilePath(action.Path, true)
-		if err != nil {
-			return "", err
-		}
-		rootPath, err := conversationFileRoot()
-		if err != nil {
-			return "", err
-		}
-		if targetPath == rootPath {
-			return "", fmt.Errorf("cannot delete the file operation root")
-		}
-		if err := os.Remove(targetPath); err != nil {
-			return "", err
-		}
-		return "deleted " + action.Path, nil
-	case "move":
-		return moveConversationFile(action.Path, action.Target)
-	default:
-		return "", fmt.Errorf("unsupported file operation %q", action.Operation)
-	}
 }
 
 func conversationFileRootOrDefault() string {
@@ -659,18 +613,69 @@ func conversationFileRoot() (string, error) {
 	return filepath.EvalSymlinks(root)
 }
 
+// errConversationPathOutsideRoots marks paths outside every allowed root so
+// callers can offer an interactive approval to add the path as a new root.
+var errConversationPathOutsideRoots = errors.New("path must stay inside the allowed file operation roots")
+
+// conversationFileRoots returns the evaluated absolute sandbox roots: the
+// configured file root plus the roots approved at runtime.
+func conversationFileRoots() ([]string, error) {
+	configured := conf.AllowedPathRoots()
+	if len(configured) == 0 {
+		configured = []string{conversationFileRootOrDefault()}
+	}
+
+	roots := make([]string, 0, len(configured))
+	for index, root := range configured {
+		absoluteRoot, err := filepath.Abs(root)
+		if err != nil {
+			return nil, err
+		}
+		// the configured root is created on demand; runtime roots must exist
+		if index == 0 {
+			if err := os.MkdirAll(absoluteRoot, 0755); err != nil {
+				return nil, err
+			}
+		}
+		evaluated, err := filepath.EvalSymlinks(absoluteRoot)
+		if err != nil {
+			continue
+		}
+		roots = append(roots, evaluated)
+	}
+	if len(roots) == 0 {
+		return nil, errors.New("no usable file operation root")
+	}
+	return roots, nil
+}
+
 func secureConversationFilePath(path string, mustExist bool) (string, error) {
-	root, err := conversationFileRoot()
+	roots, err := conversationFileRoots()
 	if err != nil {
 		return "", err
 	}
 
 	absolutePath := filepath.Clean(path)
 	if !filepath.IsAbs(absolutePath) {
-		absolutePath = filepath.Join(root, absolutePath)
+		absolutePath = filepath.Join(roots[0], absolutePath)
 	}
-	if !conversationPathInsideRoot(root, absolutePath) {
-		return "", fmt.Errorf("path must stay inside the file operation root")
+	// resolve symlinked ancestors (e.g. /var -> /private/var) before the
+	// prefix match; symlinks inside a root are still rejected below
+	evaluatedPath := utils.EvalExistingPathPrefix(absolutePath)
+	root := roots[0]
+	inside := false
+	for _, candidate := range roots {
+		if conversationPathInsideRoot(candidate, absolutePath) || conversationPathInsideRoot(candidate, evaluatedPath) {
+			root = candidate
+			inside = true
+			break
+		}
+	}
+	if !inside {
+		return "", errConversationPathOutsideRoots
+	}
+	if evaluatedPath != absolutePath {
+		absolutePath = evaluatedPath
 	}
 
 	info, err := os.Lstat(absolutePath)
@@ -696,7 +701,7 @@ func secureConversationFilePath(path string, mustExist bool) (string, error) {
 	}
 
 	if !conversationPathInsideRoot(root, absolutePath) {
-		return "", fmt.Errorf("resolved path must stay inside the file operation root")
+		return "", errConversationPathOutsideRoots
 	}
 	return absolutePath, nil
 }
@@ -707,161 +712,6 @@ func conversationPathInsideRoot(root, path string) bool {
 		return false
 	}
 	return relativePath != ".." && !strings.HasPrefix(relativePath, ".."+string(filepath.Separator))
-}
-
-func listConversationFile(path string) (string, error) {
-	targetPath, err := secureConversationFilePath(path, true)
-	if err != nil {
-		return "", err
-	}
-	entries, err := os.ReadDir(targetPath)
-	if err != nil {
-		return "", err
-	}
-
-	names := make([]string, 0, len(entries))
-	for _, entry := range entries {
-		name := entry.Name()
-		if entry.IsDir() {
-			name += "/"
-		}
-		names = append(names, name)
-		if len(names) == maxFileListEntries {
-			names = append(names, "... output truncated ...")
-			break
-		}
-	}
-	if len(names) == 0 {
-		return "directory is empty", nil
-	}
-	return strings.Join(names, "\n"), nil
-}
-
-func readConversationFile(path string) (string, error) {
-	targetPath, err := secureConversationFilePath(path, true)
-	if err != nil {
-		return "", err
-	}
-	info, err := os.Stat(targetPath)
-	if err != nil {
-		return "", err
-	}
-	if info.IsDir() {
-		return "", fmt.Errorf("path is a directory")
-	}
-	if info.Size() > maxFileReadBytes {
-		return "", fmt.Errorf("file exceeds %d bytes", maxFileReadBytes)
-	}
-	content, err := os.ReadFile(targetPath)
-	if err != nil {
-		return "", err
-	}
-	return string(content), nil
-}
-
-func writeConversationFile(path, content string) (string, error) {
-	if len(content) > maxFileWriteBytes {
-		return "", fmt.Errorf("file content exceeds %d bytes", maxFileWriteBytes)
-	}
-	targetPath, err := secureConversationFilePath(path, false)
-	if err != nil {
-		return "", err
-	}
-	if err := atomicWriteConversationFile(targetPath, []byte(content)); err != nil {
-		return "", err
-	}
-	return "wrote " + path, nil
-}
-
-func editConversationFile(path, oldText, newText string) (string, error) {
-	if oldText == "" || oldText == newText {
-		return "", fmt.Errorf("file edit requires a non-empty old_text different from new_text")
-	}
-	targetPath, err := secureConversationFilePath(path, true)
-	if err != nil {
-		return "", err
-	}
-	info, err := os.Stat(targetPath)
-	if err != nil {
-		return "", err
-	}
-	if info.IsDir() {
-		return "", fmt.Errorf("path is a directory")
-	}
-	if info.Size() > maxFileWriteBytes {
-		return "", fmt.Errorf("file exceeds %d bytes", maxFileWriteBytes)
-	}
-	content, err := os.ReadFile(targetPath)
-	if err != nil {
-		return "", err
-	}
-	count := strings.Count(string(content), oldText)
-	if count == 0 {
-		return "", fmt.Errorf("old_text was not found")
-	}
-	updatedContent := strings.ReplaceAll(string(content), oldText, newText)
-	if len(updatedContent) > maxFileWriteBytes {
-		return "", fmt.Errorf("edited file exceeds %d bytes", maxFileWriteBytes)
-	}
-	if err := atomicWriteConversationFile(targetPath, []byte(updatedContent)); err != nil {
-		return "", err
-	}
-	return fmt.Sprintf("replaced %d occurrence(s) in %s", count, path), nil
-}
-
-func moveConversationFile(path, target string) (string, error) {
-	if target == "" {
-		return "", fmt.Errorf("file target is required")
-	}
-	rootPath, err := conversationFileRoot()
-	if err != nil {
-		return "", err
-	}
-	sourcePath, err := secureConversationFilePath(path, true)
-	if err != nil {
-		return "", err
-	}
-	targetPath, err := secureConversationFilePath(target, false)
-	if err != nil {
-		return "", err
-	}
-	if sourcePath == rootPath || targetPath == rootPath {
-		return "", fmt.Errorf("cannot move the file operation root")
-	}
-	if sourcePath == targetPath {
-		return "", fmt.Errorf("source and target are the same")
-	}
-	if _, err := os.Lstat(targetPath); err == nil {
-		return "", fmt.Errorf("target already exists")
-	} else if !os.IsNotExist(err) {
-		return "", err
-	}
-	if err := os.Rename(sourcePath, targetPath); err != nil {
-		return "", err
-	}
-	return "moved " + path + " to " + target, nil
-}
-
-func atomicWriteConversationFile(path string, content []byte) error {
-	tempFile, err := os.CreateTemp(filepath.Dir(path), ".musebot-write-*")
-	if err != nil {
-		return err
-	}
-	tempPath := tempFile.Name()
-	defer os.Remove(tempPath)
-
-	if _, err := tempFile.Write(content); err != nil {
-		tempFile.Close()
-		return err
-	}
-	if err := tempFile.Chmod(0644); err != nil {
-		tempFile.Close()
-		return err
-	}
-	if err := tempFile.Close(); err != nil {
-		return err
-	}
-	return os.Rename(tempPath, path)
 }
 
 func (r *RobotInfo) executeConversationCronAction(action *param.ConversationConfigAction, userId string) (string, error) {

@@ -2,11 +2,9 @@ package llm
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"sort"
 	"strings"
-	"unicode/utf8"
 
 	"github.com/sashabaranov/go-openai"
 	"github.com/yincongcyincong/MuseBot/conf"
@@ -14,7 +12,6 @@ import (
 	"github.com/yincongcyincong/MuseBot/logger"
 	"github.com/yincongcyincong/MuseBot/metrics"
 	"github.com/yincongcyincong/MuseBot/param"
-	"github.com/yincongcyincong/MuseBot/utils"
 )
 
 type LLMTaskReq struct {
@@ -34,7 +31,7 @@ type LLMTaskReq struct {
 
 	// ConfigExecutor runs MuseBot configuration actions requested inside the
 	// task workflow; injected by the robot layer.
-	ConfigExecutor func(action *param.ConversationConfigAction) (string, error)
+	ConfigExecutor func(action *param.ConversationConfigAction, approve TaskApprovalFunc) (string, error)
 }
 
 type Task struct {
@@ -54,12 +51,11 @@ type TaskResult struct {
 func (d *LLMTaskReq) ExecuteTask() error {
 	logger.InfoCtx(d.Ctx, "task content", "content", d.Content)
 
+	// research is not a separate phase: the planner decides whether a web
+	// search step is needed and assigns the web_search agent like any other
 	machine := newTaskStateMachine()
-	if err := machine.beginResearch(); err != nil {
+	if err := machine.beginPlan(); err != nil {
 		return err
-	}
-	if err := d.runResearch(machine); err != nil {
-		logger.ErrorCtx(d.Ctx, "task research fail", "err", err)
 	}
 
 	planner, plan, err := d.planTask(machine)
@@ -73,6 +69,15 @@ func (d *LLMTaskReq) ExecuteTask() error {
 		}
 		if err := d.executePlan(machine, plan); err != nil {
 			return err
+		}
+
+		// a single-step plan that completed needs no reflection round: there
+		// is nothing left to re-evaluate, so summarize directly
+		if len(plan.Plan) == 1 {
+			if err := machine.transition(TaskStateSummarize); err != nil {
+				return err
+			}
+			break
 		}
 
 		if err := machine.transition(TaskStateReflect); err != nil {
@@ -94,8 +99,10 @@ func (d *LLMTaskReq) ExecuteTask() error {
 		planner.LLMClient.GetMessage(openai.ChatMessageRoleAssistant, planOutput)
 	}
 
-	if err := machine.transition(TaskStateSummarize); err != nil {
-		return err
+	if machine.state != TaskStateSummarize {
+		if err := machine.transition(TaskStateSummarize); err != nil {
+			return err
+		}
 	}
 	if err := d.summarizeTask(planner, machine); err != nil {
 		return err
@@ -184,99 +191,6 @@ func (d *LLMTaskReq) sendProgress(message string) {
 	}
 }
 
-func (d *LLMTaskReq) runResearch(machine *taskStateMachine) error {
-	if err := machine.requireState(TaskStateResearchQuery); err != nil {
-		return err
-	}
-	for machine.state == TaskStateResearchQuery {
-		taskParam := map[string]interface{}{
-			"user_task": d.Content,
-			"round":     machine.researchRound + 1,
-			"evidence":  strings.Join(machine.researchEvidence, "\n\n"),
-		}
-		prompt := i18n.GetMessage("task_research_prompt", taskParam)
-		llm := d.newTaskLLM(prompt, nil, false)
-		content, err := d.syncTaskLLM(llm)
-		if err != nil {
-			logger.WarnCtx(d.Ctx, "task research query failed; using fallback query", "err", err)
-			content = ""
-		}
-
-		queries := normalizeTaskResearchPlan(content, d.fallbackSearchQuery())
-		d.sendProgress(i18n.GetMessage("task_progress_research", map[string]interface{}{
-			"round":   machine.researchRound + 1,
-			"queries": strings.Join(queries, "; "),
-		}))
-		if err := machine.transition(TaskStateResearchObserve); err != nil {
-			return err
-		}
-
-		for _, query := range queries {
-			response, searchErr := utils.WebSearch(d.Ctx, query)
-			if searchErr != nil {
-				machine.addResearchEvidence(fmt.Sprintf("web_search(%q) failed: %v", query, searchErr))
-				continue
-			}
-			machine.addResearchEvidence(formatWebSearchEvidence(query, response))
-		}
-
-		if err := machine.transition(TaskStateResearchReview); err != nil {
-			return err
-		}
-		machine.researchRound++
-		if err := machine.beginNextResearchRound(); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (d *LLMTaskReq) fallbackSearchQuery() string {
-	query := strings.TrimSpace(d.Content)
-	if utf8.RuneCountInString(query) <= taskMaxQueryRunes {
-		return query
-	}
-	runes := []rune(query)
-	return string(runes[:taskMaxQueryRunes])
-}
-
-func (m *taskStateMachine) addResearchEvidence(evidence string) {
-	evidence = strings.TrimSpace(evidence)
-	if evidence == "" {
-		return
-	}
-	m.researchEvidence = append(m.researchEvidence, evidence)
-
-	total := 0
-	kept := make([]string, 0, len(m.researchEvidence))
-	for index := len(m.researchEvidence) - 1; index >= 0; index-- {
-		item := m.researchEvidence[index]
-		if total+len(item) > taskMaxObservationLen {
-			break
-		}
-		total += len(item)
-		kept = append([]string{item}, kept...)
-	}
-	m.researchEvidence = kept
-}
-
-func formatWebSearchEvidence(query, response string) string {
-	var results utils.WebSearchResponse
-	if err := json.Unmarshal([]byte(response), &results); err != nil {
-		return fmt.Sprintf("web_search(%q):\n%s", query, response)
-	}
-
-	var output strings.Builder
-	fmt.Fprintf(&output, "web_search(%q):", query)
-	for _, result := range results.Results {
-		fmt.Fprintf(&output, "\n- %s\n  %s", result.Title, result.URL)
-		if strings.TrimSpace(result.Snippet) != "" {
-			fmt.Fprintf(&output, "\n  %s", result.Snippet)
-		}
-	}
-	return output.String()
-}
-
 func (d *LLMTaskReq) planTask(machine *taskStateMachine) (*LLM, *TaskInfo, error) {
 	if err := machine.requireState(TaskStatePlan); err != nil {
 		return nil, nil, err
@@ -286,7 +200,6 @@ func (d *LLMTaskReq) planTask(machine *taskStateMachine) (*LLM, *TaskInfo, error
 	for attempt := 0; attempt < 2; attempt++ {
 		taskParam := map[string]interface{}{
 			"user_task":    d.Content,
-			"evidence":     strings.Join(machine.researchEvidence, "\n\n"),
 			"assign_param": d.taskAgentParams(),
 		}
 		prompt := i18n.GetMessage("task_state_plan_prompt", taskParam)
@@ -335,7 +248,6 @@ func (d *LLMTaskReq) executePlan(machine *taskStateMachine, plan *TaskInfo) erro
 			"user_task":        d.Content,
 			"agent_name":       task.Name,
 			"task_description": task.Description,
-			"evidence":         strings.Join(machine.researchEvidence, "\n\n"),
 			"completed_tasks":  formatTaskResults(machine.completedResults),
 		}
 		prompt := i18n.GetMessage("task_state_execute_prompt", taskParam)
@@ -368,7 +280,6 @@ func (d *LLMTaskReq) reflectTask(planner *LLM, machine *taskStateMachine) (*Task
 	}
 	taskParam := map[string]interface{}{
 		"user_task":       d.Content,
-		"evidence":        strings.Join(machine.researchEvidence, "\n\n"),
 		"completed_tasks": formatTaskResults(machine.completedResults),
 		"execution_loop":  machine.executionLoop,
 	}
@@ -403,7 +314,6 @@ func (d *LLMTaskReq) summarizeTask(planner *LLM, machine *taskStateMachine) erro
 	}
 	taskParam := map[string]interface{}{
 		"user_task":       d.Content,
-		"evidence":        strings.Join(machine.researchEvidence, "\n\n"),
 		"completed_tasks": formatTaskResults(machine.completedResults),
 	}
 	prompt := i18n.GetMessage("task_state_summary_prompt", taskParam)

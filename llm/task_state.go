@@ -2,56 +2,41 @@ package llm
 
 import (
 	"encoding/json"
+
 	"errors"
 	"fmt"
+	"github.com/yincongcyincong/MuseBot/i18n"
 	"strings"
-	"unicode/utf8"
 )
 
 const (
-	taskMaxResearchRounds  = 3
-	taskMaxQueriesPerRound = 2
-	taskMaxPlanItems       = 8
-	taskMaxExecutionLoops  = 3
-	taskMaxQueryRunes      = 256
-	taskMaxObservationLen  = 12 * 1024
+	taskMaxPlanItems      = 8
+	taskMaxExecutionLoops = 3
 )
 
 type TaskState string
 
 const (
-	TaskStateInit            TaskState = "INIT"
-	TaskStateResearchQuery   TaskState = "RESEARCH_QUERY"
-	TaskStateResearchObserve TaskState = "RESEARCH_OBSERVE"
-	TaskStateResearchReview  TaskState = "RESEARCH_REVIEW"
-	TaskStatePlan            TaskState = "PLAN"
-	TaskStateExecute         TaskState = "EXECUTE"
-	TaskStateReflect         TaskState = "REFLECT"
-	TaskStateSummarize       TaskState = "SUMMARIZE"
-	TaskStateDone            TaskState = "DONE"
+	TaskStateInit      TaskState = "INIT"
+	TaskStatePlan      TaskState = "PLAN"
+	TaskStateExecute   TaskState = "EXECUTE"
+	TaskStateReflect   TaskState = "REFLECT"
+	TaskStateSummarize TaskState = "SUMMARIZE"
+	TaskStateDone      TaskState = "DONE"
 )
 
 var taskStateTransitions = map[TaskState][]TaskState{
-	TaskStateInit:            {TaskStateResearchQuery},
-	TaskStateResearchQuery:   {TaskStateResearchObserve},
-	TaskStateResearchObserve: {TaskStateResearchReview},
-	TaskStateResearchReview:  {TaskStateResearchQuery, TaskStatePlan},
-	TaskStatePlan:            {TaskStateExecute},
-	TaskStateExecute:         {TaskStateReflect},
-	TaskStateReflect:         {TaskStatePlan, TaskStateSummarize},
-	TaskStateSummarize:       {TaskStateDone},
+	TaskStateInit:      {TaskStatePlan},
+	TaskStatePlan:      {TaskStateExecute},
+	TaskStateExecute:   {TaskStateReflect, TaskStateSummarize},
+	TaskStateReflect:   {TaskStatePlan, TaskStateSummarize},
+	TaskStateSummarize: {TaskStateDone},
 }
 
 type taskStateMachine struct {
 	state            TaskState
-	researchRound    int
 	executionLoop    int
-	researchEvidence []string
 	completedResults []TaskResult
-}
-
-type taskResearchPlan struct {
-	Queries []string `json:"queries"`
 }
 
 func newTaskStateMachine() *taskStateMachine {
@@ -81,15 +66,8 @@ func (m *taskStateMachine) requireState(expected TaskState) error {
 	return nil
 }
 
-func (m *taskStateMachine) beginResearch() error {
-	return m.transition(TaskStateResearchQuery)
-}
-
-func (m *taskStateMachine) beginNextResearchRound() error {
-	if m.researchRound >= taskMaxResearchRounds {
-		return m.transition(TaskStatePlan)
-	}
-	return m.transition(TaskStateResearchQuery)
+func (m *taskStateMachine) beginPlan() error {
+	return m.transition(TaskStatePlan)
 }
 
 func (m *taskStateMachine) beginExecutionLoop() error {
@@ -105,36 +83,6 @@ func (m *taskStateMachine) beginExecutionLoop() error {
 
 func (m *taskStateMachine) finish() error {
 	return m.transition(TaskStateDone)
-}
-
-func normalizeTaskResearchPlan(content string, fallbackQuery string) []string {
-	var research taskResearchPlan
-	if err := extractTaskJSON(content, &research); err != nil {
-		return []string{fallbackQuery}
-	}
-
-	seen := make(map[string]bool)
-	queries := make([]string, 0, taskMaxQueriesPerRound)
-	for _, query := range research.Queries {
-		query = strings.TrimSpace(query)
-		if query == "" || utf8.RuneCountInString(query) > taskMaxQueryRunes {
-			continue
-		}
-		key := strings.ToLower(query)
-		if seen[key] {
-			continue
-		}
-		seen[key] = true
-		queries = append(queries, query)
-		if len(queries) >= taskMaxQueriesPerRound {
-			break
-		}
-	}
-
-	if len(queries) == 0 {
-		return []string{fallbackQuery}
-	}
-	return queries
 }
 
 func validateTaskPlan(plan *TaskInfo, requireNonEmpty bool) error {
@@ -212,7 +160,7 @@ func extractTaskJSON(content string, target any) error {
 
 func formatTaskPlan(plan *TaskInfo) string {
 	var output strings.Builder
-	output.WriteString("Task state: PLAN\n")
+	output.WriteString(i18n.GetMessage("task_plan_header", nil) + "\n")
 	for index, task := range plan.Plan {
 		fmt.Fprintf(&output, "%d. [%s] %s\n", index+1, task.Name, task.Description)
 	}

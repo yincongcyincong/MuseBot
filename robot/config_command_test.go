@@ -14,17 +14,27 @@ func TestConversationCommandAllowed(t *testing.T) {
 	oldAllowedCommands := conf.ToolsConfInfo.AllowedCommands
 	defer func() {
 		conf.ToolsConfInfo.AllowedCommands = oldAllowedCommands
+		conf.RuntimeBoundaryFileOverride = filepath.Join(t.TempDir(), "boundary.json")
+		conf.ResetRuntimeBoundaryForTest()
 	}()
+	conf.RuntimeBoundaryFileOverride = filepath.Join(t.TempDir(), "boundary.json")
+	conf.ResetRuntimeBoundaryForTest()
 
 	conf.ToolsConfInfo.AllowedCommands = "git,/usr/bin/printf"
-	if !conversationCommandAllowed("/usr/local/bin/git") {
+	if !conf.IsCommandAllowed("/usr/local/bin/git") {
 		t.Error("expected basename allowlist entry to match")
 	}
-	if !conversationCommandAllowed("/usr/bin/printf") {
+	if !conf.IsCommandAllowed("/usr/bin/printf") {
 		t.Error("expected absolute allowlist entry to match")
 	}
-	if conversationCommandAllowed("/bin/sh") {
+	if conf.IsCommandAllowed("/bin/sh") {
 		t.Error("expected non-allowlisted command to be rejected")
+	}
+
+	// a runtime approval extends the allowlist
+	conf.AddAllowedCommand("ls")
+	if !conf.IsCommandAllowed("/bin/ls") {
+		t.Error("expected runtime-approved command to match")
 	}
 }
 
@@ -50,49 +60,6 @@ func TestSecureConversationFilePathRejectsEscapeAndSymlink(t *testing.T) {
 	}
 	if _, err := secureConversationFilePath("link", true); err == nil {
 		t.Fatal("expected symlink escape to be rejected")
-	}
-}
-
-func TestConversationFileWriteAndEdit(t *testing.T) {
-	root := t.TempDir()
-	oldFileRoot := conf.ToolsConfInfo.FileRootPath
-	defer func() {
-		conf.ToolsConfInfo.FileRootPath = oldFileRoot
-	}()
-	conf.ToolsConfInfo.FileRootPath = &root
-
-	relativePath := "notes/a.md"
-	if _, err := writeConversationFile(relativePath, "hello old world"); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := editConversationFile(relativePath, "old", "new"); err != nil {
-		t.Fatal(err)
-	}
-	content, err := os.ReadFile(filepath.Join(root, "notes", "a.md"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if string(content) != "hello new world" {
-		t.Fatalf("content = %q", content)
-	}
-}
-
-func TestConversationFileRootCannotBeDeletedOrMoved(t *testing.T) {
-	root := t.TempDir()
-	oldFileRoot := conf.ToolsConfInfo.FileRootPath
-	defer func() {
-		conf.ToolsConfInfo.FileRootPath = oldFileRoot
-	}()
-	conf.ToolsConfInfo.FileRootPath = &root
-
-	robotInfo := new(RobotInfo)
-	if _, err := robotInfo.executeConversationFileAction(&param.ConversationConfigAction{
-		Type: "file", Operation: "delete", Path: ".",
-	}); err == nil {
-		t.Error("expected deleting the file root to be rejected")
-	}
-	if _, err := moveConversationFile(".", "child"); err == nil {
-		t.Error("expected moving the file root to be rejected")
 	}
 }
 

@@ -10,9 +10,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/cohesion-org/deepseek-go"
 	"github.com/cohesion-org/deepseek-go/constants"
-	"github.com/devinyf/dashscopego/qwen"
 	"github.com/sashabaranov/go-openai"
 	"github.com/yincongcyincong/MuseBot/conf"
 	"github.com/yincongcyincong/MuseBot/db"
@@ -29,54 +27,19 @@ type OpenAIReq struct {
 
 func (d *OpenAIReq) GetModel(l *LLM) {
 	userInfo := db.GetCtxUserInfo(l.Ctx)
+	var llmConf *param.LLMConfig
 	model := ""
-	if userInfo != nil && userInfo.LLMConfigRaw != nil {
-		model = userInfo.LLMConfigRaw.TxtModel
+	if userInfo != nil {
+		llmConf = userInfo.LLMConfigRaw
+		if userInfo.LLMConfigRaw != nil {
+			model = userInfo.LLMConfigRaw.TxtModel
+		}
 	}
 
-	switch utils.GetTxtType(db.GetCtxUserInfo(l.Ctx).LLMConfigRaw) {
-	case param.OpenAi, param.ChatAnyWhere:
-		l.Model = openai.GPT3Dot5Turbo0125
-		if userInfo != nil && model != "" {
-			l.Model = model
-		}
-	case param.Aliyun:
-		l.Model = qwen.QwenMax
-		if userInfo != nil && model != "" && param.AliyunModel[model] {
-			l.Model = model
-		}
-	case param.DeepSeek:
-		l.Model = deepseek.DeepSeekChat
-		if userInfo != nil && model != "" && param.DeepseekModels[model] {
-			logger.InfoCtx(l.Ctx, "User info", "userID", userInfo.UserId, "mode", model)
-			l.Model = model
-		}
-	case param.Vol:
-		l.Model = param.ModelDoubao15VisionPro328
-		if userInfo != nil && model != "" && param.VolModels[model] {
-			logger.InfoCtx(l.Ctx, "User info", "userID", userInfo.UserId, "mode", model)
-			l.Model = model
-		}
-	case param.AI302:
-		l.Model = openai.GPT3Dot5Turbo
-		if userInfo != nil && model != "" {
-			l.Model = model
-		}
-	case param.OpenRouter:
-		l.Model = param.DeepseekDeepseekR1_0528Free
-		if userInfo != nil && model != "" {
-			l.Model = model
-		}
-	case param.OrcaRouter:
-		l.Model = param.OrcaRouterAuto
-		if userInfo != nil && model != "" {
-			l.Model = model
-		}
-	case param.Gemini:
-		l.Model = param.ModelGemini25Flash
-		if userInfo != nil && model != "" && param.GeminiModels[model] {
-			l.Model = model
-		}
+	txtType := utils.GetTxtType(llmConf)
+	l.Model = utils.GetUsingTxtModel(txtType, model)
+	if l.Model == "" {
+		l.Model = utils.GetTxtModel(txtType)
 	}
 }
 

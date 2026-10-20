@@ -4,7 +4,9 @@ import (
 	"testing"
 
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/stretchr/testify/assert"
 	"github.com/yincongcyincong/MuseBot/conf"
+	"github.com/yincongcyincong/MuseBot/param"
 )
 
 func TestInsertAndGetUser(t *testing.T) {
@@ -65,4 +67,35 @@ func TestInsertAndGetUser(t *testing.T) {
 		t.Errorf("unexpected user data: %+v", user)
 	}
 
+}
+
+func TestSyncUserTxtConfig(t *testing.T) {
+	conf.BaseConfInfo.DeepseekToken = "sk-test"
+	defer func() { conf.BaseConfInfo.DeepseekToken = "" }()
+
+	// non-json config rows must not abort the sync
+	_, err := InsertUser("sync-user-bad", "default")
+	assert.NoError(t, err)
+
+	// stored type no longer has a token: falls back to the configured type
+	// and its default model
+	_, err = InsertUser("sync-user-1", `{"txt_type":"openai","txt_model":"deepseek-chat"}`)
+	assert.NoError(t, err)
+
+	// stored type still has a token: untouched, even with a model natively
+	// belonging to another provider (relay setups)
+	_, err = InsertUser("sync-user-2", `{"txt_type":"deepseek","txt_model":"gpt-3.5-turbo"}`)
+	assert.NoError(t, err)
+
+	SyncUserTxtConfig()
+
+	user1, err := GetUserByID("sync-user-1")
+	assert.NoError(t, err)
+	assert.Equal(t, param.DeepSeek, user1.LLMConfigRaw.TxtType)
+	assert.Equal(t, "deepseek-chat", user1.LLMConfigRaw.TxtModel)
+
+	user2, err := GetUserByID("sync-user-2")
+	assert.NoError(t, err)
+	assert.Equal(t, param.DeepSeek, user2.LLMConfigRaw.TxtType)
+	assert.Equal(t, "gpt-3.5-turbo", user2.LLMConfigRaw.TxtModel)
 }

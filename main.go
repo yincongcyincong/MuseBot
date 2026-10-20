@@ -23,6 +23,7 @@ func main() {
 	conf.InitConf()
 	i18n.InitI18n()
 	db.InitTable()
+	db.SyncUserTxtConfig()
 	conf.InitTools()
 	rag.InitRag()
 	http.InitHTTP()

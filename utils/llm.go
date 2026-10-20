@@ -10,12 +10,13 @@ import (
 )
 
 func GetDefaultLLMConfig() string {
+	txtType := GetDefaultTxtType()
 	llmConf := param.LLMConfig{
-		TxtType:    conf.BaseConfInfo.Type,
+		TxtType:    txtType,
 		ImgType:    conf.BaseConfInfo.MediaType,
 		VideoType:  conf.BaseConfInfo.MediaType,
 		TTSType:    conf.AudioConfInfo.TTSType,
-		TxtModel:   GetTxtModel(conf.BaseConfInfo.Type),
+		TxtModel:   GetTxtModel(txtType),
 		ImgModel:   GetImgModel(conf.BaseConfInfo.MediaType),
 		VideoModel: GetVideoModel(conf.BaseConfInfo.MediaType),
 		TTSModel:   GetTTSModel(conf.AudioConfInfo.TTSType),
@@ -24,23 +25,24 @@ func GetDefaultLLMConfig() string {
 	return string(b)
 }
 
-func GetTxtType(llmConf *param.LLMConfig) string {
-	if llmConf == nil {
-		return conf.BaseConfInfo.Type
-	}
-
-	aType := GetAvailTxtType()
-	for _, v := range aType {
-		if v == llmConf.TxtType {
-			return v
-		}
-	}
-
-	if len(aType) > 0 {
+// GetDefaultTxtType returns the first txt type whose token is configured, or
+// the configured base type when no token is available.
+func GetDefaultTxtType() string {
+	if aType := GetAvailTxtType(); len(aType) > 0 {
 		return aType[0]
 	}
-
 	return conf.BaseConfInfo.Type
+}
+
+// GetTxtType returns the txt type stored in the user config. The config is
+// written to db with a valid type, so the stored value is trusted instead of
+// being re-derived from available tokens on every read.
+func GetTxtType(llmConf *param.LLMConfig) string {
+	if llmConf == nil || llmConf.TxtType == "" {
+		return GetDefaultTxtType()
+	}
+
+	return llmConf.TxtType
 }
 
 func GetImgType(llmConf *param.LLMConfig) string {
@@ -418,6 +420,7 @@ func GetUsingTxtModel(ty string, model string) string {
 		return qwen.QwenMax
 	}
 
+	// other types are openai-compatible relays: any model is accepted
 	return model
 }
 

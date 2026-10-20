@@ -2,6 +2,7 @@ package llm
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -13,7 +14,10 @@ import (
 func TestExecuteTaskConfigToolDispatchesActions(t *testing.T) {
 	executed := make([]*param.ConversationConfigAction, 0)
 	l := &LLM{
-		ConfigExecutor: func(action *param.ConversationConfigAction) (string, error) {
+		ConfigExecutor: func(action *param.ConversationConfigAction, approve TaskApprovalFunc) (string, error) {
+			if approve == nil {
+				return "", fmt.Errorf("approve callback must be provided")
+			}
 			executed = append(executed, action)
 			return action.Operation + " done", nil
 		},
@@ -31,14 +35,13 @@ func TestExecuteTaskConfigToolDispatchesActions(t *testing.T) {
 	executed = executed[:0]
 	out, err = l.executeTaskConfigTool(context.Background(), map[string]interface{}{
 		"actions": []interface{}{
-			map[string]interface{}{"type": "file", "op": "list", "path": "doc"},
+			map[string]interface{}{"type": "mcp", "op": "sync"},
 			map[string]interface{}{"type": "cron", "operation": "list"},
 		},
 	})
 	assert.NoError(t, err)
 	assert.Len(t, executed, 2)
-	assert.Equal(t, "list", executed[0].Operation) // alias resolved
-	assert.Equal(t, "doc", executed[0].Path)
+	assert.Equal(t, "sync", executed[0].Operation) // alias resolved
 	assert.Equal(t, 2, strings.Count(out, "✅"))
 
 	// fields inlined directly on the tool call

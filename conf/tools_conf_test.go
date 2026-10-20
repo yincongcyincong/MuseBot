@@ -2,6 +2,7 @@ package conf
 
 import (
 	"flag"
+	"path/filepath"
 	"testing"
 
 	"github.com/sashabaranov/go-openai"
@@ -146,5 +147,52 @@ func TestRebuildChatToolSetsIsIdempotent(t *testing.T) {
 	RebuildChatToolSets()
 	if got := countTool("rebuild_demo_tool"); got != 0 {
 		t.Errorf("tools kept after UseTools disabled: %d, want 0", got)
+	}
+}
+
+func TestRuntimeBoundaryCommandsAndPaths(t *testing.T) {
+	oldAllowed := ToolsConfInfo.AllowedCommands
+	oldFileRoot := ToolsConfInfo.FileRootPath
+	defer func() {
+		ToolsConfInfo.AllowedCommands = oldAllowed
+		ToolsConfInfo.FileRootPath = oldFileRoot
+		RuntimeBoundaryFileOverride = ""
+		ResetRuntimeBoundaryForTest()
+	}()
+	RuntimeBoundaryFileOverride = filepath.Join(t.TempDir(), "runtime_boundary.json")
+	ResetRuntimeBoundaryForTest()
+	ToolsConfInfo.AllowedCommands = ""
+
+	if IsCommandAllowed("/usr/bin/git") {
+		t.Fatal("git should not be allowed before approval")
+	}
+	AddAllowedCommand("/usr/bin/git")
+	if !IsCommandAllowed("/usr/bin/git") {
+		t.Fatal("git should be allowed after approval")
+	}
+	if !IsCommandAllowed("git") {
+		t.Fatal("basename form should be allowed too")
+	}
+	// duplicate approvals are idempotent
+	AddAllowedCommand("git")
+
+	if len(AllowedPathRoots()) != 0 {
+		t.Fatal("no path roots expected before approval")
+	}
+	root := t.TempDir()
+	AddAllowedPathRoot(root)
+	roots := AllowedPathRoots()
+	if len(roots) != 1 || roots[0] != root {
+		t.Fatalf("roots = %v, want [%s]", roots, root)
+	}
+
+	// approvals survive a reload (new process)
+	ResetRuntimeBoundaryForTest()
+	if !IsCommandAllowed("git") {
+		t.Fatal("approved command should survive reload")
+	}
+	roots = AllowedPathRoots()
+	if len(roots) != 1 || roots[0] != root {
+		t.Fatalf("roots after reload = %v", roots)
 	}
 }
