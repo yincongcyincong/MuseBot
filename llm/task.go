@@ -149,6 +149,12 @@ func (d *LLMTaskReq) newTaskLLM(prompt string, tool *conf.AgentInfo, streaming b
 	}
 
 	llm := NewLLM(options...)
+	if tool == nil {
+		// the planner (and fallback agents without a tool) sees recent chat
+		// history so references like "the cron task I created earlier"
+		// resolve against previous conversations
+		llm.appendHistory(d.UserId)
+	}
 	llm.LLMClient.GetMessage(openai.ChatMessageRoleUser, prompt)
 	llm.LLMClient.GetModel(llm)
 	return llm

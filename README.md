@@ -234,7 +234,7 @@ choose a language for bot, English (`en`), Chinese (`zh`), Russian (`ru`).
 
 ### other config
 
-[deepseek_conf](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/deepseekconf.md)        
+[llm_conf](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/deepseekconf.md)        
 [photo_conf](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/photoconf.md)      
 [video_conf](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/videoconf.md)      
 [audio_conf](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/audioconf.md)

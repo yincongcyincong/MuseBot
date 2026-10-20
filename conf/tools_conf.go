@@ -260,6 +260,7 @@ func RegisterBuiltinTools() {
 			"Use config(list|get|set) with config_type and key for settings; bot_name, http_host, db_type, db_conf, the command allowlist and the file root cannot change at runtime. " +
 			"Use mcp(list|set|delete|enable|disable|sync); set needs name plus a complete server object. " +
 			"Use skill(list|create|reload|set_path|search|install). Use cron(list|get|create|update|enable|disable|delete|clear) with six-field cron, prompt and numeric id as applicable. " +
+			"Cron create returns the new numeric id; keep it for later reference. Before cron update/enable/disable/delete, run cron list first and match by id, name, prompt or cron spec; never guess an id, and confirm with the user when several jobs match. " +
 			"Use command(run) with an argv array, never a shell string; file operations belong to the shell agent, not bot_config. " +
 			"Never invent configuration keys, operations, or URLs, and never return secrets.",
 		DeepseekTool:    mcputils.TransToolsToDPFunctionCall([]mcp.Tool{configTool}),

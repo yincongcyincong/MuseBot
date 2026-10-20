@@ -1799,7 +1799,7 @@ func (r *RobotInfo) smartMode() bool {
 		r.Robot.setCommand("/" + param.Task)
 	case "/cron":
 		r.cs.Token = llmClient.Cs.Token
-		err = r.InsertCron(smartResult.Cron, smartResult.Prompt)
+		_, err = r.InsertCron(smartResult.Cron, smartResult.Prompt)
 		if err != nil {
 			r.SendMsg(chatId, err.Error(), msgId, "", nil)
 		} else {
@@ -1853,7 +1853,7 @@ func (r *RobotInfo) saveRecord(content, imageContent []byte, recordType, totalTo
 	}
 }
 
-func (r *RobotInfo) InsertCron(cron, prompt string) error {
+func (r *RobotInfo) InsertCron(cron, prompt string) (int64, error) {
 	var err error
 	var id int64
 	chatId, _, userId := r.GetChatIdAndMsgIdAndUserID()
@@ -1891,23 +1891,23 @@ func (r *RobotInfo) InsertCron(cron, prompt string) error {
 	}
 
 	if t == "" {
-		return errors.New("unsupported robot type")
+		return 0, errors.New("unsupported robot type")
 	}
 
 	id, err = db.InsertCron(fmt.Sprintf("%s cron task", r.Robot.getUserName()), cron, targetId,
 		groupId, "", prompt, t, userId)
 	if err != nil {
 		logger.ErrorCtx(r.Ctx, "insert cron fail", "err", err)
-		return err
+		return 0, err
 	}
 
 	cronInfo, err := db.GetCronByID(id)
 	if err != nil {
 		logger.ErrorCtx(r.Ctx, "get cron by id fail", "err", err)
-		return err
+		return 0, err
 	}
 
-	return AddCron(cronInfo)
+	return id, AddCron(cronInfo)
 }
 
 func (r *RobotInfo) recPhoto() {

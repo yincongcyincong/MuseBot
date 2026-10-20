@@ -720,10 +720,12 @@ func (r *RobotInfo) executeConversationCronAction(action *param.ConversationConf
 		if action.Cron == "" || action.Prompt == "" {
 			return "", fmt.Errorf("cron expression and prompt are required")
 		}
-		if err := r.InsertCron(action.Cron, action.Prompt); err != nil {
+		cronID, err := r.InsertCron(action.Cron, action.Prompt)
+		if err != nil {
 			return "", err
 		}
-		return "created cron task", nil
+		// the id is what later delete/update calls need, so the model must see it
+		return fmt.Sprintf("created cron task %d (cron: %s, prompt: %s)", cronID, action.Cron, action.Prompt), nil
 	case "list":
 		crons, err := db.GetCronsByPage(1, 20, "", userId)
 		if err != nil {
