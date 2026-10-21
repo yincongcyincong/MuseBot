@@ -132,7 +132,7 @@ func NewRobot(options ...botOption) *RobotInfo {
 		r.Ctx = context.Background()
 	}
 
-	ctx, cancel := context.WithTimeout(r.Ctx, 15*time.Minute)
+	ctx, cancel := context.WithTimeout(r.Ctx, 30*time.Minute)
 
 	if ctx.Value("bot_name") == nil {
 		ctx = context.WithValue(ctx, "bot_name", conf.BaseConfInfo.BotName)

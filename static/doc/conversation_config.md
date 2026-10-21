@@ -39,7 +39,7 @@ export ALLOWED_COMMANDS=git,ls
 ```
 
 - `-allowed_commands`: comma-separated executable allowlist; equivalent environment variable is `ALLOWED_COMMANDS`.
-- `-command_timeout_sec`: maximum command runtime; equivalent environment variable is `COMMAND_TIMEOUT_SEC`.
+- `-command_timeout_sec`: maximum command runtime (default 600 seconds); equivalent environment variable is `COMMAND_TIMEOUT_SEC`.
 - Commands run inside the file root. A natural-language request may select an existing working directory inside that root.
 - A command outside the allowlist triggers an interactive approval: the user can add it to the allowlist and run it right away. Approvals are persisted to `data/runtime_boundary.json` and survive restarts.
 - `-task_auto_approve`: auto approve every task tool operation (command runs and runtime config changes) without the interactive `/y` confirmation; equivalent environment variable is `TASK_AUTO_APPROVE` (default `false`).

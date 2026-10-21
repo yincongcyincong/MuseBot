@@ -191,8 +191,13 @@ func TestParallelSearchErrorsAndRetryIdentity(t *testing.T) {
 	task := newSearchTask()
 	for _, query := range []string{"quota", "http error", "rpc error", "malformed", "no URLs", "large"} {
 		state, err := runSearchTool(task.Ctx, searchTaskAgent(task), query)
-		if err == nil || len(state.Results) != 0 {
-			t.Fatalf("%q did not surface failure: %v", query, err)
+		// search failures are fed back to the LLM as the tool result instead of
+		// aborting the request, so the agent can adapt or report them
+		if err != nil {
+			t.Fatalf("%q returned unexpected error: %v", query, err)
+		}
+		if len(state.Results) != 1 || !strings.Contains(state.Results[0].Content, "failed") {
+			t.Fatalf("%q did not surface failure as tool result: %+v", query, state.Results)
 		}
 	}
 	if _, err := runSearchTool(task.Ctx, searchTaskAgent(task), "retry"); err != nil {
@@ -230,8 +235,13 @@ func TestWebSearchDisabledAndInvalidProvider(t *testing.T) {
 	})
 	for _, provider := range []string{"disabled", "misspelled"} {
 		conf.ToolsConfInfo.WebSearchProvider = provider
-		if _, err := runSearchTool(context.Background(), searchTaskAgent(newSearchTask()), "query"); err == nil {
-			t.Fatal("disabled/invalid provider did not fail")
+		state, err := runSearchTool(context.Background(), searchTaskAgent(newSearchTask()), "query")
+		// provider errors are fed back to the LLM instead of aborting the request
+		if err != nil {
+			t.Fatalf("%q search returned unexpected error: %v", provider, err)
+		}
+		if !strings.Contains(state.Results[0].Content, "failed") {
+			t.Fatalf("%q search did not surface failure as tool result: %+v", provider, state.Results)
 		}
 	}
 }
@@ -277,8 +287,13 @@ func TestParallelSearchRejectsInvalidQueriesBeforeNetwork(t *testing.T) {
 		return nil, fmt.Errorf("unexpected network")
 	})
 	for _, query := range []string{"", "  ", strings.Repeat("界", 257)} {
-		if _, err := runSearchTool(context.Background(), searchTaskAgent(newSearchTask()), query); err == nil {
-			t.Error("invalid query accepted")
+		state, err := runSearchTool(context.Background(), searchTaskAgent(newSearchTask()), query)
+		// invalid queries are fed back to the LLM so it can retry with a corrected query
+		if err != nil {
+			t.Fatalf("invalid query %q returned unexpected error: %v", query, err)
+		}
+		if !strings.Contains(state.Results[0].Content, "failed") {
+			t.Fatalf("invalid query %q did not surface failure as tool result: %+v", query, state.Results)
 		}
 	}
 }

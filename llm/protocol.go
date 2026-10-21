@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"strings"
 	"time"
@@ -156,13 +157,31 @@ func (s *LLMToolState) execute(ctx context.Context, l *LLM) error {
 		var property map[string]interface{}
 		if err := json.Unmarshal([]byte(call.Arguments), &property); err != nil {
 			logger.WarnCtx(l.Ctx, "tool arguments json unmarshal fail", "tool", call.Name, "args", call.Arguments, "err", err)
-			return ToolsJsonErr
+			// invalid arguments are fed back as the tool result so the LLM can
+			// correct them instead of aborting the whole request
+			s.Results = append(s.Results, LLMToolResult{
+				ID:      call.ID,
+				Content: fmt.Sprintf("tool %s failed: invalid arguments: %v", call.Name, err),
+			})
+			continue
 		}
 
 		content, err := l.ExecMcpReq(ctx, call.Name, property)
 		if err != nil {
+			// a dead context means the request itself is being torn down, so
+			// there is no point in feeding the failure back to the LLM
+			if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+				return err
+			}
 			logger.ErrorCtx(ctx, "execute tool fail", "toolId", call.ID, "tool", call.Name, "err", err)
-			return err
+			// tool failures are fed back as the tool result so the LLM can adapt
+			// (different command, tool, or answer in the summary); only LLM
+			// request errors abort the request
+			s.Results = append(s.Results, LLMToolResult{
+				ID:      call.ID,
+				Content: fmt.Sprintf("tool %s failed: %v", call.Name, err),
+			})
+			continue
 		}
 		s.Results = append(s.Results, LLMToolResult{ID: call.ID, Content: content})
 	}

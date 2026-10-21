@@ -111,6 +111,9 @@ func (l *LLM) CallLLM() error {
 	}
 	var err error
 	for attempt := 0; attempt < retryTimes; attempt++ {
+		if attempt > 0 {
+			time.Sleep(time.Duration(conf.BaseConfInfo.LLMRetryInterval) * time.Millisecond)
+		}
 		if conf.BaseConfInfo.IsStreaming {
 			err = l.LLMClient.Send(l.Ctx, l)
 		} else {
@@ -124,6 +127,11 @@ func (l *LLM) CallLLM() error {
 			}
 		}
 		if err == nil {
+			break
+		}
+		// a cancelled or expired context fails every attempt instantly, so
+		// retrying cannot succeed; surface the error right away
+		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 			break
 		}
 		logger.WarnCtx(l.Ctx, "llm request fail, retrying", "attempt", attempt+1, "err", err)

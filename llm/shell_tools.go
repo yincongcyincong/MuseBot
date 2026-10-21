@@ -20,6 +20,9 @@ import (
 const (
 	taskCommandMaxOutputBytes = 16 << 10
 	taskCommandMaxTimeoutSec  = 600
+	// after the timeout kills the shell, pip/npm grandchildren keep the stdout
+	// pipe open; WaitDelay bounds how long Run waits for the pipe to close
+	taskCommandKillGrace = 10 * time.Second
 )
 
 type taskShellResult struct {
@@ -94,6 +97,9 @@ func (l *LLM) executeTaskShellTool(ctx context.Context, property map[string]inte
 	command.Dir = workingDir
 	command.Stdout = &stdout
 	command.Stderr = &stderr
+	// the timeout only kills the direct child shell; grandchildren inherit the
+	// stdout pipe and would block Wait forever without this grace bound
+	command.WaitDelay = taskCommandKillGrace
 	runErr := command.Run()
 
 	result := taskShellResult{
@@ -147,7 +153,7 @@ func taskCommandArgs(property map[string]interface{}) ([]string, error) {
 
 func taskCommandTimeout() int {
 	if conf.ToolsConfInfo.CommandTimeoutSec <= 0 {
-		return 60
+		return taskCommandMaxTimeoutSec
 	}
 	return minInt(conf.ToolsConfInfo.CommandTimeoutSec, taskCommandMaxTimeoutSec)
 }

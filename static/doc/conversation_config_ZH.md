@@ -34,7 +34,7 @@ export ALLOWED_COMMANDS=git,ls
 ```
 
 * `-allowed_commands`：逗号分隔的可执行文件白名单，等价环境变量是 `ALLOWED_COMMANDS`。
-* `-command_timeout_sec`：单次命令最长执行时间，等价环境变量是 `COMMAND_TIMEOUT_SEC`。
+* `-command_timeout_sec`：单次命令最长执行时间（默认 600 秒），等价环境变量是 `COMMAND_TIMEOUT_SEC`。
 * 命令在文件根目录内执行；也可以通过自然语言指定根目录内的已存在工作目录。
 * 不在白名单里的命令会触发交互审批：用户批准后该命令会加入白名单并立即执行。审批结果持久化到 `data/runtime_boundary.json`，重启后仍然生效。
 * `-task_auto_approve`：自动同意所有任务工具操作（命令执行、配置修改），无需交互输入 `/y` 确认；等价环境变量是 `TASK_AUTO_APPROVE`（默认 `false`）。

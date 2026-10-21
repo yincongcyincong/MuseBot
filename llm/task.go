@@ -2,9 +2,11 @@ package llm
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/sashabaranov/go-openai"
 	"github.com/yincongcyincong/MuseBot/conf"
@@ -186,9 +188,17 @@ func (d *LLMTaskReq) retryTaskRequest(stage string, fn func() error) error {
 	}
 	var err error
 	for attempt := 0; attempt < retryTimes; attempt++ {
+		if attempt > 0 {
+			time.Sleep(time.Duration(conf.BaseConfInfo.LLMRetryInterval) * time.Millisecond)
+		}
 		err = fn()
 		if err == nil {
 			return nil
+		}
+		// a cancelled or expired context fails every attempt instantly, so
+		// retrying cannot succeed; surface the error right away
+		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+			return err
 		}
 		logger.WarnCtx(d.Ctx, "task llm request fail, retrying", "stage", stage, "attempt", attempt+1, "err", err)
 	}
