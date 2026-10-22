@@ -259,12 +259,7 @@ func (s *SlackRobot) sendChatMessage() {
 }
 
 func (s *SlackRobot) executeLLM() {
-	messageChan := &MsgChan{
-		NormalMessageChan: make(chan *param.MsgInfo),
-	}
-	go s.Robot.ExecLLM(s.Prompt, messageChan)
-
-	go s.Robot.HandleUpdate(messageChan, "mp3")
+	s.Robot.runLLM(s, "mp3", false)
 }
 
 func (s *SlackRobot) downloadSlackFile(url string) ([]byte, error) {
@@ -289,40 +284,8 @@ func (s *SlackRobot) downloadSlackFile(url string) ([]byte, error) {
 
 func (s *SlackRobot) sendImg() {
 	s.Robot.TalkingPreCheck(func() {
-		chatId, msgId, _ := s.Robot.GetChatIdAndMsgIdAndUserID()
-
-		prompt := s.Prompt
-		prompt = utils.ReplaceCommand(prompt, "/photo", s.BotName)
-		if prompt == "" {
-			logger.Warn("prompt is empty")
-			s.Robot.SendMsg(chatId, i18n.GetMessage("photo_empty_content", nil), msgId, tgbotapi.ModeMarkdown, nil)
-			return
-		}
-
-		var err error
-		lastImageContent := s.ImageContent
-		if len(lastImageContent) == 0 && strings.Contains(s.Command, "edit_photo") {
-			lastImageContent, err = s.Robot.GetLastImageContent()
-			if err != nil {
-				logger.Warn("get last image record fail", "err", err)
-			}
-		}
-
-		imageContent, totalToken, err := s.Robot.CreatePhoto(prompt, lastImageContent)
-		if err != nil {
-			logger.ErrorCtx(s.Robot.Ctx, "generate image fail", "err", err)
-			s.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
-			return
-		}
-
-		err = s.sendMedia(imageContent, utils.DetectImageFormat(imageContent), "image")
-		if err != nil {
-			logger.ErrorCtx(s.Robot.Ctx, "send image fail", "err", err)
-			s.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
-			return
-		}
-
-		s.Robot.saveRecord(imageContent, lastImageContent, param.ImageRecordType, totalToken)
+		s.Prompt = utils.ReplaceCommand(s.Prompt, "/photo", s.BotName)
+		s.Robot.generateMedia(s, mediaImage)
 	})
 }
 
@@ -363,34 +326,8 @@ func (s *SlackRobot) sendMedia(media []byte, contentType, sType string) error {
 
 func (s *SlackRobot) sendVideo() {
 	s.Robot.TalkingPreCheck(func() {
-		chatId, replyToMessageID, _ := s.Robot.GetChatIdAndMsgIdAndUserID()
-
-		prompt := s.Prompt
-		prompt = utils.ReplaceCommand(prompt, "/video", s.BotName)
-		if prompt == "" {
-			logger.Warn("prompt is empty")
-			s.Robot.SendMsg(chatId, i18n.GetMessage("video_empty_content", nil),
-				replyToMessageID, tgbotapi.ModeMarkdown, nil)
-			return
-		}
-
-		var err error
-		imageContent := s.ImageContent
-		videoContent, totalToken, err := s.Robot.CreateVideo(prompt, imageContent)
-		if err != nil {
-			logger.ErrorCtx(s.Robot.Ctx, "generate video failed", "err", err)
-			s.Robot.SendMsg(chatId, err.Error(), replyToMessageID, tgbotapi.ModeMarkdown, nil)
-			return
-		}
-
-		err = s.sendMedia(videoContent, utils.DetectVideoMimeType(videoContent), "video")
-		if err != nil {
-			logger.ErrorCtx(s.Robot.Ctx, "send video failed", "err", err)
-			s.Robot.SendMsg(chatId, err.Error(), replyToMessageID, tgbotapi.ModeMarkdown, nil)
-			return
-		}
-
-		s.Robot.saveRecord(videoContent, imageContent, param.VideoRecordType, totalToken)
+		s.Prompt = utils.ReplaceCommand(s.Prompt, "/video", s.BotName)
+		s.Robot.generateMedia(s, mediaVideo)
 	})
 }
 

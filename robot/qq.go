@@ -233,39 +233,7 @@ func (q *QQRobot) requestLLM(content string) {
 
 func (q *QQRobot) sendImg() {
 	q.Robot.TalkingPreCheck(func() {
-		chatId, msgId, _ := q.Robot.GetChatIdAndMsgIdAndUserID()
-
-		prompt := strings.TrimSpace(q.Prompt)
-		if prompt == "" {
-			logger.ErrorCtx(q.Robot.Ctx, "prompt is empty")
-			q.Robot.SendMsg(chatId, i18n.GetMessage("photo_empty_content", nil), msgId, tgbotapi.ModeMarkdown, nil)
-			return
-		}
-
-		var err error
-		lastImageContent := q.ImageContent
-		if len(lastImageContent) == 0 && strings.Contains(q.Command, "edit_photo") {
-			lastImageContent, err = q.Robot.GetLastImageContent()
-			if err != nil {
-				logger.ErrorCtx(q.Robot.Ctx, "get last image record fail", "err", err)
-			}
-		}
-
-		imageContent, totalToken, err := q.Robot.CreatePhoto(prompt, lastImageContent)
-		if err != nil {
-			logger.ErrorCtx(q.Robot.Ctx, "generate image fail", "err", err)
-			q.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
-			return
-		}
-
-		err = q.sendMedia(imageContent, utils.DetectImageFormat(imageContent), "image")
-		if err != nil {
-			logger.ErrorCtx(q.Robot.Ctx, "send media fail", "err", err)
-			q.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
-			return
-		}
-
-		q.Robot.saveRecord(imageContent, lastImageContent, param.ImageRecordType, totalToken)
+		q.Robot.generateMedia(q, mediaImage)
 	})
 }
 
@@ -301,6 +269,9 @@ func (q *QQRobot) sendMedia(media []byte, contentType, sType string) error {
 	return nil
 }
 
+// sendVideo keeps its own body: unlike the other platforms it re-downloads the
+// message attachment as the image-to-video source instead of reusing
+// ImageContent.
 func (q *QQRobot) sendVideo() {
 	// 检查 prompt
 	q.Robot.TalkingPreCheck(func() {
@@ -352,20 +323,7 @@ func (q *QQRobot) sendChatMessage() {
 }
 
 func (q *QQRobot) executeLLM() {
-	var msgChan *MsgChan
-	if conf.BaseConfInfo.IsStreaming {
-		msgChan = &MsgChan{
-			StrMessageChan: make(chan string),
-		}
-	} else {
-		msgChan = &MsgChan{
-			NormalMessageChan: make(chan *param.MsgInfo),
-		}
-	}
-	go q.Robot.HandleUpdate(msgChan, "silk")
-
-	go q.Robot.ExecLLM(q.Prompt, msgChan)
-
+	q.Robot.runLLM(q, "silk", true)
 }
 
 type UploadFileRequest struct {

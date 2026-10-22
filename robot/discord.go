@@ -237,13 +237,7 @@ func (d *DiscordRobot) requestLLM(content string) {
 }
 
 func (d *DiscordRobot) executeLLM() {
-	messageChan := &MsgChan{
-		NormalMessageChan: make(chan *param.MsgInfo),
-	}
-
-	go d.Robot.ExecLLM(d.Prompt, messageChan)
-
-	go d.Robot.HandleUpdate(messageChan, "mp3")
+	d.Robot.runLLM(d, "mp3", false)
 }
 
 func (d *DiscordRobot) sendTextStream(messageChan *MsgChan) {
@@ -436,42 +430,12 @@ func (d *DiscordRobot) sendChatMessage() {
 
 func (d *DiscordRobot) sendImg() {
 	d.Robot.TalkingPreCheck(func() {
-		chatId, msgId, _ := d.Robot.GetChatIdAndMsgIdAndUserID()
-
-		prompt := strings.TrimSpace(d.getPrompt())
-		if prompt == "" {
-			d.Robot.SendMsg(chatId, i18n.GetMessage("photo_empty_content", nil),
-				msgId, tgbotapi.ModeMarkdown, nil)
-			return
+		// show the thinking placeholder only when there is something to create
+		if strings.TrimSpace(d.Prompt) != "" {
+			chatId, msgId, _ := d.Robot.GetChatIdAndMsgIdAndUserID()
+			d.Robot.SendMsg(chatId, i18n.GetMessage("thinking", nil), msgId, tgbotapi.ModeMarkdown, nil)
 		}
-
-		d.Robot.SendMsg(chatId, i18n.GetMessage("thinking", nil),
-			msgId, tgbotapi.ModeMarkdown, nil)
-
-		var lastImageContent = d.ImageContent
-		var err error
-		if len(lastImageContent) == 0 && strings.Contains(d.Command, "edit_photo") {
-			lastImageContent, err = d.Robot.GetLastImageContent()
-			if err != nil {
-				logger.WarnCtx(d.Robot.Ctx, "get last image record fail", "err", err)
-			}
-		}
-
-		imageContent, totalToken, err := d.Robot.CreatePhoto(prompt, lastImageContent)
-		if err != nil {
-			logger.WarnCtx(d.Robot.Ctx, "generate image fail", "err", err)
-			d.Robot.SendMsg(chatId, err.Error(), msgId, "", nil)
-			return
-		}
-
-		err = d.sendMedia(imageContent, utils.DetectImageFormat(imageContent), "image")
-		if err != nil {
-			logger.WarnCtx(d.Robot.Ctx, "send image fail", "err", err)
-			d.Robot.SendMsg(chatId, err.Error(), msgId, "", nil)
-			return
-		}
-
-		d.Robot.saveRecord(imageContent, lastImageContent, param.ImageRecordType, totalToken)
+		d.Robot.generateMedia(d, mediaImage)
 	})
 }
 
@@ -541,34 +505,12 @@ func (d *DiscordRobot) sendMedia(media []byte, contentType, sType string) error 
 
 func (d *DiscordRobot) sendVideo() {
 	d.Robot.TalkingPreCheck(func() {
-		chatId, msgId, _ := d.Robot.GetChatIdAndMsgIdAndUserID()
-
-		prompt := strings.TrimSpace(d.getPrompt())
-		if prompt == "" {
-			d.Robot.SendMsg(chatId, i18n.GetMessage("video_empty_content", nil),
-				msgId, tgbotapi.ModeMarkdown, nil)
-			return
+		// show the thinking placeholder only when there is something to create
+		if strings.TrimSpace(d.Prompt) != "" {
+			chatId, msgId, _ := d.Robot.GetChatIdAndMsgIdAndUserID()
+			d.Robot.SendMsg(chatId, i18n.GetMessage("thinking", nil), msgId, tgbotapi.ModeMarkdown, nil)
 		}
-
-		d.Robot.SendMsg(chatId, i18n.GetMessage("thinking", nil),
-			msgId, tgbotapi.ModeMarkdown, nil)
-
-		var imageContent = d.ImageContent
-		videoContent, totalToken, err := d.Robot.CreateVideo(prompt, imageContent)
-		if err != nil {
-			logger.WarnCtx(d.Robot.Ctx, "generate video fail", "err", err)
-			d.Robot.SendMsg(chatId, err.Error(), msgId, "", nil)
-			return
-		}
-
-		err = d.sendMedia(videoContent, utils.DetectVideoMimeType(videoContent), "video")
-		if err != nil {
-			logger.WarnCtx(d.Robot.Ctx, "send video fail", "err", err)
-			d.Robot.SendMsg(chatId, err.Error(), msgId, "", nil)
-			return
-		}
-
-		d.Robot.saveRecord(videoContent, imageContent, param.VideoRecordType, totalToken)
+		d.Robot.generateMedia(d, mediaVideo)
 	})
 }
 

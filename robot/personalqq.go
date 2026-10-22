@@ -10,7 +10,6 @@ import (
 	"strings"
 	"time"
 
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/json-iterator/go"
 	"github.com/json-iterator/go/extra"
 	"github.com/yincongcyincong/MuseBot/conf"
@@ -164,71 +163,14 @@ func (q *PersonalQQRobot) requestLLM(content string) {
 
 func (q *PersonalQQRobot) sendImg() {
 	q.Robot.TalkingPreCheck(func() {
-		chatId, msgId, _ := q.Robot.GetChatIdAndMsgIdAndUserID()
-
-		prompt := strings.TrimSpace(q.Prompt)
-		if prompt == "" {
-			logger.Warn("prompt is empty")
-			q.Robot.SendMsg(chatId, i18n.GetMessage("photo_empty_content", nil), msgId, tgbotapi.ModeMarkdown, nil)
-			return
-		}
-
-		var err error
-		var lastImageContent = q.ImageContent
-		if len(lastImageContent) == 0 && strings.Contains(q.Command, "edit_photo") {
-			lastImageContent, err = q.Robot.GetLastImageContent()
-			if err != nil {
-				logger.Warn("get last image record fail", "err", err)
-			}
-		}
-
-		imageContent, totalToken, err := q.Robot.CreatePhoto(prompt, lastImageContent)
-		if err != nil {
-			logger.Warn("generate image fail", "err", err)
-			q.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
-			return
-		}
-
-		_, err = q.SendMsg("", imageContent, nil, nil)
-		if err != nil {
-			logger.Warn("send image fail", "err", err)
-			q.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
-			return
-		}
-
-		q.Robot.saveRecord(imageContent, lastImageContent, param.ImageRecordType, totalToken)
+		q.Robot.generateMedia(q, mediaImage)
 	})
 }
 
 func (q *PersonalQQRobot) sendVideo() {
-	// 检查 prompt
 	q.Robot.TalkingPreCheck(func() {
-		chatId, msgId, _ := q.Robot.GetChatIdAndMsgIdAndUserID()
-
-		prompt := strings.TrimSpace(q.Prompt)
-		if prompt == "" {
-			logger.Warn("prompt is empty")
-			q.Robot.SendMsg(chatId, i18n.GetMessage("video_empty_content", nil), msgId, tgbotapi.ModeMarkdown, nil)
-			return
-		}
-
-		videoContent, totalToken, err := q.Robot.CreateVideo(prompt, q.ImageContent)
-		if err != nil {
-			logger.Warn("generate video fail", "err", err)
-			q.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
-			return
-		}
-
-		_, err = q.SendMsg("", nil, videoContent, nil)
-		if err != nil {
-			logger.Warn("send video fail", "err", err)
-			q.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
-			return
-		}
-
-		q.Robot.saveRecord(videoContent, q.ImageContent, param.VideoRecordType, totalToken)
+		q.Robot.generateMedia(q, mediaVideo)
 	})
-
 }
 
 func (q *PersonalQQRobot) sendChatMessage() {
@@ -239,14 +181,7 @@ func (q *PersonalQQRobot) sendChatMessage() {
 }
 
 func (q *PersonalQQRobot) executeLLM() {
-	msgChan := &MsgChan{
-		NormalMessageChan: make(chan *param.MsgInfo),
-	}
-
-	go q.Robot.HandleUpdate(msgChan, "mp3")
-
-	go q.Robot.ExecLLM(q.Prompt, msgChan)
-
+	q.Robot.runLLM(q, "mp3", false)
 }
 
 func (q *PersonalQQRobot) getPerMsgLen() int {

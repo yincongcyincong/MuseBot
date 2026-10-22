@@ -269,14 +269,7 @@ func (t *TelegramRobot) requestLLM(content string) {
 
 // executeLLM directly interact llm
 func (t *TelegramRobot) executeLLM() {
-	messageChan := &MsgChan{
-		NormalMessageChan: make(chan *param.MsgInfo),
-	}
-	go t.Robot.ExecLLM(t.Prompt, messageChan)
-
-	// send response message
-	go t.Robot.HandleUpdate(messageChan, "ogg_opus")
-
+	t.Robot.runLLM(t, "ogg_opus", false)
 }
 
 // sleepUtilNoLimit handle "Too Many Requests" error

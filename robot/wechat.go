@@ -14,10 +14,8 @@ import (
 	serverModel "github.com/ArtisanCloud/PowerWeChat/v3/src/work/server/handlers/models"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/yincongcyincong/MuseBot/conf"
-	"github.com/yincongcyincong/MuseBot/i18n"
 	"github.com/yincongcyincong/MuseBot/logger"
 	"github.com/yincongcyincong/MuseBot/metrics"
-	"github.com/yincongcyincong/MuseBot/param"
 	"github.com/yincongcyincong/MuseBot/utils"
 )
 
@@ -219,37 +217,7 @@ func (w *WechatRobot) sendImg() {
 			return
 		}
 
-		prompt := strings.TrimSpace(w.Prompt)
-		if prompt == "" {
-			logger.Warn("prompt is empty")
-			w.Robot.SendMsg(chatId, i18n.GetMessage("photo_empty_content", nil), msgId, tgbotapi.ModeMarkdown, nil)
-			return
-		}
-
-		lastImageContent := w.ImageContent
-		var err error
-		if len(lastImageContent) == 0 && strings.Contains(w.Command, "edit_photo") {
-			lastImageContent, err = w.Robot.GetLastImageContent()
-			if err != nil {
-				logger.Warn("get last image record fail", "err", err)
-			}
-		}
-
-		imageContent, totalToken, err := w.Robot.CreatePhoto(prompt, lastImageContent)
-		if err != nil {
-			logger.Error("create photo fail", "err", err)
-			w.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
-			return
-		}
-
-		err = w.sendMedia(imageContent, utils.DetectImageFormat(imageContent), "image")
-		if err != nil {
-			logger.ErrorCtx(w.Robot.Ctx, "save image fail", "err", err)
-			w.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
-			return
-		}
-
-		w.Robot.saveRecord(imageContent, lastImageContent, param.ImageRecordType, totalToken)
+		w.Robot.generateMedia(w, mediaImage)
 	})
 }
 
@@ -285,30 +253,8 @@ func (w *WechatRobot) sendVideo() {
 			return
 		}
 
-		prompt := strings.TrimSpace(w.Prompt)
-		if prompt == "" {
-			logger.Warn("prompt is empty")
-			w.Robot.SendMsg(chatId, i18n.GetMessage("video_empty_content", nil), msgId, tgbotapi.ModeMarkdown, nil)
-			return
-		}
-
-		videoContent, totalToken, err := w.Robot.CreateVideo(prompt, w.ImageContent)
-		if err != nil {
-			logger.Warn("generate video fail", "err", err)
-			w.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
-			return
-		}
-
-		err = w.sendMedia(videoContent, utils.DetectVideoMimeType(videoContent), "video")
-		if err != nil {
-			logger.Error("send video fail", "err", err)
-			w.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
-			return
-		}
-
-		w.Robot.saveRecord(videoContent, w.ImageContent, param.VideoRecordType, totalToken)
+		w.Robot.generateMedia(w, mediaVideo)
 	})
-
 }
 
 func (w *WechatRobot) sendChatMessage() {
@@ -319,13 +265,7 @@ func (w *WechatRobot) sendChatMessage() {
 }
 
 func (w *WechatRobot) executeLLM() {
-	messageChan := &MsgChan{
-		NormalMessageChan: make(chan *param.MsgInfo),
-	}
-	go w.Robot.HandleUpdate(messageChan, "amr")
-
-	go w.Robot.ExecLLM(w.Prompt, messageChan)
-
+	w.Robot.runLLM(w, "amr", false)
 }
 
 func (w *WechatRobot) GetLLMContent() interface{} {

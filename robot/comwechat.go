@@ -14,10 +14,8 @@ import (
 	serverModel "github.com/ArtisanCloud/PowerWeChat/v3/src/work/server/handlers/models"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/yincongcyincong/MuseBot/conf"
-	"github.com/yincongcyincong/MuseBot/i18n"
 	"github.com/yincongcyincong/MuseBot/logger"
 	"github.com/yincongcyincong/MuseBot/metrics"
-	"github.com/yincongcyincong/MuseBot/param"
 	"github.com/yincongcyincong/MuseBot/utils"
 )
 
@@ -170,39 +168,7 @@ func (c *ComWechatRobot) requestLLM(content string) {
 
 func (c *ComWechatRobot) sendImg() {
 	c.Robot.TalkingPreCheck(func() {
-		chatId, msgId, _ := c.Robot.GetChatIdAndMsgIdAndUserID()
-
-		prompt := strings.TrimSpace(c.Prompt)
-		if prompt == "" {
-			logger.Warn("prompt is empty")
-			c.Robot.SendMsg(chatId, i18n.GetMessage("photo_empty_content", nil), msgId, tgbotapi.ModeMarkdown, nil)
-			return
-		}
-
-		lastImageContent := c.ImageContent
-		var err error
-		if len(lastImageContent) == 0 && strings.Contains(c.Command, "edit_photo") {
-			lastImageContent, err = c.Robot.GetLastImageContent()
-			if err != nil {
-				logger.Warn("get last image record fail", "err", err)
-			}
-		}
-
-		imageContent, totalToken, err := c.Robot.CreatePhoto(prompt, lastImageContent)
-		if err != nil {
-			logger.Warn("generate image fail", "err", err)
-			c.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
-			return
-		}
-
-		err = c.sendMedia(imageContent, utils.DetectImageFormat(imageContent), "image")
-		if err != nil {
-			logger.Warn("send image fail", "err", err)
-			c.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
-			return
-		}
-
-		c.Robot.saveRecord(imageContent, lastImageContent, param.ImageRecordType, totalToken)
+		c.Robot.generateMedia(c, mediaImage)
 	})
 }
 
@@ -272,34 +238,9 @@ func (c *ComWechatRobot) sendMedia(mediaContent []byte, contentType, sType strin
 }
 
 func (c *ComWechatRobot) sendVideo() {
-	// 检查 prompt
 	c.Robot.TalkingPreCheck(func() {
-		chatId, msgId, _ := c.Robot.GetChatIdAndMsgIdAndUserID()
-
-		prompt := strings.TrimSpace(c.Prompt)
-		if prompt == "" {
-			logger.Warn("prompt is empty")
-			c.Robot.SendMsg(chatId, i18n.GetMessage("photo_empty_content", nil), msgId, tgbotapi.ModeMarkdown, nil)
-			return
-		}
-
-		videoContent, totalToken, err := c.Robot.CreateVideo(prompt, c.ImageContent)
-		if err != nil {
-			logger.Warn("generate video fail", "err", err)
-			c.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
-			return
-		}
-
-		err = c.sendMedia(videoContent, utils.DetectVideoMimeType(videoContent), "video")
-		if err != nil {
-			logger.Warn("generate video fail", "err", err)
-			c.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
-			return
-		}
-
-		c.Robot.saveRecord(videoContent, c.ImageContent, param.VideoRecordType, totalToken)
+		c.Robot.generateMedia(c, mediaVideo)
 	})
-
 }
 
 func (c *ComWechatRobot) sendChatMessage() {
@@ -310,13 +251,7 @@ func (c *ComWechatRobot) sendChatMessage() {
 }
 
 func (c *ComWechatRobot) executeLLM() {
-	messageChan := &MsgChan{
-		NormalMessageChan: make(chan *param.MsgInfo),
-	}
-	go c.Robot.HandleUpdate(messageChan, "amr")
-
-	go c.Robot.ExecLLM(c.Prompt, messageChan)
-
+	c.Robot.runLLM(c, "amr", false)
 }
 
 func (c *ComWechatRobot) getPerMsgLen() int {

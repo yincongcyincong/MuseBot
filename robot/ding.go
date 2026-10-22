@@ -20,7 +20,6 @@ import (
 	dingtalkrobot "github.com/alibabacloud-go/dingtalk/robot_1_0"
 	teaUtil "github.com/alibabacloud-go/tea-utils/v2/service"
 	"github.com/alibabacloud-go/tea/tea"
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/open-dingtalk/dingtalk-stream-sdk-go/chatbot"
 	"github.com/open-dingtalk/dingtalk-stream-sdk-go/client"
 	dingLogger "github.com/open-dingtalk/dingtalk-stream-sdk-go/logger"
@@ -142,39 +141,7 @@ func (d *DingRobot) requestLLM(content string) {
 
 func (d *DingRobot) sendImg() {
 	d.Robot.TalkingPreCheck(func() {
-		chatId, msgId, _ := d.Robot.GetChatIdAndMsgIdAndUserID()
-
-		prompt := strings.TrimSpace(d.Prompt)
-		if prompt == "" {
-			logger.ErrorCtx(d.Robot.Ctx, "prompt is empty")
-			d.Robot.SendMsg(chatId, i18n.GetMessage("photo_empty_content", nil), msgId, tgbotapi.ModeMarkdown, nil)
-			return
-		}
-
-		var err error
-		lastImageContent := d.ImageContent
-		if len(lastImageContent) == 0 && strings.Contains(d.Command, "edit_photo") {
-			lastImageContent, err = d.Robot.GetLastImageContent()
-			if err != nil {
-				logger.ErrorCtx(d.Robot.Ctx, "get last image record fail", "err", err)
-			}
-		}
-
-		imageContent, totalToken, err := d.Robot.CreatePhoto(prompt, lastImageContent)
-		if err != nil {
-			logger.ErrorCtx(d.Robot.Ctx, "generate image fail", "err", err)
-			d.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
-			return
-		}
-
-		err = d.sendMedia(imageContent, utils.DetectImageFormat(imageContent), "image")
-		if err != nil {
-			logger.ErrorCtx(d.Robot.Ctx, "send media fail", "err", err)
-			d.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
-			return
-		}
-
-		d.Robot.saveRecord(imageContent, lastImageContent, param.ImageRecordType, totalToken)
+		d.Robot.generateMedia(d, mediaImage)
 	})
 }
 
@@ -214,36 +181,9 @@ func (d *DingRobot) sendMedia(media []byte, contentType, sType string) error {
 }
 
 func (d *DingRobot) sendVideo() {
-	// 检查 prompt
 	d.Robot.TalkingPreCheck(func() {
-		chatId, msgId, _ := d.Robot.GetChatIdAndMsgIdAndUserID()
-
-		prompt := strings.TrimSpace(d.Prompt)
-		if prompt == "" {
-			logger.ErrorCtx(d.Robot.Ctx, "prompt is empty")
-			d.Robot.SendMsg(chatId, i18n.GetMessage("video_empty_content", nil), msgId, tgbotapi.ModeMarkdown, nil)
-			return
-		}
-
-		imageContent := d.ImageContent
-		videoContent, totalToken, err := d.Robot.CreateVideo(prompt, imageContent)
-		if err != nil {
-			logger.ErrorCtx(d.Robot.Ctx, "generate video fail", "err", err)
-			d.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
-			return
-		}
-
-		err = d.sendMedia(videoContent, utils.DetectVideoMimeType(videoContent), "video")
-		if err != nil {
-			logger.ErrorCtx(d.Robot.Ctx, "send video fail", "err", err)
-			d.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
-			return
-		}
-
-		d.Robot.saveRecord(videoContent, imageContent, param.VideoRecordType, totalToken)
-
+		d.Robot.generateMedia(d, mediaVideo)
 	})
-
 }
 
 func (d *DingRobot) sendChatMessage() {
@@ -254,13 +194,7 @@ func (d *DingRobot) sendChatMessage() {
 }
 
 func (d *DingRobot) executeLLM() {
-	messageChan := &MsgChan{
-		NormalMessageChan: make(chan *param.MsgInfo),
-	}
-	go d.Robot.HandleUpdate(messageChan, "amr")
-
-	go d.Robot.ExecLLM(d.Prompt, messageChan)
-
+	d.Robot.runLLM(d, "amr", false)
 }
 
 func (d *DingRobot) GetMessageContent() (bool, error) {

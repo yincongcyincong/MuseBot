@@ -136,6 +136,86 @@ func (b *baseRobot) setImage(image []byte)     { b.ImageContent = image }
 func (b *baseRobot) getDoc() *param.DocInfo    { return b.DocContent }
 func (b *baseRobot) setDoc(doc *param.DocInfo) { b.DocContent = doc }
 
+// mediaKind selects which generation flow generateMedia runs.
+type mediaKind int
+
+const (
+	mediaImage mediaKind = iota
+	mediaVideo
+)
+
+// generateMedia is the shared /photo and /video flow: validate the prompt, fall
+// back to the latest chat image for edit_photo, create the media, send it via
+// robot.sendMedia and save the record. Platform wrappers keep their own
+// pre-checks (feature gates, thinking message, prompt rewrite) around this.
+func (r *RobotInfo) generateMedia(robot Robot, m mediaKind) {
+	chatId, msgId, _ := r.GetChatIdAndMsgIdAndUserID()
+
+	emptyKey := "photo_empty_content"
+	if m == mediaVideo {
+		emptyKey = "video_empty_content"
+	}
+	prompt := strings.TrimSpace(robot.getPrompt())
+	if prompt == "" {
+		logger.WarnCtx(r.Ctx, "prompt is empty")
+		r.SendMsg(chatId, i18n.GetMessage(emptyKey, nil), msgId, tgbotapi.ModeMarkdown, nil)
+		return
+	}
+
+	lastImageContent := robot.getImage()
+	var err error
+	if m == mediaImage && len(lastImageContent) == 0 && strings.Contains(robot.getCommand(), "edit_photo") {
+		lastImageContent, err = r.GetLastImageContent()
+		if err != nil {
+			logger.WarnCtx(r.Ctx, "get last image record fail", "err", err)
+		}
+	}
+
+	var content []byte
+	var totalToken int
+	if m == mediaImage {
+		content, totalToken, err = r.CreatePhoto(prompt, lastImageContent)
+	} else {
+		content, totalToken, err = r.CreateVideo(prompt, lastImageContent)
+	}
+	if err != nil {
+		logger.WarnCtx(r.Ctx, "generate media fail", "err", err)
+		r.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
+		return
+	}
+
+	contentType, sType, recordType := utils.DetectImageFormat(content), "image", param.ImageRecordType
+	if m == mediaVideo {
+		contentType, sType, recordType = utils.DetectVideoMimeType(content), "video", param.VideoRecordType
+	}
+	if err = robot.sendMedia(content, contentType, sType); err != nil {
+		logger.WarnCtx(r.Ctx, "send media fail", "err", err)
+		r.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
+		return
+	}
+
+	r.saveRecord(content, lastImageContent, recordType, totalToken)
+}
+
+// runLLM builds the response channel, then runs the LLM request and the reply
+// pump in the background. streaming opts into the streaming channel when
+// IsStreaming is enabled; audioFormat is the voice format HandleUpdate renders.
+func (r *RobotInfo) runLLM(robot Robot, audioFormat string, streaming bool) {
+	var msgChan *MsgChan
+	if streaming && conf.BaseConfInfo.IsStreaming {
+		msgChan = &MsgChan{
+			StrMessageChan: make(chan string),
+		}
+	} else {
+		msgChan = &MsgChan{
+			NormalMessageChan: make(chan *param.MsgInfo),
+		}
+	}
+
+	go r.HandleUpdate(msgChan, audioFormat)
+	go r.ExecLLM(robot.getPrompt(), msgChan)
+}
+
 type StreamRobot interface {
 	sendTextStream(messageChan *MsgChan)
 }

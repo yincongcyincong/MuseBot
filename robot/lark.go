@@ -139,39 +139,7 @@ func (l *LarkRobot) requestLLM(content string) {
 
 func (l *LarkRobot) sendImg() {
 	l.Robot.TalkingPreCheck(func() {
-		chatId, msgId, _ := l.Robot.GetChatIdAndMsgIdAndUserID()
-
-		prompt := strings.TrimSpace(l.Prompt)
-		if prompt == "" {
-			logger.Warn("prompt is empty")
-			l.Robot.SendMsg(chatId, i18n.GetMessage("photo_empty_content", nil), msgId, tgbotapi.ModeMarkdown, nil)
-			return
-		}
-
-		lastImageContent := l.ImageContent
-		var err error
-		if len(lastImageContent) == 0 && strings.Contains(l.Command, "edit_photo") {
-			lastImageContent, err = l.Robot.GetLastImageContent()
-			if err != nil {
-				logger.Warn("get last image record fail", "err", err)
-			}
-		}
-
-		imageContent, totalToken, err := l.Robot.CreatePhoto(prompt, lastImageContent)
-		if err != nil {
-			logger.Warn("generate image fail", "err", err)
-			l.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
-			return
-		}
-
-		err = l.sendMedia(imageContent, utils.DetectImageFormat(imageContent), "image")
-		if err != nil {
-			logger.Warn("send image fail", "err", err)
-			l.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
-			return
-		}
-
-		l.Robot.saveRecord(imageContent, lastImageContent, param.ImageRecordType, totalToken)
+		l.Robot.generateMedia(l, mediaImage)
 	})
 }
 
@@ -219,34 +187,9 @@ func (l *LarkRobot) sendMedia(media []byte, contentType, sType string) error {
 }
 
 func (l *LarkRobot) sendVideo() {
-	// 检查 prompt
 	l.Robot.TalkingPreCheck(func() {
-		chatId, msgId, _ := l.Robot.GetChatIdAndMsgIdAndUserID()
-
-		prompt := strings.TrimSpace(l.Prompt)
-		if prompt == "" {
-			logger.Warn("prompt is empty")
-			l.Robot.SendMsg(chatId, i18n.GetMessage("video_empty_content", nil), msgId, tgbotapi.ModeMarkdown, nil)
-			return
-		}
-
-		videoContent, totalToken, err := l.Robot.CreateVideo(prompt, l.ImageContent)
-		if err != nil {
-			logger.Warn("generate video fail", "err", err)
-			l.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
-			return
-		}
-
-		err = l.sendMedia(videoContent, utils.DetectVideoMimeType(videoContent), "video")
-		if err != nil {
-			logger.Warn("send video fail", "err", err)
-			l.Robot.SendMsg(chatId, err.Error(), msgId, tgbotapi.ModeMarkdown, nil)
-			return
-		}
-
-		l.Robot.saveRecord(videoContent, l.ImageContent, param.VideoRecordType, totalToken)
+		l.Robot.generateMedia(l, mediaVideo)
 	})
-
 }
 
 func (l *LarkRobot) sendChatMessage() {
@@ -285,13 +228,7 @@ func (l *LarkRobot) sendTextStream(messageChan *MsgChan) {
 }
 
 func (l *LarkRobot) executeLLM() {
-	messageChan := &MsgChan{
-		NormalMessageChan: make(chan *param.MsgInfo),
-	}
-	go l.Robot.HandleUpdate(messageChan, "opus")
-
-	go l.Robot.ExecLLM(l.Prompt, messageChan)
-
+	l.Robot.runLLM(l, "opus", false)
 }
 
 func GetMarkdownContent(content string) string {
