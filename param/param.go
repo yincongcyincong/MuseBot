@@ -145,7 +145,6 @@ const (
 	RecModel   = "rec_model"
 	TtsType    = "tts_type"
 	TtsModel   = "tts_model"
-	RecPhoto   = "rec_photo"
 	CronList   = "cron_list"
 	CronDel    = "cron_del"
 	CronClear  = "cron_clear"

@@ -925,8 +925,6 @@ func (r *RobotInfo) ExecCmd(cmd string, defaultFunc func(), modeFunc func(string
 		r.Robot.sendVideo()
 	case param.Help, "/" + param.Help, "$" + param.Help:
 		r.sendHelpInfo()
-	case param.RecPhoto, "/" + param.RecPhoto, "$" + param.RecPhoto:
-		r.recPhoto()
 	case param.Task, "/" + param.Task, "$" + param.Task,
 		param.Mcp, "/" + param.Mcp, "$" + param.Mcp:
 		var emptyPromptFunc func()
@@ -1513,6 +1511,17 @@ func (r *RobotInfo) sendMultiAgent(emptyPromptFunc func()) {
 			return
 		}
 
+		// the image under discussion: the one attached to the task message,
+		// else the latest image in the user's chat context
+		images := make([][]byte, 0)
+		if len(r.Robot.getImage()) > 0 {
+			images = append(images, r.Robot.getImage())
+		} else if lastImage, err := r.GetLastImageContent(); err != nil {
+			logger.WarnCtx(r.Ctx, "get last image record fail", "err", err)
+		} else if len(lastImage) > 0 {
+			images = append(images, lastImage)
+		}
+
 		dpReq := &llm.LLMTaskReq{
 			Content:   prompt,
 			UserId:    userId,
@@ -1521,6 +1530,7 @@ func (r *RobotInfo) sendMultiAgent(emptyPromptFunc func()) {
 			PerMsgLen: r.Robot.getPerMsgLen(),
 			Cs:        r.cs,
 			Ctx:       r.Ctx,
+			Images:    images,
 			ConfigExecutor: func(action *param.ConversationConfigAction, approve llm.TaskApprovalFunc) (string, error) {
 				return r.executeConversationConfigAction(action, userId, approve)
 			},
@@ -2014,19 +2024,6 @@ func (r *RobotInfo) InsertCron(cron, prompt string) (int64, error) {
 	}
 
 	return id, AddCron(cronInfo)
-}
-
-func (r *RobotInfo) recPhoto() {
-	if len(r.Robot.getImage()) == 0 {
-		lastImageContent, err := r.GetLastImageContent()
-		if err != nil {
-			logger.ErrorCtx(r.Ctx, "get last image record fail", "err", err)
-			return
-		}
-		r.Robot.setImage(lastImageContent)
-	}
-
-	r.Robot.executeLLM()
 }
 
 func (r *RobotInfo) splitText(text string) []string {

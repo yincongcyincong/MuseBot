@@ -28,6 +28,10 @@ type LLMTaskReq struct {
 	Token       int
 	PerMsgLen   int
 
+	// Images carries the picture under discussion: the one attached to the
+	// task message, else the latest image in the user's chat history.
+	Images [][]byte
+
 	UserId string
 	ChatId string
 	MsgId  string
@@ -162,7 +166,11 @@ func (d *LLMTaskReq) newTaskLLM(prompt string, tool *conf.AgentInfo, streaming b
 		// resolve against previous conversations
 		llm.appendHistory(d.UserId)
 	}
-	llm.LLMClient.GetMessage(openai.ChatMessageRoleUser, prompt)
+	if len(d.Images) > 0 {
+		llm.LLMClient.GetImageMessage(d.Images, prompt)
+	} else {
+		llm.LLMClient.GetMessage(openai.ChatMessageRoleUser, prompt)
+	}
 	llm.LLMClient.GetModel(llm)
 	return llm
 }
