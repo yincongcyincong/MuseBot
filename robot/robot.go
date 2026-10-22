@@ -114,6 +114,28 @@ type Robot interface {
 	sendMedia(media []byte, contentType, sType string) error
 }
 
+// baseRobot carries the per-message state shared by every platform robot.
+// Platforms embed it and keep only the accessors whose source field differs
+// (e.g. getPerMsgLen, or getUserName on Web).
+type baseRobot struct {
+	Command      string
+	Prompt       string
+	UserName     string
+	ImageContent []byte
+	DocContent   *param.DocInfo
+	AudioContent []byte
+}
+
+func (b *baseRobot) setCommand(command string) { b.Command = command }
+func (b *baseRobot) getCommand() string        { return b.Command }
+func (b *baseRobot) setPrompt(prompt string)   { b.Prompt = prompt }
+func (b *baseRobot) getPrompt() string         { return b.Prompt }
+func (b *baseRobot) getUserName() string       { return b.UserName }
+func (b *baseRobot) getImage() []byte          { return b.ImageContent }
+func (b *baseRobot) setImage(image []byte)     { b.ImageContent = image }
+func (b *baseRobot) getDoc() *param.DocInfo    { return b.DocContent }
+func (b *baseRobot) setDoc(doc *param.DocInfo) { b.DocContent = doc }
+
 type StreamRobot interface {
 	sendTextStream(messageChan *MsgChan)
 }

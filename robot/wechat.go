@@ -40,17 +40,13 @@ type WechatRobot struct {
 	Robot *RobotInfo
 	App   *officialAccount.OfficialAccount
 
-	Command      string
-	Prompt       string
 	OriginPrompt string
-	ImageContent []byte
-	DocContent   *param.DocInfo
 	VoiceContent []byte
 
 	TextMsg  *serverModel.MessageText
 	VoiceMsg *serverModel.MessageVoice
 	ImageMsg *serverModel.MessageImage
-	UserName string
+	baseRobot
 }
 
 func StartWechatRobot() {
@@ -332,10 +328,6 @@ func (w *WechatRobot) executeLLM() {
 
 }
 
-func (w *WechatRobot) getPrompt() string {
-	return w.Prompt
-}
-
 func (w *WechatRobot) GetLLMContent() interface{} {
 	_, msgId, _ := w.Robot.GetChatIdAndMsgIdAndUserID()
 	for i := 0; i < 15; i++ {
@@ -409,40 +401,4 @@ func (w *WechatRobot) sendVoiceContent(voiceContent []byte, duration int) error 
 	}
 
 	return nil
-}
-
-func (w *WechatRobot) setCommand(command string) {
-	w.Command = command
-}
-
-func (w *WechatRobot) getCommand() string {
-	return w.Command
-}
-
-func (w *WechatRobot) getUserName() string {
-	return w.UserName
-}
-
-func (w *WechatRobot) setPrompt(prompt string) {
-	w.Prompt = prompt
-}
-
-func (w *WechatRobot) getAudio() []byte {
-	return w.VoiceContent
-}
-
-func (w *WechatRobot) getDoc() *param.DocInfo {
-	return w.DocContent
-}
-
-func (w *WechatRobot) setDoc(doc *param.DocInfo) {
-	w.DocContent = doc
-}
-
-func (w *WechatRobot) getImage() []byte {
-	return w.ImageContent
-}
-
-func (w *WechatRobot) setImage(image []byte) {
-	w.ImageContent = image
 }

@@ -17,14 +17,10 @@ import (
 )
 
 type Web struct {
-	Command      string
-	UserId       int64
-	RealUserId   string
-	Prompt       string
-	ImageContent []byte
-	DocContent   *param.DocInfo
-	AudioContent []byte
-	cs           *param.ContextState
+	UserId     int64
+	RealUserId string
+
+	cs *param.ContextState
 
 	OriginalPrompt string
 
@@ -32,18 +28,22 @@ type Web struct {
 	Flusher http.Flusher
 
 	Robot *RobotInfo
+
+	baseRobot
 }
 
 func NewWeb(command string, userId int64, realUserId, prompt, originalPrompt, fileName string, bodyData []byte, w http.ResponseWriter, flusher http.Flusher) *Web {
 	metrics.AppRequestCount.WithLabelValues("web").Inc()
 	web := &Web{
-		Command:        command,
 		UserId:         userId,
 		RealUserId:     realUserId,
-		Prompt:         prompt,
 		OriginalPrompt: originalPrompt,
-		W:              w,
-		Flusher:        flusher,
+		baseRobot: baseRobot{
+			Command: command,
+			Prompt:  prompt,
+		},
+		W:       w,
+		Flusher: flusher,
 		cs: &param.ContextState{
 			UseRecord: true,
 		},
@@ -253,30 +253,6 @@ func (web *Web) AddUserInfo() bool {
 	return true
 }
 
-func (web *Web) setPrompt(prompt string) {
-	web.Prompt = prompt
-}
-
-func (web *Web) getAudio() []byte {
-	return web.AudioContent
-}
-
-func (web *Web) getDoc() *param.DocInfo {
-	return web.DocContent
-}
-
-func (web *Web) setDoc(doc *param.DocInfo) {
-	web.DocContent = doc
-}
-
-func (web *Web) getImage() []byte {
-	return web.ImageContent
-}
-
-func (web *Web) setImage(image []byte) {
-	web.ImageContent = image
-}
-
 func (web *Web) checkValid() bool {
 	var err error
 	if web.AudioContent != nil {
@@ -295,10 +271,6 @@ func (web *Web) requestLLM(content string) {
 	web.Robot.ExecCmd(web.Command, web.sendChatMessage, nil, nil)
 }
 
-func (web *Web) getPrompt() string {
-	return web.Prompt
-}
-
 func (web *Web) getPerMsgLen() int {
 	return 1000000
 }
@@ -308,14 +280,6 @@ func (web *Web) sendVoiceContent(voiceContent []byte, duration int) error {
 		base64.StdEncoding.EncodeToString(voiceContent)))
 	web.Flusher.Flush()
 	return nil
-}
-
-func (web *Web) setCommand(command string) {
-	web.Command = command
-}
-
-func (web *Web) getCommand() string {
-	return web.Command
 }
 
 func (web *Web) getUserName() string {

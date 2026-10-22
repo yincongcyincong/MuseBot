@@ -34,14 +34,10 @@ type SlackRobot struct {
 
 	Robot   *RobotInfo
 	Client  *slack.Client
-	Command string
-	Prompt  string
 	BotName string
 
-	ImageContent []byte
-	DocContent   *param.DocInfo
 	VoiceContent []byte
-	UserName     string
+	baseRobot
 }
 
 func StartSlackRobot(ctx context.Context) {
@@ -443,10 +439,6 @@ func submissionHandler(callback *slack.InteractionCallback) {
 
 }
 
-func (s *SlackRobot) getPrompt() string {
-	return s.Prompt
-}
-
 func (s *SlackRobot) getPerMsgLen() int {
 	return 1800
 }
@@ -494,40 +486,4 @@ func (s *SlackRobot) sendVoiceContent(voiceContent []byte, duration int) error {
 	}
 
 	return nil
-}
-
-func (s *SlackRobot) setCommand(command string) {
-	s.Command = command
-}
-
-func (s *SlackRobot) getCommand() string {
-	return s.Command
-}
-
-func (s *SlackRobot) getUserName() string {
-	return s.UserName
-}
-
-func (s *SlackRobot) setPrompt(prompt string) {
-	s.Prompt = prompt
-}
-
-func (s *SlackRobot) getAudio() []byte {
-	return s.VoiceContent
-}
-
-func (s *SlackRobot) getDoc() *param.DocInfo {
-	return s.DocContent
-}
-
-func (s *SlackRobot) setDoc(doc *param.DocInfo) {
-	s.DocContent = doc
-}
-
-func (s *SlackRobot) getImage() []byte {
-	return s.ImageContent
-}
-
-func (s *SlackRobot) setImage(image []byte) {
-	s.ImageContent = image
 }

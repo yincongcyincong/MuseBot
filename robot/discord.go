@@ -49,13 +49,8 @@ type DiscordRobot struct {
 	Msg     *discordgo.MessageCreate
 	Inter   *discordgo.InteractionCreate
 
-	Robot        *RobotInfo
-	Prompt       string
-	Command      string
-	ImageContent []byte
-	DocContent   *param.DocInfo
-	AudioContent []byte
-	UserName     string
+	Robot *RobotInfo
+	baseRobot
 }
 
 func StartDiscordRobot(ctx context.Context) {
@@ -577,10 +572,6 @@ func (d *DiscordRobot) sendVideo() {
 	})
 }
 
-func (d *DiscordRobot) getPrompt() string {
-	return d.Prompt
-}
-
 func (d *DiscordRobot) getPerMsgLen() int {
 	return 1800
 }
@@ -914,40 +905,4 @@ func CloseTalk(vc *discordgo.VoiceConnection) {
 		})
 		volDialog.Token = 0
 	}
-}
-
-func (d *DiscordRobot) setCommand(command string) {
-	d.Command = command
-}
-
-func (d *DiscordRobot) getCommand() string {
-	return d.Command
-}
-
-func (d *DiscordRobot) getUserName() string {
-	return d.UserName
-}
-
-func (d *DiscordRobot) setPrompt(prompt string) {
-	d.Prompt = prompt
-}
-
-func (d *DiscordRobot) getAudio() []byte {
-	return d.AudioContent
-}
-
-func (d *DiscordRobot) getDoc() *param.DocInfo {
-	return d.DocContent
-}
-
-func (d *DiscordRobot) setDoc(doc *param.DocInfo) {
-	d.DocContent = doc
-}
-
-func (d *DiscordRobot) getImage() []byte {
-	return d.ImageContent
-}
-
-func (d *DiscordRobot) setImage(image []byte) {
-	d.ImageContent = image
 }

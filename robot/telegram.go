@@ -27,13 +27,8 @@ type TelegramRobot struct {
 	Update tgbotapi.Update
 	Bot    *tgbotapi.BotAPI
 
-	Robot        *RobotInfo
-	Prompt       string
-	Command      string
-	ImageContent []byte
-	DocContent   *param.DocInfo
-	AudioContent []byte
-	UserName     string
+	Robot *RobotInfo
+	baseRobot
 }
 
 func NewTelegramRobot(update tgbotapi.Update, bot *tgbotapi.BotAPI) *TelegramRobot {
@@ -1124,46 +1119,6 @@ func (t *TelegramRobot) sendVoiceContent(voiceContent []byte, duration int) erro
 	}
 
 	return nil
-}
-
-func (t *TelegramRobot) setCommand(command string) {
-	t.Command = command
-}
-
-func (t *TelegramRobot) getCommand() string {
-	return t.Command
-}
-
-func (t *TelegramRobot) getUserName() string {
-	return t.UserName
-}
-
-func (t *TelegramRobot) setPrompt(prompt string) {
-	t.Prompt = prompt
-}
-
-func (t *TelegramRobot) getAudio() []byte {
-	return t.AudioContent
-}
-
-func (t *TelegramRobot) getDoc() *param.DocInfo {
-	return t.DocContent
-}
-
-func (t *TelegramRobot) setDoc(doc *param.DocInfo) {
-	t.DocContent = doc
-}
-
-func (t *TelegramRobot) getImage() []byte {
-	return t.ImageContent
-}
-
-func (t *TelegramRobot) setImage(image []byte) {
-	t.ImageContent = image
-}
-
-func (t *TelegramRobot) getPrompt() string {
-	return t.Prompt
 }
 
 func (t *TelegramRobot) getPerMsgLen() int {

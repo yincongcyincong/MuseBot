@@ -40,13 +40,8 @@ type LarkRobot struct {
 	Robot   *RobotInfo
 	Client  *lark.Client
 
-	Command      string
-	Prompt       string
-	BotName      string
-	ImageContent []byte
-	DocContent   *param.DocInfo
-	AudioContent []byte
-	UserName     string
+	BotName string
+	baseRobot
 }
 
 func StartLarkRobot(ctx context.Context) {
@@ -508,10 +503,6 @@ func (l *LarkRobot) GetMessageContent() (bool, error) {
 	return botShowName == l.BotName, nil
 }
 
-func (l *LarkRobot) getPrompt() string {
-	return l.Prompt
-}
-
 func (l *LarkRobot) getPerMsgLen() int {
 	return 4500
 }
@@ -552,18 +543,6 @@ func (l *LarkRobot) sendVoiceContent(voiceContent []byte, duration int) error {
 	return err
 }
 
-func (l *LarkRobot) setCommand(command string) {
-	l.Command = command
-}
-
-func (l *LarkRobot) getCommand() string {
-	return l.Command
-}
-
-func (l *LarkRobot) getUserName() string {
-	return l.UserName
-}
-
 func (l *LarkRobot) getVideoInfo(videoContent []byte) (string, error) {
 	format := utils.DetectVideoMimeType(videoContent)
 	resp, err := l.Client.Im.V1.File.Create(l.Robot.Ctx, larkim.NewCreateFileReqBuilder().
@@ -595,28 +574,4 @@ func (l *LarkRobot) getImageInfo(imageContent []byte) (string, error) {
 	}
 
 	return larkcore.StringValue(resp.Data.ImageKey), nil
-}
-
-func (l *LarkRobot) setPrompt(prompt string) {
-	l.Prompt = prompt
-}
-
-func (l *LarkRobot) getAudio() []byte {
-	return l.AudioContent
-}
-
-func (l *LarkRobot) getDoc() *param.DocInfo {
-	return l.DocContent
-}
-
-func (l *LarkRobot) setDoc(doc *param.DocInfo) {
-	l.DocContent = doc
-}
-
-func (l *LarkRobot) getImage() []byte {
-	return l.ImageContent
-}
-
-func (l *LarkRobot) setImage(image []byte) {
-	l.ImageContent = image
 }

@@ -48,14 +48,9 @@ type DingRobot struct {
 	Client  *client.StreamClient
 	Message *chatbot.BotCallbackDataModel
 
-	Command      string
-	Prompt       string
 	BotName      string
 	OriginPrompt string
-	ImageContent []byte
-	DocContent   *param.DocInfo
-	AudioContent []byte
-	UserName     string
+	baseRobot
 }
 
 type DingResp struct {
@@ -100,12 +95,13 @@ func OnChatReceive(ctx context.Context, message *chatbot.BotCallbackDataModel) (
 
 func NewDingRobot(message *chatbot.BotCallbackDataModel) *DingRobot {
 	metrics.AppRequestCount.WithLabelValues("dingding").Inc()
-	return &DingRobot{
-		Message:  message,
-		Client:   DingBotClient,
-		BotName:  BotName,
-		UserName: message.SenderNick,
+	d := &DingRobot{
+		Message: message,
+		Client:  DingBotClient,
+		BotName: BotName,
 	}
+	d.UserName = message.SenderNick
+	return d
 }
 
 func (d *DingRobot) checkValid() bool {
@@ -351,10 +347,6 @@ func (d *DingRobot) GetMessageContent() (bool, error) {
 	}
 
 	return botAt, nil
-}
-
-func (d *DingRobot) getPrompt() string {
-	return d.Prompt
 }
 
 func (d *DingRobot) SimpleReplyMarkdown(ctx context.Context, content []byte) (*DingResp, error) {
@@ -604,40 +596,4 @@ func (d *DingRobot) sendVoiceContent(voiceContent []byte, duration int) error {
 	}
 
 	return nil
-}
-
-func (d *DingRobot) setCommand(command string) {
-	d.Command = command
-}
-
-func (d *DingRobot) getCommand() string {
-	return d.Command
-}
-
-func (d *DingRobot) getUserName() string {
-	return d.UserName
-}
-
-func (d *DingRobot) setPrompt(prompt string) {
-	d.Prompt = prompt
-}
-
-func (d *DingRobot) getAudio() []byte {
-	return d.AudioContent
-}
-
-func (d *DingRobot) getDoc() *param.DocInfo {
-	return d.DocContent
-}
-
-func (d *DingRobot) setDoc(doc *param.DocInfo) {
-	d.DocContent = doc
-}
-
-func (d *DingRobot) getImage() []byte {
-	return d.ImageContent
-}
-
-func (d *DingRobot) setImage(image []byte) {
-	d.ImageContent = image
 }

@@ -30,16 +30,12 @@ type ComWechatRobot struct {
 	Robot *RobotInfo
 	App   *work.Work
 
-	Command      string
-	Prompt       string
 	OriginPrompt string
-	ImageContent []byte
-	DocContent   *param.DocInfo
 	VoiceContent []byte
 	TextMsg      *serverModel.MessageText
 	VoiceMsg     *serverModel.MessageVoice
 	ImageMsg     *serverModel.MessageImage
-	UserName     string
+	baseRobot
 }
 
 func StartComWechatRobot(ctx context.Context) {
@@ -323,10 +319,6 @@ func (c *ComWechatRobot) executeLLM() {
 
 }
 
-func (c *ComWechatRobot) getPrompt() string {
-	return c.Prompt
-}
-
 func (c *ComWechatRobot) getPerMsgLen() int {
 	return 3500
 }
@@ -388,40 +380,4 @@ func (c *ComWechatRobot) sendVoiceContent(voiceContent []byte, duration int) err
 	}
 
 	return nil
-}
-
-func (c *ComWechatRobot) setCommand(command string) {
-	c.Command = command
-}
-
-func (c *ComWechatRobot) getCommand() string {
-	return c.Command
-}
-
-func (c *ComWechatRobot) getUserName() string {
-	return c.UserName
-}
-
-func (c *ComWechatRobot) setPrompt(prompt string) {
-	c.Prompt = prompt
-}
-
-func (c *ComWechatRobot) getAudio() []byte {
-	return c.VoiceContent
-}
-
-func (c *ComWechatRobot) getDoc() *param.DocInfo {
-	return c.DocContent
-}
-
-func (c *ComWechatRobot) setDoc(doc *param.DocInfo) {
-	c.DocContent = doc
-}
-
-func (c *ComWechatRobot) getImage() []byte {
-	return c.ImageContent
-}
-
-func (c *ComWechatRobot) setImage(image []byte) {
-	c.ImageContent = image
 }

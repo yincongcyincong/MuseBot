@@ -45,14 +45,9 @@ type QQRobot struct {
 	GroupAtMessage *dto.WSGroupATMessageData
 	ATMessage      *dto.WSATMessageData
 
-	Command      string
-	Prompt       string
 	BotName      string
 	OriginPrompt string
-	ImageContent []byte
-	DocContent   *param.DocInfo
-	AudioContent []byte
-	UserName     string
+	baseRobot
 }
 
 func StartQQRobot(ctx context.Context) {
@@ -373,10 +368,6 @@ func (q *QQRobot) executeLLM() {
 
 }
 
-func (q *QQRobot) getPrompt() string {
-	return q.Prompt
-}
-
 type UploadFileRequest struct {
 	FileType   int    `json:"file_type"`
 	URL        string `json:"url"`
@@ -586,40 +577,4 @@ func (q *QQRobot) sendVoiceContent(voiceContent []byte, duration int) error {
 	}
 
 	return q.PostRichMediaMessage(data, "")
-}
-
-func (q *QQRobot) setCommand(command string) {
-	q.Command = command
-}
-
-func (q *QQRobot) getCommand() string {
-	return q.Command
-}
-
-func (q *QQRobot) getUserName() string {
-	return q.UserName
-}
-
-func (q *QQRobot) setPrompt(prompt string) {
-	q.Prompt = prompt
-}
-
-func (q *QQRobot) getAudio() []byte {
-	return q.AudioContent
-}
-
-func (q *QQRobot) getDoc() *param.DocInfo {
-	return q.DocContent
-}
-
-func (q *QQRobot) setDoc(doc *param.DocInfo) {
-	q.DocContent = doc
-}
-
-func (q *QQRobot) getImage() []byte {
-	return q.ImageContent
-}
-
-func (q *QQRobot) setImage(image []byte) {
-	q.ImageContent = image
 }

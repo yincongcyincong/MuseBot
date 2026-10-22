@@ -107,13 +107,8 @@ type PersonalQQRobot struct {
 	Robot *RobotInfo
 	Ctx   context.Context
 
-	Command      string
-	Prompt       string
 	OriginPrompt string
-	ImageContent []byte
-	DocContent   *param.DocInfo
-	AudioContent []byte
-	UserName     string
+	baseRobot
 }
 
 func NewPersonalQQRobot(ctx context.Context, msgContent []byte) *PersonalQQRobot {
@@ -125,10 +120,10 @@ func NewPersonalQQRobot(ctx context.Context, msgContent []byte) *PersonalQQRobot
 	}
 
 	q := &PersonalQQRobot{
-		Msg:      msg,
-		Ctx:      ctx,
-		UserName: msg.Sender.Nickname,
+		Msg: msg,
+		Ctx: ctx,
 	}
+	q.UserName = msg.Sender.Nickname
 
 	q.Robot = NewRobot(WithRobot(q))
 	return q
@@ -252,10 +247,6 @@ func (q *PersonalQQRobot) executeLLM() {
 
 	go q.Robot.ExecLLM(q.Prompt, msgChan)
 
-}
-
-func (q *PersonalQQRobot) getPrompt() string {
-	return q.Prompt
 }
 
 func (q *PersonalQQRobot) getPerMsgLen() int {
@@ -433,40 +424,4 @@ func (q *PersonalQQRobot) GetMessageContent() (bool, error) {
 func (q *PersonalQQRobot) sendVoiceContent(voiceContent []byte, duration int) error {
 	_, err := q.SendMsg("", nil, nil, voiceContent)
 	return err
-}
-
-func (q *PersonalQQRobot) setCommand(command string) {
-	q.Command = command
-}
-
-func (q *PersonalQQRobot) getCommand() string {
-	return q.Command
-}
-
-func (q *PersonalQQRobot) getUserName() string {
-	return q.UserName
-}
-
-func (q *PersonalQQRobot) setPrompt(prompt string) {
-	q.Prompt = prompt
-}
-
-func (q *PersonalQQRobot) getAudio() []byte {
-	return q.AudioContent
-}
-
-func (q *PersonalQQRobot) getDoc() *param.DocInfo {
-	return q.DocContent
-}
-
-func (q *PersonalQQRobot) setDoc(doc *param.DocInfo) {
-	q.DocContent = doc
-}
-
-func (q *PersonalQQRobot) getImage() []byte {
-	return q.ImageContent
-}
-
-func (q *PersonalQQRobot) setImage(image []byte) {
-	q.ImageContent = image
 }
