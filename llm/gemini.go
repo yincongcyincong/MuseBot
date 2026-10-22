@@ -53,8 +53,8 @@ func GenerateGeminiImg(ctx context.Context, prompt string, imageContent []byte) 
 	}
 
 	var response *genai.GenerateContentResponse
-	for i := 0; i < conf.BaseConfInfo.LLMRetryTimes; i++ {
-		response, err = client.Models.GenerateContent(
+	response, err = retryRequest(ctx, func() (*genai.GenerateContentResponse, error) {
+		resp, err := client.Models.GenerateContent(
 			ctx,
 			model,
 			geminiContent,
@@ -62,13 +62,14 @@ func GenerateGeminiImg(ctx context.Context, prompt string, imageContent []byte) 
 				ResponseModalities: []string{"TEXT", "IMAGE"},
 			},
 		)
-
 		if err != nil {
-			time.Sleep(time.Duration(conf.BaseConfInfo.LLMRetryInterval) * time.Millisecond)
-			continue
+			return nil, err
 		}
-		break
-	}
+		if resp == nil {
+			return nil, fmt.Errorf("empty generate content response")
+		}
+		return resp, nil
+	})
 
 	if err != nil || response == nil {
 		logger.ErrorCtx(ctx, "generate image fail", "err", err)
@@ -107,17 +108,12 @@ func GenerateGeminiVideo(ctx context.Context, prompt string, image []byte) ([]by
 	}
 
 	var operation *genai.GenerateVideosOperation
-	for i := 0; i < conf.BaseConfInfo.LLMRetryTimes; i++ {
-		operation, err = client.Models.GenerateVideos(ctx,
+	operation, err = retryRequest(ctx, func() (*genai.GenerateVideosOperation, error) {
+		return client.Models.GenerateVideos(ctx,
 			model, prompt,
 			geminiImage,
 			&genai.GenerateVideosConfig{})
-		if err != nil {
-			time.Sleep(time.Duration(conf.BaseConfInfo.LLMRetryInterval) * time.Millisecond)
-			continue
-		}
-		break
-	}
+	})
 
 	if err != nil || operation == nil {
 		logger.ErrorCtx(ctx, "generate video fail", "err", err, "operation", operation)
@@ -182,20 +178,21 @@ func GenerateGeminiText(ctx context.Context, audioContent []byte) (string, int, 
 	}
 
 	var result *genai.GenerateContentResponse
-	for i := 0; i < conf.BaseConfInfo.LLMRetryTimes; i++ {
-		result, err = client.Models.GenerateContent(
+	result, err = retryRequest(ctx, func() (*genai.GenerateContentResponse, error) {
+		resp, err := client.Models.GenerateContent(
 			ctx,
 			model,
 			contents,
 			nil,
 		)
-
-		if err != nil || result == nil {
-			time.Sleep(time.Duration(conf.BaseConfInfo.LLMRetryInterval) * time.Millisecond)
-			continue
+		if err != nil {
+			return nil, err
 		}
-		break
-	}
+		if resp == nil {
+			return nil, fmt.Errorf("empty generate content response")
+		}
+		return resp, nil
+	})
 
 	if err != nil || result == nil {
 		logger.ErrorCtx(ctx, "generate text fail", "err", err)
@@ -227,8 +224,8 @@ func GeminiTTS(ctx context.Context, content, encoding string) ([]byte, int, int,
 	}
 
 	var response *genai.GenerateContentResponse
-	for i := 0; i < conf.BaseConfInfo.LLMRetryTimes; i++ {
-		response, err = client.Models.GenerateContent(
+	response, err = retryRequest(ctx, func() (*genai.GenerateContentResponse, error) {
+		resp, err := client.Models.GenerateContent(
 			ctx,
 			model,
 			contents,
@@ -245,13 +242,14 @@ func GeminiTTS(ctx context.Context, content, encoding string) ([]byte, int, int,
 				},
 			},
 		)
-
 		if err != nil {
-			time.Sleep(time.Duration(conf.BaseConfInfo.LLMRetryInterval) * time.Millisecond)
-			continue
+			return nil, err
 		}
-		break
-	}
+		if resp == nil {
+			return nil, fmt.Errorf("empty generate content response")
+		}
+		return resp, nil
+	})
 
 	if err != nil || response == nil {
 		logger.ErrorCtx(ctx, "generate audio fail", "err", err)

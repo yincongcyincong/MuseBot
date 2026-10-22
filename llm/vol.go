@@ -58,16 +58,10 @@ func GenerateVolImg(ctx context.Context, prompt string, imageContent []byte) (st
 		reqBody["binary_data_base64"] = []string{base64.StdEncoding.EncodeToString(imageContent)}
 	}
 
-	var resp map[string]interface{}
-	var err error
-	for i := 0; i < conf.BaseConfInfo.LLMRetryTimes; i++ {
-		resp, _, err = visual.DefaultInstance.CVProcess(reqBody)
-		if err != nil {
-			time.Sleep(time.Duration(conf.BaseConfInfo.LLMRetryInterval) * time.Millisecond)
-			continue
-		}
-		break
-	}
+	resp, err := retryRequest(ctx, func() (map[string]interface{}, error) {
+		data, _, err := visual.DefaultInstance.CVProcess(reqBody)
+		return data, err
+	})
 
 	if err != nil || resp == nil {
 		logger.ErrorCtx(ctx, "request img api fail", "err", err)
@@ -130,19 +124,12 @@ func GenerateVolVideo(ctx context.Context, prompt string, imageContent []byte) (
 	mediaType := utils.GetVideoType(llmConfig)
 	modelStr := utils.GetUsingVideoModel(mediaType, llmConfig.VideoModel)
 
-	var resp model.CreateContentGenerationTaskResponse
-	var err error
-	for i := 0; i < conf.BaseConfInfo.LLMRetryTimes; i++ {
-		resp, err = client.CreateContentGenerationTask(ctx, model.CreateContentGenerationTaskRequest{
+	resp, err := retryRequest(ctx, func() (model.CreateContentGenerationTaskResponse, error) {
+		return client.CreateContentGenerationTask(ctx, model.CreateContentGenerationTaskRequest{
 			Model:   modelStr,
 			Content: contents,
 		})
-		if err != nil {
-			time.Sleep(time.Duration(conf.BaseConfInfo.LLMRetryInterval) * time.Millisecond)
-			continue
-		}
-		break
-	}
+	})
 
 	if err != nil {
 		logger.ErrorCtx(ctx, "request create video api fail", "err", err)
@@ -234,26 +221,21 @@ func VolTTS(ctx context.Context, text, userId, encoding string) ([]byte, int, in
 
 	url := "https://openspeech.bytedance.com/api/v1/tts"
 	bodyStr, _ := json.Marshal(params)
-	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(bodyStr))
-	if err != nil {
-		logger.ErrorCtx(ctx, "NewRequest error", "err", err)
-		return nil, 0, 0, err
-	}
-	for key, value := range headers {
-		req.Header.Set(key, value)
-	}
 
 	httpClient := utils.GetLLMProxyClient()
 
-	var resp *http.Response
-	for i := 0; i < conf.BaseConfInfo.LLMRetryTimes; i++ {
-		resp, err = httpClient.Do(req)
+	// rebuild the request per attempt: a consumed body would make the
+	// retries send an empty payload
+	resp, err := retryRequest(ctx, func() (*http.Response, error) {
+		req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(bodyStr))
 		if err != nil {
-			time.Sleep(time.Duration(conf.BaseConfInfo.LLMRetryInterval) * time.Millisecond)
-			continue
+			return nil, err
 		}
-		break
-	}
+		for key, value := range headers {
+			req.Header.Set(key, value)
+		}
+		return httpClient.Do(req)
+	})
 
 	if err != nil || resp == nil {
 		logger.ErrorCtx(ctx, "httpClient.Do error", "err", err)

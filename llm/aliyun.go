@@ -112,25 +112,26 @@ func GenerateAliyunImg(ctx context.Context, prompt string, imageContent []byte) 
 			&MessageContent{Image: fmt.Sprintf("data:image/%s;base64,%s", utils.DetectImageFormat(imageContent), base64.StdEncoding.EncodeToString(imageContent))})
 	}
 
-	jsonData, _ := json.Marshal(payload)
-	req, _ := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+conf.BaseConfInfo.AliyunToken)
+	jsonData, err := json.Marshal(payload)
+	if err != nil {
+		return "", 0, fmt.Errorf("marshal payload error: %w", err)
+	}
 
 	client := utils.GetLLMProxyClient()
 	start := time.Now()
 	metrics.APIRequestCount.WithLabelValues(model).Inc()
 
-	var resp *http.Response
-	var err error
-	for i := 0; i < conf.BaseConfInfo.LLMRetryTimes; i++ {
-		resp, err = client.Do(req)
+	// rebuild the request per attempt: a consumed body would make the
+	// retries send an empty payload
+	resp, err := retryRequest(ctx, func() (*http.Response, error) {
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewBuffer(jsonData))
 		if err != nil {
-			time.Sleep(time.Duration(conf.BaseConfInfo.LLMRetryInterval) * time.Millisecond)
-			continue
+			return nil, err
 		}
-		break
-	}
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Authorization", "Bearer "+conf.BaseConfInfo.AliyunToken)
+		return client.Do(req)
+	})
 	if err != nil || resp == nil {
 		return "", 0, fmt.Errorf("request fail %v %v", err, resp)
 	}
@@ -211,15 +212,6 @@ func GenerateAliyunVideo(ctx context.Context, prompt string, image []byte) (stri
 		return "", 0, err
 	}
 
-	req, err := http.NewRequestWithContext(ctx, "POST", "https://dashscope.aliyuncs.com/api/v1/services/aigc/video-generation/video-synthesis", bytes.NewReader(data))
-	if err != nil {
-		return "", 0, err
-	}
-
-	req.Header.Set("Authorization", "Bearer "+conf.BaseConfInfo.AliyunToken)
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("X-DashScope-Async", "enable")
-
 	client := utils.GetLLMProxyClient()
 	start := time.Now()
 	metrics.APIRequestCount.WithLabelValues(model).Inc()
@@ -227,15 +219,20 @@ func GenerateAliyunVideo(ctx context.Context, prompt string, image []byte) (stri
 		metrics.APIRequestDuration.WithLabelValues(model).Observe(time.Since(start).Seconds())
 	}()
 
-	var resp *http.Response
-	for i := 0; i < conf.BaseConfInfo.LLMRetryTimes; i++ {
-		resp, err = client.Do(req)
+	// rebuild the request per attempt: a consumed body would make the
+	// retries send an empty payload
+	resp, err := retryRequest(ctx, func() (*http.Response, error) {
+		req, err := http.NewRequestWithContext(ctx, "POST",
+			"https://dashscope.aliyuncs.com/api/v1/services/aigc/video-generation/video-synthesis",
+			bytes.NewReader(data))
 		if err != nil {
-			time.Sleep(time.Duration(conf.BaseConfInfo.LLMRetryInterval) * time.Millisecond)
-			continue
+			return nil, err
 		}
-		break
-	}
+		req.Header.Set("Authorization", "Bearer "+conf.BaseConfInfo.AliyunToken)
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("X-DashScope-Async", "enable")
+		return client.Do(req)
+	})
 
 	if err != nil || resp == nil {
 		return "", 0, fmt.Errorf("request fail %v %v", err, resp)
@@ -255,7 +252,7 @@ func GenerateAliyunVideo(ctx context.Context, prompt string, image []byte) (stri
 	for i := 0; i < 100; i++ {
 		time.Sleep(5 * time.Second)
 
-		req, err = http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("https://dashscope.aliyuncs.com/api/v1/tasks/%s", vr.Output.TaskID), nil)
+		req, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("https://dashscope.aliyuncs.com/api/v1/tasks/%s", vr.Output.TaskID), nil)
 		if err != nil {
 			return "", 0, err
 		}
@@ -333,29 +330,23 @@ func GenerateAliyunText(ctx context.Context, audioContent []byte) (string, int, 
 		return "", 0, fmt.Errorf("failed to marshal payload: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, "POST",
-		"https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation",
-		bytes.NewReader(data))
-	if err != nil {
-		return "", 0, fmt.Errorf("failed to create request: %w", err)
-	}
-
-	req.Header.Set("Authorization", "Bearer "+conf.BaseConfInfo.AliyunToken)
-	req.Header.Set("Content-Type", "application/json")
-
 	client := utils.GetLLMProxyClient()
 	start := time.Now()
 	metrics.APIRequestCount.WithLabelValues(recModel).Inc()
 
-	var resp *http.Response
-	for i := 0; i < conf.BaseConfInfo.LLMRetryTimes; i++ {
-		resp, err = client.Do(req)
+	// rebuild the request per attempt: a consumed body would make the
+	// retries send an empty payload
+	resp, err := retryRequest(ctx, func() (*http.Response, error) {
+		req, err := http.NewRequestWithContext(ctx, "POST",
+			"https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation",
+			bytes.NewReader(data))
 		if err != nil {
-			time.Sleep(time.Duration(conf.BaseConfInfo.LLMRetryInterval) * time.Millisecond)
-			continue
+			return nil, err
 		}
-		break
-	}
+		req.Header.Set("Authorization", "Bearer "+conf.BaseConfInfo.AliyunToken)
+		req.Header.Set("Content-Type", "application/json")
+		return client.Do(req)
+	})
 
 	if err != nil || resp == nil {
 		return "", 0, fmt.Errorf("request fail %v %v", err, resp)
@@ -419,27 +410,21 @@ func AliyunTTS(ctx context.Context, text, encoding string) ([]byte, int, int, er
 		return nil, 0, 0, fmt.Errorf("marshal payload error: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
-	if err != nil {
-		return nil, 0, 0, fmt.Errorf("new request error: %w", err)
-	}
-
-	req.Header.Set("Authorization", "Bearer "+conf.BaseConfInfo.AliyunToken)
-	req.Header.Set("Content-Type", "application/json")
-
 	client := utils.GetLLMProxyClient()
 	start := time.Now()
 	metrics.APIRequestCount.WithLabelValues(model).Inc()
 
-	var resp *http.Response
-	for i := 0; i < conf.BaseConfInfo.LLMRetryTimes; i++ {
-		resp, err = client.Do(req)
+	// rebuild the request per attempt: a consumed body would make the
+	// retries send an empty payload
+	resp, err := retryRequest(ctx, func() (*http.Response, error) {
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
 		if err != nil {
-			time.Sleep(time.Duration(conf.BaseConfInfo.LLMRetryInterval) * time.Millisecond)
-			continue
+			return nil, err
 		}
-		break
-	}
+		req.Header.Set("Authorization", "Bearer "+conf.BaseConfInfo.AliyunToken)
+		req.Header.Set("Content-Type", "application/json")
+		return client.Do(req)
+	})
 
 	if err != nil || resp == nil {
 		return nil, 0, 0, fmt.Errorf("request fail %v %v", err, resp)

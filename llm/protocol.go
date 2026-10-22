@@ -48,7 +48,13 @@ type LLMStreamChunk struct {
 	HasUsage  bool
 }
 
-func retryLLMRequest[T any](l *LLM, operation func() (T, error)) (T, error) {
+// retryRequest reruns an API call up to LLMRetryTimes, sleeping
+// LLMRetryInterval between attempts (never after the final one) and giving up
+// early once ctx is cancelled. LLMRetryTimes <= 0 means a single attempt.
+func retryRequest[T any](ctx context.Context, operation func() (T, error)) (T, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
 	var value T
 	var err error
 
@@ -61,9 +67,24 @@ func retryLLMRequest[T any](l *LLM, operation func() (T, error)) (T, error) {
 		if err == nil {
 			return value, nil
 		}
-		time.Sleep(time.Duration(conf.BaseConfInfo.LLMRetryInterval) * time.Millisecond)
+		if attempt == times-1 {
+			break
+		}
+		select {
+		case <-ctx.Done():
+			return value, ctx.Err()
+		case <-time.After(time.Duration(conf.BaseConfInfo.LLMRetryInterval) * time.Millisecond):
+		}
 	}
 	return value, err
+}
+
+func retryLLMRequest[T any](l *LLM, operation func() (T, error)) (T, error) {
+	var ctx context.Context
+	if l != nil {
+		ctx = l.Ctx
+	}
+	return retryRequest(ctx, operation)
 }
 
 func observeLLMDuration(l *LLM, start time.Time) {

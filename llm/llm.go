@@ -527,14 +527,9 @@ func (l *LLM) ExecMcpReq(ctx context.Context, funcName string, property map[stri
 	startTime := time.Now()
 
 	var toolsData string
-	for i := 0; i < conf.BaseConfInfo.LLMRetryTimes; i++ {
-		toolsData, err = mc.ExecTools(ctx, funcName, property)
-		if err != nil {
-			time.Sleep(time.Duration(conf.BaseConfInfo.LLMRetryInterval) * time.Millisecond)
-			continue
-		}
-		break
-	}
+	toolsData, err = retryRequest(ctx, func() (string, error) {
+		return mc.ExecTools(ctx, funcName, property)
+	})
 
 	if err != nil {
 		logger.ErrorCtx(ctx, "get mcp fail", "err", err, "function", funcName, "argument", property)

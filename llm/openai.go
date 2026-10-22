@@ -276,52 +276,35 @@ func GenerateOpenAIImg(ctx context.Context, prompt string, imageContent []byte) 
 	model := utils.GetUsingImgModel(mediaType, llmConfig.ImgModel)
 	metrics.APIRequestCount.WithLabelValues(model).Inc()
 
-	var respUrl openai.ImageResponse
-	var err error
-	for i := 0; i < conf.BaseConfInfo.LLMRetryTimes; i++ {
-		if len(imageContent) != 0 {
-			imageFile, err := utils.ConvertToPNGFile(imageContent)
-			if err != nil {
-				logger.ErrorCtx(ctx, "failed to create temp file:", err)
-				return nil, 0, err
-			}
-			defer os.Remove(imageFile.Name())
-			defer imageFile.Close()
-
-			respUrl, err = client.CreateEditImage(ctx, openai.ImageEditRequest{
-				Image:          imageFile,
+	respUrl, err := retryRequest(ctx, func() (openai.ImageResponse, error) {
+		if len(imageContent) == 0 {
+			return client.CreateImage(ctx, openai.ImageRequest{
 				Prompt:         prompt,
 				Model:          model,
-				N:              1,
 				Size:           conf.PhotoConfInfo.OpenAIImageSize,
+				N:              1,
+				Style:          conf.PhotoConfInfo.OpenAIImageStyle,
 				ResponseFormat: "b64_json",
 			})
-
-			if err != nil {
-				time.Sleep(time.Duration(conf.BaseConfInfo.LLMRetryInterval) * time.Millisecond)
-				continue
-			}
-			break
-		} else {
-			respUrl, err = client.CreateImage(
-				ctx,
-				openai.ImageRequest{
-					Prompt:         prompt,
-					Model:          model,
-					Size:           conf.PhotoConfInfo.OpenAIImageSize,
-					N:              1,
-					Style:          conf.PhotoConfInfo.OpenAIImageStyle,
-					ResponseFormat: "b64_json",
-				},
-			)
-
-			if err != nil {
-				time.Sleep(time.Duration(conf.BaseConfInfo.LLMRetryInterval) * time.Millisecond)
-				continue
-			}
-			break
 		}
-	}
+
+		imageFile, err := utils.ConvertToPNGFile(imageContent)
+		if err != nil {
+			logger.ErrorCtx(ctx, "failed to create temp file:", err)
+			return openai.ImageResponse{}, err
+		}
+		defer os.Remove(imageFile.Name())
+		defer imageFile.Close()
+
+		return client.CreateEditImage(ctx, openai.ImageEditRequest{
+			Image:          imageFile,
+			Prompt:         prompt,
+			Model:          model,
+			N:              1,
+			Size:           conf.PhotoConfInfo.OpenAIImageSize,
+			ResponseFormat: "b64_json",
+		})
+	})
 
 	if err != nil {
 		logger.ErrorCtx(ctx, "CreateImage error", "err", err)
@@ -367,16 +350,11 @@ func GenerateOpenAIText(ctx context.Context, audioContent []byte) (string, error
 		Format:   "json",
 	}
 
-	var resp openai.AudioResponse
-	var err error
-	for i := 0; i < conf.BaseConfInfo.LLMRetryTimes; i++ {
-		resp, err = client.CreateTranscription(ctx, req)
-		if err != nil {
-			time.Sleep(time.Duration(conf.BaseConfInfo.LLMRetryInterval) * time.Millisecond)
-			continue
-		}
-		break
-	}
+	resp, err := retryRequest(ctx, func() (openai.AudioResponse, error) {
+		// reset the reader so retries do not upload an empty body
+		req.Reader = bytes.NewReader(audioContent)
+		return client.CreateTranscription(ctx, req)
+	})
 
 	metrics.APIRequestDuration.WithLabelValues(openai.Whisper1).Observe(time.Since(start).Seconds())
 	if err != nil {
@@ -400,22 +378,15 @@ func OpenAITTS(ctx context.Context, content, encoding string) ([]byte, int, int,
 
 	client := GetOpenAIClient(ctx, "")
 
-	var resp openai.RawResponse
-	var err error
-	for i := 0; i < conf.BaseConfInfo.LLMRetryTimes; i++ {
-		resp, err = client.CreateSpeech(ctx, openai.CreateSpeechRequest{
+	resp, err := retryRequest(ctx, func() (openai.RawResponse, error) {
+		return client.CreateSpeech(ctx, openai.CreateSpeechRequest{
 			Model:          openai.SpeechModel(model),
 			Input:          content,
 			Voice:          openai.SpeechVoice(conf.AudioConfInfo.OpenAIVoiceName),
 			ResponseFormat: openai.SpeechResponseFormat(formatEncoding),
 			Speed:          1.0,
 		})
-		if err != nil {
-			time.Sleep(time.Duration(conf.BaseConfInfo.LLMRetryInterval) * time.Millisecond)
-			continue
-		}
-		break
-	}
+	})
 	if err != nil {
 		logger.ErrorCtx(ctx, "decode image error", "err", err)
 		return nil, 0, 0, err
