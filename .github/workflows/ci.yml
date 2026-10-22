@@ -30,7 +30,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.24  # 指定 Go 版本
+          go-version: 1.26  # 指定 Go 版本
 
       # 下载依赖
       - name: Install Dependencies

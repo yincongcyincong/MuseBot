@@ -521,7 +521,7 @@ func (d *DingRobot) UploadFileWithType(accessToken, fileType, filePath string, f
 
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 
-	client := &http.Client{}
+	client := &http.Client{Timeout: 5 * time.Minute}
 	resp, err := client.Do(req)
 	if err != nil {
 		return "", err

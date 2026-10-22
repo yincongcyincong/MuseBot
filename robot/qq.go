@@ -426,7 +426,7 @@ func (q *QQRobot) UploadFile(imageContent string, fileType int) ([]byte, error) 
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "QQBot "+tokenInfo.AccessToken) // 如果需要鉴权的话
 
-	client := &http.Client{}
+	client := &http.Client{Timeout: 5 * time.Minute}
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("http request error: %w", err)

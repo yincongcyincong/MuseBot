@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/json-iterator/go"
@@ -339,7 +340,7 @@ func (q *PersonalQQRobot) SendMsg(txt string, image []byte, video []byte, voice 
 		req.Header.Set("Authorization", "Bearer "+conf.BaseConfInfo.QQOneBotSendToken)
 	}
 
-	client := &http.Client{}
+	client := &http.Client{Timeout: 30 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
 		logger.ErrorCtx(q.Ctx, "send message failed", "err", err, "req", payload)
