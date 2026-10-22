@@ -103,7 +103,7 @@ chatgpt: [https://www.youtube.com/watch?v=G\_DZYMvd5Ug](https://www.youtube.com/
 
 ```sh
   docker pull jackyin0822/musebot:latest
-  docker run -d -v /home/user/data:/app/data -e TELEGRAM_BOT_TOKEN="telegram-bot-token" -e DEEPSEEK_TOKEN="deepseek-auth-token" --name my-telegram-bot  jackyin0822/musebot:latest
+  docker run -d -v /home/user/data:/app/data -e TELEGRAM_BOT_TOKEN="telegram-bot-token" -e DEEPSEEK_TOKEN="deepseek-auth-token" -p 36060:36060 -p 18080:18080 --name my-telegram-bot  jackyin0822/musebot:latest
 ```
 
 ```sh
@@ -278,6 +278,9 @@ others: см. [документацию](https://www.volcengine.com/docs/82379/1
 
 ### Развертывание с помощью Docker
 
+В контейнере под supervisord запускаются **два процесса**: основной сервис MuseBot и
+админ-платформа MuseBotAdmin. Оба автоматически перезапускаются при сбое.
+
 1. **Собрать образ Docker**
 
    ```sh
@@ -287,8 +290,28 @@ others: см. [документацию](https://www.volcengine.com/docs/82379/1
 2. **Запустить контейнер**
 
    ```sh
-     docker run -d -v /home/user/xxx/data:/app/data -e TELEGRAM_BOT_TOKEN="telegram-bot-token" -e DEEPSEEK_TOKEN="deepseek-auth-token" --name my-bot MuseBot
+     docker run -d -v /home/user/xxx/data:/app/data \
+       -e TELEGRAM_BOT_TOKEN="telegram-bot-token" \
+       -e DEEPSEEK_TOKEN="deepseek-auth-token" \
+       -p 36060:36060 -p 18080:18080 \
+       --name my-bot MuseBot
    ```
+
+3. **Порты и тома**
+   - `/app/data`: обязательно сохраняйте этот том — база данных sqlite, база
+     админ-платформы (`muse_bot_admin.db`), медиафайлы и автосгенерированный ключ сессий.
+   - `36060`: HTTP основного сервиса (webhook, API конфигурации, SSE-чат).
+   - `18080`: веб-интерфейс админ-платформы.
+   - `ffmpeg`/`ffprobe`, `nodejs`/`npm` и `libopus` предустановлены для голоса, видео и skill-ов.
+
+4. **Первый вход в админку**
+   При первом запуске для аккаунта `admin` генерируется случайный пароль и один раз
+   выводится в лог контейнера:
+   ```sh
+    docker logs my-bot 2>&1 | grep "password is shown ONCE"
+   ```
+   Войдите на `http://<host>:18080` и смените пароль (см.
+   [документацию](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/admin.md)).
 
 ## Участие
 

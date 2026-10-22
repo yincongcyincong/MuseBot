@@ -28,7 +28,7 @@ const (
 	OneMsgLen       = 3896
 	FirstSendLen    = 30
 	NonFirstSendLen = 500
-	MostLoop        = 15
+	MostLoop        = 30
 )
 
 var (
@@ -55,10 +55,10 @@ type LLM struct {
 
 	Ctx context.Context
 
-	DeepseekTools   []godeepseek.Tool
-	VolTools        []*model.Tool
-	OpenAITools     []openai.Tool
-	GeminiTools     []*genai.Tool
+	DeepseekTools []godeepseek.Tool
+	VolTools      []*model.Tool
+	OpenAITools   []openai.Tool
+	GeminiTools   []*genai.Tool
 
 	WholeContent string // whole answer from llm
 	LoopNum      int

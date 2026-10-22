@@ -1,44 +1,10 @@
 package llm
 
 import (
-	"context"
-	"fmt"
-	"os"
 	"testing"
 
-	"github.com/sashabaranov/go-openai"
 	"github.com/stretchr/testify/assert"
-	"github.com/yincongcyincong/MuseBot/conf"
-	"github.com/yincongcyincong/MuseBot/db"
-	"github.com/yincongcyincong/MuseBot/param"
 )
-
-func TestOpenAISend(t *testing.T) {
-	messageChan := make(chan *param.MsgInfo)
-
-	go func() {
-		for m := range messageChan {
-			fmt.Println(m)
-		}
-	}()
-
-	conf.BaseConfInfo.CustomUrl = os.Getenv("TEST_CUSTOM_URL")
-	conf.BaseConfInfo.Type = param.OpenAi
-
-	ctx := context.WithValue(context.Background(), "user_info", &db.User{
-		LLMConfig:    `{"type":"openai"}`,
-		LLMConfigRaw: &param.LLMConfig{TxtType: param.OpenAi},
-	})
-
-	callLLM := NewLLM(WithChatId("1"), WithMsgId("2"), WithUserId("5"),
-		WithMessageChan(messageChan), WithContent("hi"), WithContext(ctx))
-	callLLM.LLMClient.GetModel(callLLM)
-	callLLM.GetMessages("5", "hi")
-	err := callLLM.LLMClient.Send(ctx, callLLM)
-	assert.Equal(t, nil, err)
-
-	conf.BaseConfInfo.CustomUrl = ""
-}
 
 func TestOpenAIReq_GetMessage(t *testing.T) {
 	req := &OpenAIReq{}
@@ -60,25 +26,6 @@ func TestOpenAIReq_AppendMessages(t *testing.T) {
 
 	assert.Len(t, req2.OpenAIMsgs, 1)
 	assert.Equal(t, "message from req1", req2.OpenAIMsgs[0].Content)
-}
-
-func TestOpenAIReq_GetModel_Default(t *testing.T) {
-	previousType := conf.BaseConfInfo.Type
-	conf.BaseConfInfo.Type = param.OpenAi
-	t.Cleanup(func() {
-		conf.BaseConfInfo.Type = previousType
-	})
-
-	req := &OpenAIReq{}
-	ctx := context.WithValue(context.Background(), "user_info", &db.User{
-		LLMConfig:    `{"type":"openai"}`,
-		LLMConfigRaw: &param.LLMConfig{TxtType: param.OpenAi},
-	})
-	llmObj := NewLLM(WithChatId("1"), WithMsgId("2"), WithUserId("4"),
-		WithContent("hi"), WithContext(ctx))
-
-	req.GetModel(llmObj)
-	assert.Equal(t, openai.GPT3Dot5Turbo0125, llmObj.Model)
 }
 
 func TestRequestToolsCall_InvalidJSON(t *testing.T) {

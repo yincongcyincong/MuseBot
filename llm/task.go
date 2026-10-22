@@ -310,6 +310,15 @@ func (d *LLMTaskReq) executePlan(machine *taskStateMachine, plan *TaskInfo) erro
 			return err
 		}
 		d.Token += llm.Cs.Token
+		// give the user visibility into what the agent actually did: one
+		// message per finished step, capped by sendProgress at the IM's
+		// per-message length (d.PerMsgLen)
+		d.sendProgress(i18n.GetMessage("task_progress_thinking", map[string]interface{}{
+			"index":    i + 1,
+			"total":    len(plan.Plan),
+			"name":     task.Name,
+			"thinking": result,
+		}))
 		d.sendProgress(i18n.GetMessage("task_progress_execute_done", map[string]interface{}{
 			"index": i + 1,
 			"total": len(plan.Plan),

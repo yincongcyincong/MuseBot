@@ -33,6 +33,12 @@ type LLMToolResult struct {
 type LLMToolState struct {
 	Calls   []LLMToolCall
 	Results []LLMToolResult
+
+	// circuit breaker: stop executing a tool that keeps failing with the same
+	// request, so a stubborn model cannot burn the whole loop budget on it
+	lastFailTool     string
+	consecutiveFails int
+	blockedTool      string
 }
 
 type LLMStreamChunk struct {
@@ -152,8 +158,21 @@ func (s *LLMToolState) observe(call LLMToolCall) error {
 	return nil
 }
 
+// taskToolMaxConsecutiveFails bounds how many times in a row the same tool
+// may fail before it is blocked for the rest of the request
+const taskToolMaxConsecutiveFails = 3
+
 func (s *LLMToolState) execute(ctx context.Context, l *LLM) error {
 	for _, call := range s.Calls {
+		if s.blockedTool == call.Name {
+			logger.WarnCtx(l.Ctx, "tool call skipped, blocked after repeated failures", "tool", call.Name)
+			s.Results = append(s.Results, LLMToolResult{
+				ID:      call.ID,
+				Content: fmt.Sprintf("tool %s is blocked: it already failed %d times in a row. Do not call it again; use a different approach or produce your final answer with the information collected so far.", call.Name, s.consecutiveFails),
+			})
+			continue
+		}
+
 		var property map[string]interface{}
 		if err := json.Unmarshal([]byte(call.Arguments), &property); err != nil {
 			logger.WarnCtx(l.Ctx, "tool arguments json unmarshal fail", "tool", call.Name, "args", call.Arguments, "err", err)
@@ -177,12 +196,23 @@ func (s *LLMToolState) execute(ctx context.Context, l *LLM) error {
 			// tool failures are fed back as the tool result so the LLM can adapt
 			// (different command, tool, or answer in the summary); only LLM
 			// request errors abort the request
+			if s.lastFailTool == call.Name {
+				s.consecutiveFails++
+			} else {
+				s.lastFailTool = call.Name
+				s.consecutiveFails = 1
+			}
+			if s.consecutiveFails >= taskToolMaxConsecutiveFails {
+				s.blockedTool = call.Name
+			}
 			s.Results = append(s.Results, LLMToolResult{
 				ID:      call.ID,
 				Content: fmt.Sprintf("tool %s failed: %v", call.Name, err),
 			})
 			continue
 		}
+		s.lastFailTool = ""
+		s.consecutiveFails = 0
 		s.Results = append(s.Results, LLMToolResult{ID: call.ID, Content: content})
 	}
 	return nil

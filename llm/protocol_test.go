@@ -1,6 +1,9 @@
 package llm
 
 import (
+	"context"
+	"encoding/json"
+	"fmt"
 	"testing"
 
 	"github.com/cohesion-org/deepseek-go"
@@ -131,4 +134,32 @@ func TestOllamaClientMessageMutation(t *testing.T) {
 	req := client.(*OllamaReq)
 	assert.Len(t, req.OllamaMsgs, 1)
 	assert.Equal(t, "hello", req.OllamaMsgs[0].Content)
+}
+
+func TestLLMToolStateBlocksRepeatedFailures(t *testing.T) {
+	previous := conf.ToolsConfInfo.WebSearchProvider
+	conf.ToolsConfInfo.WebSearchProvider = "disabled"
+	t.Cleanup(func() { conf.ToolsConfInfo.WebSearchProvider = previous })
+
+	l := searchTaskAgent(newSearchTask())
+	args, _ := json.Marshal(map[string]string{"query": "q"})
+	state := &LLMToolState{}
+
+	for i := 0; i < taskToolMaxConsecutiveFails+1; i++ {
+		state.Calls = []LLMToolCall{{
+			ID:        fmt.Sprintf("call-%d", i),
+			Name:      conf.BuiltinWebSearchTool,
+			Arguments: string(args),
+		}}
+		assert.NoError(t, state.execute(context.Background(), l))
+	}
+
+	assert.Len(t, state.Results, taskToolMaxConsecutiveFails+1)
+	for i, result := range state.Results {
+		if i < taskToolMaxConsecutiveFails {
+			assert.Contains(t, result.Content, "failed")
+		} else {
+			assert.Contains(t, result.Content, "blocked")
+		}
+	}
 }

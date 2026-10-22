@@ -134,14 +134,14 @@ Use docker
    ```sh
      docker pull jackyin0822/musebot:latest
      chmod 777 /home/user/data
-     docker run -d -v /home/user/data:/app/data -e TELEGRAM_BOT_TOKEN="telegram-bot-token" -e DEEPSEEK_TOKEN="deepseek-auth-token" -p 36060:36060 --name my-bot  jackyin0822/MuseBot:latest
+     docker run -d -v /home/user/data:/app/data -e TELEGRAM_BOT_TOKEN="telegram-bot-token" -e DEEPSEEK_TOKEN="deepseek-auth-token" -p 36060:36060 -p 18080:18080 --name my-bot  jackyin0822/MuseBot:latest
    ```
 
    ```sh
     ALIYUN:
     docker pull crpi-i1dsvpjijxpgjgbv.cn-hangzhou.personal.cr.aliyuncs.com/jackyin0822/musebot:latest
     chmod 777 /home/user/data
-     docker run -d -v /home/user/data:/app/data -e TELEGRAM_BOT_TOKEN="telegram-bot-token" -e DEEPSEEK_TOKEN="deepseek-auth-token" -p 36060:36060 --name my-bot  crpi-i1dsvpjijxpgjgbv.cn-hangzhou.personal.cr.aliyuncs.com/jackyin0822/musebot:latest
+     docker run -d -v /home/user/data:/app/data -e TELEGRAM_BOT_TOKEN="telegram-bot-token" -e DEEPSEEK_TOKEN="deepseek-auth-token" -p 36060:36060 -p 18080:18080 --name my-bot  crpi-i1dsvpjijxpgjgbv.cn-hangzhou.personal.cr.aliyuncs.com/jackyin0822/musebot:latest
    ```
 
 command: (doc)[https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/param_conf.md]
@@ -301,6 +301,9 @@ multi agent communicate with each other!
 
 ### Deploy with Docker
 
+The image runs **two processes** under supervisord: the main MuseBot service and
+the MuseBotAdmin management platform. Both restart automatically if they crash.
+
 1. **Build the Docker image**
    ```sh
     docker build -t MuseBot .
@@ -308,8 +311,29 @@ multi agent communicate with each other!
 
 2. **Run the container**
    ```sh
-     docker run -d -v /home/user/xxx/data:/app/data -e TELEGRAM_BOT_TOKEN="telegram-bot-token" -e DEEPSEEK_TOKEN="deepseek-auth-token" --name my-bot MuseBot
+     docker run -d -v /home/user/xxx/data:/app/data \
+       -e TELEGRAM_BOT_TOKEN="telegram-bot-token" \
+       -e DEEPSEEK_TOKEN="deepseek-auth-token" \
+       -p 36060:36060 -p 18080:18080 \
+       --name my-bot MuseBot
    ```
+
+3. **Ports and volumes**
+   - `/app/data`: persist this volume — sqlite database, admin database
+     (`muse_bot_admin.db`), media files and the auto-generated admin session key.
+   - `36060`: main service HTTP (webhook callbacks, config API, SSE chat).
+   - `18080`: admin web UI.
+   - `ffmpeg`/`ffprobe`, `nodejs`/`npm` and `libopus` are pre-installed for
+     voice, video and skill features.
+
+4. **First admin login**
+   A random password for the `admin` account is generated on first start and
+   printed once in the container log:
+   ```sh
+    docker logs my-bot 2>&1 | grep "password is shown ONCE"
+   ```
+   Log in at `http://<host>:18080` and change the password (see the
+   [admin doc](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/admin.md)).
 
 ## Task web search
 

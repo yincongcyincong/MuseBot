@@ -118,14 +118,14 @@ go run main.go -telegram_bot_token=telegram-bot-token -deepseek_token=deepseek-a
 ```sh
 docker pull jackyin0822/musebot:latest
 chmod 777 /home/user/data
-docker run -d -v /home/user/data:/app/data -e TELEGRAM_BOT_TOKEN="你的Telegram Bot Token" -e DEEPSEEK_TOKEN="你的DeepSeek API密钥" -p 36060:36060  --name my-bot jackyin0822/musebot:latest
+docker run -d -v /home/user/data:/app/data -e TELEGRAM_BOT_TOKEN="你的Telegram Bot Token" -e DEEPSEEK_TOKEN="你的DeepSeek API密钥" -p 36060:36060 -p 18080:18080 --name my-bot jackyin0822/musebot:latest
 ```
 
 ```sh
 阿里云:
 docker pull crpi-i1dsvpjijxpgjgbv.cn-hangzhou.personal.cr.aliyuncs.com/jackyin0822/musebot:latest
 chmod 777 /home/user/data
-docker run -d -v /home/user/data:/app/data -e TELEGRAM_BOT_TOKEN="telegram-bot-token" -e DEEPSEEK_TOKEN="deepseek-auth-token" -p 36060:36060 --name my-bot  crpi-i1dsvpjijxpgjgbv.cn-hangzhou.personal.cr.aliyuncs.com/jackyin0822/musebot:latest
+docker run -d -v /home/user/data:/app/data -e TELEGRAM_BOT_TOKEN="telegram-bot-token" -e DEEPSEEK_TOKEN="deepseek-auth-token" -p 36060:36060 -p 18080:18080 --name my-bot  crpi-i1dsvpjijxpgjgbv.cn-hangzhou.personal.cr.aliyuncs.com/jackyin0822/musebot:latest
   
 ```
 
@@ -268,15 +268,34 @@ docker run -d -v /home/user/data:/app/data -e TELEGRAM_BOT_TOKEN="telegram-bot-t
 
 ## 🚀 Docker 部署
 
+镜像内由 supervisord 同时运行**两个进程**：MuseBot 主服务和 MuseBotAdmin 管理平台，任一进程崩溃都会自动重启。
+
 1. **构建 Docker 镜像**
    ```sh
-   docker build -t musebot .
+   docker build -t MuseBot .
    ```
 
-2. **运行 Docker 容器**
+2. **运行容器**
    ```sh
-   docker run -d -v /home/user/xxx/data:/app/data -e TELEGRAM_BOT_TOKEN="你的Telegram Bot Token" -e DEEPSEEK_TOKEN="你的DeepSeek API密钥" --name my-telegram-bot musebot
+   docker run -d -v /home/user/xxx/data:/app/data \
+     -e TELEGRAM_BOT_TOKEN="你的Telegram Bot Token" \
+     -e DEEPSEEK_TOKEN="你的DeepSeek API密钥" \
+     -p 36060:36060 -p 18080:18080 \
+     --name my-bot MuseBot
    ```
+
+3. **端口与数据卷**
+   - `/app/data`：务必挂载持久化——sqlite 数据库、管理端数据库（`muse_bot_admin.db`）、媒体文件、自动生成的管理端会话密钥都在这里。
+   - `36060`：主服务 HTTP（webhook 回调、配置接口、SSE 对话）。
+   - `18080`：管理平台 Web 界面。
+   - 镜像已预装 `ffmpeg`/`ffprobe`、`nodejs`/`npm` 和 `libopus`，语音、视频、Skill 功能开箱即用。
+
+4. **首次登录管理平台**
+   首次启动会为 `admin` 账户生成随机密码，并在容器日志中只打印一次：
+   ```sh
+   docker logs my-bot 2>&1 | grep "password is shown ONCE"
+   ```
+   访问 `http://<host>:18080` 登录并尽快修改密码（详见[管理平台文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/admin_ZH.md)）。
 
 ---
 

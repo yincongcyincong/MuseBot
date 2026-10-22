@@ -10,7 +10,7 @@
 要启动管理平台，请执行以下命令：
 
 ```bash
-./admin -db_type=sqlite3 -db_conf=./admin/data/telegram_bot.db
+./admin -db_type=sqlite3 -db_conf=./data/muse_bot_admin.db
 ```
 
 ### 命令参数
@@ -18,7 +18,7 @@
 | 变量名称            | 描述                                                                                                                      | 默认值                                       |
 |:----------------|:------------------------------------------------------------------------------------------------------------------------|:------------------------------------------|
 | **DB_TYPE**     | 数据库类型：`sqlite3` / `mysql`                                                                                               | `sqlite3` / `mysql`                       |
-| **DB_CONF**     | 数据库配置：`./data/telegram_admin_bot.db` 或 `root:admin@tcp(127.0.0.1:3306)/dbname?charset=utf8mb4&parseTime=True&loc=Local` | `./data/telegram_admin_bot.db`            |
+| **DB_CONF**     | 数据库配置：`./data/muse_bot_admin.db` 或 `root:admin@tcp(127.0.0.1:3306)/dbname?charset=utf8mb4&parseTime=True&loc=Local` | `./data/muse_bot_admin.db`            |
 | **SESSION_KEY** | 用于签发会话 cookie 的密钥。请自行设置随机值；未设置时会自动生成随机密钥并保存到 `data/admin_session_key`（权限 0600） | 自动生成            |
 | **ADMIN_PORT**  | 管理平台端口                                                                                                                  | `18080`                                   |
 
@@ -37,6 +37,12 @@
 
 ```
 initial admin account created; password is shown ONCE, change it after first login  username=admin password=xxxxxxxxxxxx
+```
+
+从管理端进程输出里取回密码（只打印一次）：
+
+```bash
+docker logs <容器名> 2>&1 | grep "password is shown ONCE"
 ```
 
 登录后请尽快修改（管理页面 -> 修改密码）。

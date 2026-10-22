@@ -40,7 +40,13 @@ func (l *LLM) executeTaskConfigTool(ctx context.Context, property map[string]int
 		if err != nil {
 			logger.ErrorCtx(ctx, "task config action fail", "type", action.Type,
 				"operation", action.Operation, "err", err)
-			results = append(results, fmt.Sprintf("❌ %s %s: %s", action.Type, action.Operation, err.Error()))
+			message := fmt.Sprintf("❌ %s %s: %s", action.Type, action.Operation, err.Error())
+			// the executor attaches captured command output to failures, so the
+			// model can see why the command failed instead of retrying blind
+			if result != "" {
+				message += "\n" + result
+			}
+			results = append(results, message)
 			continue
 		}
 		results = append(results, "✅ "+result)

@@ -53,9 +53,9 @@ func TestSendMsg_WithoutChanDoesNotBlock(t *testing.T) {
 }
 
 func TestOverLoop(t *testing.T) {
-	l := &LLM{LoopNum: 14}
+	l := &LLM{LoopNum: MostLoop - 1}
 	assert.False(t, l.OverLoop())
-	assert.Equal(t, 15, l.LoopNum)
+	assert.Equal(t, MostLoop, l.LoopNum)
 	assert.True(t, l.OverLoop())
 }
 

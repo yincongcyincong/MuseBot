@@ -10,7 +10,7 @@ provides context-aware responses, and supports multiple models for diverse inter
 To start the management platform, execute the following command:
 
 ```bash
-./admin -db_type=sqlite3 -db_conf=./data/telegram_admin_bot.db
+./admin -db_type=sqlite3 -db_conf=./data/muse_bot_admin.db
 ```
 
 ### Command Parameters
@@ -18,7 +18,7 @@ To start the management platform, execute the following command:
 | Variable Name    | Description                                                                                                                                | Default Value                                                      |
 |:-----------------|:-------------------------------------------------------------------------------------------------------------------------------------------|:-------------------------------------------------------------------|
 | **DB\_TYPE**     | Database type: `sqlite3` / `mysql`                                                                                                         | `sqlite3` / `mysql`                                                |
-| **DB\_CONF**     | Database configuration: `./data/telegram_admin_bot.db` or `root:admin@tcp(127.0.0.1:3306)/dbname?charset=utf8mb4&parseTime=True&loc=Local` | `./data/telegram_admin_bot.db`                                     |
+| **DB\_CONF**     | Database configuration: `./data/muse_bot_admin.db` or `root:admin@tcp(127.0.0.1:3306)/dbname?charset=utf8mb4&parseTime=True&loc=Local` | `./data/muse_bot_admin.db`                                         |
 | **SESSION\_KEY** | Secret key used to sign session cookies. Set your own random value; when empty a random key is generated and persisted to `data/admin_session_key` (permission 0600) | auto-generated |
 | **ADMIN\_PORT**  | port for admin platform                                                                                                                    | `18080`                                                            |
 
@@ -38,6 +38,12 @@ There is no default password anymore. On first launch a random password for the
 
 ```
 initial admin account created; password is shown ONCE, change it after first login  username=admin password=xxxxxxxxxxxx
+```
+
+Retrieve the password from the admin process output (printed only once):
+
+```bash
+docker logs <container> 2>&1 | grep "password is shown ONCE"
 ```
 
 Change it after logging in (Admin Page -> update password).
