@@ -1922,6 +1922,10 @@ func (r *RobotInfo) smartMode() bool {
 
 	chatId, msgId, userId := r.GetChatIdAndMsgIdAndUserID()
 
+	// the classifier round-trip can take a while; tell the user why the next
+	// reply is delayed
+	r.SendMsg(chatId, i18n.GetMessage("smart_mode_analyzing", nil), msgId, "", nil)
+
 	smartModeParams := map[string]interface{}{
 		"prompt": r.Robot.getPrompt(),
 	}
