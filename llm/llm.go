@@ -301,6 +301,7 @@ func (l *LLM) InsertOrUpdate() error {
 
 func (l *LLM) GetMessages(userId string, prompt string) {
 	l.appendHistory(userId)
+	l.appendLatestImage(userId)
 
 	if len(l.Images) > 0 {
 		l.LLMClient.GetImageMessage(l.Images, prompt)
@@ -340,6 +341,36 @@ func (l *LLM) appendHistory(userId string) {
 			l.LLMClient.GetMessage(openai.ChatMessageRoleAssistant, record.Answer)
 		}
 	}
+}
+
+// appendLatestImage keeps the most recent picture of the conversation (usually
+// a photo the bot just generated, else the user's last upload) visible to the
+// current chat turn, so follow-up prompts like "make it brighter" resolve
+// against it. Skipped when the current turn already carries its own images.
+func (l *LLM) appendLatestImage(userId string) {
+	if len(l.Images) > 0 || !l.Cs.UseRecord {
+		return
+	}
+	record, err := db.GetLastImageRecord(userId)
+	if err != nil {
+		logger.WarnCtx(l.Ctx, "get last image record fail", "err", err)
+		return
+	}
+	if record == nil || record.Answer == "" {
+		return
+	}
+	if record.CreateTime > 0 && record.CreateTime <= time.Now().Unix()-int64(conf.BaseConfInfo.ContextExpireTime) {
+		return
+	}
+	content, err := utils.DecodeStoredImage(record.Answer)
+	if err != nil {
+		logger.WarnCtx(l.Ctx, "decode last image record fail", "err", err)
+		return
+	}
+	if len(content) == 0 {
+		return
+	}
+	l.LLMClient.GetImageMessage([][]byte{content}, i18n.GetMessage("latest_image_context", nil))
 }
 
 // CompressHistory summarizes oldSummary + oldAQs into a single condensed summary.

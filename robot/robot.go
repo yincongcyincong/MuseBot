@@ -855,36 +855,7 @@ func (r *RobotInfo) GetLastImageContent() ([]byte, error) {
 		return nil, nil
 	}
 
-	answer := imageInfo.Answer
-	switch {
-	case strings.HasPrefix(answer, "data:image/"):
-		// 去掉前缀，找到 base64 数据起始位置
-		idx := strings.Index(answer, "base64,")
-		if idx == -1 {
-			return nil, errors.New("invalid base64 image data URI")
-		}
-		base64Data := answer[idx+7:] // "base64," 长度是7
-		imageContent, err := base64.StdEncoding.DecodeString(base64Data)
-		if err != nil {
-			logger.WarnCtx(r.Ctx, "decode base64 image fail", "err", err)
-			return nil, err
-		}
-		return imageContent, nil
-
-	case utils.IsMediaPath(answer):
-		imageContent, err := utils.ReadMediaFile(answer)
-		if err != nil {
-			logger.WarnCtx(r.Ctx, "read image media file fail", "err", err)
-			return nil, err
-		}
-		return imageContent, nil
-	}
-
-	imageContent, err := utils.DownloadFile(answer)
-	if err != nil {
-		logger.WarnCtx(r.Ctx, "download image fail", "err", err)
-	}
-	return imageContent, err
+	return utils.DecodeStoredImage(imageInfo.Answer)
 }
 
 func (r *RobotInfo) TalkingPreCheck(f func()) {

@@ -284,11 +284,11 @@ func GetTokenByUserIdAndTime(userId string, start, end int64) (int, error) {
 }
 
 func GetLastImageRecord(userId string) (*Record, error) {
-	query := "SELECT id, user_id, question, answer, content FROM records WHERE user_id = ? and record_type = ? and is_deleted = 0 order by id desc LIMIT 1"
+	query := "SELECT id, user_id, question, answer, content, create_time FROM records WHERE user_id = ? and record_type = ? and is_deleted = 0 order by id desc LIMIT 1"
 
 	var record Record
 	err := DB.QueryRow(query, userId, param.ImageRecordType).
-		Scan(&record.ID, &record.UserId, &record.Question, &record.Answer, &record.Content)
+		Scan(&record.ID, &record.UserId, &record.Question, &record.Answer, &record.Content, &record.CreateTime)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}

@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"encoding/base64"
 	"fmt"
 	"io/fs"
 	"os"
@@ -37,6 +38,25 @@ func MediaAbsDir() string {
 
 func IsMediaPath(p string) bool {
 	return strings.HasPrefix(p, MediaRootDir+"/")
+}
+
+// DecodeStoredImage turns a value stored in a record's answer/content column
+// back into raw image bytes. Records may hold a base64 data URI, a path under
+// data/media/, or a remote URL.
+func DecodeStoredImage(v string) ([]byte, error) {
+	switch {
+	case strings.HasPrefix(v, "data:image/"):
+		idx := strings.Index(v, "base64,")
+		if idx == -1 {
+			return nil, fmt.Errorf("invalid base64 image data URI")
+		}
+		return base64.StdEncoding.DecodeString(v[idx+7:])
+
+	case IsMediaPath(v):
+		return ReadMediaFile(v)
+	}
+
+	return DownloadFile(v)
 }
 
 // SaveMediaFile writes content into data/media/{folder}/ and returns the
