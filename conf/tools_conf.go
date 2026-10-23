@@ -184,7 +184,7 @@ func RegisterBuiltinTools() {
 	}
 
 	TaskTools.Store(BuiltinWebSearchTool, &AgentInfo{
-		Description:     "Web research agent. Assign it as a plan step whenever the task needs external facts, current data, or source links; it calls web_search.",
+		Description:     "Web research agent. Assign it as a plan step only when the task needs external facts, current data, or source links; skip it when no external information is required. It calls web_search.",
 		IsBuiltin:       true,
 		DeepseekTool:    mcputils.TransToolsToDPFunctionCall([]mcp.Tool{searchTool}),
 		VolTool:         mcputils.TransToolsToVolFunctionCall([]mcp.Tool{searchTool}),
