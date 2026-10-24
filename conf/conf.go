@@ -67,7 +67,7 @@ type BaseConf struct {
 	MaxUserChat       int    `json:"max_user_chat"`
 	HTTPHost          string `json:"http_host"`
 	UseTools          bool   `json:"use_tools"`
-	MaxQAPair         int    `json:"max_qa_pari"`
+	MaxQAPair         int    `json:"max_qa_pair"`
 	Character         string `json:"character"`
 	SmartMode         bool   `json:"smart_mode"`
 	ContextExpireTime int    `json:"context_expire_time"`
@@ -136,7 +136,7 @@ func InitConf() {
 	flag.StringVar(&BaseConfInfo.QQOneBotReceiveToken, "qq_one_bot_receive_token", "MuseBot", "onebot receive token")
 	flag.StringVar(&BaseConfInfo.QQOneBotSendToken, "qq_one_bot_send_token", "MuseBot", "onebot send token")
 	flag.StringVar(&BaseConfInfo.QQOneBotHttpServer, "qq_one_bot_http_server", "http://127.0.0.1:3000", "onebot http server")
-	flag.BoolVar(&BaseConfInfo.SmartMode, "smart_mode", false, "Smart mode")
+	flag.BoolVar(&BaseConfInfo.SmartMode, "smart_mode", true, "Smart mode")
 	flag.IntVar(&BaseConfInfo.ContextExpireTime, "context_expire_time", 86400, "Context expire time")
 
 	flag.BoolVar(&BaseConfInfo.EnableAutoCompress, "enable_auto_compress", true, "enable auto compress context history")
@@ -168,7 +168,7 @@ func InitConf() {
 	flag.IntVar(&BaseConfInfo.MaxUserChat, "max_user_chat", 2, "max chat per user")
 	flag.StringVar(&BaseConfInfo.HTTPHost, "http_host", ":36060", "http server port")
 	flag.BoolVar(&BaseConfInfo.UseTools, "use_tools", false, "use function tools")
-	flag.IntVar(&BaseConfInfo.MaxQAPair, "max_qa_pari", 100, "max qa pair")
+	flag.IntVar(&BaseConfInfo.MaxQAPair, "max_qa_pair", 100, "max qa pair")
 	flag.StringVar(&BaseConfInfo.Character, "character", "", "ai's character")
 	flag.StringVar(&BaseConfInfo.Powered, "powered", "", "powered by")
 	flag.StringVar(&BaseConfInfo.ImagePath, "image_path", "./conf/img/", "image path")
@@ -189,6 +189,7 @@ func InitConf() {
 	allowedUserIds := flag.String("allowed_user_ids", "", "allowed user ids")
 	allowedGroupIds := flag.String("allowed_group_ids", "", "allowed group ids")
 	adminUserIds := flag.String("admin_user_ids", "", "admin user ids")
+	confPath := flag.String("conf", "", "json config file path; file values beat flags, env vars beat the file")
 
 	BaseConfInfo.AllowedUserIds = make(map[string]bool)
 	BaseConfInfo.AllowedGroupIds = make(map[string]bool)
@@ -205,6 +206,8 @@ func InitConf() {
 	flag.CommandLine.Init(os.Args[0], flag.ContinueOnError)
 	flag.Parse()
 	applyParsedToolsFlags(flag.CommandLine)
+
+	loadCustomConf(*confPath)
 
 	if os.Getenv("TELEGRAM_BOT_TOKEN") != "" {
 		BaseConfInfo.TelegramBotToken = os.Getenv("TELEGRAM_BOT_TOKEN")
@@ -292,14 +295,21 @@ func InitConf() {
 
 	if os.Getenv("QQ_ONEBOT_SEND_TOKEN") != "" {
 		BaseConfInfo.QQOneBotSendToken = os.Getenv("QQ_ONEBOT_SEND_TOKEN")
+	} else if os.Getenv("QQ_ONE_BOT_SEND_TOKEN") != "" {
+		// alias matching the flag/json spelling qq_one_bot_send_token
+		BaseConfInfo.QQOneBotSendToken = os.Getenv("QQ_ONE_BOT_SEND_TOKEN")
 	}
 
 	if os.Getenv("QQ_ONEBOT_RECEIVE_TOKEN") != "" {
 		BaseConfInfo.QQOneBotReceiveToken = os.Getenv("QQ_ONEBOT_RECEIVE_TOKEN")
+	} else if os.Getenv("QQ_ONE_BOT_RECEIVE_TOKEN") != "" {
+		BaseConfInfo.QQOneBotReceiveToken = os.Getenv("QQ_ONE_BOT_RECEIVE_TOKEN")
 	}
 
 	if os.Getenv("QQ_ONEBOT_HTTP_SERVER") != "" {
 		BaseConfInfo.QQOneBotHttpServer = os.Getenv("QQ_ONEBOT_HTTP_SERVER")
+	} else if os.Getenv("QQ_ONE_BOT_HTTP_SERVER") != "" {
+		BaseConfInfo.QQOneBotHttpServer = os.Getenv("QQ_ONE_BOT_HTTP_SERVER")
 	}
 
 	if os.Getenv("DEEPSEEK_TOKEN") != "" {
@@ -308,6 +318,10 @@ func InitConf() {
 
 	if os.Getenv("CUSTOM_URL") != "" {
 		BaseConfInfo.CustomUrl = os.Getenv("CUSTOM_URL")
+	}
+
+	if os.Getenv("CUSTOM_PATH") != "" {
+		BaseConfInfo.CustomPath = os.Getenv("CUSTOM_PATH")
 	}
 
 	if os.Getenv("BOT_NAME") != "" {
@@ -682,6 +696,74 @@ func logConf(allowedUserIds, allowedGroupIds, adminUserIds string) {
 	logger.Info("TOOLS_CONF", "McpConfPath", *ToolsConfInfo.McpConfPath)
 }
 
+// loadCustomConf applies the json config file given via the -conf flag or the
+// CONFIG env var (the flag wins when both are set). A flat file (top-level
+// base keys only) or the same sectioned layout as the admin-persisted config
+// (base/audio/llm/photo/rag/video/register/tools) both work. File values
+// override flag defaults; environment variables applied afterwards still take
+// precedence.
+func loadCustomConf(flagValue string) {
+	path := strings.TrimSpace(flagValue)
+	if path == "" {
+		path = strings.TrimSpace(os.Getenv("CONFIG"))
+	}
+	if path == "" {
+		return
+	}
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		logger.Fatal("read config file fail", "path", path, "err", err)
+		return
+	}
+
+	m := make(map[string]interface{})
+	if err := json.Unmarshal(data, &m); err != nil {
+		logger.Fatal("parse config file fail", "path", path, "err", err)
+		return
+	}
+
+	section, nested := m["base"]
+	if !nested {
+		// flat file: every top-level key is a base config key
+		section = m
+	}
+	sectionMap, ok := section.(map[string]interface{})
+	if !ok {
+		logger.Fatal("invalid config file format", "path", path)
+		return
+	}
+
+	applyLegacyConfKeys(sectionMap)
+	if _, err := TransferMapToConf(sectionMap, BaseConfInfo); err != nil {
+		logger.Fatal("transfer config file to base conf fail", "path", path, "err", err)
+		return
+	}
+
+	if nested {
+		for name, target := range map[string]interface{}{
+			"audio":    AudioConfInfo,
+			"llm":      LLMConfInfo,
+			"photo":    PhotoConfInfo,
+			"rag":      RagConfInfo,
+			"video":    VideoConfInfo,
+			"register": RegisterConfInfo,
+			"tools":    ToolsConfInfo,
+		} {
+			v, ok := m[name].(map[string]interface{})
+			if !ok {
+				continue
+			}
+			if _, err := TransferMapToConf(v, target); err != nil {
+				logger.Fatal("transfer config file to conf fail", "path", path, "section", name, "err", err)
+				return
+			}
+		}
+	}
+
+	logger.Info("CONF", "ConfFile", path)
+}
+
 func GetAbsPath(relPath string) string {
 	exe, err := os.Executable()
 	if err != nil {
@@ -708,6 +790,11 @@ func loadConf() bool {
 		return false
 	}
 
+	// an explicit -conf file replaces the implicit persisted config entirely
+	if _, ok := m["conf"]; ok {
+		return false
+	}
+
 	data, err := os.ReadFile(getSaveConf(m))
 	if err != nil {
 		return false
@@ -721,6 +808,7 @@ func loadConf() bool {
 
 	hasNewField := false
 
+	applyLegacyConfKeys(AllConf["base"].(map[string]interface{}))
 	newField, err := TransferMapToConf(AllConf["base"].(map[string]interface{}), BaseConfInfo)
 	if err != nil {
 		logger.Error("Failed to transfer map to base conf", "err", err)
@@ -841,6 +929,18 @@ func NormalizeHTTP(addr string) string {
 		addr = "http://" + addr
 	}
 	return addr
+}
+
+// applyLegacyConfKeys renames config keys that were misspelled in older
+// versions to their current names, so config files written before the fix
+// keep working. Only applied when the current name is absent.
+func applyLegacyConfKeys(m map[string]interface{}) {
+	if _, ok := m["max_qa_pair"]; !ok {
+		if v, ok := m["max_qa_pari"]; ok {
+			m["max_qa_pair"] = v
+			delete(m, "max_qa_pari")
+		}
+	}
 }
 
 // TransferMapToConf unmarshals the persisted config map m into conf. Values

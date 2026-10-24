@@ -91,8 +91,11 @@ func EnvToolsConf() {
 	if os.Getenv("MCP_CONF_PATH") != "" {
 		*ToolsConfInfo.McpConfPath = os.Getenv("MCP_CONF_PATH")
 	}
-	if os.Getenv("SKILLS_PATH") != "" {
-		*ToolsConfInfo.SkillPath = os.Getenv("SKILLS_PATH")
+	if path := os.Getenv("SKILL_PATH"); path != "" {
+		*ToolsConfInfo.SkillPath = path
+	} else if path := os.Getenv("SKILLS_PATH"); path != "" {
+		// legacy plural spelling kept for compatibility
+		*ToolsConfInfo.SkillPath = path
 	}
 	if os.Getenv("ALLOWED_COMMANDS") != "" {
 		ToolsConfInfo.AllowedCommands = os.Getenv("ALLOWED_COMMANDS")

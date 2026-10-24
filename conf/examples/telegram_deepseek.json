@@ -1,0 +1,7 @@
+{
+  "telegram_bot_token": "your-telegram-bot-token",
+  "type": "deepseek",
+  "deepseek_token": "your-deepseek-api-key",
+  "bot_name": "MuseBot",
+  "lang": "en"
+}

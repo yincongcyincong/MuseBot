@@ -133,7 +133,7 @@ Load local `SKILL.md` prompt skills for the `/task` workflow.
 ./MuseBot -skill_path=/path/to/skills
 ```
 
-* `-skill_path`: Skill directory. The equivalent environment variable is `SKILLS_PATH`.
+* `-skill_path`: Skill directory. The equivalent environment variable is `SKILL_PATH` (the legacy `SKILLS_PATH` spelling still works).
 * See [Skills](skills.md) for the file format.
 
 #### 8\.2\. Conversation Configuration (`config`)

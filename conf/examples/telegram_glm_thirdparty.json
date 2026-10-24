@@ -1,0 +1,11 @@
+{
+  "telegram_bot_token": "your-telegram-bot-token",
+  "type": "openai",
+  "openai_token": "your-zhipu-api-key",
+  "custom_url": "https://open.bigmodel.cn/api/paas/v4",
+  "default_model": "glm-4.6",
+  "smart_mode": true,
+  "task_auto_approve": true,
+  "bot_name": "MuseBot",
+  "lang": "zh"
+}

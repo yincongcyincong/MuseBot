@@ -113,8 +113,8 @@ func EnvPhotoConf() {
 		PhotoConfInfo.Height, _ = strconv.Atoi(os.Getenv("HEIGHT"))
 	}
 
-	if os.Getenv("USE_PER_LLM") != "" {
-		PhotoConfInfo.UsePreLLM, _ = strconv.ParseBool(os.Getenv("USE_PER_LLM"))
+	if os.Getenv("USE_PRE_LLM") != "" {
+		PhotoConfInfo.UsePreLLM, _ = strconv.ParseBool(os.Getenv("USE_PRE_LLM"))
 	}
 
 	if os.Getenv("USE_SR") != "" {

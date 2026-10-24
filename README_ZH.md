@@ -198,12 +198,70 @@ docker run -d -v /home/user/data:/app/data -e TELEGRAM_BOT_TOKEN="telegram-bot-t
 | **SEND_MCP_RES**                | 是否发送mcp的请求结果                                                                        | false                 |
 | **TASK_AUTO_APPROVE**           | 任务工具操作（命令执行、配置修改）自动同意，无需输入 /y 确认                                | false                 |
 | **DEFAULT_MODEL**               | 用户默认使用的文本模型                                                                         | -                     |
+| **CONFIG**                      | 指定 json 配置文件路径，文件中的配置优先于命令行参数，环境变量优先于配置文件                    | -                     |
+
+### 配置文件启动
+
+不想传一长串参数/环境变量时，可以写一个 json 配置文件，用 `-conf` 参数或 `CONFIG` 环境变量指定：
+
+```sh
+go run main.go -conf=conf/examples/telegram_deepseek.json
+
+# docker 挂载配置文件
+docker run -d -v /home/user/data:/app/data \
+  -v /home/user/mybot.json:/app/mybot.json \
+  -e CONFIG="/app/mybot.json" \
+  -p 36060:36060 -p 18080:18080 --name my-bot jackyin0822/musebot:latest
+```
+
+配置文件支持两种格式：
+
+**扁平格式**（推荐，顶层直接写基础配置项，key 同环境变量的小写下划线形式）：
+
+```json
+{
+  "telegram_bot_token": "your-telegram-bot-token",
+  "type": "deepseek",
+  "deepseek_token": "your-deepseek-api-key",
+  "smart_mode": true,
+  "admin_user_ids": {"123456789": true}
+}
+```
+
+**分区格式**（与 [管理后台](static/doc/admin_ZH.md) 持久化的配置文件相同，`base`/`llm`/`audio`/`photo`/`video`/`rag`/`tools`/`register` 分区，可精细控制每个分区参数）：
+
+```json
+{
+  "base": {
+    "telegram_bot_token": "your-telegram-bot-token",
+    "type": "deepseek",
+    "deepseek_token": "your-deepseek-api-key"
+  },
+  "llm": {
+    "temperature": 0.7
+  }
+}
+```
+
+优先级：**环境变量 > 配置文件 > 命令行参数 > 默认值**。配置文件里没写的项沿用默认值，修改配置文件后重启生效。
+
+[conf/examples/](conf/examples/) 里有几个经典配置可以直接复制修改：
+
+| 文件                            | 场景                                                |
+|---------------------------------|-----------------------------------------------------|
+| `telegram_deepseek.json`        | Telegram + DeepSeek，最简入门                        |
+| `telegram_glm_thirdparty.json`  | Telegram + 智谱 GLM（第三方 OpenAI 兼容），开启 smart_mode + 任务自动同意 |
+| `discord_openai.json`           | Discord + OpenAI，开启 Function Call 和流式输出      |
+| `lark_aliyun.json`              | 飞书 + 阿里云百炼                                    |
+| `dingtalk_deepseek.json`        | 钉钉 + DeepSeek，开启 smart_mode                     |
+| `full_nested.json`              | 分区格式完整示例（base + llm + tools）               |
 
 ### 其他配置
 
 [deepseek参数](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/deepseekconf_ZH.md)
 [图片参数](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/photoconf_ZH.md)
 [视频参数](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/videoconf_ZH.md)
+[进阶配置（第三方模型 / smart_mode / 任务自动同意）](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/advanced_ZH.md)
 
 ---
 

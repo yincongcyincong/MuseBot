@@ -22,6 +22,7 @@ func InitSessionStore() {
 		Path:     "/",
 		MaxAge:   86400 * 30,
 		HttpOnly: true,
+		Secure:   conf.BaseConfInfo.SessionSecure,
 		SameSite: http.SameSiteLaxMode,
 	}
 }
@@ -95,6 +96,21 @@ func RequireLogin(next http.HandlerFunc) http.HandlerFunc {
 		if !ok || userID == nil {
 			utils.Failure(ctx, w, r, param.CodeNotLogin, param.MsgNotLogin, nil)
 			logger.ErrorCtx(ctx, "get session error", "err", err)
+			return
+		}
+
+		// the cookie is only cryptographically bound to the session key;
+		// re-check the user against the database so a leaked key cannot mint
+		// cookies for arbitrary or deleted users
+		id, ok := userID.(int)
+		if !ok || id <= 0 {
+			utils.Failure(ctx, w, r, param.CodeNotLogin, param.MsgNotLogin, nil)
+			logger.ErrorCtx(ctx, "get session error", "err", "invalid user id in session")
+			return
+		}
+		if _, err := db.GetUserByID(id); err != nil {
+			utils.Failure(ctx, w, r, param.CodeNotLogin, param.MsgNotLogin, nil)
+			logger.ErrorCtx(ctx, "session user no longer exists", "userId", id, "err", err)
 			return
 		}
 		next.ServeHTTP(w, r)

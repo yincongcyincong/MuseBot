@@ -1,0 +1,30 @@
+{
+  "base": {
+    "telegram_bot_token": "your-telegram-bot-token",
+    "type": "openai",
+    "openai_token": "your-api-key",
+    "custom_url": "https://your-openai-compatible-endpoint/v1",
+    "default_model": "your-model",
+    "smart_mode": true,
+    "task_auto_approve": true,
+    "use_tools": true,
+    "http_host": ":36060",
+    "db_type": "sqlite3",
+    "db_conf": "data/muse_bot.db",
+    "token_per_user": 100000,
+    "max_user_chat": 2,
+    "max_qa_pari": 100,
+    "context_expire_time": 86400,
+    "lang": "zh",
+    "admin_user_ids": {"123456789": true},
+    "allowed_user_ids": {"*": true}
+  },
+  "llm": {
+    "temperature": 0.7,
+    "max_tokens": 4096
+  },
+  "tools": {
+    "web_search_provider": "default",
+    "command_timeout_sec": 60
+  }
+}

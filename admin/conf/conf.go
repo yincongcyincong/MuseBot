@@ -25,6 +25,10 @@ type BaseConfig struct {
 
 	SessionKey string `json:"session_key"`
 
+	// SessionSecure marks the session cookie Secure so browsers only send it
+	// over HTTPS; off by default because most deployments serve plain HTTP.
+	SessionSecure bool `json:"session_secure"`
+
 	AdminPort string `json:"admin_port"`
 
 	CheckBotSec int `json:"check_bot_sec"`
@@ -36,6 +40,7 @@ func InitConfig() {
 	flag.StringVar(&BaseConfInfo.DBType, "db_type", "sqlite3", "db type")
 	flag.StringVar(&BaseConfInfo.DBConf, "db_conf", botUtils.GetAbsPath("data/muse_bot_admin.db"), "db conf")
 	flag.StringVar(&BaseConfInfo.SessionKey, "session_key", "", "session key; auto-generated and persisted when empty")
+	flag.BoolVar(&BaseConfInfo.SessionSecure, "session_secure", false, "mark the admin session cookie as Secure (HTTPS only)")
 	flag.StringVar(&BaseConfInfo.AdminPort, "admin_port", "18080", "admin port")
 	flag.IntVar(&BaseConfInfo.CheckBotSec, "check_bot_sec", 10, "check bot interval")
 
@@ -56,6 +61,10 @@ func InitConfig() {
 		BaseConfInfo.SessionKey = os.Getenv("SESSION_KEY")
 	}
 
+	if os.Getenv("SESSION_SECURE") == "true" {
+		BaseConfInfo.SessionSecure = true
+	}
+
 	if os.Getenv("ADMIN_PORT") != "" {
 		BaseConfInfo.AdminPort = os.Getenv("ADMIN_PORT")
 	}
@@ -70,6 +79,7 @@ func InitConfig() {
 	logger.Info("CONF", "DBConf", BaseConfInfo.DBConf)
 	// never log the session key itself
 	logger.Info("CONF", "SessionKey", sessionKeySource)
+	logger.Info("CONF", "SessionSecure", BaseConfInfo.SessionSecure)
 	logger.Info("CONF", "AdminPort", BaseConfInfo.AdminPort)
 	logger.Info("CONF", "CheckBotSec", BaseConfInfo.CheckBotSec)
 

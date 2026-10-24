@@ -134,7 +134,7 @@
 ./MuseBot -skill_path=/path/to/skills
 ```
 
-* `-skill_path`：Skill 目录，等价环境变量是 `SKILLS_PATH`。
+* `-skill_path`：Skill 目录，等价环境变量是 `SKILL_PATH`（旧写法 `SKILLS_PATH` 仍兼容）。
 * 文件格式详见 [Skill 文档](skills_ZH.md)。
 
 #### 8\.2\. 对话式配置（`config`）

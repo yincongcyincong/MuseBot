@@ -1,0 +1,10 @@
+{
+  "discord_bot_token": "your-discord-bot-token",
+  "type": "openai",
+  "openai_token": "your-openai-api-key",
+  "default_model": "gpt-4o",
+  "use_tools": true,
+  "is_streaming": true,
+  "bot_name": "MuseBot",
+  "lang": "en"
+}

@@ -35,7 +35,7 @@ Skill 目录下的可读文本辅助文件会按相对路径一起注入。单�
 或者：
 
 ```bash
-export SKILLS_PATH=/path/to/skills
+export SKILL_PATH=/path/to/skills
 ```
 
 同步 MCP 配置时会重新加载 Skill。Skill 名称不能和已有 MCP 任务智能体名称冲突。

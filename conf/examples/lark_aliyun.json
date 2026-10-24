@@ -1,0 +1,8 @@
+{
+  "lark_app_id": "your-lark-app-id",
+  "lark_app_secret": "your-lark-app-secret",
+  "type": "aliyun",
+  "aliyun_token": "your-aliyun-bailian-token",
+  "bot_name": "MuseBot",
+  "lang": "zh"
+}

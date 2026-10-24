@@ -35,7 +35,7 @@ By default, skills are loaded recursively from `conf/skills`.
 Or:
 
 ```bash
-export SKILLS_PATH=/path/to/skills
+export SKILL_PATH=/path/to/skills
 ```
 
 Skills are reloaded when MCP configuration is synchronized. A skill name cannot conflict with an existing MCP task-agent name.

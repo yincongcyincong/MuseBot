@@ -1,0 +1,10 @@
+{
+  "ding_client_id": "your-dingtalk-app-key",
+  "ding_client_secret": "your-dingtalk-app-secret",
+  "ding_template_id": "your-dingtalk-template-id",
+  "type": "deepseek",
+  "deepseek_token": "your-deepseek-api-key",
+  "smart_mode": true,
+  "bot_name": "MuseBot",
+  "lang": "zh"
+}
