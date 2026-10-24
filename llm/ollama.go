@@ -244,10 +244,11 @@ func (o *OllamaReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 func GetDeepseekClient(ctx context.Context) *deepseek.Client {
 	httpClient := utils.GetLLMProxyClient()
 	txtType := utils.GetTxtType(db.GetCtxUserInfo(ctx).LLMConfigRaw)
+	token := conf.BaseConfInfo.DeepseekToken
 	if txtType == param.Ollama {
-		conf.BaseConfInfo.DeepseekToken = "ollama"
+		token = "ollama"
 	}
-	client, err := deepseek.NewClientWithOptions(conf.BaseConfInfo.DeepseekToken, deepseek.WithHTTPClient(httpClient))
+	client, err := deepseek.NewClientWithOptions(token, deepseek.WithHTTPClient(httpClient))
 	if err != nil {
 		logger.ErrorCtx(ctx, "Error creating deepseek client", "err", err)
 		return nil
