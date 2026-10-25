@@ -5,12 +5,15 @@ import (
 
 	"errors"
 	"fmt"
+	"github.com/yincongcyincong/MuseBot/conf"
 	"github.com/yincongcyincong/MuseBot/i18n"
 	"strings"
 )
 
 const (
-	taskMaxPlanItems      = 8
+	taskMaxPlanItems = 8
+	// taskMaxExecutionLoops is the fallback used when the configured value is
+	// unset or invalid, so existing config files keep the previous behaviour.
 	taskMaxExecutionLoops = 3
 )
 
@@ -34,14 +37,20 @@ var taskStateTransitions = map[TaskState][]TaskState{
 }
 
 type taskStateMachine struct {
-	state            TaskState
-	executionLoop    int
-	completedResults []TaskResult
+	state             TaskState
+	executionLoop     int
+	maxExecutionLoops int
+	completedResults  []TaskResult
 }
 
 func newTaskStateMachine() *taskStateMachine {
+	maxLoops := conf.BaseConfInfo.TaskMaxExecLoops
+	if maxLoops <= 0 {
+		maxLoops = taskMaxExecutionLoops
+	}
 	return &taskStateMachine{
-		state: TaskStateInit,
+		state:             TaskStateInit,
+		maxExecutionLoops: maxLoops,
 	}
 }
 
@@ -71,8 +80,8 @@ func (m *taskStateMachine) beginPlan() error {
 }
 
 func (m *taskStateMachine) beginExecutionLoop() error {
-	if m.executionLoop >= taskMaxExecutionLoops {
-		return fmt.Errorf("task exceeded %d execution loops", taskMaxExecutionLoops)
+	if m.executionLoop >= m.maxExecutionLoops {
+		return fmt.Errorf("task exceeded %d execution loops", m.maxExecutionLoops)
 	}
 	if err := m.transition(TaskStateExecute); err != nil {
 		return err
