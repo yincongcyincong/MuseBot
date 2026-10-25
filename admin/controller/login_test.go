@@ -10,6 +10,7 @@ import (
 
 	"github.com/yincongcyincong/MuseBot/admin/conf"
 	"github.com/yincongcyincong/MuseBot/admin/db"
+	"github.com/yincongcyincong/MuseBot/param"
 )
 
 func TestMain(m *testing.M) {
@@ -31,8 +32,9 @@ func testRequest(url string) *http.Request {
 }
 
 // signedRequest returns a request carrying a validly-signed session cookie
-// with the given user_id, as a leaked-key attacker would forge.
-func signedRequest(t *testing.T, userID int) *http.Request {
+// with the given user_id, as a leaked-key attacker would forge. An optional
+// username mirrors what real login sessions store.
+func signedRequest(t *testing.T, userID int, username ...string) *http.Request {
 	t.Helper()
 	r := testRequest("/user/get")
 	w := httptest.NewRecorder()
@@ -41,6 +43,9 @@ func signedRequest(t *testing.T, userID int) *http.Request {
 		t.Fatalf("new session fail: %v", err)
 	}
 	session.Values["user_id"] = userID
+	if len(username) > 0 {
+		session.Values["username"] = username[0]
+	}
 	if err := session.Save(r, w); err != nil {
 		t.Fatalf("save session fail: %v", err)
 	}
@@ -131,5 +136,47 @@ func TestSessionCookieFlags(t *testing.T) {
 	}
 	if cookie.Path != "/" {
 		t.Errorf("session cookie path must be /, got %s", cookie.Path)
+	}
+}
+
+// GetCurrentUserHandler flags accounts still on the default admin/admin
+// password so the UI can prompt for a change.
+func TestCurrentUserFlagsDefaultPassword(t *testing.T) {
+	if err := db.CreateUser("default_pwd_user", "admin"); err != nil {
+		t.Fatalf("create user fail: %v", err)
+	}
+	u, err := db.GetUserByUsername("default_pwd_user")
+	if err != nil {
+		t.Fatalf("get user fail: %v", err)
+	}
+	defer func() { _ = db.DeleteUser(u.ID) }()
+
+	w := httptest.NewRecorder()
+	GetCurrentUserHandler(w, signedRequest(t, u.ID, "default_pwd_user"))
+	res := decodeResponse(w)
+	if res == nil || res.Code != param.CodeSuccess {
+		t.Fatalf("current user fail: %+v", res)
+	}
+	data, _ := res.Data.(map[string]interface{})
+	if data == nil {
+		t.Fatalf("unexpected payload: %+v", res.Data)
+	}
+	if data["is_default_password"] != true {
+		t.Errorf("expected is_default_password true for the default password, got %v", data["is_default_password"])
+	}
+
+	// changing the password clears the flag
+	if err := db.UpdateUserPassword(u.ID, "new-password"); err != nil {
+		t.Fatalf("update password fail: %v", err)
+	}
+	w = httptest.NewRecorder()
+	GetCurrentUserHandler(w, signedRequest(t, u.ID, "default_pwd_user"))
+	res = decodeResponse(w)
+	if res == nil || res.Code != param.CodeSuccess {
+		t.Fatalf("current user after update fail: %+v", res)
+	}
+	data, _ = res.Data.(map[string]interface{})
+	if data["is_default_password"] != false {
+		t.Errorf("expected is_default_password false after password change, got %v", data["is_default_password"])
 	}
 }

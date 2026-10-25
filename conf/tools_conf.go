@@ -35,10 +35,10 @@ type AgentInfo struct {
 	IsSkill      bool   `json:"-"`
 	IsBuiltin    bool   `json:"-"`
 
-	DeepseekTool    []deepseek.Tool   `json:"-"`
-	VolTool         []*model.Tool     `json:"-"`
-	OpenAITools     []openai.Tool     `json:"-"`
-	GeminiTools     []*genai.Tool     `json:"-"`
+	DeepseekTool []deepseek.Tool `json:"-"`
+	VolTool      []*model.Tool   `json:"-"`
+	OpenAITools  []openai.Tool   `json:"-"`
+	GeminiTools  []*genai.Tool   `json:"-"`
 }
 
 type ToolsConf struct {
@@ -187,12 +187,12 @@ func RegisterBuiltinTools() {
 	}
 
 	TaskTools.Store(BuiltinWebSearchTool, &AgentInfo{
-		Description:     "Web research agent. Assign it as a plan step only when the task needs external facts, current data, or source links; skip it when no external information is required. It calls web_search.",
-		IsBuiltin:       true,
-		DeepseekTool:    mcputils.TransToolsToDPFunctionCall([]mcp.Tool{searchTool}),
-		VolTool:         mcputils.TransToolsToVolFunctionCall([]mcp.Tool{searchTool}),
-		OpenAITools:     mcputils.TransToolsToChatGPTFunctionCall([]mcp.Tool{searchTool}),
-		GeminiTools:     mcputils.TransToolsToGeminiFunctionCall([]mcp.Tool{searchTool}),
+		Description:  "Web research agent. Assign it as a plan step only when the task needs external facts, current data, or source links; skip it when no external information is required. It calls web_search.",
+		IsBuiltin:    true,
+		DeepseekTool: mcputils.TransToolsToDPFunctionCall([]mcp.Tool{searchTool}),
+		VolTool:      mcputils.TransToolsToVolFunctionCall([]mcp.Tool{searchTool}),
+		OpenAITools:  mcputils.TransToolsToChatGPTFunctionCall([]mcp.Tool{searchTool}),
+		GeminiTools:  mcputils.TransToolsToGeminiFunctionCall([]mcp.Tool{searchTool}),
 	})
 
 	shellTool := mcp.Tool{
@@ -220,12 +220,12 @@ func RegisterBuiltinTools() {
 	}
 
 	TaskTools.Store(BuiltinShellTool, &AgentInfo{
-		Description:     "Command execution agent. Call shell only with the exact argv needed, and wait for user approval before execution.",
-		IsBuiltin:       true,
-		DeepseekTool:    mcputils.TransToolsToDPFunctionCall([]mcp.Tool{shellTool}),
-		VolTool:         mcputils.TransToolsToVolFunctionCall([]mcp.Tool{shellTool}),
-		OpenAITools:     mcputils.TransToolsToChatGPTFunctionCall([]mcp.Tool{shellTool}),
-		GeminiTools:     mcputils.TransToolsToGeminiFunctionCall([]mcp.Tool{shellTool}),
+		Description:  "Command execution agent. Call shell only with the exact argv needed, and wait for user approval before execution.",
+		IsBuiltin:    true,
+		DeepseekTool: mcputils.TransToolsToDPFunctionCall([]mcp.Tool{shellTool}),
+		VolTool:      mcputils.TransToolsToVolFunctionCall([]mcp.Tool{shellTool}),
+		OpenAITools:  mcputils.TransToolsToChatGPTFunctionCall([]mcp.Tool{shellTool}),
+		GeminiTools:  mcputils.TransToolsToGeminiFunctionCall([]mcp.Tool{shellTool}),
 	})
 
 	configTool := mcp.Tool{
@@ -267,10 +267,10 @@ func RegisterBuiltinTools() {
 			"Cron create returns the new numeric id; keep it for later reference. Before cron update/enable/disable/delete, run cron list first and match by id, name, prompt or cron spec; never guess an id, and confirm with the user when several jobs match. " +
 			"Use command(run) with an argv array, never a shell string; file operations belong to the shell agent, not bot_config. " +
 			"Never invent configuration keys, operations, or URLs, and never return secrets.",
-		DeepseekTool:    mcputils.TransToolsToDPFunctionCall([]mcp.Tool{configTool}),
-		VolTool:         mcputils.TransToolsToVolFunctionCall([]mcp.Tool{configTool}),
-		OpenAITools:     mcputils.TransToolsToChatGPTFunctionCall([]mcp.Tool{configTool}),
-		GeminiTools:     mcputils.TransToolsToGeminiFunctionCall([]mcp.Tool{configTool}),
+		DeepseekTool: mcputils.TransToolsToDPFunctionCall([]mcp.Tool{configTool}),
+		VolTool:      mcputils.TransToolsToVolFunctionCall([]mcp.Tool{configTool}),
+		OpenAITools:  mcputils.TransToolsToChatGPTFunctionCall([]mcp.Tool{configTool}),
+		GeminiTools:  mcputils.TransToolsToGeminiFunctionCall([]mcp.Tool{configTool}),
 	})
 }
 
@@ -291,11 +291,11 @@ func InsertTools(clientName string) {
 		gmTools := mcputils.TransToolsToGeminiFunctionCall(c.Tools)
 
 		TaskTools.Store(clientName, &AgentInfo{
-			Description: fmt.Sprintf("MCP server %s exposes the function tools listed in this agent's schema.", clientName),
-			DeepseekTool:    dpTools,
-			VolTool:         volTools,
-			GeminiTools:     gmTools,
-			OpenAITools:     oaTools,
+			Description:  fmt.Sprintf("MCP server %s exposes the function tools listed in this agent's schema.", clientName),
+			DeepseekTool: dpTools,
+			VolTool:      volTools,
+			GeminiTools:  gmTools,
+			OpenAITools:  oaTools,
 		})
 
 		RebuildChatToolSets()

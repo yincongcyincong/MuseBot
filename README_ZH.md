@@ -349,11 +349,8 @@ docker run -d -v /home/user/data:/app/data \
    - 镜像已预装 `ffmpeg`/`ffprobe`、`nodejs`/`npm` 和 `libopus`，语音、视频、Skill 功能开箱即用。
 
 4. **首次登录管理平台**
-   首次启动会为 `admin` 账户生成随机密码，并在容器日志中只打印一次：
-   ```sh
-   docker logs my-bot 2>&1 | grep "password is shown ONCE"
-   ```
-   访问 `http://<host>:18080` 登录并尽快修改密码（详见[管理平台文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/admin_ZH.md)）。
+   首次启动会创建默认账户 `admin` / `admin`，登录后管理页面会弹出修改密码的提示（可点击「稍后再说」跳过，但建议尽快修改）。
+   访问 `http://<host>:18080` 登录（详见[管理平台文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/admin_ZH.md)）。
 
 ---
 

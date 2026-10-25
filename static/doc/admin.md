@@ -33,28 +33,18 @@ Access the management platform's login page.
 
 ### Initial Account
 
-There is no default password anymore. On first launch a random password for the
-`admin` account is generated and printed **once** in the admin log:
+On first launch the default account `admin` / `admin` is created. After login
+the admin UI shows a change-password prompt: change it right away, or click
+"Later" to skip (the prompt stays dismissed for the rest of that browser
+session).
 
-```
-initial admin account created; password is shown ONCE, change it after first login  username=admin password=xxxxxxxxxxxx
-```
-
-Retrieve the password from the admin process output (printed only once):
-
-```bash
-docker logs <container> 2>&1 | grep "password is shown ONCE"
-```
-
-Change it after logging in (Admin Page -> update password).
+> The default password is publicly known — change it soon. Once changed, the
+> prompt no longer appears.
 
 Notes for upgrades from older versions:
 
 * Passwords are now stored as bcrypt hashes. Old unsalted MD5 passwords still
   work and are transparently re-hashed on your next successful login.
-* If the account still used the public default `admin`/`admin`, its password is
-  reset on first startup after the upgrade and the new one is printed in the
-  admin log.
 * If you never set `SESSION_KEY`, a random key is generated and saved to
   `data/admin_session_key`, invalidating existing login sessions once.
 

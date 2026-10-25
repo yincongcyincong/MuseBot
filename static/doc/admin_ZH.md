@@ -33,24 +33,13 @@
 
 ### 初始账户
 
-不再有默认密码。首次启动时会为 `admin` 账户生成随机密码，并只在日志里打印**一次**：
+首次启动时会创建默认账户 `admin` / `admin`。登录后管理页面会自动弹出修改密码的提示，可以立即修改，也可以点击「稍后再说」跳过（跳过后本次浏览器会话内不会再次弹出）。
 
-```
-initial admin account created; password is shown ONCE, change it after first login  username=admin password=xxxxxxxxxxxx
-```
-
-从管理端进程输出里取回密码（只打印一次）：
-
-```bash
-docker logs <容器名> 2>&1 | grep "password is shown ONCE"
-```
-
-登录后请尽快修改（管理页面 -> 修改密码）。
+> 默认密码是公开已知的，建议尽早修改；修改成功后提示不会再出现。
 
 从旧版本升级的说明：
 
 * 密码现在使用 bcrypt 存储。旧的无盐 MD5 密码仍然可以登录，并在下次登录成功时自动升级为 bcrypt。
-* 如果账户仍在使用公开的默认密码 `admin`/`admin`，升级后首次启动会强制重置，新密码打印在管理端日志中。
 * 如果从未设置过 `SESSION_KEY`，将自动生成随机密钥并保存到 `data/admin_session_key`，已登录的会话会因此失效一次。
 
 -----

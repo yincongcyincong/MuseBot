@@ -1,20 +1,26 @@
 package db
 
 import (
-	"crypto/rand"
 	"crypto/subtle"
-	"errors"
 	"fmt"
-	"math/big"
 	"strings"
 
 	"github.com/yincongcyincong/MuseBot/utils"
 	"golang.org/x/crypto/bcrypt"
 )
 
-// DefaultAdminMD5Password is the unsalted MD5 hash of the well-known legacy
-// password "admin". Accounts still holding this hash are reset on startup.
-const DefaultAdminMD5Password = "21232f297a57a5a743894a0e4a801fc3"
+// DefaultAdminPassword is the well-known initial admin/admin password. The
+// admin UI prompts for a password change after login, so the default is meant
+// to be short-lived.
+const DefaultAdminPassword = "admin"
+
+// HasDefaultPassword reports whether the account still carries the default
+// admin/admin password (bcrypt or legacy unsalted MD5 hash) so the UI can
+// prompt for a change.
+func HasDefaultPassword(u *User) bool {
+	ok, _ := VerifyPassword(DefaultAdminPassword, u.Password)
+	return ok
+}
 
 // HashPassword hashes a plaintext password with bcrypt.
 func HashPassword(password string) (string, error) {
@@ -44,21 +50,4 @@ func VerifyPassword(password, hash string) (ok bool, isLegacy bool) {
 // bcrypt hashes (prefixed with $2).
 func isLegacyMD5Hash(hash string) bool {
 	return len(hash) == 32 && !strings.HasPrefix(hash, "$2")
-}
-
-// GenerateRandomPassword returns a random readable password printed once for
-// the initial admin account.
-func GenerateRandomPassword() (string, error) {
-	const alphabet = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789"
-	const length = 12
-
-	password := make([]byte, length)
-	for i := range password {
-		index, err := rand.Int(rand.Reader, big.NewInt(int64(len(alphabet))))
-		if err != nil {
-			return "", errors.New("generate random password fail: " + err.Error())
-		}
-		password[i] = alphabet[index.Int64()]
-	}
-	return string(password), nil
 }

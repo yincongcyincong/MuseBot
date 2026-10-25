@@ -2,7 +2,6 @@ package db
 
 import (
 	"testing"
-	"time"
 
 	"github.com/yincongcyincong/MuseBot/utils"
 )
@@ -125,17 +124,11 @@ func TestListUsers_Filter_SQLite(t *testing.T) {
 	DeleteAllUserData()
 }
 
-// accounts still carrying the public admin/admin hash must be reset on startup
-func TestEnsureAdminUserResetsDefaultPassword(t *testing.T) {
+// an empty table gets the initial admin account with the default admin/admin
+// password; the UI prompts for a change after login
+func TestEnsureAdminUserCreatesDefaultAdmin(t *testing.T) {
 	DeleteAllUserData()
 	defer DeleteAllUserData()
-
-	now := time.Now().Unix()
-	_, err := DB.Exec(`INSERT INTO admin_users (username, password, create_time, update_time) VALUES ('admin', ?, ?, ?)`,
-		DefaultAdminMD5Password, now, now)
-	if err != nil {
-		t.Fatalf("insert legacy admin failed: %v", err)
-	}
 
 	if err := ensureAdminUser(); err != nil {
 		t.Fatalf("ensureAdminUser failed: %v", err)
@@ -145,11 +138,52 @@ func TestEnsureAdminUserResetsDefaultPassword(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetUserByUsername failed: %v", err)
 	}
-	if u.Password == DefaultAdminMD5Password {
-		t.Fatal("expected the default admin/admin hash to be reset")
+	if ok, isLegacy := VerifyPassword(DefaultAdminPassword, u.Password); !ok || isLegacy {
+		t.Errorf("expected default admin password to verify as bcrypt, ok=%v isLegacy=%v", ok, isLegacy)
 	}
-	// the default password must no longer verify
-	if ok, _ := VerifyPassword("admin", u.Password); ok {
-		t.Error("expected admin/admin to stop working after the reset")
+	if !HasDefaultPassword(u) {
+		t.Error("expected HasDefaultPassword true for the initial account")
+	}
+
+	// a second run must not create a duplicate
+	if err := ensureAdminUser(); err != nil {
+		t.Fatalf("second ensureAdminUser failed: %v", err)
+	}
+	_, total, err := ListUsers(0, 10, "admin")
+	if err != nil {
+		t.Fatalf("ListUsers failed: %v", err)
+	}
+	if total != 1 {
+		t.Errorf("expected exactly 1 admin account, got %d", total)
+	}
+}
+
+func TestHasDefaultPassword(t *testing.T) {
+	DeleteAllUserData()
+	defer DeleteAllUserData()
+
+	// legacy unsalted MD5 admin/admin hashes still count as the default
+	if _, err := DB.Exec(`INSERT INTO admin_users (username, password, create_time, update_time) VALUES ('legacy', ?, 0, 0)`,
+		utils.MD5(DefaultAdminPassword)); err != nil {
+		t.Fatalf("insert legacy admin failed: %v", err)
+	}
+	u, err := GetUserByUsername("legacy")
+	if err != nil {
+		t.Fatalf("get legacy admin failed: %v", err)
+	}
+	if !HasDefaultPassword(u) {
+		t.Error("expected legacy MD5 default hash to count as default password")
+	}
+
+	// changing the password clears the flag
+	if err := UpdateUserPassword(u.ID, "changed"); err != nil {
+		t.Fatalf("update password failed: %v", err)
+	}
+	u, err = GetUserByUsername("legacy")
+	if err != nil {
+		t.Fatalf("get user after update failed: %v", err)
+	}
+	if HasDefaultPassword(u) {
+		t.Error("expected HasDefaultPassword false after password change")
 	}
 }

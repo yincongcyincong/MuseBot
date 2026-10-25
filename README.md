@@ -385,12 +385,10 @@ the MuseBotAdmin management platform. Both restart automatically if they crash.
      voice, video and skill features.
 
 4. **First admin login**
-   A random password for the `admin` account is generated on first start and
-   printed once in the container log:
-   ```sh
-    docker logs my-bot 2>&1 | grep "password is shown ONCE"
-   ```
-   Log in at `http://<host>:18080` and change the password (see the
+   The default account `admin` / `admin` is created on first start. After
+   login the admin UI shows a change-password prompt (you can click "Later"
+   to skip, but changing it soon is recommended).
+   Log in at `http://<host>:18080` (see the
    [admin doc](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/admin.md)).
 
 ## Task web search

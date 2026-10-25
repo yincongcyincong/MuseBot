@@ -107,9 +107,11 @@ func InitTable() {
 	logger.Info("db initialize successfully")
 }
 
-// ensureAdminUser creates the initial admin account with a random password
-// when the users table is empty, and resets accounts that still carry the
-// well-known default admin/admin hash.
+// ensureAdminUser creates the initial admin account with the well-known
+// default password admin/admin when the users table is empty. The admin UI
+// prompts for a password change after login, so the default is meant to be
+// short-lived. Legacy unsalted MD5 hashes upgrade transparently on the next
+// successful login (see VerifyPassword).
 func ensureAdminUser() error {
 	var count int
 	err := DB.QueryRow(`SELECT COUNT(*) FROM admin_users`).Scan(&count)
@@ -118,11 +120,7 @@ func ensureAdminUser() error {
 	}
 
 	if count == 0 {
-		password, err := GenerateRandomPassword()
-		if err != nil {
-			return err
-		}
-		hash, err := HashPassword(password)
+		hash, err := HashPassword(DefaultAdminPassword)
 		if err != nil {
 			return err
 		}
@@ -132,28 +130,9 @@ func ensureAdminUser() error {
 		if err != nil {
 			return err
 		}
-		logger.Warn("initial admin account created; password is shown ONCE, change it after first login",
-			"username", "admin", "password", password)
+		logger.Warn("initial admin account created with the default password; change it after first login",
+			"username", "admin", "password", DefaultAdminPassword)
 		return nil
-	}
-
-	// reset accounts still using the public default password admin/admin
-	password, err := GenerateRandomPassword()
-	if err != nil {
-		return err
-	}
-	hash, err := HashPassword(password)
-	if err != nil {
-		return err
-	}
-	result, err := DB.Exec(`UPDATE admin_users SET password = ?, update_time = ? WHERE password = ?`,
-		hash, time.Now().Unix(), DefaultAdminMD5Password)
-	if err != nil {
-		return err
-	}
-	if affected, _ := result.RowsAffected(); affected > 0 {
-		logger.Warn("accounts still using the default admin/admin password were reset; the new password is shown ONCE, change it after first login",
-			"username", "admin", "password", password)
 	}
 
 	return nil

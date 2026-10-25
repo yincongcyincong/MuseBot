@@ -144,6 +144,17 @@ func GetCurrentUserHandler(w http.ResponseWriter, r *http.Request) {
 		"username": userName,
 	}
 
+	// the UI prompts for a password change when the account still carries the
+	// default admin/admin password. GetUserByID deliberately omits the hash,
+	// so look the account up by username, which includes it.
+	isDefault := false
+	if name, _ := userName.(string); name != "" {
+		if u, err := db.GetUserByUsername(name); err == nil {
+			isDefault = db.HasDefaultPassword(u)
+		}
+	}
+	res["is_default_password"] = isDefault
+
 	utils.Success(ctx, w, r, res)
 }
 
