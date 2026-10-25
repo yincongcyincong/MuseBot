@@ -3,6 +3,7 @@ package llm
 import (
 	"testing"
 
+	"github.com/yincongcyincong/MuseBot/conf"
 	"github.com/yincongcyincong/MuseBot/param"
 )
 
@@ -68,6 +69,24 @@ func TestTaskStateMachineLimitsExecutionLoops(t *testing.T) {
 	}
 	if err := machine.beginExecutionLoop(); err == nil {
 		t.Fatal("expected execution loop limit")
+	}
+}
+
+func TestTaskStateMachineUsesConfiguredLoopLimit(t *testing.T) {
+	previous := conf.BaseConfInfo.TaskMaxExecLoops
+	defer func() { conf.BaseConfInfo.TaskMaxExecLoops = previous }()
+
+	conf.BaseConfInfo.TaskMaxExecLoops = 5
+	if got := newTaskStateMachine().maxExecutionLoops; got != 5 {
+		t.Fatalf("maxExecutionLoops = %d, want 5", got)
+	}
+
+	// unset or invalid values fall back to the built-in default
+	for _, invalid := range []int{0, -1} {
+		conf.BaseConfInfo.TaskMaxExecLoops = invalid
+		if got := newTaskStateMachine().maxExecutionLoops; got != taskMaxExecutionLoops {
+			t.Fatalf("fallback for %d = %d, want %d", invalid, got, taskMaxExecutionLoops)
+		}
 	}
 }
 
