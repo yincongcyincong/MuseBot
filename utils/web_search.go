@@ -22,6 +22,11 @@ const (
 	webSearchTimeout         = 45 * time.Second
 	webSearchPrimaryTimeout  = 10 * time.Second
 	webSearchFallbackTimeout = 30 * time.Second
+
+	// webSearchUserAgent mimics a regular desktop browser. DuckDuckGo and Bing
+	// both answer obvious bot user agents with a bot-check page or with
+	// irrelevant ad-heavy results, which made the built-in search unusable.
+	webSearchUserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
 )
 
 var (
@@ -29,6 +34,10 @@ var (
 	bingWebSearchURL    = "https://www.bing.com/search?mkt=en-US&setlang=en-US&q="
 	bingWebSearchResult = regexp.MustCompile(`(?is)<h2[^>]*>\s*<a[^>]+href=["']([^"']+)["'][^>]*>(.*?)</a>`)
 	bingWebSearchNote   = regexp.MustCompile(`(?is)<p[^>]+class=["'][^"']*b_lineclamp[^"']*["'][^>]*>(.*?)</p>`)
+
+	// duckDuckGoBotCheckReg matches DuckDuckGo's anti-bot page. It contains no
+	// results, so parsing it silently produced an empty and useless response.
+	duckDuckGoBotCheckReg = regexp.MustCompile(`(?i)anomaly-modal|unusual (?:traffic|activity)`)
 )
 
 type WebSearchResult struct {
@@ -81,7 +90,7 @@ func duckDuckGoWebSearch(ctx context.Context, query string) (string, error) {
 		return "", err
 	}
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	request.Header.Set("User-Agent", "Mozilla/5.0 (compatible; MuseBot web search)")
+	request.Header.Set("User-Agent", webSearchUserAgent)
 	request.Header.Set("Accept-Language", "en-US,en;q=0.9")
 
 	httpClient := &http.Client{Timeout: webSearchPrimaryTimeout}
@@ -90,6 +99,11 @@ func duckDuckGoWebSearch(ctx context.Context, query string) (string, error) {
 		return "", err
 	}
 	defer response.Body.Close()
+	// DuckDuckGo answers blocked clients with 202 plus a bot-check page. Treat it
+	// as a failure so the caller falls back instead of parsing an empty page.
+	if response.StatusCode == http.StatusAccepted {
+		return "", fmt.Errorf("web search returned HTTP %d (bot check)", response.StatusCode)
+	}
 	if response.StatusCode < 200 || response.StatusCode >= 300 {
 		return "", fmt.Errorf("web search returned HTTP %d", response.StatusCode)
 	}
@@ -100,6 +114,9 @@ func duckDuckGoWebSearch(ctx context.Context, query string) (string, error) {
 	}
 	if int64(len(content)) > webSearchMaxBytes {
 		return "", fmt.Errorf("web search response exceeds %d bytes", webSearchMaxBytes)
+	}
+	if duckDuckGoBotCheckReg.Match(content) {
+		return "", fmt.Errorf("web search returned a bot-check page")
 	}
 	return string(content), nil
 }
@@ -112,7 +129,7 @@ func bingWebSearch(ctx context.Context, query string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	request.Header.Set("User-Agent", "Mozilla/5.0 (compatible; MuseBot web search)")
+	request.Header.Set("User-Agent", webSearchUserAgent)
 	request.Header.Set("Accept-Language", "en-US,en;q=0.9")
 
 	httpClient := &http.Client{Timeout: webSearchFallbackTimeout}

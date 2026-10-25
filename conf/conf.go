@@ -85,6 +85,7 @@ type BaseConf struct {
 	ImagePath          string `json:"image_path"`
 	IsStreaming        bool   `json:"is_streaming"`
 	TaskAutoApprove    bool   `json:"task_auto_approve"`
+	TaskMaxExecLoops   int    `json:"task_max_execution_loops"`
 	MediaRetentionDays int    `json:"media_retention_days"`
 
 	CrtFile string `json:"crt_file"`
@@ -185,6 +186,7 @@ func InitConf() {
 	flag.BoolVar(&BaseConfInfo.LLMOptionParam, "llm_option_param", false, "llm option param")
 	flag.BoolVar(&BaseConfInfo.IsStreaming, "is_streaming", false, "is streaming")
 	flag.BoolVar(&BaseConfInfo.TaskAutoApprove, "task_auto_approve", false, "auto approve task tool operations without /y")
+	flag.IntVar(&BaseConfInfo.TaskMaxExecLoops, "task_max_execution_loops", 3, "how many EXECUTE rounds a task may run before it is aborted")
 
 	allowedUserIds := flag.String("allowed_user_ids", "", "allowed user ids")
 	allowedGroupIds := flag.String("allowed_group_ids", "", "allowed group ids")
@@ -322,6 +324,7 @@ func logConf(allowedUserIds, allowedGroupIds, adminUserIds string) {
 	logger.Info("CONF", "ImagePath", BaseConfInfo.ImagePath)
 	logger.Info("CONF", "IsStreaming", BaseConfInfo.IsStreaming)
 	logger.Info("CONF", "TaskAutoApprove", BaseConfInfo.TaskAutoApprove)
+	logger.Info("CONF", "TaskMaxExecLoops", BaseConfInfo.TaskMaxExecLoops)
 	logger.Info("CONF", "SendMcpMediaToLLM", BaseConfInfo.SendMcpMediaToLLM)
 
 	logger.Info("AUDIO_CONF", "AudioAppID", AudioConfInfo.VolAudioAppID)
@@ -764,6 +767,12 @@ func applyEnvConf(allowedUserIds, allowedGroupIds, adminUserIds *string) {
 
 	if os.Getenv("TASK_AUTO_APPROVE") != "" {
 		BaseConfInfo.TaskAutoApprove = os.Getenv("TASK_AUTO_APPROVE") == "true"
+	}
+
+	if os.Getenv("TASK_MAX_EXECUTION_LOOPS") != "" {
+		if loops, err := strconv.Atoi(os.Getenv("TASK_MAX_EXECUTION_LOOPS")); err == nil {
+			BaseConfInfo.TaskMaxExecLoops = loops
+		}
 	}
 
 	if os.Getenv("SEND_MCP_MEDIA_TO_LLM") == "true" {
