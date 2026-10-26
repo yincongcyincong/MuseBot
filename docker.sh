@@ -22,7 +22,9 @@ PLATFORMS="linux/amd64,linux/arm64"
 # 基础镜像双平台都 pull 到本地后,可用 BUILD_CONTEXT_ARGS 完全绕开 registry:
 #   BUILD_CONTEXT_ARGS="--build-context golang:1.26=docker-image://golang:1.26 \
 #     --build-context mwader/static-ffmpeg:7.1=docker-image://mwader/static-ffmpeg:7.1 \
-#     --build-context debian:stable-slim=docker-image://debian:stable-slim" ./docker.sh v2.0.1
+#     --build-context debian:stable-slim=docker-image://debian:stable-slim"
+# RUN 步骤(apt/go mod)直连不稳时,再注入宿主机代理:
+#   BUILD_PROXY_ARGS="--build-arg http_proxy=http://host.docker.internal:7892 --build-arg https_proxy=http://host.docker.internal:7892"
 TAR=/tmp/musebot-${VERSION}.tar
 
 echo "🚀 create multi-platform image (local load)..."
@@ -30,6 +32,7 @@ docker buildx build \
   --platform ${PLATFORMS} \
   --provenance=false --sbom=false \
   ${BUILD_CONTEXT_ARGS:-} \
+  ${BUILD_PROXY_ARGS:-} \
   -t ${DOCKER_HUB_REPO}:${VERSION} \
   -t ${DOCKER_HUB_REPO}:latest \
   -t ${ALIYUN_REPO}:latest \

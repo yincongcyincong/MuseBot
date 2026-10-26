@@ -5,6 +5,10 @@ FROM golang:1.26 AS builder
 
 WORKDIR /app
 
+# GOPROXY 可在构建时覆盖 (国内: --build-arg GOPROXY=https://goproxy.cn,direct)
+ARG GOPROXY=https://proxy.golang.org,direct
+ENV GOPROXY=${GOPROXY}
+
 # 使用国内 Debian 镜像源 (deb.debian.org 在国内不稳定)
 RUN sed -i 's|http://deb.debian.org|https://mirrors.tuna.tsinghua.edu.cn|g' /etc/apt/sources.list.d/debian.sources /etc/apt/sources.list || true
 
@@ -16,7 +20,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Copy dependency files first for better caching
 COPY go.mod go.sum ./
-RUN go mod download
+# 构建上下文带 vendor/ 目录时(离线构建)自动跳过下载, go build 会优先使用 vendor
+RUN go mod download || echo "skip module download, vendor dir will be used"
 
 # Copy the rest of the application
 COPY . .

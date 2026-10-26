@@ -23,3 +23,5 @@ build/
 output/
 data/
 release/
+# go mod vendor 本地离线构建产物, 不入库
+vendor/
