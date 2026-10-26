@@ -96,3 +96,30 @@ For example:
 Your **`MuseBot`** should now be able to interact with your configured MCP servers.
 
 ---
+
+### 4. Example: a keyless remote MCP server (deed.page)
+
+Remote servers only need a `url`. MuseBot detects Streamable HTTP or SSE from the
+endpoint. For example, [deed.page](https://deed.page) is a free static hosting
+service with a keyless MCP endpoint. With it, `/task` or `/mcp` runs can publish
+an HTML page and reply with its URL:
+
+```json
+{
+    "mcpServers": {
+       "deed-page": {
+          "url": "https://deed.page/mcp"
+       }
+    }
+}
+```
+
+You can also add it at runtime through the MCP management in `/task`, for example
+"add an MCP server named deed-page with url https://deed.page/mcp".
+
+**Please note:**
+
+* **Published pages are public.** Anyone with the URL can open them, so don't ask the bot to publish secrets or private chat content.
+* MuseBot exposes every tool the server lists (about two dozen, including `publish_site`, `get_site` and `delete_site`). Remove the entry or set `"disabled": true` when you don't need it.
+* `publish_site` returns the page URL and a management token, which shows up in the tool result. Keep the token if you want to update or delete the page. Ask for `ttl_seconds` to make a page expire on its own.
+* See the [deed.page docs](https://deed.page/docs) for limits and the full tool list.

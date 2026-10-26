@@ -98,3 +98,28 @@ ENV MCP_CONF_PATH /app/mcp_config.json
 
 现在，您的 `MuseBot` 应该能够与您配置的 MCP 服务器进行交互。
 ---
+
+### 4. 示例：无需密钥的远程 MCP 服务器（deed.page）
+
+远程服务器只需要配置 `url`，MuseBot 会自动识别 Streamable HTTP 或 SSE。例如
+[deed.page](https://deed.page) 是一个免费的静态托管服务，提供无需密钥的 MCP 端点，
+`/task` 或 `/mcp` 可以用它发布 HTML 页面并返回页面链接：
+
+```json
+{
+    "mcpServers": {
+       "deed-page": {
+          "url": "https://deed.page/mcp"
+       }
+    }
+}
+```
+
+也可以在 `/task` 中通过 MCP 管理功能在运行时添加，例如“添加名为 deed-page、url 为 https://deed.page/mcp 的 MCP 服务器”。
+
+**注意：**
+
+* **发布的页面是公开的**，任何拿到链接的人都能访问，请不要让机器人发布密钥或私密聊天内容。
+* MuseBot 会暴露该服务器列出的全部工具（二十多个，包括 `publish_site`、`get_site` 和 `delete_site`）。不需要时请删除该条目或设置 `"disabled": true`。
+* `publish_site` 会返回页面链接和管理 token，token 会出现在工具结果中。如需更新或删除页面请保存它；可以让模型设置 `ttl_seconds` 让页面自动过期。
+* 限制和完整工具列表见 [deed.page 文档](https://deed.page/docs)。
