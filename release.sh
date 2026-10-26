@@ -44,9 +44,11 @@ package_release() {
     mkdir -p ./output/conf/
     cp -r ./conf/i18n ./output/conf/
     cp -r ./conf/mcp ./output/conf/
-    cp -r ./conf/skills ./output/conf/
-    # conf/img is a runtime directory (image_path default), create it empty
+    cp -r ./conf/examples ./output/conf/
+    # conf/img is a runtime directory (image_path default), create it empty;
+    # conf/skills (skill_path default) was removed from the repo — same treatment
     mkdir -p ./output/conf/img
+    mkdir -p ./output/conf/skills
     mkdir -p ./output/data/
 
     # Copy admin UI files
