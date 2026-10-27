@@ -81,5 +81,6 @@
   "doc_received_hint": "📎 Document received: {{.file_name}}. Processing…",
   "doc_analyze_prompt": "Please read the document above and give a concise summary of its content, highlighting the key points.",
   "llm_request_fail": "❌ LLM request failed after {{.retry}} retries: {{.err}}",
-  "task_progress_thinking": "🧠 [{{.index}}/{{.total}}] {{.name}} thinking:\n{{.thinking}}"
+  "task_progress_thinking": "🧠 [{{.index}}/{{.total}}] {{.name}} thinking:\n{{.thinking}}",
+  "sticker_prompt": "(The user sent a sticker) Read the sticker image, understand what it means, and respond to it naturally."
 }

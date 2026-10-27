@@ -80,5 +80,6 @@
   "doc_received_hint": "📎 已收到文档：{{.file_name}}，正在处理…",
   "doc_analyze_prompt": "请阅读上面的文档，简要总结它的内容并指出重点。",
   "llm_request_fail": "❌ 模型请求失败（已重试 {{.retry}} 次）：{{.err}}",
-  "task_progress_thinking": "🧠 [{{.index}}/{{.total}}] {{.name}} 思考过程：\n{{.thinking}}"
+  "task_progress_thinking": "🧠 [{{.index}}/{{.total}}] {{.name}} 思考过程：\n{{.thinking}}",
+  "sticker_prompt": "（用户发来一个表情包）请读懂这张表情包图片，理解它的含义并自然地回应。"
 }
