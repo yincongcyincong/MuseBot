@@ -67,6 +67,12 @@ func GetRobotProxyClient() *http.Client {
 
 	return &http.Client{
 		Transport: transport,
+		// Telegram update polling uses a 60s long poll (StartTelegramRobot sets
+		// u.Timeout = 60). Without a timeout a half-open connection keeps the
+		// request blocked forever: the process stays healthy, the socket stays
+		// ESTABLISHED, and the bot silently stops receiving updates. With a
+		// timeout the request fails and tgbotapi retries after 3 seconds.
+		Timeout: 90 * time.Second,
 	}
 }
 
