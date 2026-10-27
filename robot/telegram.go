@@ -224,6 +224,12 @@ func (t *TelegramRobot) checkValid() bool {
 		}
 
 		t.ImageContent = t.GetPhotoContent()
+		// Telegram stickers cannot carry a caption, so a sticker on its own
+		// would have an empty prompt and never reach the model
+		if len(t.ImageContent) > 0 && strings.TrimSpace(t.Prompt) == "" &&
+			t.Update.Message.Sticker != nil {
+			t.Prompt = i18n.GetMessage("sticker_prompt", nil)
+		}
 		t.DocContent = t.GetDocumentContent()
 		t.AudioContent = t.GetAudioContent()
 		var err error
@@ -321,7 +327,7 @@ func (t *TelegramRobot) skipThisMsg() bool {
 	if t.Update.Message.Chat.Type == "private" {
 		if strings.TrimSpace(t.getMsgContent()) == "" &&
 			t.Update.Message.Voice == nil && t.Update.Message.Photo == nil &&
-			t.Update.Message.Document == nil {
+			t.Update.Message.Document == nil && t.Update.Message.Sticker == nil {
 			return true
 		}
 
@@ -943,7 +949,16 @@ func (t *TelegramRobot) GetAudioContent() []byte {
 }
 
 func (t *TelegramRobot) GetPhotoContent() []byte {
-	if t.Update.Message == nil || t.Update.Message.Photo == nil {
+	if t.Update.Message == nil {
+		return nil
+	}
+
+	// static stickers are WebP images, convert them so the vision models can
+	// read them; animated (.tgs) and video (.webm) stickers are skipped
+	if t.Update.Message.Photo == nil {
+		if sticker := t.Update.Message.Sticker; sticker != nil {
+			return t.getStickerContent(sticker)
+		}
 		return nil
 	}
 
@@ -970,6 +985,53 @@ func (t *TelegramRobot) GetPhotoContent() []byte {
 	}
 
 	return photoContent
+}
+
+// getStickerContent downloads a static sticker and converts it to PNG.
+// Animated (.tgs) and video (.webm) stickers cannot be read by vision models,
+// so they are dropped with a warning instead of failing the whole message.
+func (t *TelegramRobot) getStickerContent(sticker *tgbotapi.Sticker) []byte {
+	// tgbotapi v5 has no IsVideo field, so video stickers are recognised from
+	// the downloaded bytes instead of from the message
+	if sticker.IsAnimated {
+		logger.WarnCtx(t.Robot.Ctx, "animated sticker not supported", "emoji", sticker.Emoji)
+		return nil
+	}
+	if sticker.FileSize > 8*1024*1024 {
+		logger.WarnCtx(t.Robot.Ctx, "sticker too large", "size", sticker.FileSize)
+		return nil
+	}
+
+	file, err := t.Bot.GetFile(tgbotapi.FileConfig{FileID: sticker.FileID})
+	if err != nil {
+		logger.WarnCtx(t.Robot.Ctx, "get sticker file fail", "err", err)
+		return nil
+	}
+
+	content, err := utils.DownloadFile(file.Link(t.Bot.Token))
+	if err != nil {
+		logger.WarnCtx(t.Robot.Ctx, "download sticker fail", "err", err)
+		return nil
+	}
+
+	if isVideoSticker(content) {
+		logger.WarnCtx(t.Robot.Ctx, "video sticker not supported", "emoji", sticker.Emoji)
+		return nil
+	}
+
+	pngContent, err := utils.WebPToPNG(content)
+	if err != nil {
+		logger.WarnCtx(t.Robot.Ctx, "convert sticker to png fail", "err", err)
+		return nil
+	}
+	return pngContent
+}
+
+// isVideoSticker reports whether content is a WebM container, which is what
+// Telegram uses for video stickers. WebP files start with "RIFF" instead.
+func isVideoSticker(content []byte) bool {
+	return len(content) >= 4 && content[0] == 0x1A && content[1] == 0x45 &&
+		content[2] == 0xDF && content[3] == 0xA3
 }
 
 // GetDocumentContent downloads the document attachment of the message.
