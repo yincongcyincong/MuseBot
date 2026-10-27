@@ -710,53 +710,7 @@ func StartRobot() {
 	RobotControl.Cancel = cancel
 	ctx = context.WithValue(ctx, "bot_name", conf.BaseConfInfo.BotName)
 
-	if conf.BaseConfInfo.TelegramBotToken != "" {
-		go func() {
-			StartTelegramRobot(ctx)
-		}()
-	}
-
-	if conf.BaseConfInfo.DiscordBotToken != "" {
-		go func() {
-			StartDiscordRobot(ctx)
-		}()
-	}
-
-	if conf.BaseConfInfo.LarkAPPID != "" && conf.BaseConfInfo.LarkAppSecret != "" {
-		go func() {
-			StartLarkRobot(ctx)
-		}()
-	}
-
-	if conf.BaseConfInfo.SlackBotToken != "" && conf.BaseConfInfo.SlackAppToken != "" {
-		go func() {
-			StartSlackRobot(ctx)
-		}()
-	}
-
-	if conf.BaseConfInfo.DingClientId != "" && conf.BaseConfInfo.DingClientSecret != "" {
-		go func() {
-			StartDingRobot(ctx)
-		}()
-	}
-
-	if conf.BaseConfInfo.ComWechatSecret != "" && conf.BaseConfInfo.ComWechatAgentID != "" && conf.BaseConfInfo.ComWechatEncodingAESKey != "" {
-		go func() {
-			StartComWechatRobot(ctx)
-		}()
-	}
-
-	if conf.BaseConfInfo.QQAppID != "" && conf.BaseConfInfo.QQAppSecret != "" {
-		go func() {
-			StartQQRobot(ctx)
-		}()
-	}
-
-	if conf.BaseConfInfo.WechatAppID != "" && conf.BaseConfInfo.WechatAppSecret != "" {
-		go func() {
-			StartWechatRobot()
-		}()
-	}
+	startChannels(ctx)
 }
 
 // checkUserAllow check use can use telegram bot or not
@@ -810,23 +764,10 @@ func (r *RobotInfo) checkUserTokenExceed(chatId string, msgId string, userId str
 }
 
 func (r *RobotInfo) GetAudioContent(audioContent []byte) (string, error) {
-	var answer string
-	var err error
-	var token = param.AudioTokenUsage
 	llmConf := db.GetCtxUserInfo(r.Ctx).LLMConfigRaw
 	t := utils.GetRecType(llmConf)
 	logger.InfoCtx(r.Ctx, "recognize audio", "type", t, "model", utils.GetUsingRecModel(t, llmConf.RecModel))
-	switch t {
-	case param.Vol:
-		answer, err = utils.FileRecognize(audioContent)
-	case param.OpenAi:
-		answer, err = llm.GenerateOpenAIText(r.Ctx, audioContent)
-	case param.Gemini:
-		answer, token, err = llm.GenerateGeminiText(r.Ctx, audioContent)
-	case param.Aliyun:
-		answer, token, err = llm.GenerateAliyunText(r.Ctx, audioContent)
-	}
-
+	answer, token, err := llm.RecognizeAudio(r.Ctx, audioContent)
 	if err != nil {
 		return "", err
 	}

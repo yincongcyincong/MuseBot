@@ -512,3 +512,15 @@ func (l *LarkRobot) getImageInfo(imageContent []byte) (string, error) {
 
 	return larkcore.StringValue(resp.Data.ImageKey), nil
 }
+
+func init() {
+	RegisterChannel(Channel{
+		Name: param.Lark,
+		MissingCfg: func() []string {
+			var missing []string
+			missing = required(missing, "LARK_APP_ID", conf.BaseConfInfo.LarkAPPID)
+			return required(missing, "LARK_APP_SECRET", conf.BaseConfInfo.LarkAppSecret)
+		},
+		Start: StartLarkRobot,
+	})
+}

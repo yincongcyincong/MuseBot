@@ -536,3 +536,15 @@ func (q *QQRobot) sendVoiceContent(voiceContent []byte, duration int) error {
 
 	return q.PostRichMediaMessage(data, "")
 }
+
+func init() {
+	RegisterChannel(Channel{
+		Name: param.QQ,
+		MissingCfg: func() []string {
+			var missing []string
+			missing = required(missing, "QQ_APP_ID", conf.BaseConfInfo.QQAppID)
+			return required(missing, "QQ_APP_SECRET", conf.BaseConfInfo.QQAppSecret)
+		},
+		Start: StartQQRobot,
+	})
+}

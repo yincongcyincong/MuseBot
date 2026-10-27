@@ -464,3 +464,7 @@ func AliyunTTS(ctx context.Context, text, encoding string) ([]byte, int, int, er
 
 	return audioContent, param.AudioTokenUsage, utils.PCMDuration(len(audioContent), 16000, 1, 16), nil
 }
+
+func init() {
+	RegisterRecognizer(param.Aliyun, GenerateAliyunText)
+}

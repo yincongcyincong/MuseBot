@@ -424,3 +424,15 @@ func (s *SlackRobot) sendVoiceContent(voiceContent []byte, duration int) error {
 
 	return nil
 }
+
+func init() {
+	RegisterChannel(Channel{
+		Name: param.Slack,
+		MissingCfg: func() []string {
+			var missing []string
+			missing = required(missing, "SLACK_BOT_TOKEN", conf.BaseConfInfo.SlackBotToken)
+			return required(missing, "SLACK_APP_TOKEN", conf.BaseConfInfo.SlackAppToken)
+		},
+		Start: StartSlackRobot,
+	})
+}

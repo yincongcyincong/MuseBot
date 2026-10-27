@@ -199,12 +199,7 @@ func NewLLM(opts ...Option) *LLM {
 		opt(l)
 	}
 
-	switch utils.GetTxtType(db.GetCtxUserInfo(l.Ctx).LLMConfigRaw) {
-	case param.Ollama:
-		l.LLMClient = &OllamaReq{}
-	default:
-		l.LLMClient = &OpenAIReq{}
-	}
+	l.LLMClient = NewChatClient(l.Ctx)
 
 	return l
 }

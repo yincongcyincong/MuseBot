@@ -1117,3 +1117,13 @@ func (t *TelegramRobot) sendVoiceContent(voiceContent []byte, duration int) erro
 func (t *TelegramRobot) getPerMsgLen() int {
 	return 3596
 }
+
+func init() {
+	RegisterChannel(Channel{
+		Name: param.Telegram,
+		MissingCfg: func() []string {
+			return required(nil, "TELEGRAM_BOT_TOKEN", conf.BaseConfInfo.TelegramBotToken)
+		},
+		Start: StartTelegramRobot,
+	})
+}

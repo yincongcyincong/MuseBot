@@ -16,6 +16,7 @@ import (
 	"github.com/yincongcyincong/MuseBot/conf"
 	"github.com/yincongcyincong/MuseBot/logger"
 	"github.com/yincongcyincong/MuseBot/metrics"
+	"github.com/yincongcyincong/MuseBot/param"
 	"github.com/yincongcyincong/MuseBot/utils"
 )
 
@@ -315,4 +316,17 @@ func (c *ComWechatRobot) sendVoiceContent(voiceContent []byte, duration int) err
 	}
 
 	return nil
+}
+
+func init() {
+	RegisterChannel(Channel{
+		Name: param.ComWechat,
+		MissingCfg: func() []string {
+			var missing []string
+			missing = required(missing, "COM_WECHAT_SECRET", conf.BaseConfInfo.ComWechatSecret)
+			missing = required(missing, "COM_WECHAT_AGENT_ID", conf.BaseConfInfo.ComWechatAgentID)
+			return required(missing, "COM_WECHAT_ENCODING_AES_KEY", conf.BaseConfInfo.ComWechatEncodingAESKey)
+		},
+		Start: StartComWechatRobot,
+	})
 }

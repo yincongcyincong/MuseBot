@@ -289,3 +289,7 @@ func GetGeminiClient(ctx context.Context) (*genai.Client, error) {
 		HTTPOptions: httpOption,
 	})
 }
+
+func init() {
+	RegisterRecognizer(param.Gemini, GenerateGeminiText)
+}

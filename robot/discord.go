@@ -848,3 +848,13 @@ func CloseTalk(vc *discordgo.VoiceConnection) {
 		volDialog.Token = 0
 	}
 }
+
+func init() {
+	RegisterChannel(Channel{
+		Name: param.Discord,
+		MissingCfg: func() []string {
+			return required(nil, "DISCORD_BOT_TOKEN", conf.BaseConfInfo.DiscordBotToken)
+		},
+		Start: StartDiscordRobot,
+	})
+}

@@ -358,3 +358,7 @@ func Receive(stream *Stream) (*deepseek.StreamChatCompletionResponse, error) {
 func (s *Stream) Close() {
 	s.resp.Body.Close()
 }
+
+func init() {
+	RegisterChatClient(param.Ollama, func() LLMClient { return &OllamaReq{} })
+}

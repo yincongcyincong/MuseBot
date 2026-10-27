@@ -1,6 +1,7 @@
 package robot
 
 import (
+	"context"
 	"io"
 	"os"
 	"runtime/debug"
@@ -16,6 +17,7 @@ import (
 	"github.com/yincongcyincong/MuseBot/conf"
 	"github.com/yincongcyincong/MuseBot/logger"
 	"github.com/yincongcyincong/MuseBot/metrics"
+	"github.com/yincongcyincong/MuseBot/param"
 	"github.com/yincongcyincong/MuseBot/utils"
 )
 
@@ -341,4 +343,16 @@ func (w *WechatRobot) sendVoiceContent(voiceContent []byte, duration int) error 
 	}
 
 	return nil
+}
+
+func init() {
+	RegisterChannel(Channel{
+		Name: param.Wechat,
+		MissingCfg: func() []string {
+			var missing []string
+			missing = required(missing, "WECHAT_APP_ID", conf.BaseConfInfo.WechatAppID)
+			return required(missing, "WECHAT_APP_SECRET", conf.BaseConfInfo.WechatAppSecret)
+		},
+		Start: func(ctx context.Context) { StartWechatRobot() },
+	})
 }

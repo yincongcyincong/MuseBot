@@ -531,3 +531,15 @@ func (d *DingRobot) sendVoiceContent(voiceContent []byte, duration int) error {
 
 	return nil
 }
+
+func init() {
+	RegisterChannel(Channel{
+		Name: param.Ding,
+		MissingCfg: func() []string {
+			var missing []string
+			missing = required(missing, "DING_CLIENT_ID", conf.BaseConfInfo.DingClientId)
+			return required(missing, "DING_CLIENT_SECRET", conf.BaseConfInfo.DingClientSecret)
+		},
+		Start: StartDingRobot,
+	})
+}
