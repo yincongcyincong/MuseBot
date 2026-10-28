@@ -927,6 +927,11 @@ func (t *TelegramRobot) ExecuteForceReply() {
 		t.Robot.sendMultiAgent(t.sendForceReply("task_empty_content"))
 	case i18n.GetMessage("mcp_empty_content", nil):
 		t.Robot.sendMultiAgent(t.sendForceReply("task_empty_content"))
+	default:
+		// Replying to an ordinary bot message is not an answer to a ForceReply
+		// prompt. Without this fallback the switch matched nothing and the
+		// message was dropped silently, so replying to the bot never worked.
+		t.sendChatMessage()
 	}
 }
 
