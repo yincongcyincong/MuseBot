@@ -60,6 +60,10 @@ type RobotInfo struct {
 	Cancel context.CancelFunc
 	Robot  Robot
 
+	// turnFailed marks the current LLM turn as failed so the runLLM wrapper
+	// reports the error reaction; written only by ExecLLM's goroutine.
+	turnFailed bool
+
 	cs *param.ContextState
 }
 
@@ -212,8 +216,13 @@ func (r *RobotInfo) runLLM(robot Robot, audioFormat string, streaming bool) {
 		}
 	}
 
+	stop := r.startTurnSignals()
+
 	go r.HandleUpdate(msgChan, audioFormat)
-	go r.ExecLLM(robot.getPrompt(), msgChan)
+	go func() {
+		r.ExecLLM(robot.getPrompt(), msgChan)
+		r.finishTurnSignals(stop, r.turnFailed)
+	}()
 }
 
 type StreamRobot interface {
@@ -1359,6 +1368,7 @@ func (r *RobotInfo) ExecLLM(msgContent string, msgChan *MsgChan) {
 
 	chatId, msgId, userId := r.GetChatIdAndMsgIdAndUserID()
 	content := r.Robot.getPrompt()
+	r.turnFailed = false
 
 	// a received document joins the conversation context: with a prompt the
 	// LLM answers it directly, a lone document gets analyzed automatically.
@@ -1369,6 +1379,7 @@ func (r *RobotInfo) ExecLLM(msgContent string, msgChan *MsgChan) {
 		docText, err := rag.ParseDocument(doc.FileName, bytes.NewReader(doc.Content))
 		if err != nil {
 			logger.ErrorCtx(r.Ctx, "parse document fail", "err", err)
+			r.turnFailed = true
 			r.SendMsg(chatId, i18n.GetMessage("doc_parse_fail",
 				map[string]interface{}{"err": err.Error()}), msgId, "", nil)
 			return
@@ -1439,11 +1450,18 @@ func (r *RobotInfo) ExecLLM(msgContent string, msgChan *MsgChan) {
 	err := llmClient.CallLLM()
 	if err != nil {
 		logger.ErrorCtx(r.Ctx, "get content fail", "err", err)
+		r.turnFailed = true
 		r.SendMsg(chatId, i18n.GetMessage("llm_request_fail", map[string]interface{}{
 			"retry": conf.BaseConfInfo.LLMRetryTimes,
 			"err":   err.Error(),
 		}), msgId, "", nil)
+		return
 	}
+
+	// consolidate long-term memories in the background once the turn is
+	// recorded; WithoutCancel keeps log_id/user_info values but survives the
+	// turn's ctx teardown.
+	go llm.MaybeConsolidateMemories(context.WithoutCancel(r.Ctx), userId)
 
 }
 
@@ -1850,6 +1868,7 @@ func (r *RobotInfo) smartMode() bool {
 		llm.WithMsgId(msgId),
 		llm.WithContent(smartModePrompt),
 		llm.WithContext(r.Ctx),
+		llm.WithUtilityModel(),
 		llm.WithImages([][]byte{
 			r.Robot.getImage(),
 		}),

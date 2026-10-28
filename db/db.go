@@ -77,6 +77,16 @@ var (
 		    create_by VARCHAR(255) NOT NULL DEFAULT ''
 		);
 	`,
+		"memories": `
+		CREATE TABLE IF NOT EXISTS memories (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			user_id varchar(100) NOT NULL DEFAULT '0',
+			content TEXT NOT NULL,
+			create_time INTEGER NOT NULL DEFAULT '0',
+			is_deleted INTEGER NOT NULL DEFAULT '0'
+		);
+		CREATE INDEX IF NOT EXISTS idx_memories_user_id ON memories(user_id);
+	`,
 	}
 
 	mysqlInitializeSQLs = []string{
@@ -146,6 +156,17 @@ var (
           from_bot VARCHAR(255) NOT NULL DEFAULT '',
           type VARCHAR(255) NOT NULL DEFAULT '',
     	  create_by VARCHAR(255) NOT NULL DEFAULT ''
+       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+	`,
+		// 5. memories 表 (长期记忆,嵌入索引)
+		`CREATE TABLE IF NOT EXISTS memories (
+          id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+          user_id varchar(100) NOT NULL DEFAULT '0',
+          content TEXT NOT NULL,
+          create_time INT(10) NOT NULL DEFAULT 0,
+          is_deleted INT(10) NOT NULL DEFAULT 0,
+
+          INDEX idx_memories_user_id (user_id)
        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 	`,
 	}

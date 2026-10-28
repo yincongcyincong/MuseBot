@@ -436,3 +436,25 @@ func init() {
 		Start: StartSlackRobot,
 	})
 }
+
+// slackReactionEmoji maps turn statuses to Slack reaction names.
+var slackReactionEmoji = map[string]string{
+	ReactionWorking: "eyes",
+	ReactionOK:      "+1",
+	ReactionError:   "cry",
+}
+
+// react mirrors the turn state on the user's message. Slack exposes no bot
+// typing indicator, so SlackRobot only implements Reactor, not Typer.
+func (s *SlackRobot) react(status string) {
+	if s.Event == nil || s.Event.TimeStamp == "" || s.Client == nil {
+		return
+	}
+	name, ok := slackReactionEmoji[status]
+	if !ok {
+		return
+	}
+	if err := s.Client.AddReaction(name, slack.NewRefToMessage(s.Event.Channel, s.Event.TimeStamp)); err != nil {
+		logger.WarnCtx(s.Robot.Ctx, "add reaction fail", "err", err)
+	}
+}

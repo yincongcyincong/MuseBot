@@ -3,8 +3,11 @@ package robot
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"image"
+	"net/http"
 	"runtime/debug"
 	"strconv"
 	"strings"
@@ -1188,4 +1191,65 @@ func init() {
 		},
 		Start: StartTelegramRobot,
 	})
+}
+
+// telegramReactionEmoji maps turn statuses to reactions Telegram allows
+// bots to set (fixed whitelist; 👀/👍/😢 are all in it).
+var telegramReactionEmoji = map[string]string{
+	ReactionWorking: "👀",
+	ReactionOK:      "👍",
+	ReactionError:   "😢",
+}
+
+// react mirrors the turn state on the user's message. tgbotapi v5 predates
+// setMessageReaction, so the Bot API call goes over HTTP on the bot's own
+// client; failures only warn, the turn itself is unaffected.
+func (t *TelegramRobot) react(status string) {
+	// cron replays build synthetic messages without a message id; there is
+	// nothing to attach a reaction to then
+	if t.Update.Message == nil || t.Update.Message.MessageID == 0 || t.Bot == nil {
+		return
+	}
+	emoji, ok := telegramReactionEmoji[status]
+	if !ok {
+		return
+	}
+
+	body, err := json.Marshal(map[string]interface{}{
+		"chat_id":    t.Update.Message.Chat.ID,
+		"message_id": t.Update.Message.MessageID,
+		"reaction":   []map[string]string{{"type": "emoji", "emoji": emoji}},
+	})
+	if err != nil {
+		logger.WarnCtx(t.Robot.Ctx, "marshal setMessageReaction fail", "err", err)
+		return
+	}
+
+	url := fmt.Sprintf("https://api.telegram.org/bot%s/setMessageReaction", t.Bot.Token)
+	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(body))
+	if err != nil {
+		logger.WarnCtx(t.Robot.Ctx, "build setMessageReaction request fail", "err", err)
+		return
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := t.Bot.Client.Do(req)
+	if err != nil {
+		logger.WarnCtx(t.Robot.Ctx, "setMessageReaction fail", "err", err)
+		return
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		logger.WarnCtx(t.Robot.Ctx, "setMessageReaction unexpected status", "code", resp.StatusCode)
+	}
+}
+
+// sendTyping keeps the chat's typing indicator alive while the LLM works.
+func (t *TelegramRobot) sendTyping() {
+	if t.Update.Message == nil || t.Bot == nil {
+		return
+	}
+	if _, err := t.Bot.Send(tgbotapi.NewChatAction(t.Update.Message.Chat.ID, tgbotapi.ChatTyping)); err != nil {
+		logger.WarnCtx(t.Robot.Ctx, "send typing action fail", "err", err)
+	}
 }

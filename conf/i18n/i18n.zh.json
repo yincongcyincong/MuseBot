@@ -68,6 +68,8 @@
   "cron_list_header": "已设置的定时任务 (Cron) 列表:\n\n",
   "compress_history_prompt": "你是一个对话历史压缩助手。请把下面的对话历史（可能已包含之前的摘要）压缩成一段简洁、连贯的摘要，保留关键事实、用户偏好、已达成的结论和未完成的事项，去除寒暄和冗余。只输出摘要正文，不要额外说明。\n\n对话历史：\n{{.history}}",
   "compress_summary_context": "以下是早期对话的摘要，供你参考以保持上下文连贯：\n{{.summary}}",
+  "memory_context": "以下是从更早对话中提炼的关于该用户的长期记忆，回答时可据此个性化作答：\n{{.memories}}",
+  "memory_merge_prompt": "你是聊天助手的长期记忆管理器。请把该用户的既有长期记忆与下面的近期对话片段合并成一份值得长期记住的事实清单（偏好、进行中的事项、约束条件等，不含寒暄和一次性问题）。最多保留 {{.max_count}} 条，去除重复和过时内容，每条一句话以内。只输出 JSON 字符串数组，不要任何解释。\n\n既有记忆：\n{{.memories}}\n\n近期对话：\n{{.history}}",
   "rag_prompt": "请根据以下上下文回答用户问题。如果上下文与问题无关，则基于你自己的知识回答。\n\n上下文：\n{{.context}}\n问题：\n{{.question}}",
   "task_tool_approval_request": "⚠️ 任务操作需要授权。\n工具：{{.operation}}\n目标：{{.path}}\n详情：{{.detail}}\n请在 {{.timeout}} 分钟内回复 `/y` 授权，或回复 `/n` 拒绝。",
   "task_tool_approval_received": "已收到授权，任务继续执行。",

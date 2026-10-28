@@ -26,6 +26,13 @@ type OpenAIReq struct {
 }
 
 func (d *OpenAIReq) GetModel(l *LLM) {
+	// utility routing and failover rungs pin their model; the user config
+	// is bypassed entirely
+	if l.modelOverride != "" {
+		l.Model = l.modelOverride
+		return
+	}
+
 	userInfo := db.GetCtxUserInfo(l.Ctx)
 	var llmConf *param.LLMConfig
 	model := ""
@@ -50,7 +57,7 @@ func (d *OpenAIReq) Send(ctx context.Context, l *LLM) error {
 
 	start := time.Now()
 
-	client := GetOpenAIClient(ctx, "txt")
+	client := GetOpenAIClientForType(l.txtProviderType())
 	request := openai.ChatCompletionRequest{
 		Model:  l.Model,
 		Stream: true,
@@ -185,7 +192,7 @@ func (d *OpenAIReq) GetMessage(role, msg string) {
 func (d *OpenAIReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 	start := time.Now()
 
-	client := GetOpenAIClient(ctx, "txt")
+	client := GetOpenAIClientForType(l.txtProviderType())
 
 	request := openai.ChatCompletionRequest{
 		Model:    l.Model,
@@ -432,7 +439,6 @@ var openaiEndpoints = map[string]struct {
 }
 
 func GetOpenAIClient(ctx context.Context, clientType string) *openai.Client {
-	httpClient := utils.GetLLMProxyClient()
 	t := param.OpenAi
 	switch clientType {
 	case "txt":
@@ -444,6 +450,14 @@ func GetOpenAIClient(ctx context.Context, clientType string) *openai.Client {
 	case "rec":
 		t = utils.GetRecType(db.GetCtxUserInfo(ctx).LLMConfigRaw)
 	}
+
+	return GetOpenAIClientForType(t)
+}
+
+// GetOpenAIClientForType builds a client for one provider type; unknown
+// types fall back to the official OpenAI endpoint with no token.
+func GetOpenAIClientForType(t string) *openai.Client {
+	httpClient := utils.GetLLMProxyClient()
 
 	var token string
 	var specialLLMUrl string

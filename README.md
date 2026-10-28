@@ -52,6 +52,8 @@ Thanks to the Reddit community as well, even though a few of my subreddits got b
   see [doc](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/admin.md).
 - 🌛 **Register**: With the service registration module, robot instances can be automatically registered to the
   registration center [doc](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/register.md)
+- 🧩 **Plugins**: Wire up new LLM providers and chat channels through the provider / channel registries — one file per
+  extension, see [doc](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/plugin.md)
 - 🌈 **Metrics**: Support Metrics for monitoring,
   see [doc](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/metrics.md).
 - 🐶 **Cron**: Support Cron to trigger LLM,

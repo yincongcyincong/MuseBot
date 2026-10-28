@@ -75,6 +75,15 @@ type BaseConf struct {
 	EnableAutoCompress bool   `json:"enable_auto_compress"`
 	CompressThreshold  int    `json:"compress_threshold"`
 	CompressKeepPairs  int    `json:"compress_keep_pairs"`
+	EnableMemory       bool   `json:"enable_memory"`
+	MemoryMaxCount     int    `json:"memory_max_count"`
+	MemoryInterval     int    `json:"memory_interval"`
+	EnableTyping       bool   `json:"enable_typing"`
+	EnableReaction     bool   `json:"enable_reaction"`
+	EnableFailover     bool   `json:"enable_failover"`
+	FailoverProviders  string `json:"failover_providers"`
+	UtilityType        string `json:"utility_type"`
+	UtilityModel       string `json:"utility_model"`
 	Powered            string `json:"powered"`
 	SendMcpRes         bool   `json:"send_mcp_res"`
 	SendMcpMediaToLLM  bool   `json:"send_mcp_media_to_llm"`
@@ -143,6 +152,15 @@ func InitConf() {
 	flag.BoolVar(&BaseConfInfo.EnableAutoCompress, "enable_auto_compress", true, "enable auto compress context history")
 	flag.IntVar(&BaseConfInfo.CompressThreshold, "compress_threshold", 8000, "accumulated context token that triggers compression")
 	flag.IntVar(&BaseConfInfo.CompressKeepPairs, "compress_keep_pairs", 3, "recent qa pairs kept uncompressed")
+	flag.BoolVar(&BaseConfInfo.EnableMemory, "enable_memory", true, "enable long-term memory extraction and injection")
+	flag.IntVar(&BaseConfInfo.MemoryMaxCount, "memory_max_count", 20, "max long-term memory items kept per user")
+	flag.IntVar(&BaseConfInfo.MemoryInterval, "memory_interval", 3600, "min seconds between two memory extractions per user")
+	flag.BoolVar(&BaseConfInfo.EnableTyping, "enable_typing", true, "send typing indicators while the LLM is generating (platforms that support it)")
+	flag.BoolVar(&BaseConfInfo.EnableReaction, "enable_reaction", true, "react on the user's message while processing and on completion (platforms that support it)")
+	flag.BoolVar(&BaseConfInfo.EnableFailover, "enable_failover", true, "after the primary provider fails, retry once on each other configured OpenAI-compatible provider")
+	flag.StringVar(&BaseConfInfo.FailoverProviders, "failover_providers", "", "explicit failover chain, comma separated (default: all other configured providers, ollama excluded)")
+	flag.StringVar(&BaseConfInfo.UtilityType, "utility_type", "", "cheap provider for internal calls (history compression, memory, smart mode)")
+	flag.StringVar(&BaseConfInfo.UtilityModel, "utility_model", "", "model used for internal utility calls; empty disables utility routing")
 
 	flag.StringVar(&BaseConfInfo.DeepseekToken, "deepseek_token", "", "deepseek auth token")
 	flag.StringVar(&BaseConfInfo.OpenAIToken, "openai_token", "", "openai auth token")
@@ -316,6 +334,15 @@ func logConf(allowedUserIds, allowedGroupIds, adminUserIds string) {
 	logger.Info("CONF", "EnableAutoCompress", BaseConfInfo.EnableAutoCompress)
 	logger.Info("CONF", "CompressThreshold", BaseConfInfo.CompressThreshold)
 	logger.Info("CONF", "CompressKeepPairs", BaseConfInfo.CompressKeepPairs)
+	logger.Info("CONF", "EnableMemory", BaseConfInfo.EnableMemory)
+	logger.Info("CONF", "MemoryMaxCount", BaseConfInfo.MemoryMaxCount)
+	logger.Info("CONF", "MemoryInterval", BaseConfInfo.MemoryInterval)
+	logger.Info("CONF", "EnableTyping", BaseConfInfo.EnableTyping)
+	logger.Info("CONF", "EnableReaction", BaseConfInfo.EnableReaction)
+	logger.Info("CONF", "EnableFailover", BaseConfInfo.EnableFailover)
+	logger.Info("CONF", "FailoverProviders", BaseConfInfo.FailoverProviders)
+	logger.Info("CONF", "UtilityType", BaseConfInfo.UtilityType)
+	logger.Info("CONF", "UtilityModel", BaseConfInfo.UtilityModel)
 	logger.Info("CONF", "SendMcpRes", BaseConfInfo.SendMcpRes)
 	logger.Info("CONF", "DefaultModel", BaseConfInfo.DefaultModel)
 	logger.Info("CONF", "LLMRetryTimes", BaseConfInfo.LLMRetryTimes)
@@ -727,6 +754,34 @@ func applyEnvConf(allowedUserIds, allowedGroupIds, adminUserIds *string) {
 
 	if os.Getenv("COMPRESS_KEEP_PAIRS") != "" {
 		BaseConfInfo.CompressKeepPairs, _ = strconv.Atoi(os.Getenv("COMPRESS_KEEP_PAIRS"))
+	}
+
+	if v := os.Getenv("ENABLE_MEMORY"); v != "" {
+		BaseConfInfo.EnableMemory = v != "false"
+	}
+	if os.Getenv("MEMORY_MAX_COUNT") != "" {
+		BaseConfInfo.MemoryMaxCount, _ = strconv.Atoi(os.Getenv("MEMORY_MAX_COUNT"))
+	}
+	if os.Getenv("MEMORY_INTERVAL") != "" {
+		BaseConfInfo.MemoryInterval, _ = strconv.Atoi(os.Getenv("MEMORY_INTERVAL"))
+	}
+	if v := os.Getenv("ENABLE_TYPING"); v != "" {
+		BaseConfInfo.EnableTyping = v != "false"
+	}
+	if v := os.Getenv("ENABLE_REACTION"); v != "" {
+		BaseConfInfo.EnableReaction = v != "false"
+	}
+	if v := os.Getenv("ENABLE_FAILOVER"); v != "" {
+		BaseConfInfo.EnableFailover = v != "false"
+	}
+	if os.Getenv("FAILOVER_PROVIDERS") != "" {
+		BaseConfInfo.FailoverProviders = os.Getenv("FAILOVER_PROVIDERS")
+	}
+	if os.Getenv("UTILITY_TYPE") != "" {
+		BaseConfInfo.UtilityType = os.Getenv("UTILITY_TYPE")
+	}
+	if os.Getenv("UTILITY_MODEL") != "" {
+		BaseConfInfo.UtilityModel = os.Getenv("UTILITY_MODEL")
 	}
 
 	if os.Getenv("POWERED") != "" {

@@ -858,3 +858,35 @@ func init() {
 		Start: StartDiscordRobot,
 	})
 }
+
+// discordReactionEmoji maps turn statuses to unicode reactions.
+var discordReactionEmoji = map[string]string{
+	ReactionWorking: "👀",
+	ReactionOK:      "👍",
+	ReactionError:   "😢",
+}
+
+// react mirrors the turn state on the user's message. Slash-command turns
+// (d.Inter set, d.Msg nil) are skipped: there is no message to react on.
+func (d *DiscordRobot) react(status string) {
+	if d.Msg == nil || d.Session == nil {
+		return
+	}
+	emoji, ok := discordReactionEmoji[status]
+	if !ok {
+		return
+	}
+	if err := d.Session.MessageReactionAdd(d.Msg.ChannelID, d.Msg.ID, emoji); err != nil {
+		logger.WarnCtx(d.Robot.Ctx, "add reaction fail", "err", err)
+	}
+}
+
+// sendTyping triggers the channel's typing indicator while the LLM works.
+func (d *DiscordRobot) sendTyping() {
+	if d.Msg == nil || d.Session == nil {
+		return
+	}
+	if err := d.Session.ChannelTyping(d.Msg.ChannelID); err != nil {
+		logger.WarnCtx(d.Robot.Ctx, "send typing fail", "err", err)
+	}
+}

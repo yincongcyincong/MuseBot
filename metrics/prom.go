@@ -71,12 +71,21 @@ var (
 		},
 		[]string{"mcp_service", "mcp_func"},
 	)
+
+	APIFailoverCount = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "api_failover_total",
+			Help: "Total number of provider failovers, labeled by source and target provider.",
+		},
+		[]string{"from", "to"},
+	)
 )
 
 // RegisterMetrics 注册指标
 func RegisterMetrics() {
 	prometheus.MustRegister(APIRequestCount)
 	prometheus.MustRegister(APIRequestDuration)
+	prometheus.MustRegister(APIFailoverCount)
 	prometheus.MustRegister(AppRequestCount)
 	prometheus.MustRegister(HTTPRequestCount)
 	prometheus.MustRegister(MCPRequestCount)

@@ -38,6 +38,8 @@ chatgpt: https://www.bilibili.com/video/BV1RutxzJEGY/
 - 🌊 **RAG（检索增强生成）**：支持RAG以填充上下文，详见[文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/rag_ZH.md)。
 - 🌞 **管理平台（AdminPlatform）**：使用管理平台来管理MuseBot，详见[文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/admin_ZH.md)。
 - 🌛 **注册中心**：支持服务注册，机器人实例可自动注册，详见 [文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/register_ZH.md)
+- 🧩 **插件化扩展**：通过 Provider / Channel 注册表接入新模型与新聊天渠道，新增一个文件即可，详见 [文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/plugin_ZH.md)
+- 🛟 **模型层韧性**：主模型故障自动降级到其它已配置厂商，内部调用可走便宜的辅助模型，详见 [文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/failover_ZH.md)
 - 🌈 **监控数据**：支持监控数据，详见[文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/metrics_ZH.md)。
 - 🐶 **Cron**: 定时触发LLM, see [文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/cron_ZH.md).
 

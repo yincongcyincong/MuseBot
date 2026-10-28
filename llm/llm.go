@@ -66,6 +66,12 @@ type LLM struct {
 	ToolApprovals bool
 	searchSession *utils.WebSearchSession
 
+	// providerOverride/modelOverride pin a specific provider+model for this
+	// request: utility routing (cheap internal calls) and failover rungs.
+	// Empty = resolve from the user config as usual.
+	providerOverride string
+	modelOverride    string
+
 	// ConfigExecutor runs MuseBot configuration actions (config/mcp/skill/
 	// cron/command/file) from inside the /task workflow. It is injected by the
 	// robot layer to avoid an llm -> robot import cycle; approve lets the
@@ -105,37 +111,7 @@ func (l *LLM) CallLLM() error {
 
 	metrics.APIRequestCount.WithLabelValues(l.Model).Inc()
 
-	retryTimes := conf.BaseConfInfo.LLMRetryTimes
-	if retryTimes <= 0 {
-		retryTimes = 1
-	}
-	var err error
-	for attempt := 0; attempt < retryTimes; attempt++ {
-		if attempt > 0 {
-			time.Sleep(time.Duration(conf.BaseConfInfo.LLMRetryInterval) * time.Millisecond)
-		}
-		if conf.BaseConfInfo.IsStreaming {
-			err = l.LLMClient.Send(l.Ctx, l)
-		} else {
-			var content string
-			content, err = l.LLMClient.SyncSend(l.Ctx, l)
-			if err == nil {
-				l.MessageChan <- &param.MsgInfo{
-					Content: content,
-				}
-				l.WholeContent = content
-			}
-		}
-		if err == nil {
-			break
-		}
-		// a cancelled or expired context fails every attempt instantly, so
-		// retrying cannot succeed; surface the error right away
-		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
-			break
-		}
-		logger.WarnCtx(l.Ctx, "llm request fail, retrying", "attempt", attempt+1, "err", err)
-	}
+	err := l.sendWithFailover()
 	if err != nil {
 		logger.ErrorCtx(l.Ctx, "Error calling LLM API", "err", err)
 		return err
@@ -328,6 +304,17 @@ func (l *LLM) appendHistory(userId string) {
 			}))
 	}
 
+	if memories := db.GetMemories(userId); len(memories) > 0 {
+		lines := make([]string, 0, len(memories))
+		for _, m := range memories {
+			lines = append(lines, "- "+m.Content)
+		}
+		l.LLMClient.GetMessage(openai.ChatMessageRoleSystem,
+			i18n.GetMessage("memory_context", map[string]interface{}{
+				"memories": strings.Join(lines, "\n"),
+			}))
+	}
+
 	aqs := db.FilterByMaxContextFromLatest(msgRecords.AQs, param.DefaultContextToken)
 	for i, record := range aqs {
 		if record.Question != "" && record.Answer != "" && record.CreateTime > time.Now().Unix()-int64(conf.BaseConfInfo.ContextExpireTime) {
@@ -391,7 +378,7 @@ func CompressHistory(ctx context.Context, userId, oldSummary string, oldAQs []*d
 		"history": sb.String(),
 	})
 
-	l := NewLLM(WithUserId(userId), WithContent(prompt), WithContext(ctx))
+	l := NewLLM(WithUserId(userId), WithContent(prompt), WithContext(ctx), WithUtilityModel())
 	l.Cs.UseRecord = false
 	l.LLMClient.GetModel(l)
 	l.LLMClient.GetMessage(openai.ChatMessageRoleUser, prompt)
@@ -422,6 +409,18 @@ func WithModel(model string) Option {
 func WithContent(content string) Option {
 	return func(p *LLM) {
 		p.Content = content
+	}
+}
+
+// WithUtilityModel routes this request through the configured utility
+// provider/model (cheap internal calls: history compression, memory,
+// smart mode). No-op when utility routing is not configured.
+func WithUtilityModel() Option {
+	return func(p *LLM) {
+		if conf.BaseConfInfo.UtilityType != "" && conf.BaseConfInfo.UtilityModel != "" {
+			p.providerOverride = conf.BaseConfInfo.UtilityType
+			p.modelOverride = conf.BaseConfInfo.UtilityModel
+		}
 	}
 }
 
