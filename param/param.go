@@ -23,7 +23,6 @@ const (
 	ModelGeminiFlashPreviewTTS string = "gemini-flash-preview-tts"
 	ModelGeminiEmbedding       string = "gemini-embedding"
 	ModelImagen3               string = "imagen-3"
-	ModelVeo2                  string = "veo-2"
 
 	OpenAi = "openai"
 
@@ -81,11 +80,7 @@ const (
 	Imagen4_0Generate001     = "imagen-4.0-generate-001"
 	Imagen4_0FastGenerate002 = "imagen-4.0-fast-generate-001"
 
-	GeminiVideoVeo3_1Preview     = "veo-3.1-generate-preview"
-	GeminiVideoVeo3_1FastPreview = "veo-3.1-fast-generate-preview"
-	GeminiVideoVeo2              = "veo-2.0-generate-001"
-	GeminiVideoVeo3              = "veo-3.0-generate-001"
-	GeminiVideoFastVeo3          = "veo-3.0-fast-generate-001"
+	GeminiVideoOmniFlash = "gemini-omni-1.1-flash"
 
 	ModelImageGPT = "gpt-image-1"
 
@@ -225,11 +220,7 @@ var (
 	//}
 	//
 	GeminiVideoModels = map[string]bool{
-		GeminiVideoVeo3_1Preview:     true,
-		GeminiVideoVeo3_1FastPreview: true,
-		GeminiVideoFastVeo3:          true,
-		GeminiVideoVeo3:              true,
-		GeminiVideoVeo2:              true,
+		GeminiVideoOmniFlash: true,
 	}
 
 	GeminiImageModels = map[string]bool{

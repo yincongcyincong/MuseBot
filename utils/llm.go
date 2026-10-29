@@ -321,7 +321,7 @@ func GetUsingVideoModel(ty string, model string) string {
 		if param.GeminiVideoModels[model] {
 			return model
 		}
-		return param.GeminiVideoVeo3_1FastPreview
+		return param.GeminiVideoOmniFlash
 
 	case param.Aliyun:
 		if param.AliyunVideoModels[model] {

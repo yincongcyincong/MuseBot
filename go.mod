@@ -47,7 +47,7 @@ require (
 	golang.org/x/image v0.22.0
 	golang.org/x/oauth2 v0.32.0
 	golang.org/x/text v0.34.0
-	google.golang.org/genai v1.21.0
+	google.golang.org/genai v1.76.0
 	gopkg.in/fsnotify.v1 v1.4.7
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 	gopkg.in/yaml.v3 v3.0.1

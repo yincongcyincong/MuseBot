@@ -11,7 +11,7 @@ func TestInitConfig_WithEnv(t *testing.T) {
 
 	os.Setenv("DB_TYPE", "mysql")
 	os.Setenv("DB_CONF", "root:pass@tcp(localhost:3306)/muse")
-	os.Setenv("SESSION_KEY", "env_session_key")
+	os.Setenv("SESSION_KEY", "env_session_key_0123456789abcdef")
 	os.Setenv("ADMIN_PORT", "8080")
 	os.Setenv("CHECK_BOT_SEC", "99")
 
@@ -30,8 +30,8 @@ func TestInitConfig_WithEnv(t *testing.T) {
 		t.Errorf("expected DBConf = mysql conf, got %s", BaseConfInfo.DBConf)
 	}
 
-	if BaseConfInfo.SessionKey != "env_session_key" {
-		t.Errorf("expected SessionKey = env_session_key, got %s", BaseConfInfo.SessionKey)
+	if BaseConfInfo.SessionKey != "env_session_key_0123456789abcdef" {
+		t.Errorf("expected SessionKey = env_session_key_0123456789abcdef, got %s", BaseConfInfo.SessionKey)
 	}
 
 	if BaseConfInfo.AdminPort != "8080" {
@@ -96,5 +96,24 @@ func TestEnsureSessionKeyAt(t *testing.T) {
 	ensureSessionKeyAt(legacyPath)
 	if BaseConfInfo.SessionKey == legacySessionKeyDefault {
 		t.Error("expected the legacy default session key to be replaced")
+	}
+}
+
+func TestValidateSessionKey(t *testing.T) {
+	// the legacy public default is rejected outright
+	if err := validateSessionKey(legacySessionKeyDefault); err == nil {
+		t.Error("expected the legacy default session key to be rejected")
+	}
+
+	// short keys are forgeable material and must be rejected
+	for _, key := range []string{"", "abc", "0123456789abcdef0123456789abcde"} {
+		if err := validateSessionKey(key); err == nil {
+			t.Errorf("expected short session key %q to be rejected", key)
+		}
+	}
+
+	// 32 or more characters pass
+	if err := validateSessionKey("0123456789abcdef0123456789abcdef"); err != nil {
+		t.Errorf("expected a 32-char session key to pass, got %v", err)
 	}
 }

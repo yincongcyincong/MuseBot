@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"flag"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -18,6 +19,10 @@ import (
 const legacySessionKeyDefault = "muse_bot_session_key"
 
 const sessionKeyFile = "data/admin_session_key"
+
+// minSessionKeyLen matches the 32-char hex key ensureSessionKeyAt persists;
+// anything shorter than 16 bytes of raw entropy signs forgeable cookies.
+const minSessionKeyLen = 32
 
 type BaseConfig struct {
 	DBType string `json:"db_type"`
@@ -91,10 +96,27 @@ func InitConfig() {
 // stored under the data directory so sessions survive restarts.
 func ensureSessionKey() string {
 	if BaseConfInfo.SessionKey != "" && BaseConfInfo.SessionKey != legacySessionKeyDefault {
+		if err := validateSessionKey(BaseConfInfo.SessionKey); err != nil {
+			logger.Fatal("invalid session key; unset it to auto-generate a strong key", "err", err)
+			return ""
+		}
 		return "configured"
 	}
 
 	return ensureSessionKeyAt(botUtils.GetAbsPath(sessionKeyFile))
+}
+
+// validateSessionKey rejects explicitly configured keys that are too short to
+// be high entropy; the issue-56 forged-cookie attack was exactly a known,
+// guessable key.
+func validateSessionKey(key string) error {
+	if key == legacySessionKeyDefault {
+		return fmt.Errorf("session key is the known legacy default")
+	}
+	if len(key) < minSessionKeyLen {
+		return fmt.Errorf("session key is %d chars, need at least %d random chars", len(key), minSessionKeyLen)
+	}
+	return nil
 }
 
 // ensureSessionKeyAt loads or creates the persisted session key at keyPath.

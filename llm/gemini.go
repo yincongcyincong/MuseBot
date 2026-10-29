@@ -2,6 +2,7 @@ package llm
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"net/http"
@@ -16,6 +17,8 @@ import (
 	"github.com/yincongcyincong/MuseBot/param"
 	"github.com/yincongcyincong/MuseBot/utils"
 	"google.golang.org/genai"
+	"google.golang.org/genai/interactions/models/interactions"
+	"google.golang.org/genai/interactions/models/operations"
 )
 
 type GeminiReq struct {
@@ -99,58 +102,116 @@ func GenerateGeminiVideo(ctx context.Context, prompt string, image []byte) ([]by
 	model := utils.GetUsingVideoModel(param.Gemini, db.GetCtxUserInfo(ctx).LLMConfigRaw.VideoModel)
 	metrics.APIRequestCount.WithLabelValues(model).Inc()
 
-	var geminiImage *genai.Image
+	// gemini-omni video models serve through the synchronous Interactions API
+	// instead of the retired Models.GenerateVideos path; image-to-video sends
+	// the image first, then the text prompt
+	input := interactions.NewInteractionsInput(prompt)
 	if len(image) > 0 {
-		geminiImage = &genai.Image{
-			ImageBytes: image,
-			MIMEType:   "image/" + utils.DetectImageFormat(image),
-		}
+		input = interactions.NewInteractionsInput([]interactions.Content{
+			interactions.NewContent(interactions.ImageContent{
+				Data:     genai.Ptr(base64.StdEncoding.EncodeToString(image)),
+				MimeType: interactions.ImageContentMimeType("image/" + utils.DetectImageFormat(image)).ToPointer(),
+			}),
+			interactions.NewContent(interactions.TextContent{Text: prompt}),
+		})
 	}
 
-	var operation *genai.GenerateVideosOperation
-	operation, err = retryRequest(ctx, func() (*genai.GenerateVideosOperation, error) {
-		return client.Models.GenerateVideos(ctx,
-			model, prompt,
-			geminiImage,
-			&genai.GenerateVideosConfig{})
+	var res *operations.CreateInteractionResponse
+	res, err = retryRequest(ctx, func() (*operations.CreateInteractionResponse, error) {
+		resp, err := client.Interactions.Create(ctx, operations.CreateInteractionRequest{
+			Body: operations.NewCreateInteractionRequestBody(interactions.CreateModelInteraction{
+				Model:      interactions.Model(model),
+				Input:      &input,
+				Stream:     genai.Ptr(false),
+				Store:      genai.Ptr(false),
+				Background: genai.Ptr(false),
+			}),
+		})
+		if err != nil {
+			return nil, err
+		}
+		if resp == nil || resp.Interaction == nil {
+			return nil, errors.New("empty interaction response")
+		}
+		return resp, nil
 	})
 
-	if err != nil || operation == nil {
-		logger.ErrorCtx(ctx, "generate video fail", "err", err, "operation", operation)
+	if err != nil || res == nil {
+		logger.ErrorCtx(ctx, "generate video fail", "err", err)
 		return nil, 0, err
-	}
-
-	for !operation.Done {
-		logger.InfoCtx(ctx, "video is createing...")
-		time.Sleep(5 * time.Second)
-		operation, err = client.Operations.GetVideosOperation(ctx, operation, nil)
-		if err != nil {
-			logger.ErrorCtx(ctx, "get video operation fail", "err", err)
-			return nil, 0, err
-		}
 	}
 
 	metrics.APIRequestDuration.WithLabelValues(model).Observe(time.Since(start).Seconds())
 
-	if len(operation.Response.GeneratedVideos) == 0 {
-		logger.ErrorCtx(ctx, "generate video fail", "err", "video is empty", "resp", operation.Response)
+	video := res.Interaction.OutputVideo
+	if video == nil {
+		logger.ErrorCtx(ctx, "generate video fail", "err", "video is empty", "interaction_id", res.Interaction.ID)
 		return nil, 0, errors.New("video is empty")
 	}
 
 	var totalToken int
-	if operation.Metadata != nil {
-		if usageRaw, ok := operation.Metadata["usageMetadata"]; ok {
-			if usage, ok := usageRaw.(map[string]interface{}); ok {
-				if tokenValue, ok := usage["totalTokenCount"]; ok {
-					if tokenFloat, ok := tokenValue.(float64); ok {
-						totalToken = int(tokenFloat)
-					}
-				}
-			}
-		}
+	if res.Interaction.Usage != nil && res.Interaction.Usage.TotalTokens != nil {
+		totalToken = *res.Interaction.Usage.TotalTokens
 	}
 
-	return operation.Response.GeneratedVideos[0].Video.VideoBytes, totalToken, nil
+	// the video comes back inline as base64; oversized ones fall back to a file URI
+	if video.Data != nil && *video.Data != "" {
+		videoBytes, err := base64.StdEncoding.DecodeString(*video.Data)
+		if err != nil {
+			logger.ErrorCtx(ctx, "decode video fail", "err", err)
+			return nil, 0, err
+		}
+		return videoBytes, totalToken, nil
+	}
+
+	if video.URI != nil && *video.URI != "" {
+		videoBytes, err := downloadInteractionFile(ctx, client, *video.URI)
+		if err != nil {
+			logger.ErrorCtx(ctx, "download video fail", "err", err, "uri", *video.URI)
+			return nil, 0, err
+		}
+		return videoBytes, totalToken, nil
+	}
+
+	logger.ErrorCtx(ctx, "generate video fail", "err", "video is empty", "interaction_id", res.Interaction.ID)
+	return nil, 0, errors.New("video is empty")
+}
+
+// downloadInteractionFile fetches a video delivered as a Files API URI: poll
+// the file until it is ACTIVE, then download its bytes.
+func downloadInteractionFile(ctx context.Context, client *genai.Client, uri string) ([]byte, error) {
+	fileName := uri
+	if idx := strings.LastIndex(fileName, "/"); idx >= 0 {
+		fileName = fileName[idx+1:]
+	}
+	if idx := strings.IndexAny(fileName, ":?"); idx >= 0 {
+		fileName = fileName[:idx]
+	}
+
+	for i := 0; ; i++ {
+		fileInfo, err := client.Files.Get(ctx, "files/"+fileName, nil)
+		if err != nil {
+			return nil, err
+		}
+		if fileInfo == nil {
+			return nil, errors.New("video file is empty")
+		}
+		if fileInfo.State == genai.FileStateActive {
+			return client.Files.Download(ctx, genai.NewDownloadURIFromFile(fileInfo), nil)
+		}
+		if fileInfo.State == genai.FileStateFailed {
+			return nil, errors.New("video file processing failed")
+		}
+		if i >= 10 {
+			return nil, errors.New("video file is not ready")
+		}
+		logger.InfoCtx(ctx, "video file is processing...")
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case <-time.After(2 * time.Second):
+		}
+	}
 }
 
 func GenerateGeminiText(ctx context.Context, audioContent []byte) (string, int, error) {

@@ -30,7 +30,7 @@ func InitVideoConf() {
 	flag.StringVar(&VideoConfInfo.Resolution, "resolution", "480p", "the resolution of video, only support 480p / 720p")
 	flag.BoolVar(&VideoConfInfo.Watermark, "watermark", false, "include watermark")
 
-	flag.StringVar(&VideoConfInfo.GeminiVideoModel, "gemini_video_model", "veo-2.0-generate-001", "create video model")
+	flag.StringVar(&VideoConfInfo.GeminiVideoModel, "gemini_video_model", "gemini-omni-1.1-flash", "create video model")
 
 	flag.StringVar(&VideoConfInfo.AliyunVideoModel, "aliyun_video_model", "wan2.5-t2v-preview", "create video model")
 }
