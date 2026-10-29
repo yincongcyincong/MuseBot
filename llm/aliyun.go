@@ -237,9 +237,7 @@ func GenerateAliyunVideo(ctx context.Context, prompt string, image []byte) (stri
 	if err != nil || resp == nil {
 		return "", 0, fmt.Errorf("request fail %v %v", err, resp)
 	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
+	body, err := readAliyunVideoResponseBody(resp)
 	if err != nil {
 		return "", 0, err
 	}
@@ -264,9 +262,7 @@ func GenerateAliyunVideo(ctx context.Context, prompt string, image []byte) (stri
 		if err != nil {
 			return "", 0, err
 		}
-		defer resp.Body.Close()
-
-		body, err = io.ReadAll(resp.Body)
+		body, err = readAliyunVideoResponseBody(resp)
 		if err != nil {
 			return "", 0, err
 		}
@@ -286,6 +282,11 @@ func GenerateAliyunVideo(ctx context.Context, prompt string, image []byte) (stri
 	}
 
 	return "", 0, fmt.Errorf("video generation timeout")
+}
+
+func readAliyunVideoResponseBody(resp *http.Response) ([]byte, error) {
+	defer resp.Body.Close()
+	return io.ReadAll(resp.Body)
 }
 
 func GenerateAliyunText(ctx context.Context, audioContent []byte) (string, int, error) {
