@@ -117,25 +117,22 @@ func GenerateGeminiVideo(ctx context.Context, prompt string, image []byte) ([]by
 
 	if err != nil || operation == nil {
 		logger.ErrorCtx(ctx, "generate video fail", "err", err, "operation", operation)
+		if err != nil {
+			return nil, 0, err
+		}
+		return nil, 0, errors.New("video operation is empty")
+	}
+
+	operation, err = waitForGeminiVideo(ctx, operation, 5*time.Second, func(ctx context.Context, current *genai.GenerateVideosOperation) (*genai.GenerateVideosOperation, error) {
+		logger.InfoCtx(ctx, "video is creating...")
+		return client.Operations.GetVideosOperation(ctx, current, nil)
+	})
+	if err != nil {
+		logger.ErrorCtx(ctx, "get video operation fail", "err", err)
 		return nil, 0, err
 	}
 
-	for !operation.Done {
-		logger.InfoCtx(ctx, "video is createing...")
-		time.Sleep(5 * time.Second)
-		operation, err = client.Operations.GetVideosOperation(ctx, operation, nil)
-		if err != nil {
-			logger.ErrorCtx(ctx, "get video operation fail", "err", err)
-			return nil, 0, err
-		}
-	}
-
 	metrics.APIRequestDuration.WithLabelValues(model).Observe(time.Since(start).Seconds())
-
-	if len(operation.Response.GeneratedVideos) == 0 {
-		logger.ErrorCtx(ctx, "generate video fail", "err", "video is empty", "resp", operation.Response)
-		return nil, 0, errors.New("video is empty")
-	}
 
 	var totalToken int
 	if operation.Metadata != nil {
@@ -150,7 +147,62 @@ func GenerateGeminiVideo(ctx context.Context, prompt string, image []byte) ([]by
 		}
 	}
 
-	return operation.Response.GeneratedVideos[0].Video.VideoBytes, totalToken, nil
+	videoBytes, err := geminiVideoBytes(ctx, operation, func(ctx context.Context, video *genai.Video) ([]byte, error) {
+		return client.Files.Download(ctx, genai.NewDownloadURIFromVideo(video), nil)
+	})
+	if err != nil {
+		logger.ErrorCtx(ctx, "generate video fail", "err", err)
+		return nil, 0, err
+	}
+	return videoBytes, totalToken, nil
+}
+
+func waitForGeminiVideo(ctx context.Context, operation *genai.GenerateVideosOperation, interval time.Duration, poll func(context.Context, *genai.GenerateVideosOperation) (*genai.GenerateVideosOperation, error)) (*genai.GenerateVideosOperation, error) {
+	for operation != nil && !operation.Done {
+		timer := time.NewTimer(interval)
+		select {
+		case <-ctx.Done():
+			timer.Stop()
+			return nil, ctx.Err()
+		case <-timer.C:
+		}
+		var err error
+		operation, err = poll(ctx, operation)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if operation == nil {
+		return nil, errors.New("video operation is empty")
+	}
+	return operation, nil
+}
+
+func geminiVideoBytes(ctx context.Context, operation *genai.GenerateVideosOperation, download func(context.Context, *genai.Video) ([]byte, error)) ([]byte, error) {
+	if operation == nil {
+		return nil, errors.New("video operation is empty")
+	}
+	if len(operation.Error) > 0 {
+		return nil, fmt.Errorf("video generation failed: %v", operation.Error)
+	}
+	if operation.Response == nil || len(operation.Response.GeneratedVideos) == 0 || operation.Response.GeneratedVideos[0] == nil || operation.Response.GeneratedVideos[0].Video == nil {
+		return nil, errors.New("video is empty")
+	}
+	video := operation.Response.GeneratedVideos[0].Video
+	if len(video.VideoBytes) > 0 {
+		return video.VideoBytes, nil
+	}
+	if video.URI == "" {
+		return nil, errors.New("video is empty")
+	}
+	data, err := download(ctx, video)
+	if err != nil {
+		return nil, fmt.Errorf("download video: %w", err)
+	}
+	if len(data) == 0 {
+		return nil, errors.New("downloaded video is empty")
+	}
+	return data, nil
 }
 
 func GenerateGeminiText(ctx context.Context, audioContent []byte) (string, int, error) {
