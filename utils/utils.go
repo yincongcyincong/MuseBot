@@ -2,6 +2,7 @@ package utils
 
 import (
 	"bytes"
+	"context"
 	"crypto/md5"
 	"crypto/rand"
 	"encoding/hex"
@@ -93,7 +94,7 @@ func GetLLMProxyClient() *http.Client {
 	}
 }
 
-func FileRecognize(audioContent []byte) (string, error) {
+func FileRecognize(ctx context.Context, audioContent []byte) (string, error) {
 
 	client := BuildAsrClient()
 	client.Appid = conf.AudioConfInfo.VolAudioAppID
@@ -102,12 +103,12 @@ func FileRecognize(audioContent []byte) (string, error) {
 
 	asrResponse, err := client.RequestAsr(audioContent)
 	if err != nil {
-		logger.Error("fail to request asr ", "err", err)
+		logger.ErrorCtx(ctx, "fail to request asr ", "err", err)
 		return "", err
 	}
 
 	if len(asrResponse.Results) == 0 {
-		logger.Error("fail to request asr", "results", asrResponse.Results)
+		logger.ErrorCtx(ctx, "fail to request asr", "results", asrResponse.Results)
 		return "", errors.New("fail to request asr")
 	}
 

@@ -58,6 +58,7 @@
   "talk_param_error": "交谈参数不全",
   "bot_talking": "机器人正在交谈中",
   "audio_rec_prompt": "获取语音中的内容，只返回内容",
+  "mode_info": "模型信息 \n文本类型: {{.txt_type}} \n文本模型: {{.txt_model}} \n\n图片类型: {{.photo_type}} \n图片模型: {{.photo_model}} \n\n视频类型: {{.video_type}} \n视频模型: {{.video_model}} \n\n识别类型: {{.rec_type}} \n识别模型: {{.rec_model}}\n\n语音类型: {{.tts_type}} \n语音模型: {{.tts_model}}",
   "smart_mode_analyzing": "正在分析你的需求...",
   "latest_image_context": "(上面这张图是当前对话中最新的图片，可能是你刚生成的，也可能是用户刚发送的。用户说\"这张图\"\"它\"等指代时就是指它。)",
   "smart_mode_prompt": "```\n你是一个智能分类器。你的任务是根据用户的输入文本，确定用户想要执行的操作类型。\n\n操作类型共有六种：\n1. 生成视频 (Generate Video) — 用户希望 AI 创建或生成一个视频。\n   输出: {\"command\":\"/video\"}\n\n2. 生成图片 (Generate Image) — 用户希望 AI 创建或生成一张图片。\n   输出: {\"command\":\"/photo\"}\n\n3. 编辑图片 (Edit Image) — 用户提供一张或多张图片，希望 AI 对其进行修改、编辑、增强或转换。\n   输出: {\"command\":\"/edit_photo\"}\n\n4. **识别图片 (Recognize Photo / Image Recognition)** — 用户希望 AI 识别、分析或辨认图片中的内容。\n   输出: {\"command\":\"/task\"}\n\n5. **定时任务 (Cron Job / Scheduled Task)** — 用户正在设置一个周期性、重复性的定时任务。输出必须包含识别到的 **秒级 Cron 表达式** 和原始的 **提示** 内容。\n   输出: {\"cron\": \"<cron_expression>\", \"prompt\": \"<user_prompt>\", \"command\":\"/cron\"}\n\n6. 文本对话 (Text Conversation) — 用户只是进行正常的对话、提问或聊天。\n   输出: {\"command\":\"/chat\"}\n\n你必须**仅**以 JSON 格式返回结果。不要包含任何其他文本或解释。\n\n用户的输入文本是：{{.prompt}}\n\n---\n\n示例：\n\n输入: \"Generate a video of a cat running on the beach\" (生成一个猫在沙滩上奔跑的视频)\n输出: {\"command\":\"/video\"}\n\n输入: \"Draw a cute anime girl\" (画一个可爱的动漫女孩)\n输出: {\"command\":\"/photo\"}\n\n输入: \"Make this picture look like an oil painting\" (把这张图片变成油画风格)\n输出: {\"command\":\"/edit_photo\"}\n\n输入: \"**What is in this image?**\" (这张图片里有什么？)\n输出: {\"command\":\"/task\"}\n\n输入: \"**I want to be reminded to 'buy milk' every day at 8 AM**\" (我希望每天早上 8 点提醒我“买牛奶”)\n输出: {\"cron\": \"0 0 8 * * *\", \"prompt\": \"buy milk\", \"command\":\"/cron\"}\n// 注：Cron 表达式使用 6 个字段的秒级格式：秒(0) 分(0) 时(8) 日期 月份 星期\n\n输入: \"How are you today?\" (你今天怎么样？)\n输出: {\"command\":\"/chat\"}\n```",
@@ -69,7 +70,7 @@
   "compress_history_prompt": "你是一个对话历史压缩助手。请把下面的对话历史（可能已包含之前的摘要）压缩成一段简洁、连贯的摘要，保留关键事实、用户偏好、已达成的结论和未完成的事项，去除寒暄和冗余。只输出摘要正文，不要额外说明。\n\n对话历史：\n{{.history}}",
   "compress_summary_context": "以下是早期对话的摘要，供你参考以保持上下文连贯：\n{{.summary}}",
   "memory_context": "以下是从更早对话中提炼的关于该用户的长期记忆，回答时可据此个性化作答：\n{{.memories}}",
-  "memory_merge_prompt": "你是聊天助手的长期记忆管理器。请把该用户的既有长期记忆与下面的近期对话片段合并成一份值得长期记住的事实清单（偏好、进行中的事项、约束条件等，不含寒暄和一次性问题）。最多保留 {{.max_count}} 条，去除重复和过时内容，每条一句话以内。只输出 JSON 字符串数组，不要任何解释。\n\n既有记忆：\n{{.memories}}\n\n近期对话：\n{{.history}}",
+  "memory_merge_prompt": "你是聊天助手的长期记忆管理器。请把该用户的既有长期记忆与下面的近期对话片段合并成一份值得长期记住的事实清单（偏好、进行中的事项、约束条件等，不含寒暄和一次性问题）。最多保留 {{.max_count}} 条，去除重复和过时内容，每条一句话以内。只输出 JSON 字符串数组，不要任何解释；若没有值得记住的内容，直接输出 []。\n\n既有记忆：\n{{.memories}}\n\n近期对话：\n{{.history}}",
   "rag_prompt": "请根据以下上下文回答用户问题。如果上下文与问题无关，则基于你自己的知识回答。\n\n上下文：\n{{.context}}\n问题：\n{{.question}}",
   "task_tool_approval_request": "⚠️ 任务操作需要授权。\n工具：{{.operation}}\n目标：{{.path}}\n详情：{{.detail}}\n请在 {{.timeout}} 分钟内回复 `/y` 授权，或回复 `/n` 拒绝。",
   "task_tool_approval_received": "已收到授权，任务继续执行。",
@@ -83,5 +84,6 @@
   "doc_analyze_prompt": "请阅读上面的文档，简要总结它的内容并指出重点。",
   "llm_request_fail": "❌ 模型请求失败（已重试 {{.retry}} 次）：{{.err}}",
   "task_progress_thinking": "🧠 [{{.index}}/{{.total}}] {{.name}} 思考过程：\n{{.thinking}}",
-  "sticker_prompt": "（用户发来一个表情包）请读懂这张表情包图片，理解它的含义并自然地回应。"
+  "sticker_prompt": "（用户发来一个表情包）请读懂这张表情包图片，理解它的含义并自然地回应。",
+  "sticker_unsupported": "这个贴纸我读不了（暂不支持动图和视频贴纸），换个静态贴纸试试吧。"
 }

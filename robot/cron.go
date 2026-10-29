@@ -1,7 +1,11 @@
 package robot
 
 import (
+	"context"
+	"github.com/yincongcyincong/MuseBot/conf"
+
 	"encoding/json"
+	"github.com/google/uuid"
 	"strings"
 	"time"
 
@@ -48,29 +52,33 @@ func InitCron() {
 }
 
 func ExecCron(c *db.Cron) {
-	logger.Info("exec cron", "cron", c.CronName, "cronSpec",
+	// one log id per cron fire, reused by every synthetic robot below so the
+	// whole fire is traceable as one unit
+	ctx := context.WithValue(context.WithValue(context.Background(),
+		"bot_name", conf.BaseConfInfo.BotName), "log_id", uuid.New().String())
+	logger.InfoCtx(ctx, "exec cron", "cron", c.CronName, "cronSpec",
 		c.CronSpec, "type", c.Type, "targetId", c.TargetID, "groupId", c.GroupID)
 	switch c.Type {
 	case param.Wechat:
-		ExecWechat(c)
+		ExecWechat(ctx, c)
 	case param.Telegram:
-		ExecTelegram(c)
+		ExecTelegram(ctx, c)
 	case param.ComWechat:
-		ExecComWechat(c)
+		ExecComWechat(ctx, c)
 	case param.Lark:
-		ExecLark(c)
+		ExecLark(ctx, c)
 	case param.PersonalQQ:
-		ExecPersonalQQ(c)
+		ExecPersonalQQ(ctx, c)
 	case param.Slack:
-		ExecSlack(c)
+		ExecSlack(ctx, c)
 	case param.Ding:
-		ExecDing(c)
+		ExecDing(ctx, c)
 	}
 }
 
-func ExecDing(c *db.Cron) {
+func ExecDing(ctx context.Context, c *db.Cron) {
 	if DingBotClient == nil {
-		logger.Error("dingbot client is nil")
+		logger.ErrorCtx(ctx, "dingbot client is nil")
 		return
 	}
 
@@ -86,16 +94,16 @@ func ExecDing(c *db.Cron) {
 			},
 			Client: DingBotClient,
 		}
-		t.Robot = NewRobot(WithRobot(t),
+		t.Robot = NewRobot(WithCtx(ctx), WithRobot(t),
 			WithSkipCheck(true), WithUseRecord(false))
 		t.Robot.Exec()
 	}
 
 }
 
-func ExecLark(c *db.Cron) {
+func ExecLark(ctx context.Context, c *db.Cron) {
 	if LarkBotClient == nil {
-		logger.Error("larkbot client is nil")
+		logger.ErrorCtx(ctx, "larkbot client is nil")
 		return
 	}
 
@@ -125,13 +133,13 @@ func ExecLark(c *db.Cron) {
 			},
 			Client: LarkBotClient,
 		}
-		t.Robot = NewRobot(WithRobot(t), WithSkipCheck(true), WithUseRecord(false))
+		t.Robot = NewRobot(WithCtx(ctx), WithRobot(t), WithSkipCheck(true), WithUseRecord(false))
 		t.Robot.Exec()
 	}
 
 }
 
-func ExecPersonalQQ(c *db.Cron) {
+func ExecPersonalQQ(ctx context.Context, c *db.Cron) {
 	for _, groupId := range strings.Split(c.GroupID, ",") {
 		groupId = strings.TrimSpace(groupId)
 		if groupId == "" {
@@ -152,7 +160,7 @@ func ExecPersonalQQ(c *db.Cron) {
 				},
 			},
 		}
-		t.Robot = NewRobot(WithRobot(t),
+		t.Robot = NewRobot(WithCtx(ctx), WithRobot(t),
 			WithSkipCheck(true), WithUseRecord(false))
 		t.Robot.Exec()
 	}
@@ -176,16 +184,16 @@ func ExecPersonalQQ(c *db.Cron) {
 				},
 			},
 		}
-		t.Robot = NewRobot(WithRobot(t),
+		t.Robot = NewRobot(WithCtx(ctx), WithRobot(t),
 			WithSkipCheck(true), WithUseRecord(false))
 		t.Robot.Exec()
 	}
 
 }
 
-func ExecSlack(c *db.Cron) {
+func ExecSlack(ctx context.Context, c *db.Cron) {
 	if SlackClient == nil {
-		logger.Error("slack client is nil")
+		logger.ErrorCtx(ctx, "slack client is nil")
 		return
 	}
 
@@ -202,15 +210,15 @@ func ExecSlack(c *db.Cron) {
 			},
 			Client: SlackClient,
 		}
-		t.Robot = NewRobot(WithRobot(t), WithSkipCheck(true), WithUseRecord(false))
+		t.Robot = NewRobot(WithCtx(ctx), WithRobot(t), WithSkipCheck(true), WithUseRecord(false))
 		t.Robot.Exec()
 	}
 
 }
 
-func ExecComWechat(c *db.Cron) {
+func ExecComWechat(ctx context.Context, c *db.Cron) {
 	if ComWechatApp == nil {
-		logger.Warn("com wechat app is nil")
+		logger.WarnCtx(ctx, "com wechat app is nil")
 		return
 	}
 
@@ -229,16 +237,20 @@ func ExecComWechat(c *db.Cron) {
 				Content: c.Command + " " + c.Prompt,
 			},
 		}
-		t.Robot = NewRobot(WithRobot(t), WithSkipCheck(true), WithUseRecord(false))
+		t.Robot = NewRobot(WithCtx(ctx), WithRobot(t), WithSkipCheck(true), WithUseRecord(false))
 		t.Robot.Exec()
 	}
 
 }
 
-func ExecTelegram(c *db.Cron) {
+func ExecTelegram(ctx context.Context, c *db.Cron) {
 	for _, targetId := range strings.Split(c.TargetID, ",") {
 		targetId = strings.TrimSpace(targetId)
 		if targetId == "" {
+			continue
+		}
+		if utils.ParseInt(targetId) == 0 {
+			logger.WarnCtx(ctx, "cron target is not a valid telegram id, skip", "cron_id", c.ID, "targetId", targetId)
 			continue
 		}
 		t := &TelegramRobot{
@@ -255,13 +267,17 @@ func ExecTelegram(c *db.Cron) {
 				},
 			},
 		}
-		t.Robot = NewRobot(WithRobot(t), WithSkipCheck(true), WithUseRecord(false))
+		t.Robot = NewRobot(WithCtx(ctx), WithRobot(t), WithSkipCheck(true), WithUseRecord(false))
 		t.Robot.Exec()
 	}
 
 	for _, groupId := range strings.Split(c.GroupID, ",") {
 		groupId = strings.TrimSpace(groupId)
 		if groupId == "" {
+			continue
+		}
+		if utils.ParseInt(groupId) == 0 {
+			logger.WarnCtx(ctx, "cron group is not a valid telegram id, skip", "cron_id", c.ID, "groupId", groupId)
 			continue
 		}
 		t := &TelegramRobot{
@@ -278,15 +294,15 @@ func ExecTelegram(c *db.Cron) {
 				},
 			},
 		}
-		t.Robot = NewRobot(WithRobot(t), WithSkipCheck(true), WithUseRecord(false))
+		t.Robot = NewRobot(WithCtx(ctx), WithRobot(t), WithSkipCheck(true), WithUseRecord(false))
 		t.Robot.Exec()
 	}
 
 }
 
-func ExecWechat(c *db.Cron) {
+func ExecWechat(ctx context.Context, c *db.Cron) {
 	if OfficialAccountApp == nil {
-		logger.Warn("official account app is nil", "type", c.Type, "userId", c.TargetID, "prompt", c.Prompt)
+		logger.WarnCtx(ctx, "official account app is nil", "type", c.Type, "userId", c.TargetID, "prompt", c.Prompt)
 		return
 	}
 
@@ -305,7 +321,7 @@ func ExecWechat(c *db.Cron) {
 				Content: c.Command + " " + c.Prompt,
 			},
 		}
-		w.Robot = NewRobot(WithRobot(w), WithSkipCheck(true), WithUseRecord(false))
+		w.Robot = NewRobot(WithCtx(ctx), WithRobot(w), WithSkipCheck(true), WithUseRecord(false))
 		w.Robot.Exec()
 	}
 

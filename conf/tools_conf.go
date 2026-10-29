@@ -67,7 +67,7 @@ func InitToolsConf() {
 	flag.Int("command_timeout_sec", 60, "built-in command timeout in seconds")
 
 	ToolsConfInfo.McpConfPath = flag.String("mcp_conf_path", GetAbsPath("conf/mcp/mcp.json"), "mcp conf path")
-	ToolsConfInfo.SkillPath = flag.String("skill_path", GetAbsPath("conf/skills"), "skill directory path")
+	ToolsConfInfo.SkillPath = flag.String("skill_path", GetAbsPath("data/skills"), "skill directory path")
 	ToolsConfInfo.FileRootPath = flag.String("file_root_path", GetAbsPath("data/agent_files"), "built-in file operation root")
 }
 
@@ -167,7 +167,7 @@ func InitTools() {
 		InsertTools(mcpParam.Name)
 	}
 
-	InitSkills()
+	InitSkills(context.Background())
 }
 
 func RegisterBuiltinTools() {
@@ -235,7 +235,7 @@ func RegisterBuiltinTools() {
 			Type: "object",
 			Properties: map[string]any{
 				"type":        map[string]any{"type": "string", "description": "Action type: config, mcp, skill, cron, command"},
-				"operation":   map[string]any{"type": "string", "description": "config: list|get|set; mcp: list|set|delete|enable|disable|sync; skill: list|create|reload|set_path|search|install; cron: list|get|create|update|enable|disable|delete|clear; command: run"},
+				"operation":   map[string]any{"type": "string", "description": "config: list|get|set; mcp: list|set|delete|enable|disable|sync; skill: list|create|reload|search|install|delete (empty name deletes all); cron: list|get|create|update|enable|disable|delete|clear; command: run"},
 				"config_type": map[string]any{"type": "string", "description": "config get/set target: base, audio, llm, photo, rag, video, register, tools"},
 				"key":         map[string]any{"type": "string", "description": "config key in json tag form, e.g. smart_mode"},
 				"value":       map[string]any{"description": "config value to set"},
@@ -250,7 +250,7 @@ func RegisterBuiltinTools() {
 				"prompt":  map[string]any{"type": "string", "description": "cron prompt"},
 				"args":    map[string]any{"type": "array", "items": map[string]any{"type": "string"}, "description": "command argv array, e.g. [\"git\",\"status\"]"},
 				"timeout": map[string]any{"type": "integer", "description": "command timeout seconds"},
-				"path":    map[string]any{"type": "string", "description": "command working directory inside the sandbox"},
+				"path":    map[string]any{"type": "string", "description": "skill: source URL or owner/repo for install; command: working directory inside the sandbox"},
 				"id":      map[string]any{"type": "integer", "description": "cron id for cron update/enable/disable/delete"},
 			},
 			Required: []string{"type", "operation"},

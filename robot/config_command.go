@@ -70,7 +70,7 @@ func (r *RobotInfo) executeConversationConfigAction(action *param.ConversationCo
 	case "mcp":
 		return r.executeMCPAction(action)
 	case "skill":
-		return r.executeSkillAction(action)
+		return r.executeSkillAction(action, approve)
 	case "cron":
 		return r.executeConversationCronAction(action, userId)
 	case "command":
@@ -140,9 +140,6 @@ func (r *RobotInfo) executeConfigAction(action *param.ConversationConfigAction) 
 			return "", err
 		}
 		conf.SaveConf()
-		if action.ConfigType == "tools" && action.Key == "skill_path" {
-			conf.InitSkills()
-		}
 		return fmt.Sprintf("set %s.%s", action.ConfigType, action.Key), nil
 	default:
 		return "", fmt.Errorf("unsupported config operation %q", action.Operation)
@@ -252,7 +249,7 @@ func coerceConfigValue(value json.RawMessage, kind reflect.Kind) json.RawMessage
 
 func isRuntimeImmutableConfigKey(key string) bool {
 	switch key {
-	case "bot_name", "http_host", "db_type", "db_conf", "allowed_commands", "file_root_path":
+	case "bot_name", "http_host", "db_type", "db_conf", "allowed_commands", "file_root_path", "skill_path":
 		return true
 	default:
 		return false
@@ -323,7 +320,7 @@ func (r *RobotInfo) executeMCPAction(action *param.ConversationConfigAction) (st
 	case "set":
 		return upsertConversationMCP(action)
 	case "delete", "enable", "disable":
-		return changeConversationMCP(action)
+		return changeConversationMCP(r.Ctx, action)
 	case "sync":
 		syncMCPAndSkills()
 		return "synchronized MCP servers and skills", nil
@@ -381,7 +378,7 @@ func upsertConversationMCP(action *param.ConversationConfigAction) (string, erro
 	return "set and synchronized MCP server " + action.Name, nil
 }
 
-func changeConversationMCP(action *param.ConversationConfigAction) (string, error) {
+func changeConversationMCP(ctx context.Context, action *param.ConversationConfigAction) (string, error) {
 	if !configNameReg.MatchString(action.Name) {
 		return "", fmt.Errorf("invalid MCP name")
 	}
@@ -398,7 +395,7 @@ func changeConversationMCP(action *param.ConversationConfigAction) (string, erro
 	case "delete":
 		delete(config.McpServers, action.Name)
 		if err := clients.RemoveMCPClient(action.Name); err != nil {
-			logger.Warn("remove MCP client fail", "name", action.Name, "err", err)
+			logger.WarnCtx(ctx, "remove MCP client fail", "name", action.Name, "err", err)
 		}
 		conf.TaskTools.Delete(action.Name)
 	case "disable":
@@ -449,12 +446,12 @@ func syncMCPAndSkills() {
 	conf.InitTools()
 }
 
-func (r *RobotInfo) executeSkillAction(action *param.ConversationConfigAction) (string, error) {
+func (r *RobotInfo) executeSkillAction(action *param.ConversationConfigAction, approve llm.TaskApprovalFunc) (string, error) {
 	switch action.Operation {
 	case "list":
 		return conversationSkillSummary(), nil
 	case "reload":
-		conf.InitSkills()
+		conf.InitSkills(r.Ctx)
 		return "reloaded skills", nil
 	case "search":
 		candidates, err := conf.SearchRemoteSkills(r.Ctx, action.Query)
@@ -476,31 +473,41 @@ func (r *RobotInfo) executeSkillAction(action *param.ConversationConfigAction) (
 			return conf.InstallRemoteSkill(r.Ctx, strings.TrimSpace(action.Path))
 		}
 		return conf.SearchAndInstallRemoteSkill(r.Ctx, action.Query)
-	case "set_path":
-		path := strings.TrimSpace(action.Path)
-		if path == "" {
-			return "", fmt.Errorf("skill path is required")
-		}
-		absolutePath, err := filepath.Abs(path)
-		if err != nil {
-			return "", err
-		}
-		info, err := os.Stat(absolutePath)
-		if err != nil || !info.IsDir() {
-			return "", fmt.Errorf("skill path is not a directory")
-		}
-		conf.ToolsConfInfo.SkillPath = &absolutePath
-		conf.SaveConf()
-		conf.InitSkills()
-		return "set and reloaded skill path " + absolutePath, nil
 	case "create":
-		if err := conf.CreateSkill(action.Name, action.Description, action.Instructions); err != nil {
+		if err := conf.CreateSkill(r.Ctx, action.Name, action.Description, action.Instructions); err != nil {
 			return "", err
 		}
 		if _, ok := conf.SkillTools.Load(action.Name); !ok {
 			return "", fmt.Errorf("skill name conflicts with an existing task agent")
 		}
 		return "created and loaded skill " + action.Name, nil
+	case "delete":
+		// deleting skill directories is destructive, so it always goes
+		// through the interactive approval flow
+		name := strings.TrimSpace(action.Name)
+		if approve == nil {
+			return "", fmt.Errorf("skill deletion requires user approval")
+		}
+		target := "all skills"
+		if name != "" {
+			target = "skill " + name
+		}
+		detail := fmt.Sprintf("delete the directories of %s under %s and reload", target, *conf.ToolsConfInfo.SkillPath)
+		approved, approvalErr := approve("delete_skill", target, detail)
+		if approvalErr != nil {
+			return "", approvalErr
+		}
+		if !approved {
+			return "", fmt.Errorf("deletion of %s was not approved by the user", target)
+		}
+		deleted, err := conf.DeleteSkills(r.Ctx, name)
+		if err != nil {
+			return "", err
+		}
+		if len(deleted) == 0 {
+			return "no matching skills to delete", nil
+		}
+		return fmt.Sprintf("deleted %d skill(s): %s", len(deleted), strings.Join(deleted, ", ")), nil
 	default:
 		return "", fmt.Errorf("unsupported skill operation %q", action.Operation)
 	}

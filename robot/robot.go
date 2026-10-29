@@ -690,6 +690,14 @@ func (r *RobotInfo) SendMsg(chatId string, msgContent string, replyToMessageID s
 	return ""
 }
 
+func WithCtx(ctx context.Context) func(*RobotInfo) {
+	return func(r *RobotInfo) {
+		if ctx != nil {
+			r.Ctx = ctx
+		}
+	}
+}
+
 func WithRobot(robot Robot) func(*RobotInfo) {
 	return func(r *RobotInfo) {
 		r.Robot = robot

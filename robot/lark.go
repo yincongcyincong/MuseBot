@@ -65,7 +65,7 @@ func StartLarkRobot(ctx context.Context) {
 		return
 	}
 	BotName = larkcore.StringValue(resp.Data.App.AppName)
-	logger.Info("LarkBot Info", "username", BotName)
+	logger.InfoCtx(ctx, "LarkBot Info", "username", BotName)
 
 	err = cli.Start(ctx)
 	if err != nil {
@@ -118,7 +118,7 @@ func (l *LarkRobot) checkValid() bool {
 	}
 	if larkcore.StringValue(l.Message.Event.Message.ChatType) == "group" {
 		if !atBot {
-			logger.Warn("no at bot")
+			logger.WarnCtx(l.Robot.Ctx, "no at bot")
 			return false
 		}
 	}
@@ -179,7 +179,7 @@ func (l *LarkRobot) sendMedia(media []byte, contentType, sType string) error {
 			Build()).
 		Build())
 	if err != nil || !res.Success() {
-		logger.Warn("send message fail", "err", err, "resp", res)
+		logger.WarnCtx(l.Robot.Ctx, "send message fail", "err", err, "resp", res)
 		return err
 	}
 
@@ -220,7 +220,7 @@ func (l *LarkRobot) sendTextStream(messageChan *MsgChan) {
 					Build()).
 				Build())
 			if err != nil || !resp.Success() {
-				logger.Warn("send message fail", "err", err, "resp", resp)
+				logger.WarnCtx(l.Robot.Ctx, "send message fail", "err", err, "resp", resp)
 				continue
 			}
 		}
@@ -348,7 +348,7 @@ func (l *LarkRobot) GetMessageContent() (bool, error) {
 		msgAudio := new(larkim.MessageAudio)
 		err := json.Unmarshal([]byte(larkcore.StringValue(l.Message.Event.Message.Content)), msgAudio)
 		if err != nil {
-			logger.Warn("unmarshal message audio failed", "err", err)
+			logger.WarnCtx(l.Robot.Ctx, "unmarshal message audio failed", "err", err)
 			return false, err
 		}
 		resp, err := l.Client.Im.V1.MessageResource.Get(l.Robot.Ctx,
@@ -371,7 +371,7 @@ func (l *LarkRobot) GetMessageContent() (bool, error) {
 
 		l.Prompt, err = l.Robot.GetAudioContent(bs)
 		if err != nil {
-			logger.Warn("generate text from audio failed", "err", err)
+			logger.WarnCtx(l.Robot.Ctx, "generate text from audio failed", "err", err)
 			return false, err
 		}
 	} else if msgType == larkim.MsgTypeImage {
@@ -456,7 +456,7 @@ func (l *LarkRobot) sendVoiceContent(voiceContent []byte, duration int) error {
 			Build()).
 		Build())
 	if err != nil || !resp.Success() {
-		logger.Warn("create voice fail", "err", err, "resp", resp)
+		logger.WarnCtx(l.Robot.Ctx, "create voice fail", "err", err, "resp", resp)
 		return errors.New("request upload file fail")
 	}
 
@@ -473,7 +473,7 @@ func (l *LarkRobot) sendVoiceContent(voiceContent []byte, duration int) error {
 			Build()).
 		Build())
 	if err != nil || !updateRes.Success() {
-		logger.Warn("send message fail", "err", err, "resp", updateRes)
+		logger.WarnCtx(l.Robot.Ctx, "send message fail", "err", err, "resp", updateRes)
 		return errors.New("send voice fail")
 	}
 
@@ -506,7 +506,7 @@ func (l *LarkRobot) getImageInfo(imageContent []byte) (string, error) {
 			Build()).
 		Build())
 	if err != nil || !resp.Success() {
-		logger.Warn("create image fail", "err", err, "resp", resp)
+		logger.WarnCtx(l.Robot.Ctx, "create image fail", "err", err, "resp", resp)
 		return "", err
 	}
 

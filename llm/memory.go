@@ -59,7 +59,10 @@ func MaybeConsolidateMemories(ctx context.Context, userId string) {
 		start = 0
 	}
 	if err := consolidateMemories(ctx, userId, msgRecords.AQs[start:]); err != nil {
-		logger.WarnCtx(ctx, "consolidate memories fail, keep old memories", "err", err)
+		// a trivial conversation ("hi") or a chatty model often answers in
+		// prose instead of JSON; stored memories stay untouched, so this is
+		// a normal outcome rather than a fault
+		logger.InfoCtx(ctx, "consolidate memories skip, keep old memories", "err", err)
 	}
 }
 

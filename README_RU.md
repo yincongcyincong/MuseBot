@@ -35,6 +35,8 @@ chatgpt: [https://www.youtube.com/watch?v=G\_DZYMvd5Ug](https://www.youtube.com/
   центре регистрации [документация](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/register.md)
 - 🧩 **Плагины**: Подключайте новые LLM-провайдеры и каналы чата через реестры провайдеров и каналов — по одному файлу на
   расширение, см. [документацию](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/plugin.md)
+- 🛟 **Отказоустойчивость моделей**: автоматический переход на другие настроенные провайдеры при сбоях основной модели,
+  плюс дешёвая вспомогательная модель для внутренних вызовов, см. [документацию](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/failover.md)
 - 🌈 **Метрики**: Поддержка Метрик для мониторинга,
   см. [документацию](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/metrics.md).
 

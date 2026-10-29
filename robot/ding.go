@@ -73,7 +73,7 @@ func StartDingRobot(ctx context.Context) {
 		return
 	}
 
-	logger.Info("DingRobot Info", "username", DingBotClient.UserAgent)
+	logger.InfoCtx(ctx, "DingRobot Info", "username", DingBotClient.UserAgent)
 }
 
 func OnChatReceive(ctx context.Context, message *chatbot.BotCallbackDataModel) ([]byte, error) {
@@ -225,7 +225,7 @@ func (d *DingRobot) GetMessageContent() (bool, error) {
 					// tell images and documents apart
 					mediaContent, err := d.GetImageContent(accessToken, cMap)
 					if err != nil {
-						logger.Warn("get media content fail", "err", err)
+						logger.WarnCtx(d.Robot.Ctx, "get media content fail", "err", err)
 					} else if utils.DetectImageFormat(mediaContent) != "unknown" {
 						d.ImageContent = mediaContent
 					} else {
@@ -264,7 +264,7 @@ func (d *DingRobot) GetMessageContent() (bool, error) {
 			}
 			content, err = d.Robot.GetAudioContent(d.AudioContent)
 			if err != nil {
-				logger.Warn("generate text from audio failed", "err", err)
+				logger.WarnCtx(d.Robot.Ctx, "generate text from audio failed", "err", err)
 				d.Robot.SendMsg(chatId, err.Error(), msgId, "", nil)
 				return false, err
 			}

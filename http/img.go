@@ -173,7 +173,7 @@ func imageHandler(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query()
 	imageType := strings.ToLower(query.Get("type"))
 	if imageType == "" {
-		logger.Error("Missing 'type' query parameter in image request")
+		logger.ErrorCtx(r.Context(), "Missing 'type' query parameter in image request")
 		utils.Failure(ctx, w, r, param.CodeParamError, param.MsgParamError, "")
 		return
 	}
@@ -195,7 +195,7 @@ func imageHandler(w http.ResponseWriter, r *http.Request) {
 
 	file, err := os.Open(imagePath)
 	if err != nil {
-		logger.Error("Failed to open image file", "file", imagePath, "error", err)
+		logger.ErrorCtx(r.Context(), "Failed to open image file", "file", imagePath, "error", err)
 		utils.Failure(ctx, w, r, param.CodeParamError, param.MsgParamError, "")
 		return
 	}
@@ -207,7 +207,7 @@ func imageHandler(w http.ResponseWriter, r *http.Request) {
 
 	_, err = io.Copy(w, file)
 	if err != nil {
-		logger.Error("Failed to copy image file to response", "file", imagePath, "error", err)
+		logger.ErrorCtx(r.Context(), "Failed to copy image file to response", "file", imagePath, "error", err)
 	}
 }
 

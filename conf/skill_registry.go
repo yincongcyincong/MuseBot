@@ -44,6 +44,15 @@ var (
 	githubURLReg       = regexp.MustCompile(`(?i)https://github\.com/([A-Za-z0-9_.-]+)/([A-Za-z0-9_.-]+)(?:/[^"'\s<>&]+)?`)
 )
 
+// isGitHubShorthand reports whether s looks like "owner/repo", the bare form
+// of a GitHub repository reference
+func isGitHubShorthand(s string) bool {
+	owner, repo, found := strings.Cut(s, "/")
+	return found && owner != "" && repo != "" &&
+		!strings.Contains(repo, "/") &&
+		githubOwnerRepoReg.MatchString(owner) && githubOwnerRepoReg.MatchString(repo)
+}
+
 type RemoteSkillCandidate struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
@@ -139,6 +148,15 @@ func SearchRemoteSkills(ctx context.Context, query string) ([]*RemoteSkillCandid
 }
 
 func SearchAndInstallRemoteSkill(ctx context.Context, query string) (string, error) {
+	// the LLM often pastes the repo URL (or owner/repo) into the query field;
+	// treat those as direct sources instead of search keywords
+	trimmed := strings.TrimSpace(query)
+	if strings.HasPrefix(trimmed, "https://github.com/") {
+		return InstallRemoteSkill(ctx, trimmed)
+	}
+	if isGitHubShorthand(trimmed) {
+		return InstallRemoteSkill(ctx, "https://github.com/"+trimmed)
+	}
 	candidates, err := SearchRemoteSkills(ctx, query)
 	if err != nil {
 		return "", err
@@ -156,10 +174,16 @@ func InstallRemoteSkill(ctx context.Context, source string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	// already present and intact -> idempotent no-op; a partial download
+	// (unparsable SKILL.md) falls through and is reinstalled
+	existingDir := filepath.Join(*ToolsConfInfo.SkillPath, candidate.Name)
+	if existingSkill, _, loadErr := loadSkill(filepath.Join(existingDir, "SKILL.md")); loadErr == nil && existingSkill == candidate.Name {
+		return "skill " + candidate.Name + " is already installed", nil
+	}
 	if err := downloadRemoteSkill(installCtx, candidate); err != nil {
 		return "", err
 	}
-	InitSkills()
+	InitSkills(ctx)
 	return "installed " + candidate.Name + " from " + candidate.Source, nil
 }
 
@@ -358,7 +382,11 @@ func resolveRemoteSkill(ctx context.Context, source string) (*RemoteSkillCandida
 		return nil, err
 	}
 	if len(candidates) != 1 {
-		return nil, fmt.Errorf("source contains %d skills; install a direct SKILL.md URL", len(candidates))
+		example := ""
+		if len(candidates) > 0 {
+			example = fmt.Sprintf(", e.g. %s", candidates[0].Source)
+		}
+		return nil, fmt.Errorf("source contains %d skills; install a direct SKILL.md URL%s", len(candidates), example)
 	}
 	return candidates[0], nil
 }

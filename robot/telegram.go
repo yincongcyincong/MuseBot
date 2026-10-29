@@ -233,6 +233,14 @@ func (t *TelegramRobot) checkValid() bool {
 			t.Update.Message.Sticker != nil {
 			t.Prompt = i18n.GetMessage("sticker_prompt", nil)
 		}
+		// a sticker that could not be converted (animated .tgs, video .webm,
+		// oversized or failed download) carries no text at all — hint
+		// instead of dropping the message silently
+		if t.Update.Message.Sticker != nil && len(t.ImageContent) == 0 &&
+			strings.TrimSpace(t.Prompt) == "" {
+			t.Robot.SendMsg(chatId, i18n.GetMessage("sticker_unsupported", nil), msgId, "", nil)
+			return false
+		}
 		t.DocContent = t.GetDocumentContent()
 		t.AudioContent = t.GetAudioContent()
 		var err error
@@ -1103,6 +1111,12 @@ func (t *TelegramRobot) sendForceReply(agentType string) func() {
 }
 
 func ForceReply(chatId int64, msgId int, i18MsgId string, bot *tgbotapi.BotAPI) error {
+	if chatId == 0 {
+		// synthetic updates (e.g. cron replay with an unparseable target id)
+		// have no chat to reply to; Telegram would just answer
+		// "Bad Request: chat_id is empty"
+		return nil
+	}
 	msg := tgbotapi.NewMessage(chatId, i18n.GetMessage(i18MsgId, nil))
 	msg.ReplyMarkup = tgbotapi.ForceReply{
 		ForceReply: true,
@@ -1254,7 +1268,9 @@ func (t *TelegramRobot) sendTyping() {
 	if t.Update.Message == nil || t.Bot == nil {
 		return
 	}
-	if _, err := t.Bot.Send(tgbotapi.NewChatAction(t.Update.Message.Chat.ID, tgbotapi.ChatTyping)); err != nil {
+	// Request (not Send): sendChatAction answers {"ok":true,"result":true},
+	// which Send cannot decode into tgbotapi.Message
+	if _, err := t.Bot.Request(tgbotapi.NewChatAction(t.Update.Message.Chat.ID, tgbotapi.ChatTyping)); err != nil {
 		logger.WarnCtx(t.Robot.Ctx, "send typing action fail", "err", err)
 	}
 }

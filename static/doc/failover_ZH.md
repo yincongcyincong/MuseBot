@@ -22,14 +22,14 @@ MuseBot 的 txt 聊天链路提供两项韧性/成本能力：
 
 - 默认：`GetAvailTxtType()` 返回的其它已配置 token 的厂商（deepseek → gemini → openai → aliyun → vol → chatanywhere 的固定顺序，跳过主 provider 和 ollama）
 - ollama 永不参与降级：它的协议客户端消息格式不同，无法中途迁移
-- 可用 `-failover_providers` 显式指定顺序
+- 可用 `-failover_providers` 显式指定顺序，每项支持 `厂商:模型` 写法为自定义网关固定模型（如 `openai:gpt-4o-mini`），不写模型则用该厂商默认模型
 
 ### 配置
 
 | 参数 | 环境变量 | 默认值 | 说明 |
 | --- | --- | --- | --- |
 | `-enable_failover` | `ENABLE_FAILOVER=false` 关闭 | `true` | 总开关 |
-| `-failover_providers` | `FAILOVER_PROVIDERS` | `""` | 显式降级链，逗号分隔，如 `gemini,openai` |
+| `-failover_providers` | `FAILOVER_PROVIDERS` | `""` | 显式降级链，逗号分隔，如 `gemini,openai`；可带模型 `openai:gpt-4o-mini` |
 
 示例：
 

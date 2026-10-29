@@ -44,6 +44,7 @@ require (
 	github.com/yincongcyincong/mcp-client-go v0.0.25
 	go.etcd.io/etcd/client/v3 v3.5.0
 	golang.org/x/crypto v0.48.0
+	golang.org/x/image v0.22.0
 	golang.org/x/oauth2 v0.32.0
 	golang.org/x/text v0.34.0
 	google.golang.org/genai v1.21.0
@@ -51,7 +52,6 @@ require (
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 	gopkg.in/yaml.v3 v3.0.1
 	layeh.com/gopus v0.0.0-20210501142526-1ee02d434e32
-	golang.org/x/image v0.22.0
 )
 
 require (

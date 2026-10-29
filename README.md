@@ -54,6 +54,8 @@ Thanks to the Reddit community as well, even though a few of my subreddits got b
   registration center [doc](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/register.md)
 - 🧩 **Plugins**: Wire up new LLM providers and chat channels through the provider / channel registries — one file per
   extension, see [doc](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/plugin.md)
+- 🛟 **Model-layer resilience**: automatically fail over from the primary model to other configured providers, and route
+  internal calls to a cheap utility model, see [doc](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/failover.md)
 - 🌈 **Metrics**: Support Metrics for monitoring,
   see [doc](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/metrics.md).
 - 🐶 **Cron**: Support Cron to trigger LLM,

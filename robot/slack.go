@@ -102,7 +102,7 @@ func StartSlackRobot(ctx context.Context) {
 		}
 
 	}()
-	logger.Info("SlackBot Info", "username", authResp.User)
+	logger.InfoCtx(ctx, "SlackBot Info", "username", authResp.User)
 	err = socketClient.RunContext(ctx)
 	if err != nil {
 		logger.ErrorCtx(ctx, "SlackBot Run failed", "err", err)
@@ -213,7 +213,7 @@ func (s *SlackRobot) getMessageContent() bool {
 
 			s.Prompt, err = s.Robot.GetAudioContent(s.VoiceContent)
 			if err != nil {
-				logger.Warn("generate text from audio failed", "err", err)
+				logger.WarnCtx(s.Robot.Ctx, "generate text from audio failed", "err", err)
 				return false
 			}
 
@@ -418,7 +418,7 @@ func (s *SlackRobot) sendVoiceContent(voiceContent []byte, duration int) error {
 
 	_, err := s.Client.UploadFileV2(uploadParams)
 	if err != nil {
-		logger.Warn("upload voice to slack fail", "err", err)
+		logger.WarnCtx(s.Robot.Ctx, "upload voice to slack fail", "err", err)
 		return err
 	}
 

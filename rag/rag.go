@@ -148,8 +148,8 @@ func InitRag() {
 func insertVectorDb(ctx context.Context, docs []schema.Document) error {
 	ids, err := conf.RagConfInfo.Store.AddDocuments(ctx, docs)
 	if err != nil {
-		logger.Error("get save doc fail", "err", err)
-		cleanupPendingRagFiles(docs)
+		logger.ErrorCtx(ctx, "get save doc fail", "err", err)
+		cleanupPendingRagFiles(ctx, docs)
 		return err
 	}
 
@@ -162,14 +162,14 @@ func insertVectorDb(ctx context.Context, docs []schema.Document) error {
 	for fileMd5, vectorIds := range fileVectorIds {
 		err = db.UpdateVectorIdByFileMd5(fileMd5, strings.TrimRight(vectorIds, ","))
 		if err != nil {
-			logger.Error("update vector id fail", "err", err)
+			logger.ErrorCtx(ctx, "update vector id fail", "err", err)
 			return err
 		}
 	}
 	return nil
 }
 
-func cleanupPendingRagFiles(docs []schema.Document) {
+func cleanupPendingRagFiles(ctx context.Context, docs []schema.Document) {
 	fileNames := make(map[string]struct{})
 	for _, doc := range docs {
 		fileName, ok := doc.Metadata["file_name"].(string)
@@ -204,22 +204,22 @@ func handleEntry(ctx context.Context, entries []os.DirEntry) ([]schema.Document,
 			case strings.HasSuffix(strings.ToLower(entry.Name()), ".txt"):
 				docs, err = handleTextDoc(ctx, entry)
 				if err != nil {
-					logger.Error("handle text doc fail", "err", err)
+					logger.ErrorCtx(ctx, "handle text doc fail", "err", err)
 				}
 			case strings.HasSuffix(strings.ToLower(entry.Name()), ".pdf"):
 				docs, err = handlePDFDoc(ctx, entry)
 				if err != nil {
-					logger.Error("handle pdf doc fail", "err", err)
+					logger.ErrorCtx(ctx, "handle pdf doc fail", "err", err)
 				}
 			case strings.HasSuffix(strings.ToLower(entry.Name()), ".csv"):
 				docs, err = handleCSVDoc(ctx, entry)
 				if err != nil {
-					logger.Error("handle csv doc fail", "err", err)
+					logger.ErrorCtx(ctx, "handle csv doc fail", "err", err)
 				}
 			case strings.HasSuffix(strings.ToLower(entry.Name()), ".html"):
 				docs, err = handleHTMLDoc(ctx, entry)
 				if err != nil {
-					logger.Error("handle html doc fail", "err", err)
+					logger.ErrorCtx(ctx, "handle html doc fail", "err", err)
 				}
 			}
 			if len(docs) > 0 {
@@ -280,7 +280,7 @@ func initGeminiEmbedding(ctx context.Context) (embeddings.Embedder, error) {
 	return embedder, err
 }
 
-func getFileResource(entry os.DirEntry) (*os.File, string, error) {
+func getFileResource(ctx context.Context, entry os.DirEntry) (*os.File, string, error) {
 	fullPath := filepath.Join(conf.RagConfInfo.KnowledgePath, entry.Name())
 
 	fileMd5, err := utils.FileToMd5(fullPath)
@@ -315,9 +315,9 @@ func getFileResource(entry os.DirEntry) (*os.File, string, error) {
 }
 
 func handleTextDoc(ctx context.Context, entry os.DirEntry) ([]schema.Document, error) {
-	f, fMd5, err := getFileResource(entry)
+	f, fMd5, err := getFileResource(ctx, entry)
 	if err != nil {
-		logger.Error("read file fail", "err", err)
+		logger.ErrorCtx(ctx, "read file fail", "err", err)
 		return nil, err
 	}
 	if f == nil {
@@ -330,9 +330,9 @@ func handleTextDoc(ctx context.Context, entry os.DirEntry) ([]schema.Document, e
 }
 
 func handlePDFDoc(ctx context.Context, entry os.DirEntry) ([]schema.Document, error) {
-	f, fMd5, err := getFileResource(entry)
+	f, fMd5, err := getFileResource(ctx, entry)
 	if err != nil {
-		logger.Error("read file fail", "err", err)
+		logger.ErrorCtx(ctx, "read file fail", "err", err)
 		return nil, err
 	}
 	if f == nil {
@@ -342,7 +342,7 @@ func handlePDFDoc(ctx context.Context, entry os.DirEntry) ([]schema.Document, er
 
 	finfo, err := f.Stat()
 	if err != nil {
-		logger.Error("get file stat fail", "err", err)
+		logger.ErrorCtx(ctx, "get file stat fail", "err", err)
 		return nil, err
 	}
 	loader := documentloaders.NewPDF(f, finfo.Size())
@@ -350,9 +350,9 @@ func handlePDFDoc(ctx context.Context, entry os.DirEntry) ([]schema.Document, er
 }
 
 func handleCSVDoc(ctx context.Context, entry os.DirEntry) ([]schema.Document, error) {
-	f, fMd5, err := getFileResource(entry)
+	f, fMd5, err := getFileResource(ctx, entry)
 	if err != nil {
-		logger.Error("read file fail", "err", err)
+		logger.ErrorCtx(ctx, "read file fail", "err", err)
 		return nil, err
 	}
 	if f == nil {
@@ -365,9 +365,9 @@ func handleCSVDoc(ctx context.Context, entry os.DirEntry) ([]schema.Document, er
 }
 
 func handleHTMLDoc(ctx context.Context, entry os.DirEntry) ([]schema.Document, error) {
-	f, fMd5, err := getFileResource(entry)
+	f, fMd5, err := getFileResource(ctx, entry)
 	if err != nil {
-		logger.Error("read file fail", "err", err)
+		logger.ErrorCtx(ctx, "read file fail", "err", err)
 		return nil, err
 	}
 	if f == nil {
@@ -388,7 +388,7 @@ func saveDocIntoStore(ctx context.Context, loader documentloaders.Loader, fMd5 s
 
 	docs, err := loader.LoadAndSplit(ctx, splitter)
 	if err != nil {
-		logger.Error("get rag docs fail: %v", err)
+		logger.ErrorCtx(ctx, "get rag docs fail: %v", err)
 		return nil, err
 	}
 
@@ -461,18 +461,18 @@ func DeleteDoc(ctx context.Context, event fsnotify.Event) {
 	fileName := filepath.Base(event.Name)
 	fileDbInfo, err := db.GetRagFileByFileName(fileName)
 	if err != nil {
-		logger.Error("get file db info fail", "err", err)
+		logger.ErrorCtx(ctx, "get file db info fail", "err", err)
 		return
 	}
 	if fileDbInfo != nil && len(fileDbInfo) > 0 {
 		err = DeleteStoreData(ctx, fileDbInfo[0].VectorId)
 		if err != nil {
-			logger.Error("delete doc fail", "err", err)
+			logger.ErrorCtx(ctx, "delete doc fail", "err", err)
 			return
 		}
 		err = db.DeleteRagFileByFileName(fileDbInfo[0].FileName)
 		if err != nil {
-			logger.Error("delete doc in db fail", "err", err)
+			logger.ErrorCtx(ctx, "delete doc in db fail", "err", err)
 			return
 		}
 	}
@@ -481,22 +481,22 @@ func DeleteDoc(ctx context.Context, event fsnotify.Event) {
 func InsertDoc(ctx context.Context, event fsnotify.Event) {
 	fileInfo, err := os.Stat(event.Name)
 	if err != nil {
-		logger.Error("stat file fail", "err", err)
+		logger.ErrorCtx(ctx, "stat file fail", "err", err)
 		return
 	}
 	entry, err := findDirEntry(conf.RagConfInfo.KnowledgePath, fileInfo.Name())
 	if err != nil {
-		logger.Error("find dir entry fail", "err", err)
+		logger.ErrorCtx(ctx, "find dir entry fail", "err", err)
 		return
 	}
 	docs, err := handleEntry(ctx, []os.DirEntry{entry})
 	if err != nil {
-		logger.Error("handle entry fail", "err", err)
+		logger.ErrorCtx(ctx, "handle entry fail", "err", err)
 		return
 	}
 	if len(docs) > 0 {
 		if err = insertVectorDb(ctx, docs); err != nil {
-			logger.Error("insert vector data fail", "err", err)
+			logger.ErrorCtx(ctx, "insert vector data fail", "err", err)
 		}
 	}
 }
@@ -525,7 +525,7 @@ func DeleteStoreData(ctx context.Context, vectorIds string) error {
 				WithID(vectorId).
 				Do(ctx)
 			if err != nil {
-				logger.Error("delete store data fail", "err", err)
+				logger.ErrorCtx(ctx, "delete store data fail", "err", err)
 			}
 		}
 

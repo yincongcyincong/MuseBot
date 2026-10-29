@@ -286,7 +286,7 @@ func init() {
 	// Vol speech recognition authenticates with the audio app credentials
 	// instead of VolToken, so its recognizer lives in utils (see GetAvailRecType).
 	RegisterRecognizer(param.Vol, func(ctx context.Context, audioContent []byte) (string, int, error) {
-		text, err := utils.FileRecognize(audioContent)
+		text, err := utils.FileRecognize(ctx, audioContent)
 		return text, param.AudioTokenUsage, err
 	})
 }

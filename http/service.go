@@ -26,6 +26,27 @@ func PongHandler(w http.ResponseWriter, r *http.Request) {
 	utils.Success(ctx, w, r, "pong")
 }
 
+// HealthzHandler reports liveness: the process and its HTTP loop are up.
+// Deliberately dependency-free (no db, no auth) so orchestrators like
+// Kubernetes can probe it cheaply; returns a plain 200 body.
+func HealthzHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte("ok"))
+}
+
+// ReadyzHandler reports readiness: the database answers. Returns 503 until
+// then so load balancers stop routing traffic during startup or db outages.
+func ReadyzHandler(w http.ResponseWriter, r *http.Request) {
+	if db.DB == nil || db.DB.Ping() != nil {
+		http.Error(w, "db unavailable", http.StatusServiceUnavailable)
+		return
+	}
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte("ok"))
+}
+
 func DashboardHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	recordCount, err := db.GetRecordCount("", -1, "")

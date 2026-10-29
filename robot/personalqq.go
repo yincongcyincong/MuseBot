@@ -328,7 +328,7 @@ func (q *PersonalQQRobot) GetMessageContent() (bool, error) {
 				fileName = "doc" + utils.DetectDocumentType("", docContent)
 			}
 			if utils.DetectDocumentType(fileName, docContent) == "" {
-				logger.Warn("unsupported document type", "fileName", fileName)
+				logger.WarnCtx(q.Robot.Ctx, "unsupported document type", "fileName", fileName)
 				chatId, msgId, _ := q.Robot.GetChatIdAndMsgIdAndUserID()
 				q.Robot.SendMsg(chatId, i18n.GetMessage("doc_unsupported_type",
 					map[string]interface{}{"file_name": fileName}), msgId, "", nil)
@@ -342,7 +342,7 @@ func (q *PersonalQQRobot) GetMessageContent() (bool, error) {
 			}
 			q.Prompt, err = q.Robot.GetAudioContent(q.AudioContent)
 			if err != nil {
-				logger.Warn("generate text from audio failed", "err", err)
+				logger.WarnCtx(q.Robot.Ctx, "generate text from audio failed", "err", err)
 				return false, err
 			}
 		case "at":

@@ -2,6 +2,7 @@ package conf
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -27,7 +28,7 @@ type skillInfo struct {
 	Description string `yaml:"description" json:"description"`
 }
 
-func InitSkills() {
+func InitSkills(ctx context.Context) {
 	SkillTools.Range(func(key, _ any) bool {
 		TaskTools.Delete(key)
 		SkillTools.Delete(key)
@@ -35,6 +36,12 @@ func InitSkills() {
 	})
 
 	skillPath := *ToolsConfInfo.SkillPath
+	// data/skills is the bot's own skill home; make sure it exists so
+	// installs and creates always land there
+	if err := os.MkdirAll(skillPath, 0755); err != nil {
+		logger.ErrorCtx(ctx, "create skill path fail", "path", skillPath, "err", err)
+		return
+	}
 	matches := make([]string, 0)
 	err := filepath.WalkDir(skillPath, func(path string, entry os.DirEntry, err error) error {
 		if err != nil {
@@ -48,7 +55,7 @@ func InitSkills() {
 	})
 	if err != nil {
 		if !errors.Is(err, os.ErrNotExist) {
-			logger.Error("init skills fail", "path", skillPath, "err", err)
+			logger.ErrorCtx(ctx, "init skills fail", "path", skillPath, "err", err)
 		}
 		return
 	}
@@ -57,19 +64,19 @@ func InitSkills() {
 	for _, match := range matches {
 		skillName, skill, err := loadSkill(match)
 		if err != nil {
-			logger.Error("load skill fail", "path", match, "err", err)
+			logger.ErrorCtx(ctx, "load skill fail", "path", match, "err", err)
 			continue
 		}
 		if _, loaded := TaskTools.LoadOrStore(skillName, skill); loaded {
-			logger.Error("skill name conflicts with an existing task agent", "name", skillName, "path", match)
+			logger.ErrorCtx(ctx, "skill name conflicts with an existing task agent", "name", skillName, "path", match)
 			continue
 		}
 		SkillTools.Store(skillName, skill)
-		logger.Info("load skill", "name", skillName, "path", match)
+		logger.InfoCtx(ctx, "load skill", "name", skillName, "path", match)
 	}
 }
 
-func CreateSkill(name, description, instructions string) error {
+func CreateSkill(ctx context.Context, name, description, instructions string) error {
 	name = strings.TrimSpace(name)
 	if !skillNameReg.MatchString(name) {
 		return errors.New("invalid skill name; use 1-64 letters, digits, hyphens, or underscores")
@@ -100,8 +107,78 @@ func CreateSkill(name, description, instructions string) error {
 		return err
 	}
 
-	InitSkills()
+	InitSkills(ctx)
 	return nil
+}
+
+// DeleteSkills removes the directory of the named skill, or of every loaded
+// skill when name is empty, then reloads skills. Only directories that contain
+// a SKILL.md inside the configured skill path are ever removed; a bare
+// SKILL.md sitting directly in the skill path root has its file removed
+// instead of the root directory itself.
+func DeleteSkills(ctx context.Context, name string) ([]string, error) {
+	skillPath, err := filepath.Abs(*ToolsConfInfo.SkillPath)
+	if err != nil {
+		return nil, err
+	}
+	info, err := os.Stat(skillPath)
+	if err != nil || !info.IsDir() {
+		return nil, errors.New("skill path is not a directory")
+	}
+
+	type skillEntry struct {
+		name string
+		file string
+	}
+	entries := make([]skillEntry, 0)
+	err = filepath.WalkDir(skillPath, func(path string, entry os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if entry.IsDir() || !strings.EqualFold(entry.Name(), "SKILL.md") {
+			return nil
+		}
+		skillName, _, loadErr := loadSkill(path)
+		if loadErr != nil {
+			logger.WarnCtx(ctx, "load skill fail, skip delete", "path", path, "err", loadErr)
+			return nil
+		}
+		entries = append(entries, skillEntry{name: skillName, file: path})
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	deleted := make([]string, 0)
+	for _, entry := range entries {
+		if name != "" && entry.name != name {
+			continue
+		}
+		dir := filepath.Dir(entry.file)
+		absDir, err := filepath.Abs(dir)
+		if err != nil {
+			return nil, err
+		}
+		if absDir == skillPath {
+			// never RemoveAll the skill root; the file is the whole skill
+			if err := os.Remove(entry.file); err != nil {
+				return nil, err
+			}
+			deleted = append(deleted, entry.name)
+			continue
+		}
+		if !strings.HasPrefix(absDir, skillPath+string(os.PathSeparator)) {
+			return nil, fmt.Errorf("skill directory %s escapes the skill path", absDir)
+		}
+		if err := os.RemoveAll(absDir); err != nil {
+			return nil, err
+		}
+		deleted = append(deleted, entry.name)
+	}
+
+	InitSkills(ctx)
+	return deleted, nil
 }
 
 func loadSkill(skillFile string) (string, *AgentInfo, error) {

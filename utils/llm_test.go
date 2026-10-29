@@ -26,7 +26,7 @@ func TestGetAvailImgType_IncludesChatAnyWhere(t *testing.T) {
 }
 
 func TestGetTxtModel_ChatAnyWhereDefault(t *testing.T) {
-	assert.Equal(t, openai.GPT3Dot5Turbo, GetTxtModel(param.ChatAnyWhere))
+	assert.Equal(t, openai.GPT4oMini, GetTxtModel(param.ChatAnyWhere))
 }
 
 func TestGetTxtType_ChatAnyWhereFallback(t *testing.T) {

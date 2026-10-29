@@ -106,7 +106,7 @@ func WechatComm(w http.ResponseWriter, r *http.Request) {
 		}
 	} else {
 		rs, err = robot.OfficialAccountApp.Server.Notify(r, func(event contract.EventInterface) interface{} {
-			c, isExec := robot.NewWechatRobot(event)
+			c, isExec := robot.NewWechatRobot(ctx, event)
 			if isExec {
 				c.Robot.Exec()
 			}

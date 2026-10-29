@@ -158,7 +158,7 @@ func GetTxtModel(t string) string {
 	case param.Gemini:
 		return param.ModelGemini25Flash
 	case param.OpenAi:
-		return openai.GPT3Dot5Turbo
+		return openai.GPT4oMini
 	case param.Ollama:
 		return "deepseek-r1"
 	case param.Vol:
@@ -166,7 +166,7 @@ func GetTxtModel(t string) string {
 	case param.Aliyun:
 		return qwen.QwenMax
 	case param.ChatAnyWhere:
-		return openai.GPT3Dot5Turbo
+		return openai.GPT4oMini
 	}
 
 	return godeepseek.DeepSeekChat

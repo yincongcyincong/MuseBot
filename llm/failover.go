@@ -131,28 +131,33 @@ func (l *LLM) txtProviderType() string {
 func (l *LLM) failoverChain() []failoverTarget {
 	primary := l.txtProviderType()
 
-	var types []string
+	entries := utils.GetAvailTxtType()
 	if explicit := conf.BaseConfInfo.FailoverProviders; explicit != "" {
-		for _, t := range strings.Split(explicit, ",") {
-			t = strings.TrimSpace(t)
-			if t != "" && t != primary && t != param.Ollama {
-				types = append(types, t)
-			}
-		}
-	} else {
-		for _, t := range utils.GetAvailTxtType() {
-			if t != primary && t != param.Ollama {
-				types = append(types, t)
-			}
-		}
+		entries = strings.Split(explicit, ",")
 	}
 
-	targets := make([]failoverTarget, 0, len(types))
-	for _, t := range types {
-		if _, ok := openaiEndpoints[t]; !ok {
+	targets := make([]failoverTarget, 0, len(entries))
+	for _, entry := range entries {
+		entry = strings.TrimSpace(entry)
+		if entry == "" {
+			continue
+		}
+		// explicit entries may pin the model for custom relays: "openai:gpt-4o-mini"
+		provider, model := entry, ""
+		if i := strings.Index(entry, ":"); i >= 0 {
+			provider = strings.TrimSpace(entry[:i])
+			model = strings.TrimSpace(entry[i+1:])
+		}
+		if provider == primary || provider == param.Ollama {
+			continue
+		}
+		if _, ok := openaiEndpoints[provider]; !ok {
 			continue // no OpenAI-compatible endpoint for this type
 		}
-		targets = append(targets, failoverTarget{Type: t, Model: utils.GetTxtModel(t)})
+		if model == "" {
+			model = utils.GetTxtModel(provider)
+		}
+		targets = append(targets, failoverTarget{Type: provider, Model: model})
 	}
 	return targets
 }

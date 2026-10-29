@@ -9,49 +9,92 @@ on:
     branches:
       - main
 
+# 最小权限：PR 上的检查只需要读代码
+permissions:
+  contents: read
+
+# 同分支新提交到来时取消旧的运行，节省 CI 资源
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 # 工作流程定义
 jobs:
   build:
     runs-on: ubuntu-latest  # 指定运行环境
-    env:
-      DEEPSEEK_TOKEN: ${{ secrets.DEEPSEEK_TOKEN }}
-      GEMINI_TOKEN: ${{ secrets.GEMINI_TOKEN }}
-      OPENAI_TOKEN: ${{ secrets.OPENAI_TOKEN }}
-      OPEN_ROUTER_TOKEN: ${{ secrets.OPEN_ROUTER_TOKEN }}
-      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-      VOL_TOKEN: ${{ secrets.VOL_TOKEN }}
-      TEST_CUSTOM_URL: ${{ secrets.TEST_CUSTOM_URL }}
+    timeout-minutes: 20
     steps:
       # 检出代码
       - name: Checkout Code
         uses: actions/checkout@v4
+
+      # gopus (Discord 语音) 的 cgo 编译需要系统库
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends pkg-config libopus-dev
 
       # 安装 Golang 环境
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
           go-version: 1.26  # 指定 Go 版本
+          cache: true
+          cache-dependency-path: go.sum
 
       # 下载依赖
       - name: Install Dependencies
+        run: go mod download
+
+      # go.mod / go.sum 必须与代码保持一致，漏 tidy 的 PR 直接失败
+      - name: Check go.mod tidiness
         run: |
           go mod tidy
-          go mod download
+          git diff --exit-code -- go.mod go.sum
 
-      # 格式化和静态检查
-      - name: Lint and Vet
+      # 格式检查：只报告不改动，存在未格式化文件即失败
+      - name: Check Formatting
         run: |
-          go fmt ./...
-          go vet ./...
+          unformatted=$(gofmt -l .)
+          if [ -n "$unformatted" ]; then
+            echo "::error::These files are not gofmt-clean:"
+            echo "$unformatted"
+            exit 1
+          fi
 
-      # 运行测试
+      # 静态检查
+      - name: Vet
+        run: go vet ./...
+
+      # 三份 i18n 文件必须是合法 JSON 且 key 集合一致
+      - name: Check i18n parity
+        run: |
+          python3 - <<'EOF'
+          import json, sys
+          langs = ["en", "zh", "ru"]
+          keys = {}
+          for lang in langs:
+              with open(f"conf/i18n/i18n.{lang}.json") as f:
+                  keys[lang] = set(json.load(f))
+          ok = True
+          for lang in langs[1:]:
+              missing = keys["en"] - keys[lang]
+              extra = keys[lang] - keys["en"]
+              if missing or extra:
+                  ok = False
+                  print(f"i18n.{lang}.json mismatch: missing={sorted(missing)} extra={sorted(extra)}")
+          if not ok:
+              sys.exit(1)
+          print(f"i18n parity ok ({len(keys['en'])} keys)")
+          EOF
+
+      # 运行测试：-race 检测数据竞争，-count=1 绕过本地缓存
       - name: Run Tests
-        run: go test -v ./...
+        run: go test -race -count=1 ./...
 
       # 构建
       - name: Build
         run: |
           mkdir -p ./bin
-          go build -o ./bin/MuseBot main.go
+          go build -o ./bin/MuseBot .
           go build -o ./bin/MuseBot-admin ./admin
-
