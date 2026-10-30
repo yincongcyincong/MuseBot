@@ -138,15 +138,22 @@ func GenerateGeminiVideo(ctx context.Context, prompt string, image []byte) ([]by
 
 	if err != nil || res == nil {
 		logger.ErrorCtx(ctx, "generate video fail", "err", err)
-		return nil, 0, err
+		if err != nil {
+			return nil, 0, err
+		}
+		return nil, 0, errors.New("empty interaction response")
 	}
 
 	metrics.APIRequestDuration.WithLabelValues(model).Observe(time.Since(start).Seconds())
 
 	video := res.Interaction.OutputVideo
 	if video == nil {
-		logger.ErrorCtx(ctx, "generate video fail", "err", "video is empty", "interaction_id", res.Interaction.ID)
-		return nil, 0, errors.New("video is empty")
+		err := interactionStepError(res)
+		if err == nil {
+			err = errors.New("video is empty")
+		}
+		logger.ErrorCtx(ctx, "generate video fail", "err", err, "interaction_id", interactionID(res))
+		return nil, 0, err
 	}
 
 	var totalToken int
@@ -173,8 +180,35 @@ func GenerateGeminiVideo(ctx context.Context, prompt string, image []byte) ([]by
 		return videoBytes, totalToken, nil
 	}
 
-	logger.ErrorCtx(ctx, "generate video fail", "err", "video is empty", "interaction_id", res.Interaction.ID)
+	logger.ErrorCtx(ctx, "generate video fail", "err", "video is empty", "interaction_id", interactionID(res))
 	return nil, 0, errors.New("video is empty")
+}
+
+// interactionStepError surfaces a failed model-output step so rejected or
+// quota-limited generations report the server's reason instead of an
+// unexplained "video is empty".
+func interactionStepError(res *operations.CreateInteractionResponse) error {
+	if res == nil || res.Interaction == nil {
+		return nil
+	}
+	for _, step := range res.Interaction.Steps {
+		if step.ModelOutputStep != nil && step.ModelOutputStep.Error != nil {
+			msg := "generation failed"
+			if step.ModelOutputStep.Error.Message != nil {
+				msg = *step.ModelOutputStep.Error.Message
+			}
+			return fmt.Errorf("video generation failed: %s", msg)
+		}
+	}
+	return nil
+}
+
+// interactionID returns the interaction's ID for logs, tolerating nils.
+func interactionID(res *operations.CreateInteractionResponse) string {
+	if res == nil || res.Interaction == nil || res.Interaction.ID == nil {
+		return ""
+	}
+	return *res.Interaction.ID
 }
 
 // downloadInteractionFile fetches a video delivered as a Files API URI: poll
@@ -197,7 +231,14 @@ func downloadInteractionFile(ctx context.Context, client *genai.Client, uri stri
 			return nil, errors.New("video file is empty")
 		}
 		if fileInfo.State == genai.FileStateActive {
-			return client.Files.Download(ctx, genai.NewDownloadURIFromFile(fileInfo), nil)
+			data, err := client.Files.Download(ctx, genai.NewDownloadURIFromFile(fileInfo), nil)
+			if err != nil {
+				return nil, err
+			}
+			if len(data) == 0 {
+				return nil, errors.New("downloaded video is empty")
+			}
+			return data, nil
 		}
 		if fileInfo.State == genai.FileStateFailed {
 			return nil, errors.New("video file processing failed")
