@@ -529,6 +529,8 @@ func (l *LLM) ExecMcpReq(ctx context.Context, funcName string, property map[stri
 				return "", errors.New("web search session is not initialized")
 			}
 			return utils.ParallelWebSearch(ctx, query, l.searchSession.ID())
+		case "outcrawl":
+			return utils.OutcrawlWebSearch(ctx, query)
 		case "disabled":
 			return "", errors.New("web search is disabled")
 		default:
