@@ -87,6 +87,26 @@ var (
 		);
 		CREATE INDEX IF NOT EXISTS idx_memories_user_id ON memories(user_id);
 	`,
+		"webhooks": `
+		CREATE TABLE IF NOT EXISTS webhooks (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			webhook_name VARCHAR(255) NOT NULL DEFAULT '',
+			token_hash VARCHAR(255) NOT NULL,
+			source VARCHAR(255) NOT NULL DEFAULT 'generic',
+			type VARCHAR(255) NOT NULL DEFAULT '',
+			target_id TEXT NOT NULL,
+			group_id TEXT NOT NULL,
+			command VARCHAR(255) NOT NULL DEFAULT '',
+			prompt_template TEXT NOT NULL,
+			status INTEGER NOT NULL DEFAULT 1, -- 0:disable 1:enable
+			create_time INTEGER NOT NULL DEFAULT '0',
+			update_time INTEGER NOT NULL DEFAULT '0',
+			is_deleted INTEGER NOT NULL DEFAULT '0',
+			from_bot VARCHAR(255) NOT NULL DEFAULT '',
+			create_by VARCHAR(255) NOT NULL DEFAULT ''
+		);
+		CREATE UNIQUE INDEX IF NOT EXISTS idx_webhooks_token_hash ON webhooks(token_hash);
+	`,
 	}
 
 	mysqlInitializeSQLs = []string{
@@ -167,6 +187,27 @@ var (
           is_deleted INT(10) NOT NULL DEFAULT 0,
 
           INDEX idx_memories_user_id (user_id)
+       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+	`,
+		// 6. webhooks 表 (事件触发自动化,token 哈希唯一索引)
+		`CREATE TABLE IF NOT EXISTS webhooks (
+          id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+          webhook_name VARCHAR(255) NOT NULL DEFAULT '',
+          token_hash VARCHAR(255) NOT NULL,
+          source VARCHAR(255) NOT NULL DEFAULT 'generic',
+          type VARCHAR(255) NOT NULL DEFAULT '',
+          target_id TEXT NOT NULL,
+          group_id TEXT NOT NULL,
+          command VARCHAR(255) NOT NULL DEFAULT '',
+          prompt_template TEXT NOT NULL,
+          status tinyint(1) NOT NULL DEFAULT 1 COMMENT '0:disable 1:enable',
+          create_time INT(10) NOT NULL DEFAULT 0,
+          update_time INT(10) NOT NULL DEFAULT 0,
+          is_deleted INT(10) NOT NULL DEFAULT 0,
+          from_bot VARCHAR(255) NOT NULL DEFAULT '',
+          create_by VARCHAR(255) NOT NULL DEFAULT '',
+
+          UNIQUE INDEX idx_webhooks_token_hash (token_hash)
        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 	`,
 	}

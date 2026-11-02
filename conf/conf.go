@@ -66,6 +66,8 @@ type BaseConf struct {
 	TokenPerUser      int    `json:"token_per_user"`
 	MaxUserChat       int    `json:"max_user_chat"`
 	HTTPHost          string `json:"http_host"`
+	EnableWebhook     bool   `json:"enable_webhook"`
+	WebhookPayloadMB  int    `json:"webhook_payload_mb"`
 	UseTools          bool   `json:"use_tools"`
 	MaxQAPair         int    `json:"max_qa_pair"`
 	Character         string `json:"character"`
@@ -186,6 +188,8 @@ func InitConf() {
 	flag.IntVar(&BaseConfInfo.TokenPerUser, "token_per_user", 10000, "token per user")
 	flag.IntVar(&BaseConfInfo.MaxUserChat, "max_user_chat", 2, "max chat per user")
 	flag.StringVar(&BaseConfInfo.HTTPHost, "http_host", ":36060", "http server port")
+	flag.BoolVar(&BaseConfInfo.EnableWebhook, "enable_webhook", true, "enable the /webhook/{token} trigger endpoint")
+	flag.IntVar(&BaseConfInfo.WebhookPayloadMB, "webhook_payload_mb", 1, "max webhook request body in megabytes")
 	flag.BoolVar(&BaseConfInfo.UseTools, "use_tools", false, "use function tools")
 	flag.IntVar(&BaseConfInfo.MaxQAPair, "max_qa_pair", 100, "max qa pair")
 	flag.StringVar(&BaseConfInfo.Character, "character", "", "ai's character")
@@ -315,6 +319,8 @@ func logConf(allowedUserIds, allowedGroupIds, adminUserIds string) {
 	logger.Info("CONF", "TokenPerUser", BaseConfInfo.TokenPerUser)
 	logger.Info("CONF", "MaxUserChat", BaseConfInfo.MaxUserChat)
 	logger.Info("CONF", "HTTPHost", BaseConfInfo.HTTPHost)
+	logger.Info("CONF", "EnableWebhook", BaseConfInfo.EnableWebhook)
+	logger.Info("CONF", "WebhookPayloadMB", BaseConfInfo.WebhookPayloadMB)
 	logger.Info("CONF", "UseTools", BaseConfInfo.UseTools)
 	logger.Info("CONF", "OpenAIToken", BaseConfInfo.OpenAIToken)
 	logger.Info("CONF", "GeminiToken", BaseConfInfo.GeminiToken)
@@ -682,6 +688,14 @@ func applyEnvConf(allowedUserIds, allowedGroupIds, adminUserIds *string) {
 
 	if os.Getenv("HTTP_HOST") != "" {
 		BaseConfInfo.HTTPHost = os.Getenv("HTTP_HOST")
+	}
+
+	if os.Getenv("ENABLE_WEBHOOK") == "false" {
+		BaseConfInfo.EnableWebhook = false
+	}
+
+	if os.Getenv("WEBHOOK_PAYLOAD_MB") != "" {
+		BaseConfInfo.WebhookPayloadMB, _ = strconv.Atoi(os.Getenv("WEBHOOK_PAYLOAD_MB"))
 	}
 
 	if os.Getenv("USE_TOOLS") != "" {

@@ -58,6 +58,13 @@ func ExecCron(c *db.Cron) {
 		"bot_name", conf.BaseConfInfo.BotName), "log_id", uuid.New().String())
 	logger.InfoCtx(ctx, "exec cron", "cron", c.CronName, "cronSpec",
 		c.CronSpec, "type", c.Type, "targetId", c.TargetID, "groupId", c.GroupID)
+	execTask(ctx, c)
+}
+
+// execTask dispatches a synthetic message to the target platform; it is the
+// shared execution path of time-triggered cron jobs and event-triggered
+// webhooks.
+func execTask(ctx context.Context, c *db.Cron) {
 	switch c.Type {
 	case param.Wechat:
 		ExecWechat(ctx, c)
@@ -74,6 +81,25 @@ func ExecCron(c *db.Cron) {
 	case param.Ding:
 		ExecDing(ctx, c)
 	}
+}
+
+// ExecWebhook runs a rendered webhook prompt through the same synthetic robot
+// path as cron. Only the log id is carried over from the HTTP request context:
+// the request itself is cancelled as soon as the trigger is acknowledged.
+func ExecWebhook(ctx context.Context, wh *db.Webhook, prompt string) {
+	_, logId := logger.GetBotNameAndLogId(ctx)
+	execCtx := context.WithValue(context.WithValue(context.Background(),
+		"bot_name", conf.BaseConfInfo.BotName), "log_id", logId)
+	logger.InfoCtx(execCtx, "exec webhook", "webhook", wh.WebhookName, "type", wh.Type,
+		"targetId", wh.TargetID, "groupId", wh.GroupID, "promptLength", len(prompt))
+	execTask(execCtx, &db.Cron{
+		Type:     wh.Type,
+		TargetID: wh.TargetID,
+		GroupID:  wh.GroupID,
+		Command:  wh.Command,
+		Prompt:   prompt,
+		CreateBy: wh.CreateBy,
+	})
 }
 
 func ExecDing(ctx context.Context, c *db.Cron) {

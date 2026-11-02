@@ -92,6 +92,15 @@ func (p *HTTPServer) Start() {
 		mux.HandleFunc("/cron/delete", DeleteCron)
 		mux.HandleFunc("/cron/list", GetCrons)
 
+		// webhook trigger: POST /webhook/{token}; the exact management routes
+		// below win over the /webhook/ prefix pattern in ServeMux
+		mux.HandleFunc("/webhook/", TriggerWebhook)
+		mux.HandleFunc("/webhook/create", CreateWebhook)
+		mux.HandleFunc("/webhook/update", UpdateWebhook)
+		mux.HandleFunc("/webhook/update_status", UpdateWebhookStatus)
+		mux.HandleFunc("/webhook/delete", DeleteWebhook)
+		mux.HandleFunc("/webhook/list", GetWebhooks)
+
 		mux.HandleFunc("/image", imageHandler)
 
 		wrappedMux := WithRequestContext(mux)
