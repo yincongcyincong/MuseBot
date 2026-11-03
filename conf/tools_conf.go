@@ -62,7 +62,7 @@ var (
 )
 
 func InitToolsConf() {
-	flag.StringVar(&ToolsConfInfo.WebSearchProvider, "web_search_provider", "default", "task web search provider: default, parallel, or disabled")
+	flag.StringVar(&ToolsConfInfo.WebSearchProvider, "web_search_provider", "default", "task web search provider: default, parallel, outcrawl, or disabled")
 	flag.String("allowed_commands", "", "comma-separated executable allowlist")
 	flag.Int("command_timeout_sec", 60, "built-in command timeout in seconds")
 
