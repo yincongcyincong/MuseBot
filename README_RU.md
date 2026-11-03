@@ -321,9 +321,7 @@ others: см. [документацию](https://www.volcengine.com/docs/82379/1
 
 # Группа
 
-telegram-group: [https://t.me/+WtaMcDpaMOlhZTE1](https://t.me/+WtaMcDpaMOlhZTE1), или вы можете попробовать робота *
-*Guanwushan\_bot**.
-У каждого есть **10000** токенов, чтобы попробовать этого бота, пожалуйста, поставьте мне звезду\!
+telegram-group: [https://t.me/+WtaMcDpaMOlhZTE1](https://t.me/+WtaMcDpaMOlhZTE1)
 
 ## Лицензия
 

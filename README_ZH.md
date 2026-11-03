@@ -362,8 +362,7 @@ docker run -d -v /home/user/data:/app/data \
 
 ## 群聊
 
-telegram群: https://t.me/+WtaMcDpaMOlhZTE1, 或者尝试一下Guanwushan_bot。
-每个人有 **10000** token 去试用robot, 点个star吧!
+telegram群: https://t.me/+WtaMcDpaMOlhZTE1
 
 QQ群：1031411708
 

@@ -427,8 +427,7 @@ Feel free to submit issues and pull requests to improve this bot. 🚀
 
 ## group
 
-telegram-group: https://t.me/+WtaMcDpaMOlhZTE1 , or you can have a try robot `Guanwushan_bot`.
-every body have **10000** token to try this bot, please give me a star!
+telegram-group: https://t.me/+WtaMcDpaMOlhZTE1 
 
 QQ群：1031411708
 
