@@ -55,7 +55,8 @@ func StartLarkRobot(ctx context.Context) {
 	)
 
 	LarkBotClient = lark.NewClient(conf.BaseConfInfo.LarkAPPID, conf.BaseConfInfo.LarkAppSecret,
-		lark.WithHttpClient(utils.GetRobotProxyClient()))
+		lark.WithHttpClient(utils.GetRobotProxyClient()),
+		lark.WithLogger(logger.Logger))
 
 	// get bot name
 	resp, err := LarkBotClient.Application.Application.Get(ctx, larkapplication.NewGetApplicationReqBuilder().

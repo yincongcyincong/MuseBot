@@ -52,7 +52,7 @@ func StartSlackRobot(ctx context.Context) {
 		slack.OptionLog(logger.Logger),
 		slack.OptionHTTPClient(utils.GetRobotProxyClient()),
 	)
-	socketClient = socketmode.New(SlackClient)
+	socketClient = socketmode.New(SlackClient, socketmode.OptionLog(logger.Logger))
 
 	authResp, err := SlackClient.AuthTest()
 	if err != nil {

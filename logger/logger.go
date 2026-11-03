@@ -63,6 +63,7 @@ func InitLogger() {
 
 	log.SetOutput(Logger.logger)
 	log.SetFlags(0)
+	captureGrpcLog()
 	// set log level
 	switch strings.ToLower(*LogLevel) {
 	case "debug":
@@ -86,15 +87,22 @@ func getCallerFile() string {
 }
 
 // Debug debug info
+// These ctx variants serve SDK loggers (lark etc.) whose args are plain
+// message slices, not key-value pairs, so they are rendered as text instead
+// of zerolog Fields (Fields silently drops a trailing unpaired arg).
 func (l *LoggerInfo) Debug(ctx context.Context, fields ...interface{}) {
 	callerFile := getCallerFile()
-	zerolog.Ctx(ctx).Debug().Fields(fields).Msg(callerFile)
+	botName, logId := GetBotNameAndLogId(ctx)
+	Logger.logger.Debug().Str("bot_name", botName).Str("log_id", logId).
+		Msg(callerFile + " " + fmt.Sprintf("%v", fields))
 }
 
 // Info info log
 func (l *LoggerInfo) Info(ctx context.Context, fields ...interface{}) {
 	callerFile := getCallerFile()
-	zerolog.Ctx(ctx).Info().Fields(fields).Msg(callerFile)
+	botName, logId := GetBotNameAndLogId(ctx)
+	Logger.logger.Info().Str("bot_name", botName).Str("log_id", logId).
+		Msg(callerFile + " " + fmt.Sprintf("%v", fields))
 }
 
 func (l *LoggerInfo) Output(level int, logStr string) error {
@@ -106,19 +114,25 @@ func (l *LoggerInfo) Output(level int, logStr string) error {
 // Warn log
 func (l *LoggerInfo) Warn(ctx context.Context, fields ...interface{}) {
 	callerFile := getCallerFile()
-	zerolog.Ctx(ctx).Warn().Fields(fields).Msg(callerFile)
+	botName, logId := GetBotNameAndLogId(ctx)
+	Logger.logger.Warn().Str("bot_name", botName).Str("log_id", logId).
+		Msg(callerFile + " " + fmt.Sprintf("%v", fields))
 }
 
 // Error error log
 func (l *LoggerInfo) Error(ctx context.Context, fields ...interface{}) {
 	callerFile := getCallerFile()
-	zerolog.Ctx(ctx).Error().Fields(fields).Msg(callerFile)
+	botName, logId := GetBotNameAndLogId(ctx)
+	Logger.logger.Error().Str("bot_name", botName).Str("log_id", logId).
+		Msg(callerFile + " " + fmt.Sprintf("%v", fields))
 }
 
 // Fatal fatal log
 func (l *LoggerInfo) Fatal(ctx context.Context, fields ...interface{}) {
 	callerFile := getCallerFile()
-	zerolog.Ctx(ctx).Fatal().Fields(fields).Msg(callerFile)
+	botName, logId := GetBotNameAndLogId(ctx)
+	Logger.logger.Fatal().Str("bot_name", botName).Str("log_id", logId).
+		Msg(callerFile + " " + fmt.Sprintf("%v", fields))
 }
 
 // Debugf debug log
