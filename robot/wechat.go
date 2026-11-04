@@ -141,8 +141,10 @@ func NewWechatRobot(ctx context.Context, event contract.EventInterface) (*Wechat
 		return w, true
 	}
 
-	logger.InfoCtx(w.Robot.Ctx, "msg still handling", "msgId", msgId)
+	// a retried/duplicate callback: the robot must exist before it is used,
+	// GetLLMContent below reads it and WeChat retries make this branch routine
 	w.Robot = NewRobot(WithRobot(w))
+	logger.InfoCtx(w.Robot.Ctx, "msg still handling", "msgId", msgId)
 	return w, false
 }
 

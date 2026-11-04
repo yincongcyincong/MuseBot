@@ -98,7 +98,13 @@ func NewDiscordRobot(s *discordgo.Session, msg *discordgo.MessageCreate, i *disc
 	}
 
 	if i != nil {
-		dr.UserName = i.User.Username
+		// guild interactions carry the user inside Member; User is only set
+		// for DM-invoked commands (discordgo v0.29 fills exactly one of them)
+		if i.User != nil {
+			dr.UserName = i.User.Username
+		} else if i.Member != nil && i.Member.User != nil {
+			dr.UserName = i.Member.User.Username
+		}
 	}
 
 	return dr

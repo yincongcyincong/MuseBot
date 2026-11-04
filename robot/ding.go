@@ -381,7 +381,11 @@ func (d *DingRobot) CreateDingInteractClient() (_result *dingtalkaiinteraction.C
 }
 
 func (d *DingRobot) GetAccessToken() (string, error) {
-	if accessTokenInfo.ExpiredTime != 0 && accessTokenInfo.ExpiredTime < time.Now().Unix() {
+	// ExpiredTime is a future "valid until" stamp (set to now+ExpiresIn-300
+	// below): the cached token is only usable while that stamp is still ahead;
+	// the old `<` served the token while valid never cached it, then kept
+	// returning the expired one forever
+	if accessTokenInfo.ExpiredTime > time.Now().Unix() {
 		return accessTokenInfo.AccessToken, nil
 	}
 

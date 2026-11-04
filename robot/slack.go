@@ -180,10 +180,11 @@ func SlackMessageHandler(message *slackevents.MessageEvent) {
 }
 
 func (s *SlackRobot) checkValid() bool {
-	// group need at bot
+	// group need at bot: in channels a message WITHOUT the mention is chatter
+	// and must be ignored — the mention itself is what makes it valid
 	atRobot := fmt.Sprintf("<@%s>", slackUserId)
 	if (strings.HasPrefix(s.Event.Channel, "C") || strings.HasPrefix(s.Event.Channel, "G")) &&
-		strings.Contains(s.Event.Text, atRobot) {
+		!strings.Contains(s.Event.Text, atRobot) {
 		return false
 	}
 

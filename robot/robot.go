@@ -663,8 +663,10 @@ func (r *RobotInfo) SendMsg(chatId string, msgContent string, replyToMessageID s
 			}
 		} else {
 			_, msgId, _ := w.Robot.GetChatIdAndMsgIdAndUserID()
-			_, ok := TencentMsgMap.Load(msgId)
-			if msgId != "" && !ok {
+			// NewWechatRobot pre-stores a msgHandling entry for this msgId, so
+			// the finished answer must overwrite it; requiring the key to be
+			// absent made the reply unreachable and every passive answer 500.
+			if msgId != "" {
 				msgContent = strings.ReplaceAll(strings.ReplaceAll(msgContent, "http", ""), "https", "")
 				TencentMsgMap.Store(msgId, &TencentWechatMessage{
 					Msg:       msgContent,
@@ -978,7 +980,11 @@ func (r *RobotInfo) ExecCmd(cmd string, defaultFunc func(), modeFunc func(string
 	case param.CronClear, "/" + param.CronClear, "$" + param.CronClear:
 		r.cronClear()
 	default:
-		defaultFunc()
+		// some callers (e.g. slack button handlers) have no sensible default;
+		// calling a nil func here would panic the caller's goroutine
+		if defaultFunc != nil {
+			defaultFunc()
+		}
 	}
 }
 
