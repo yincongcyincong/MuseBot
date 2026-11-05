@@ -293,12 +293,10 @@ func (l *LarkRobot) GetMessageContent() (bool, error) {
 			}
 		}
 
-		l.Prompt = strings.ReplaceAll(l.Prompt, "@"+botShowName, "")
-		for _, at := range l.Message.Event.Message.Mentions {
-			if larkcore.StringValue(at.Name) == l.BotName {
-				botShowName = larkcore.StringValue(at.Name)
-				break
-			}
+		// the mention key already carries the @ prefix (e.g. @_user_1), which
+		// is exactly how the placeholder appears in the text
+		if botShowName != "" {
+			l.Prompt = strings.ReplaceAll(l.Prompt, botShowName, "")
 		}
 	} else if msgType == larkim.MsgTypePost {
 		postMsg := new(MessagePostContent)

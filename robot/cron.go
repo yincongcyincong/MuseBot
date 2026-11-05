@@ -24,14 +24,25 @@ import (
 )
 
 func InitCron() {
+	// create and start the scheduler before anything else: chat-side cron
+	// commands must never see a nil Cron during the startup window, and a
+	// failed db load must leave an empty-but-working scheduler, not a nil one
+	Cron = cron.New(cron.WithSeconds())
+	Cron.Start()
+
 	time.Sleep(10 * time.Second)
+
 	cronJobs, err := db.GetCronsByPage(1, 10000, "", "")
+	for retry := 0; err != nil && retry < 5; retry++ {
+		logger.Error("get crons error, retrying", "err", err, "retry", retry+1)
+		time.Sleep(30 * time.Second)
+		cronJobs, err = db.GetCronsByPage(1, 10000, "", "")
+	}
 	if err != nil {
-		logger.Error("get crons error", "err", err)
+		logger.Error("get crons error, give up; scheduler stays empty", "err", err)
 		return
 	}
 
-	Cron = cron.New(cron.WithSeconds())
 	for _, c := range cronJobs {
 		if c.CronSpec != "" && c.Status == 1 && c.Type != "" && c.Prompt != "" {
 			cronID, err := Cron.AddFunc(c.CronSpec, func() {
@@ -48,8 +59,6 @@ func InitCron() {
 			}
 		}
 	}
-
-	Cron.Start()
 }
 
 func ExecCron(c *db.Cron) {

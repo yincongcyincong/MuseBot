@@ -93,7 +93,7 @@ func NewDiscordRobot(s *discordgo.Session, msg *discordgo.MessageCreate, i *disc
 		Inter:   i,
 	}
 
-	if msg != nil {
+	if msg != nil && msg.Author != nil {
 		dr.UserName = msg.Author.Username
 	}
 
@@ -277,44 +277,71 @@ func (d *DiscordRobot) sendTextStream(messageChan *MsgChan) {
 	}
 
 	var msg *param.MsgInfo
+	// the LLM producer reuses the same *MsgInfo pointer for every update of a
+	// segment, so writing msg.MsgId back is how later chunks target the same
+	// message; a fresh pointer (empty MsgId) starts a new message
+	initialResponseUsed := false
 	for msg = range messageChan.NormalMessageChan {
 		if len(msg.Content) == 0 {
 			msg.Content = "get nothing from llm!"
 		}
 
-		if msg.MsgId == "" && originalMsgID != "" {
+		// the first segment replaces the "thinking..." placeholder message
+		if d.Msg != nil && msg.MsgId == "" && originalMsgID != "" {
 			msg.MsgId = originalMsgID
+			originalMsgID = ""
 		}
 
 		if d.Msg != nil {
-			if msg.MsgId == "" && originalMsgID == "" {
-				_, err = d.Session.ChannelMessageSend(channelID, msg.Content)
-				if err != nil {
-					logger.ErrorCtx(d.Robot.Ctx, "Sending message failed", "err", err)
+			if msg.MsgId == "" {
+				sentMsg, sendErr := d.Session.ChannelMessageSend(channelID, msg.Content)
+				if sendErr != nil {
+					logger.ErrorCtx(d.Robot.Ctx, "Sending message failed", "err", sendErr)
+				} else {
+					msg.MsgId = sentMsg.ID
 				}
 			} else {
 				_, err = d.Session.ChannelMessageEdit(channelID, msg.MsgId, msg.Content)
 				if err != nil {
 					logger.ErrorCtx(d.Robot.Ctx, "Editing message failed", "msgID", msg.MsgId, "err", err)
 				}
-				originalMsgID = ""
 			}
 		} else if d.Inter != nil {
-			if msg.MsgId == "" && originalMsgID == "" {
+			switch {
+			case msg.MsgId == "" && !initialResponseUsed:
+				// the first segment streams into the deferred interaction response
 				_, err = d.Session.InteractionResponseEdit(d.Inter.Interaction, &discordgo.WebhookEdit{
 					Content: &msg.Content,
 				})
 				if err != nil {
 					logger.ErrorCtx(d.Robot.Ctx, "Sending interaction response failed", "err", err)
+				} else {
+					initialResponseUsed = true
+					msg.MsgId = "initial"
 				}
-			} else {
-				_, err = d.Session.FollowupMessageCreate(d.Inter.Interaction, true, &discordgo.WebhookParams{
+			case msg.MsgId == "":
+				followup, followupErr := d.Session.FollowupMessageCreate(d.Inter.Interaction, true, &discordgo.WebhookParams{
 					Content: msg.Content,
 				})
-				if err != nil {
-					logger.ErrorCtx(d.Robot.Ctx, "Editing followup interaction message failed", "err", err)
+				if followupErr != nil {
+					logger.ErrorCtx(d.Robot.Ctx, "Creating followup message failed", "err", followupErr)
+				} else {
+					msg.MsgId = followup.ID
 				}
-				originalMsgID = ""
+			case msg.MsgId == "initial":
+				_, err = d.Session.InteractionResponseEdit(d.Inter.Interaction, &discordgo.WebhookEdit{
+					Content: &msg.Content,
+				})
+				if err != nil {
+					logger.ErrorCtx(d.Robot.Ctx, "Editing interaction response failed", "err", err)
+				}
+			default:
+				_, err = d.Session.FollowupMessageEdit(d.Inter.Interaction, msg.MsgId, &discordgo.WebhookEdit{
+					Content: &msg.Content,
+				})
+				if err != nil {
+					logger.ErrorCtx(d.Robot.Ctx, "Editing followup message failed", "msgID", msg.MsgId, "err", err)
+				}
 			}
 		}
 	}
@@ -353,7 +380,17 @@ func (d *DiscordRobot) skipThisMsg() bool {
 	return false
 }
 
+// recoverDiscordHandler keeps a panic inside a discordgo event handler from
+// killing the session's dispatch goroutine (and with it the whole bot).
+func recoverDiscordHandler(handler string) {
+	if err := recover(); err != nil {
+		logger.Error("discord handler panic", "handler", handler, "err", err, "stack", string(debug.Stack()))
+	}
+}
+
 func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
+	defer recoverDiscordHandler("messageCreate")
+
 	d := NewDiscordRobot(s, m, nil)
 	d.Robot = NewRobot(WithRobot(d))
 	d.Robot.Exec()
@@ -545,7 +582,14 @@ func (d *DiscordRobot) sendVoiceContent(voiceContent []byte, duration int) error
 
 func (d *DiscordRobot) Talk() {
 	d.Robot.TalkingPreCheck(func() {
-		gid := d.Inter.GuildID
+		// "talk" is reachable from plain messages too (requestLLM dispatches
+		// the command), where Inter is nil; take the guild from the message
+		gid := ""
+		if d.Inter != nil {
+			gid = d.Inter.GuildID
+		} else if d.Msg != nil {
+			gid = d.Msg.GuildID
+		}
 		cid, replyToMessageID, userId := d.Robot.GetChatIdAndMsgIdAndUserID()
 
 		if gid == "" || cid == "" {
@@ -573,6 +617,17 @@ func (d *DiscordRobot) Talk() {
 				return
 			}
 
+			// any setup failure below must release the voice slot and the ws
+			// conn again, otherwise VoiceConnections never empties and the
+			// bot answers "bot_talking" to every later /talk until restart
+			cleanupFailedSetup := func() {
+				if volDialog.VolWsConn != nil {
+					volDialog.VolWsConn.Close()
+					volDialog.VolWsConn = nil
+				}
+				vc.Disconnect()
+			}
+
 			wsURL := url.URL{Scheme: "wss", Host: "openspeech.bytedance.com", Path: "/api/v3/realtime/dialogue"}
 			volDialog.VolWsConn, _, err = websocket.DefaultDialer.DialContext(context.Background(), wsURL.String(), http.Header{
 				"X-Api-Resource-Id": []string{"volc.speech.dialog"},
@@ -583,12 +638,14 @@ func (d *DiscordRobot) Talk() {
 			})
 			if err != nil {
 				logger.ErrorCtx(d.Robot.Ctx, "connect vol fail", "err", err)
+				vc.Disconnect()
 				return
 			}
 
 			err = utils.StartConnection(volDialog.VolWsConn)
 			if err != nil {
 				logger.ErrorCtx(d.Robot.Ctx, "start connect fail", "err", err)
+				cleanupFailedSetup()
 				return
 			}
 			err = utils.StartSession(volDialog.VolWsConn, userId, &utils.StartSessionPayload{
@@ -618,6 +675,7 @@ func (d *DiscordRobot) Talk() {
 			})
 			if err != nil {
 				logger.ErrorCtx(d.Robot.Ctx, "start session fail", "err", err)
+				cleanupFailedSetup()
 				return
 			}
 
@@ -637,12 +695,17 @@ func (d *DiscordRobot) PlayAudioToDiscord(vc *discordgo.VoiceConnection) {
 		CloseTalk(vc)
 	}()
 
+	// bind to this session's conn and ctx: CloseTalk (or a newer Talk) can
+	// swap the globals under us at any time
+	wsConn := volDialog.VolWsConn
+	dialogCtx := volDialog.Ctx
+
 	for {
 		select {
-		case <-volDialog.Ctx.Done():
+		case <-dialogCtx.Done():
 			return
 		default:
-			msg, err := utils.ReceiveMessage(volDialog.VolWsConn)
+			msg, err := utils.ReceiveMessage(wsConn)
 			if err != nil {
 				logger.ErrorCtx(d.Robot.Ctx, "receive message", "err", err)
 				return
@@ -762,9 +825,14 @@ func (d *DiscordRobot) receiveVoice(vc *discordgo.VoiceConnection) {
 
 	_, _, userId := d.Robot.GetChatIdAndMsgIdAndUserID()
 
+	// bind to this session's conn and ctx: CloseTalk (or a newer Talk) can
+	// swap the globals under us at any time
+	wsConn := volDialog.VolWsConn
+	dialogCtx := volDialog.Ctx
+
 	for {
 		select {
-		case <-volDialog.Ctx.Done():
+		case <-dialogCtx.Done():
 			return
 		case packet := <-vc.OpusRecv:
 			pcm, err := decoder.Decode(packet.Opus, 960, false)
@@ -780,7 +848,7 @@ func (d *DiscordRobot) receiveVoice(vc *discordgo.VoiceConnection) {
 					buf[2*i+1] = byte(v >> 8)
 				}
 
-				err = utils.SendAudio(volDialog.VolWsConn, userId, buf)
+				err = utils.SendAudio(wsConn, userId, buf)
 				if err != nil {
 					logger.ErrorCtx(d.Robot.Ctx, "Failed to send PCM data", "err", err)
 				}
@@ -790,6 +858,8 @@ func (d *DiscordRobot) receiveVoice(vc *discordgo.VoiceConnection) {
 }
 
 func voiceStateUpdate(s *discordgo.Session, v *discordgo.VoiceStateUpdate) {
+	defer recoverDiscordHandler("voiceStateUpdate")
+
 	// 1. Get the bot's own voice state.
 	// s.State.User.ID is your bot's ID.
 	botVoiceState, err := s.State.VoiceState(v.GuildID, s.State.User.ID)
@@ -838,10 +908,26 @@ func voiceStateUpdate(s *discordgo.Session, v *discordgo.VoiceStateUpdate) {
 }
 
 func CloseTalk(vc *discordgo.VoiceConnection) {
-	err := volDialog.VolWsConn.Close()
-	if err == nil {
+	// called from several places (both voice loops' defers, member-leave) and
+	// possibly before Talk finished setting up: be idempotent and nil-safe
+	wsConn := volDialog.VolWsConn
+	cancel := volDialog.Cancel
+	if wsConn == nil || cancel == nil {
+		// nothing (or nothing left) to tear down; still release the voice slot
+		if vc != nil {
+			vc.Disconnect()
+		}
+		return
+	}
+	volDialog.VolWsConn = nil
+	volDialog.Cancel = nil
+
+	err := wsConn.Close()
+	if vc != nil {
 		vc.Disconnect()
-		volDialog.Cancel()
+	}
+	cancel()
+	if err == nil {
 		db.InsertRecordInfo(context.Background(), &db.Record{
 			UserId:     volDialog.CallUserId,
 			Question:   "discord talk",

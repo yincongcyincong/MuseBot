@@ -64,6 +64,13 @@ type RobotInfo struct {
 	// reports the error reaction; written only by ExecLLM's goroutine.
 	turnFailed bool
 
+	// concurrent-chat slot accounting: TalkingPreCheck acquires one slot per
+	// turn; async flows (runLLM, sendMultiAgent) defer the release until the
+	// turn actually completes instead of when the callback returns
+	chatSlotAcquired bool
+	chatSlotReleased bool
+	chatSlotDeferred bool
+
 	cs *param.ContextState
 }
 
@@ -217,11 +224,27 @@ func (r *RobotInfo) runLLM(robot Robot, audioFormat string, streaming bool) {
 	}
 
 	stop := r.startTurnSignals()
+	// the turn outlives the TalkingPreCheck callback; release the chat slot
+	// when the LLM exchange finishes
+	r.deferChatSlotRelease()
 
-	go r.HandleUpdate(msgChan, audioFormat)
+	consumerDone := make(chan struct{})
 	go func() {
+		defer close(consumerDone)
+		r.HandleUpdate(msgChan, audioFormat)
+	}()
+	go func() {
+		defer r.releaseChatSlot()
 		r.ExecLLM(robot.getPrompt(), msgChan)
 		r.finishTurnSignals(stop, r.turnFailed)
+	}()
+	// every message owns a 30-minute ctx (NewRobot); release it once the reply
+	// pump has drained the channels — nothing ever called Cancel before, so
+	// every message leaked its ctx and timer until the timeout fired
+	go func() {
+		<-consumerDone
+		r.releaseChatSlot()
+		r.Cancel()
 	}()
 }
 
@@ -334,19 +357,30 @@ func (r *RobotInfo) GetChatIdAndMsgIdAndUserID() (string, string, string) {
 		telegramRobot := r.Robot.(*TelegramRobot)
 		if telegramRobot.Update.Message != nil {
 			chatId = strconv.FormatInt(telegramRobot.Update.Message.Chat.ID, 10)
-			userId = strconv.FormatInt(telegramRobot.Update.Message.From.ID, 10)
+			// channel posts and some forwards carry no From
+			if telegramRobot.Update.Message.From != nil {
+				userId = strconv.FormatInt(telegramRobot.Update.Message.From.ID, 10)
+			}
 			msgId = strconv.Itoa(telegramRobot.Update.Message.MessageID)
 		}
 		if telegramRobot.Update.CallbackQuery != nil {
-			chatId = strconv.FormatInt(telegramRobot.Update.CallbackQuery.Message.Chat.ID, 10)
-			userId = strconv.FormatInt(telegramRobot.Update.CallbackQuery.From.ID, 10)
-			msgId = strconv.Itoa(telegramRobot.Update.CallbackQuery.Message.MessageID)
+			// Message is nil for inline-mode callbacks
+			if telegramRobot.Update.CallbackQuery.Message != nil {
+				chatId = strconv.FormatInt(telegramRobot.Update.CallbackQuery.Message.Chat.ID, 10)
+				msgId = strconv.Itoa(telegramRobot.Update.CallbackQuery.Message.MessageID)
+			}
+			if telegramRobot.Update.CallbackQuery.From != nil {
+				userId = strconv.FormatInt(telegramRobot.Update.CallbackQuery.From.ID, 10)
+			}
 		}
 	case *DiscordRobot:
 		discordRobot := r.Robot.(*DiscordRobot)
 		if discordRobot.Msg != nil {
 			chatId = discordRobot.Msg.ChannelID
-			userId = discordRobot.Msg.Author.ID
+			// webhook/system messages can carry a nil Author
+			if discordRobot.Msg.Author != nil {
+				userId = discordRobot.Msg.Author.ID
+			}
 			msgId = discordRobot.Msg.Message.ID
 		}
 		if discordRobot.Inter != nil {
@@ -826,16 +860,45 @@ func (r *RobotInfo) TalkingPreCheck(f func()) {
 		return
 	}
 
-	defer utils.DecreaseUserChat(userId)
-
-	// check user chat exceed max count
+	// check user chat exceed max count; a rejected check does not increment
+	// the counter, so it must not decrement it either
 	if utils.CheckUserChatExceed(userId) {
 		r.SendMsg(chatId, i18n.GetMessage("chat_exceed", nil),
 			msgId, tgbotapi.ModeMarkdown, nil)
 		return
 	}
 
+	r.chatSlotAcquired = true
 	f()
+
+	// synchronous f() bodies are done here; async paths (runLLM,
+	// sendMultiAgent) marked the slot deferred and release it when the
+	// turn completes
+	if !r.chatSlotDeferred {
+		r.releaseChatSlot()
+		// the synchronous turn is fully done: release the message ctx now
+		// instead of letting its 30-minute timer run out on its own
+		r.Cancel()
+	}
+}
+
+// deferChatSlotRelease hands the chat-slot release over to the turn's
+// completion goroutine, for flows that outlive the TalkingPreCheck callback
+func (r *RobotInfo) deferChatSlotRelease() {
+	if r.chatSlotAcquired && !r.chatSlotReleased {
+		r.chatSlotDeferred = true
+	}
+}
+
+// releaseChatSlot gives back one concurrent-chat slot; safe to call multiple
+// times and from flows that never acquired a slot (cron replays)
+func (r *RobotInfo) releaseChatSlot() {
+	if !r.chatSlotAcquired || r.chatSlotReleased {
+		return
+	}
+	r.chatSlotReleased = true
+	_, _, userId := r.GetChatIdAndMsgIdAndUserID()
+	utils.DecreaseUserChat(userId)
 }
 
 type RobotModel struct {
@@ -1229,7 +1292,8 @@ func (r *RobotInfo) showImageModel() {
 	chatId, msgId, _ := r.GetChatIdAndMsgIdAndUserID()
 	var modelList []string
 
-	switch utils.GetTxtType(db.GetCtxUserInfo(r.Ctx).LLMConfigRaw) {
+	// image models come from the configured image provider, not the txt one
+	switch utils.GetImgType(db.GetCtxUserInfo(r.Ctx).LLMConfigRaw) {
 	case param.Gemini:
 		for k := range param.GeminiImageModels {
 			modelList = append(modelList, k)
@@ -1239,7 +1303,7 @@ func (r *RobotInfo) showImageModel() {
 			modelList = append(modelList, k)
 		}
 	case param.Ollama, param.OpenAi:
-		switch utils.GetTxtType(db.GetCtxUserInfo(r.Ctx).LLMConfigRaw) {
+		switch utils.GetImgType(db.GetCtxUserInfo(r.Ctx).LLMConfigRaw) {
 		case param.OpenAi:
 			r.SendMsg(chatId, i18n.GetMessage("mix_mode_choose", map[string]interface{}{
 				"link": "https://platform.openai.com/",
@@ -1271,7 +1335,8 @@ func (r *RobotInfo) showVideoModel() {
 	chatId, msgId, _ := r.GetChatIdAndMsgIdAndUserID()
 	var modelList []string
 
-	switch utils.GetTxtType(db.GetCtxUserInfo(r.Ctx).LLMConfigRaw) {
+	// video models come from the configured video provider, not the txt one
+	switch utils.GetVideoType(db.GetCtxUserInfo(r.Ctx).LLMConfigRaw) {
 	case param.Gemini:
 		for k := range param.GeminiVideoModels {
 			modelList = append(modelList, k)
@@ -1582,11 +1647,30 @@ func (r *RobotInfo) sendMultiAgent(emptyPromptFunc func()) {
 			},
 		}
 
-		if _, ok := r.Robot.(*QQRobot); ok {
+		// QQ and the web consumer stream through the string channel; every
+		// other platform consumes NormalMessageChan. In non-streaming mode the
+		// string channel has no consumer at all, so it must not be used —
+		// otherwise the task blocks forever on its first progress message
+		_, isQQRobot := r.Robot.(*QQRobot)
+		_, isWebRobot := r.Robot.(*Web)
+		if (isQQRobot || isWebRobot) && conf.BaseConfInfo.IsStreaming {
 			dpReq.HTTPMsgChan = make(chan string)
 		} else {
 			dpReq.MessageChan = make(chan *param.MsgInfo)
 		}
+
+		// the task outlives the TalkingPreCheck callback; the goroutine below
+		// releases the chat slot when ExecuteTask finishes
+		r.deferChatSlotRelease()
+
+		consumerDone := make(chan struct{})
+		go func() {
+			defer close(consumerDone)
+			r.HandleUpdate(&MsgChan{
+				NormalMessageChan: dpReq.MessageChan,
+				StrMessageChan:    dpReq.HTTPMsgChan,
+			}, "")
+		}()
 
 		go func() {
 			defer func() {
@@ -1599,6 +1683,7 @@ func (r *RobotInfo) sendMultiAgent(emptyPromptFunc func()) {
 				if dpReq.MessageChan != nil {
 					close(dpReq.MessageChan)
 				}
+				r.releaseChatSlot()
 			}()
 
 			err := dpReq.ExecuteTask()
@@ -1612,10 +1697,12 @@ func (r *RobotInfo) sendMultiAgent(emptyPromptFunc func()) {
 			}
 		}()
 
-		go r.HandleUpdate(&MsgChan{
-			NormalMessageChan: dpReq.MessageChan,
-			StrMessageChan:    dpReq.HTTPMsgChan,
-		}, "")
+		// same as runLLM: release the message ctx once the reply pump drained
+		go func() {
+			<-consumerDone
+			r.releaseChatSlot()
+			r.Cancel()
+		}()
 	})
 }
 

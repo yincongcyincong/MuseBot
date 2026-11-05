@@ -12,6 +12,7 @@ import (
 	"runtime/debug"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	openapi "github.com/alibabacloud-go/darabonba-openapi/v2/client"
@@ -34,6 +35,7 @@ import (
 
 var (
 	DingBotClient   *client.StreamClient
+	accessTokenMu   sync.Mutex
 	accessTokenInfo = new(AccessToken)
 )
 
@@ -334,6 +336,7 @@ func (d *DingRobot) ReplyMessage(ctx context.Context, requestBody map[string]int
 	if err != nil {
 		return nil, err
 	}
+	defer resp.Body.Close()
 
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -381,6 +384,11 @@ func (d *DingRobot) CreateDingInteractClient() (_result *dingtalkaiinteraction.C
 }
 
 func (d *DingRobot) GetAccessToken() (string, error) {
+	// the token is a process-wide cache shared by every ding robot instance;
+	// concurrent messages would otherwise race on the read-modify-write below
+	accessTokenMu.Lock()
+	defer accessTokenMu.Unlock()
+
 	// ExpiredTime is a future "valid until" stamp (set to now+ExpiresIn-300
 	// below): the cached token is only usable while that stamp is still ahead;
 	// the old `<` served the token while valid never cached it, then kept

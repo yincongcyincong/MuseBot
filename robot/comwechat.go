@@ -76,7 +76,9 @@ func NewComWechatRobot(event contract.EventInterface) *ComWechatRobot {
 		msg := &serverModel.MessageText{}
 		err := event.ReadMessage(msg)
 		if err != nil {
-			logger.ErrorCtx(c.Robot.Ctx, "ComWechatRobot", "err", err)
+			// c.Robot is still nil here (the caller assigns it after this
+			// constructor returns), so log without a robot context
+			logger.Error("ComWechatRobot", "err", err)
 			return nil
 		}
 		c.TextMsg = msg
@@ -85,7 +87,7 @@ func NewComWechatRobot(event contract.EventInterface) *ComWechatRobot {
 		msg := &serverModel.MessageImage{}
 		err := event.ReadMessage(msg)
 		if err != nil {
-			logger.ErrorCtx(c.Robot.Ctx, "ComWechatRobot", "err", err)
+			logger.Error("ComWechatRobot", "err", err)
 			return nil
 		}
 		c.ImageMsg = msg
@@ -94,7 +96,7 @@ func NewComWechatRobot(event contract.EventInterface) *ComWechatRobot {
 		msg := &serverModel.MessageVoice{}
 		err := event.ReadMessage(msg)
 		if err != nil {
-			logger.ErrorCtx(c.Robot.Ctx, "ComWechatRobot", "err", err)
+			logger.Error("ComWechatRobot", "err", err)
 			return nil
 		}
 		c.VoiceMsg = msg

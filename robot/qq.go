@@ -345,7 +345,8 @@ func (q *QQRobot) UploadFile(imageContent string, fileType int) ([]byte, error) 
 
 	apiURL := fmt.Sprintf("https://api.sgroup.qq.com/v2/users/%s/files", chatId)
 	if q.ATMessage != nil {
-		apiURL = fmt.Sprintf("https://api.sgroup.qq.com/v2/groups/%s/files", chatId)
+		// guild channels use the channel file endpoint
+		apiURL = fmt.Sprintf("https://api.sgroup.qq.com/v2/channels/%s/files", chatId)
 	}
 	if q.GroupAtMessage != nil {
 		apiURL = fmt.Sprintf("https://api.sgroup.qq.com/v2/groups/%s/files", chatId)
@@ -492,7 +493,8 @@ func (q *QQRobot) PostStreamMessage(state, idx int32, id, content string) (strin
 	}
 
 	if q.ATMessage != nil {
-		resp, err := q.QQApi.PostGroupMessage(q.Robot.Ctx, q.ATMessage.GuildID, msg)
+		// guild channels send through the channel endpoint, not the group one
+		resp, err := q.QQApi.PostMessage(q.Robot.Ctx, q.ATMessage.GuildID, msg)
 		if err != nil {
 			return "", err
 		}

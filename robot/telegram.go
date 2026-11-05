@@ -292,8 +292,14 @@ func (t *TelegramRobot) executeLLM() {
 // sleepUtilNoLimit handle "Too Many Requests" error
 func (t *TelegramRobot) sleepUtilNoLimit(msgId int, err error) bool {
 	var apiErr *tgbotapi.Error
-	if errors.As(err, &apiErr) && apiErr.Message == "Too Many Requests" {
+	// telegram reports 429 as "Too Many Requests: retry after N", so the
+	// message must be matched by substring (or code), never by equality
+	if errors.As(err, &apiErr) &&
+		(apiErr.Code == http.StatusTooManyRequests || strings.Contains(apiErr.Message, "Too Many Requests")) {
 		waitTime := time.Duration(apiErr.RetryAfter) * time.Second
+		if apiErr.RetryAfter <= 0 {
+			waitTime = time.Second
+		}
 		logger.WarnCtx(t.Robot.Ctx, "Rate limited. Retrying after", "msgID", msgId, "waitTime", waitTime)
 		time.Sleep(waitTime)
 		return true
@@ -776,6 +782,11 @@ func (t *TelegramRobot) sendVideo() {
 			replyToMessageID, tgbotapi.ModeMarkdown, nil)
 
 		videoContent, totalToken, err := t.Robot.CreateVideo(prompt, imageContent)
+		if err != nil {
+			logger.ErrorCtx(t.Robot.Ctx, "generate video fail", "err", err)
+			t.Robot.SendMsg(chatId, err.Error(), replyToMessageID, "", nil)
+			return
+		}
 
 		video := tgbotapi.NewInputMediaVideo(tgbotapi.FileBytes{
 			Name:  "video." + utils.DetectVideoMimeType(videoContent),
@@ -1151,7 +1162,8 @@ func (t *TelegramRobot) sendTextStream(messageChan *MsgChan) {
 					tgMsgInfo.ParseMode = ""
 					sendInfo, err = t.Bot.Send(tgMsgInfo)
 				} else {
-					_, err = t.Bot.Send(tgMsgInfo)
+					// keep the retry's message id: later segments edit this message
+					sendInfo, err = t.Bot.Send(tgMsgInfo)
 				}
 				if err != nil {
 					logger.WarnCtx(t.Robot.Ctx, "Error sending message:", "msgID", msgId, "err", err)
