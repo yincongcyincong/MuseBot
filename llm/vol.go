@@ -96,7 +96,10 @@ func GenerateVolVideo(ctx context.Context, prompt string, imageContent []byte) (
 	}
 
 	start := time.Now()
-	metrics.APIRequestCount.WithLabelValues(conf.PhotoConfInfo.ModelVersion).Inc()
+	llmConfig := db.GetCtxUserInfo(ctx).LLMConfigRaw
+	mediaType := utils.GetVideoType(llmConfig)
+	modelStr := utils.GetUsingVideoModel(mediaType, llmConfig.VideoModel)
+	metrics.APIRequestCount.WithLabelValues(modelStr).Inc()
 
 	client := GetVolClient()
 	videoParam := fmt.Sprintf(" --ratio %s --fps %d  --dur %d --resolution %s --watermark %t",
@@ -120,10 +123,6 @@ func GenerateVolVideo(ctx context.Context, prompt string, imageContent []byte) (
 		})
 	}
 
-	llmConfig := db.GetCtxUserInfo(ctx).LLMConfigRaw
-	mediaType := utils.GetVideoType(llmConfig)
-	modelStr := utils.GetUsingVideoModel(mediaType, llmConfig.VideoModel)
-
 	resp, err := retryRequest(ctx, func() (model.CreateContentGenerationTaskResponse, error) {
 		return client.CreateContentGenerationTask(ctx, model.CreateContentGenerationTaskRequest{
 			Model:   modelStr,
@@ -136,7 +135,7 @@ func GenerateVolVideo(ctx context.Context, prompt string, imageContent []byte) (
 		return "", 0, err
 	}
 
-	metrics.APIRequestDuration.WithLabelValues(conf.PhotoConfInfo.ModelVersion).Observe(time.Since(start).Seconds())
+	metrics.APIRequestDuration.WithLabelValues(modelStr).Observe(time.Since(start).Seconds())
 	for i := 0; i < 100; i++ {
 		getResp, err := client.GetContentGenerationTask(ctx, model.GetContentGenerationTaskRequest{
 			ID: resp.ID,
@@ -241,6 +240,7 @@ func VolTTS(ctx context.Context, text, userId, encoding string) ([]byte, int, in
 		logger.ErrorCtx(ctx, "httpClient.Do error", "err", err)
 		return nil, 0, 0, err
 	}
+	defer resp.Body.Close()
 
 	metrics.APIRequestDuration.WithLabelValues(model).Observe(time.Since(start).Seconds())
 

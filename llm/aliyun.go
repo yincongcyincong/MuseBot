@@ -82,9 +82,12 @@ type TextResponse struct {
 func GenerateAliyunImg(ctx context.Context, prompt string, imageContent []byte) (string, int, error) {
 	url := "https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation"
 
-	model := utils.GetUsingImgModel(param.Aliyun, db.GetCtxUserInfo(ctx).LLMConfigRaw.ImgModel)
-	if imageContent != nil {
-		model = "qwen-image-edit"
+	userImgModel := db.GetCtxUserInfo(ctx).LLMConfigRaw.ImgModel
+	model := utils.GetUsingImgModel(param.Aliyun, userImgModel)
+	// image editing needs an edit-capable model; honor an explicit user
+	// choice, else fall back to the edit model
+	if len(imageContent) > 0 && userImgModel == "" {
+		model = param.QwenImageEdit
 	}
 
 	payload := Payload{
@@ -150,7 +153,7 @@ func GenerateAliyunImg(ctx context.Context, prompt string, imageContent []byte) 
 		return "", 0, err
 	}
 
-	if len(imgRsp.Output.Choices) == 0 {
+	if len(imgRsp.Output.Choices) == 0 || len(imgRsp.Output.Choices[0].Message.Content) == 0 {
 		logger.ErrorCtx(ctx, "generate image fail", "message", imgRsp.Message)
 		return "", 0, fmt.Errorf("generate image fail: %s", imgRsp.Message)
 	}
@@ -246,6 +249,11 @@ func GenerateAliyunVideo(ctx context.Context, prompt string, image []byte) (stri
 	if err = json.Unmarshal(body, &vr); err != nil {
 		return "", 0, err
 	}
+	// an error response carries no task id; polling /tasks/ without one a
+	// hundred times cannot produce anything
+	if vr.Output.TaskID == "" {
+		return "", 0, fmt.Errorf("create video task fail, request_id: %s, body: %.200s", vr.RequestID, string(body))
+	}
 
 	for i := 0; i < 100; i++ {
 		time.Sleep(5 * time.Second)
@@ -267,17 +275,21 @@ func GenerateAliyunVideo(ctx context.Context, prompt string, image []byte) (stri
 			return "", 0, err
 		}
 
-		var vr videoResponse
-		if err = json.Unmarshal(body, &vr); err != nil {
+		var taskRes videoResponse
+		if err = json.Unmarshal(body, &taskRes); err != nil {
 			return "", 0, err
 		}
 
-		if vr.Output.TaskStatus == "SUCCEEDED" && vr.Output.VideoURL != "" {
-			return vr.Output.VideoURL, param.VideoTokenUsage, nil
-		}
-
-		if vr.Output.TaskStatus == "RUNNING" {
-			logger.InfoCtx(ctx, "video is createing...")
+		switch taskRes.Output.TaskStatus {
+		case "SUCCEEDED":
+			if taskRes.Output.VideoURL != "" {
+				return taskRes.Output.VideoURL, param.VideoTokenUsage, nil
+			}
+		case "RUNNING", "PENDING":
+			logger.InfoCtx(ctx, "video is creating...", "taskId", taskRes.Output.TaskID, "status", taskRes.Output.TaskStatus)
+		default:
+			// FAILED / CANCELED / ... are terminal: polling longer cannot help
+			return "", 0, fmt.Errorf("video generation %s", taskRes.Output.TaskStatus)
 		}
 	}
 

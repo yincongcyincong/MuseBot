@@ -87,6 +87,7 @@ const (
 	DoubaoSeed16VisionPro = "doubao-seed-1-6-250615"
 
 	QwenImagePlus   = "qwen-image-plus"
+	QwenImageEdit   = "qwen-image-edit"
 	QwenVlMaxLatest = "qwen-vl-max-latest"
 	QwenVlMax       = "qwen-vl-max"
 	QVQMax          = "qvq-max"
@@ -192,6 +193,7 @@ var (
 
 	AliyunImageModels = map[string]bool{
 		QwenImagePlus: true,
+		QwenImageEdit: true,
 	}
 
 	AliyunVideoModels = map[string]bool{

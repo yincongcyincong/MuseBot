@@ -15,6 +15,7 @@ MuseBot 所有文本请求都走 OpenAI 兼容格式。`TYPE` 决定使用哪个
 | `TYPE`    | 固定填 `openai`（使用 `OPENAI_TOKEN`，且不带内置地址）                    |
 | `OPENAI_TOKEN` | 第三方平台的 API Key                                        |
 | `CUSTOM_URL` | 第三方 OpenAI 兼容 BaseURL（一般以 `/v1` 结尾）                     |
+| `OLLAMA_URL` | Ollama 服务地址；ollama 类型时优先于 `CUSTOM_URL`（默认 `http://localhost:11434/`） |
 | `DEFAULT_MODEL` | 默认文本模型名（按第三方平台的模型命名填写）                              |
 
 本地运行：

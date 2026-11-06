@@ -193,6 +193,7 @@ If you use parameter. Please use lower letter and underscore. for example: ./Mus
 | **ERNIE_AK**                    | Baidu ERNIE large model AK [doc](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Sly8bm96d)     | -                                                      |
 | **ERNIE_SK**                    | Baidu ERNIE large model SK [doc](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Sly8bm96d)     | -                                                      |
 | **CUSTOM_URL**                  | Custom LLM API endpoint                                                                      | [https://api.deepseek.com/](https://api.deepseek.com/) |
+| **OLLAMA_URL**                  | Ollama server url (wins over CUSTOM_URL for the ollama type)                                 | http://localhost:11434/                                |
 | **TYPE**                        | LLM type (deepseek/openai/gemini/vol/chatanywhere/aliyun/ollama), all via OpenAI-compatible format | deepseek                                         |
 | **MEDIA_TYPE**                  | Media generation source (openai/gemini/vol/aliyun), all via OpenAI-compatible format          | vol                                                    |
 | **DB_TYPE**                     | Database type (sqlite3/mysql)                                                                | sqlite3                                                |

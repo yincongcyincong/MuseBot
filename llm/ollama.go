@@ -256,10 +256,16 @@ func GetDeepseekClient(ctx context.Context) *deepseek.Client {
 
 	if txtType == param.Ollama {
 		client.Path = "api/chat"
-		client.BaseURL = "http://localhost:11434/"
-	}
-
-	if conf.BaseConfInfo.CustomUrl != "" {
+		// an explicit ollama url beats the global custom url; localhost is
+		// the fallback when neither is configured
+		if conf.BaseConfInfo.OllamaUrl != "" {
+			client.BaseURL = conf.BaseConfInfo.OllamaUrl
+		} else if conf.BaseConfInfo.CustomUrl != "" {
+			client.BaseURL = conf.BaseConfInfo.CustomUrl
+		} else {
+			client.BaseURL = "http://localhost:11434/"
+		}
+	} else if conf.BaseConfInfo.CustomUrl != "" {
 		client.BaseURL = conf.BaseConfInfo.CustomUrl
 	}
 
@@ -287,8 +293,18 @@ func requestDeepseek(ctx context.Context, c *deepseek.Client, request *deepseek.
 	}
 
 	resp, err := c.HTTPClient.Do(req)
-	if resp == nil || resp.StatusCode >= 400 {
+	if err != nil {
 		return nil, fmt.Errorf("error sending request: %w", err)
+	}
+	if resp.StatusCode >= 400 {
+		// read and close the body so the connection is not leaked; the body
+		// usually carries the provider's error message
+		defer resp.Body.Close()
+		body, readErr := io.ReadAll(io.LimitReader(resp.Body, 4<<10))
+		if readErr != nil {
+			return nil, fmt.Errorf("request failed with status %d", resp.StatusCode)
+		}
+		return nil, fmt.Errorf("request failed with status %d: %s", resp.StatusCode, string(body))
 	}
 
 	return &Stream{

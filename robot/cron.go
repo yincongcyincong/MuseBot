@@ -283,7 +283,8 @@ func ExecTelegram(ctx context.Context, c *db.Cron) {
 	// like the other platforms: the telegram channel may be disabled or still
 	// retrying to connect, and checkValid dereferences Bot.Self — a nil bot
 	// here would panic this cron/webhook goroutine and take the process down
-	if TelegramBot == nil {
+	bot := GetTelegramBot()
+	if bot == nil {
 		logger.ErrorCtx(ctx, "telegram bot client is nil")
 		return
 	}
@@ -297,7 +298,7 @@ func ExecTelegram(ctx context.Context, c *db.Cron) {
 			continue
 		}
 		t := &TelegramRobot{
-			Bot: TelegramBot,
+			Bot: bot,
 			Update: tgbotapi.Update{
 				Message: &tgbotapi.Message{
 					From: &tgbotapi.User{
@@ -324,7 +325,7 @@ func ExecTelegram(ctx context.Context, c *db.Cron) {
 			continue
 		}
 		t := &TelegramRobot{
-			Bot: TelegramBot,
+			Bot: bot,
 			Update: tgbotapi.Update{
 				Message: &tgbotapi.Message{
 					From: &tgbotapi.User{

@@ -15,6 +15,7 @@ All text requests in MuseBot use the OpenAI-compatible format. `TYPE` selects th
 | `TYPE`               | Set to `openai` (uses `OPENAI_TOKEN`, no built-in endpoint)  |
 | `OPENAI_TOKEN`       | API key of the third-party platform                          |
 | `CUSTOM_URL`         | OpenAI-compatible base URL (usually ends with `/v1`)         |
+| `OLLAMA_URL`         | Ollama server url; wins over `CUSTOM_URL` for the ollama type (default `http://localhost:11434/`) |
 | `DEFAULT_MODEL`      | Default text model name (use the platform's model naming)    |
 
 Run locally:

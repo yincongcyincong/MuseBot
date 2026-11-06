@@ -402,7 +402,7 @@ func OpenAITTS(ctx context.Context, content, encoding string) ([]byte, int, int,
 		})
 	})
 	if err != nil {
-		logger.ErrorCtx(ctx, "decode image error", "err", err)
+		logger.ErrorCtx(ctx, "create speech error", "err", err)
 		return nil, 0, 0, err
 	}
 	metrics.APIRequestDuration.WithLabelValues(model).Observe(time.Since(start).Seconds())

@@ -174,6 +174,11 @@ func OneBot(w http.ResponseWriter, r *http.Request) {
 	}
 
 	qqRobot := robot.NewPersonalQQRobot(ctx, body)
+	// NewPersonalQQRobot returns nil on an unparseable payload (the parse
+	// error is logged there); Exec on nil would only add a generic panic log
+	if qqRobot == nil {
+		return
+	}
 	go func() {
 		defer func() {
 			if err := recover(); err != nil {

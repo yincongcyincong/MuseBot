@@ -359,13 +359,16 @@ func GeminiTTS(ctx context.Context, content, encoding string) ([]byte, int, int,
 	}
 
 	metrics.APIRequestDuration.WithLabelValues(model).Observe(time.Since(start).Seconds())
-	if len(response.Candidates) > 0 {
+	// a blocked or failed generation returns candidates without content —
+	// Content must be checked before dereferencing Parts (cf. GenerateGeminiImg)
+	if len(response.Candidates) > 0 && response.Candidates[0].Content != nil {
 		for _, part := range response.Candidates[0].Content.Parts {
 			if part.InlineData != nil {
-				var data = part.InlineData.Data
-				data, err = utils.GetAudioData(encoding, part.InlineData.Data)
+				data, err := utils.GetAudioData(encoding, part.InlineData.Data)
 				if err != nil {
 					logger.ErrorCtx(ctx, "convert audio fail", "err", err)
+					// swallowing this would send an empty voice message
+					return nil, 0, 0, err
 				}
 				return data, int(response.UsageMetadata.TotalTokenCount), utils.PCMDuration(len(part.InlineData.Data), 24000, 1, 16), nil
 			}

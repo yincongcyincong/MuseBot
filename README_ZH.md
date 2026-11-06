@@ -175,6 +175,7 @@ docker run -d -v /home/user/data:/app/data -e TELEGRAM_BOT_TOKEN="telegram-bot-t
 | **ERNIE_AK**                    | 百度文心大模型 AK [doc](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Sly8bm96d)            | -                     |
 | **ERNIE_SK**                    | 百度文心大模型 SK [doc](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Sly8bm96d)            | -                     |
 | **CUSTOM_URL**                  | 自定义 LLM API 地址                                                                      |                       |
+| **OLLAMA_URL**                  | Ollama 服务地址（ollama 类型时优先于 CUSTOM_URL）                                            | http://localhost:11434/                                |
 | **TYPE**                        | LLM 类型（deepseek/openai/gemini/vol/chatanywhere/aliyun/ollama），均走 OpenAI 兼容格式         | deepseek              |
 | **MEDIA_TYPE**                  | 图片/视频生成模型来源（openai/gemini/vol/aliyun），均走 OpenAI 兼容格式                                | vol                   |
 | **DB_TYPE**                     | 数据库类型（sqlite3/mysql）                                                                | sqlite3               |

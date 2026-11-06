@@ -25,7 +25,6 @@ type LLMTaskReq struct {
 	HTTPMsgChan chan string
 	Content     string
 	Model       string
-	Token       int
 	PerMsgLen   int
 
 	// Images carries the picture under discussion: the one attached to the
@@ -317,7 +316,6 @@ func (d *LLMTaskReq) executePlan(machine *taskStateMachine, plan *TaskInfo) erro
 		if err != nil {
 			return err
 		}
-		d.Token += llm.Cs.Token
 		// give the user visibility into what the agent actually did: one
 		// message per finished step, capped by sendProgress at the IM's
 		// per-message length (d.PerMsgLen)

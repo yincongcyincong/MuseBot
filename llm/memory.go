@@ -30,6 +30,29 @@ var lastMemoryExtract sync.Map
 
 var jsonArrayRe = regexp.MustCompile(`\[[\s\S]*\]`)
 
+// claimMemoryExtract atomically reports whether this call should run the
+// consolidation for userId, and stamps the claim time. A plain Load-then-Store
+// would let two concurrent turns both pass the interval check and consolidate
+// twice.
+func claimMemoryExtract(userId string, interval time.Duration) bool {
+	now := time.Now()
+	last, ok := lastMemoryExtract.Load(userId)
+	if !ok {
+		_, loaded := lastMemoryExtract.LoadOrStore(userId, now)
+		return !loaded
+	}
+	t, isTime := last.(time.Time)
+	if !isTime {
+		lastMemoryExtract.Store(userId, now)
+		return true
+	}
+	if time.Since(t) < interval {
+		return false
+	}
+	// interval elapsed: refresh only if nobody else did in the meantime
+	return lastMemoryExtract.CompareAndSwap(userId, t, now)
+}
+
 // MaybeConsolidateMemories merges the user's long-term memories with their
 // recent conversation into a new memory set, at most once per
 // MemoryInterval per user. Any failure leaves the stored memories untouched.
@@ -42,12 +65,9 @@ func MaybeConsolidateMemories(ctx context.Context, userId string) {
 	if interval <= 0 {
 		interval = time.Hour
 	}
-	if last, ok := lastMemoryExtract.Load(userId); ok {
-		if t, ok := last.(time.Time); ok && time.Since(t) < interval {
-			return
-		}
+	if !claimMemoryExtract(userId, interval) {
+		return
 	}
-	lastMemoryExtract.Store(userId, time.Now())
 
 	msgRecords := db.GetMsgRecord(userId)
 	if msgRecords == nil || len(msgRecords.AQs) == 0 {

@@ -649,7 +649,7 @@ func (r *RobotInfo) SendMsg(chatId string, msgContent string, replyToMessageID s
 		q := r.Robot.(*QQRobot)
 		qqMsg := &dto.MessageToCreate{
 			MsgType: dto.TextMsg,
-			Content: strings.ReplaceAll(strings.ReplaceAll(msgContent, "http", ""), "https", ""),
+			Content: strings.ReplaceAll(strings.ReplaceAll(msgContent, "https://", ""), "http://", ""),
 			MsgID:   replyToMessageID,
 			MsgSeq:  crc32.ChecksumIEEE([]byte(msgContent)),
 			MessageReference: &dto.MessageReference{
@@ -701,7 +701,7 @@ func (r *RobotInfo) SendMsg(chatId string, msgContent string, replyToMessageID s
 			// the finished answer must overwrite it; requiring the key to be
 			// absent made the reply unreachable and every passive answer 500.
 			if msgId != "" {
-				msgContent = strings.ReplaceAll(strings.ReplaceAll(msgContent, "http", ""), "https", "")
+				msgContent = strings.ReplaceAll(strings.ReplaceAll(msgContent, "https://", ""), "http://", "")
 				TencentMsgMap.Store(msgId, &TencentWechatMessage{
 					Msg:       msgContent,
 					Status:    msgFinished,
@@ -835,7 +835,10 @@ func (r *RobotInfo) GetAudioContent(audioContent []byte) (string, error) {
 		logger.WarnCtx(r.Ctx, "AddRecordContent err", "err", err)
 	}
 
-	return answer, err
+	// the transcript is valid; persisting it is best-effort and its failures
+	// are logged above — returning them here made callers drop the transcript
+	// and echo a raw DB error at the user
+	return answer, nil
 }
 
 func (r *RobotInfo) GetLastImageContent() ([]byte, error) {
@@ -1021,11 +1024,16 @@ func (r *RobotInfo) ExecCmd(cmd string, defaultFunc func(), modeFunc func(string
 		r.Robot.sendVideo()
 	case param.Help, "/" + param.Help, "$" + param.Help:
 		r.sendHelpInfo()
-	case param.Task, "/" + param.Task, "$" + param.Task,
-		param.Mcp, "/" + param.Mcp, "$" + param.Mcp:
+	case param.Task, "/" + param.Task, "$" + param.Task:
 		var emptyPromptFunc func()
 		if t, ok := r.Robot.(*TelegramRobot); ok {
 			emptyPromptFunc = t.sendForceReply("task_empty_content")
+		}
+		r.sendMultiAgent(emptyPromptFunc)
+	case param.Mcp, "/" + param.Mcp, "$" + param.Mcp:
+		var emptyPromptFunc func()
+		if t, ok := r.Robot.(*TelegramRobot); ok {
+			emptyPromptFunc = t.sendForceReply("mcp_empty_content")
 		}
 		r.sendMultiAgent(emptyPromptFunc)
 	case param.Approve, "/" + param.Approve, "$" + param.Approve,
@@ -1726,7 +1734,7 @@ func (r *RobotInfo) CreatePhoto(prompt string, lastImageContent []byte) ([]byte,
 	case param.Aliyun:
 		imageUrl, totalToken, err = llm.GenerateAliyunImg(r.Ctx, prompt, lastImageContent)
 	default:
-		err = fmt.Errorf("unsupported media type: %s", conf.BaseConfInfo.MediaType)
+		err = fmt.Errorf("unsupported media type: %s", mediaType)
 	}
 
 	if err != nil {
@@ -1963,17 +1971,20 @@ func (r *RobotInfo) smartMode() bool {
 	smartModePrompt := i18n.GetMessage("smart_mode_prompt", smartModeParams) +
 		"\n\n" + i18n.GetMessage("smart_mode_task_prompt", smartModeParams)
 
-	llmClient := llm.NewLLM(
+	smartOptions := []llm.Option{
 		llm.WithChatId(chatId),
 		llm.WithUserId(userId),
 		llm.WithMsgId(msgId),
 		llm.WithContent(smartModePrompt),
 		llm.WithContext(r.Ctx),
 		llm.WithUtilityModel(),
-		llm.WithImages([][]byte{
-			r.Robot.getImage(),
-		}),
-	)
+	}
+	// only attach an image when there is one: a nil entry would produce a
+	// broken "data:image/unknown;base64," part
+	if img := r.Robot.getImage(); len(img) > 0 {
+		smartOptions = append(smartOptions, llm.WithImages([][]byte{img}))
+	}
+	llmClient := llm.NewLLM(smartOptions...)
 	llmClient.LLMClient.GetModel(llmClient)
 	llmClient.LLMClient.GetMessage(openai.ChatMessageRoleUser, llmClient.Content)
 	content, err := llmClient.LLMClient.SyncSend(r.Ctx, llmClient)

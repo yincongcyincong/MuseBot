@@ -56,6 +56,7 @@ type BaseConf struct {
 	MediaType         string `json:"media_type"`
 	CustomUrl         string `json:"custom_url"`
 	CustomPath        string `json:"custom_path"`
+	OllamaUrl         string `json:"ollama_url"`
 	VolcAK            string `json:"volc_ak"`
 	VolcSK            string `json:"volc_sk"`
 	DBType            string `json:"db_type"`
@@ -178,6 +179,7 @@ func InitConf() {
 	flag.StringVar(&BaseConfInfo.BotName, "bot_name", "MuseBot", "bot name")
 	flag.StringVar(&BaseConfInfo.CustomUrl, "custom_url", "", "custom url")
 	flag.StringVar(&BaseConfInfo.CustomPath, "custom_path", "", "custom path")
+	flag.StringVar(&BaseConfInfo.OllamaUrl, "ollama_url", "", "ollama server url (default http://localhost:11434/)")
 	flag.StringVar(&BaseConfInfo.Type, "type", "", "llm type: deepseek gemini openai vol chatanywhere aliyun ollama (all via OpenAI-compatible API format)")
 	flag.StringVar(&BaseConfInfo.MediaType, "media_type", "", "media type: vol gemini openai aliyun (all via OpenAI-compatible API format)")
 	flag.StringVar(&BaseConfInfo.DBType, "db_type", "sqlite3", "db type")
@@ -305,6 +307,7 @@ func logConf(allowedUserIds, allowedGroupIds, adminUserIds string) {
 	logger.Info("CONF", "QQOneBotSendToken", BaseConfInfo.QQOneBotSendToken)
 	logger.Info("CONF", "DeepseekToken", BaseConfInfo.DeepseekToken)
 	logger.Info("CONF", "CustomUrl", BaseConfInfo.CustomUrl)
+	logger.Info("CONF", "OllamaUrl", BaseConfInfo.OllamaUrl)
 	logger.Info("CONF", "Type", BaseConfInfo.Type)
 	logger.Info("CONF", "VolcAK", BaseConfInfo.VolcAK)
 	logger.Info("CONF", "VolcSK", BaseConfInfo.VolcSK)
@@ -625,6 +628,10 @@ func applyEnvConf(allowedUserIds, allowedGroupIds, adminUserIds *string) {
 
 	if os.Getenv("CUSTOM_URL") != "" {
 		BaseConfInfo.CustomUrl = os.Getenv("CUSTOM_URL")
+	}
+
+	if os.Getenv("OLLAMA_URL") != "" {
+		BaseConfInfo.OllamaUrl = os.Getenv("OLLAMA_URL")
 	}
 
 	if os.Getenv("CUSTOM_PATH") != "" {

@@ -11,6 +11,7 @@ import (
 	"runtime/debug"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/disintegration/imaging"
@@ -24,7 +25,26 @@ import (
 	"github.com/yincongcyincong/MuseBot/utils"
 )
 
-var TelegramBot *tgbotapi.BotAPI
+var (
+	// TelegramBot is swapped by StartTelegramRobot on (re)connect while cron
+	// and webhook goroutines read it concurrently, hence the lock
+	telegramBotMu sync.RWMutex
+	TelegramBot   *tgbotapi.BotAPI
+)
+
+func setTelegramBot(bot *tgbotapi.BotAPI) {
+	telegramBotMu.Lock()
+	defer telegramBotMu.Unlock()
+	TelegramBot = bot
+}
+
+// GetTelegramBot is the concurrency-safe read for goroutines outside the
+// telegram update loop (cron jobs, webhooks).
+func GetTelegramBot() *tgbotapi.BotAPI {
+	telegramBotMu.RLock()
+	defer telegramBotMu.RUnlock()
+	return TelegramBot
+}
 
 type TelegramRobot struct {
 	Update tgbotapi.Update
@@ -65,7 +85,7 @@ func StartTelegramRobot(ctx context.Context) {
 	}()
 
 	for {
-		TelegramBot = CreateBot(ctx)
+		setTelegramBot(CreateBot(ctx))
 		if TelegramBot == nil {
 			time.Sleep(3 * time.Second)
 			continue
@@ -813,6 +833,17 @@ func (t *TelegramRobot) sendVideo() {
 }
 
 // sendImg send img to telegram
+// editThinkingMsg replaces a "thinking" placeholder with the failure reason so
+// an aborted generation does not leave a dangling placeholder; if the edit is
+// rejected (e.g. text unchanged), fall back to a fresh reply.
+func (t *TelegramRobot) editThinkingMsg(chatId, msgId, text string) {
+	edit := tgbotapi.NewEditMessageText(int64(utils.ParseInt(chatId)), utils.ParseInt(msgId), text)
+	if _, err := t.Bot.Request(edit); err != nil {
+		logger.WarnCtx(t.Robot.Ctx, "edit thinking msg fail", "err", err)
+		t.Robot.SendMsg(chatId, text, "", "", nil)
+	}
+}
+
 func (t *TelegramRobot) sendImg() {
 	t.Robot.TalkingPreCheck(func() {
 		chatId, replyToMessageID, _ := t.Robot.GetChatIdAndMsgIdAndUserID()
@@ -858,6 +889,7 @@ func (t *TelegramRobot) sendImg() {
 		img, _, err := image.Decode(bytes.NewReader(imageContent))
 		if err != nil {
 			logger.ErrorCtx(t.Robot.Ctx, "decode image fail", "err", err)
+			t.editThinkingMsg(chatId, thinkingMsgId, err.Error())
 			return
 		}
 		resizedImg := imaging.Fit(img, 1280, 1280, imaging.Lanczos)
@@ -866,6 +898,7 @@ func (t *TelegramRobot) sendImg() {
 		err = imaging.Encode(&buf, resizedImg, imaging.JPEG)
 		if err != nil {
 			logger.ErrorCtx(t.Robot.Ctx, "encode image fail", "err", err)
+			t.editThinkingMsg(chatId, thinkingMsgId, err.Error())
 			return
 		}
 
@@ -945,7 +978,7 @@ func (t *TelegramRobot) ExecuteForceReply() {
 	case i18n.GetMessage("task_empty_content", nil):
 		t.Robot.sendMultiAgent(t.sendForceReply("task_empty_content"))
 	case i18n.GetMessage("mcp_empty_content", nil):
-		t.Robot.sendMultiAgent(t.sendForceReply("task_empty_content"))
+		t.Robot.sendMultiAgent(t.sendForceReply("mcp_empty_content"))
 	default:
 		// Replying to an ordinary bot message is not an answer to a ForceReply
 		// prompt. Without this fallback the switch matched nothing and the
