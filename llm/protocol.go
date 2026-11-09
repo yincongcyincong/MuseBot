@@ -19,6 +19,9 @@ import (
 )
 
 type LLMToolCall struct {
+	// Index routes streamed continuation fragments back to their call when
+	// the provider supplies one (OpenAI streaming spec). -1 = not provided.
+	Index     int
 	ID        string
 	Name      string
 	Type      string
@@ -152,31 +155,53 @@ func (o llmSamplingOptions) applyToDeepseekStream(request *deepseek.StreamChatCo
 	request.LogProbs = o.LogProbs
 }
 
+// observe accumulates one streamed tool-call fragment. The first fragment of
+// a call carries id+name (and, on providers following the OpenAI streaming
+// spec, an index); continuation fragments carry arguments only and are routed
+// back to their call by index, so parallel tool calls with interleaved
+// argument fragments stay separate.
 func (s *LLMToolState) observe(call LLMToolCall) error {
+	target := -1
 	if call.Name != "" || len(s.Calls) == 0 {
-		s.Calls = append(s.Calls, LLMToolCall{
-			ID:        call.ID,
-			Name:      call.Name,
-			Type:      call.Type,
-			Arguments: call.Arguments,
-		})
+		// start of a new tool call
+		s.Calls = append(s.Calls, call)
+		target = len(s.Calls) - 1
 	} else {
-		latest := &s.Calls[len(s.Calls)-1]
+		target = s.fragmentTarget(call.Index)
 		if call.ID != "" {
-			latest.ID = call.ID
+			s.Calls[target].ID = call.ID
 		}
 		if call.Type != "" {
-			latest.Type = call.Type
+			s.Calls[target].Type = call.Type
 		}
-		latest.Arguments += call.Arguments
+		s.Calls[target].Arguments += call.Arguments
 	}
 
-	latest := &s.Calls[len(s.Calls)-1]
 	var property map[string]interface{}
-	if err := json.Unmarshal([]byte(latest.Arguments), &property); err != nil {
+	if err := json.Unmarshal([]byte(s.Calls[target].Arguments), &property); err != nil {
 		return ToolsJsonErr
 	}
 	return nil
+}
+
+// fragmentTarget locates the call a continuation fragment belongs to. An
+// index that maps to exactly one recorded call routes there; duplicated or
+// missing indexes (sequential providers that omit the field) fall back to the
+// most recent call, which matches those providers' wire order.
+func (s *LLMToolState) fragmentTarget(index int) int {
+	if index >= 0 {
+		found, matches := -1, 0
+		for i := range s.Calls {
+			if s.Calls[i].Index == index {
+				found = i
+				matches++
+			}
+		}
+		if matches == 1 {
+			return found
+		}
+	}
+	return len(s.Calls) - 1
 }
 
 // taskToolMaxConsecutiveFails bounds how many times in a row the same tool
@@ -278,9 +303,12 @@ func receiveLLMStream(ctx context.Context, l *LLM, next func() (LLMStreamChunk, 
 			}
 		}
 
-		if !hasTools {
-			msgInfo = l.SendMsg(msgInfo, chunk.Content)
-		}
+		// stream content even in rounds that end in tool calls: the preamble
+		// before a tool call is part of the answer the user should see (and
+		// of WholeContent, which is replayed as the assistant message). The
+		// final answer after the tool results streams as a fresh message from
+		// the recursive Send.
+		msgInfo = l.SendMsg(msgInfo, chunk.Content)
 		if chunk.HasUsage {
 			l.Cs.Token += chunk.Usage
 		}

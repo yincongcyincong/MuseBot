@@ -20,6 +20,7 @@ import (
 	"strings"
 	"time"
 	"unicode/utf16"
+	"unicode/utf8"
 
 	"github.com/yincongcyincong/MuseBot/conf"
 	"github.com/yincongcyincong/MuseBot/logger"
@@ -29,6 +30,42 @@ import (
 func Utf16len(s string) int {
 	utf16Str := utf16.Encode([]rune(s))
 	return len(utf16Str)
+}
+
+// TruncateUTF8 returns the first maxBytes bytes of content, cut on a rune
+// boundary so a multi-byte character is never split in half.
+func TruncateUTF8(content string, maxBytes int) string {
+	if maxBytes <= 0 || len(content) <= maxBytes {
+		return content
+	}
+	cut := content[:maxBytes]
+	// back off while the cut leaves an incomplete rune at the end; a literal
+	// U+FFFD decodes in more than one byte, so it is left alone
+	for len(cut) > 0 {
+		r, size := utf8.DecodeLastRuneInString(cut)
+		if r != utf8.RuneError || size != 1 {
+			break
+		}
+		cut = cut[:len(cut)-1]
+	}
+	return cut
+}
+
+// TruncateUTF8Tail returns the last maxBytes bytes of content, cut on a rune
+// boundary (the mirror of TruncateUTF8, for "keep the end" truncation).
+func TruncateUTF8Tail(content string, maxBytes int) string {
+	if maxBytes <= 0 || len(content) <= maxBytes {
+		return content
+	}
+	cut := content[len(content)-maxBytes:]
+	for len(cut) > 0 {
+		r, size := utf8.DecodeRuneInString(cut)
+		if r != utf8.RuneError || size != 1 {
+			break
+		}
+		cut = cut[size:]
+	}
+	return cut
 }
 
 func ParseInt(str string) int {

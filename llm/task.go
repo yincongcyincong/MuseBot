@@ -222,8 +222,9 @@ func (d *LLMTaskReq) sendProgress(message string) {
 	if perMsgLen == 0 {
 		perMsgLen = OneMsgLen
 	}
-	if len([]byte(message)) > perMsgLen {
-		message = string([]byte(message)[:perMsgLen])
+	if len(message) > perMsgLen {
+		// cut on a rune boundary so multi-byte characters stay intact
+		message = utils.TruncateUTF8(message, perMsgLen)
 	}
 
 	if d.MessageChan != nil {

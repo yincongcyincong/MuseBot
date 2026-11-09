@@ -90,8 +90,6 @@ type LLMClient interface {
 
 	GetImageMessage(image [][]byte, msg string)
 
-	GetAudioMessage(audio []byte, msg string)
-
 	AppendMessages(client LLMClient)
 
 	SyncSend(ctx context.Context, l *LLM) (string, error)
@@ -181,8 +179,15 @@ func NewLLM(opts ...Option) *LLM {
 }
 
 func (l *LLM) DirectSendMsg(content string, ignoreLen bool) {
-	if !ignoreLen && len([]byte(content)) > l.PerMsgLen {
-		content = string([]byte(content)[:l.PerMsgLen])
+	perMsgLen := l.PerMsgLen
+	if perMsgLen == 0 {
+		// mirror SendMsg: an unset length still means a sane cap — and must
+		// never truncate a non-empty message to nothing
+		perMsgLen = OneMsgLen
+	}
+	if !ignoreLen && len(content) > perMsgLen {
+		// cut on a rune boundary so multi-byte characters stay intact
+		content = utils.TruncateUTF8(content, perMsgLen)
 	}
 
 	if l.MessageChan != nil {

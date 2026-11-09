@@ -192,12 +192,14 @@ func formatTaskCommandOutput(stdout, stderr []byte) string {
 		return string(output)
 	}
 
-	prefix := output[:taskCommandMaxOutputBytes/2]
-	suffix := output[len(output)-taskCommandMaxOutputBytes/2:]
+	// keep head and tail, each cut on a rune boundary so multi-byte
+	// characters are not split in half
+	prefix := utils.TruncateUTF8(string(output), taskCommandMaxOutputBytes/2)
+	suffix := utils.TruncateUTF8Tail(string(output), taskCommandMaxOutputBytes/2)
 	return string(bytes.Join([][]byte{
-		prefix,
+		[]byte(prefix),
 		[]byte("\n... output truncated ...\n"),
-		suffix,
+		[]byte(suffix),
 	}, nil))
 }
 

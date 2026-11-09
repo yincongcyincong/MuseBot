@@ -15,7 +15,10 @@ import (
 func TestLLMToolStateAccumulatesStreamedCall(t *testing.T) {
 	tools := &LLMToolState{}
 
+	// sequential provider: fragments carry no index (-1) and merge in wire
+	// order into the most recent call
 	assert.ErrorIs(t, tools.observe(LLMToolCall{
+		Index:     -1,
 		ID:        "call-1",
 		Name:      "web_search",
 		Type:      "function",
@@ -23,12 +26,36 @@ func TestLLMToolStateAccumulatesStreamedCall(t *testing.T) {
 	}), ToolsJsonErr)
 	assert.Empty(t, tools.Results)
 
-	assert.NoError(t, tools.observe(LLMToolCall{Arguments: `y":"mcp"} `}))
+	assert.NoError(t, tools.observe(LLMToolCall{Index: -1, Arguments: `y":"mcp"} `}))
 	assert.Len(t, tools.Calls, 1)
 	assert.Equal(t, "call-1", tools.Calls[0].ID)
 	assert.Equal(t, "web_search", tools.Calls[0].Name)
 	assert.Equal(t, `{"query":"mcp"} `, tools.Calls[0].Arguments)
 	assert.Empty(t, tools.Results)
+}
+
+func TestLLMToolStateRoutesInterleavedToolCallFragments(t *testing.T) {
+	tools := &LLMToolState{}
+
+	// parallel calls arrive as interleaved fragments tagged with the call
+	// index (OpenAI streaming spec); they must stay separate
+	assert.ErrorIs(t, tools.observe(LLMToolCall{
+		Index: 0, ID: "call-1", Name: "web_search", Type: "function",
+		Arguments: `{"quer`,
+	}), ToolsJsonErr)
+	assert.ErrorIs(t, tools.observe(LLMToolCall{
+		Index: 1, ID: "call-2", Name: "shell", Type: "function",
+		Arguments: `{"ar`,
+	}), ToolsJsonErr)
+
+	assert.NoError(t, tools.observe(LLMToolCall{Index: 1, Arguments: `gs":[1]}`}))
+	assert.NoError(t, tools.observe(LLMToolCall{Index: 0, Arguments: `y":"mcp"}`}))
+
+	assert.Len(t, tools.Calls, 2)
+	assert.Equal(t, "web_search", tools.Calls[0].Name)
+	assert.Equal(t, `{"query":"mcp"}`, tools.Calls[0].Arguments)
+	assert.Equal(t, "shell", tools.Calls[1].Name)
+	assert.Equal(t, `{"args":[1]}`, tools.Calls[1].Arguments)
 }
 
 func TestRetryLLMRequestRetriesUntilSuccess(t *testing.T) {

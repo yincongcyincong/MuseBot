@@ -92,8 +92,14 @@ func (l *LLM) attempt() error {
 	}
 	content, err := l.LLMClient.SyncSend(l.Ctx, l)
 	if err == nil {
-		l.MessageChan <- &param.MsgInfo{Content: content}
 		l.WholeContent = content
+		// mirror SendMsg's routing; utility calls run without any channel
+		// attached, and sending on a nil channel would block forever
+		if l.MessageChan != nil {
+			l.MessageChan <- &param.MsgInfo{Content: content}
+		} else if l.HTTPMsgChan != nil {
+			l.HTTPMsgChan <- content
+		}
 	}
 	return err
 }

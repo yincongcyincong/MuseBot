@@ -90,7 +90,14 @@ func (d *OpenAIReq) Send(ctx context.Context, l *LLM) error {
 		for _, choice := range response.Choices {
 			chunk.Content += choice.Delta.Content
 			for _, toolCall := range choice.Delta.ToolCalls {
+				// the streaming spec tags fragments with the call index
+				// (nil only outside streaming)
+				index := -1
+				if toolCall.Index != nil {
+					index = *toolCall.Index
+				}
 				chunk.ToolCalls = append(chunk.ToolCalls, LLMToolCall{
+					Index:     index,
 					ID:        toolCall.ID,
 					Name:      toolCall.Function.Name,
 					Type:      string(toolCall.Type),
@@ -143,24 +150,6 @@ func (d *OpenAIReq) GetImageMessage(images [][]byte, msg string) {
 	d.OpenAIMsgs = append(d.OpenAIMsgs, openai.ChatCompletionMessage{
 		Role:         openai.ChatMessageRoleUser,
 		MultiContent: multiContent,
-	})
-}
-
-func (d *OpenAIReq) GetAudioMessage(audio []byte, msg string) {
-	d.OpenAIMsgs = append(d.OpenAIMsgs, openai.ChatCompletionMessage{
-		Role: openai.ChatMessageRoleUser,
-		MultiContent: []openai.ChatMessagePart{
-			{
-				Type: openai.ChatMessagePartTypeText,
-				Text: msg,
-			},
-			{
-				Type: "input_audio",
-				ImageURL: &openai.ChatMessageImageURL{
-					URL: base64.StdEncoding.EncodeToString(audio),
-				},
-			},
-		},
 	})
 }
 
@@ -220,7 +209,9 @@ func (d *OpenAIReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 	l.Cs.Token += response.Usage.TotalTokens
 	if len(response.Choices[0].Message.ToolCalls) > 0 {
 		toolCalls := openAIStreamToolCalls(response.Choices[0].Message.ToolCalls)
-		d.GetMessage(openai.ChatMessageRoleAssistant, "")
+		// replay the preamble content together with the tool calls; dropping
+		// it would desync the replayed conversation from what the model said
+		d.GetMessage(openai.ChatMessageRoleAssistant, response.Choices[0].Message.Content)
 		d.OpenAIMsgs[len(d.OpenAIMsgs)-1].ToolCalls = response.Choices[0].Message.ToolCalls
 		if err := d.Tools.observeComplete(ctx, l, toolCalls); err != nil {
 			return "", err
@@ -251,7 +242,9 @@ func openAIToolCalls(calls []LLMToolCall) []openai.ToolCall {
 func openAIStreamToolCalls(calls []openai.ToolCall) []LLMToolCall {
 	toolCalls := make([]LLMToolCall, 0, len(calls))
 	for _, call := range calls {
+		// complete (non-streamed) calls carry no index
 		toolCalls = append(toolCalls, LLMToolCall{
+			Index:     -1,
 			ID:        call.ID,
 			Name:      call.Function.Name,
 			Type:      string(call.Type),

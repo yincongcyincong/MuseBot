@@ -121,6 +121,10 @@ func deepseekStreamToolCalls(calls []deepseek.ToolCall) []LLMToolCall {
 	toolCalls := make([]LLMToolCall, 0, len(calls))
 	for _, call := range calls {
 		toolCalls = append(toolCalls, LLMToolCall{
+			// stream deltas carry the fragment index; complete calls leave it
+			// zero, which observe() never uses for routing (name-bearing
+			// fragments always start a new slot)
+			Index:     call.Index,
 			ID:        call.ID,
 			Name:      call.Function.Name,
 			Type:      call.Type,
@@ -168,8 +172,6 @@ func (o *OllamaReq) GetSystemMessage(msg string) {
 }
 
 func (o *OllamaReq) GetImageMessage(image [][]byte, msg string) {}
-
-func (o *OllamaReq) GetAudioMessage(audio []byte, msg string) {}
 
 func (o *OllamaReq) AppendMessages(client LLMClient) {
 	if len(o.OllamaMsgs) == 0 {
@@ -228,7 +230,9 @@ func (o *OllamaReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 	l.Cs.Token += response.Usage.TotalTokens
 	if len(response.Choices[0].Message.ToolCalls) > 0 {
 		toolCalls := deepseekStreamToolCalls(response.Choices[0].Message.ToolCalls)
-		o.GetAssistantMessage("")
+		// replay the preamble content together with the tool calls; dropping
+		// it would desync the replayed conversation from what the model said
+		o.GetAssistantMessage(response.Choices[0].Message.Content)
 		o.OllamaMsgs[len(o.OllamaMsgs)-1].ToolCalls = response.Choices[0].Message.ToolCalls
 		if err := o.Tools.observeComplete(ctx, l, toolCalls); err != nil {
 			return "", err
