@@ -288,7 +288,7 @@ others: см. [документацию](https://www.volcengine.com/docs/82379/1
 1. **Собрать образ Docker**
 
    ```sh
-    docker build -t MuseBot .
+    docker build -t musebot .
    ```
 
 2. **Запустить контейнер**
@@ -298,7 +298,7 @@ others: см. [документацию](https://www.volcengine.com/docs/82379/1
        -e TELEGRAM_BOT_TOKEN="telegram-bot-token" \
        -e DEEPSEEK_TOKEN="deepseek-auth-token" \
        -p 36060:36060 -p 18080:18080 \
-       --name my-bot MuseBot
+       --name my-bot musebot
    ```
 
 3. **Порты и тома**
