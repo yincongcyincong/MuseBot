@@ -369,7 +369,7 @@ the MuseBotAdmin management platform. Both restart automatically if they crash.
 
 1. **Build the Docker image**
    ```sh
-    docker build -t MuseBot .
+    docker build -t musebot .
    ```
 
 2. **Run the container**
@@ -378,7 +378,7 @@ the MuseBotAdmin management platform. Both restart automatically if they crash.
        -e TELEGRAM_BOT_TOKEN="telegram-bot-token" \
        -e DEEPSEEK_TOKEN="deepseek-auth-token" \
        -p 36060:36060 -p 18080:18080 \
-       --name my-bot MuseBot
+       --name my-bot musebot
    ```
 
 3. **Ports and volumes**

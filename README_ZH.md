@@ -333,7 +333,7 @@ docker run -d -v /home/user/data:/app/data \
 
 1. **构建 Docker 镜像**
    ```sh
-   docker build -t MuseBot .
+   docker build -t musebot .
    ```
 
 2. **运行容器**
@@ -342,7 +342,7 @@ docker run -d -v /home/user/data:/app/data \
      -e TELEGRAM_BOT_TOKEN="你的Telegram Bot Token" \
      -e DEEPSEEK_TOKEN="你的DeepSeek API密钥" \
      -p 36060:36060 -p 18080:18080 \
-     --name my-bot MuseBot
+     --name my-bot musebot
    ```
 
 3. **端口与数据卷**
