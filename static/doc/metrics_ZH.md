@@ -12,6 +12,7 @@
 | -------------------------------- | --------- | ------------------------- | --------------- |
 | `api_request_total`              | Counter   | `model`                   | 各模型的 API 调用总次数  |
 | `api_request_duration_seconds`   | Histogram | `model`                   | 各模型 API 请求耗时分布  |
+| `api_failover_total`             | Counter   | `from`, `to`              | 模型厂商降级次数（from → to） |
 | `app_request_total`              | Counter   | `app`                     | 各 App 的请求总次数    |
 | `http_request_total`             | Counter   | `path`                    | 各 HTTP 路径的请求总次数 |
 | `http_response_total`            | Counter   | `path`, `code`            | 各路径返回状态码统计      |

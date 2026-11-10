@@ -43,11 +43,11 @@
 -telegram_bot_token=xxxx \
 -deepseek_token=sk-xxx \
 -robot_proxy=http://127.0.0.1:7890 \
--robot_proxy=http://127.0.0.1:7890
+-llm_proxy=http://127.0.0.1:7890
 ```
 
 * `-robot_proxy`: Telegram API 请求使用的代理地址。
-* `-robot_proxy`: DeepSeek API 请求使用的代理地址。
+* `-llm_proxy`: DeepSeek API 请求使用的代理地址。
 
 #### 4\. OpenAI 模型支持 (`openai`)
 
@@ -102,14 +102,14 @@
 ./MuseBot \
 -telegram_bot_token=xxxx \
 -deepseek_token=sk-xxx \
--audio_app_id=xxx \
--audio_cluster=volcengine_input_common \
--audio_token=xxxx
+-vol_audio_app_id=xxx \
+-vol_audio_rec_cluster=volcengine_input_common \
+-vol_audio_token=xxxx
 ```
 
-* `-audio_app_id`: 火山引擎语音识别的 App ID。
-* `-audio_cluster`: 语音识别集群名称，通常为 `volcengine_input_common`。
-* `-audio_token`: 语音识别的 Token。
+* `-vol_audio_app_id`: 火山引擎语音识别的 App ID。
+* `-vol_audio_rec_cluster`: 语音识别集群名称，通常为 `volcengine_input_common`。
+* `-vol_audio_token`: 语音识别的 Token。
 
 更多详情请参考：[火山引擎语音识别文档](https://www.volcengine.com/docs/6561/80816)
 
@@ -155,9 +155,9 @@
 * `-file_root_path`：内置文件操作根目录，等价环境变量是 `FILE_ROOT_PATH`。
 * 支持操作详见[对话式配置文档](conversation_config_ZH.md)。
 
-#### 9\. RAG (Retrieval Augmented Generation) - ChromaDB (`rag milvus`)
+#### 9\. RAG (Retrieval Augmented Generation) - Milvus + OpenAI Embedding (`rag milvus`)
 
-结合 ChromaDB 进行 RAG，需要使用 OpenAI 的 Embedding 服务。
+结合 Milvus 进行 RAG，需要使用 OpenAI 的 Embedding 服务。
 
 ```bash
 ./MuseBot \
@@ -170,7 +170,7 @@
 
 * `-openai_token`: 您的 OpenAI API Token (用于 embedding)。
 * `-embedding_type`: Embedding 类型，设置为 `openai`。
-* `-vector_db_type`: 向量数据库类型，设置为 `milvus`。
+* `-vector_db_type`: 向量数据库类型，设置为 `milvus`（也支持 `weaviate`、`qdrant`）。
 
 #### 10\. RAG (Retrieval Augmented Generation) - Milvus (`rag milvus`)
 

@@ -5,7 +5,6 @@
 | `EMBEDDING_TYPE`     | `String` | Обязательный      | API для эмбеддингов: openai, gemini, ernie |
 | `KNOWLEDGE_PATH`     | `String` | Обязательный      | Путь к документам с знаниями            |
 | `VECTOR_DB_TYPE`     | `String` | Обязательный      | Тип векторной БД: weaviate, milvus, qdrant |
-| `CHROMA_URL`         | `String` | Опциональный      | URL Chroma: http://localhost:8080       |
 | `MILVUS_URL`         | `String` | Опциональный      | URL Milvus: http://localhost:19530      |
 | `WEAVIATE_URL`       | `String` | Опциональный      | URL Weaviate: localhost:8000            |
 | `WEAVIATE_SCHEME`    | `String` | Опциональный      | Протокол Weaviate: http                 |
@@ -29,7 +28,6 @@
     - Параметры `CHUNK_*` настраивают обработку документов
 
 3. **Рекомендации**:
-    - Для Chroma обычно используется порт 8000
     - Milvus по умолчанию работает на порту 19530
     - Weaviate может использовать как HTTP, так и HTTPS
     - Qdrant по умолчанию использует gRPC-адрес `localhost:6334`. Если коллекция `SPACE` отсутствует, MuseBot создаёт её с метрикой `Cosine`. Для определения размерности MuseBot отправляет один запрос к сервису эмбеддингов. Размерность существующей коллекции должна совпадать с размерностью выбранной модели

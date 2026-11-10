@@ -66,24 +66,11 @@
 
 ## 📌 3. Update User Mode
 
-* **Endpoint**: `POST /user/update/mode`
-* **Description**: Update the mode (model) for a user.
-* **Request Parameters** (Form):
+There is **no HTTP endpoint for this on the main API server**. To change a user's mode (model):
 
-| Parameter | Type   | Required | Description            |
-|-----------|--------|----------|------------------------|
-| user\_id  | string | Yes      | Unique user identifier |
-| mode      | string | Yes      | New mode to set        |
-
-* **Response Example**:
-
-```json
-{
-  "code": 0,
-  "msg": "success",
-  "data": null
-}
-```
+* The user switches it in chat with the `/mode` command (see the README command list);
+* Or an administrator uses the admin panel (`http://<host>:18080`, see [admin doc](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/admin.md)) — the admin route is
+  `POST /bot/user/mode/update?userId={id}&mode={mode}` on the admin port and requires a logged-in admin session.
 
 ---
 
@@ -269,7 +256,7 @@ curl -N -X POST --data-binary @notes.txt \
 ### Example Request
 
 ```http
-POST /api/communicate?prompt=/photo sunset&user_id=12345 HTTP/1.1
+POST /communicate?prompt=/photo sunset&user_id=12345 HTTP/1.1
 Content-Type: application/octet-stream
 
 <binary image data>
@@ -484,6 +471,27 @@ Content-Type: application/octet-stream
   "data": ""
 }
 ```
+
+---
+
+## 14. Other Endpoints on the Main Server
+
+The endpoints above are documented in detail; the main server (`HTTP_HOST`, default `:36060`) also registers:
+
+| Endpoint | Description |
+|----------|-------------|
+| `POST /restart` / `POST /stop` | Restart / stop the MuseBot process |
+| `GET /log` | Tail recent logs |
+| `POST /user/insert/record` | Insert conversation records for a user |
+| `GET /rag/list` / `POST /rag/create` / `POST /rag/delete` / `GET /rag/get` / `POST /rag/clear` | Manage RAG knowledge files (see [rag config](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/rag.md)) |
+| `POST /cron/create` / `POST /cron/update` / `POST /cron/update_status` / `POST /cron/delete` / `GET /cron/list` | Manage cron jobs (see [cron doc](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/cron.md)) |
+| `POST /webhook/{token}` | Trigger a webhook prompt (see [webhook doc](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/webhook.md)) |
+| `POST /webhook/create` / `POST /webhook/update` / `POST /webhook/update_status` / `POST /webhook/delete` / `GET /webhook/list` | Manage webhooks |
+| `GET /dashboard` | HTML status dashboard |
+| `GET /image?type=...&rand=...` | Serve locally stored media files |
+| `GET /healthz` / `GET /readyz` / `GET /pong` | Health probes |
+| `GET /metrics` | Prometheus metrics (see [metrics doc](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/metrics.md)) |
+| `POST /com/wechat`, `POST /wechat`, `POST /qq`, `POST /onebot` | Platform callback receivers (WeCom / WeChat / QQ bots) |
 
 ---
 

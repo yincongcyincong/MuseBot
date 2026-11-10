@@ -43,11 +43,11 @@ Use this configuration if your network environment requires accessing Telegram o
 -telegram_bot_token=xxxx \
 -deepseek_token=sk-xxx \
 -robot_proxy=http://127.0.0.1:7890 \
--robot_proxy=http://127.0.0.1:7890
+-llm_proxy=http://127.0.0.1:7890
 ```
 
 * `-robot_proxy`: The proxy address used for Telegram API requests.
-* `-robot_proxy`: The proxy address used for DeepSeek API requests.
+* `-llm_proxy`: The proxy address used for DeepSeek API requests.
 
 #### 4\. OpenAI Model Support (`openai`)
 
@@ -102,14 +102,14 @@ To integrate with VolcEngine's voice recognition feature.
 ./MuseBot \
 -telegram_bot_token=xxxx \
 -deepseek_token=sk-xxx \
--audio_app_id=xxx \
--audio_cluster=volcengine_input_common \
--audio_token=xxxx
+-vol_audio_app_id=xxx \
+-vol_audio_rec_cluster=volcengine_input_common \
+-vol_audio_token=xxxx
 ```
 
-* `-audio_app_id`: VolcEngine Voice Recognition App ID.
-* `-audio_cluster`: Voice recognition cluster name, typically `volcengine_input_common`.
-* `-audio_token`: Voice recognition Token.
+* `-vol_audio_app_id`: VolcEngine Voice Recognition App ID.
+* `-vol_audio_rec_cluster`: Voice recognition cluster name, typically `volcengine_input_common`.
+* `-vol_audio_token`: Voice recognition Token.
 
 For more details, please refer to: [VolcEngine Voice Recognition Documentation](https://www.volcengine.com/docs/6561/80816)
 
@@ -154,9 +154,9 @@ Configured administrators can manage runtime settings, MCP, skills, and cron job
 * `-file_root_path`: Built-in file-operation root. The equivalent environment variable is `FILE_ROOT_PATH`.
 * See [Conversation Configuration](conversation_config.md) for supported operations.
 
-#### 9\. RAG (Retrieval Augmented Generation) - ChromaDB (`rag milvus`)
+#### 9\. RAG (Retrieval Augmented Generation) - Milvus + OpenAI Embedding (`rag milvus`)
 
-To perform RAG with ChromaDB, you'll need to use OpenAI's Embedding service.
+To perform RAG with Milvus, you'll need to use OpenAI's Embedding service.
 
 ```bash
 ./MuseBot \
@@ -169,7 +169,7 @@ To perform RAG with ChromaDB, you'll need to use OpenAI's Embedding service.
 
 * `-openai_token`: Your OpenAI API Token (for embedding).
 * `-embedding_type`: Embedding type, set to `openai`.
-* `-vector_db_type`: Vector database type, set to `chroma`.
+* `-vector_db_type`: Vector database type, set to `milvus` (also supported: `weaviate`, `qdrant`).
 
 #### 10\. RAG (Retrieval Augmented Generation) - Milvus (`rag milvus`)
 

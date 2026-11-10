@@ -29,6 +29,6 @@
 | `OPENAI_IMAGE_STYLE` | `String` | 可选    | openai 图片风格                                                                                         |
 | `VOL_IMAGE_MODEL`    | `String` | 可选    | vol/豆包 图片模型                                                                                         |
 | `VOL_REC_MODEL`      | `String` | 可选    | vol/豆包  图片识别模型                                                                                      |
-| `ALIYUN_IMAGE_MODEL` | `String` | 可选    | 阿里云 图片模型                                                                                            |
+| `ALIYUN_IMAGE_MODEL` | `String` | 可选    | 阿里云 图片模型：`qwen-image-plus`（生成）、`qwen-image-edit`（编辑已有图片）                                    |
 | `ALIYUN_REC_MODEL`   | `String` | 可选    | 阿里云  图片识别模型                                                                                         |
 

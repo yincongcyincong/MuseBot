@@ -119,6 +119,33 @@ TASK_AUTO_APPROVE=true
 
 ---
 
+## 四、运行行为调优
+
+下面这些不显眼的开关控制流式输出、重试、长期记忆、上下文压缩和平台交互细节。每个 flag 都有同名（大写）环境变量。
+
+| Flag | 默认值 | 说明 |
+|------|--------|------|
+| `-is_streaming` | `false` | 流式分段输出回复，而不是一整条消息 |
+| `-llm_retry_times` | `3` | 单次 LLM 请求的最大尝试次数（用尽后进入 failover） |
+| `-llm_retry_interval` | `100` | 两次重试之间的等待毫秒数 |
+| `-llm_option_param` | `false` | 启用采样参数（temperature、top_p、stop 等），详见[模型参数](./deepseekconf_ZH.md) |
+| `-enable_memory` | `true` | 按用户抽取并注入长期记忆 |
+| `-memory_max_count` | `20` | 每个用户保留的长期记忆条数上限 |
+| `-memory_interval` | `3600` | 同一用户两次记忆抽取的最小间隔秒数 |
+| `-enable_auto_compress` | `true` | 自动压缩累积的上下文历史 |
+| `-compress_threshold` | `8000` | 触发压缩的累积上下文 token 数 |
+| `-compress_keep_pairs` | `3` | 压缩时保留不动的最近问答轮数 |
+| `-enable_typing` | `true` | LLM 生成期间发送"正在输入"提示（支持的平台） |
+| `-enable_reaction` | `true` | 处理中和完成时对用户消息加 reaction（支持的平台） |
+| `-context_expire_time` | `86400` | 会话上下文的存活秒数 |
+| `-powered` | `""` | 每条回复的尾部署名（如 `powered by MuseBot`） |
+| `-custom_path` | `""` | 覆盖 API 请求路径，用于非标准中转（默认 `/v1/chat/completions`） |
+| `-image_path` | `./conf/img/` | 生成图片的存放目录 |
+| `-send_mcp_media_to_llm` | `false` | 将 MCP 工具的媒体结果回传给 LLM |
+| `-task_max_execution_loops` | `3` | `/task` 允许的 EXECUTE 循环轮数上限 |
+
+---
+
 ## 相关文档
 
 - [命令与参数总览](./param_conf_ZH.md)

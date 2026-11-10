@@ -43,11 +43,11 @@
 -telegram_bot_token=xxxx \
 -deepseek_token=sk-xxx \
 -robot_proxy=http://127.0.0.1:7890 \
--robot_proxy=http://127.0.0.1:7890
+-llm_proxy=http://127.0.0.1:7890
 ```
 
 * `-robot_proxy`: Адрес прокси для запросов к Telegram API
-* `-robot_proxy`: Адрес прокси для запросов к DeepSeek API
+* `-llm_proxy`: Адрес прокси для запросов к DeepSeek API
 
 ### 4. Поддержка моделей OpenAI (`openai`)
 
@@ -102,14 +102,14 @@
 ./MuseBot \
 -telegram_bot_token=xxxx \
 -deepseek_token=sk-xxx \
--audio_app_id=xxx \
--audio_cluster=volcengine_input_common \
--audio_token=xxxx
+-vol_audio_app_id=xxx \
+-vol_audio_rec_cluster=volcengine_input_common \
+-vol_audio_token=xxxx
 ```
 
-* `-audio_app_id`: ID приложения распознавания речи
-* `-audio_cluster`: Имя кластера (обычно `volcengine_input_common`)
-* `-audio_token`: Токен доступа
+* `-vol_audio_app_id`: ID приложения распознавания речи
+* `-vol_audio_rec_cluster`: Имя кластера (обычно `volcengine_input_common`)
+* `-vol_audio_token`: Токен доступа
 
 Подробнее: [Документация VolcEngine](https://www.volcengine.com/docs/6561/80816)
 
@@ -126,9 +126,9 @@
 
 * `-use_tools`: Активирует инструменты (по умолчанию `false`)
 
-### 9. RAG с ChromaDB (`rag chroma`)
+### 9. RAG с Milvus + эмбеддингами OpenAI (`rag milvus`)
 
-Для использования RAG с ChromaDB и сервисом эмбеддингов OpenAI.
+Для использования RAG с Milvus и сервисом эмбеддингов OpenAI.
 
 ```bash
 ./MuseBot \
@@ -136,12 +136,12 @@
 -deepseek_token=sk-xxx \
 -openai_token=sk-xxxx \
 -embedding_type=openai \
--vector_db_type=chroma
+-vector_db_type=milvus
 ```
 
 * `-openai_token`: Токен OpenAI (для эмбеддингов)
 * `-embedding_type`: Тип эмбеддингов (указать `openai`)
-* `-vector_db_type`: Тип векторной БД (указать `milvus`)
+* `-vector_db_type`: Тип векторной БД (указать `milvus`; также поддерживаются `weaviate`, `qdrant`)
 
 ### 10. RAG с Milvus (`rag milvus`)
 

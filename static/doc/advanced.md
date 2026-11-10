@@ -119,6 +119,33 @@ With auto-approval on, every task tool operation is executed immediately without
 
 ---
 
+## 4. Runtime Behavior Tuning
+
+These less-visible settings control streaming, retries, memory, context compression and platform niceties. Every flag has an environment variable of the same name (upper case).
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `-is_streaming` | `false` | Stream replies segment by segment instead of one message |
+| `-llm_retry_times` | `3` | Attempts per LLM request before giving up / failing over |
+| `-llm_retry_interval` | `100` | Milliseconds to wait between retry attempts |
+| `-llm_option_param` | `false` | Enable the sampling parameters (temperature, top_p, stop, ...) — see [deepseek config](./deepseekconf.md) |
+| `-enable_memory` | `true` | Long-term memory extraction and injection per user |
+| `-memory_max_count` | `20` | Max long-term memory items kept per user |
+| `-memory_interval` | `3600` | Min seconds between two memory extractions per user |
+| `-enable_auto_compress` | `true` | Compress accumulated context history automatically |
+| `-compress_threshold` | `8000` | Accumulated context tokens that trigger compression |
+| `-compress_keep_pairs` | `3` | Recent Q/A pairs kept uncompressed |
+| `-enable_typing` | `true` | Typing indicator while the LLM generates (platforms that support it) |
+| `-enable_reaction` | `true` | React on the user's message while processing and on completion |
+| `-context_expire_time` | `86400` | Seconds a conversation context stays alive |
+| `-powered` | `""` | Footer appended to every reply (e.g. `powered by MuseBot`) |
+| `-custom_path` | `""` | Override the API request path for non-standard relays (default `/v1/chat/completions`) |
+| `-image_path` | `./conf/img/` | Where generated images are stored |
+| `-send_mcp_media_to_llm` | `false` | Send MCP tool media results back to the LLM |
+| `-task_max_execution_loops` | `3` | EXECUTE rounds a `/task` run may loop through before abort |
+
+---
+
 ## Related Docs
 
 - [Commands & parameters overview](./param_conf.md)

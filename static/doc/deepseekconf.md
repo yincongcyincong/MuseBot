@@ -1,4 +1,10 @@
-### Parameter List
+### LLM Sampling Parameters
+
+These sampling parameters apply to **all OpenAI-compatible chat providers** (deepseek, openai, gemini, vol, aliyun, ollama, chatanywhere), not only DeepSeek.
+
+> They take effect only when `LLM_OPTION_PARAM` is enabled (`-llm_option_param=true` or env `LLM_OPTION_PARAM=true`, default off). With the switch off, requests are sent without these fields and the provider defaults apply.
+
+| Parameter Name      | Type     | Required/Optional | Description                                      |
 
 | Parameter Name      | Type     | Required/Optional | Description                                      |
 |---------------------|----------|-------------------|--------------------------------------------------|

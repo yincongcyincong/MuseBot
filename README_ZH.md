@@ -28,8 +28,10 @@ chatgpt: https://www.bilibili.com/video/BV1RutxzJEGY/
 
 - 🤖 **AI 回复**：使用 大模型 API 提供聊天机器人回复。
 - ⏳ **流式输出**：实时发送回复，提升用户体验。
+- 🧠 **长期记忆**：跨会话记住用户事实并注入上下文；历史过长时自动压缩，详见[高级配置](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/advanced_ZH.md)。
+- 💬 **聊天体验**：LLM 生成期间显示"正在输入"，完成后对消息加 reaction（支持的平台）。
 - 🏗 **轻松部署**：可本地运行或部署到云服务器。
-- 👀 **图像识别**：使用图片与大模型进行交流，详见[文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/photoconf_ZH.md)。
+- 👀 **图像识别**：使用图片与大模型进行交流，详见[文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/imageconf_ZH.md)。
 - 📄 **文档识别**：发送 txt/pdf/csv/html 文档提问，媒体按会话存本地，详见[文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/document_ZH.md)。
 - 🎺 **支持语音**：使用语音与大模型进行交流，详见[文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/audioconf_ZH.md)。
 - 🐂 **函数调用**：将MCP协议转换为函数调用，详见[文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/functioncall_ZH.md)。
@@ -149,7 +151,6 @@ docker run -d -v /home/user/data:/app/data -e TELEGRAM_BOT_TOKEN="telegram-bot-t
 | **LARK_APP_SECRET**             | 飞书 App Secret                                                                       | -                     |
 | **DING_CLIENT_ID**              | 钉钉 App Key / Client ID                                                              | -                     |
 | **DING_CLIENT_SECRET**          | 钉钉 App Secret                                                                       | -                     |
-| **DING_TEMPLATE_ID**            | 钉钉 模板消息 ID                                                                          | -                     |
 | **COM_WECHAT_TOKEN**            | 企业微信 Token                                                                          | -                     |
 | **COM_WECHAT_ENCODING_AES_KEY** | 企业微信 EncodingAESKey                                                                 | -                     |
 | **COM_WECHAT_CORP_ID**          | 企业微信 CorpID                                                                         | -                     |

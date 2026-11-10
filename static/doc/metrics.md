@@ -13,6 +13,7 @@ The `metrics` package registers the following Prometheus metrics to track API, H
 | -------------------------------- | --------- | ------------------------- | -------------------------------- |
 | `api_request_total`              | Counter   | `model`                   | Total API requests per model     |
 | `api_request_duration_seconds`   | Histogram | `model`                   | API request latency distribution |
+| `api_failover_total`             | Counter   | `from`, `to`              | Provider failovers (from → to)   |
 | `app_request_total`              | Counter   | `app`                     | Total requests per App           |
 | `http_request_total`             | Counter   | `path`                    | Total HTTP requests per path     |
 | `http_response_total`            | Counter   | `path`, `code`            | HTTP response count by status    |

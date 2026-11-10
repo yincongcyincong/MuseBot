@@ -20,6 +20,9 @@ chatgpt: [https://www.youtube.com/watch?v=G\_DZYMvd5Ug](https://www.youtube.com/
 - 🤖 **Ответы ИИ**: Использует LLM API для ответов чат-бота.
 - ⏳ **Потоковая передача вывода (Streaming Output)**: Отправляет ответы в реальном времени для улучшения
   пользовательского опыта.
+- 🧠 **Долговременная память**: запоминает факты о пользователе между разговорами и внедряет их в контекст;
+  разросшаяся история автоматически сжимается, см. [расширенную настройку](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/advanced_RU.md).
+- 💬 **Комфорт чата**: индикатор «печатает» во время генерации и реакции на сообщения по завершении (на поддерживаемых платформах).
 - 🏗 **Простое развертывание**: Запуск локально или развертывание на облачном сервере.
 - 👀 **Распознавание изображений**: Используйте изображения для общения с LLM,
   см. [документацию](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/imageconf.md).
@@ -134,7 +137,6 @@ chatgpt: [https://www.youtube.com/watch?v=G\_DZYMvd5Ug](https://www.youtube.com/
 | **LARK\_APP\_SECRET**               | Секрет приложения Lark (Feishu)                                                                                         | -                                                      |
 | **DING\_CLIENT\_ID**                | App Key / Client ID DingTalk                                                                                            | -                                                      |
 | **DING\_CLIENT\_SECRET**            | App Secret DingTalk                                                                                                     | -                                                      |
-| **DING\_TEMPLATE\_ID**              | ID шаблонного сообщения DingTalk                                                                                        | -                                                      |
 | **COM\_WECHAT\_TOKEN**              | Токен WeCom (Enterprise WeChat)                                                                                         | -                                                      |
 | **COM\_WECHAT\_ENCODING\_AES\_KEY** | EncodingAESKey WeCom                                                                                                    | -                                                      |
 | **COM\_WECHAT\_CORP\_ID**           | CorpID WeCom                                                                                                            | -                                                      |
@@ -160,6 +162,7 @@ chatgpt: [https://www.youtube.com/watch?v=G\_DZYMvd5Ug](https://www.youtube.com/
 | **ERNIE\_AK**                       | AK большой модели Baidu ERNIE [doc](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Sly8bm96d)                             | -                                                      |
 | **ERNIE\_SK**                       | SK большой модели Baidu ERNIE [doc](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Sly8bm96d)                             | -                                                      |
 | **CUSTOM\_URL**                     | Пользовательская конечная точка API DeepSeek                                                                            | [https://api.deepseek.com/](https://api.deepseek.com/) |
+| **OLLAMA\_URL**                     | Адрес сервера Ollama (для типа ollama имеет приоритет над CUSTOM\_URL)                                                  | http://localhost:11434/                                |
 | **TYPE**                            | Тип LLM (deepseek/openai/gemini/vol/chatanywhere/aliyun/ollama), всё через формат, совместимый с OpenAI                | deepseek                                               |
 | **MEDIA\_TYPE**                     | Источник генерации медиа (openai/gemini/vol/aliyun), всё через формат, совместимый с OpenAI                            | vol                                                    |
 | **DB\_TYPE**                        | Тип базы данных (sqlite3/mysql)                                                                                         | sqlite3                                                |
@@ -181,7 +184,11 @@ chatgpt: [https://www.youtube.com/watch?v=G\_DZYMvd5Ug](https://www.youtube.com/
 | **ALLOWED\_GROUP\_IDS**             | ID групп, которым разрешено использовать бота, разделенные запятыми; пусто = разрешено всем; 0 = запрещено всем         | -                                                      |
 | **BOT\_NAME**                       | Имя бота                                                                                                                | MuseBot                                                |
 | **CHAT\_ANY\_WHERE\_TOKEN**         | Токен платформы ChatAnyWhere                                                                                            | -                                                      |
+| **SMART\_MODE**                     | Автоматически определять намерение (txt/фото/видео) и направлять многошаговые задачи в `/task`                          | true                                                   |
+| **SEND\_MCP\_RES**                  | Отправлять пользователю результаты MCP-инструментов                                                                    | false                                                  |
 | **TASK\_AUTO\_APPROVE**             | Автоматическое подтверждение операций task-инструментов (команды/изменения конфигурации) без ввода /y                   | false                                                  |
+| **DEFAULT\_MODEL**                  | Модель текста по умолчанию                                                                                              | -                                                      |
+| **CONFIG**                          | Путь к json-файлу конфигурации; значения файла имеют приоритет над флагами, переменные окружения — над файлом            | -                                                      |
 
 ### CUSTOM\_URL
 

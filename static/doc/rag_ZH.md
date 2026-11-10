@@ -5,7 +5,6 @@
 | `EMBEDDING_TYPE` | `字符串` | 必填   | 向量化方式，支持：openai、gemini、ernie |
 | `KNOWLEDGE_PATH` | `字符串` | 必填   | 知识文档路径                       |
 | `VECTOR_DB_TYPE` | `字符串` | 可选   | 向量数据库类型：milvus、weaviate、qdrant |
-| `CHROMA_URL`     | `字符串` | 可选   | Chroma 数据库的连接地址              |
 | `QDRANT_HOST`    | `字符串` | 可选   | Qdrant gRPC 主机，默认：localhost     |
 | `QDRANT_PORT`    | `整数`  | 可选   | Qdrant gRPC 端口，默认：6334          |
 | `QDRANT_API_KEY` | `字符串` | 可选   | Qdrant API 密钥                       |

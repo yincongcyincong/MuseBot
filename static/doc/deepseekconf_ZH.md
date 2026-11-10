@@ -1,4 +1,10 @@
-### 参数介绍
+### LLM 采样参数
+
+这些采样参数适用于**所有 OpenAI 兼容的对话厂商**（deepseek、openai、gemini、vol、aliyun、ollama、chatanywhere），并不限于 DeepSeek。
+
+> 仅在开启 `LLM_OPTION_PARAM` 后生效（`-llm_option_param=true` 或环境变量 `LLM_OPTION_PARAM=true`，默认关闭）。开关关闭时请求不携带这些字段，由厂商默认值决定。
+
+| Parameter Name      | Type     | Required/Optional | Description                                |
 
 | Parameter Name      | Type     | Required/Optional | Description                                |
 |---------------------|----------|-------------------|--------------------------------------------|

@@ -49,7 +49,29 @@ Supported commands:
 * `/clear`: Clear the current conversation context
 <img width="400" alt="image" src="https://github.com/user-attachments/assets/ebba556f-267a-4052-a3a3-3eab019eb4f4" />
   
-* `/talk` Direct talk with vol llm see (doc)[https://www.volcengine.com/docs/6561/1594356]
+* `/talk`: Real-time voice conversation with the LLM (Discord voice channel), see [Voice Dialog](#-voice-dialog-talk) below.
+
+### 🎙 Voice Dialog (`/talk`)
+
+Join a voice channel and send `/talk` (the bot must be able to see the channel); the bot joins the channel and you can
+talk to it in real time — speech recognition, LLM reply and voice synthesis run end to end on the Volcengine realtime
+dialogue service ([doc](https://www.volcengine.com/docs/6561/1594356)).
+
+Required configuration:
+
+| Variable | Description |
+|----------|-------------|
+| `VOL_AUDIO_APP_ID` | Volcengine audio App ID |
+| `VOL_AUDIO_TOKEN` | Volcengine audio access token |
+
+Optional persona/voice settings (defaults in the [audio config](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/audioconf.md)): `VOL_TTS_SPEAKER` (voice),
+`VOL_BOT_NAME`, `VOL_SYSTEM_ROLE` (persona), `VOL_SPEAKING_STYLE`, `VOL_END_SMOOTH_WINDOW` (end-of-speech smoothing, ms).
+
+Notes:
+
+* One voice conversation at a time per bot — while active, further `/talk` calls get a "talking" notice;
+* The session ends when you leave the voice channel (or the bot is disconnected);
+* Requires ffmpeg in the environment (bundled in the official Docker image).
 
 ### Group Chat Mode
 

@@ -47,7 +47,27 @@
 * `/clear`：清除当前聊天上下文（重置对话）
 <img width="400" alt="image" src="https://github.com/user-attachments/assets/ebba556f-267a-4052-a3a3-3eab019eb4f4" />
 
-* `/talk` 直接与火山大模型实时对话 (文档)[https://www.volcengine.com/docs/6561/1594356]
+* `/talk`：与 LLM 实时语音对话（Discord 语音频道），详见下方[语音对话](#-语音对话-talk)章节。
+
+### 🎙 语音对话（`/talk`）
+
+先进入一个语音频道再发送 `/talk`（机器人需能看到该频道），机器人会加入频道与你实时对话——语音识别、LLM
+回复和语音合成由火山引擎实时对话服务端到端完成（[文档](https://www.volcengine.com/docs/6561/1594356)）。
+
+必填配置：
+
+| 变量 | 说明 |
+|------|------|
+| `VOL_AUDIO_APP_ID` | 火山引擎音频 App ID |
+| `VOL_AUDIO_TOKEN` | 火山引擎音频访问 Token |
+
+可选的人设/音色设置（默认值见[语音配置](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/audioconf_ZH.md)）：`VOL_TTS_SPEAKER`（音色）、`VOL_BOT_NAME`、`VOL_SYSTEM_ROLE`（人设）、`VOL_SPEAKING_STYLE`（说话风格）、`VOL_END_SMOOTH_WINDOW`（尾音平滑窗口，毫秒）。
+
+注意事项：
+
+* 每个机器人同一时间只有一个语音会话——占用期间再发 `/talk` 会收到"对话中"提示；
+* 你离开语音频道（或机器人被断开）时本次会话结束；
+* 环境需要 ffmpeg（官方 Docker 镜像已内置）。
 
 ### 群聊模式
 

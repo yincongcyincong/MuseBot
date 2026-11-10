@@ -66,24 +66,11 @@
 
 ## 📌 3. 更新用户模式
 
-* **接口地址**：`POST /user/update/mode`
-* **功能说明**：修改用户的模型（mode）。
-* **请求参数**（Form 表单）：
+主 API 服务**没有**对应的 HTTP 接口。修改用户模式（mode）的方式：
 
-| 参数名     | 类型     | 必填 | 说明      |
-|---------|--------|----|---------|
-| user_id | string | 是  | 用户唯一标识  |
-| mode    | string | 是  | 要设置的新模式 |
-
-* **响应示例**：
-
-```json
-{
-  "code": 0,
-  "msg": "success",
-  "data": null
-}
-```
+* 用户在聊天中发送 `/mode` 命令自行切换（见 README 命令列表）；
+* 或由管理员在管理平台操作（`http://<host>:18080`，见[管理平台文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/admin.md)）——管理平台路由为
+  admin 端口的 `POST /bot/user/mode/update?userId={id}&mode={mode}`，需要管理员登录会话。
 
 ---
 
@@ -268,7 +255,7 @@ curl -N -X POST --data-binary @notes.txt \
 ### 示例请求
 
 ```http
-POST /api/communicate?prompt=/photo sunset&user_id=12345 HTTP/1.1
+POST /communicate?prompt=/photo sunset&user_id=12345 HTTP/1.1
 Content-Type: application/octet-stream
 
 <二进制图片数据>
@@ -455,6 +442,27 @@ Content-Type: application/octet-stream
   "data": ""
 }
 ```
+
+---
+
+## 14. 主服务其它接口
+
+上面各节是详细文档；主服务（`HTTP_HOST`，默认 `:36060`）还注册了以下接口：
+
+| 接口 | 说明 |
+|------|------|
+| `POST /restart` / `POST /stop` | 重启 / 停止 MuseBot 进程 |
+| `GET /log` | 查看最近日志 |
+| `POST /user/insert/record` | 为用户插入会话记录 |
+| `GET /rag/list` / `POST /rag/create` / `POST /rag/delete` / `GET /rag/get` / `POST /rag/clear` | 管理 RAG 知识文件（见[RAG 配置](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/rag_ZH.md)） |
+| `POST /cron/create` / `POST /cron/update` / `POST /cron/update_status` / `POST /cron/delete` / `GET /cron/list` | 管理定时任务（见[Cron 文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/cron_ZH.md)） |
+| `POST /webhook/{token}` | 触发 webhook 提示词（见[webhook 文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/webhook_ZH.md)） |
+| `POST /webhook/create` / `POST /webhook/update` / `POST /webhook/update_status` / `POST /webhook/delete` / `GET /webhook/list` | 管理 webhook |
+| `GET /dashboard` | HTML 状态面板 |
+| `GET /image?type=...&rand=...` | 访问本地存储的媒体文件 |
+| `GET /healthz` / `GET /readyz` / `GET /pong` | 健康检查 |
+| `GET /metrics` | Prometheus 指标（见[监控文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/metrics_ZH.md)） |
+| `POST /com/wechat`、`POST /wechat`、`POST /qq`、`POST /onebot` | 平台回调接收端（企业微信 / 微信 / QQ 机器人） |
 
 ---
 
