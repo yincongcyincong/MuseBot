@@ -107,6 +107,25 @@ var (
 		);
 		CREATE UNIQUE INDEX IF NOT EXISTS idx_webhooks_token_hash ON webhooks(token_hash);
 	`,
+		"task_runs": `
+		CREATE TABLE IF NOT EXISTS task_runs (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			run_id VARCHAR(64) NOT NULL,
+			user_id VARCHAR(128) NOT NULL DEFAULT '',
+			chat_id VARCHAR(128) NOT NULL DEFAULT '',
+			content TEXT NOT NULL,
+			state VARCHAR(16) NOT NULL DEFAULT '',
+			loop_count INTEGER NOT NULL DEFAULT 0,
+			steps TEXT NOT NULL DEFAULT '',
+			events TEXT NOT NULL DEFAULT '',
+			final_result TEXT NOT NULL DEFAULT '',
+			err_msg TEXT NOT NULL DEFAULT '',
+			start_time INTEGER NOT NULL DEFAULT '0',
+			end_time INTEGER NOT NULL DEFAULT '0',
+			from_bot VARCHAR(255) NOT NULL DEFAULT ''
+		);
+		CREATE INDEX IF NOT EXISTS idx_task_runs_start_time ON task_runs(start_time);
+	`,
 	}
 
 	mysqlInitializeSQLs = []string{
@@ -208,6 +227,26 @@ var (
           create_by VARCHAR(255) NOT NULL DEFAULT '',
 
           UNIQUE INDEX idx_webhooks_token_hash (token_hash)
+       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+	`,
+		// 7. task_runs 表 (/task 执行过程快照,终态一次性写入)
+		`CREATE TABLE IF NOT EXISTS task_runs (
+          id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+          run_id VARCHAR(64) NOT NULL,
+          user_id VARCHAR(128) NOT NULL DEFAULT '',
+          chat_id VARCHAR(128) NOT NULL DEFAULT '',
+          content MEDIUMTEXT NOT NULL,
+          state VARCHAR(16) NOT NULL DEFAULT '',
+          loop_count INT NOT NULL DEFAULT 0,
+          steps MEDIUMTEXT NOT NULL,
+          events MEDIUMTEXT NOT NULL,
+          final_result MEDIUMTEXT NOT NULL,
+          err_msg TEXT NOT NULL,
+          start_time INT NOT NULL DEFAULT 0,
+          end_time INT NOT NULL DEFAULT 0,
+          from_bot VARCHAR(255) NOT NULL DEFAULT '',
+
+          INDEX idx_task_runs_start_time (start_time)
        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 	`,
 	}

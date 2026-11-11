@@ -456,6 +456,7 @@ Content-Type: application/octet-stream
 | `POST /user/insert/record` | 为用户插入会话记录 |
 | `GET /rag/list` / `POST /rag/create` / `POST /rag/delete` / `GET /rag/get` / `POST /rag/clear` | 管理 RAG 知识文件（见[RAG 配置](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/rag_ZH.md)） |
 | `POST /cron/create` / `POST /cron/update` / `POST /cron/update_status` / `POST /cron/delete` / `GET /cron/list` | 管理定时任务（见[Cron 文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/cron_ZH.md)） |
+| `GET /task/list` / `GET /task/get` | 查询 `/task` 工作流执行记录：列表返回运行中 + 历史任务，详情返回单次执行的完整快照（状态机阶段、计划步骤、事件时间线、最终结果），供后台"任务流程"页面使用 |
 | `POST /webhook/{token}` | 触发 webhook 提示词（见[webhook 文档](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/webhook_ZH.md)） |
 | `POST /webhook/create` / `POST /webhook/update` / `POST /webhook/update_status` / `POST /webhook/delete` / `GET /webhook/list` | 管理 webhook |
 | `GET /dashboard` | HTML 状态面板 |

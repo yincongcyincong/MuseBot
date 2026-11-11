@@ -14,6 +14,7 @@ import Log from "../pages/Log.jsx";
 import Communicate from "../pages/Communicate.jsx";
 import Rag from "../pages/Rag.jsx";
 import Cron from "../pages/Cron.jsx";
+import TaskFlow from "../pages/TaskFlow.jsx";
 
 export default function Router() {
     const { isAuthenticated, isLoading } = useUser();
@@ -44,6 +45,7 @@ export default function Router() {
                     <Route path="chats" element={<BotChat />} />
                     <Route path="mcp" element={<MCP />} />
                     <Route path="cron" element={<Cron />} />
+                    <Route path="taskflow" element={<TaskFlow />} />
                     <Route path="communicate" element={<Communicate />} />
                     <Route path="rag" element={<Rag />} />
                     <Route path="log" element={<Log />} />

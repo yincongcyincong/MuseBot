@@ -13,6 +13,7 @@ import {
     ScrollText,
     DatabaseIcon,
     Timer,
+    Workflow,
 } from "lucide-react";
 import {useTranslation} from "react-i18next";
 
@@ -27,6 +28,7 @@ export default function Sidebar() {
         { path: "/bot", label: t("bots"), icon: Bot },
         { path: "/mcp", label: t("mcp"), icon: Database },
         { path: "/cron", label: t("cron"), icon: Timer },
+        { path: "/taskflow", label: t("taskflow"), icon: Workflow },
         { path: "/users", label: t("bot_users"), icon: UserCircle },
         { path: "/chats", label: t("bot_chats"), icon: MessageCircle },
         { path: "/communicate", label: t("chat"), icon: MessageSquare },

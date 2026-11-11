@@ -71,6 +71,8 @@ func main() {
 	mux.HandleFunc("/bot/cron/create", controller.RequireLogin(controller.CreateCron))
 	mux.HandleFunc("/bot/cron/update/status", controller.RequireLogin(controller.UpdateCronStatus))
 	mux.HandleFunc("/bot/cron/update", controller.RequireLogin(controller.UpdateCron))
+	mux.HandleFunc("/bot/task/list", controller.RequireLogin(controller.ListTaskRuns))
+	mux.HandleFunc("/bot/task/get", controller.RequireLogin(controller.GetTaskRun))
 
 	mux.HandleFunc("/user/login", controller.UserLogin)
 	mux.HandleFunc("/user/me", controller.RequireLogin(controller.GetCurrentUserHandler))

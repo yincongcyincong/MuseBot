@@ -231,7 +231,10 @@ func (s *LLMToolState) execute(ctx context.Context, l *LLM) error {
 			continue
 		}
 
+		toolStart := time.Now()
 		content, err := l.ExecMcpReq(ctx, call.Name, property)
+		// nil-safe: reports to the admin flow view only inside /task runs
+		l.taskTracker.ToolCalled(call.Name, call.Arguments, err, time.Since(toolStart))
 		if err != nil {
 			// a dead context means the request itself is being torn down, so
 			// there is no point in feeding the failure back to the LLM

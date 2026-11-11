@@ -140,3 +140,11 @@ conversations.
 ### Chat Page
 ![image](https://github.com/user-attachments/assets/b8c9c3e0-467b-44b2-9186-f0c9344b5633)
 chat with your telegram deepseek bot 
+
+### Task Flow Page
+
+This page visualizes every `/task` multi-agent workflow run on the selected bot:
+
+* **Running tasks** are listed on top (polled every 2s) and show the current state-machine stage (`PLAN` → `EXECUTE` → `REFLECT` ⇄ loop → `SUMMARIZE` → terminal state) and the execution loop counter.
+* Click a run to open the detail view: a flow diagram of the stages with the current one highlighted, plan step cards (`pending` / `running` / `done` / `failed` with per-step results), a live event timeline (stage switches, plan creation, step start/finish, tool calls with duration, approval requests), and the final answer.
+* Finished runs are persisted in the `task_runs` table and browsable in the history list with duration and outcome.

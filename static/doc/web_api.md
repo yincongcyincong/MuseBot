@@ -485,6 +485,7 @@ The endpoints above are documented in detail; the main server (`HTTP_HOST`, defa
 | `POST /user/insert/record` | Insert conversation records for a user |
 | `GET /rag/list` / `POST /rag/create` / `POST /rag/delete` / `GET /rag/get` / `POST /rag/clear` | Manage RAG knowledge files (see [rag config](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/rag.md)) |
 | `POST /cron/create` / `POST /cron/update` / `POST /cron/update_status` / `POST /cron/delete` / `GET /cron/list` | Manage cron jobs (see [cron doc](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/cron.md)) |
+| `GET /task/list` / `GET /task/get` | Query `/task` workflow runs: list running + historical executions, or fetch one run's full snapshot (state machine stages, plan steps, event timeline, final result). Powers the admin "TaskFlow" page |
 | `POST /webhook/{token}` | Trigger a webhook prompt (see [webhook doc](https://github.com/yincongcyincong/MuseBot/blob/main/static/doc/webhook.md)) |
 | `POST /webhook/create` / `POST /webhook/update` / `POST /webhook/update_status` / `POST /webhook/delete` / `GET /webhook/list` | Manage webhooks |
 | `GET /dashboard` | HTML status dashboard |

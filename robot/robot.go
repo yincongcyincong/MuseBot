@@ -34,6 +34,7 @@ import (
 	"github.com/yincongcyincong/MuseBot/logger"
 	"github.com/yincongcyincong/MuseBot/param"
 	"github.com/yincongcyincong/MuseBot/rag"
+	"github.com/yincongcyincong/MuseBot/taskflow"
 	"github.com/yincongcyincong/MuseBot/utils"
 )
 
@@ -1650,6 +1651,8 @@ func (r *RobotInfo) sendMultiAgent(emptyPromptFunc func()) {
 			Cs:        r.cs,
 			Ctx:       r.Ctx,
 			Images:    images,
+			// register the run so the admin flow view can follow it live
+			Tracker: taskflow.StartRun(prompt, userId, chatId),
 			ConfigExecutor: func(action *param.ConversationConfigAction, approve llm.TaskApprovalFunc) (string, error) {
 				return r.executeConversationConfigAction(action, userId, approve)
 			},

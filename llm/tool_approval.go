@@ -49,6 +49,9 @@ func requestTaskToolApproval(ctx context.Context, l *LLM, operation, target, det
 		return false, fmt.Errorf("another tool approval %s is pending", pending.Token)
 	}
 
+	// nil-safe: surfaces the approval request in the admin flow view
+	l.taskTracker.ApprovalRequested(operation, target)
+
 	l.DirectSendMsg(i18n.GetMessage("task_tool_approval_request", map[string]interface{}{
 		"operation": approval.Operation,
 		"path":      approval.Path,

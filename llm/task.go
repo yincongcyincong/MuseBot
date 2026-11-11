@@ -14,6 +14,7 @@ import (
 	"github.com/yincongcyincong/MuseBot/logger"
 	"github.com/yincongcyincong/MuseBot/metrics"
 	"github.com/yincongcyincong/MuseBot/param"
+	"github.com/yincongcyincong/MuseBot/taskflow"
 	"github.com/yincongcyincong/MuseBot/utils"
 )
 
@@ -41,6 +42,11 @@ type LLMTaskReq struct {
 	// ConfigExecutor runs MuseBot configuration actions requested inside the
 	// task workflow; injected by the robot layer.
 	ConfigExecutor func(action *param.ConversationConfigAction, approve TaskApprovalFunc) (string, error)
+
+	// Tracker reports the workflow progress to the taskflow registry for the
+	// admin flow view. Nil (tests, internal callers) disables tracking; every
+	// Tracker method is nil-receiver safe.
+	Tracker *taskflow.Tracker
 }
 
 type Task struct {
@@ -57,7 +63,35 @@ type TaskResult struct {
 	TaskResult string
 }
 
+// ExecuteTask runs the workflow and reports the outcome to the taskflow
+// registry: terminal state (DONE / FAILED / CANCELED) plus the final answer.
 func (d *LLMTaskReq) ExecuteTask() error {
+	d.Tracker.RunStarted()
+
+	var planner *LLM
+	err := d.executeTask(&planner)
+
+	state := taskflow.StateDone
+	errMsg := ""
+	if err != nil {
+		state = taskflow.StateFailed
+		errMsg = err.Error()
+	}
+	// a cancelled context means the request was torn down, not that the plan
+	// itself failed — report it as canceled so the flow view stays honest
+	if d.Ctx != nil && d.Ctx.Err() != nil {
+		state = taskflow.StateCanceled
+		errMsg = ""
+	}
+	finalResult := ""
+	if planner != nil {
+		finalResult = planner.WholeContent
+	}
+	d.Tracker.Finish(state, finalResult, errMsg)
+	return err
+}
+
+func (d *LLMTaskReq) executeTask(plannerOut **LLM) error {
 	logger.InfoCtx(d.Ctx, "task content", "content", d.Content)
 
 	// research is not a separate phase: the planner decides whether a web
@@ -66,16 +100,21 @@ func (d *LLMTaskReq) ExecuteTask() error {
 	if err := machine.beginPlan(); err != nil {
 		return err
 	}
+	d.Tracker.Stage(taskflow.StatePlan)
 
 	planner, plan, err := d.planTask(machine)
 	if err != nil {
 		return err
 	}
+	*plannerOut = planner
 
 	for machine.state == TaskStatePlan {
 		if err := machine.beginExecutionLoop(); err != nil {
 			return err
 		}
+		d.Tracker.Stage(taskflow.StateExecute)
+		d.Tracker.LoopStarted(machine.executionLoop, machine.maxExecutionLoops)
+
 		if err := d.executePlan(machine, plan); err != nil {
 			return err
 		}
@@ -86,12 +125,14 @@ func (d *LLMTaskReq) ExecuteTask() error {
 			if err := machine.transition(TaskStateSummarize); err != nil {
 				return err
 			}
+			d.Tracker.Stage(taskflow.StateSummarize)
 			break
 		}
 
 		if err := machine.transition(TaskStateReflect); err != nil {
 			return err
 		}
+		d.Tracker.Stage(taskflow.StateReflect)
 		plan, err = d.reflectTask(planner, machine)
 		if err != nil {
 			return err
@@ -99,10 +140,12 @@ func (d *LLMTaskReq) ExecuteTask() error {
 		if len(plan.Plan) == 0 {
 			break
 		}
+		d.Tracker.PlanCreated(taskflowSteps(plan))
 
 		if err := machine.transition(TaskStatePlan); err != nil {
 			return err
 		}
+		d.Tracker.Stage(taskflow.StatePlan)
 		planOutput := formatTaskPlan(plan)
 		planner.DirectSendMsg(planOutput, false)
 		planner.LLMClient.GetMessage(openai.ChatMessageRoleAssistant, planOutput)
@@ -112,6 +155,7 @@ func (d *LLMTaskReq) ExecuteTask() error {
 		if err := machine.transition(TaskStateSummarize); err != nil {
 			return err
 		}
+		d.Tracker.Stage(taskflow.StateSummarize)
 	}
 	if err := d.summarizeTask(planner, machine); err != nil {
 		return err
@@ -120,6 +164,25 @@ func (d *LLMTaskReq) ExecuteTask() error {
 		return err
 	}
 	return planner.InsertOrUpdate()
+}
+
+// taskflowSteps converts a parsed plan into tracking steps (all pending)
+func taskflowSteps(plan *TaskInfo) []taskflow.TaskStep {
+	if plan == nil {
+		return nil
+	}
+	steps := make([]taskflow.TaskStep, 0, len(plan.Plan))
+	for _, task := range plan.Plan {
+		if task == nil {
+			continue
+		}
+		steps = append(steps, taskflow.TaskStep{
+			Name:        task.Name,
+			Description: task.Description,
+			Status:      taskflow.StepPending,
+		})
+	}
+	return steps
 }
 
 func (d *LLMTaskReq) taskAgentParams() []map[string]string {
@@ -157,6 +220,9 @@ func (d *LLMTaskReq) newTaskLLM(prompt string, tool *conf.AgentInfo, streaming b
 		options = append(options, WithConfigExecutor(d.ConfigExecutor))
 	}
 
+	if d.Tracker != nil {
+		options = append(options, WithTaskTracker(d.Tracker))
+	}
 	llm := NewLLM(options...)
 	llm.searchSession = &d.searchSession
 	if tool == nil {
@@ -271,6 +337,7 @@ func (d *LLMTaskReq) planTask(machine *taskStateMachine) (*LLM, *TaskInfo, error
 			planOutput := formatTaskPlan(plan)
 			llm.DirectSendMsg(planOutput, false)
 			llm.LLMClient.GetMessage(openai.ChatMessageRoleAssistant, planOutput)
+			d.Tracker.PlanCreated(taskflowSteps(plan))
 			return llm, plan, nil
 		}
 		lastErr = err
@@ -308,6 +375,7 @@ func (d *LLMTaskReq) executePlan(machine *taskStateMachine, plan *TaskInfo) erro
 		}
 
 		llm := d.newTaskLLM(prompt, tool, true)
+		d.Tracker.StepStarted(i, task.Name)
 		var result string
 		err := d.retryTaskRequest("execute", func() error {
 			var syncErr error
@@ -315,8 +383,10 @@ func (d *LLMTaskReq) executePlan(machine *taskStateMachine, plan *TaskInfo) erro
 			return syncErr
 		})
 		if err != nil {
+			d.Tracker.StepFinished(i, task.Name, "", err)
 			return err
 		}
+		d.Tracker.StepFinished(i, task.Name, result, nil)
 		// give the user visibility into what the agent actually did: one
 		// message per finished step, capped by sendProgress at the IM's
 		// per-message length (d.PerMsgLen)

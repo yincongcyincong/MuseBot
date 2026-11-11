@@ -19,6 +19,7 @@ import (
 	"github.com/yincongcyincong/MuseBot/logger"
 	"github.com/yincongcyincong/MuseBot/metrics"
 	"github.com/yincongcyincong/MuseBot/param"
+	"github.com/yincongcyincong/MuseBot/taskflow"
 	"github.com/yincongcyincong/MuseBot/utils"
 	"github.com/yincongcyincong/mcp-client-go/clients"
 	"google.golang.org/genai"
@@ -77,6 +78,10 @@ type LLM struct {
 	// robot layer to avoid an llm -> robot import cycle; approve lets the
 	// executor ask the user before expanding the runtime boundary.
 	ConfigExecutor func(action *param.ConversationConfigAction, approve TaskApprovalFunc) (string, error)
+
+	// taskTracker reports /task progress to the taskflow registry for the
+	// admin flow view; nil (all non-task requests) makes every call a no-op.
+	taskTracker *taskflow.Tracker
 }
 
 // TaskApprovalFunc asks the triggering user to confirm an operation; it
@@ -508,6 +513,12 @@ func WithToolApprovals(enabled bool) Option {
 func WithConfigExecutor(executor func(action *param.ConversationConfigAction, approve TaskApprovalFunc) (string, error)) Option {
 	return func(p *LLM) {
 		p.ConfigExecutor = executor
+	}
+}
+
+func WithTaskTracker(tracker *taskflow.Tracker) Option {
+	return func(p *LLM) {
+		p.taskTracker = tracker
 	}
 }
 
