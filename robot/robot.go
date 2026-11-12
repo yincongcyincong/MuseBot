@@ -326,7 +326,8 @@ func (r *RobotInfo) AddUserInfo() bool {
 	}
 
 	if userInfo == nil || userInfo.ID == 0 {
-		_, err = db.InsertUser(userId, utils.GetDefaultLLMConfig())
+		lastType, lastModel := db.GetLastSuccessLLMConf()
+		_, err = db.InsertUser(userId, utils.GetDefaultLLMConfig(lastType, lastModel))
 		if err != nil {
 			logger.ErrorCtx(r.Ctx, "insert user fail", "userID", userId, "err", err)
 			return false

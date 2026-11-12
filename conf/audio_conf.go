@@ -47,7 +47,7 @@ func InitAudioConf() {
 	flag.StringVar(&AudioConfInfo.VolSystemRole, "vol_system_role", "你使用活泼灵动的女声，性格开朗，热爱生活。", "vol system role")
 	flag.StringVar(&AudioConfInfo.VolSpeakingStyle, "vol_speaking_style", "你的说话风格简洁明了，语速适中，语调自然。", "vol speaking style")
 
-	flag.StringVar(&AudioConfInfo.GeminiAudioModel, "gemini_audio_model", "gemini-2.5-flash-preview-tts", "gemini audio model")
+	flag.StringVar(&AudioConfInfo.GeminiAudioModel, "gemini_audio_model", "gemini-3.8-flash-tts", "gemini audio model")
 	flag.StringVar(&AudioConfInfo.GeminiVoiceName, "gemini_voice_name", "Kore", "gemini voice name")
 
 	flag.StringVar(&AudioConfInfo.OpenAIAudioModel, "openai_audio_model", "tts-1", "openai audio model")

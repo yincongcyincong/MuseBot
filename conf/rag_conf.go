@@ -13,8 +13,13 @@ import (
 
 type RagConf struct {
 	EmbeddingType string `json:"embedding_type"`
-	KnowledgePath string `json:"knowledge_path"`
-	VectorDBType  string `json:"vector_db_type"`
+	// EmbeddingModel overrides the embedder's default model. Empty keeps the
+	// provider default: gemini -> gemini-embedding-001, openai -> text-embedding-ada-002.
+	// Changing it on an existing collection requires re-importing the knowledge
+	// base: vectors from different models (or dimensions) are not comparable.
+	EmbeddingModel string `json:"embedding_model"`
+	KnowledgePath  string `json:"knowledge_path"`
+	VectorDBType   string `json:"vector_db_type"`
 
 	ChromaURL      string `json:"chroma_url"`
 	MilvusURL      string `json:"milvus_url"`
@@ -44,6 +49,7 @@ var (
 
 func InitRagConf() {
 	flag.StringVar(&RagConfInfo.EmbeddingType, "embedding_type", "", "embedding split api: openai gemini ernie")
+	flag.StringVar(&RagConfInfo.EmbeddingModel, "embedding_model", "", "embedding model override (gemini default: gemini-embedding-001, openai default: text-embedding-ada-002)")
 	flag.StringVar(&RagConfInfo.KnowledgePath, "knowledge_path", GetAbsPath("data/knowledge"), "knowledge")
 	flag.StringVar(&RagConfInfo.VectorDBType, "vector_db_type", "milvus", "vector db type: weaviate milvus qdrant")
 
@@ -65,6 +71,10 @@ func InitRagConf() {
 func EnvRagConf() {
 	if os.Getenv("EMBEDDING_TYPE") != "" {
 		RagConfInfo.EmbeddingType = os.Getenv("EMBEDDING_TYPE")
+	}
+
+	if os.Getenv("EMBEDDING_MODEL") != "" {
+		RagConfInfo.EmbeddingModel = os.Getenv("EMBEDDING_MODEL")
 	}
 
 	if os.Getenv("KNOWLEDGE_PATH") != "" {

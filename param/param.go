@@ -13,16 +13,22 @@ const (
 	Vol    = "vol"
 	Aliyun = "aliyun"
 
-	Gemini                    = "gemini"
-	ModelGemini30Pro   string = "gemini-3-pro-preview"
-	ModelGemini30Flash string = "gemini-3-flash-preview"
+	Gemini = "gemini"
+	// Gemini 4 系列
+	ModelGemini4Carbon string = "gemini-4-carbon"
+	ModelGemini4Argon  string = "gemini-4-argon"
+	// Gemini 3.x 系列
+	ModelGemini38Flash     string = "gemini-3.8-flash"
+	ModelGemini36Flash     string = "gemini-3.6-flash"
+	ModelGemini35FlashLite string = "gemini-3.5-flash-lite"
+	ModelGemini31Pro       string = "gemini-3.1-pro-preview"
+	ModelGemini30Flash     string = "gemini-3-flash-preview"
+	// 2.5 系列已被官方标记弃用（2026-12-01 起自动路由到新模型），保留兼容存量配置
 	ModelGemini25Pro   string = "gemini-2.5-pro"
 	ModelGemini25Flash string = "gemini-2.5-flash"
 
-	// 特定功能模型
-	ModelGeminiFlashPreviewTTS string = "gemini-flash-preview-tts"
-	ModelGeminiEmbedding       string = "gemini-embedding"
-	ModelImagen3               string = "imagen-3"
+	// Gemini 向量模型（现行；旧 embedding-001 已下线）
+	ModelGeminiEmbedding001 string = "gemini-embedding-001"
 
 	OpenAi = "openai"
 
@@ -59,6 +65,10 @@ const (
 	ModelDeepSeekR1Qwen32bQ = "deepseek-r1-distill-qwen-32b"
 	ModelDeepSeekR1Qwen7bQ  = "deepseek-r1-distill-qwen-7b"
 
+	// DeepSeek 官方 API 现行模型（V4 系列；deepseek-chat/reasoner 为旧别名）
+	ModelDeepseekFlash = "deepseek-flash"
+	ModelDeepseekV4Pro = "deepseek-v4-pro"
+
 	// doubao-1.5
 	ModelDoubao15VisionPro32k = "doubao-1.5-vision-pro-32k-250115"
 	ModelDoubao15VisionLite   = "doubao-1.5-vision-lite-250315"
@@ -74,15 +84,22 @@ const (
 
 	DefaultContextToken = 128000
 
-	GeminiImageGenV2_5       = "gemini-2.5-flash-image"
-	GeminiImage3Pro          = "gemini-3-pro-image-preview"
-	Imagen3_0Generate002     = "imagen-3.0-generate-002"
-	Imagen4_0Generate001     = "imagen-4.0-generate-001"
-	Imagen4_0FastGenerate002 = "imagen-4.0-fast-generate-001"
+	GeminiNanoBanana21     = "gemini-nano-banana-2.1"
+	GeminiImage31Flash     = "gemini-3.1-flash-image"
+	GeminiImage31FlashLite = "gemini-3.1-flash-lite-image"
+	GeminiImage3Pro        = "gemini-3-pro-image"
+	GeminiImageGenV2_5     = "gemini-2.5-flash-image"
 
-	GeminiVideoOmniFlash = "gemini-omni-1.1-flash"
+	GeminiVideoOmni12Flash = "gemini-omni-1.2-flash"
+	GeminiVideoOmniFlash   = "gemini-omni-1.1-flash"
 
-	ModelImageGPT = "gpt-image-1"
+	ModelGPT52      = "gpt-5.2"
+	ModelGPT52Pro   = "gpt-5.2-pro"
+	ModelGPT51      = "gpt-5.1"
+	ModelGPT5Mini   = "gpt-5-mini"
+	ModelGPT5Nano   = "gpt-5-nano"
+	ModelImageGPT15 = "gpt-image-1.5"
+	ModelImageGPT   = "gpt-image-1"
 
 	DoubaoSeed16VisionPro = "doubao-seed-1-6-250615"
 
@@ -106,6 +123,9 @@ const (
 
 	Qwen3TTSFlash = "qwen3-tts-flash"
 
+	Gemini38FlashTTS         = "gemini-3.8-flash-tts"
+	Gemini38FlashLiteTTS     = "gemini-3.8-flash-lite-tts"
+	Gemini31FlashTTSPreview  = "gemini-3.1-flash-tts-preview"
 	Gemini2_5FlashPreviewTTS = "gemini-2.5-flash-preview-tts"
 
 	ComWechat  = "com_wechat"
@@ -159,18 +179,35 @@ var (
 	}
 
 	GeminiModels = map[string]bool{
+		// Gemini 4
+		ModelGemini4Carbon: true,
+		ModelGemini4Argon:  true,
+		// Gemini 3.x
+		ModelGemini38Flash:     true,
+		ModelGemini36Flash:     true,
+		ModelGemini35FlashLite: true,
+		ModelGemini31Pro:       true,
+		ModelGemini30Flash:     true,
+		// 2.5 legacy（2026-12-01 起自动路由）
 		ModelGemini25Pro:   true,
 		ModelGemini25Flash: true,
-		ModelGemini30Flash: true,
-		ModelGemini30Pro:   true,
 	}
 
 	GeminiRecModels = map[string]bool{
+		ModelGemini4Carbon:     true,
+		ModelGemini4Argon:      true,
+		ModelGemini38Flash:     true,
+		ModelGemini36Flash:     true,
+		ModelGemini35FlashLite: true,
+		// 2.5 legacy
 		ModelGemini25Pro:   true,
 		ModelGemini25Flash: true,
 	}
 
 	GeminiTTSModels = map[string]bool{
+		Gemini38FlashTTS:         true,
+		Gemini38FlashLiteTTS:     true,
+		Gemini31FlashTTSPreview:  true,
 		Gemini2_5FlashPreviewTTS: true,
 	}
 
@@ -222,21 +259,25 @@ var (
 	//}
 	//
 	GeminiVideoModels = map[string]bool{
-		GeminiVideoOmniFlash: true,
+		GeminiVideoOmni12Flash: true,
+		GeminiVideoOmniFlash:   true,
 	}
 
 	GeminiImageModels = map[string]bool{
-		Imagen4_0FastGenerate002: true,
-		GeminiImageGenV2_5:       true,
-		Imagen3_0Generate002:     true,
-		Imagen4_0Generate001:     true,
-		GeminiImage3Pro:          true,
+		GeminiNanoBanana21:     true,
+		GeminiImage3Pro:        true,
+		GeminiImage31Flash:     true,
+		GeminiImage31FlashLite: true,
+		GeminiImageGenV2_5:     true,
 	}
 
 	DeepseekModels = map[string]bool{
+		// V4 现行模型
+		ModelDeepseekFlash: true,
+		ModelDeepseekV4Pro: true,
+		// 旧别名，仍被 API 接受
 		deepseek.DeepSeekChat:     true,
 		deepseek.DeepSeekReasoner: true,
-		deepseek.DeepSeekCoder:    true,
 	}
 
 	VolModels = map[string]bool{

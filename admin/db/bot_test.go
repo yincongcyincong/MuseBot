@@ -21,6 +21,12 @@ func TestMain(m *testing.M) {
 func setup() {
 	conf.InitConfig()
 	InitTable()
+	// InitTable seeds the default bot on an empty table; tests here assert
+	// exact row counts and hardcoded ids, so start from a clean slate
+	_ = DeleteAllBotData()
+	// DELETE keeps the AUTOINCREMENT sequence; reset it so freshly inserted
+	// rows start at id 1 again (ignored on non-sqlite backends)
+	_, _ = DB.Exec(`DELETE FROM sqlite_sequence WHERE name = 'bot'`)
 }
 
 func TestInitializeSqlite3Table(t *testing.T) {
@@ -122,6 +128,37 @@ func TestListBots_WithAddress(t *testing.T) {
 	assert.Equal(t, 1, len(bots))
 	assert.Equal(t, 1, total)
 	assert.Equal(t, "127.0.0.1", bots[0].Address)
+
+	DeleteAllBotData()
+}
+
+func TestEnsureDefaultBot(t *testing.T) {
+	_ = DeleteAllBotData()
+
+	// empty table: the local default bot is seeded
+	assert.NoError(t, ensureDefaultBot())
+	bots, total, err := ListBots(0, 10, "")
+	assert.NoError(t, err)
+	assert.Equal(t, 1, total)
+	if assert.Len(t, bots, 1) {
+		assert.Equal(t, defaultBotAddress, bots[0].Address)
+		assert.Equal(t, defaultBotName, bots[0].Name)
+		assert.Equal(t, defaultBotCommand, bots[0].Command)
+	}
+
+	// idempotent: an existing bot keeps the seeder silent
+	assert.NoError(t, ensureDefaultBot())
+	_, total, err = ListBots(0, 10, "")
+	assert.NoError(t, err)
+	assert.Equal(t, 1, total)
+
+	// a user-created bot also counts as data: nothing extra is inserted
+	_ = DeleteAllBotData()
+	assert.NoError(t, CreateBot("http://10.0.0.1:1234", "Mine", "", "", "", "run"))
+	assert.NoError(t, ensureDefaultBot())
+	_, total, err = ListBots(0, 10, "")
+	assert.NoError(t, err)
+	assert.Equal(t, 1, total)
 
 	DeleteAllBotData()
 }

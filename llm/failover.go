@@ -87,18 +87,21 @@ func (l *LLM) sendWithFailover() error {
 // sync path the full answer is pushed to the message channel, matching the
 // historical CallLLM behavior.
 func (l *LLM) attempt() error {
+	var err error
 	if conf.BaseConfInfo.IsStreaming {
-		return l.LLMClient.Send(l.Ctx, l)
-	}
-	content, err := l.LLMClient.SyncSend(l.Ctx, l)
-	if err == nil {
-		l.WholeContent = content
-		// mirror SendMsg's routing; utility calls run without any channel
-		// attached, and sending on a nil channel would block forever
-		if l.MessageChan != nil {
-			l.MessageChan <- &param.MsgInfo{Content: content}
-		} else if l.HTTPMsgChan != nil {
-			l.HTTPMsgChan <- content
+		err = l.LLMClient.Send(l.Ctx, l)
+	} else {
+		var content string
+		content, err = l.LLMClient.SyncSend(l.Ctx, l)
+		if err == nil {
+			l.WholeContent = content
+			// mirror SendMsg's routing; utility calls run without any channel
+			// attached, and sending on a nil channel would block forever
+			if l.MessageChan != nil {
+				l.MessageChan <- &param.MsgInfo{Content: content}
+			} else if l.HTTPMsgChan != nil {
+				l.HTTPMsgChan <- content
+			}
 		}
 	}
 	return err

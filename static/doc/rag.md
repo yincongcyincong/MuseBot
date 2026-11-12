@@ -3,6 +3,7 @@
 | Parameter Name    | Type     | Required/Optional | Description                              |
 |-------------------|----------|-------------------|------------------------------------------|
 | `EMBEDDING_TYPE`  | `String` | Required          | embedding split api: openai gemini ernie |
+| `EMBEDDING_MODEL` | `String` | Optional          | embedding model override. Default: gemini -> `gemini-embedding-001`, openai -> `text-embedding-ada-002`. Changing the model on an existing collection requires re-importing the knowledge base (vectors of different models/dimensions are not comparable) |
 | `KNOWLEDGE_PATH`  | `String` | Required          | knowledge doc path                       |
 | `VECTOR_DB_TYPE`  | `String` | Required          | vector db type: weaviate, milvus, qdrant |
 | `MILVUS_URL`      | `String` | Optional          | milvus url: http://localhost:19530       |

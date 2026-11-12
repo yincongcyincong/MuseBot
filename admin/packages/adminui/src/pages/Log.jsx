@@ -12,6 +12,10 @@ function BotLogPage() {
     const logRef = useRef(null);
     const shouldAutoScroll = useRef(true);
     const hasFirstScroll = useRef(false);
+    // 标记"这次 scroll 事件是我们自己 set scrollTop 触发的"：
+    // 积压日志突发到达时，程序化滚动后 React 又渲染了新行，距底距离瞬间 > 50，
+    // 若不区分来源会把 shouldAutoScroll 误关，视图从此卡住追不上底部
+    const isProgrammaticScroll = useRef(false);
 
     const { t } = useTranslation();
 
@@ -26,8 +30,8 @@ function BotLogPage() {
             eventSourceRef.current.close();
         }
 
-        // ✅ 将 typ 参数加入请求 URL
-        const url = `http://127.0.0.1:18080/bot/log?id=${botId}&type=${typ}`;
+        // 相对路径走同源 admin 服务，避免硬编码端口在远程访问时失效
+        const url = `/bot/log?id=${botId}&type=${typ}`;
         const es = new EventSource(url);
 
         es.onmessage = (event) => {
@@ -52,10 +56,11 @@ function BotLogPage() {
         return () => es.close();
     }, [botId, typ]);
 
-    // 用户滚动事件
+    // 用户滚动事件：只响应真实用户滚动，忽略程序化滚动
     const handleScroll = () => {
         const el = logRef.current;
         if (!el) return;
+        if (isProgrammaticScroll.current) return;
         const isAtBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 50;
         shouldAutoScroll.current = isAtBottom;
     };
@@ -74,7 +79,12 @@ function BotLogPage() {
         if (!el) return;
 
         const scrollToBottom = () => {
+            isProgrammaticScroll.current = true;
             el.scrollTop = el.scrollHeight;
+            // scroll 事件在下一帧之前派发，届时恢复响应用户滚动
+            requestAnimationFrame(() => {
+                isProgrammaticScroll.current = false;
+            });
         };
 
         if (shouldAutoScroll.current || !hasFirstScroll.current) {

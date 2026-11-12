@@ -3,6 +3,7 @@
 | 参数名称             | 类型    | 是否必填 | 描述                           |
 |------------------|-------|------|------------------------------|
 | `EMBEDDING_TYPE` | `字符串` | 必填   | 向量化方式，支持：openai、gemini、ernie |
+| `EMBEDDING_MODEL` | `字符串` | 可选   | 向量模型覆盖。默认：gemini → `gemini-embedding-001`，openai → `text-embedding-ada-002`。更换模型后已有集合需重新导入知识库（不同模型/维度的向量不可比） |
 | `KNOWLEDGE_PATH` | `字符串` | 必填   | 知识文档路径                       |
 | `VECTOR_DB_TYPE` | `字符串` | 可选   | 向量数据库类型：milvus、weaviate、qdrant |
 | `QDRANT_HOST`    | `字符串` | 可选   | Qdrant gRPC 主机，默认：localhost     |

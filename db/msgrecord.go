@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"sync"
@@ -240,6 +241,30 @@ func getRecordsByUserId(userId string) ([]Record, error) {
 	}
 
 	return records, nil
+}
+
+// GetLastSuccessLLMConf derives the txt type and model behind the most recent
+// completed conversation. A text record with a non-empty answer proves that
+// model is actually served in this deployment (relay/custom_url setups only
+// serve a limited model list), so it is the safest default for first-time
+// users. The user's current config is read, which self-heals once any newer
+// conversation succeeds. Returns empty strings when no completed record exists.
+func GetLastSuccessLLMConf() (txtType, txtModel string) {
+	query := `SELECT u.llm_config FROM records r
+		JOIN users u ON u.user_id = r.user_id
+		WHERE r.is_deleted = 0 AND r.record_type = ? AND r.answer != ''
+		ORDER BY r.create_time DESC, r.id DESC LIMIT 1`
+	var llmConfig string
+	err := DB.QueryRow(query, param.TextRecordType).Scan(&llmConfig)
+	if err != nil {
+		return "", ""
+	}
+
+	var llmConf param.LLMConfig
+	if err := json.Unmarshal([]byte(llmConfig), &llmConf); err != nil {
+		return "", ""
+	}
+	return llmConf.TxtType, llmConf.TxtModel
 }
 
 // InsertRecordInfo insert record

@@ -104,7 +104,44 @@ func InitTable() {
 		logger.Fatal("ensure admin user fail", "err", err)
 	}
 
+	if err := ensureDefaultBot(); err != nil {
+		logger.Fatal("ensure default bot fail", "err", err)
+	}
+
 	logger.Info("db initialize successfully")
+}
+
+// Default bot row seeded when the bot table is empty. The address matches the
+// bot binary's own -http_host flag default (:36060) and the command matches
+// the admin UI's add-bot default, so a fresh admin install has a manageable
+// local bot without manual setup.
+const (
+	defaultBotAddress = "http://127.0.0.1:36060"
+	defaultBotName    = "MuseBot"
+	defaultBotCommand = "-bot_name=MuseBot\n-http_host=127.0.0.1:36060"
+)
+
+// ensureDefaultBot inserts the local default bot when no (undeleted) bot row
+// exists. Idempotent: any existing bot, including a re-created one, keeps the
+// seeder silent.
+func ensureDefaultBot() error {
+	var count int
+	err := DB.QueryRow(`SELECT COUNT(*) FROM bot WHERE is_deleted = 0`).Scan(&count)
+	if err != nil {
+		return err
+	}
+
+	if count == 0 {
+		now := time.Now().Unix()
+		_, err = DB.Exec(`INSERT INTO bot (address, name, key_file, crt_file, ca_file, create_time, update_time, is_deleted, command) VALUES (?, ?, '', '', '', ?, ?, 0, ?)`,
+			defaultBotAddress, defaultBotName, now, now, defaultBotCommand)
+		if err != nil {
+			return err
+		}
+		logger.Info("no bot configured, seeded default local bot", "address", defaultBotAddress)
+	}
+
+	return nil
 }
 
 // ensureAdminUser creates the initial admin account with the well-known

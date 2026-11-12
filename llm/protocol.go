@@ -133,6 +133,38 @@ func (o llmSamplingOptions) applyToOpenAI(request *openai.ChatCompletionRequest)
 	request.LogProbs = o.LogProbs
 }
 
+// isOpenAIReasoningModel reports whether the model belongs to the
+// reasoning-era OpenAI families (gpt-5.x, o1/o3/o4) that only accept the
+// default sampling values and reject logprobs.
+func isOpenAIReasoningModel(model string) bool {
+	return strings.HasPrefix(model, "gpt-5") ||
+		strings.HasPrefix(model, "o1") ||
+		strings.HasPrefix(model, "o3") ||
+		strings.HasPrefix(model, "o4")
+}
+
+// sanitizeOpenAISamplingParams drops parameters the reasoning-era OpenAI
+// models reject: temperature/top_p/penalties may only stay at their default,
+// logprobs are unsupported, and max_tokens was replaced by
+// max_completion_tokens. All fields are omitempty, so zeroing them omits the
+// parameter instead of sending an invalid value.
+func sanitizeOpenAISamplingParams(request *openai.ChatCompletionRequest) {
+	if !isOpenAIReasoningModel(request.Model) {
+		return
+	}
+
+	request.Temperature = 0
+	request.TopP = 0
+	request.PresencePenalty = 0
+	request.FrequencyPenalty = 0
+	request.LogProbs = false
+	request.TopLogProbs = 0
+	if request.MaxTokens > 0 {
+		request.MaxCompletionTokens = request.MaxTokens
+		request.MaxTokens = 0
+	}
+}
+
 func (o llmSamplingOptions) applyToDeepseek(request *deepseek.ChatCompletionRequest) {
 	request.FrequencyPenalty = o.FrequencyPenalty
 	request.MaxTokens = o.MaxTokens

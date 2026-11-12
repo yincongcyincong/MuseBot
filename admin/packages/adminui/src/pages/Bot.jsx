@@ -286,7 +286,24 @@ function Bots() {
                         <tr key={bot.id} className="hover:bg-gray-50">
                             <td className="px-6 py-4 text-sm text-gray-800">{bot.name}</td>
                             <td className="px-6 py-4 text-sm text-gray-800">{bot.address}</td>
-                            <td className="px-6 py-4 text-sm text-gray-800">{bot.status}</td>
+                            <td className="px-6 py-4 text-sm text-gray-800">
+                                {/* 在线状态图标，悬停显示具体状态 */}
+                                <div className="relative inline-block group">
+                                    {bot.status === "online" ? (
+                                        <span className="relative flex h-3 w-3">
+                                            <span
+                                                className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                                            <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                                        </span>
+                                    ) : (
+                                        <span className="block h-3 w-3 rounded-full bg-gray-300"></span>
+                                    )}
+                                    <div
+                                        className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 hidden group-hover:block whitespace-nowrap rounded bg-gray-800 px-2 py-1 text-xs text-white shadow-lg z-10 pointer-events-none">
+                                        {bot.status === "online" ? t("bot_online") : bot.status === "offline" ? t("bot_offline") : (bot.status || "-")}
+                                    </div>
+                                </div>
+                            </td>
                             <td className="px-6 py-4 text-sm text-gray-600">
                                 {new Date(bot.create_time * 1000).toLocaleString()}
                             </td>

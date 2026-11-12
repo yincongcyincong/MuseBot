@@ -10,6 +10,7 @@ import (
 	"github.com/sashabaranov/go-openai"
 	"github.com/stretchr/testify/assert"
 	"github.com/yincongcyincong/MuseBot/conf"
+	"github.com/yincongcyincong/MuseBot/param"
 )
 
 func TestLLMToolStateAccumulatesStreamedCall(t *testing.T) {
@@ -152,6 +153,57 @@ func TestLLMSamplingOptionsApplyToProviderRequests(t *testing.T) {
 	assert.Equal(t, conf.LLMConfInfo.Stop, openAIRequest.Stop)
 	assert.Equal(t, conf.LLMConfInfo.Stop, deepseekRequest.Stop)
 	assert.Equal(t, conf.LLMConfInfo.Stop, deepseekStreamRequest.Stop)
+}
+
+func TestSanitizeOpenAISamplingParams(t *testing.T) {
+	// reasoning-era models only accept default sampling values and moved
+	// max_tokens to max_completion_tokens
+	request := openai.ChatCompletionRequest{
+		Model:            param.ModelGPT52,
+		Temperature:      0.7,
+		TopP:             0.9,
+		PresencePenalty:  0.5,
+		FrequencyPenalty: 0.5,
+		LogProbs:         true,
+		TopLogProbs:      3,
+		MaxTokens:        512,
+		Stop:             []string{"stop"},
+	}
+	sanitizeOpenAISamplingParams(&request)
+
+	assert.Zero(t, request.Temperature)
+	assert.Zero(t, request.TopP)
+	assert.Zero(t, request.PresencePenalty)
+	assert.Zero(t, request.FrequencyPenalty)
+	assert.False(t, request.LogProbs)
+	assert.Zero(t, request.TopLogProbs)
+	assert.Zero(t, request.MaxTokens)
+	assert.Equal(t, 512, request.MaxCompletionTokens)
+	// stop survives: still supported on gpt-5
+	assert.Equal(t, []string{"stop"}, request.Stop)
+
+	// every gpt-5 / o-series family is treated as reasoning
+	for _, model := range []string{
+		param.ModelGPT52Pro, param.ModelGPT5Mini, "o1", "o1-mini", "o3", "o4-mini",
+	} {
+		assert.True(t, isOpenAIReasoningModel(model), model)
+	}
+
+	// classic models and other providers routed through the OpenAI client
+	// keep the configured sampling options untouched
+	request = openai.ChatCompletionRequest{
+		Model:       openai.GPT4oMini,
+		Temperature: 0.7,
+		MaxTokens:   512,
+	}
+	sanitizeOpenAISamplingParams(&request)
+	assert.Equal(t, float32(0.7), request.Temperature)
+	assert.Equal(t, 512, request.MaxTokens)
+	assert.Zero(t, request.MaxCompletionTokens)
+
+	request = openai.ChatCompletionRequest{Model: param.ModelGemini38Flash, Temperature: 0.7}
+	sanitizeOpenAISamplingParams(&request)
+	assert.Equal(t, float32(0.7), request.Temperature)
 }
 
 func TestOllamaClientMessageMutation(t *testing.T) {

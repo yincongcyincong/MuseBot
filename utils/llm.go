@@ -1,7 +1,6 @@
 package utils
 
 import (
-	godeepseek "github.com/cohesion-org/deepseek-go"
 	"github.com/devinyf/dashscopego/qwen"
 	"github.com/goccy/go-json"
 	"github.com/sashabaranov/go-openai"
@@ -9,14 +8,23 @@ import (
 	"github.com/yincongcyincong/MuseBot/param"
 )
 
-func GetDefaultLLMConfig() string {
-	txtType := GetDefaultTxtType()
+// GetDefaultLLMConfig builds the config assigned to first-time users. An
+// empty txtType falls back to the default chain; a non-empty pair (usually
+// the last successful conversation, passed by the caller from db) is used
+// as-is, because a completed conversation proves the pair is served here.
+func GetDefaultLLMConfig(txtType, txtModel string) string {
+	if txtType == "" {
+		txtType = GetDefaultTxtType()
+	}
+	if txtModel == "" {
+		txtModel = GetTxtModel(txtType)
+	}
 	llmConf := param.LLMConfig{
 		TxtType:    txtType,
 		ImgType:    conf.BaseConfInfo.MediaType,
 		VideoType:  conf.BaseConfInfo.MediaType,
 		TTSType:    conf.AudioConfInfo.TTSType,
-		TxtModel:   GetTxtModel(txtType),
+		TxtModel:   txtModel,
 		ImgModel:   GetImgModel(conf.BaseConfInfo.MediaType),
 		VideoModel: GetVideoModel(conf.BaseConfInfo.MediaType),
 		TTSModel:   GetTTSModel(conf.AudioConfInfo.TTSType),
@@ -25,8 +33,8 @@ func GetDefaultLLMConfig() string {
 	return string(b)
 }
 
-// GetDefaultTxtType returns the first txt type whose token is configured, or
-// the configured base type when no token is available.
+// GetDefaultTxtType returns the first txt type whose token is configured,
+// and finally the configured base type.
 func GetDefaultTxtType() string {
 	if aType := GetAvailTxtType(); len(aType) > 0 {
 		return aType[0]
@@ -154,11 +162,11 @@ func GetTxtModel(t string) string {
 
 	switch t {
 	case param.DeepSeek:
-		return godeepseek.DeepSeekChat
+		return param.ModelDeepseekFlash
 	case param.Gemini:
-		return param.ModelGemini25Flash
+		return param.ModelGemini38Flash
 	case param.OpenAi:
-		return openai.GPT4oMini
+		return param.ModelGPT52
 	case param.Ollama:
 		return "deepseek-r1"
 	case param.Vol:
@@ -169,7 +177,7 @@ func GetTxtModel(t string) string {
 		return openai.GPT4oMini
 	}
 
-	return godeepseek.DeepSeekChat
+	return param.ModelDeepseekFlash
 }
 
 func GetAvailTxtType() []string {
@@ -299,7 +307,7 @@ func GetUsingImgModel(ty string, model string) string {
 		if param.GeminiImageModels[model] {
 			return model
 		}
-		return param.GeminiImageGenV2_5
+		return param.GeminiImage31Flash
 	case param.Aliyun:
 		if param.AliyunImageModels[model] {
 			return model
@@ -321,7 +329,7 @@ func GetUsingVideoModel(ty string, model string) string {
 		if param.GeminiVideoModels[model] {
 			return model
 		}
-		return param.GeminiVideoOmniFlash
+		return param.GeminiVideoOmni12Flash
 
 	case param.Aliyun:
 		if param.AliyunVideoModels[model] {
@@ -344,7 +352,7 @@ func GetUsingRecModel(ty string, model string) string {
 		if param.GeminiRecModels[model] {
 			return model
 		}
-		return param.ModelGemini25Flash
+		return param.ModelGemini35FlashLite
 	case param.Aliyun:
 		if param.AliyunRecModels[model] {
 			return model
@@ -366,12 +374,12 @@ func GetUsingTxtModel(ty string, model string) string {
 		if param.DeepseekModels[model] {
 			return model
 		}
-		return godeepseek.DeepSeekChat
+		return param.ModelDeepseekFlash
 	case param.Gemini:
 		if param.GeminiModels[model] {
 			return model
 		}
-		return param.ModelGemini25Flash
+		return param.ModelGemini38Flash
 	case param.Vol:
 		if param.VolModels[model] {
 			return model
@@ -396,7 +404,7 @@ func GetUsingTTSModel(ty string, model string) string {
 		if param.GeminiTTSModels[model] {
 			return model
 		}
-		return param.Gemini2_5FlashPreviewTTS
+		return param.Gemini38FlashTTS
 	case param.Vol:
 		if param.VolTTSModels[model] {
 			return model

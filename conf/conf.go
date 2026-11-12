@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/yincongcyincong/MuseBot/logger"
@@ -967,7 +968,14 @@ func loadConf() bool {
 	return true
 }
 
+// saveConfMutex serializes config file writes: concurrent callers must not
+// interleave partial JSON into the persisted file.
+var saveConfMutex sync.Mutex
+
 func SaveConf() {
+	saveConfMutex.Lock()
+	defer saveConfMutex.Unlock()
+
 	AllConf["base"] = BaseConfInfo
 	AllConf["audio"] = AudioConfInfo
 	AllConf["llm"] = LLMConfInfo

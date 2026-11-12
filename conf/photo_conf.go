@@ -64,11 +64,11 @@ func InitPhotoConf() {
 	flag.Float64Var(&PhotoConfInfo.Opacity, "opacity", 0.3, "opacity")
 	flag.StringVar(&PhotoConfInfo.LogoTextContent, "logo_text_content", "", "logo text content")
 
-	flag.StringVar(&PhotoConfInfo.GeminiImageModel, "gemini_image_model", "gemini-2.0-flash-preview-image-generation", "gemini create photo model")
-	flag.StringVar(&PhotoConfInfo.GeminiRecModel, "gemini_rec_model", "gemini-2.0-flash", "gemini recognize photo model")
+	flag.StringVar(&PhotoConfInfo.GeminiImageModel, "gemini_image_model", "gemini-3.1-flash-image", "gemini create photo model")
+	flag.StringVar(&PhotoConfInfo.GeminiRecModel, "gemini_rec_model", "gemini-3.5-flash-lite", "gemini recognize photo model")
 
-	flag.StringVar(&PhotoConfInfo.OpenAIRecModel, "openai_rec_model", "chatgpt-4o-latest", "openai create photo model")
-	flag.StringVar(&PhotoConfInfo.OpenAIImageModel, "openai_image_model", "gpt-image-1", "openai create photo model")
+	flag.StringVar(&PhotoConfInfo.OpenAIRecModel, "openai_rec_model", "gpt-5.2", "openai recognize photo model")
+	flag.StringVar(&PhotoConfInfo.OpenAIImageModel, "openai_image_model", "gpt-image-1.5", "openai create photo model")
 	flag.StringVar(&PhotoConfInfo.OpenAIImageSize, "openai_image_size", openai.CreateImageSize1024x1024, "openai image size")
 	flag.StringVar(&PhotoConfInfo.OpenAIImageStyle, "openai_image_style", "", "openai image style")
 

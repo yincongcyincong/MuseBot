@@ -69,6 +69,7 @@ func (d *OpenAIReq) Send(ctx context.Context, l *LLM) error {
 	}
 
 	currentLLMSamplingOptions().applyToOpenAI(&request)
+	sanitizeOpenAISamplingParams(&request)
 
 	stream, err := retryLLMRequest(l, func() (*openai.ChatCompletionStream, error) {
 		return client.CreateChatCompletionStream(ctx, request)
@@ -190,6 +191,7 @@ func (d *OpenAIReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 	}
 
 	currentLLMSamplingOptions().applyToOpenAI(&request)
+	sanitizeOpenAISamplingParams(&request)
 
 	response, err := retryLLMRequest(l, func() (openai.ChatCompletionResponse, error) {
 		return client.CreateChatCompletion(ctx, request)

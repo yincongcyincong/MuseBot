@@ -92,7 +92,7 @@ func TestSyncUserTxtConfig(t *testing.T) {
 	user1, err := GetUserByID("sync-user-1")
 	assert.NoError(t, err)
 	assert.Equal(t, param.DeepSeek, user1.LLMConfigRaw.TxtType)
-	assert.Equal(t, "deepseek-chat", user1.LLMConfigRaw.TxtModel)
+	assert.Equal(t, param.ModelDeepseekFlash, user1.LLMConfigRaw.TxtModel)
 
 	user2, err := GetUserByID("sync-user-2")
 	assert.NoError(t, err)

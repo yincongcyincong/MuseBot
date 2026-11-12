@@ -39,7 +39,7 @@ Example:
 
 ### Observability
 
-- Logs: `failover to backup provider from=deepseek to=gemini model=gemini-2.5-flash` / `failover success ...`
+- Logs: `failover to backup provider from=deepseek to=gemini model=gemini-3.8-flash` / `failover success ...`
 - Prometheus: `api_failover_total{from,to}` counter
 
 ---
@@ -78,7 +78,7 @@ Note: utility requests go straight to the configured provider+model; they **do n
 | ctx cancel/timeout | never triggers failover; the error is returned directly |
 | replies after failover | content is returned to the user as-is (persona unchanged); the switch is only recorded in logs and metrics |
 | attempts per backup | one per backup provider (still bounded by the inner `LLMRetryTimes` retry) |
-| backup provider's model | that provider's default from `GetTxtModel()` (e.g. gemini → `gemini-2.5-flash`) |
+| backup provider's model | that provider's default from `GetTxtModel()` (e.g. gemini → `gemini-3.8-flash`) |
 | primary provider is ollama | no failover (different client protocol); behavior identical to older versions |
 | with failover disabled | byte-for-byte identical to before this feature |
 

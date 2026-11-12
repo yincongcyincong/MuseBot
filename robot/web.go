@@ -235,7 +235,8 @@ func (web *Web) AddUserInfo() bool {
 	}
 
 	if userInfo == nil || userInfo.ID == 0 {
-		_, err = db.InsertUser(web.RealUserId, utils.GetDefaultLLMConfig())
+		lastType, lastModel := db.GetLastSuccessLLMConf()
+		_, err = db.InsertUser(web.RealUserId, utils.GetDefaultLLMConfig(lastType, lastModel))
 		if err != nil {
 			logger.ErrorCtx(web.Robot.Ctx, "insert user fail", "userID", web.RealUserId, "err", err)
 			return false

@@ -107,7 +107,7 @@ func TestFailoverOnServerError(t *testing.T) {
 	assert.Equal(t, 1, backup.hits)
 	assert.Equal(t, "ok", l.WholeContent)
 	// the fallback rung runs on the provider's default model
-	assert.Equal(t, param.ModelGemini25Flash, backup.lastModel)
+	assert.Equal(t, param.ModelGemini38Flash, backup.lastModel)
 	assert.Equal(t, param.Gemini, l.providerOverride)
 }
 

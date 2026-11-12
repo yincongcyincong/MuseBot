@@ -49,6 +49,27 @@ func TestGetTxtType_TrustsStoredValue(t *testing.T) {
 	assert.Equal(t, param.DeepSeek, GetTxtType(nil))
 }
 
+func TestGetDefaultLLMConfigInjectedPair(t *testing.T) {
+	// an injected pair (the last successful conversation from db) is used as-is
+	var llmConf param.LLMConfig
+	assert.NoError(t, json.Unmarshal([]byte(GetDefaultLLMConfig(param.OpenAi, "glm-5.3-flash")), &llmConf))
+	assert.Equal(t, param.OpenAi, llmConf.TxtType)
+	assert.Equal(t, "glm-5.3-flash", llmConf.TxtModel)
+
+	// empty pair falls back to the static default chain
+	conf.BaseConfInfo.DeepseekToken = "sk-test"
+	defer func() { conf.BaseConfInfo.DeepseekToken = "" }()
+	llmConf = param.LLMConfig{}
+	assert.NoError(t, json.Unmarshal([]byte(GetDefaultLLMConfig("", "")), &llmConf))
+	assert.Equal(t, param.DeepSeek, llmConf.TxtType)
+	assert.Equal(t, GetTxtModel(param.DeepSeek), llmConf.TxtModel)
+
+	// a type without a model gets the type's static default model
+	assert.NoError(t, json.Unmarshal([]byte(GetDefaultLLMConfig(param.Gemini, "")), &llmConf))
+	assert.Equal(t, param.Gemini, llmConf.TxtType)
+	assert.Equal(t, param.ModelGemini38Flash, llmConf.TxtModel)
+}
+
 func TestGetDefaultLLMConfig_UsesAvailTxtType(t *testing.T) {
 	conf.BaseConfInfo.DeepseekToken = "sk-test"
 	conf.BaseConfInfo.Type = param.Gemini
@@ -58,7 +79,7 @@ func TestGetDefaultLLMConfig_UsesAvailTxtType(t *testing.T) {
 	}()
 
 	var llmConf param.LLMConfig
-	assert.NoError(t, json.Unmarshal([]byte(GetDefaultLLMConfig()), &llmConf))
+	assert.NoError(t, json.Unmarshal([]byte(GetDefaultLLMConfig("", "")), &llmConf))
 	assert.Equal(t, param.DeepSeek, llmConf.TxtType)
 	assert.Equal(t, GetTxtModel(param.DeepSeek), llmConf.TxtModel)
 }
@@ -70,6 +91,6 @@ func TestGetUsingTxtModel_RelaysKeepAnyModel(t *testing.T) {
 	assert.Equal(t, "my-custom-model", GetUsingTxtModel(param.OpenAi, "my-custom-model"))
 
 	// types with a fixed model list still validate
-	assert.Equal(t, godeepseek.DeepSeekChat, GetUsingTxtModel(param.DeepSeek, openai.GPT3Dot5Turbo))
+	assert.Equal(t, param.ModelDeepseekFlash, GetUsingTxtModel(param.DeepSeek, openai.GPT3Dot5Turbo))
 	assert.Equal(t, godeepseek.DeepSeekChat, GetUsingTxtModel(param.DeepSeek, godeepseek.DeepSeekChat))
 }

@@ -167,11 +167,21 @@ func Log(w http.ResponseWriter, r *http.Request) {
 
 	flusher := w.(http.Flusher)
 
-	for line := range t.Lines {
+	// 客户端断开时停掉 tailer，释放轮询 goroutine 与文件句柄；
+	// 否则每次打开日志页都泄漏一个 tail
+	defer func() {
+		t.Stop()
+		t.Cleanup()
+	}()
+
+	for {
 		select {
 		case <-r.Context().Done():
 			return
-		default:
+		case line, ok := <-t.Lines:
+			if !ok {
+				return
+			}
 			if typ != "" && !strings.Contains(line.Text, typ) {
 				continue
 			}

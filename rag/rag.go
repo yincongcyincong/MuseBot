@@ -15,6 +15,7 @@ import (
 	"github.com/yincongcyincong/MuseBot/conf"
 	"github.com/yincongcyincong/MuseBot/db"
 	"github.com/yincongcyincong/MuseBot/logger"
+	"github.com/yincongcyincong/MuseBot/param"
 	"github.com/yincongcyincong/MuseBot/utils"
 	"github.com/yincongcyincong/langchaingo/documentloaders"
 	"github.com/yincongcyincong/langchaingo/embeddings"
@@ -232,9 +233,14 @@ func handleEntry(ctx context.Context, entries []os.DirEntry) ([]schema.Document,
 }
 
 func initOpenAIEmbedding() (embeddings.Embedder, error) {
-	llmEmbedder, err := openai.New(
-		openai.WithToken(conf.BaseConfInfo.OpenAIToken),
-	)
+	// default text-embedding-ada-002; override via -embedding_model, e.g.
+	// text-embedding-3-small / text-embedding-3-large
+	opts := []openai.Option{openai.WithToken(conf.BaseConfInfo.OpenAIToken)}
+	if model := conf.RagConfInfo.EmbeddingModel; model != "" {
+		opts = append(opts, openai.WithEmbeddingModel(model))
+	}
+
+	llmEmbedder, err := openai.New(opts...)
 
 	if err != nil {
 		return nil, err
@@ -265,8 +271,16 @@ func initErnieEmbedding() (embeddings.Embedder, error) {
 }
 
 func initGeminiEmbedding(ctx context.Context) (embeddings.Embedder, error) {
+	// the SDK's built-in default "embedding-001" has been retired by Google;
+	// the current embedding models are gemini-embedding-001 / gemini-embedding-2
+	model := conf.RagConfInfo.EmbeddingModel
+	if model == "" {
+		model = param.ModelGeminiEmbedding001
+	}
+
 	llmEmbedder, err := googleai.New(ctx,
 		googleai.WithAPIKey(conf.BaseConfInfo.GeminiToken),
+		googleai.WithDefaultEmbeddingModel(model),
 	)
 
 	if err != nil {

@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/yincongcyincong/MuseBot/conf"
@@ -22,6 +23,40 @@ func TestMain(m *testing.M) {
 func setup() {
 	conf.InitConf()
 	InitTable()
+}
+
+func TestGetLastSuccessLLMConf(t *testing.T) {
+	// unique ids + future timestamps so assertions hold even when the suite
+	// runs against a database that already has real records
+	userA := "last-success-a"
+	userB := "last-success-b"
+	t.Cleanup(func() {
+		_, _ = DB.Exec("DELETE FROM users WHERE user_id IN (?, ?)", userA, userB)
+		_, _ = DB.Exec("DELETE FROM records WHERE user_id IN (?, ?)", userA, userB)
+	})
+	_, _ = DB.Exec("DELETE FROM records WHERE user_id IN (?, ?)", userA, userB)
+
+	_, err := InsertUser(userA, `{"txt_type":"openai","txt_model":"glm-5.3-flash"}`)
+	assert.NoError(t, err)
+	_, err = InsertUser(userB, `{"txt_type":"openai","txt_model":"gpt-5.2"}`)
+	assert.NoError(t, err)
+
+	// newest completed conversation wins
+	future := time.Now().Unix() + 100000
+	_, err = DB.Exec(`INSERT INTO records (user_id, question, answer, content, create_time, record_type, is_deleted)
+		VALUES (?, 'q', 'ok', '', ?, 0, 0)`, userA, future)
+	assert.NoError(t, err)
+	txtType, txtModel := GetLastSuccessLLMConf()
+	assert.Equal(t, "openai", txtType)
+	assert.Equal(t, "glm-5.3-flash", txtModel)
+
+	// an even newer failed conversation (empty answer) must NOT become the default
+	_, err = DB.Exec(`INSERT INTO records (user_id, question, answer, content, create_time, record_type, is_deleted)
+		VALUES (?, 'q', '', '', ?, 0, 0)`, userB, future+100)
+	assert.NoError(t, err)
+	txtType, txtModel = GetLastSuccessLLMConf()
+	assert.Equal(t, "openai", txtType)
+	assert.Equal(t, "glm-5.3-flash", txtModel)
 }
 
 func TestInsertMsgRecord(t *testing.T) {

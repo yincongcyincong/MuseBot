@@ -10,8 +10,8 @@
 
 | 厂商     | `-photo_type` 取值 | 模型 |
 |----------|--------------------|------|
-| Gemini   | `gemini`  | `imagen-3.0-generate-002`、`imagen-4.0-generate-001`、`imagen-4.0-fast-generate-001`、`gemini-2.5-flash-image`、`gemini-3-pro-image-preview` |
-| OpenAI   | `openai`  | `gpt-image-1` |
+| Gemini   | `gemini`  | `gemini-3-pro-image`, `gemini-nano-banana-2.1`, `gemini-3.1-flash-image`, `gemini-3.1-flash-lite-image`, `gemini-2.5-flash-image` |
+| OpenAI   | `openai`  | `gpt-image-1.5`, `gpt-image-1` |
 | 阿里云   | `aliyun`  | `qwen-image-plus`、`qwen-image-edit` |
 | 火山引擎 | `vol`     | `doubao-seed-1-6-250615` |
 
@@ -23,7 +23,7 @@
 
 | 厂商     | 模型 |
 |----------|------|
-| Gemini   | `gemini-2.5-pro`、`gemini-2.5-flash` |
+| Gemini   | `gemini-4-carbon`、`gemini-4-argon`、`gemini-3.8-flash`、`gemini-3.6-flash`、`gemini-3.5-flash-lite`、`gemini-2.5-pro`、`gemini-2.5-flash` |
 | 火山引擎 | `doubao-seed-1-6-250615` |
 | 阿里云   | `qwen-vl-max`、`qwen-vl-max-latest`、`qvq-max`、`qvq-max-latest`、`qwen-audio-turbo-latest` |
 

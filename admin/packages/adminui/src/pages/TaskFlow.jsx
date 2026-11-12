@@ -1,4 +1,5 @@
 import React, {useCallback, useEffect, useRef, useState} from "react";
+import {useSearchParams} from "react-router-dom";
 import BotSelector from "../components/BotSelector";
 import Toast from "../components/Toast";
 import Pagination from "../components/Pagination.jsx";
@@ -186,7 +187,10 @@ function TaskFlow() {
     const [total, setTotal] = useState(0);
     const [running, setRunning] = useState([]);
     const [history, setHistory] = useState([]);
-    const [selectedRunId, setSelectedRunId] = useState(null);
+    // 详情的 run_id 挂在 URL（?run=...）：刷新页面或直接打开链接仍停留在详情页，
+    // 浏览器返回键也能自然回到列表
+    const [searchParams, setSearchParams] = useSearchParams();
+    const selectedRunId = searchParams.get("run");
     const [detail, setDetail] = useState(null);
     const [toast, setToast] = useState({show: false, message: "", type: "error"});
 
@@ -240,15 +244,16 @@ function TaskFlow() {
         // otherwise the interval keeps the stale closure and re-fetches the old page
     }, [running.length, detail?.state, selectedRunId, fetchList, fetchDetail]);
 
-    // 详情加载
+    // 详情加载。deps 必须含 botId：直接打开/刷新 ?run= 链接时，首次触发时
+    // botId 还是 null（fetchDetail 会短路），等 BotSelector 自动选中后再真正拉取
     useEffect(() => {
         if (selectedRunId) {
             setDetail(null);
-            fetchDetail(selectedRunId);
+            if (botId !== null) fetchDetail(selectedRunId);
         } else {
             setDetail(null);
         }
-    }, [selectedRunId]);
+    }, [selectedRunId, botId, fetchDetail]);
 
     const stateBadge = (state) => {
         const s = STATE_STYLE[state] || STATE_STYLE.PLAN;
@@ -262,7 +267,7 @@ function TaskFlow() {
         );
     };
 
-    const openDetail = (runId) => setSelectedRunId(runId);
+    const openDetail = (runId) => setSearchParams(runId ? {run: runId} : {});
 
     // ---------------- 详情视图 ----------------
     if (selectedRunId) {
@@ -273,11 +278,23 @@ function TaskFlow() {
                 )}
 
                 <div className="flex items-center gap-3 mb-6">
-                    <button onClick={() => setSelectedRunId(null)}
+                    <button onClick={() => setSearchParams({})}
                             className="text-indigo-600 hover:underline text-sm">← {t("taskflow_back")}</button>
                     <h2 className="text-2xl font-bold text-gray-800">{t("taskflow_detail")}</h2>
                     {detail && stateBadge(detail.state)}
                     {!detail && <span className="text-sm text-gray-400">{t("taskflow_loading")}</span>}
+                    {/* 详情视图也要渲染 BotSelector：直接打开/刷新 ?run= 链接时，
+                        只有它能（通过缓存）初始化 botId，否则详情请求永远发不出去。
+                        切换 bot 不清 run 参数，避免初始化时的自动选中把用户弹回列表 */}
+                    <div className="w-72 ml-auto">
+                        <BotSelector
+                            value={botId}
+                            onChange={(bot) => {
+                                setBotId(bot.id);
+                                setPage(1);
+                            }}
+                        />
+                    </div>
                 </div>
 
                 {detail && (
@@ -343,7 +360,7 @@ function TaskFlow() {
                         onChange={(bot) => {
                             setBotId(bot.id);
                             setPage(1);
-                            setSelectedRunId(null);
+                            setSearchParams({});
                         }}
                     />
                 </div>

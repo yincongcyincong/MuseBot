@@ -39,7 +39,7 @@ MuseBot 的 txt 聊天链路提供两项韧性/成本能力：
 
 ### 观测
 
-- 日志：`failover to backup provider from=deepseek to=gemini model=gemini-2.5-flash` / `failover success ...`
+- 日志：`failover to backup provider from=deepseek to=gemini model=gemini-3.8-flash` / `failover success ...`
 - Prometheus：`api_failover_total{from,to}` 计数器
 
 ---
@@ -78,7 +78,7 @@ MuseBot 的 txt 聊天链路提供两项韧性/成本能力：
 | ctx 取消/超时 | 永不触发降级，直接返回错误 |
 | 降级后的回复 | 内容直接返回给用户（人设不变），仅在日志与指标中记录切换 |
 | 降级尝试次数 | 每个备选 provider 一次（内部仍受 `LLMRetryTimes` 的内层重试约束） |
-| 备选 provider 的模型 | `GetTxtModel()` 的该厂商默认模型（如 gemini → `gemini-2.5-flash`） |
+| 备选 provider 的模型 | `GetTxtModel()` 的该厂商默认模型（如 gemini → `gemini-3.8-flash`） |
 | 主 provider 为 ollama | 不降级（客户端协议不同），行为与旧版一致 |
 | 关闭 failover 后 | 与引入本功能前逐字节一致 |
 
