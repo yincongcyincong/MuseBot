@@ -31,6 +31,8 @@ Other usage see this [doc](https://github.com/yincongcyincong/MuseBot)
 ### Create a bot
 go to web: https://api.slack.com/apps/    
 <img width="400" alt="image" src="https://github.com/user-attachments/assets/15b97d1f-7a50-4c9e-953b-7899a1ecd935" />
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/be722a4f-8640-4b9b-9044-4123b8f38cb2" />
+
 
 Oauth:    
 <img width="400" alt="image" src="https://github.com/user-attachments/assets/e15ef32e-e4c4-4560-b076-a44e27a8c65e" />
