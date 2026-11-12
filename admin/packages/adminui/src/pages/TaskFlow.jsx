@@ -236,7 +236,9 @@ function TaskFlow() {
             if (selectedRunId) fetchDetail(selectedRunId);
         }, 2000);
         return () => clearInterval(pollTimer.current);
-    }, [botId, running.length, detail?.state, selectedRunId]);
+        // fetchList/fetchDetail must be deps: their identity changes with page,
+        // otherwise the interval keeps the stale closure and re-fetches the old page
+    }, [running.length, detail?.state, selectedRunId, fetchList, fetchDetail]);
 
     // 详情加载
     useEffect(() => {
@@ -247,8 +249,6 @@ function TaskFlow() {
             setDetail(null);
         }
     }, [selectedRunId]);
-
-    const totalPages = Math.ceil(total / pageSize);
 
     const stateBadge = (state) => {
         const s = STATE_STYLE[state] || STATE_STYLE.PLAN;

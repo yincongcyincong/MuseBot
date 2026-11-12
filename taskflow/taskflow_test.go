@@ -111,6 +111,30 @@ func TestEventsCapped(t *testing.T) {
 	assert.Equal(t, "tool_called", run.Events[0].Type)
 }
 
+// RunningRuns/GetRun 会在 HTTP 轮询时与任务 goroutine 的写入并发执行，
+// 此测试配 -race 验证快照读取全部走锁
+func TestSnapshotReadsRaceWithWrites(t *testing.T) {
+	tracker := StartRun("并发读写", "user-3", "chat-3")
+
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		for i := 0; i < 300; i++ {
+			tracker.Stage(StateExecute)
+			tracker.LoopStarted(1, 3)
+			tracker.append("tick", "x")
+		}
+	}()
+	for i := 0; i < 300; i++ {
+		RunningRuns()
+		GetRun(tracker.run.RunId)
+	}
+	<-done
+
+	tracker.Finish(StateDone, "ok", "")
+	assert.False(t, containsRun(RunningRuns(), tracker.run.RunId))
+}
+
 func containsRun(runs []*TaskRun, runId string) bool {
 	for _, run := range runs {
 		if run.RunId == runId {

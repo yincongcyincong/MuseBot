@@ -1,6 +1,8 @@
 package http
 
 import (
+	"database/sql"
+	"errors"
 	"net/http"
 
 	"github.com/yincongcyincong/MuseBot/db"
@@ -74,6 +76,11 @@ func GetTaskRun(w http.ResponseWriter, r *http.Request) {
 
 	record, err := db.GetTaskRunByRunID(runId)
 	if err != nil {
+		// an unknown run_id (typo, or lost on restart) is not a server fault
+		if errors.Is(err, sql.ErrNoRows) {
+			utils.Failure(ctx, w, r, param.CodeParamError, "task run not found", nil)
+			return
+		}
 		logger.ErrorCtx(ctx, "get task run error", "err", err)
 		utils.Failure(ctx, w, r, param.CodeDBQueryFail, param.MsgDBQueryFail, err)
 		return

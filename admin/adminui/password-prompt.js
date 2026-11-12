@@ -1,14 +1,15 @@
 // Change-password prompt for accounts still using the default admin/admin
-// password. Self-contained plain JS: the SPA bundle is compiled without
-// sources in this repo, so this overlay is injected via a script tag in
-// index.html instead. The prompt can be dismissed ("稍后再说") and stays
-// dismissed for the rest of the browser session (sessionStorage flag).
+// password. Self-contained plain JS overlay shipped from public/ and injected
+// via a script tag in index.html. The prompt can be dismissed ("稍后再说") and
+// stays dismissed for the rest of the browser session (sessionStorage flag).
 (function () {
   'use strict';
 
   var DISMISS_KEY = 'musebot_default_pwd_dismissed';
   var POLL_INTERVAL_MS = 1500;
-  var MAX_POLLS = 20;
+  var SLOW_POLL_INTERVAL_MS = 5000;
+  var FAST_POLLS = 20;   // ~30s at 1.5s, then back off while waiting for login
+  var MAX_ERRORS = 60;   // stop after repeated network failures (server down)
 
   function dismissed() {
     try {
@@ -132,26 +133,36 @@
     pwd.focus();
   }
 
-  function poll(remaining) {
-    if (remaining <= 0 || dismissed()) return;
+  // Poll /user/me until the user is logged in, then show the prompt once if
+  // they still carry the default password. "Not logged in" never stops the
+  // poll — the user may sit on the login form for minutes — but the interval
+  // backs off to 5s after the first FAST_POLLS attempts. Only network errors
+  // consume a budget, so a down backend eventually ends the polling.
+  function poll(fastRemaining, errorBudget) {
+    if (dismissed()) return;
+    var next = function (nextFast) {
+      var interval = nextFast > 0 ? POLL_INTERVAL_MS : SLOW_POLL_INTERVAL_MS;
+      setTimeout(function () { poll(nextFast, errorBudget); }, interval);
+    };
     fetchJSON('/user/me').then(function (res) {
       if (!res || res.code !== 0) {
-        // not logged in yet (login page) — keep waiting
-        setTimeout(function () { poll(remaining - 1); }, POLL_INTERVAL_MS);
+        // not logged in yet (login page) — keep waiting for as long as needed
+        next(fastRemaining - 1);
         return;
       }
       var data = res.data || {};
       if (data.is_default_password && !dismissed()) {
         openModal(data.user_id);
       }
+      // logged in without the default password: done, stop polling
     }).catch(function () {
-      setTimeout(function () { poll(remaining - 1); }, POLL_INTERVAL_MS);
+      if (errorBudget > 0) next(fastRemaining - 1);
     });
   }
 
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', function () { poll(MAX_POLLS); });
+    document.addEventListener('DOMContentLoaded', function () { poll(FAST_POLLS, MAX_ERRORS); });
   } else {
-    poll(MAX_POLLS);
+    poll(FAST_POLLS, MAX_ERRORS);
   }
 })();

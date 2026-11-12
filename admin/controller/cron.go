@@ -32,8 +32,9 @@ func ListCrons(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 构造目标 URL：/cron/list?page=...&page_size=...&name=...
+	// 前端 Cron 页发送的是 page_size（与主服务 /cron/list 一致），不是 pageSize
 	targetURL := strings.TrimSuffix(botInfo.Address, "/") +
-		fmt.Sprintf("/cron/list?page=%s&page_size=%s&name=%s", r.FormValue("page"), r.FormValue("pageSize"), r.FormValue("name"))
+		fmt.Sprintf("/cron/list?page=%s&page_size=%s&name=%s", r.FormValue("page"), r.FormValue("page_size"), r.FormValue("name"))
 
 	resp, err := adminUtils.GetCrtClient(botInfo).Do(GetRequest(ctx, http.MethodGet, targetURL, bytes.NewBuffer(nil)))
 	if err != nil {

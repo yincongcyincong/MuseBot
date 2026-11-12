@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"runtime/debug"
 	"sort"
 	"strings"
 	"time"
@@ -65,29 +66,39 @@ type TaskResult struct {
 
 // ExecuteTask runs the workflow and reports the outcome to the taskflow
 // registry: terminal state (DONE / FAILED / CANCELED) plus the final answer.
-func (d *LLMTaskReq) ExecuteTask() error {
+// The terminal report is deferred so even a panic inside the workflow leaves
+// the run in a terminal state instead of "running" forever; the panic is
+// converted to an error carrying the stack for the robot layer to log.
+func (d *LLMTaskReq) ExecuteTask() (err error) {
 	d.Tracker.RunStarted()
 
 	var planner *LLM
-	err := d.executeTask(&planner)
 
-	state := taskflow.StateDone
-	errMsg := ""
-	if err != nil {
-		state = taskflow.StateFailed
-		errMsg = err.Error()
-	}
-	// a cancelled context means the request was torn down, not that the plan
-	// itself failed — report it as canceled so the flow view stays honest
-	if d.Ctx != nil && d.Ctx.Err() != nil {
-		state = taskflow.StateCanceled
-		errMsg = ""
-	}
-	finalResult := ""
-	if planner != nil {
-		finalResult = planner.WholeContent
-	}
-	d.Tracker.Finish(state, finalResult, errMsg)
+	defer func() {
+		state, errMsg := taskflow.StateDone, ""
+		if p := recover(); p != nil {
+			state = taskflow.StateFailed
+			errMsg = fmt.Sprintf("panic: %v", p)
+			err = fmt.Errorf("task panic: %v\n%s", p, debug.Stack())
+		} else if err != nil {
+			state = taskflow.StateFailed
+			errMsg = err.Error()
+		}
+		// a cancelled context means the request was torn down, not that the
+		// plan itself failed — report it as canceled so the flow view stays
+		// honest
+		if d.Ctx != nil && d.Ctx.Err() != nil {
+			state = taskflow.StateCanceled
+			errMsg = ""
+		}
+		finalResult := ""
+		if planner != nil {
+			finalResult = planner.WholeContent
+		}
+		d.Tracker.Finish(state, finalResult, errMsg)
+	}()
+
+	err = d.executeTask(&planner)
 	return err
 }
 

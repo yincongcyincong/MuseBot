@@ -33,9 +33,10 @@ func ListTaskRuns(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 构造目标 URL：/task/list?page=...&page_size=...
+	// 前端发送的是 page_size（与主服务 /task/list 一致），不是 pageSize
 	targetURL := strings.TrimSuffix(botInfo.Address, "/") +
 		fmt.Sprintf("/task/list?page=%s&page_size=%s",
-			url.QueryEscape(r.FormValue("page")), url.QueryEscape(r.FormValue("pageSize")))
+			url.QueryEscape(r.FormValue("page")), url.QueryEscape(r.FormValue("page_size")))
 
 	resp, err := adminUtils.GetCrtClient(botInfo).Do(GetRequest(ctx, http.MethodGet, targetURL, bytes.NewBuffer(nil)))
 	if err != nil {

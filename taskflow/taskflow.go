@@ -17,13 +17,13 @@ import (
 
 // 任务/步骤状态
 const (
-	StatePlan     = "PLAN"
-	StateExecute  = "EXECUTE"
-	StateReflect  = "REFLECT"
+	StatePlan      = "PLAN"
+	StateExecute   = "EXECUTE"
+	StateReflect   = "REFLECT"
 	StateSummarize = "SUMMARIZE"
-	StateDone     = "DONE"
-	StateFailed   = "FAILED"
-	StateCanceled = "CANCELED"
+	StateDone      = "DONE"
+	StateFailed    = "FAILED"
+	StateCanceled  = "CANCELED"
 
 	StepPending = "pending"
 	StepRunning = "running"
@@ -51,18 +51,18 @@ type TaskEvent struct {
 type TaskRun struct {
 	mu sync.RWMutex `json:"-"`
 
-	RunId       string     `json:"run_id"`
-	UserId      string     `json:"user_id"`
-	ChatId      string     `json:"chat_id"`
-	Content     string     `json:"content"`
-	State       string     `json:"state"`
-	Loop        int        `json:"loop"`
-	MaxLoops    int        `json:"max_loops"`
-	Plan        []TaskStep `json:"plan"`
-	StartedAt   int64      `json:"started_at"`
-	FinishedAt  int64      `json:"finished_at"`
-	FinalResult string     `json:"final_result"`
-	ErrMsg      string     `json:"err_msg"`
+	RunId       string      `json:"run_id"`
+	UserId      string      `json:"user_id"`
+	ChatId      string      `json:"chat_id"`
+	Content     string      `json:"content"`
+	State       string      `json:"state"`
+	Loop        int         `json:"loop"`
+	MaxLoops    int         `json:"max_loops"`
+	Plan        []TaskStep  `json:"plan"`
+	StartedAt   int64       `json:"started_at"`
+	FinishedAt  int64       `json:"finished_at"`
+	FinalResult string      `json:"final_result"`
+	ErrMsg      string      `json:"err_msg"`
 	Events      []TaskEvent `json:"events"`
 }
 
@@ -264,7 +264,12 @@ func RunningRuns() []*TaskRun {
 	runs := make([]*TaskRun, 0)
 	registry.Range(func(_, value any) bool {
 		run := value.(*TaskRun)
-		if !run.terminal() {
+		// terminal() reads State, which the task goroutine may be writing
+		// (Stage/Finish) — take the read lock like pruneRuns does
+		run.mu.RLock()
+		terminal := run.terminal()
+		run.mu.RUnlock()
+		if !terminal {
 			runs = append(runs, run.Snapshot())
 		}
 		return true
