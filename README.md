@@ -419,6 +419,12 @@ task agent receives titles, source URLs and snippets in the same result format.
 Outcrawl needs an API key (there is a free tier of 1,000 credits a month). A
 missing key or an API error is returned to the task without switching providers.
 
+To use the [SpecStream](https://specstream.ai/search-api) Search API instead, set
+`WEB_SEARCH_PROVIDER=specstream` (or `-web_search_provider=specstream`) and put your
+key in `SPECSTREAM_API_KEY`. The task agent receives titles, source URLs and snippets
+in the same result format. A missing key or an API error is returned to the task
+without switching providers.
+
 Use `default` to retain DuckDuckGo/Bing, or `disabled` to block built-in web
 search. Custom MCP servers and their tool settings are separate. Each `/task`
 or `/mcp` research run has its own opaque Parallel session identifier, reused by
