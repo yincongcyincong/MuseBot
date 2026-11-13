@@ -21,10 +21,10 @@ import (
 	"github.com/yincongcyincong/MuseBot/db"
 	"github.com/yincongcyincong/MuseBot/llm"
 	"github.com/yincongcyincong/MuseBot/logger"
+	clients "github.com/yincongcyincong/MuseBot/mcpclient"
+	mcpParam "github.com/yincongcyincong/MuseBot/mcpclient/param"
 	"github.com/yincongcyincong/MuseBot/param"
 	"github.com/yincongcyincong/MuseBot/utils"
-	"github.com/yincongcyincong/mcp-client-go/clients"
-	mcpParam "github.com/yincongcyincong/mcp-client-go/clients/param"
 )
 
 const (

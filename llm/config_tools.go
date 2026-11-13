@@ -3,6 +3,7 @@ package llm
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -30,6 +31,7 @@ func (l *LLM) executeTaskConfigTool(ctx context.Context, property map[string]int
 	}
 
 	results := make([]string, 0, len(plan.Actions))
+	failed := false
 	approve := func(operation, target, detail string) (bool, error) {
 		return requestTaskToolApproval(ctx, l, operation, target, detail)
 	}
@@ -47,12 +49,21 @@ func (l *LLM) executeTaskConfigTool(ctx context.Context, property map[string]int
 				message += "\n" + result
 			}
 			results = append(results, message)
+			failed = true
 			continue
 		}
 		results = append(results, "✅ "+result)
 	}
 
-	return strings.Join(results, "\n"), nil
+	joined := strings.Join(results, "\n")
+	if failed {
+		// surface action failures as a real tool error: the tool-call accounting
+		// in the task executor only counts errors, and returning the messages as
+		// the error text keeps the ❌ details as the feedback the model reads
+		// (the tool loop embeds err verbatim in the tool result)
+		return "", errors.New(joined)
+	}
+	return joined, nil
 }
 
 // configToolActions normalizes the tool arguments into a plan JSON document.

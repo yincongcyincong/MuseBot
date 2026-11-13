@@ -31,7 +31,7 @@
 
 ### 创建机器人
 
-访问：[https://api.slack.com/apps/](https://api.slack.com/apps/) <img width="400" alt="image" src="https://github.com/user-attachments/assets/15b97d1f-7a50-4c9e-953b-7899a1ecd935" />
+访问：[https://api.slack.com/apps/](https://api.slack.com/apps/) <img width="400" alt="image" src="https://github.com/user-attachments/assets/15b97d1f-7a50-4c9e-953b-7899a1ecd935" /> <img width="400" alt="image" src="https://github.com/user-attachments/assets/be722a4f-8640-4b9b-9044-4123b8f38cb2" />
 
 配置 OAuth： <img width="400" alt="image" src="https://github.com/user-attachments/assets/e15ef32e-e4c4-4560-b076-a44e27a8c65e" /> <img width="400" alt="image" src="https://github.com/user-attachments/assets/cfc51f3b-2e57-4575-ae2d-b6d9568921e7" />
 

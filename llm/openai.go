@@ -223,6 +223,21 @@ func (d *OpenAIReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 		return d.SyncSend(ctx, l)
 	}
 
+	// GLM-style models sometimes write the tool call as <tool_call> XML in the
+	// content instead of the native tool_calls field: adopt it so the call
+	// still executes instead of ending the turn as raw XML text
+	if calls, remaining := parseXMLToolCalls(response.Choices[0].Message.Content); len(calls) > 0 {
+		logger.InfoCtx(l.Ctx, "inline tool_call blocks adopted", "count", len(calls))
+		d.GetMessage(openai.ChatMessageRoleAssistant, remaining)
+		d.OpenAIMsgs[len(d.OpenAIMsgs)-1].ToolCalls = openAIToolCalls(calls)
+		if err := d.Tools.observeComplete(ctx, l, calls); err != nil {
+			return "", err
+		}
+		d.OpenAIMsgs = append(d.OpenAIMsgs, openAIToolMessages(d.Tools.Results)...)
+		d.Tools.reset()
+		return d.SyncSend(ctx, l)
+	}
+
 	return response.Choices[0].Message.Content, nil
 }
 

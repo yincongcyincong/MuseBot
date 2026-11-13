@@ -15,10 +15,10 @@ import (
 
 	"github.com/yincongcyincong/MuseBot/conf"
 	"github.com/yincongcyincong/MuseBot/logger"
+	clients "github.com/yincongcyincong/MuseBot/mcpclient"
+	mcpParam "github.com/yincongcyincong/MuseBot/mcpclient/param"
 	"github.com/yincongcyincong/MuseBot/param"
 	"github.com/yincongcyincong/MuseBot/utils"
-	"github.com/yincongcyincong/mcp-client-go/clients"
-	mcpParam "github.com/yincongcyincong/mcp-client-go/clients/param"
 )
 
 type UpdateConfParam struct {

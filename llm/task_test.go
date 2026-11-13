@@ -2,6 +2,7 @@ package llm
 
 import (
 	"context"
+	"net/http"
 	"testing"
 	"time"
 
@@ -59,4 +60,44 @@ func TestNewTaskLLM_NoHistoryWithoutRecords(t *testing.T) {
 	plannerMsgs := planner.LLMClient.(*OpenAIReq).OpenAIMsgs
 	assert.Equal(t, 1, len(plannerMsgs))
 	assert.Equal(t, "plan prompt", plannerMsgs[0].Content)
+}
+
+// a step counts as failed only when the agent made tool calls and every one
+// of them failed; an agent that recovered from one bad call is a success
+func TestStepToolFailure(t *testing.T) {
+	assert.NoError(t, stepToolFailure(nil))
+	assert.NoError(t, stepToolFailure(&LLM{}))                           // no tool calls at all
+	assert.NoError(t, stepToolFailure(&LLM{toolCalls: 3, toolFails: 1})) // agent worked around it
+	assert.Error(t, stepToolFailure(&LLM{toolCalls: 3, toolFails: 3}))
+}
+
+// when a step fails, the remaining steps must not run and the loop must
+// surface errStepFailed so executeTask skips reflection and summarizes
+func TestExecutePlanStopsAfterFailedStep(t *testing.T) {
+	patchConf(t, false, "", 1)
+	primary := newFakeProvider(t, http.StatusInternalServerError)
+	routeProvider(t, param.OpenAi, primary)
+
+	d := &LLMTaskReq{
+		UserId: "task-fail-user",
+		Cs:     &param.ContextState{},
+		Ctx: context.WithValue(context.Background(), "user_info", &db.User{
+			LLMConfigRaw: &param.LLMConfig{TxtType: param.OpenAi, TxtModel: "m"},
+		}),
+	}
+
+	machine := newTaskStateMachine()
+	assert.NoError(t, machine.beginPlan())
+	assert.NoError(t, machine.beginExecutionLoop())
+	plan := &TaskInfo{Plan: []*Task{
+		{Name: "web_search", Description: "first"},
+		{Name: "web_search", Description: "second"},
+	}}
+
+	err := d.executePlan(machine, plan)
+	assert.ErrorIs(t, err, errStepFailed)
+	// only the first step was sent to the LLM; the second never started
+	assert.Equal(t, 1, primary.hits)
+	assert.Len(t, machine.completedResults, 1)
+	assert.Contains(t, machine.completedResults[0].TaskResult, "(step failed)")
 }

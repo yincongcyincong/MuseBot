@@ -23,9 +23,9 @@ import (
 	adminUtils "github.com/yincongcyincong/MuseBot/admin/utils"
 	"github.com/yincongcyincong/MuseBot/conf"
 	"github.com/yincongcyincong/MuseBot/logger"
+	mcpParam "github.com/yincongcyincong/MuseBot/mcpclient/param"
 	"github.com/yincongcyincong/MuseBot/param"
 	"github.com/yincongcyincong/MuseBot/utils"
-	mcpParam "github.com/yincongcyincong/mcp-client-go/clients/param"
 )
 
 type Bot struct {

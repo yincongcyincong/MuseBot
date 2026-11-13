@@ -33,7 +33,9 @@ func init() {
 		*LogLevel = os.Getenv("LOG_LEVEL")
 	}
 
-	fmt.Println("log level:", *LogLevel)
+	// stderr, never stdout: stdout is a protocol channel for stdio MCP server
+	// subprocesses, so diagnostic output must not land on it
+	fmt.Fprintln(os.Stderr, "log level:", *LogLevel)
 }
 
 // Logger instance

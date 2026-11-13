@@ -1,6 +1,6 @@
 package conf
 
-import "github.com/yincongcyincong/mcp-client-go/clients/param"
+import "github.com/yincongcyincong/MuseBot/mcpclient/param"
 
 var MCPConf = &param.McpClientGoConfig{
 	McpServers: map[string]*param.MCPConfig{

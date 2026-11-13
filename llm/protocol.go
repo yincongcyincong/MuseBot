@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"regexp"
 	"strings"
 	"time"
 	"unicode"
@@ -256,6 +257,8 @@ func (s *LLMToolState) execute(ctx context.Context, l *LLM) error {
 			logger.WarnCtx(l.Ctx, "tool arguments json unmarshal fail", "tool", call.Name, "args", call.Arguments, "err", err)
 			// invalid arguments are fed back as the tool result so the LLM can
 			// correct them instead of aborting the whole request
+			l.toolCalls++
+			l.toolFails++
 			s.Results = append(s.Results, LLMToolResult{
 				ID:      call.ID,
 				Content: fmt.Sprintf("tool %s failed: invalid arguments: %v", call.Name, err),
@@ -267,6 +270,7 @@ func (s *LLMToolState) execute(ctx context.Context, l *LLM) error {
 		content, err := l.ExecMcpReq(ctx, call.Name, property)
 		// nil-safe: reports to the admin flow view only inside /task runs
 		l.taskTracker.ToolCalled(call.Name, call.Arguments, err, time.Since(toolStart))
+		l.toolCalls++
 		if err != nil {
 			// a dead context means the request itself is being torn down, so
 			// there is no point in feeding the failure back to the LLM
@@ -274,6 +278,7 @@ func (s *LLMToolState) execute(ctx context.Context, l *LLM) error {
 				return err
 			}
 			logger.ErrorCtx(ctx, "execute tool fail", "toolId", call.ID, "tool", call.Name, "err", err)
+			l.toolFails++
 			// tool failures are fed back as the tool result so the LLM can adapt
 			// (different command, tool, or answer in the summary); only LLM
 			// request errors abort the request
@@ -309,6 +314,79 @@ func (s *LLMToolState) reset() {
 	s.Results = nil
 }
 
+// xmlToolCallRe matches one <tool_call>...</tool_call> block. GLM-style
+// models emit their native agentic tool-call syntax in the message content
+// instead of the native function-call fields; (?is) makes it tolerant of
+// case and newlines.
+var xmlToolCallRe = regexp.MustCompile(`(?is)<tool_call>\s*(.*?)\s*</tool_call>`)
+
+// parseXMLToolCalls extracts tool calls from <tool_call> blocks embedded in
+// message content and returns them together with the content stripped of the
+// blocks. Two inner shapes are accepted:
+//   - the canonical GLM JSON form: {"name": "...", "arguments": {...}}
+//   - a loose form with the bare name on the first line and the JSON
+//     arguments on the following line(s)
+//
+// Blocks without a usable name are ignored; if nothing parses the content is
+// returned unchanged.
+func parseXMLToolCalls(content string) ([]LLMToolCall, string) {
+	matches := xmlToolCallRe.FindAllStringSubmatchIndex(content, -1)
+	if len(matches) == 0 {
+		return nil, content
+	}
+
+	calls := make([]LLMToolCall, 0, len(matches))
+	for i, loc := range matches {
+		inner := strings.TrimSpace(content[loc[2]:loc[3]])
+		call := LLMToolCall{Index: -1, ID: fmt.Sprintf("xmltool_%d", i), Type: "function"}
+		if strings.HasPrefix(inner, "{") {
+			var parsed struct {
+				Name      string          `json:"name"`
+				Arguments json.RawMessage `json:"arguments"`
+			}
+			if err := json.Unmarshal([]byte(inner), &parsed); err == nil {
+				call.Name = parsed.Name
+				call.Arguments = string(parsed.Arguments)
+			}
+		} else {
+			lines := strings.SplitN(inner, "\n", 2)
+			call.Name = strings.TrimSpace(lines[0])
+			if len(lines) > 1 {
+				call.Arguments = strings.TrimSpace(lines[1])
+			}
+		}
+		if call.Name == "" {
+			continue
+		}
+		if call.Arguments == "" {
+			call.Arguments = "{}"
+		}
+		calls = append(calls, call)
+	}
+	if len(calls) == 0 {
+		return nil, content
+	}
+	return calls, xmlToolCallRe.ReplaceAllString(content, "")
+}
+
+// adoptInlineToolCalls records <tool_call> blocks the model wrote into the
+// message content as pending tool calls (used when the provider sent no
+// native tool_calls). It reports whether any were adopted and strips the raw
+// XML from the replayed content and from the not-yet-sent message tail.
+func adoptInlineToolCalls(l *LLM, tools *LLMToolState, msgInfo *param.MsgInfo) bool {
+	calls, remaining := parseXMLToolCalls(l.WholeContent)
+	if len(calls) == 0 {
+		return false
+	}
+	logger.InfoCtx(l.Ctx, "inline tool_call blocks adopted", "count", len(calls))
+	l.WholeContent = remaining
+	if msgInfo != nil {
+		msgInfo.Content = xmlToolCallRe.ReplaceAllString(msgInfo.Content, "")
+	}
+	tools.Calls = append(tools.Calls, calls...)
+	return true
+}
+
 func receiveLLMStream(ctx context.Context, l *LLM, next func() (LLMStreamChunk, error), tools *LLMToolState) (*param.MsgInfo, bool, error) {
 	msgInfo := &param.MsgInfo{SendLen: FirstSendLen}
 	hasTools := false
@@ -317,6 +395,9 @@ func receiveLLMStream(ctx context.Context, l *LLM, next func() (LLMStreamChunk, 
 		chunk, err := next()
 		if errors.Is(err, io.EOF) {
 			logger.InfoCtx(l.Ctx, "stream finished", "updateMsgID", l.MsgId)
+			if !hasTools {
+				hasTools = adoptInlineToolCalls(l, tools, msgInfo)
+			}
 			if err := tools.execute(ctx, l); err != nil {
 				return msgInfo, hasTools, err
 			}

@@ -64,6 +64,22 @@ type TaskResult struct {
 	TaskResult string
 }
 
+// errStepFailed marks a plan step that cannot complete (LLM request error or
+// every tool call in it failed). The remaining steps build on it and would
+// only repeat the failure, so executeTask skips them and summarizes what was
+// accomplished so far.
+var errStepFailed = errors.New("task step failed")
+
+// stepToolFailure reports whether the step agent finished but every tool call
+// it made failed (permission denials, missing tools): the step produced
+// nothing usable even though the agent itself answered.
+func stepToolFailure(llm *LLM) error {
+	if llm != nil && llm.toolCalls > 0 && llm.toolFails == llm.toolCalls {
+		return fmt.Errorf("all %d tool calls failed", llm.toolCalls)
+	}
+	return nil
+}
+
 // ExecuteTask runs the workflow and reports the outcome to the taskflow
 // registry: terminal state (DONE / FAILED / CANCELED) plus the final answer.
 // The terminal report is deferred so even a panic inside the workflow leaves
@@ -127,7 +143,13 @@ func (d *LLMTaskReq) executeTask(plannerOut **LLM) error {
 		d.Tracker.LoopStarted(machine.executionLoop, machine.maxExecutionLoops)
 
 		if err := d.executePlan(machine, plan); err != nil {
-			return err
+			if !errors.Is(err, errStepFailed) {
+				return err
+			}
+			// a failed step poisons the rest of the plan: skip the remaining
+			// steps and the reflection round, and let the summarizer report
+			// what completed and what failed (EXECUTE -> SUMMARIZE)
+			break
 		}
 
 		// a single-step plan that completed needs no reflection round: there
@@ -393,9 +415,24 @@ func (d *LLMTaskReq) executePlan(machine *taskStateMachine, plan *TaskInfo) erro
 			result, syncErr = d.syncTaskLLM(llm)
 			return syncErr
 		})
+		// the agent answered, but every tool call it made failed: the step
+		// produced nothing usable — treat it as a failed step
+		if err == nil {
+			err = stepToolFailure(llm)
+		}
 		if err != nil {
-			d.Tracker.StepFinished(i, task.Name, "", err)
-			return err
+			d.Tracker.StepFinished(i, task.Name, result, err)
+			// the failure is part of the summary context so the summarizer
+			// can explain why the remaining steps were skipped
+			failureNote := strings.TrimSpace(result)
+			if failureNote == "" {
+				failureNote = err.Error()
+			}
+			machine.completedResults = append(machine.completedResults, TaskResult{
+				TaskName:   task.Name,
+				TaskResult: "(step failed) " + failureNote,
+			})
+			return errStepFailed
 		}
 		d.Tracker.StepFinished(i, task.Name, result, nil)
 		// give the user visibility into what the agent actually did: one

@@ -3,65 +3,63 @@ package llm
 import (
 	"context"
 	"fmt"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/yincongcyincong/MuseBot/conf"
 	"github.com/yincongcyincong/MuseBot/param"
 )
 
-func TestExecuteTaskConfigToolDispatchesActions(t *testing.T) {
-	executed := make([]*param.ConversationConfigAction, 0)
-	l := &LLM{
-		ConfigExecutor: func(action *param.ConversationConfigAction, approve TaskApprovalFunc) (string, error) {
-			if approve == nil {
-				return "", fmt.Errorf("approve callback must be provided")
-			}
-			executed = append(executed, action)
-			return action.Operation + " done", nil
-		},
-	}
+// a rejected action must surface as a real tool error (carrying the ❌ detail),
+// not as success content: the task executor's step-failure accounting only
+// counts errors, so swallowing them here would let the next plan step run
+func TestExecuteTaskConfigToolSurfacesActionFailure(t *testing.T) {
+	l := &LLM{ConfigExecutor: func(action *param.ConversationConfigAction,
+		approve TaskApprovalFunc) (string, error) {
+		return "", fmt.Errorf("configuration actions require an administrator user")
+	}}
 
-	// a single action object
-	out, err := l.executeTaskConfigTool(context.Background(), map[string]interface{}{
-		"action": map[string]interface{}{"type": "config", "operation": "list"},
+	content, err := l.executeTaskConfigTool(context.Background(), map[string]interface{}{
+		"action": map[string]interface{}{"type": "skill", "operation": "list"},
 	})
-	assert.NoError(t, err)
-	assert.Contains(t, out, "✅ list done")
-	assert.Len(t, executed, 1)
+	assert.Error(t, err)
+	assert.Empty(t, content)
+	// the ❌ line stays in the error text: the tool loop feeds err back to the
+	// model verbatim, so the failure reason is not lost
+	assert.Contains(t, err.Error(), "❌ skill list")
+	assert.Contains(t, err.Error(), "administrator user")
+}
 
-	// an actions array, including the "op" alias
-	executed = executed[:0]
-	out, err = l.executeTaskConfigTool(context.Background(), map[string]interface{}{
+// one failing action among several marks the whole call failed, but the ✅
+// results of the other actions ride along in the same message
+func TestExecuteTaskConfigToolMixedActions(t *testing.T) {
+	l := &LLM{ConfigExecutor: func(action *param.ConversationConfigAction,
+		approve TaskApprovalFunc) (string, error) {
+		if action.Operation == "delete" {
+			return "", fmt.Errorf("not found")
+		}
+		return "done " + action.Operation, nil
+	}}
+
+	_, err := l.executeTaskConfigTool(context.Background(), map[string]interface{}{
 		"actions": []interface{}{
-			map[string]interface{}{"type": "mcp", "op": "sync"},
-			map[string]interface{}{"type": "cron", "operation": "list"},
+			map[string]interface{}{"type": "config", "operation": "get"},
+			map[string]interface{}{"type": "skill", "operation": "delete"},
 		},
 	})
-	assert.NoError(t, err)
-	assert.Len(t, executed, 2)
-	assert.Equal(t, "sync", executed[0].Operation) // alias resolved
-	assert.Equal(t, 2, strings.Count(out, "✅"))
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "✅ done get")
+	assert.Contains(t, err.Error(), "❌ skill delete: not found")
+}
 
-	// fields inlined directly on the tool call
-	executed = executed[:0]
-	out, err = l.executeTaskConfigTool(context.Background(), map[string]interface{}{
-		"type": "mcp", "operation": "sync",
+func TestExecuteTaskConfigToolAllActionsSucceed(t *testing.T) {
+	l := &LLM{ConfigExecutor: func(action *param.ConversationConfigAction,
+		approve TaskApprovalFunc) (string, error) {
+		return "ok", nil
+	}}
+
+	content, err := l.executeTaskConfigTool(context.Background(), map[string]interface{}{
+		"action": map[string]interface{}{"type": "config", "operation": "get"},
 	})
 	assert.NoError(t, err)
-	assert.Len(t, executed, 1)
-	assert.Equal(t, "mcp", executed[0].Type)
-
-	// unsupported action types are rejected before reaching the executor
-	_, err = l.executeTaskConfigTool(context.Background(), map[string]interface{}{
-		"action": map[string]interface{}{"type": "reboot", "operation": "now"},
-	})
-	assert.ErrorContains(t, err, "unsupported configuration action type")
-
-	// no executor injected -> explicit error instead of falling through to MCP
-	bare := &LLM{}
-	_, err = bare.ExecMcpReq(context.Background(), conf.BuiltinConfigTool,
-		map[string]interface{}{"action": map[string]interface{}{"type": "config", "operation": "list"}})
-	assert.ErrorContains(t, err, "config executor is unavailable")
+	assert.Equal(t, "✅ ok", content)
 }

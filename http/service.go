@@ -143,7 +143,7 @@ func Log(w http.ResponseWriter, r *http.Request) {
 
 	maxLines := 5000
 	if typ != "" {
-		maxLines = 100000
+		maxLines = 10000
 	}
 
 	filePath := utils.GetAbsPath("log/muse_bot.log")

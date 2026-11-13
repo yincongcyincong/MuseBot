@@ -17,11 +17,11 @@ import (
 	"github.com/yincongcyincong/MuseBot/db"
 	"github.com/yincongcyincong/MuseBot/i18n"
 	"github.com/yincongcyincong/MuseBot/logger"
+	clients "github.com/yincongcyincong/MuseBot/mcpclient"
 	"github.com/yincongcyincong/MuseBot/metrics"
 	"github.com/yincongcyincong/MuseBot/param"
 	"github.com/yincongcyincong/MuseBot/taskflow"
 	"github.com/yincongcyincong/MuseBot/utils"
-	"github.com/yincongcyincong/mcp-client-go/clients"
 	"google.golang.org/genai"
 )
 
@@ -82,6 +82,13 @@ type LLM struct {
 	// taskTracker reports /task progress to the taskflow registry for the
 	// admin flow view; nil (all non-task requests) makes every call a no-op.
 	taskTracker *taskflow.Tracker
+
+	// toolCalls/toolFails tally the tool-call outcomes of this request. The
+	// task executor reads them to detect a step whose every tool call failed
+	// (permission denials, missing tools): such a step produced nothing
+	// usable and the remaining steps should not run.
+	toolCalls int
+	toolFails int
 }
 
 // TaskApprovalFunc asks the triggering user to confirm an operation; it
@@ -559,6 +566,10 @@ func (l *LLM) ExecMcpReq(ctx context.Context, funcName string, property map[stri
 	if l.ToolApprovals && funcName == conf.BuiltinShellTool {
 		return l.executeTaskShellTool(ctx, property)
 	}
+
+	// GLM-style models rename advertised tools with the mcp__server__tool
+	// convention; map such names back onto the advertised ones
+	funcName = clients.ResolveToolName(funcName)
 
 	mc, err := clients.GetMCPClientByToolName(funcName)
 	if err != nil {

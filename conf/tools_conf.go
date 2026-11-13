@@ -13,12 +13,11 @@ import (
 	"time"
 
 	"github.com/cohesion-org/deepseek-go"
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/sashabaranov/go-openai"
 	"github.com/volcengine/volcengine-go-sdk/service/arkruntime/model"
 	"github.com/yincongcyincong/MuseBot/logger"
-	"github.com/yincongcyincong/mcp-client-go/clients"
-	mcputils "github.com/yincongcyincong/mcp-client-go/utils"
+	clients "github.com/yincongcyincong/MuseBot/mcpclient"
 	"google.golang.org/genai"
 )
 
@@ -171,36 +170,36 @@ func InitTools() {
 }
 
 func RegisterBuiltinTools() {
-	searchTool := mcp.Tool{
+	searchTool := &mcp.Tool{
 		Name:        BuiltinWebSearchTool,
 		Description: "Search the public web. Use for current facts, unknown terminology, market data, documentation, prior work, and source links.",
-		InputSchema: mcp.ToolInputSchema{
-			Type: "object",
-			Properties: map[string]any{
+		InputSchema: map[string]any{
+			"type": "object",
+			"properties": map[string]any{
 				"query": map[string]any{
 					"type":        "string",
 					"description": "Focused web search query",
 				},
 			},
-			Required: []string{"query"},
+			"required": []any{"query"},
 		},
 	}
 
 	TaskTools.Store(BuiltinWebSearchTool, &AgentInfo{
 		Description:  "Web research agent. Assign it as a plan step only when the task needs external facts, current data, or source links; skip it when no external information is required. It calls web_search.",
 		IsBuiltin:    true,
-		DeepseekTool: mcputils.TransToolsToDPFunctionCall([]mcp.Tool{searchTool}),
-		VolTool:      mcputils.TransToolsToVolFunctionCall([]mcp.Tool{searchTool}),
-		OpenAITools:  mcputils.TransToolsToChatGPTFunctionCall([]mcp.Tool{searchTool}),
-		GeminiTools:  mcputils.TransToolsToGeminiFunctionCall([]mcp.Tool{searchTool}),
+		DeepseekTool: clients.TransToolsToDPFunctionCall([]*mcp.Tool{searchTool}),
+		VolTool:      clients.TransToolsToVolFunctionCall([]*mcp.Tool{searchTool}),
+		OpenAITools:  clients.TransToolsToChatGPTFunctionCall([]*mcp.Tool{searchTool}),
+		GeminiTools:  clients.TransToolsToGeminiFunctionCall([]*mcp.Tool{searchTool}),
 	})
 
-	shellTool := mcp.Tool{
+	shellTool := &mcp.Tool{
 		Name:        BuiltinShellTool,
 		Description: "Run one allowlisted command as an argv array after explicit user approval. Shell interpolation is not used. All file operations (list, read, write, edit, create, move) go through allowlisted commands such as ls, cat, tee, mkdir, mv.",
-		InputSchema: mcp.ToolInputSchema{
-			Type: "object",
-			Properties: map[string]any{
+		InputSchema: map[string]any{
+			"type": "object",
+			"properties": map[string]any{
 				"args": map[string]any{
 					"type":        "array",
 					"items":       map[string]any{"type": "string"},
@@ -215,31 +214,35 @@ func RegisterBuiltinTools() {
 					"description": "Optional timeout in seconds, capped by the server configuration",
 				},
 			},
-			Required: []string{"args"},
+			"required": []any{"args"},
 		},
 	}
 
 	TaskTools.Store(BuiltinShellTool, &AgentInfo{
 		Description:  "Command execution agent. Call shell only with the exact argv needed, and wait for user approval before execution.",
 		IsBuiltin:    true,
-		DeepseekTool: mcputils.TransToolsToDPFunctionCall([]mcp.Tool{shellTool}),
-		VolTool:      mcputils.TransToolsToVolFunctionCall([]mcp.Tool{shellTool}),
-		OpenAITools:  mcputils.TransToolsToChatGPTFunctionCall([]mcp.Tool{shellTool}),
-		GeminiTools:  mcputils.TransToolsToGeminiFunctionCall([]mcp.Tool{shellTool}),
+		DeepseekTool: clients.TransToolsToDPFunctionCall([]*mcp.Tool{shellTool}),
+		VolTool:      clients.TransToolsToVolFunctionCall([]*mcp.Tool{shellTool}),
+		OpenAITools:  clients.TransToolsToChatGPTFunctionCall([]*mcp.Tool{shellTool}),
+		GeminiTools:  clients.TransToolsToGeminiFunctionCall([]*mcp.Tool{shellTool}),
 	})
 
-	configTool := mcp.Tool{
+	configTool := &mcp.Tool{
 		Name:        BuiltinConfigTool,
 		Description: "Manage MuseBot itself: runtime settings, MCP servers, skills, cron jobs, and allowlisted commands. Use it whenever the task asks to view or change the bot's own configuration. Requires an administrator user.",
-		InputSchema: mcp.ToolInputSchema{
-			Type: "object",
-			Properties: map[string]any{
+		InputSchema: map[string]any{
+			"type": "object",
+			"properties": map[string]any{
 				"type":        map[string]any{"type": "string", "description": "Action type: config, mcp, skill, cron, command"},
 				"operation":   map[string]any{"type": "string", "description": "config: list|get|set; mcp: list|set|delete|enable|disable|sync; skill: list|create|reload|search|install|delete (empty name deletes all); cron: list|get|create|update|enable|disable|delete|clear; command: run"},
 				"config_type": map[string]any{"type": "string", "description": "config get/set target: base, audio, llm, photo, rag, video, register, tools"},
 				"key":         map[string]any{"type": "string", "description": "config key in json tag form, e.g. smart_mode"},
 				"value":       map[string]any{"description": "config value to set"},
 				"name":        map[string]any{"type": "string", "description": "mcp/skill/cron name"},
+				"server": map[string]any{
+					"type":        "object",
+					"description": "mcp set: the complete server object — stdio {\"command\",\"args\",\"env\"} or remote {\"url\",\"headers\"}",
+				},
 				"query":       map[string]any{"type": "string", "description": "skill search/install capability query"},
 				"description": map[string]any{"type": "string", "description": "mcp/skill description"},
 				"instructions": map[string]any{
@@ -248,12 +251,13 @@ func RegisterBuiltinTools() {
 				},
 				"cron":    map[string]any{"type": "string", "description": "six-field cron expression for cron create/update"},
 				"prompt":  map[string]any{"type": "string", "description": "cron prompt"},
+				"command": map[string]any{"type": "string", "description": "cron create/update: command of the cron job"},
 				"args":    map[string]any{"type": "array", "items": map[string]any{"type": "string"}, "description": "command argv array, e.g. [\"git\",\"status\"]"},
 				"timeout": map[string]any{"type": "integer", "description": "command timeout seconds"},
 				"path":    map[string]any{"type": "string", "description": "skill: source URL or owner/repo for install; command: working directory inside the sandbox"},
 				"id":      map[string]any{"type": "integer", "description": "cron id for cron update/enable/disable/delete"},
 			},
-			Required: []string{"type", "operation"},
+			"required": []any{"type", "operation"},
 		},
 	}
 
@@ -267,10 +271,10 @@ func RegisterBuiltinTools() {
 			"Cron create returns the new numeric id; keep it for later reference. Before cron update/enable/disable/delete, run cron list first and match by id, name, prompt or cron spec; never guess an id, and confirm with the user when several jobs match. " +
 			"Use command(run) with an argv array, never a shell string; file operations belong to the shell agent, not bot_config. " +
 			"Never invent configuration keys, operations, or URLs, and never return secrets.",
-		DeepseekTool: mcputils.TransToolsToDPFunctionCall([]mcp.Tool{configTool}),
-		VolTool:      mcputils.TransToolsToVolFunctionCall([]mcp.Tool{configTool}),
-		OpenAITools:  mcputils.TransToolsToChatGPTFunctionCall([]mcp.Tool{configTool}),
-		GeminiTools:  mcputils.TransToolsToGeminiFunctionCall([]mcp.Tool{configTool}),
+		DeepseekTool: clients.TransToolsToDPFunctionCall([]*mcp.Tool{configTool}),
+		VolTool:      clients.TransToolsToVolFunctionCall([]*mcp.Tool{configTool}),
+		OpenAITools:  clients.TransToolsToChatGPTFunctionCall([]*mcp.Tool{configTool}),
+		GeminiTools:  clients.TransToolsToGeminiFunctionCall([]*mcp.Tool{configTool}),
 	})
 }
 
@@ -285,10 +289,11 @@ func InsertTools(clientName string) {
 	if err != nil {
 		logger.Error("get client fail", "err", err)
 	} else {
-		dpTools := mcputils.TransToolsToDPFunctionCall(c.Tools)
-		volTools := mcputils.TransToolsToVolFunctionCall(c.Tools)
-		oaTools := mcputils.TransToolsToChatGPTFunctionCall(c.Tools)
-		gmTools := mcputils.TransToolsToGeminiFunctionCall(c.Tools)
+		tools := c.Tools()
+		dpTools := clients.TransToolsToDPFunctionCall(tools)
+		volTools := clients.TransToolsToVolFunctionCall(tools)
+		oaTools := clients.TransToolsToChatGPTFunctionCall(tools)
+		gmTools := clients.TransToolsToGeminiFunctionCall(tools)
 
 		TaskTools.Store(clientName, &AgentInfo{
 			Description:  fmt.Sprintf("MCP server %s exposes the function tools listed in this agent's schema.", clientName),
