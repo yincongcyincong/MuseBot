@@ -425,6 +425,16 @@ key in `SPECSTREAM_API_KEY`. The task agent receives titles, source URLs and sni
 in the same result format. A missing key or an API error is returned to the task
 without switching providers.
 
+To use [Keenable](https://docs.keenable.ai/api-reference/search) instead, set
+`WEB_SEARCH_PROVIDER=keenable` (or `-web_search_provider=keenable`). It works
+without an account or API key: keyless requests go to the public endpoint, which
+Keenable rate limits per IP address. Set `KEENABLE_API_KEY` to use the keyed
+endpoint instead. The task agent receives titles, source URLs and snippets in the
+same result format. Search queries are sent to Keenable; keyless requests are
+logged with the query, IP address and user agent
+([details](https://docs.keenable.ai/authentication#try-it-without-a-key)). Errors
+are returned to the task without switching providers.
+
 Use `default` to retain DuckDuckGo/Bing, or `disabled` to block built-in web
 search. Custom MCP servers and their tool settings are separate. Each `/task`
 or `/mcp` research run has its own opaque Parallel session identifier, reused by
