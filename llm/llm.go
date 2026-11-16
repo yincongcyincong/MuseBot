@@ -554,6 +554,8 @@ func (l *LLM) ExecMcpReq(ctx context.Context, funcName string, property map[stri
 			return utils.ParallelWebSearch(ctx, query, l.searchSession.ID())
 		case "outcrawl":
 			return utils.OutcrawlWebSearch(ctx, query)
+		case "specstream":
+			return utils.SpecStreamWebSearch(ctx, query)
 		case "disabled":
 			return "", errors.New("web search is disabled")
 		default:
