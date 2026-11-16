@@ -72,7 +72,7 @@ func TestRetryLLMRequestRetriesUntilSuccess(t *testing.T) {
 	})
 
 	attempts := 0
-	value, err := retryLLMRequest(nil, func() (string, error) {
+	value, err := retryLLMRequest(nil, "sync", func() (string, error) {
 		attempts++
 		if attempts == 1 {
 			return "", assert.AnError

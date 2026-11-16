@@ -8,8 +8,10 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 	"os"
+	"strconv"
 	"time"
 
+	"github.com/felixge/httpsnoop"
 	"github.com/google/uuid"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/yincongcyincong/MuseBot/conf"
@@ -185,8 +187,19 @@ func WithRequestContext(next http.Handler) http.Handler {
 			logger.InfoCtx(ctx, "request start", "path", r.URL.Path)
 		}
 
-		next.ServeHTTP(w, r)
-
-		metrics.HTTPRequestCount.WithLabelValues(r.URL.Path).Inc()
+		route := "unmatched"
+		if mux, ok := next.(*http.ServeMux); ok {
+			if _, pattern := mux.Handler(r); pattern != "" {
+				route = pattern
+			}
+		}
+		metrics.HTTPRequestCount.WithLabelValues(route).Inc()
+		inFlight := metrics.HTTPInFlight.WithLabelValues(route)
+		inFlight.Inc()
+		defer inFlight.Dec()
+		response := httpsnoop.CaptureMetrics(next, w, r)
+		status := strconv.Itoa(response.Code)
+		metrics.HTTPRequests.WithLabelValues(route, status).Inc()
+		metrics.HTTPDuration.WithLabelValues(route, status).Observe(response.Duration.Seconds())
 	})
 }

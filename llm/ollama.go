@@ -64,7 +64,7 @@ func (o *OllamaReq) Send(ctx context.Context, l *LLM) error {
 
 	request.Messages = o.OllamaMsgs
 
-	stream, err := retryLLMRequest(l, func() (*Stream, error) {
+	stream, err := retryLLMRequest(l, "stream", func() (*Stream, error) {
 		return requestDeepseek(ctx, client, request)
 	})
 	if err != nil || stream == nil {
@@ -75,7 +75,7 @@ func (o *OllamaReq) Send(ctx context.Context, l *LLM) error {
 
 	metrics.APIRequestDuration.WithLabelValues(l.Model).Observe(time.Since(start).Seconds())
 
-	msgInfoContent, hasTools, err := receiveLLMStream(ctx, l, func() (LLMStreamChunk, error) {
+	msgInfoContent, hasTools, err := receiveLLMStream(ctx, l, start, func() (LLMStreamChunk, error) {
 		response, err := Receive(stream)
 		if err != nil {
 			return LLMStreamChunk{}, err
@@ -212,7 +212,7 @@ func (o *OllamaReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 	currentLLMSamplingOptions().applyToDeepseek(request)
 
 	// assign task
-	response, err := retryLLMRequest(l, func() (*deepseek.ChatCompletionResponse, error) {
+	response, err := retryLLMRequest(l, "sync", func() (*deepseek.ChatCompletionResponse, error) {
 		return client.CreateChatCompletion(ctx, request)
 	})
 	if err != nil || response == nil {

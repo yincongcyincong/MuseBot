@@ -668,6 +668,354 @@
       ],
       "title": "MCP Request Duration (seconds)",
       "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "aeatio09j0kqob"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 12,
+        "x": 0,
+        "y": 24
+      },
+      "id": 9,
+      "targets": [
+        {
+          "expr": "60 * sum by (route, status) (rate(musebot_http_requests_total[$__rate_interval]))",
+          "legendFormat": "{{route}} {{status}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "HTTP requests per minute",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "aeatio09j0kqob"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 12,
+        "x": 12,
+        "y": 24
+      },
+      "id": 10,
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (le, route) (rate(musebot_http_request_duration_seconds_bucket[$__rate_interval])))",
+          "legendFormat": "{{route}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "HTTP request latency P95",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "aeatio09j0kqob"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 12,
+        "x": 0,
+        "y": 30
+      },
+      "id": 11,
+      "targets": [
+        {
+          "expr": "60 * sum by (provider, model, outcome) (rate(musebot_llm_request_attempts_total[$__rate_interval]))",
+          "legendFormat": "{{provider}} / {{model}} / {{outcome}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Chat API attempts per minute",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "aeatio09j0kqob"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 12,
+        "x": 12,
+        "y": 30
+      },
+      "id": 12,
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (le, provider, model) (rate(musebot_llm_first_content_seconds_bucket[$__rate_interval])))",
+          "legendFormat": "{{provider}} / {{model}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Chat stream first content P95",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "aeatio09j0kqob"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 12,
+        "x": 0,
+        "y": 36
+      },
+      "id": 13,
+      "targets": [
+        {
+          "expr": "60 * sum by (service, tool, outcome) (rate(musebot_tool_calls_total[$__rate_interval]))",
+          "legendFormat": "{{service}} / {{tool}} / {{outcome}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Tool calls per minute",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "aeatio09j0kqob"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 12,
+        "x": 12,
+        "y": 36
+      },
+      "id": 14,
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (le, service, tool) (rate(musebot_tool_call_duration_seconds_bucket[$__rate_interval])))",
+          "legendFormat": "{{service}} / {{tool}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Tool call latency P95",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "aeatio09j0kqob"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 12,
+        "x": 0,
+        "y": 42
+      },
+      "id": 15,
+      "targets": [
+        {
+          "expr": "60 * sum by (state) (rate(musebot_task_runs_total[$__rate_interval]))",
+          "legendFormat": "{{state}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Task runs per minute",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "aeatio09j0kqob"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 12,
+        "x": 12,
+        "y": 42
+      },
+      "id": 16,
+      "targets": [
+        {
+          "expr": "60 * sum by (outcome) (rate(musebot_task_recovery_total[$__rate_interval]))",
+          "legendFormat": "{{outcome}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Task step recovery per minute",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "aeatio09j0kqob"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 12,
+        "x": 0,
+        "y": 48
+      },
+      "id": 17,
+      "targets": [
+        {
+          "expr": "60 * sum by (from, to, outcome) (rate(musebot_llm_failover_results_total[$__rate_interval]))",
+          "legendFormat": "{{from}} → {{to}} / {{outcome}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "LLM failover attempts per minute",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "aeatio09j0kqob"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 12,
+        "x": 12,
+        "y": 48
+      },
+      "id": 18,
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (le, provider, model) (rate(musebot_llm_stream_duration_seconds_bucket[$__rate_interval])))",
+          "legendFormat": "{{provider}} / {{model}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Chat stream consumption P95",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "aeatio09j0kqob"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 12,
+        "x": 0,
+        "y": 54
+      },
+      "id": 19,
+      "targets": [
+        {
+          "expr": "sum by (route) (musebot_http_requests_in_flight)",
+          "legendFormat": "{{route}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "HTTP requests in flight",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "aeatio09j0kqob"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 12,
+        "x": 12,
+        "y": 54
+      },
+      "id": 20,
+      "targets": [
+        {
+          "expr": "sum by (service, tool) (rate(musebot_tool_calls_total{outcome=~\"error|timeout\"}[$__rate_interval])) / sum by (service, tool) (rate(musebot_tool_calls_total[$__rate_interval]))",
+          "legendFormat": "{{service}} / {{tool}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Tool failure ratio",
+      "type": "timeseries"
     }
   ],
   "preload": false,

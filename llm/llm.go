@@ -541,7 +541,15 @@ func WithContentParameter(contentParameter map[string]string) Option {
 	}
 }
 
-func (l *LLM) ExecMcpReq(ctx context.Context, funcName string, property map[string]interface{}) (string, error) {
+func (l *LLM) ExecMcpReq(ctx context.Context, funcName string, property map[string]interface{}) (_ string, callErr error) {
+	start := time.Now()
+	service, tool := "unresolved", "unknown"
+	switch funcName {
+	case conf.BuiltinWebSearchTool, conf.BuiltinConfigTool, conf.BuiltinShellTool:
+		service, tool = "builtin", funcName
+	}
+	defer func() { metrics.ObserveTool(ctx, service, tool, start, callErr) }()
+
 	if funcName == conf.BuiltinWebSearchTool {
 		query, _ := property["query"].(string)
 		switch strings.ToLower(strings.TrimSpace(conf.ToolsConfInfo.WebSearchProvider)) {
@@ -554,6 +562,8 @@ func (l *LLM) ExecMcpReq(ctx context.Context, funcName string, property map[stri
 			return utils.ParallelWebSearch(ctx, query, l.searchSession.ID())
 		case "outcrawl":
 			return utils.OutcrawlWebSearch(ctx, query)
+		case "specstream":
+			return utils.SpecStreamWebSearch(ctx, query)
 		case "keenable":
 			return utils.KeenableWebSearch(ctx, query)
 		case "disabled":
@@ -579,7 +589,8 @@ func (l *LLM) ExecMcpReq(ctx context.Context, funcName string, property map[stri
 		return "", err
 	}
 
-	metrics.MCPRequestCount.WithLabelValues(mc.Conf.Name, funcName).Inc()
+	service, tool = mc.Conf.Name, funcName
+	metrics.MCPRequestCount.WithLabelValues(service, tool).Inc()
 	startTime := time.Now()
 
 	var toolsData string
@@ -587,12 +598,11 @@ func (l *LLM) ExecMcpReq(ctx context.Context, funcName string, property map[stri
 		return mc.ExecTools(ctx, funcName, property)
 	})
 
+	metrics.MCPRequestDuration.WithLabelValues(service, tool).Observe(time.Since(startTime).Seconds())
 	if err != nil {
 		logger.ErrorCtx(ctx, "get mcp fail", "err", err, "function", funcName, "argument", property)
 		return "", err
 	}
-
-	metrics.MCPRequestDuration.WithLabelValues(mc.Conf.Name, funcName).Observe(time.Since(startTime).Seconds())
 
 	logger.InfoCtx(ctx, "get mcp", "function", funcName, "argument", property, "res", toolsData)
 
