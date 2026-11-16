@@ -83,16 +83,19 @@ func retryRequest[T any](ctx context.Context, operation func() (T, error)) (T, e
 	return value, err
 }
 
-func retryLLMRequest[T any](l *LLM, operation func() (T, error)) (T, error) {
-	var ctx context.Context
-	if l != nil {
-		ctx = l.Ctx
+func retryLLMRequest[T any](l *LLM, mode string, operation func() (T, error)) (T, error) {
+	if l == nil {
+		return retryRequest(nil, operation)
 	}
-	return retryRequest(ctx, operation)
-}
-
-func observeLLMDuration(l *LLM, start time.Time) {
-	metrics.APIRequestDuration.WithLabelValues(l.Model).Observe(time.Since(start).Seconds())
+	provider, model := l.txtProviderType(), l.Model
+	return retryRequest(l.Ctx, func() (T, error) {
+		start := time.Now()
+		value, err := operation()
+		outcome := metrics.Outcome(l.Ctx, err)
+		metrics.LLMAttempts.WithLabelValues(provider, model, mode, outcome).Inc()
+		metrics.LLMAttemptDuration.WithLabelValues(provider, model, mode, outcome).Observe(time.Since(start).Seconds())
+		return value, err
+	})
 }
 
 type llmSamplingOptions struct {
@@ -387,13 +390,20 @@ func adoptInlineToolCalls(l *LLM, tools *LLMToolState, msgInfo *param.MsgInfo) b
 	return true
 }
 
-func receiveLLMStream(ctx context.Context, l *LLM, next func() (LLMStreamChunk, error), tools *LLMToolState) (*param.MsgInfo, bool, error) {
+func receiveLLMStream(ctx context.Context, l *LLM, roundStart time.Time, next func() (LLMStreamChunk, error), tools *LLMToolState) (*param.MsgInfo, bool, error) {
+	provider, model := l.txtProviderType(), l.Model
+	streamStart := time.Now()
+	firstContent := true
+	observeStream := func(err error) {
+		metrics.LLMStreamDuration.WithLabelValues(provider, model, metrics.Outcome(ctx, err)).Observe(time.Since(streamStart).Seconds())
+	}
 	msgInfo := &param.MsgInfo{SendLen: FirstSendLen}
 	hasTools := false
 
 	for {
 		chunk, err := next()
 		if errors.Is(err, io.EOF) {
+			observeStream(nil)
 			logger.InfoCtx(l.Ctx, "stream finished", "updateMsgID", l.MsgId)
 			if !hasTools {
 				hasTools = adoptInlineToolCalls(l, tools, msgInfo)
@@ -404,6 +414,7 @@ func receiveLLMStream(ctx context.Context, l *LLM, next func() (LLMStreamChunk, 
 			return msgInfo, hasTools, nil
 		}
 		if err != nil {
+			observeStream(err)
 			logger.WarnCtx(l.Ctx, "stream error", "updateMsgID", l.MsgId, "err", err)
 			return msgInfo, hasTools, err
 		}
@@ -414,6 +425,7 @@ func receiveLLMStream(ctx context.Context, l *LLM, next func() (LLMStreamChunk, 
 				if errors.Is(err, ToolsJsonErr) {
 					continue
 				}
+				observeStream(err)
 				logger.ErrorCtx(l.Ctx, "request tools call error", "updateMsgID", l.MsgId, "err", err)
 				return msgInfo, hasTools, err
 			}
@@ -424,6 +436,10 @@ func receiveLLMStream(ctx context.Context, l *LLM, next func() (LLMStreamChunk, 
 		// of WholeContent, which is replayed as the assistant message). The
 		// final answer after the tool results streams as a fresh message from
 		// the recursive Send.
+		if firstContent && chunk.Content != "" {
+			metrics.LLMFirstContent.WithLabelValues(provider, model).Observe(time.Since(roundStart).Seconds())
+			firstContent = false
+		}
 		msgInfo = l.SendMsg(msgInfo, chunk.Content)
 		if chunk.HasUsage {
 			l.Cs.Token += chunk.Usage

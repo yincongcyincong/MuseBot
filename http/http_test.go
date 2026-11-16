@@ -3,9 +3,11 @@ package http
 import (
 	"io/ioutil"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus/testutil"
 	"github.com/yincongcyincong/MuseBot/metrics"
 )
 
@@ -52,5 +54,28 @@ func TestPProfServer_Start(t *testing.T) {
 
 	if len(body) == 0 {
 		t.Error("Expected non-empty /metrics response")
+	}
+}
+
+func TestHTTPMetricsUseRouteAndPreserveFlushing(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/test-stream/", func(w http.ResponseWriter, r *http.Request) {
+		w.(http.Flusher).Flush()
+	})
+	handler := WithRequestContext(mux)
+
+	for _, test := range []struct {
+		path, route, status string
+	}{
+		{"/test-stream/token-one", "/test-stream/", "200"},
+		{"/test-stream/token-two", "/test-stream/", "200"},
+		{"/unknown-test-path", "unmatched", "404"},
+	} {
+		counter := metrics.HTTPRequests.WithLabelValues(test.route, test.status)
+		before := testutil.ToFloat64(counter)
+		handler.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, test.path, nil))
+		if got := testutil.ToFloat64(counter); got != before+1 {
+			t.Errorf("route %q status %q: count = %v, want %v", test.route, test.status, got, before+1)
+		}
 	}
 }

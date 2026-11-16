@@ -71,7 +71,7 @@ func (d *OpenAIReq) Send(ctx context.Context, l *LLM) error {
 	currentLLMSamplingOptions().applyToOpenAI(&request)
 	sanitizeOpenAISamplingParams(&request)
 
-	stream, err := retryLLMRequest(l, func() (*openai.ChatCompletionStream, error) {
+	stream, err := retryLLMRequest(l, "stream", func() (*openai.ChatCompletionStream, error) {
 		return client.CreateChatCompletionStream(ctx, request)
 	})
 	if err != nil {
@@ -82,7 +82,7 @@ func (d *OpenAIReq) Send(ctx context.Context, l *LLM) error {
 
 	metrics.APIRequestDuration.WithLabelValues(l.Model).Observe(time.Since(start).Seconds())
 
-	msgInfoContent, hasTools, err := receiveLLMStream(ctx, l, func() (LLMStreamChunk, error) {
+	msgInfoContent, hasTools, err := receiveLLMStream(ctx, l, start, func() (LLMStreamChunk, error) {
 		response, err := stream.Recv()
 		if err != nil {
 			return LLMStreamChunk{}, err
@@ -193,7 +193,7 @@ func (d *OpenAIReq) SyncSend(ctx context.Context, l *LLM) (string, error) {
 	currentLLMSamplingOptions().applyToOpenAI(&request)
 	sanitizeOpenAISamplingParams(&request)
 
-	response, err := retryLLMRequest(l, func() (openai.ChatCompletionResponse, error) {
+	response, err := retryLLMRequest(l, "sync", func() (openai.ChatCompletionResponse, error) {
 		return client.CreateChatCompletion(ctx, request)
 	})
 	if err != nil {

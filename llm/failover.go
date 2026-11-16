@@ -72,6 +72,7 @@ func (l *LLM) sendWithFailover() error {
 		metrics.APIFailoverCount.WithLabelValues(primary, target.Type).Inc()
 
 		err = l.attempt()
+		metrics.FailoverResults.WithLabelValues(primary, target.Type, metrics.Outcome(l.Ctx, err)).Inc()
 		if err == nil {
 			logger.InfoCtx(l.Ctx, "failover success", "from", primary, "to", target.Type)
 			return nil
@@ -130,7 +131,12 @@ func (l *LLM) txtProviderType() string {
 	if l.providerOverride != "" {
 		return l.providerOverride
 	}
-	return utils.GetTxtType(db.GetCtxUserInfo(l.Ctx).LLMConfigRaw)
+	if l.Ctx != nil {
+		if user := db.GetCtxUserInfo(l.Ctx); user != nil {
+			return utils.GetTxtType(user.LLMConfigRaw)
+		}
+	}
+	return utils.GetTxtType(nil)
 }
 
 // failoverChain lists the backup providers after the primary: the explicit

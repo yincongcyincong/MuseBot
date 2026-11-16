@@ -65,9 +65,8 @@ type TaskResult struct {
 }
 
 // errStepFailed marks a plan step that cannot complete (LLM request error or
-// every tool call in it failed). The remaining steps build on it and would
-// only repeat the failure, so executeTask skips them and summarizes what was
-// accomplished so far.
+// every tool call in it failed). Reflection can replace the failed step and
+// the steps that depend on it.
 var errStepFailed = errors.New("task step failed")
 
 // stepToolFailure reports whether the step agent finished but every tool call
@@ -86,9 +85,12 @@ func stepToolFailure(llm *LLM) error {
 // the run in a terminal state instead of "running" forever; the panic is
 // converted to an error carrying the stack for the robot layer to log.
 func (d *LLMTaskReq) ExecuteTask() (err error) {
+	start := time.Now()
 	d.Tracker.RunStarted()
 
 	var planner *LLM
+	var stepErr error
+	var recovery string
 
 	defer func() {
 		state, errMsg := taskflow.StateDone, ""
@@ -99,6 +101,8 @@ func (d *LLMTaskReq) ExecuteTask() (err error) {
 		} else if err != nil {
 			state = taskflow.StateFailed
 			errMsg = err.Error()
+		} else if stepErr != nil {
+			state, errMsg = taskflow.StateFailed, stepErr.Error()
 		}
 		// a cancelled context means the request was torn down, not that the
 		// plan itself failed — report it as canceled so the flow view stays
@@ -111,14 +115,22 @@ func (d *LLMTaskReq) ExecuteTask() (err error) {
 		if planner != nil {
 			finalResult = planner.WholeContent
 		}
+		metrics.TaskRuns.WithLabelValues(state).Inc()
+		if state == taskflow.StateCanceled && (stepErr != nil || recovery != "") {
+			recovery = "canceled"
+		}
+		if recovery != "" {
+			metrics.TaskRecovery.WithLabelValues(recovery).Inc()
+		}
+		metrics.TaskDuration.WithLabelValues(state).Observe(time.Since(start).Seconds())
 		d.Tracker.Finish(state, finalResult, errMsg)
 	}()
 
-	err = d.executeTask(&planner)
+	err = d.executeTask(&planner, &stepErr, &recovery)
 	return err
 }
 
-func (d *LLMTaskReq) executeTask(plannerOut **LLM) error {
+func (d *LLMTaskReq) executeTask(plannerOut **LLM, stepErr *error, recovery *string) error {
 	logger.InfoCtx(d.Ctx, "task content", "content", d.Content)
 
 	// research is not a separate phase: the planner decides whether a web
@@ -142,23 +154,25 @@ func (d *LLMTaskReq) executeTask(plannerOut **LLM) error {
 		d.Tracker.Stage(taskflow.StateExecute)
 		d.Tracker.LoopStarted(machine.executionLoop, machine.maxExecutionLoops)
 
-		if err := d.executePlan(machine, plan); err != nil {
-			if !errors.Is(err, errStepFailed) {
-				return err
+		executionErr := d.executePlan(machine, plan)
+		if executionErr != nil && !errors.Is(executionErr, errStepFailed) {
+			return executionErr
+		}
+		if err := d.Ctx.Err(); err != nil {
+			return err
+		}
+		if *stepErr != nil && executionErr == nil {
+			*recovery = "recovered"
+		}
+		*stepErr = executionErr
+
+		if machine.executionLoop >= machine.maxExecutionLoops {
+			if executionErr != nil {
+				*recovery = "exhausted"
 			}
-			// a failed step poisons the rest of the plan: skip the remaining
-			// steps and the reflection round, and let the summarizer report
-			// what completed and what failed (EXECUTE -> SUMMARIZE)
 			break
 		}
-
-		// a single-step plan that completed needs no reflection round: there
-		// is nothing left to re-evaluate, so summarize directly
-		if len(plan.Plan) == 1 {
-			if err := machine.transition(TaskStateSummarize); err != nil {
-				return err
-			}
-			d.Tracker.Stage(taskflow.StateSummarize)
+		if executionErr == nil && len(plan.Plan) == 1 {
 			break
 		}
 
@@ -166,11 +180,19 @@ func (d *LLMTaskReq) executeTask(plannerOut **LLM) error {
 			return err
 		}
 		d.Tracker.Stage(taskflow.StateReflect)
-		plan, err = d.reflectTask(planner, machine)
+		plan, err = d.reflectTask(planner, machine, executionErr != nil)
 		if err != nil {
-			return err
+			if executionErr == nil || d.Ctx.Err() != nil {
+				return err
+			}
+			*stepErr = fmt.Errorf("%w; reflection failed: %w", executionErr, err)
+			*recovery = "reflection_error"
+			break
 		}
 		if len(plan.Plan) == 0 {
+			if executionErr != nil {
+				*recovery = "no_plan"
+			}
 			break
 		}
 		d.Tracker.PlanCreated(taskflowSteps(plan))
@@ -422,17 +444,18 @@ func (d *LLMTaskReq) executePlan(machine *taskStateMachine, plan *TaskInfo) erro
 		}
 		if err != nil {
 			d.Tracker.StepFinished(i, task.Name, result, err)
-			// the failure is part of the summary context so the summarizer
-			// can explain why the remaining steps were skipped
-			failureNote := strings.TrimSpace(result)
-			if failureNote == "" {
-				failureNote = err.Error()
+			failureNote := err.Error()
+			if detail := strings.TrimSpace(result); detail != "" {
+				failureNote += "\n" + detail
+			}
+			for _, pending := range plan.Plan[i+1:] {
+				failureNote += fmt.Sprintf("\nPending step [%s]: %s", pending.Name, pending.Description)
 			}
 			machine.completedResults = append(machine.completedResults, TaskResult{
 				TaskName:   task.Name,
 				TaskResult: "(step failed) " + failureNote,
 			})
-			return errStepFailed
+			return fmt.Errorf("%w: %s: %w", errStepFailed, task.Name, err)
 		}
 		d.Tracker.StepFinished(i, task.Name, result, nil)
 		// give the user visibility into what the agent actually did: one
@@ -457,7 +480,7 @@ func (d *LLMTaskReq) executePlan(machine *taskStateMachine, plan *TaskInfo) erro
 	return nil
 }
 
-func (d *LLMTaskReq) reflectTask(planner *LLM, machine *taskStateMachine) (*TaskInfo, error) {
+func (d *LLMTaskReq) reflectTask(planner *LLM, machine *taskStateMachine, repairing bool) (*TaskInfo, error) {
 	if err := machine.requireState(TaskStateReflect); err != nil {
 		return nil, err
 	}
@@ -467,6 +490,9 @@ func (d *LLMTaskReq) reflectTask(planner *LLM, machine *taskStateMachine) (*Task
 		"execution_loop":  machine.executionLoop,
 	}
 	prompt := i18n.GetMessage("task_state_reflect_prompt", taskParam)
+	if repairing {
+		prompt += "\nThe latest execution stopped at a failed step. Use the failure details to plan a correction or an alternative. Include any skipped steps still needed to complete the user's task. Return an empty plan only if you cannot propose a correction."
+	}
 	d.sendProgress(i18n.GetMessage("task_progress_reflect", nil))
 	planner.LLMClient.GetMessage(openai.ChatMessageRoleUser, prompt)
 	planner.Content = prompt

@@ -3,6 +3,7 @@ package clients
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -143,6 +144,26 @@ func TestGetByToolNameAndExecTools(t *testing.T) {
 
 	_, err = mc.ExecTools(context.Background(), "nope", nil)
 	assert.EqualError(t, err, "tool nope not found")
+}
+
+func TestExecToolsReturnsMCPToolFailure(t *testing.T) {
+	clientTransport, serverTransport := mcp.NewInMemoryTransports()
+	server := mcp.NewServer(&mcp.Implementation{Name: "test-server", Version: "1.0"}, nil)
+	server.AddTool(echoTestTool, func(context.Context, *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		result := &mcp.CallToolResult{}
+		result.SetError(errors.New("echo unavailable"))
+		return result, nil
+	})
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go func() { _ = server.Run(ctx, serverTransport) }()
+
+	session, err := connectSession(ctx, clientTransport)
+	require.NoError(t, err)
+	mc := &MCPClient{session: session, tools: []*mcp.Tool{echoTestTool}}
+	defer mc.Close()
+	_, err = mc.ExecTools(ctx, "echo", map[string]interface{}{"msg": "hi"})
+	require.EqualError(t, err, "mcp tool echo failed: echo unavailable")
 }
 
 func TestResolveToolName(t *testing.T) {

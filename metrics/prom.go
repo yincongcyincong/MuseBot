@@ -83,6 +83,9 @@ var (
 
 // RegisterMetrics 注册指标
 func RegisterMetrics() {
+	prometheus.MustRegister(HTTPRequests, HTTPDuration, HTTPInFlight,
+		LLMAttempts, LLMAttemptDuration, LLMStreamDuration, LLMFirstContent,
+		ToolCalls, ToolDuration, TaskRuns, TaskDuration, TaskRecovery, FailoverResults)
 	prometheus.MustRegister(APIRequestCount)
 	prometheus.MustRegister(APIRequestDuration)
 	prometheus.MustRegister(APIFailoverCount)

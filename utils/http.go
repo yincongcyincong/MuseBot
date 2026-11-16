@@ -37,8 +37,8 @@ func Failure(ctx context.Context, w http.ResponseWriter, r *http.Request, code i
 	json.NewEncoder(w).Encode(resp)
 
 	strCode := strconv.Itoa(code)
-	metrics.HTTPResponseCount.WithLabelValues(r.URL.Path, strCode).Inc()
-	metrics.HTTPResponseDuration.WithLabelValues(r.URL.Path, strCode).Observe(time.Since(start).Seconds())
+	metrics.HTTPResponseCount.WithLabelValues(responseRoute(r), strCode).Inc()
+	metrics.HTTPResponseDuration.WithLabelValues(responseRoute(r), strCode).Observe(time.Since(start).Seconds())
 }
 
 func Success(ctx context.Context, w http.ResponseWriter, r *http.Request, data interface{}) {
@@ -58,8 +58,15 @@ func Success(ctx context.Context, w http.ResponseWriter, r *http.Request, data i
 	json.NewEncoder(w).Encode(resp)
 
 	strCode := strconv.Itoa(param.CodeSuccess)
-	metrics.HTTPResponseCount.WithLabelValues(r.URL.Path, strCode).Inc()
-	metrics.HTTPResponseDuration.WithLabelValues(r.URL.Path, strCode).Observe(time.Since(start).Seconds())
+	metrics.HTTPResponseCount.WithLabelValues(responseRoute(r), strCode).Inc()
+	metrics.HTTPResponseDuration.WithLabelValues(responseRoute(r), strCode).Observe(time.Since(start).Seconds())
+}
+
+func responseRoute(r *http.Request) string {
+	if r.Pattern == "" {
+		return "unmatched"
+	}
+	return r.Pattern
 }
 
 func HandleJsonBody(r *http.Request, v interface{}) error {

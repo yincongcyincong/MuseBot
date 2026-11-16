@@ -351,6 +351,10 @@ func (m *MCPClient) GetAllTools(ctx context.Context) ([]*mcp.Tool, error) {
 		return nil, fmt.Errorf("mcp client %s is not connected", m.Conf.Name)
 	}
 
+	return listSessionTools(ctx, session)
+}
+
+func listSessionTools(ctx context.Context, session *mcp.ClientSession) ([]*mcp.Tool, error) {
 	var all []*mcp.Tool
 	var cursor string
 	for {
@@ -394,7 +398,14 @@ func (m *MCPClient) ExecTools(ctx context.Context, name string, params map[strin
 	if err != nil {
 		return "", err
 	}
-	return ResultString(result), nil
+	content := ResultString(result)
+	if result != nil && result.IsError {
+		if content == "" {
+			return "", fmt.Errorf("mcp tool %s failed", name)
+		}
+		return "", fmt.Errorf("mcp tool %s failed: %s", name, content)
+	}
+	return content, nil
 }
 
 // handlePing keeps the connection alive: ping every 10s and rebuild the
@@ -472,10 +483,10 @@ func (m *MCPClient) restartMCPServer() {
 		return
 	}
 
-	pingCtx, cancel := context.WithTimeout(context.Background(), pingTimeout)
+	pingCtx, cancel := context.WithTimeout(m.keepaliveCtx, pingTimeout)
 	err := session.Ping(pingCtx, pingParams(session))
 	cancel()
-	if err == nil {
+	if err == nil || m.keepaliveCtx.Err() != nil {
 		return
 	}
 	// a "method not found" response means the server answered: ping was removed
@@ -492,7 +503,7 @@ func (m *MCPClient) restartMCPServer() {
 		logger.Error("mcp rebuild transport fail", "server", m.Conf.Name, "err", tErr)
 		return
 	}
-	newSession, err := connectSession(context.Background(), transport)
+	newSession, err := connectSession(m.keepaliveCtx, transport)
 	if err != nil {
 		logger.Error("mcp reconnect fail", "server", m.Conf.Name, "err", err)
 		if closeStderr != nil {
@@ -501,28 +512,30 @@ func (m *MCPClient) restartMCPServer() {
 		return
 	}
 
+	tools, err := listSessionTools(m.keepaliveCtx, newSession)
 	m.mu.Lock()
-	oldSession := m.session
+	if err != nil || m.keepaliveCtx.Err() != nil || m.session != session {
+		m.mu.Unlock()
+		_ = newSession.Close()
+		if closeStderr != nil {
+			closeStderr()
+		}
+		if err != nil && m.keepaliveCtx.Err() == nil {
+			logger.Error("mcp list tools after reconnect fail", "server", m.Conf.Name, "err", err)
+		}
+		return
+	}
 	oldCloseStderr := m.closeStderr
 	m.session = newSession
 	m.closeStderr = closeStderr
+	m.tools = tools
 	m.mu.Unlock()
 
-	if oldSession != nil {
-		_ = oldSession.Close()
-	}
+	_ = session.Close()
 	if oldCloseStderr != nil {
 		oldCloseStderr()
 	}
-
-	if tools, err := m.GetAllTools(context.Background()); err == nil {
-		m.mu.Lock()
-		m.tools = tools
-		m.mu.Unlock()
-		logger.Info("mcp client reconnected", "server", m.Conf.Name, "tools", len(tools))
-	} else {
-		logger.Error("mcp list tools after reconnect fail", "server", m.Conf.Name, "err", err)
-	}
+	logger.Info("mcp client reconnected", "server", m.Conf.Name, "tools", len(tools))
 }
 
 // Close tears the connection and its keepalive loop down.
@@ -534,6 +547,7 @@ func (m *MCPClient) Close() {
 	session := m.session
 	closeStderr := m.closeStderr
 	m.session = nil
+	m.closeStderr = nil
 	m.tools = nil
 	m.mu.Unlock()
 	if session != nil {

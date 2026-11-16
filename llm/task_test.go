@@ -72,7 +72,7 @@ func TestStepToolFailure(t *testing.T) {
 }
 
 // when a step fails, the remaining steps must not run and the loop must
-// surface errStepFailed so executeTask skips reflection and summarizes
+// surface errStepFailed so reflection can repair the remaining plan
 func TestExecutePlanStopsAfterFailedStep(t *testing.T) {
 	patchConf(t, false, "", 1)
 	primary := newFakeProvider(t, http.StatusInternalServerError)
@@ -100,4 +100,5 @@ func TestExecutePlanStopsAfterFailedStep(t *testing.T) {
 	assert.Equal(t, 1, primary.hits)
 	assert.Len(t, machine.completedResults, 1)
 	assert.Contains(t, machine.completedResults[0].TaskResult, "(step failed)")
+	assert.Contains(t, machine.completedResults[0].TaskResult, "Pending step [web_search]: second")
 }
