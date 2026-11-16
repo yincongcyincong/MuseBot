@@ -34,7 +34,7 @@ func TestApplyParsedToolsFlags(t *testing.T) {
 func TestWebSearchProviderConfiguration(t *testing.T) {
 	previous := ToolsConfInfo
 	t.Cleanup(func() { ToolsConfInfo = previous })
-	for _, provider := range []string{"", "default", "parallel", "outcrawl", "disabled"} {
+	for _, provider := range []string{"", "default", "parallel", "outcrawl", "specstream", "disabled"} {
 		ToolsConfInfo = &ToolsConf{WebSearchProvider: provider}
 		t.Setenv("WEB_SEARCH_PROVIDER", "")
 		EnvToolsConf()
