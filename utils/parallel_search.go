@@ -4,15 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"net/url"
 	"strings"
 	"sync"
 	"unicode/utf8"
 
 	"github.com/google/uuid"
-	"github.com/mark3labs/mcp-go/client"
-	"github.com/mark3labs/mcp-go/client/transport"
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
 const parallelSearchURL = "https://search.parallel.ai/mcp"
@@ -27,6 +26,22 @@ type WebSearchSession struct {
 func (s *WebSearchSession) ID() string {
 	s.once.Do(func() { s.id = uuid.NewString() })
 	return s.id
+}
+
+// parallelSearchTransport attaches the identifying User-Agent to every request;
+// the search endpoint is a plain anonymous MCP server, no auth headers needed.
+type parallelSearchTransport struct {
+	base http.RoundTripper
+}
+
+func (t parallelSearchTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	clone := req.Clone(req.Context())
+	clone.Header.Set("User-Agent", "MuseBot/ParallelSearch")
+	base := t.base
+	if base == nil {
+		base = http.DefaultTransport
+	}
+	return base.RoundTrip(clone)
 }
 
 // ParallelWebSearch uses the anonymous Search MCP endpoint. It keeps the built-in
@@ -48,39 +63,36 @@ func ParallelWebSearch(ctx context.Context, query, sessionID string) (string, er
 	ctx, cancel := context.WithTimeout(ctx, webSearchTimeout)
 	defer cancel()
 
-	c, err := client.NewStreamableHttpClient(parallelSearchURL,
-		transport.WithHTTPHeaders(map[string]string{"User-Agent": "MuseBot/ParallelSearch"}),
-		transport.WithHTTPTimeout(webSearchTimeout))
+	client := mcp.NewClient(&mcp.Implementation{Name: "MuseBot", Version: "1"}, nil)
+	session, err := client.Connect(ctx, &mcp.StreamableClientTransport{
+		Endpoint: parallelSearchURL,
+		HTTPClient: &http.Client{
+			Timeout:   webSearchTimeout,
+			Transport: parallelSearchTransport{},
+		},
+		// one-shot tool call: no server-initiated messages are wanted, and
+		// skipping the standalone SSE stream avoids a dangling GET per search
+		DisableStandaloneSSE: true,
+	}, nil)
 	if err != nil {
-		return "", err
-	}
-	defer c.Close()
-	if err := c.Start(ctx); err != nil {
-		return "", err
-	}
-	init := mcp.InitializeRequest{}
-	init.Params.ProtocolVersion = mcp.LATEST_PROTOCOL_VERSION
-	init.Params.ClientInfo = mcp.Implementation{Name: "MuseBot", Version: "1"}
-	if _, err := c.Initialize(ctx, init); err != nil {
 		return "", fmt.Errorf("initialize Parallel search: %w", err)
 	}
-	tools, err := c.ListTools(ctx, mcp.ListToolsRequest{})
+	defer session.Close()
+
+	found, err := parallelSearchExposes(ctx, session, "web_search")
 	if err != nil {
 		return "", fmt.Errorf("discover Parallel search: %w", err)
-	}
-	found := false
-	for _, tool := range tools.Tools {
-		found = found || tool.Name == "web_search"
 	}
 	if !found {
 		return "", fmt.Errorf("Parallel MCP server does not expose web_search")
 	}
-	request := mcp.CallToolRequest{}
-	request.Params.Name = "web_search"
-	request.Params.Arguments = map[string]interface{}{
-		"objective": query, "search_queries": []string{query}, "session_id": sessionID,
-	}
-	result, err := c.CallTool(ctx, request)
+
+	result, err := session.CallTool(ctx, &mcp.CallToolParams{
+		Name: "web_search",
+		Arguments: map[string]interface{}{
+			"objective": query, "search_queries": []string{query}, "session_id": sessionID,
+		},
+	})
 	if err != nil {
 		return "", fmt.Errorf("Parallel web search: %w", err)
 	}
@@ -90,10 +102,34 @@ func ParallelWebSearch(ctx context.Context, query, sessionID string) (string, er
 	return parseParallelSearch(query, parallelSearchText(result))
 }
 
+// parallelSearchExposes walks the server's tool list (with pagination) looking
+// for the given tool name.
+func parallelSearchExposes(ctx context.Context, session *mcp.ClientSession, name string) (bool, error) {
+	found := false
+	for cursor := ""; ; {
+		tools, err := session.ListTools(ctx, &mcp.ListToolsParams{Cursor: cursor})
+		if err != nil {
+			return false, err
+		}
+		for _, tool := range tools.Tools {
+			if tool.Name == name {
+				found = true
+			}
+		}
+		if tools.NextCursor == "" {
+			return found, nil
+		}
+		cursor = tools.NextCursor
+	}
+}
+
 func parallelSearchText(result *mcp.CallToolResult) string {
 	var text strings.Builder
+	if result == nil {
+		return ""
+	}
 	for _, content := range result.Content {
-		if part, ok := content.(mcp.TextContent); ok {
+		if part, ok := content.(*mcp.TextContent); ok {
 			text.WriteString(part.Text)
 		}
 	}

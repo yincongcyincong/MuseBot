@@ -10,7 +10,9 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"os/exec"
@@ -34,6 +36,9 @@ const (
 	// mirrored here; MCP protocol versions are ISO dates, so the comparison
 	// matches the SDK's usesNewProtocol exactly.
 	newProtocolVersion = "2026-07-28"
+	// maxReconnectBackoff caps the exponential reconnect delay so a dead
+	// server is retried indefinitely, but at most every 5 minutes
+	maxReconnectBackoff = 5 * time.Minute
 )
 
 // mcpClients maps server name -> *MCPClient for the whole process.
@@ -50,6 +55,13 @@ type MCPClient struct {
 	keepaliveCtx  context.Context
 	stopKeepalive context.CancelFunc
 	closeStderr   func()
+
+	// reconnect backoff state (guarded by mu; shared by the keepalive loop
+	// and in-call healing): attempts counts consecutive reconnects that did
+	// not yet lead to a successful ping, nextReconnect gates the next attempt
+	// so a dead server cannot be hammered by every caller
+	reconnectAttempts int
+	nextReconnect     time.Time
 }
 
 // InitByConfFile loads an mcp.json document and resolves every enabled server
@@ -395,6 +407,17 @@ func (m *MCPClient) ExecTools(ctx context.Context, name string, params map[strin
 	}
 
 	result, err := session.CallTool(ctx, &mcp.CallToolParams{Name: name, Arguments: params})
+	if err != nil && isConnectionError(err) {
+		// the transport died mid-call (server process went away, network
+		// dropped): rebuild the session right here and retry once, so the
+		// caller's own retry loop is not left waiting for the keepalive tick
+		if m.rebuildSession(fmt.Sprintf("call %s failed: %v", name, err)) {
+			m.mu.RLock()
+			session = m.session
+			m.mu.RUnlock()
+			result, err = session.CallTool(ctx, &mcp.CallToolParams{Name: name, Arguments: params})
+		}
+	}
 	if err != nil {
 		return "", err
 	}
@@ -473,8 +496,41 @@ func isMethodNotFound(err error) bool {
 	return err != nil && strings.Contains(strings.ToLower(err.Error()), "method not found")
 }
 
-// restartMCPServer rebuilds the session when a ping fails; the registry entry
-// (and thus the *MCPClient identity) stays the same.
+// isConnectionError reports whether a tool-call error means the transport
+// died mid-call (as opposed to the tool itself failing): such a session is
+// healed best by an immediate reconnect.
+func isConnectionError(err error) bool {
+	if err == nil {
+		return false
+	}
+	return errors.Is(err, mcp.ErrConnectionClosed) ||
+		errors.Is(err, io.EOF) ||
+		errors.Is(err, os.ErrClosed) ||
+		strings.Contains(err.Error(), "connection reset by peer")
+}
+
+// reconnectBackoff is the delay before the next reconnect attempt after the
+// given consecutive attempts: one interval for the first retry, doubling
+// afterwards, capped at maxReconnectBackoff. A single transient failure
+// therefore reconnects at the next ping tick as before; only repeated
+// failures back off.
+func reconnectBackoff(attempts int) time.Duration {
+	if attempts <= 1 {
+		return pingInterval
+	}
+	if attempts > 6 { // 10s<<5 = 320s already exceeds the cap
+		return maxReconnectBackoff
+	}
+	backoff := pingInterval << (attempts - 1)
+	if backoff > maxReconnectBackoff || backoff <= 0 {
+		return maxReconnectBackoff
+	}
+	return backoff
+}
+
+// restartMCPServer checks the session's health with a ping and rebuilds it
+// when the server stopped responding; the registry entry (and thus the
+// *MCPClient identity) stays the same.
 func (m *MCPClient) restartMCPServer() {
 	m.mu.RLock()
 	session := m.session
@@ -487,6 +543,10 @@ func (m *MCPClient) restartMCPServer() {
 	err := session.Ping(pingCtx, pingParams(session))
 	cancel()
 	if err == nil || m.keepaliveCtx.Err() != nil {
+		m.mu.Lock()
+		m.reconnectAttempts = 0
+		m.nextReconnect = time.Time{}
+		m.mu.Unlock()
 		return
 	}
 	// a "method not found" response means the server answered: ping was removed
@@ -497,11 +557,43 @@ func (m *MCPClient) restartMCPServer() {
 		return
 	}
 
-	logger.Warn("mcp ping fail, reconnecting", "server", m.Conf.Name, "err", err)
+	m.rebuildSession(fmt.Sprintf("ping fail: %v", err))
+}
+
+// rebuildSession replaces a session the caller already established is dead
+// (failed ping or failed call). Reconnect attempts are gated by an exponential
+// backoff — shared with the keepalive loop and any concurrent caller — so a
+// dead server is retried at a shrinking rate instead of once per ping tick;
+// a single successful ping resets it. It reports whether a fresh session took
+// over.
+func (m *MCPClient) rebuildSession(reason string) bool {
+	now := time.Now()
+	m.mu.Lock()
+	if now.Before(m.nextReconnect) {
+		attempt, retryIn := m.reconnectAttempts, time.Until(m.nextReconnect)
+		m.mu.Unlock()
+		logger.Debug("mcp reconnect gated by backoff", "server", m.Conf.Name,
+			"attempt", attempt, "retryIn", retryIn.Round(time.Second))
+		return false
+	}
+	session := m.session
+	if session == nil {
+		m.mu.Unlock()
+		return false
+	}
+	// record the attempt up front: every attempt counts, and only a later
+	// successful ping proves the server is healthy again
+	m.reconnectAttempts++
+	attempt := m.reconnectAttempts
+	m.nextReconnect = now.Add(reconnectBackoff(attempt))
+	m.mu.Unlock()
+
+	logger.Warn("mcp reconnecting", "server", m.Conf.Name, "reason", reason, "attempt", attempt)
+
 	transport, closeStderr, tErr := buildTransport(m.Conf)
 	if tErr != nil {
 		logger.Error("mcp rebuild transport fail", "server", m.Conf.Name, "err", tErr)
-		return
+		return false
 	}
 	newSession, err := connectSession(m.keepaliveCtx, transport)
 	if err != nil {
@@ -509,7 +601,7 @@ func (m *MCPClient) restartMCPServer() {
 		if closeStderr != nil {
 			closeStderr()
 		}
-		return
+		return false
 	}
 
 	tools, err := listSessionTools(m.keepaliveCtx, newSession)
@@ -523,7 +615,7 @@ func (m *MCPClient) restartMCPServer() {
 		if err != nil && m.keepaliveCtx.Err() == nil {
 			logger.Error("mcp list tools after reconnect fail", "server", m.Conf.Name, "err", err)
 		}
-		return
+		return false
 	}
 	oldCloseStderr := m.closeStderr
 	m.session = newSession
@@ -536,6 +628,7 @@ func (m *MCPClient) restartMCPServer() {
 		oldCloseStderr()
 	}
 	logger.Info("mcp client reconnected", "server", m.Conf.Name, "tools", len(tools))
+	return true
 }
 
 // Close tears the connection and its keepalive loop down.

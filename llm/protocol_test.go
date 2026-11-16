@@ -4,8 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/cohesion-org/deepseek-go"
 	"github.com/sashabaranov/go-openai"
@@ -287,20 +289,104 @@ func TestParseXMLToolCalls(t *testing.T) {
 	assert.Equal(t, content, remaining)
 }
 
-func TestAdoptInlineToolCalls(t *testing.T) {
+func TestAdoptInlineToolBlocks(t *testing.T) {
 	l := &LLM{Ctx: context.Background()}
-	l.WholeContent = "前置说明\n<tool_call>\n{\"name\": \"web_search\", \"arguments\": {\"query\": \"q\"}}\n</tool_call>"
 	tools := &LLMToolState{}
-	msgInfo := &param.MsgInfo{Content: "<tool_call>\n{\"name\": \"web_search\", \"arguments\": {\"query\": \"q\"}}\n</tool_call>"}
 
-	assert.True(t, adoptInlineToolCalls(l, tools, msgInfo))
+	assert.True(t, adoptInlineToolBlocks(l, tools, []string{
+		"<tool_call>\n{\"name\": \"web_search\", \"arguments\": {\"query\": \"q\"}}\n</tool_call>",
+	}))
 	require.Len(t, tools.Calls, 1)
 	assert.Equal(t, "web_search", tools.Calls[0].Name)
-	assert.NotContains(t, l.WholeContent, "tool_call")
-	assert.Contains(t, l.WholeContent, "前置说明")
-	assert.NotContains(t, msgInfo.Content, "tool_call")
+	assert.JSONEq(t, `{"query": "q"}`, tools.Calls[0].Arguments)
 
-	// second adoption on plain content is a no-op
-	assert.False(t, adoptInlineToolCalls(l, tools, msgInfo))
+	// nothing new to adopt is a no-op
+	assert.False(t, adoptInlineToolBlocks(l, tools, nil))
 	assert.Len(t, tools.Calls, 1)
+}
+
+// TestXMLToolCallGateWithholdsBlocks drives the streaming gate with the chunk
+// fragmentation a real stream produces (tag split across chunks) and asserts
+// no raw block text is ever forwarded.
+func TestXMLToolCallGateWithholdsBlocks(t *testing.T) {
+	var g xmlToolCallGate
+	var forwarded strings.Builder
+
+	for _, chunk := range []string{
+		"我来查询当前时间\n<tool_ca",
+		"ll>\nmcp__time__get_current_time\n{\"timezone\": \"Asia/Shanghai\"}\n</tool_",
+		"call>\n以上是查询计划。",
+	} {
+		forwarded.WriteString(g.push(chunk))
+	}
+	rest, blocks := g.finish()
+	forwarded.WriteString(rest)
+
+	assert.Equal(t, "我来查询当前时间\n\n以上是查询计划。", forwarded.String())
+	require.Len(t, blocks, 1)
+	assert.Contains(t, blocks[0], "mcp__time__get_current_time")
+}
+
+func TestXMLToolCallGateFalseAlarmFlushes(t *testing.T) {
+	var g xmlToolCallGate
+	var forwarded strings.Builder
+	for _, chunk := range []string{"对比 a<b 和 ", "<toolbar", "> 的用法", "，还有 <tool", "ate 的例子"} {
+		forwarded.WriteString(g.push(chunk))
+	}
+	rest, blocks := g.finish()
+	forwarded.WriteString(rest)
+
+	// partial "<tool" turned out not to be the tag: everything flushes
+	assert.Equal(t, "对比 a<b 和 <toolbar> 的用法，还有 <toolate 的例子", forwarded.String())
+	assert.Empty(t, blocks)
+}
+
+// TestXMLToolCallGateDropsUnterminatedBlock: a block the stream never closed
+// is dropped at finish instead of leaking its raw XML.
+func TestXMLToolCallGateDropsUnterminatedBlock(t *testing.T) {
+	var g xmlToolCallGate
+	forwarded := g.push("开头说明 <tool_call>{\"name\": \"x\"")
+	rest, blocks := g.finish()
+	forwarded += rest
+
+	assert.Equal(t, "开头说明 ", forwarded)
+	assert.Empty(t, blocks)
+}
+
+// TestReceiveLLMStreamInlineToolCall runs the full streaming path: content
+// with an embedded tool-call block streams to the user without the raw XML
+// and the block executes as a real tool call.
+func TestReceiveLLMStreamInlineToolCall(t *testing.T) {
+	previous := conf.ToolsConfInfo.WebSearchProvider
+	conf.ToolsConfInfo.WebSearchProvider = "disabled" // offline: the call fails and is fed back
+	t.Cleanup(func() { conf.ToolsConfInfo.WebSearchProvider = previous })
+
+	l := &LLM{Ctx: context.Background(), Model: "test"}
+	tools := &LLMToolState{}
+	chunks := []string{
+		"先查一下。\n<tool_call>\n",
+		"{\"name\": \"web_search\", \"arguments\": {\"query\": \"q\"}}\n</tool_call>\n",
+	}
+	next := func() (LLMStreamChunk, error) {
+		if len(chunks) == 0 {
+			return LLMStreamChunk{}, io.EOF
+		}
+		chunk := LLMStreamChunk{Content: chunks[0]}
+		chunks = chunks[1:]
+		return chunk, nil
+	}
+
+	msgInfo, hasTools, err := receiveLLMStream(context.Background(), l, time.Now(), next, tools)
+	require.NoError(t, err)
+	assert.True(t, hasTools)
+	require.Len(t, tools.Calls, 1)
+	assert.Equal(t, "web_search", tools.Calls[0].Name)
+	// neither the replayed content nor the streamed message carries the XML
+	assert.Equal(t, "先查一下。\n\n", l.WholeContent) // preamble + the newline after the block
+	if msgInfo != nil {
+		assert.NotContains(t, msgInfo.Content, "tool_call")
+	}
+	// the call ran (disabled provider surfaces as the fed-back failure)
+	require.Len(t, tools.Results, 1)
+	assert.Contains(t, tools.Results[0].Content, "web_search")
 }

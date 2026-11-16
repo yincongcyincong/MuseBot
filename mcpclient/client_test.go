@@ -316,3 +316,106 @@ func TestHelperMCPServer(t *testing.T) {
 	// is the MCP protocol channel
 	os.Exit(0)
 }
+
+func TestReconnectBackoff(t *testing.T) {
+	cases := []struct {
+		attempts int
+		want     time.Duration
+	}{
+		{0, 10 * time.Second}, // no failures yet: next tick as before
+		{1, 10 * time.Second}, // first retry is not delayed beyond a tick
+		{2, 20 * time.Second}, // then doubling
+		{3, 40 * time.Second},
+		{4, 80 * time.Second},
+		{5, 160 * time.Second},
+		{6, 300 * time.Second},  // 320s would exceed the cap
+		{10, 300 * time.Second}, // stays capped
+	}
+	for _, c := range cases {
+		assert.Equal(t, c.want, reconnectBackoff(c.attempts), "attempts=%d", c.attempts)
+	}
+}
+
+// TestRestartMCPServerBackoffGatesRetries drives the reconnect path against a
+// closed session and an unreachable stdio command: the first failure records
+// an attempt and opens the gate, an immediate second call is gated, and an
+// expired gate lets the next attempt through with a longer backoff.
+func TestRestartMCPServerBackoffGatesRetries(t *testing.T) {
+	session, err := connectSession(context.Background(), startInMemoryServer(t))
+	require.NoError(t, err)
+	require.NoError(t, session.Close()) // ping on it now fails with connection closed
+
+	mc := &MCPClient{
+		Conf: &param.MCPClientConf{
+			Name:       "backoff-test",
+			ClientType: param.StdioType,
+			StdioConf: &param.StdioClientConfig{
+				Command: "/nonexistent-musebot-backoff-test",
+			},
+		},
+		session:      session,
+		keepaliveCtx: context.Background(),
+	}
+
+	mc.restartMCPServer()
+	assert.Equal(t, 1, mc.reconnectAttempts)
+	assert.True(t, time.Now().Before(mc.nextReconnect), "gate must be in the future")
+	assert.InDelta(t, 10*time.Second, time.Until(mc.nextReconnect), float64(2*time.Second))
+
+	// immediate retry is gated: no second connect attempt
+	mc.restartMCPServer()
+	assert.Equal(t, 1, mc.reconnectAttempts)
+
+	// once the gate expires the next attempt goes through and doubles the backoff
+	mc.nextReconnect = time.Now().Add(-time.Millisecond)
+	mc.restartMCPServer()
+	assert.Equal(t, 2, mc.reconnectAttempts)
+	assert.InDelta(t, 20*time.Second, time.Until(mc.nextReconnect), float64(2*time.Second))
+}
+
+// TestExecToolsHealsDeadConnection kills the live session of a stdio server
+// mid-run: the next tool call must rebuild the session inline and answer
+// instead of failing up to a full keepalive tick.
+func TestExecToolsHealsDeadConnection(t *testing.T) {
+	if os.Getenv("GO_MCP_HELPER") == "1" {
+		t.Skip("helper process")
+	}
+
+	conf := &param.MCPClientConf{
+		Name:       "stdio-heal",
+		ClientType: param.StdioType,
+		StdioConf: &param.StdioClientConfig{
+			Command: os.Args[0],
+			Args:    []string{"-test.run=^TestHelperMCPServer$", "-test.count=1"},
+			Env:     []string{"GO_MCP_HELPER=1"},
+		},
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+	require.NoError(t, connectMCPClient(ctx, conf))
+	t.Cleanup(func() {
+		require.NoError(t, RemoveMCPClient("stdio-heal"))
+	})
+
+	mc, err := GetMCPClient("stdio-heal")
+	require.NoError(t, err)
+
+	out, err := mc.ExecTools(ctx, "echo", map[string]interface{}{"msg": "one"})
+	require.NoError(t, err)
+	assert.Equal(t, "echo: one", out)
+
+	// sever the connection as a server crash would
+	mc.mu.RLock()
+	dead := mc.session
+	mc.mu.RUnlock()
+	require.NoError(t, dead.Close())
+
+	out, err = mc.ExecTools(ctx, "echo", map[string]interface{}{"msg": "two"})
+	require.NoError(t, err, "the call after a dead connection must self-heal")
+	assert.Equal(t, "echo: two", out)
+
+	mc.mu.RLock()
+	after := mc.session
+	mc.mu.RUnlock()
+	assert.NotSame(t, dead, after, "a fresh session must have taken over")
+}

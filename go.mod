@@ -3,7 +3,6 @@ module github.com/yincongcyincong/MuseBot
 go 1.26.0
 
 require (
-	github.com/felixge/httpsnoop v1.0.4
 	github.com/ArtisanCloud/PowerWeChat/v3 v3.4.22
 	github.com/alibabacloud-go/darabonba-openapi/v2 v2.0.11
 	github.com/alibabacloud-go/dingtalk v1.6.88
@@ -13,6 +12,7 @@ require (
 	github.com/cohesion-org/deepseek-go v1.3.2
 	github.com/devinyf/dashscopego v0.1.1
 	github.com/disintegration/imaging v1.6.2
+	github.com/felixge/httpsnoop v1.0.4
 	github.com/go-sql-driver/mysql v1.9.0
 	github.com/go-telegram-bot-api/telegram-bot-api/v5 v5.5.1
 	github.com/goccy/go-json v0.10.2
@@ -22,7 +22,6 @@ require (
 	github.com/hpcloud/tail v1.0.0
 	github.com/json-iterator/go v1.1.12
 	github.com/larksuite/oapi-sdk-go/v3 v3.4.22
-	github.com/mark3labs/mcp-go v0.31.0
 	github.com/mattn/go-sqlite3 v1.14.24
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d
 	github.com/milvus-io/milvus-sdk-go/v2 v2.3.6

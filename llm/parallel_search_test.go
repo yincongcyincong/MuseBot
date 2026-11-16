@@ -36,9 +36,17 @@ func mockParallelSearch(t *testing.T, call func(http.ResponseWriter, *http.Reque
 		w.Header().Set("Content-Type", "application/json")
 		var result interface{}
 		switch request["method"] {
+		case "server/discover":
+			// the official SDK probes SEP-2575 discover first; answering
+			// method-not-found makes it fall back to the legacy handshake below
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+				"jsonrpc": "2.0", "id": request["id"],
+				"error": map[string]interface{}{"code": -32601, "message": "method not found"},
+			})
+			return
 		case "initialize":
 			result = map[string]interface{}{"protocolVersion": "2025-03-26", "capabilities": map[string]interface{}{}, "serverInfo": map[string]string{"name": "fixture", "version": "1"}}
-		case "notifications/initialized":
+		case "notifications/initialized", "notifications/cancelled":
 			w.WriteHeader(http.StatusAccepted)
 			return
 		case "tools/list":

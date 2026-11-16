@@ -319,19 +319,52 @@ func (s *LLMToolState) reset() {
 
 // xmlToolCallRe matches one <tool_call>...</tool_call> block. GLM-style
 // models emit their native agentic tool-call syntax in the message content
-// instead of the native function-call fields; (?is) makes it tolerant of
-// case and newlines.
-var xmlToolCallRe = regexp.MustCompile(`(?is)<tool_call>\s*(.*?)\s*</tool_call>`)
+// instead of the native function-call fields. The tag spelling is strict
+// lowercase so the streaming gate and this parser agree on the same blocks.
+var xmlToolCallRe = regexp.MustCompile(`(?s)<tool_call>\s*(.*?)\s*</tool_call>`)
 
-// parseXMLToolCalls extracts tool calls from <tool_call> blocks embedded in
-// message content and returns them together with the content stripped of the
-// blocks. Two inner shapes are accepted:
+const (
+	xmlToolCallOpen  = "<tool_call>"
+	xmlToolCallClose = "</tool_call>"
+)
+
+// parseXMLToolCallInner parses the inside of one <tool_call> block. Two
+// shapes are accepted:
 //   - the canonical GLM JSON form: {"name": "...", "arguments": {...}}
 //   - a loose form with the bare name on the first line and the JSON
 //     arguments on the following line(s)
-//
-// Blocks without a usable name are ignored; if nothing parses the content is
-// returned unchanged.
+func parseXMLToolCallInner(inner string, idx int) (LLMToolCall, bool) {
+	inner = strings.TrimSpace(inner)
+	call := LLMToolCall{Index: -1, ID: fmt.Sprintf("xmltool_%d", idx), Type: "function"}
+	if strings.HasPrefix(inner, "{") {
+		var parsed struct {
+			Name      string          `json:"name"`
+			Arguments json.RawMessage `json:"arguments"`
+		}
+		if err := json.Unmarshal([]byte(inner), &parsed); err == nil {
+			call.Name = parsed.Name
+			call.Arguments = string(parsed.Arguments)
+		}
+	} else {
+		lines := strings.SplitN(inner, "\n", 2)
+		call.Name = strings.TrimSpace(lines[0])
+		if len(lines) > 1 {
+			call.Arguments = strings.TrimSpace(lines[1])
+		}
+	}
+	if call.Name == "" {
+		return LLMToolCall{}, false
+	}
+	if call.Arguments == "" {
+		call.Arguments = "{}"
+	}
+	return call, true
+}
+
+// parseXMLToolCalls extracts tool calls from <tool_call> blocks embedded in
+// complete message content and returns them together with the content
+// stripped of the blocks. Blocks without a usable name are ignored; if
+// nothing parses the content is returned unchanged.
 func parseXMLToolCalls(content string) ([]LLMToolCall, string) {
 	matches := xmlToolCallRe.FindAllStringSubmatchIndex(content, -1)
 	if len(matches) == 0 {
@@ -340,31 +373,9 @@ func parseXMLToolCalls(content string) ([]LLMToolCall, string) {
 
 	calls := make([]LLMToolCall, 0, len(matches))
 	for i, loc := range matches {
-		inner := strings.TrimSpace(content[loc[2]:loc[3]])
-		call := LLMToolCall{Index: -1, ID: fmt.Sprintf("xmltool_%d", i), Type: "function"}
-		if strings.HasPrefix(inner, "{") {
-			var parsed struct {
-				Name      string          `json:"name"`
-				Arguments json.RawMessage `json:"arguments"`
-			}
-			if err := json.Unmarshal([]byte(inner), &parsed); err == nil {
-				call.Name = parsed.Name
-				call.Arguments = string(parsed.Arguments)
-			}
-		} else {
-			lines := strings.SplitN(inner, "\n", 2)
-			call.Name = strings.TrimSpace(lines[0])
-			if len(lines) > 1 {
-				call.Arguments = strings.TrimSpace(lines[1])
-			}
+		if call, ok := parseXMLToolCallInner(content[loc[2]:loc[3]], i); ok {
+			calls = append(calls, call)
 		}
-		if call.Name == "" {
-			continue
-		}
-		if call.Arguments == "" {
-			call.Arguments = "{}"
-		}
-		calls = append(calls, call)
 	}
 	if len(calls) == 0 {
 		return nil, content
@@ -372,20 +383,101 @@ func parseXMLToolCalls(content string) ([]LLMToolCall, string) {
 	return calls, xmlToolCallRe.ReplaceAllString(content, "")
 }
 
-// adoptInlineToolCalls records <tool_call> blocks the model wrote into the
-// message content as pending tool calls (used when the provider sent no
-// native tool_calls). It reports whether any were adopted and strips the raw
-// XML from the replayed content and from the not-yet-sent message tail.
-func adoptInlineToolCalls(l *LLM, tools *LLMToolState, msgInfo *param.MsgInfo) bool {
-	calls, remaining := parseXMLToolCalls(l.WholeContent)
+// xmlToolCallGate keeps raw <tool_call> XML out of the text the user sees
+// while it streams. Content is forwarded as soon as it cannot be the start
+// of a block anymore; once an opener appears everything up to the closer is
+// held back and, when the block completes, captured for adoption instead of
+// being sent. The gate and xmlToolCallRe must recognize the same blocks.
+type xmlToolCallGate struct {
+	held   string
+	blocks []string
+}
+
+// push feeds one stream chunk and returns the portion that is safe to
+// forward to the user right away.
+func (g *xmlToolCallGate) push(chunk string) string {
+	g.held += chunk
+	return g.release(false)
+}
+
+// finish flushes at end of stream: trailing non-block content is returned
+// for forwarding, complete blocks are returned for adoption, and a block the
+// model never closed is dropped (it never executes, so leaking its raw XML
+// to the user would be pure noise).
+func (g *xmlToolCallGate) finish() (string, []string) {
+	return g.release(true), g.blocks
+}
+
+// release processes held content. final marks end of stream, where
+// unterminated openers are dropped instead of waited on.
+func (g *xmlToolCallGate) release(final bool) string {
+	var forward strings.Builder
+	for {
+		if i := strings.Index(g.held, xmlToolCallOpen); i >= 0 {
+			forward.WriteString(g.held[:i])
+			if j := strings.Index(g.held[i:], xmlToolCallClose); j >= 0 {
+				end := i + j + len(xmlToolCallClose)
+				g.blocks = append(g.blocks, g.held[i:end])
+				g.held = g.held[end:]
+				continue
+			}
+			// opener present, closer not (yet): hold from the opener on
+			if final {
+				g.held = ""
+			} else {
+				g.held = g.held[i:]
+			}
+			return forward.String()
+		}
+		// no full opener: a partial opener at the tail could still become one
+		if idx := partialXMLTagIndex(g.held, xmlToolCallOpen); idx >= 0 {
+			forward.WriteString(g.held[:idx])
+			g.held = g.held[idx:]
+			if final {
+				g.held = ""
+			}
+			return forward.String()
+		}
+		out := g.held
+		g.held = ""
+		return forward.String() + out
+	}
+}
+
+// partialXMLTagIndex returns the earliest index where a proper prefix of tag
+// begins, or -1. A proper prefix is shorter than the tag itself ("<tool_c"),
+// so a full tag is not reported here.
+func partialXMLTagIndex(s, tag string) int {
+	for i := 0; i < len(s); i++ {
+		if s[i] != '<' {
+			continue
+		}
+		rest := s[i:]
+		if len(rest) >= len(tag) {
+			rest = rest[:len(tag)]
+		}
+		if len(rest) < len(tag) && strings.HasPrefix(tag, rest) {
+			return i
+		}
+	}
+	return -1
+}
+
+// adoptInlineToolBlocks records captured <tool_call> blocks as pending tool
+// calls (used when the provider sent no native tool_calls). The blocks were
+// already kept out of the streamed text, so nothing needs stripping here.
+func adoptInlineToolBlocks(l *LLM, tools *LLMToolState, blocks []string) bool {
+	calls := make([]LLMToolCall, 0, len(blocks))
+	for i, block := range blocks {
+		inner := strings.TrimSuffix(strings.TrimPrefix(block, xmlToolCallOpen), xmlToolCallClose)
+		if call, ok := parseXMLToolCallInner(inner, i); ok {
+			calls = append(calls, call)
+		}
+	}
 	if len(calls) == 0 {
 		return false
 	}
 	logger.InfoCtx(l.Ctx, "inline tool_call blocks adopted", "count", len(calls))
-	l.WholeContent = remaining
-	if msgInfo != nil {
-		msgInfo.Content = xmlToolCallRe.ReplaceAllString(msgInfo.Content, "")
-	}
 	tools.Calls = append(tools.Calls, calls...)
 	return true
 }
@@ -399,14 +491,22 @@ func receiveLLMStream(ctx context.Context, l *LLM, roundStart time.Time, next fu
 	}
 	msgInfo := &param.MsgInfo{SendLen: FirstSendLen}
 	hasTools := false
+	var xmlGate xmlToolCallGate
 
 	for {
 		chunk, err := next()
 		if errors.Is(err, io.EOF) {
 			observeStream(nil)
 			logger.InfoCtx(l.Ctx, "stream finished", "updateMsgID", l.MsgId)
-			if !hasTools {
-				hasTools = adoptInlineToolCalls(l, tools, msgInfo)
+			// flush what the gate still holds: trailing text goes out, the
+			// captured <tool_call> blocks are adopted as tool calls
+			if rest, blocks := xmlGate.finish(); len(blocks) > 0 || rest != "" {
+				if rest != "" {
+					msgInfo = l.SendMsg(msgInfo, rest)
+				}
+				if !hasTools {
+					hasTools = adoptInlineToolBlocks(l, tools, blocks)
+				}
 			}
 			if err := tools.execute(ctx, l); err != nil {
 				return msgInfo, hasTools, err
@@ -435,12 +535,15 @@ func receiveLLMStream(ctx context.Context, l *LLM, roundStart time.Time, next fu
 		// before a tool call is part of the answer the user should see (and
 		// of WholeContent, which is replayed as the assistant message). The
 		// final answer after the tool results streams as a fresh message from
-		// the recursive Send.
+		// the recursive Send. The gate withholds anything that may still turn
+		// into a <tool_call> block so the raw XML never reaches the chat.
 		if firstContent && chunk.Content != "" {
 			metrics.LLMFirstContent.WithLabelValues(provider, model).Observe(time.Since(roundStart).Seconds())
 			firstContent = false
 		}
-		msgInfo = l.SendMsg(msgInfo, chunk.Content)
+		if safe := xmlGate.push(chunk.Content); safe != "" {
+			msgInfo = l.SendMsg(msgInfo, safe)
+		}
 		if chunk.HasUsage {
 			l.Cs.Token += chunk.Usage
 		}
