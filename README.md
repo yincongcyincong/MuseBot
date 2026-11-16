@@ -435,6 +435,12 @@ logged with the query, IP address and user agent
 ([details](https://docs.keenable.ai/authentication#try-it-without-a-key)). Errors
 are returned to the task without switching providers.
 
+To use [Sofya](https://sofya.co/docs) instead, set `WEB_SEARCH_PROVIDER=sofya`
+(or `-web_search_provider=sofya`) and put your key in `SOFYA_API_KEY`. The task
+agent receives titles, source URLs and snippets in the same result format. Sofya
+is pay as you go and does not charge for a failed request. A missing key or an
+API error is returned to the task without switching providers.
+
 Use `default` to retain DuckDuckGo/Bing, or `disabled` to block built-in web
 search. Custom MCP servers and their tool settings are separate. Each `/task`
 or `/mcp` research run has its own opaque Parallel session identifier, reused by
