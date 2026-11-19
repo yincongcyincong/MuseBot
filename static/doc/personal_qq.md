@@ -60,14 +60,14 @@ Before starting MuseBot, set the following **three environment variables** relat
 
 | Variable Name             | Description                                                      | Example Value           |
 | ------------------------- | ---------------------------------------------------------------- | ----------------------- |
-| `QQ_ONEBOT_RECEIVE_TOKEN` | Token used by OneBot to send messages to MuseBot (client token)  | `MuseBot`               |
+| `QQ_ONEBOT_RECEIVE_TOKEN` | Token used by OneBot to send messages to MuseBot (client token)  | —               |
 | `QQ_ONEBOT_SEND_TOKEN`    | Token used by MuseBot to send messages to OneBot (server token)  | `MuseBot`               |
 | `QQ_ONEBOT_HTTP_SERVER`   | OneBot HTTP server address (OneBot’s message receiving endpoint) | `http://127.0.0.1:3000` |
 
 **Example:**
 
 ```bash
-export QQ_ONEBOT_RECEIVE_TOKEN=MuseBot
+export QQ_ONEBOT_RECEIVE_TOKEN="<your-unique-random-token>"
 export QQ_ONEBOT_SEND_TOKEN=MuseBot
 export QQ_ONEBOT_HTTP_SERVER=http://127.0.0.1:3000
 ```
@@ -93,3 +93,5 @@ Go to the **OneBot Web Console → “Configuration” → “Network Settings�
 ![image](https://github.com/user-attachments/assets/b6aa893d-6db9-444a-82e6-a185561ad818)
 ![image](https://github.com/user-attachments/assets/53e86994-a19d-487b-b46f-3b457a38d5c0)
 
+
+Set a unique random receive token on both sides. Media URLs must use public HTTP(S); local files and private addresses are rejected.

@@ -4,6 +4,7 @@ import (
 	"crypto/hmac"
 	"crypto/sha1"
 	"encoding/hex"
+	"errors"
 	"io"
 	"net/http"
 	"runtime/debug"
@@ -36,7 +37,11 @@ func Communicate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	realUserId := r.URL.Query().Get("user_id")
-	intUserId, _ := strconv.ParseInt(realUserId, 10, 64)
+	intUserId, err := strconv.ParseInt(realUserId, 10, 64)
+	if err != nil {
+		http.Error(w, "Invalid user_id", http.StatusBadRequest)
+		return
+	}
 
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
@@ -160,15 +165,29 @@ func QQBotComm(w http.ResponseWriter, r *http.Request) {
 
 func OneBot(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	body, _ := io.ReadAll(r.Body)
+	secret := conf.BaseConfInfo.QQOneBotReceiveToken
+	if secret == "" || secret == "MuseBot" {
+		http.Error(w, "OneBot receive token must be configured", http.StatusServiceUnavailable)
+		return
+	}
+	body, err := io.ReadAll(http.MaxBytesReader(w, r.Body, webhookPayloadLimit()))
+	if err != nil {
+		var sizeErr *http.MaxBytesError
+		if errors.As(err, &sizeErr) {
+			http.Error(w, "request body too large", http.StatusRequestEntityTooLarge)
+		} else {
+			http.Error(w, "invalid request body", http.StatusBadRequest)
+		}
+		return
+	}
 	signature := r.Header.Get("X-Signature")
 
-	h := hmac.New(sha1.New, []byte(conf.BaseConfInfo.QQOneBotReceiveToken))
+	h := hmac.New(sha1.New, []byte(secret))
 	h.Write(body)
 	expectedSign := "sha1=" + hex.EncodeToString(h.Sum(nil))
 
-	if signature != expectedSign {
-		logger.ErrorCtx(ctx, "check sign fail", "expected", expectedSign, "actual", signature)
+	if !hmac.Equal([]byte(signature), []byte(expectedSign)) {
+		logger.WarnCtx(ctx, "OneBot signature verification failed")
 		http.Error(w, "check sign fail", http.StatusUnauthorized)
 		return
 	}

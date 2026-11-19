@@ -1,9 +1,9 @@
 package http
 
 import (
-	"io"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/yincongcyincong/MuseBot/conf"
@@ -19,6 +19,26 @@ type RagFile struct {
 	Content  string `json:"content"`
 }
 
+// The API handles flat filenames. Root confines filesystem resolution even
+// if a symlink inside the knowledge directory changes during the operation.
+func validRagFileName(name string) bool {
+	return filepath.IsLocal(name) && !strings.ContainsAny(name, "/\\:\x00") && name != "." && name != ".."
+}
+
+func openRagRoot(w http.ResponseWriter, r *http.Request, name string) *os.Root {
+	if !validRagFileName(name) {
+		utils.Failure(r.Context(), w, r, param.CodeParamError, param.MsgParamError, nil)
+		return nil
+	}
+	root, err := os.OpenRoot(conf.RagConfInfo.KnowledgePath)
+	if err != nil {
+		logger.ErrorCtx(r.Context(), "open knowledge directory", "err", err)
+		utils.Failure(r.Context(), w, r, param.CodeServerFail, param.MsgServerFail, nil)
+		return nil
+	}
+	return root
+}
+
 func CreateRagFile(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	ragFile := &RagFile{}
@@ -29,11 +49,15 @@ func CreateRagFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	path := conf.RagConfInfo.KnowledgePath + "/" + ragFile.FileName
-	_, err = os.Stat(path)
+	root := openRagRoot(w, r, ragFile.FileName)
+	if root == nil {
+		return
+	}
+	defer root.Close()
+	_, err = root.Stat(ragFile.FileName)
 	fileNotExist := os.IsNotExist(err)
 
-	err = os.WriteFile(path, []byte(ragFile.Content), 0644)
+	err = root.WriteFile(ragFile.FileName, []byte(ragFile.Content), 0644)
 	if err != nil {
 		logger.ErrorCtx(ctx, "write file error", "err", err)
 		utils.Failure(ctx, w, r, param.CodeServerFail, param.MsgServerFail, err)
@@ -62,22 +86,18 @@ func GetRagFileContent(w http.ResponseWriter, r *http.Request) {
 	}
 	name := r.FormValue("file_name")
 
-	if !strings.Contains(name, ".txt") {
+	if !strings.HasSuffix(name, ".txt") {
 		logger.ErrorCtx(ctx, "only support txt file")
 		utils.Failure(ctx, w, r, param.CodeTxtFileOnly, param.MsgTxtFileOnly, "only support txt file")
 		return
 	}
 
-	path := conf.RagConfInfo.KnowledgePath + "/" + name
-	file, err := os.Open(path)
-	if err != nil {
-		logger.ErrorCtx(ctx, "open file error", "err", err)
-		utils.Failure(ctx, w, r, param.CodeServerFail, param.MsgServerFail, err)
+	root := openRagRoot(w, r, name)
+	if root == nil {
 		return
 	}
-	defer file.Close()
-
-	content, err := io.ReadAll(file)
+	defer root.Close()
+	content, err := root.ReadFile(name)
 	if err != nil {
 		logger.ErrorCtx(ctx, "write file error", "err", err)
 		utils.Failure(ctx, w, r, param.CodeServerFail, param.MsgServerFail, err)
@@ -101,7 +121,12 @@ func DeleteRagFile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fileName := r.FormValue("file_name")
-	err = os.Remove(conf.RagConfInfo.KnowledgePath + "/" + fileName)
+	root := openRagRoot(w, r, fileName)
+	if root == nil {
+		return
+	}
+	defer root.Close()
+	err = root.Remove(fileName)
 	if err != nil {
 		logger.ErrorCtx(ctx, "delete file error", "err", err)
 		utils.Failure(ctx, w, r, param.CodeServerFail, param.MsgServerFail, err)

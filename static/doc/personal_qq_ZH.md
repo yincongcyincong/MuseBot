@@ -55,14 +55,14 @@ docker run -d \
 
 | 环境变量名                     | 说明                                                | 示例值                     |
 |---------------------------|---------------------------------------------------|-------------------------|
-| `QQ_ONEBOT_RECEIVE_TOKEN` | OneBot 向 MuseBot 发送消息时使用的 token（OneBot 客户端 token） | `MuseBot`               |
+| `QQ_ONEBOT_RECEIVE_TOKEN` | OneBot 向 MuseBot 发送消息时使用的 token（OneBot 客户端 token） | —               |
 | `QQ_ONEBOT_SEND_TOKEN`    | MuseBot 向 OneBot 发送消息时使用的 token（OneBot 服务器 token） | `MuseBot`               |
 | `QQ_ONEBOT_HTTP_SERVER`   | OneBot HTTP 服务器地址（即 OneBot 接收消息的接口）               | `http://127.0.0.1:3000` |
 
 例如：
 
 ```bash
-export QQ_ONEBOT_RECEIVE_TOKEN=MuseBot
+export QQ_ONEBOT_RECEIVE_TOKEN="<your-unique-random-token>"
 export QQ_ONEBOT_SEND_TOKEN=MuseBot
 export QQ_ONEBOT_HTTP_SERVER=http://127.0.0.1:3000
 ```
@@ -88,3 +88,5 @@ export QQ_ONEBOT_HTTP_SERVER=http://127.0.0.1:3000
 
 
 
+
+请在两端配置同一个随机接收令牌。媒体地址须使用公网 HTTP(S)，本地文件和私有地址会被拒绝。

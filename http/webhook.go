@@ -130,10 +130,7 @@ func TriggerWebhook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	limitBytes := int64(conf.BaseConfInfo.WebhookPayloadMB) << 20
-	if limitBytes <= 0 {
-		limitBytes = 1 << 20
-	}
+	limitBytes := webhookPayloadLimit()
 	if r.ContentLength > limitBytes {
 		writeWebhookStatus(w, http.StatusRequestEntityTooLarge, param.CodeParamError, "payload too large")
 		return
@@ -358,4 +355,12 @@ func GetWebhooks(w http.ResponseWriter, r *http.Request) {
 		"list":  webhooks,
 		"total": total,
 	})
+}
+
+func webhookPayloadLimit() int64 {
+	limitBytes := int64(conf.BaseConfInfo.WebhookPayloadMB) << 20
+	if limitBytes <= 0 {
+		return 1 << 20
+	}
+	return limitBytes
 }

@@ -1,5 +1,7 @@
 ## 📌 1. Add User Token
 
+Management endpoints, including chat, users, records and RAG, require direct loopback access with a local Host or a verified mTLS client certificate. Configure mTLS for Admin on a separate host or container. Keep management routes out of public reverse proxies.
+
 * **Endpoint**: `POST /user/token/add`
 * **Description**: Add available tokens for a user.
 * **Request Body** (JSON):

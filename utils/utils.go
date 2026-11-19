@@ -310,48 +310,6 @@ func MapKeysToString(input interface{}) string {
 	return strings.Join(keyStrs, ",")
 }
 
-func DownloadFile(urlStr string) ([]byte, error) {
-	if urlStr == "" {
-		return nil, errors.New("url is empty")
-	}
-
-	// 解析 URL 以判断协议
-	parsedURL, err := url.Parse(urlStr)
-	if err != nil {
-		return nil, errors.New("invalid URL format: " + err.Error())
-	}
-
-	// 处理 file:// 协议
-	if parsedURL.Scheme == "file" {
-		// 去除 "file://" 前缀，得到本地文件路径
-		filePath := strings.TrimPrefix(urlStr, "file://")
-		// 对于 Windows 路径可能需要额外处理，但你的路径是 macOS/Linux 格式
-		data, err := os.ReadFile(filePath)
-		if err != nil {
-			return nil, errors.New("failed to read local file: " + err.Error())
-		}
-		return data, nil
-	}
-
-	client := GetRobotProxyClient()
-	resp, err := client.Get(urlStr)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, errors.New("failed to download file: " + resp.Status)
-	}
-
-	data, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	return data, nil
-}
-
 func DetectAudioFormat(data []byte) string {
 	if len(data) < 12 {
 		return "unknown"
