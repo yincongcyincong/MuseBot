@@ -22,14 +22,14 @@ MuseBot's txt chat pipeline ships two resilience/cost features:
 
 - Default: the other token-configured providers returned by `GetAvailTxtType()` (fixed order deepseek → gemini → openai → aliyun → vol → chatanywhere, skipping the primary provider and ollama)
 - ollama never joins the ladder: its client message format differs, so a request cannot migrate mid-flight
-- `-failover_providers` overrides the order explicitly; each entry may pin a model for custom relays with `provider:model` (e.g. `openai:gpt-4o-mini`), falling back to the provider default
+- `-failover_providers` overrides the order explicitly; each entry may pin a model for custom relays with `provider:model` (e.g. `openai:gpt-6-luna`), falling back to the provider default
 
 ### Configuration
 
 | Flag | Env var | Default | Description |
 | --- | --- | --- | --- |
 | `-enable_failover` | `ENABLE_FAILOVER=false` disables | `true` | master switch |
-| `-failover_providers` | `FAILOVER_PROVIDERS` | `""` | explicit failover chain, comma separated, e.g. `gemini,openai`; entries may pin a model: `openai:gpt-4o-mini` |
+| `-failover_providers` | `FAILOVER_PROVIDERS` | `""` | explicit failover chain, comma separated, e.g. `gemini,openai`; entries may pin a model: `openai:gpt-6-luna` |
 
 Example:
 

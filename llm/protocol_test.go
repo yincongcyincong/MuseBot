@@ -186,9 +186,9 @@ func TestSanitizeOpenAISamplingParams(t *testing.T) {
 	// stop survives: still supported on gpt-5
 	assert.Equal(t, []string{"stop"}, request.Stop)
 
-	// every gpt-5 / o-series family is treated as reasoning
+	// every gpt-5 / gpt-6 / o-series family is treated as reasoning
 	for _, model := range []string{
-		param.ModelGPT52Pro, param.ModelGPT5Mini, "o1", "o1-mini", "o3", "o4-mini",
+		param.ModelGPT52Pro, param.ModelGPT5Mini, param.ModelGPT6Luna, "o1", "o1-mini", "o3", "o4-mini",
 	} {
 		assert.True(t, isOpenAIReasoningModel(model), model)
 	}

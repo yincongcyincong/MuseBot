@@ -138,10 +138,11 @@ func (o llmSamplingOptions) applyToOpenAI(request *openai.ChatCompletionRequest)
 }
 
 // isOpenAIReasoningModel reports whether the model belongs to the
-// reasoning-era OpenAI families (gpt-5.x, o1/o3/o4) that only accept the
-// default sampling values and reject logprobs.
+// reasoning-era OpenAI families (gpt-5.x, gpt-6.x, o1/o3/o4) that only
+// accept the default sampling values and reject logprobs.
 func isOpenAIReasoningModel(model string) bool {
 	return strings.HasPrefix(model, "gpt-5") ||
+		strings.HasPrefix(model, "gpt-6") ||
 		strings.HasPrefix(model, "o1") ||
 		strings.HasPrefix(model, "o3") ||
 		strings.HasPrefix(model, "o4")

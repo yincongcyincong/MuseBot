@@ -10,10 +10,10 @@ The model is switched per user with `/img_model`, or set at startup with the env
 
 | Provider | `-photo_type` value | Models |
 |----------|--------------------|--------|
-| Gemini   | `gemini`  | `gemini-3-pro-image`, `gemini-nano-banana-2.1`, `gemini-3.1-flash-image`, `gemini-3.1-flash-lite-image`, `gemini-2.5-flash-image` |
-| OpenAI   | `openai`  | `gpt-image-1.5`, `gpt-image-1` |
+| Gemini   | `gemini`  | `gemini-3-pro-image`, `gemini-nano-banana-2.1`, `gemini-3.1-flash-image`, `gemini-3.1-flash-lite-image` |
+| OpenAI   | `openai`  | `gpt-image-2.6-sunburst`, `gpt-image-2.6-flare` |
 | Aliyun   | `aliyun`  | `qwen-image-plus`, `qwen-image-edit` |
-| Vol      | `vol`     | `doubao-seed-1-6-250615` |
+| Vol      | `vol`     | `doubao-seed-2-0-lite-260428` |
 
 > With Aliyun, `/edit_photo` (or `/photo` with an attached image) uses `qwen-image-edit` unless a custom image model is set.
 
@@ -24,7 +24,7 @@ Recognition uses the vision capability of the configured chat/recognition provid
 | Provider | Models |
 |----------|--------|
 | Gemini   | `gemini-4-carbon`, `gemini-4-argon`, `gemini-3.8-flash`, `gemini-3.6-flash`, `gemini-3.5-flash-lite`, `gemini-2.5-pro`, `gemini-2.5-flash` |
-| Vol      | `doubao-seed-1-6-250615` |
+| Vol      | `doubao-seed-2-0-lite-260428` |
 | Aliyun   | `qwen-vl-max`, `qwen-vl-max-latest`, `qvq-max`, `qvq-max-latest`, `qwen-audio-turbo-latest` |
 
 ## Environment Variables

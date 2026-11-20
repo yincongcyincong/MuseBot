@@ -23,7 +23,7 @@ var (
 )
 
 func InitVideoConf() {
-	flag.StringVar(&VideoConfInfo.VolVideoModel, "vol_video_model", "doubao-seedance-1-0-pro-250528", "video model")
+	flag.StringVar(&VideoConfInfo.VolVideoModel, "vol_video_model", "doubao-seedance-2-0-mini-260615", "video model")
 	flag.StringVar(&VideoConfInfo.Radio, "radio", "1:1", "the width to height ratio")
 	flag.IntVar(&VideoConfInfo.Duration, "duration", 5, "the duration in seconds, only support 5s / 10s")
 	flag.IntVar(&VideoConfInfo.FPS, "fps", 24, "the frame per second")

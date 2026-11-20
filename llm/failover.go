@@ -157,7 +157,7 @@ func (l *LLM) failoverChain() []failoverTarget {
 		if entry == "" {
 			continue
 		}
-		// explicit entries may pin the model for custom relays: "openai:gpt-4o-mini"
+		// explicit entries may pin the model for custom relays: "openai:gpt-6-luna"
 		provider, model := entry, ""
 		if i := strings.Index(entry, ":"); i >= 0 {
 			provider = strings.TrimSpace(entry[:i])

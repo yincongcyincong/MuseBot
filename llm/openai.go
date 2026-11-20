@@ -356,12 +356,13 @@ func GenerateOpenAIImg(ctx context.Context, prompt string, imageContent []byte) 
 func GenerateOpenAIText(ctx context.Context, audioContent []byte) (string, error) {
 
 	start := time.Now()
-	metrics.APIRequestCount.WithLabelValues(openai.Whisper1).Inc()
+	// whisper-1 retires on 2027-02-26; gpt-transcribe is the replacement
+	metrics.APIRequestCount.WithLabelValues(param.ModelGPTTranscribe).Inc()
 
 	client := GetOpenAIClient(ctx, "rec")
 
 	req := openai.AudioRequest{
-		Model:    openai.Whisper1,
+		Model:    param.ModelGPTTranscribe,
 		FilePath: "voice." + utils.DetectAudioFormat(audioContent),
 		Reader:   bytes.NewReader(audioContent),
 		Format:   "json",
@@ -373,7 +374,7 @@ func GenerateOpenAIText(ctx context.Context, audioContent []byte) (string, error
 		return client.CreateTranscription(ctx, req)
 	})
 
-	metrics.APIRequestDuration.WithLabelValues(openai.Whisper1).Observe(time.Since(start).Seconds())
+	metrics.APIRequestDuration.WithLabelValues(param.ModelGPTTranscribe).Observe(time.Since(start).Seconds())
 	if err != nil {
 		logger.ErrorCtx(ctx, "CreateTranscription error", "err", err)
 		return "", err

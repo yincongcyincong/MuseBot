@@ -42,24 +42,20 @@ const (
 )
 
 const (
-	// doubao Seed 1.6
-	ModelDoubaoSeed16         = "doubao-seed-1.6-250615"
-	ModelDoubaoSeed16Flash    = "doubao-seed-1.6-flash-250615"
-	ModelDoubaoSeed16Thinking = "doubao-seed-1.6-thinking-250615"
+	// 火山方舟现行模型。旧的 seed-1.6 / doubao-1.5 / deepseek-r1 快照版已按
+	// 第 6–10 批下线公告于 2026-03 至 2026-11 间全部 EOS，官方迁移目标如下：
+	// https://ark.volcengine.com/region:cn-beijing/docs/model-deprecation-notice
+	DoubaoSeed20Lite  = "doubao-seed-2-0-lite-260428"
+	DoubaoSeed20Mini  = "doubao-seed-2-0-mini-260428"
+	DoubaoSeed21Lite  = "doubao-seed-2-1-lite-260915"
+	DeepseekV41Flash  = "deepseek-v4-1-flash-260910"
+	DeepseekV4FlashGA = "deepseek-v4-flash-ga-260731"
 
-	// doubao 1.5 系列
-	ModelDoubao15ThinkingPro     = "doubao-1.5-thinking-pro-250415"
-	ModelDoubao15ThinkingProM428 = "doubao-1.5-thinking-pro-m-250428"
-	ModelDoubao15ThinkingProM415 = "doubao-1.5-thinking-pro-m-250415"
-	ModelDoubao15VisionPro428    = "doubao-1.5-thinking-vision-pro-250428"
-	ModelDoubao15VisionPro328    = "doubao-1.5-vision-pro-250328"
+	DoubaoSeedance20     = "doubao-seedance-2-0-260128"
+	DoubaoSeedance20Fast = "doubao-seedance-2-0-fast-260128"
+	DoubaoSeedance20Mini = "doubao-seedance-2-0-mini-260615"
 
-	// DeepSeek R1
-	ModelDeepSeekR1        = "deepseek-r1"
-	ModelDeepSeekR1_528    = "deepseek-r1-250528"
-	ModelDeepSeekR1_120    = "deepseek-r1-250120"
-	ModelDeepSeekR1Qwen32b = "deepseek-r1-distill-qwen-32b-250120"
-	ModelDeepSeekR1Qwen7b  = "deepseek-r1-distill-qwen-7b-250120"
+	ModelDeepSeekR1 = "deepseek-r1"
 
 	ModelDeepseekV3         = "deepseek-v3.1"
 	ModelDeepSeekR1Qwen32bQ = "deepseek-r1-distill-qwen-32b"
@@ -68,10 +64,6 @@ const (
 	// DeepSeek 官方 API 现行模型（V4 系列；deepseek-chat/reasoner 为旧别名）
 	ModelDeepseekFlash = "deepseek-flash"
 	ModelDeepseekV4Pro = "deepseek-v4-pro"
-
-	// doubao-1.5
-	ModelDoubao15VisionPro32k = "doubao-1.5-vision-pro-32k-250115"
-	ModelDoubao15VisionLite   = "doubao-1.5-vision-lite-250315"
 
 	AllRecordType      = -1
 	TextRecordType     = 0
@@ -88,20 +80,23 @@ const (
 	GeminiImage31Flash     = "gemini-3.1-flash-image"
 	GeminiImage31FlashLite = "gemini-3.1-flash-lite-image"
 	GeminiImage3Pro        = "gemini-3-pro-image"
-	GeminiImageGenV2_5     = "gemini-2.5-flash-image"
 
 	GeminiVideoOmni12Flash = "gemini-omni-1.2-flash"
-	GeminiVideoOmniFlash   = "gemini-omni-1.1-flash"
 
 	ModelGPT52      = "gpt-5.2"
 	ModelGPT52Pro   = "gpt-5.2-pro"
 	ModelGPT51      = "gpt-5.1"
 	ModelGPT5Mini   = "gpt-5-mini"
 	ModelGPT5Nano   = "gpt-5-nano"
-	ModelImageGPT15 = "gpt-image-1.5"
-	ModelImageGPT   = "gpt-image-1"
+	ModelGPT6Luna   = "gpt-6-luna"
 
-	DoubaoSeed16VisionPro = "doubao-seed-1-6-250615"
+	ModelImageGPT26Sunburst = "gpt-image-2.6-sunburst"
+	ModelImageGPT26Flare    = "gpt-image-2.6-flare"
+
+	// OpenAI speech/transcription models: tts-1 retires on 2027-01-06 and
+	// whisper-1 on 2027-02-26 (https://developers.openai.com/api/docs/deprecations)
+	ModelGPTRealtime21Mini = "gpt-realtime-2.1-mini"
+	ModelGPTTranscribe     = "gpt-transcribe"
 
 	QwenImagePlus   = "qwen-image-plus"
 	QwenImageEdit   = "qwen-image-edit"
@@ -114,19 +109,13 @@ const (
 
 	Wan2_5T2VPreview = "wan2.5-t2v-preview"
 
-	DoubaoSeedance1_0Pro = "doubao-seedance-1-0-pro-250528"
-
-	ChatGPT4_0 = "chatgpt-4o-latest"
-
 	VolTTS = "volcano_tts"
 	VolIcl = "volcano_icl"
 
 	Qwen3TTSFlash = "qwen3-tts-flash"
 
-	Gemini38FlashTTS         = "gemini-3.8-flash-tts"
-	Gemini38FlashLiteTTS     = "gemini-3.8-flash-lite-tts"
-	Gemini31FlashTTSPreview  = "gemini-3.1-flash-tts-preview"
-	Gemini2_5FlashPreviewTTS = "gemini-2.5-flash-preview-tts"
+	Gemini38FlashTTS     = "gemini-3.8-flash-tts"
+	Gemini38FlashLiteTTS = "gemini-3.8-flash-lite-tts"
 
 	ComWechat  = "com_wechat"
 	Ding       = "ding"
@@ -205,22 +194,24 @@ var (
 	}
 
 	GeminiTTSModels = map[string]bool{
-		Gemini38FlashTTS:         true,
-		Gemini38FlashLiteTTS:     true,
-		Gemini31FlashTTSPreview:  true,
-		Gemini2_5FlashPreviewTTS: true,
+		Gemini38FlashTTS:     true,
+		Gemini38FlashLiteTTS: true,
 	}
 
+	// Vol whitelists hold only current Ark models; retired snapshots fall back
+	// to the defaults in utils.GetUsing*Model (batch 6-10 deprecations)
 	VolImageModels = map[string]bool{
-		DoubaoSeed16VisionPro: true,
+		DoubaoSeed20Lite: true,
 	}
 
 	VolVideoModels = map[string]bool{
-		DoubaoSeedance1_0Pro: true,
+		DoubaoSeedance20Mini: true,
+		DoubaoSeedance20:     true,
+		DoubaoSeedance20Fast: true,
 	}
 
 	VolRecModels = map[string]bool{
-		DoubaoSeed16VisionPro: true,
+		DoubaoSeed20Lite: true,
 	}
 
 	VolTTSModels = map[string]bool{
@@ -250,17 +241,45 @@ var (
 	}
 
 	//OpenAIImageModels = map[string]bool{
-	//	ModelImageGPT: true,
+	//	ModelImageGPT26Sunburst: true,
+	//	ModelImageGPT26Flare:    true,
 	//}
 	//
 	//OpenAiRecModels = map[string]bool{
-	//	openai.Whisper1: true,
-	//	ChatGPT4_0:      true,
+	//	ModelGPTTranscribe: true,
 	//}
 	//
+
+	// OpenAI shut gpt-image-1 down on 2026-10-23 and retires gpt-image-1.5
+	// on 2026-12-01. Map the retired names to the recommended replacement so
+	// user configs stored before the shutdown keep working.
+	// https://developers.openai.com/api/docs/deprecations
+	DeprecatedOpenAIImageModels = map[string]string{
+		"gpt-image-1":   ModelImageGPT26Sunburst,
+		"gpt-image-1.5": ModelImageGPT26Sunburst,
+	}
+
+	// Retired or retiring OpenAI speech models (tts-1 family shuts down on
+	// 2027-01-06) map to the recommended replacement gpt-realtime-2.1-mini.
+	DeprecatedOpenAITTSModels = map[string]string{
+		"tts-1":           ModelGPTRealtime21Mini,
+		"tts-1-hd":        ModelGPTRealtime21Mini,
+		"gpt-4o-mini-tts": ModelGPTRealtime21Mini,
+	}
+
+	// Former OpenAI/ChatAnyWhere default text models map to their
+	// replacement (gpt-4o family retires on 2027-01-14; chatgpt-4o-latest
+	// already shut down on 2026-02-17). Custom relay model names not listed
+	// here are passed through untouched.
+	DeprecatedOpenAITxtModels = map[string]string{
+		"gpt-4o-mini":       ModelGPT6Luna,
+		"gpt-4o":            ModelGPT6Luna,
+		"chatgpt-4o-latest": ModelGPT6Luna,
+	}
+	// gemini-omni-1.1-flash shut down on 2026-12-03; stored configs fall back
+	// to gemini-omni-1.2-flash. https://ai.google.dev/gemini-api/docs/deprecations
 	GeminiVideoModels = map[string]bool{
 		GeminiVideoOmni12Flash: true,
-		GeminiVideoOmniFlash:   true,
 	}
 
 	GeminiImageModels = map[string]bool{
@@ -268,7 +287,6 @@ var (
 		GeminiImage3Pro:        true,
 		GeminiImage31Flash:     true,
 		GeminiImage31FlashLite: true,
-		GeminiImageGenV2_5:     true,
 	}
 
 	DeepseekModels = map[string]bool{
@@ -281,27 +299,14 @@ var (
 	}
 
 	VolModels = map[string]bool{
-		// doubao Seed 1.6
-		ModelDoubaoSeed16:         true,
-		ModelDoubaoSeed16Flash:    true,
-		ModelDoubaoSeed16Thinking: true,
+		// doubao Seed 2.x
+		DoubaoSeed21Lite: true,
+		DoubaoSeed20Lite: true,
+		DoubaoSeed20Mini: true,
 
-		// doubao 1.5 系列
-		ModelDoubao15ThinkingPro:     true,
-		ModelDoubao15ThinkingProM428: true,
-		ModelDoubao15ThinkingProM415: true,
-		ModelDoubao15VisionPro428:    true,
-		ModelDoubao15VisionPro328:    true,
-
-		// DeepSeek R1
-		ModelDeepSeekR1_528:    true,
-		ModelDeepSeekR1_120:    true,
-		ModelDeepSeekR1Qwen32b: true,
-		ModelDeepSeekR1Qwen7b:  true,
-
-		// doubao-1.5
-		ModelDoubao15VisionPro32k: true,
-		ModelDoubao15VisionLite:   true,
+		// 方舟托管的 DeepSeek
+		DeepseekV41Flash:  true,
+		DeepseekV4FlashGA: true,
 	}
 
 	AliyunModel = map[string]bool{
@@ -317,9 +322,11 @@ var (
 		qwen.QwenVLMax:      true,
 		qwen.QwenAudioTurbo: true,
 
-		ModelDeepSeekR1_528: true,
-		ModelDeepSeekR1:     true,
-		ModelDeepseekV3:     true,
+		// Aliyun-hosted DeepSeek entries kept as literals; their availability
+		// is tracked by DashScope, not the Volcano Ark deprecation batches
+		"deepseek-r1-250528": true,
+		ModelDeepSeekR1:      true,
+		ModelDeepseekV3:      true,
 	}
 )
 

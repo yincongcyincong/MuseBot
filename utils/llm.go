@@ -3,7 +3,6 @@ package utils
 import (
 	"github.com/devinyf/dashscopego/qwen"
 	"github.com/goccy/go-json"
-	"github.com/sashabaranov/go-openai"
 	"github.com/yincongcyincong/MuseBot/conf"
 	"github.com/yincongcyincong/MuseBot/param"
 )
@@ -170,11 +169,11 @@ func GetTxtModel(t string) string {
 	case param.Ollama:
 		return "deepseek-r1"
 	case param.Vol:
-		return param.ModelDeepSeekR1_528
+		return param.DoubaoSeed20Lite
 	case param.Aliyun:
 		return qwen.QwenMax
 	case param.ChatAnyWhere:
-		return openai.GPT4oMini
+		return param.ModelGPT6Luna
 	}
 
 	return param.ModelDeepseekFlash
@@ -317,7 +316,17 @@ func GetUsingImgModel(ty string, model string) string {
 		if param.VolImageModels[model] {
 			return model
 		}
-		return param.DoubaoSeed16VisionPro
+		return param.DoubaoSeed20Lite
+	case param.OpenAi, param.ChatAnyWhere:
+		// retired gpt-image models are mapped to the replacement so stored
+		// user configs survive the 2026-12-01 shutdown (#82)
+		if replace, ok := param.DeprecatedOpenAIImageModels[model]; ok {
+			return replace
+		}
+		if model == "" {
+			return conf.PhotoConfInfo.OpenAIImageModel
+		}
+		return model
 	default:
 		return model
 	}
@@ -340,7 +349,7 @@ func GetUsingVideoModel(ty string, model string) string {
 		if param.VolVideoModels[model] {
 			return model
 		}
-		return param.DoubaoSeedance1_0Pro
+		return param.DoubaoSeedance20Mini
 	}
 
 	return ""
@@ -362,7 +371,7 @@ func GetUsingRecModel(ty string, model string) string {
 		if param.VolRecModels[model] {
 			return model
 		}
-		return param.DoubaoSeed16VisionPro
+		return param.DoubaoSeed20Lite
 	default:
 		return model
 	}
@@ -384,12 +393,19 @@ func GetUsingTxtModel(ty string, model string) string {
 		if param.VolModels[model] {
 			return model
 		}
-		return param.ModelDeepSeekR1_528
+		return param.DoubaoSeed20Lite
 	case param.Aliyun:
 		if param.AliyunModel[model] {
 			return model
 		}
 		return qwen.QwenMax
+	case param.OpenAi, param.ChatAnyWhere:
+		// former defaults that OpenAI retired map to the replacement (#82);
+		// custom relay models pass through untouched
+		if replace, ok := param.DeprecatedOpenAITxtModels[model]; ok {
+			return replace
+		}
+		return model
 	}
 
 	// other types are openai-compatible relays: any model is accepted
@@ -399,6 +415,11 @@ func GetUsingTxtModel(ty string, model string) string {
 func GetUsingTTSModel(ty string, model string) string {
 	switch ty {
 	case param.OpenAi:
+		// tts-1 family retires on 2027-01-06; map stored values to the
+		// recommended replacement (#82)
+		if replace, ok := param.DeprecatedOpenAITTSModels[model]; ok {
+			return replace
+		}
 		return model
 	case param.Gemini:
 		if param.GeminiTTSModels[model] {

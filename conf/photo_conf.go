@@ -68,12 +68,12 @@ func InitPhotoConf() {
 	flag.StringVar(&PhotoConfInfo.GeminiRecModel, "gemini_rec_model", "gemini-3.5-flash-lite", "gemini recognize photo model")
 
 	flag.StringVar(&PhotoConfInfo.OpenAIRecModel, "openai_rec_model", "gpt-5.2", "openai recognize photo model")
-	flag.StringVar(&PhotoConfInfo.OpenAIImageModel, "openai_image_model", "gpt-image-1.5", "openai create photo model")
+	flag.StringVar(&PhotoConfInfo.OpenAIImageModel, "openai_image_model", "gpt-image-2.6-sunburst", "openai create photo model")
 	flag.StringVar(&PhotoConfInfo.OpenAIImageSize, "openai_image_size", openai.CreateImageSize1024x1024, "openai image size")
 	flag.StringVar(&PhotoConfInfo.OpenAIImageStyle, "openai_image_style", "", "openai image style")
 
-	flag.StringVar(&PhotoConfInfo.VolImageModel, "vol_image_model", "doubao-seed-1-6-250615", "vol image model")
-	flag.StringVar(&PhotoConfInfo.VolRecModel, "vol_rec_model", "doubao-seed-1-6-250615", "vol recognize photo model")
+	flag.StringVar(&PhotoConfInfo.VolImageModel, "vol_image_model", "doubao-seed-2-0-lite-260428", "vol image model")
+	flag.StringVar(&PhotoConfInfo.VolRecModel, "vol_rec_model", "doubao-seed-2-0-lite-260428", "vol recognize photo model")
 
 	flag.StringVar(&PhotoConfInfo.AliyunImageModel, "aliyun_image_model", "qwen-image-plus", "aliyun image model")
 	flag.StringVar(&PhotoConfInfo.AliyunRecModel, "aliyun_rec_model", "qwen-vl-max-latest", "aliyun recognize photo model")

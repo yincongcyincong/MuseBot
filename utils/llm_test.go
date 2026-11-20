@@ -26,7 +26,8 @@ func TestGetAvailImgType_IncludesChatAnyWhere(t *testing.T) {
 }
 
 func TestGetTxtModel_ChatAnyWhereDefault(t *testing.T) {
-	assert.Equal(t, openai.GPT4oMini, GetTxtModel(param.ChatAnyWhere))
+	// gpt-4o-mini retires on 2027-01-14; gpt-6-luna is the replacement
+	assert.Equal(t, param.ModelGPT6Luna, GetTxtModel(param.ChatAnyWhere))
 }
 
 func TestGetTxtType_ChatAnyWhereFallback(t *testing.T) {
@@ -90,7 +91,38 @@ func TestGetUsingTxtModel_RelaysKeepAnyModel(t *testing.T) {
 	assert.Equal(t, "deepseek-chat", GetUsingTxtModel(param.OpenAi, godeepseek.DeepSeekChat))
 	assert.Equal(t, "my-custom-model", GetUsingTxtModel(param.OpenAi, "my-custom-model"))
 
+	// retired former defaults map to their replacement (#82)
+	assert.Equal(t, param.ModelGPT6Luna, GetUsingTxtModel(param.ChatAnyWhere, "gpt-4o-mini"))
+	assert.Equal(t, param.ModelGPT6Luna, GetUsingTxtModel(param.OpenAi, "chatgpt-4o-latest"))
+
 	// types with a fixed model list still validate
 	assert.Equal(t, param.ModelDeepseekFlash, GetUsingTxtModel(param.DeepSeek, openai.GPT3Dot5Turbo))
 	assert.Equal(t, godeepseek.DeepSeekChat, GetUsingTxtModel(param.DeepSeek, godeepseek.DeepSeekChat))
+}
+
+func TestGetUsingTTSModel_OpenAIDeprecatedMapping(t *testing.T) {
+	// tts-1 family retires on 2027-01-06
+	assert.Equal(t, param.ModelGPTRealtime21Mini, GetUsingTTSModel(param.OpenAi, "tts-1"))
+	assert.Equal(t, param.ModelGPTRealtime21Mini, GetUsingTTSModel(param.OpenAi, "gpt-4o-mini-tts"))
+
+	// current and custom models pass through
+	assert.Equal(t, param.ModelGPTRealtime21Mini, GetUsingTTSModel(param.OpenAi, param.ModelGPTRealtime21Mini))
+	assert.Equal(t, "my-custom-tts", GetUsingTTSModel(param.OpenAi, "my-custom-tts"))
+}
+
+func TestGetUsingImgModel_OpenAIRetiredMapping(t *testing.T) {
+	conf.PhotoConfInfo.OpenAIImageModel = "gpt-image-2.6-sunburst"
+	defer func() { conf.PhotoConfInfo.OpenAIImageModel = "" }()
+
+	// retired models stored in user configs map to the replacement (#82)
+	assert.Equal(t, param.ModelImageGPT26Sunburst, GetUsingImgModel(param.OpenAi, "gpt-image-1.5"))
+	assert.Equal(t, param.ModelImageGPT26Sunburst, GetUsingImgModel(param.OpenAi, "gpt-image-1"))
+	assert.Equal(t, param.ModelImageGPT26Sunburst, GetUsingImgModel(param.ChatAnyWhere, "gpt-image-1.5"))
+
+	// current models and custom relays pass through unchanged
+	assert.Equal(t, param.ModelImageGPT26Flare, GetUsingImgModel(param.OpenAi, param.ModelImageGPT26Flare))
+	assert.Equal(t, "my-custom-model", GetUsingImgModel(param.OpenAi, "my-custom-model"))
+
+	// empty stored model falls back to the configured default
+	assert.Equal(t, "gpt-image-2.6-sunburst", GetUsingImgModel(param.OpenAi, ""))
 }

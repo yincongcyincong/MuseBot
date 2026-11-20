@@ -50,7 +50,7 @@ func InitAudioConf() {
 	flag.StringVar(&AudioConfInfo.GeminiAudioModel, "gemini_audio_model", "gemini-3.8-flash-tts", "gemini audio model")
 	flag.StringVar(&AudioConfInfo.GeminiVoiceName, "gemini_voice_name", "Kore", "gemini voice name")
 
-	flag.StringVar(&AudioConfInfo.OpenAIAudioModel, "openai_audio_model", "tts-1", "openai audio model")
+	flag.StringVar(&AudioConfInfo.OpenAIAudioModel, "openai_audio_model", "gpt-realtime-2.1-mini", "openai audio model")
 	flag.StringVar(&AudioConfInfo.OpenAIVoiceName, "openai_voice_name", "alloy", "openai voice name")
 
 	flag.StringVar(&AudioConfInfo.AliyunAudioModel, "aliyun_audio_model", "qwen3-tts-flash", "aliyun audio model")
